@@ -33,11 +33,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\FlowLinksControllerServices;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\FlowLinkService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\FlowLinkServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -48,21 +51,39 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class FlowLinksController extends Controller {
+	use ObjectLinkActionsTrait;
+
+	/**
+	 * Backing service.
+	 *
+	 * @var FlowLinkServiceInterface
+	 */
+	private readonly FlowLinkServiceInterface $flowLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param FlowLinkService $flowLinkService Backing service.
-	 * @param ObjectService $objectService OR object resolver.
+	 * @param FlowLinksControllerServices $services The flow links controller services.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly FlowLinkService $flowLinkService,
-		private readonly ObjectService $objectService,
+		FlowLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->flowLinkService = $services->flowLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
@@ -83,33 +104,7 @@ class FlowLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		if ($this->flowLinkService->isFlowAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Flow (workflowengine) app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
-
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$results = $this->flowLinkService->getLinkedOperations($object->getUuid());
-
-			return new JSONResponse(
-				[
-					'results' => $results,
-					'total' => count($results),
-					'isAdmin' => $this->flowLinkService->isCurrentUserAdmin(),
-				]
-			);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
-		}//end try
+		return $this->linkedOperations(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 	}//end index()
 
 	/**
@@ -129,37 +124,7 @@ class FlowLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		if ($this->flowLinkService->isFlowAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Flow (workflowengine) app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
-
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$operationId = (int)$this->request->getParam('operationId', 0);
-			if ($operationId === 0) {
-				return new JSONResponse(['error' => 'operationId is required'], 400);
-			}
-
-			$link = $this->flowLinkService->linkOperation(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$operationId
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->operationLinked(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 	}//end link()
 
 	/**
@@ -178,27 +143,7 @@ class FlowLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $operationId): JSONResponse {
-		if ($this->flowLinkService->isFlowAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Flow (workflowengine) app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
-
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$this->flowLinkService->unlinkOperation($object->getUuid(), (int)$operationId);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->operationUnlinked(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), operationId: $operationId);
 	}//end destroy()
 
 	/**
@@ -219,10 +164,7 @@ class FlowLinksController extends Controller {
 	 */
 	public function available(): JSONResponse {
 		if ($this->flowLinkService->isFlowAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Flow (workflowengine) app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Flow (workflowengine)');
 		}
 
 		if ($this->flowLinkService->isCurrentUserAdmin() === false) {
@@ -247,26 +189,114 @@ class FlowLinksController extends Controller {
 	}//end available()
 
 	/**
-	 * Resolve an OR object from register/schema/id.
+	 * The Flow operations linked to the routed object.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object id.
+	 * @param ObjectLinkRoute $route The object the route names.
 	 *
-	 * @return ObjectEntity|null
+	 * @return JSONResponse
 	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
 	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+	private function linkedOperations(ObjectLinkRoute $route): JSONResponse {
+		if ($this->flowLinkService->isFlowAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Flow (workflowengine)');
+		}
 
-		return $this->objectService->getObject();
-	}//end validateObject()
+		return $this->listLinkedObject(route: $route, action: fn (ObjectEntity $object): JSONResponse => $this->operationsOf(object: $object));
+	}//end linkedOperations()
+
+	/**
+	 * The Flow operations linked to a resolved object, with the caller's admin flag.
+	 *
+	 * @param ObjectEntity $object The resolved object.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function operationsOf(ObjectEntity $object): JSONResponse {
+		$results = $this->flowLinkService->getLinkedOperations($object->getUuid());
+
+		return new JSONResponse(
+			[
+				'results' => $results,
+				'total' => count($results),
+				'isAdmin' => $this->flowLinkService->isCurrentUserAdmin(),
+			]
+		);
+	}//end operationsOf()
+
+	/**
+	 * Link the operation the request names to the routed object.
+	 *
+	 * @param ObjectLinkRoute $route The object the route names.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function operationLinked(ObjectLinkRoute $route): JSONResponse {
+		if ($this->flowLinkService->isFlowAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Flow (workflowengine)');
+		}
+
+		return $this->onLinkedObject(route: $route, action: fn (ObjectEntity $object): JSONResponse => $this->linkOperationTo(object: $object));
+	}//end operationLinked()
+
+	/**
+	 * Link the operation the request names to a resolved object.
+	 *
+	 * @param ObjectEntity $object The resolved object.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function linkOperationTo(ObjectEntity $object): JSONResponse {
+		$operationId = (int)$this->request->getParam('operationId', 0);
+		if ($operationId === 0) {
+			return new JSONResponse(['error' => 'operationId is required'], 400);
+		}
+
+		$link = $this->flowLinkService->linkOperation(
+			$object->getUuid(),
+			(int)$object->getRegister(),
+			(int)$object->getSchema(),
+			$operationId
+		);
+
+		return new JSONResponse($link->jsonSerialize(), 201);
+	}//end linkOperationTo()
+
+	/**
+	 * Unlink an operation from the routed object.
+	 *
+	 * @param ObjectLinkRoute $route       The object the route names.
+	 * @param string          $operationId Operation id (numeric).
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function operationUnlinked(ObjectLinkRoute $route, string $operationId): JSONResponse {
+		if ($this->flowLinkService->isFlowAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Flow (workflowengine)');
+		}
+
+		return $this->onLinkedObject(
+			route: $route,
+			action: function (ObjectEntity $object) use ($operationId): JSONResponse {
+				$this->flowLinkService->unlinkOperation($object->getUuid(), (int)$operationId);
+
+				return new JSONResponse(['success' => true]);
+			}
+		);
+	}//end operationUnlinked()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -283,7 +313,7 @@ class FlowLinksController extends Controller {
 	 *
 	 * @return JSONResponse
 	 */
-	private function mapException(Exception $exception): JSONResponse {
+	protected function mapException(Exception $exception): JSONResponse {
 		$code = $exception->getCode();
 		if (in_array($code, [400, 403, 404, 409, 503], true) === true) {
 			return new JSONResponse(['error' => $exception->getMessage()], $code);

@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCP\IL10N;
 
 /**
@@ -40,13 +40,13 @@ class NotesProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param NoteService $noteService Notes service.
+	 * @param NoteServiceInterface $noteService Notes service.
 	 * @param IL10N $l10n Localisation.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private NoteService $noteService,
+		private NoteServiceInterface $noteService,
 		private IL10N $l10n,
 	) {
 	}//end __construct()
@@ -127,10 +127,22 @@ class NotesProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-13
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->notesPage(objectId: $objectId, filters: $filters);
+	}//end list()
+
+	/**
+	 * One page of the object's notes: `_limit` (default 50) per page, `_page` from 0.
+	 *
+	 * @param string              $objectId Owning object uuid.
+	 * @param array<string,mixed> $filters  `_limit` and `_page`.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function notesPage(string $objectId, array $filters): array {
 		$limit = (int)($filters['_limit'] ?? 50);
 		$offset = (int)($filters['_page'] ?? 0) * $limit;
 		return $this->noteService->getNotesForObject(objectUuid: $objectId, limit: $limit, offset: max(0, $offset));
-	}//end list()
+	}//end notesPage()
 
 	/**
 	 * Create a note linked to the given OR object.
@@ -170,6 +182,7 @@ class NotesProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-13
 	 */
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
+		$this->noteService->requireNoteOf(objectUuid: $objectId, noteId: (int)$entityId);
 		$message = (string)($payload['message'] ?? '');
 		return $this->noteService->updateNote(noteId: (int)$entityId, message: $message);
 	}//end update()
@@ -187,6 +200,7 @@ class NotesProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-13
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+		$this->noteService->requireNoteOf(objectUuid: $objectId, noteId: (int)$entityId);
 		$this->noteService->deleteNote(noteId: (int)$entityId);
 	}//end delete()
 }//end class

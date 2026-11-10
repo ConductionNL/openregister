@@ -8,7 +8,6 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 	<NcDialog
 		name="Analyze Schema Properties"
 		size="large"
-		:canClose="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
 			<p>
@@ -62,61 +61,8 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 						<div class="steps-section">
 							<h4>{{ t('openregister', 'Analysis steps:') }}</h4>
 							<ol class="steps-list">
-								<li>
-									{{
-										t(
-											'openregister',
-											'Retrieve all objects for this schema',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Extract properties from each object',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Detect data types and patterns',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Identify properties not in the schema',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Analyze existing properties for improvement opportunities',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Compare current schema with real object data',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Generate recommendations and confidence scores',
-										)
-									}}
+								<li v-for="step in analysisSteps" :key="step">
+									{{ step }}
 								</li>
 							</ol>
 						</div>
@@ -125,135 +71,16 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 
 				<!-- Analysis Results (inside the well) -->
 				<div v-else-if="explorationData" class="analysis-summary">
-					<div
-						style="
-							display: grid;
-							grid-template-columns: repeat(
-								auto-fit,
-								minmax(200px, 1fr)
-							);
-							gap: 16px;
-							margin-bottom: 20px;
-						">
+					<div class="summary-cards">
 						<div
-							style="
-								background: var(--color-main-background);
-								border: 2px solid var(--color-border);
-								border-radius: 8px;
-								padding: 20px;
-								text-align: center;
-								box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-							">
-							<div
-								style="
-									font-size: 2rem;
-									font-weight: bold;
-									color: var(--color-primary-element);
-									margin-bottom: 8px;
-								">
-								{{ explorationData.total_objects }}
+							v-for="card in summaryCards"
+							:key="card.label"
+							class="summary-card">
+							<div class="summary-card-value">
+								{{ card.value }}
 							</div>
-							<div
-								style="
-									font-size: 0.9rem;
-									color: var(--color-text-maxcontrast);
-									text-transform: uppercase;
-									font-weight: 600;
-								">
-								{{ t('openregister', 'Objects Analyzed') }}
-							</div>
-						</div>
-						<div
-							style="
-								background: var(--color-main-background);
-								border: 2px solid var(--color-border);
-								border-radius: 8px;
-								padding: 20px;
-								text-align: center;
-								box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-							">
-							<div
-								style="
-									font-size: 2rem;
-									font-weight: bold;
-									color: var(--color-primary-element);
-									margin-bottom: 8px;
-								">
-								{{
-									explorationData.analysis_summary
-										?.new_properties_count
-									|| Object.keys(
-										explorationData.discovered_properties || {},
-									).length
-								}}
-							</div>
-							<div
-								style="
-									font-size: 0.9rem;
-									color: var(--color-text-maxcontrast);
-									text-transform: uppercase;
-									font-weight: 600;
-								">
-								{{ t('openregister', 'New Properties') }}
-							</div>
-						</div>
-						<div
-							style="
-								background: var(--color-main-background);
-								border: 2px solid var(--color-border);
-								border-radius: 8px;
-								padding: 20px;
-								text-align: center;
-								box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-							">
-							<div
-								style="
-									font-size: 2rem;
-									font-weight: bold;
-									color: var(--color-primary-element);
-									margin-bottom: 8px;
-								">
-								{{
-									explorationData.analysis_summary
-										?.existing_properties_improvements || 0
-								}}
-							</div>
-							<div
-								style="
-									font-size: 0.9rem;
-									color: var(--color-text-maxcontrast);
-									text-transform: uppercase;
-									font-weight: 600;
-								">
-								{{ t('openregister', 'Existing Improvements') }}
-							</div>
-						</div>
-						<div
-							style="
-								background: var(--color-main-background);
-								border: 2px solid var(--color-border);
-								border-radius: 8px;
-								padding: 20px;
-								text-align: center;
-								box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-							">
-							<div
-								style="
-									font-size: 2rem;
-									font-weight: bold;
-									color: var(--color-primary-element);
-									margin-bottom: 8px;
-								">
-								{{ selectedProperties.length }}
-							</div>
-							<div
-								style="
-									font-size: 0.9rem;
-									color: var(--color-text-maxcontrast);
-									text-transform: uppercase;
-									font-weight: 600;
-								">
-								{{ t('openregister', 'Selected') }}
+							<div class="summary-card-label">
+								{{ card.label }}
 							</div>
 						</div>
 					</div>
@@ -642,20 +469,12 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 
 							<div class="config-fields">
 								<NcTextField
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].title
-									"
+									v-model="propertyConfig(suggestion).title"
 									:label="t('openregister', 'Property Title')"
 									:placeholder="suggestion.property_name" />
 
 								<NcTextField
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].technicalDescription
-									"
+									v-model="propertyConfig(suggestion).technicalDescription"
 									:label="
 										t('openregister', 'Technical Description')
 									"
@@ -671,22 +490,14 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 										suggestion.recommended_type
 										!== suggestion.type
 									"
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].type
-									"
+									v-model="propertyConfig(suggestion).type"
 									:options="typeOptions"
 									:inputLabel="t('openregister', 'Property Type')"
 									:labelOutside="true" />
 
 								<NcSelect
 									v-if="suggestion.detected_format"
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].format
-									"
+									v-model="propertyConfig(suggestion).format"
 									:options="formatOptions(suggestion)"
 									:inputLabel="t('openregister', 'Format')"
 									:labelOutside="true" />
@@ -694,20 +505,14 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 								<!-- String constraints -->
 								<div
 									v-if="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].type === 'string'
+										propertyConfig(suggestion).type === 'string'
 									"
 									class="constraints-section">
 									<h5>
 										{{ t('openregister', 'String Constraints') }}
 									</h5>
 									<NcTextField
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].maxLength
-										"
+										v-model="propertyConfig(suggestion).maxLength"
 										:label="t('openregister', 'Max Length')"
 										type="number"
 										:placeholder="
@@ -717,11 +522,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 										" />
 
 									<NcTextField
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].minLength
-										"
+										v-model="propertyConfig(suggestion).minLength"
 										:label="t('openregister', 'Min Length')"
 										type="number"
 										:placeholder="
@@ -731,11 +532,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 										" />
 
 									<NcTextField
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].pattern
-										"
+										v-model="propertyConfig(suggestion).pattern"
 										:label="t('openregister', 'Pattern (regex)')"
 										placeholder="^[A-Za-z]+$" />
 								</div>
@@ -744,9 +541,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 								<div
 									v-if="
 										['number', 'integer'].includes(
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].type,
+											propertyConfig(suggestion).type,
 										)
 									"
 									class="constraints-section">
@@ -754,47 +549,27 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 										{{ t('openregister', 'Number Constraints') }}
 									</h5>
 									<NcTextField
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].minimum
-										"
+										v-model="propertyConfig(suggestion).minimum"
 										:label="t('openregister', 'Minimum')"
 										type="number" />
 
 									<NcTextField
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].maximum
-										"
+										v-model="propertyConfig(suggestion).maximum"
 										:label="t('openregister', 'Maximum')"
 										type="number" />
 
 									<NcTextField
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].multipleOf
-										"
+										v-model="propertyConfig(suggestion).multipleOf"
 										:label="t('openregister', 'Multiple Of')"
 										type="number" />
 
 									<NcCheckboxRadioSwitch
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].exclusiveMin
-										">
+										v-model="propertyConfig(suggestion).exclusiveMin">
 										{{ t('openregister', 'Exclusive Minimum') }}
 									</NcCheckboxRadioSwitch>
 
 									<NcCheckboxRadioSwitch
-										v-model="
-											selectedPropertiesConfig[
-												suggestion.property_name
-											].exclusiveMax
-										">
+										v-model="propertyConfig(suggestion).exclusiveMax">
 										{{ t('openregister', 'Exclusive Maximum') }}
 									</NcCheckboxRadioSwitch>
 								</div>
@@ -805,115 +580,19 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 										{{ t('openregister', 'Property Behaviors') }}
 									</h5>
 									<div class="behaviors-grid">
-										<!-- Left Column -->
-										<div class="behavior-column">
-											<div class="behavior-item">
+										<div
+											v-for="(column, columnIndex) in behaviorColumns"
+											:key="columnIndex"
+											class="behavior-column">
+											<div
+												v-for="behavior in column"
+												:key="behavior.field"
+												class="behavior-item">
 												<NcCheckboxRadioSwitch
 													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														].required
+														propertyConfig(suggestion)[behavior.field]
 													">
-													{{
-														t(
-															'openregister',
-															'Required field',
-														)
-													}}
-												</NcCheckboxRadioSwitch>
-											</div>
-											<div class="behavior-item">
-												<NcCheckboxRadioSwitch
-													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														].immutable
-													">
-													{{
-														t(
-															'openregister',
-															'Immutable',
-														)
-													}}
-												</NcCheckboxRadioSwitch>
-											</div>
-											<div class="behavior-item">
-												<NcCheckboxRadioSwitch
-													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														].deprecated
-													">
-													{{
-														t(
-															'openregister',
-															'Deprecated',
-														)
-													}}
-												</NcCheckboxRadioSwitch>
-											</div>
-											<div class="behavior-item">
-												<NcCheckboxRadioSwitch
-													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														].visible
-													">
-													{{
-														t(
-															'openregister',
-															'Visible to users',
-														)
-													}}
-												</NcCheckboxRadioSwitch>
-											</div>
-										</div>
-
-										<!-- Right Column -->
-										<div class="behavior-column">
-											<div class="behavior-item">
-												<NcCheckboxRadioSwitch
-													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														].hideOnCollection
-													">
-													{{
-														t(
-															'openregister',
-															'Hide in list view',
-														)
-													}}
-												</NcCheckboxRadioSwitch>
-											</div>
-											<div class="behavior-item">
-												<NcCheckboxRadioSwitch
-													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														].hideOnForm
-													">
-													{{
-														t(
-															'openregister',
-															'Hide in forms',
-														)
-													}}
-												</NcCheckboxRadioSwitch>
-											</div>
-											<div class="behavior-item">
-												<NcCheckboxRadioSwitch
-													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														].facetable
-													">
-													{{
-														t(
-															'openregister',
-															'Enable faceting',
-														)
-													}}
+													{{ behavior.label }}
 												</NcCheckboxRadioSwitch>
 											</div>
 										</div>
@@ -922,20 +601,12 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 
 								<!-- Additional property configuration fields -->
 								<NcTextField
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].displayTitle
-									"
+									v-model="propertyConfig(suggestion).displayTitle"
 									:label="t('openregister', 'Title')"
 									:placeholder="suggestion.property_name" />
 
 								<NcTextArea
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].userDescription
-									"
+									v-model="propertyConfig(suggestion).userDescription"
 									:label="t('openregister', 'User Description')"
 									:placeholder="
 										t(
@@ -945,11 +616,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 									" />
 
 								<NcTextField
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].example
-									"
+									v-model="propertyConfig(suggestion).example"
 									:label="t('openregister', 'Example Value')"
 									:placeholder="
 										t(
@@ -959,11 +626,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 									" />
 
 								<NcTextField
-									v-model="
-										selectedPropertiesConfig[
-											suggestion.property_name
-										].order
-									"
+									v-model="propertyConfig(suggestion).order"
 									:label="t('openregister', 'Order')"
 									type="number"
 									placeholder="0" />
@@ -1089,6 +752,28 @@ import Check from 'vue-material-design-icons/Check.vue'
 import DatabaseSearch from 'vue-material-design-icons/DatabaseSearch.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import {
+	selectedPropertyConfig,
+	suggestedPropertyConfig,
+} from '../../services/schemaExploration.js'
+
+/**
+ * The JSON body of an explore/update response, or the error it reports: a
+ * failed HTTP status, or an `error` in the body.
+ *
+ * @param {Response} response The fetch response
+ * @return {Promise<object>} The body
+ */
+async function jsonOrThrow(response) {
+	if (!response.ok) {
+		throw new Error(`HTTP error! status: ${response.status}`)
+	}
+	const data = await response.json()
+	if (data.error) {
+		throw new Error(data.error)
+	}
+	return data
+}
 
 export default {
 	name: 'ExploreSchema',
@@ -1130,6 +815,69 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The steps of an analysis, listed before it runs.
+		 *
+		 * @spec exclude UI display helper — static, translated step list.
+		 * @return {Array<string>}
+		 */
+		analysisSteps() {
+			return [
+				this.t('openregister', 'Retrieve all objects for this schema'),
+				this.t('openregister', 'Extract properties from each object'),
+				this.t('openregister', 'Detect data types and patterns'),
+				this.t('openregister', 'Identify properties not in the schema'),
+				this.t(
+					'openregister',
+					'Analyze existing properties for improvement opportunities',
+				),
+				this.t(
+					'openregister',
+					'Compare current schema with real object data',
+				),
+				this.t(
+					'openregister',
+					'Generate recommendations and confidence scores',
+				),
+			]
+		},
+
+		/**
+		 * @spec exclude UI display helper — the counts shown above the analysis results.
+		 * @return {Array<object>} One label and value per card.
+		 */
+		summaryCards() {
+			const data = this.explorationData
+			const summary = data.analysis_summary
+			const discovered = Object.keys(data.discovered_properties || {}).length
+			return [
+				{ label: this.t('openregister', 'Objects Analyzed'), value: data.total_objects },
+				{ label: this.t('openregister', 'New Properties'), value: summary?.new_properties_count || discovered },
+				{ label: this.t('openregister', 'Existing Improvements'), value: summary?.existing_properties_improvements || 0 },
+				{ label: this.t('openregister', 'Selected'), value: this.selectedProperties.length },
+			]
+		},
+
+		/**
+		 * @spec exclude UI display helper — the behaviour switches of a property, per column.
+		 * @return {Array<Array<object>>} Two columns of a field and label each.
+		 */
+		behaviorColumns() {
+			return [
+				[
+					{ field: 'required', label: this.t('openregister', 'Required field') },
+					{ field: 'immutable', label: this.t('openregister', 'Immutable') },
+					{ field: 'deprecated', label: this.t('openregister', 'Deprecated') },
+					{ field: 'visible', label: this.t('openregister', 'Visible to users') },
+				],
+				[
+					{ field: 'hideOnCollection', label: this.t('openregister', 'Hide in list view') },
+					{ field: 'hideOnForm', label: this.t('openregister', 'Hide in forms') },
+					{ field: 'facetable', label: this.t('openregister', 'Enable faceting') },
+				],
+			]
+		},
+
 		/**
 		 * @spec exclude UI display helper — static property-type select options.
 		 */
@@ -1312,6 +1060,17 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The editable configuration of one suggested property.
+		 *
+		 * @param {object} suggestion The suggestion
+		 * @return {object} Its entry in selectedPropertiesConfig
+		 * @spec exclude template accessor for the property configuration form
+		 */
+		propertyConfig(suggestion) {
+			return this.selectedPropertiesConfig[suggestion.property_name]
+		},
+
 		t,
 		/**
 		 * @spec exclude UI event handler — closes the dialog and resets its state.
@@ -1361,6 +1120,26 @@ export default {
 		},
 
 		/**
+		 * Run the schema-explore endpoint and return its analysis.
+		 *
+		 * @param {number|string} schemaId The schema to explore.
+		 * @return {Promise<object>} The exploration data.
+		 * @spec exclude Modal action plumbing — calls the schema-explore endpoint.
+		 */
+		async fetchExploration(schemaId) {
+			const response = await fetch(
+				`/index.php/apps/openregister/api/schemas/${schemaId}/explore`,
+				{
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				},
+			)
+			return jsonOrThrow(response)
+		},
+
+		/**
 		 * @spec exclude Modal action plumbing — runs the schema-explore endpoint and seeds suggestion config.
 		 */
 		async startAnalysis() {
@@ -1369,63 +1148,14 @@ export default {
 			this.error = null
 
 			try {
-				const endpoint = `/index.php/apps/openregister/api/schemas/${schemaStore.schemaItem.id}/explore`
-
-				const response = await fetch(endpoint, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = await response.json()
-
-				if (data.error) {
-					throw new Error(data.error)
-				}
-
+				const data = await this.fetchExploration(schemaStore.schemaItem.id)
 				this.explorationData = data
 
 				// Initialize configuration for suggestions
 				data.suggestions?.forEach((suggestion) => {
 					if (!this.selectedPropertiesConfig[suggestion.property_name]) {
-						this.selectedPropertiesConfig[suggestion.property_name] = {
-							type: suggestion.recommended_type,
-							title: suggestion.property_name,
-							displayTitle: suggestion.property_name,
-							format: suggestion.detected_format || '',
-							maxLength:
-								suggestion.max_length > 0
-									? suggestion.max_length
-									: null,
-							minLength:
-								suggestion.min_length !== null
-								&& suggestion.min_length < Number.MAX_SAFE_INTEGER
-									? suggestion.min_length
-									: null,
-							description: suggestion.description || '',
-							example: '',
-							order: 0,
-							required: false, // Default to not required
-
-							immutable: false, // Default to not immutable
-							deprecated: false, // Default to not deprecated
-							visible: true, // Default to visible
-							hideOnCollection: false, // Default to show in collection view
-							hideOnForm: false, // Default to show in form view
-							facetable: false, // Default to not facetable
-							// Constraint fields
-							pattern: '',
-							minimum: null,
-							maximum: null,
-							multipleOf: null,
-							exclusiveMin: false,
-							exclusiveMax: false,
-						}
+						this.selectedPropertiesConfig[suggestion.property_name] =
+							suggestedPropertyConfig(suggestion)
 					}
 				})
 			} catch (error) {
@@ -1440,7 +1170,7 @@ export default {
 		},
 
 		/**
-		 * @param propertyName
+		 * @param {string} propertyName
 		 * @spec exclude UI selection plumbing — toggles a suggested property in the selection.
 		 */
 		togglePropertySelection(propertyName) {
@@ -1455,34 +1185,8 @@ export default {
 					const suggestion = this.explorationData.suggestions.find(
 						(s) => s.property_name === propertyName,
 					)
-					this.selectedPropertiesConfig[propertyName] = {
-						selected: true,
-						type: suggestion?.recommended_type || 'string',
-						title: propertyName,
-						description: suggestion?.description || '',
-						format: suggestion?.detected_format || '',
-						required: false,
-						immutable: false,
-						deprecated: false,
-						visible: true,
-						facetable: false,
-						hideOnCollection: false,
-						hideOnForm: false,
-						displayTitle: propertyName,
-						userDescription: '',
-						example: '',
-						order: 100,
-						technicalDescription: '',
-						// Constraint fields
-						pattern: '',
-						minimum: null,
-						maximum: null,
-						multipleOf: null,
-						exclusiveMin: false,
-						exclusiveMax: false,
-						maxLength: suggestion?.max_length || null,
-						minLength: suggestion?.min_length || null,
-					}
+					this.selectedPropertiesConfig[propertyName] =
+						selectedPropertyConfig(propertyName, suggestion)
 				}
 			}
 		},
@@ -1553,15 +1257,7 @@ export default {
 					}),
 				})
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = await response.json()
-
-				if (data.error) {
-					throw new Error(data.error)
-				}
+				const data = await jsonOrThrow(response)
 
 				this.success = true
 
@@ -1588,7 +1284,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {unknown} value
 		 * @spec exclude UI display helper — truncates/normalizes an example value for display.
 		 */
 		formatExample(value) {
@@ -1608,7 +1304,7 @@ export default {
 		},
 
 		/**
-		 * @param page
+		 * @param {number} page
 		 * @spec exclude UI pagination handler — sets the current page and scrolls to top.
 		 */
 		onPageChanged(page) {
@@ -1622,7 +1318,7 @@ export default {
 		},
 
 		/**
-		 * @param pageSize
+		 * @param {number} pageSize
 		 * @spec exclude UI pagination handler — sets page size and resets to page one.
 		 */
 		onPageSizeChanged(pageSize) {
@@ -1639,7 +1335,7 @@ export default {
 		},
 
 		/**
-		 * @param issues
+		 * @param {Array<string>} issues
 		 * @spec exclude UI display helper — maps issue-type strings to display objects.
 		 */
 		getIssueDetails(issues) {
@@ -1653,7 +1349,7 @@ export default {
 		},
 
 		/**
-		 * @param issueType
+		 * @param {string} issueType
 		 * @spec exclude UI display helper — maps an issue type to a UI category.
 		 */
 		getIssueType(issueType) {
@@ -1675,7 +1371,7 @@ export default {
 		},
 
 		/**
-		 * @param issueType
+		 * @param {string} issueType
 		 * @spec exclude UI display helper — maps an issue category to a translated label.
 		 */
 		getIssueLabel(issueType) {
@@ -1693,7 +1389,7 @@ export default {
 		},
 
 		/**
-		 * @param issueType
+		 * @param {string} issueType
 		 * @spec exclude UI display helper — maps an issue type to a translated description.
 		 */
 		getIssueDescription(issueType) {
@@ -1761,6 +1457,38 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
+.summary-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 16px;
+	margin-bottom: 20px;
+}
+
+.summary-card {
+	background: var(--color-main-background);
+	border: 2px solid var(--color-border);
+	border-radius: 8px;
+	padding: 20px;
+	text-align: center;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.summary-card-value {
+	font-size: 2rem;
+	font-weight: bold;
+	color: var(--color-primary-element);
+	margin-bottom: 8px;
+}
+
+.summary-card-label {
+	font-size: 0.9rem;
+	color: var(--color-text-maxcontrast);
+	text-transform: uppercase;
+	font-weight: 600;
+}
+
 .exploitation-header {
 	margin-bottom: 2rem;
 
@@ -2071,18 +1799,7 @@ export default {
 	margin-bottom: 2rem;
 }
 
-.object-count-section {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 1rem;
-	margin-bottom: 2rem;
-}
-
-.object-count-section h4 {
-	margin-top: 0;
-	margin-bottom: 1rem;
-	color: var(--color-text);
-}
+@include object-count-section-rules;
 
 .object-count {
 	display: flex;
@@ -2091,92 +1808,25 @@ export default {
 	font-size: 1.2rem;
 }
 
-.object-count-centered {
-	display: flex;
-	align-items: baseline;
-	justify-content: center;
-	gap: 0.5rem;
-	font-size: 1.2rem;
-}
-
-.count-value {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary-element);
-}
+@include object-count-centered-rules;
 
 .count-label {
 	color: var(--color-text-lighter);
 }
 
-.loading-count {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.5rem;
-	color: var(--color-text-lighter);
-}
-
-.object-breakdown {
-	margin-top: 1rem;
-	padding: 1rem;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	border: 1px solid var(--color-border);
-}
-
-.breakdown-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 0.5rem;
-}
+@include loading-count-rules;
 
 .breakdown-item:last-child {
 	margin-bottom: 0;
 }
 
-.breakdown-label {
-	font-weight: 500;
-	color: var(--color-text);
-}
-
-.breakdown-value {
-	font-weight: 600;
-	padding: 0.25rem 0.5rem;
-	border-radius: var(--border-radius);
-	background: var(--color-background-hover);
-}
-
-.breakdown-value.invalid {
-	color: var(--color-warning);
-	background: var(--color-warning-light);
-}
-
-.breakdown-value.deleted {
-	color: var(--color-error);
-	background: var(--color-error-light);
-}
+@include breakdown-label-rules;
 
 .steps-section {
 	margin-bottom: 2rem;
 }
 
-.steps-section h4 {
-	margin-bottom: 1rem;
-	color: var(--color-text);
-}
-
-.steps-list {
-	margin: 0;
-	padding-left: 1.5rem;
-	color: var(--color-text);
-}
-
-.steps-list li {
-	margin-bottom: 0.5rem;
-	line-height: 1.5;
-}
+@include steps-section-h4-rules;
 
 .start-analysis {
 	text-align: center;
@@ -2313,37 +1963,31 @@ export default {
 }
 
 /* Improvement and Issue Styles */
-.improvement-status {
-	background: var(--color-primary-element);
-	color: var(--color-primary-element-text);
+@mixin caps-badge {
 	padding: 0.25rem 0.5rem;
 	border-radius: var(--border-radius-small);
 	font-size: 0.7rem;
 	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
+}
+
+.improvement-status {
+	background: var(--color-primary-element);
+	color: var(--color-primary-element-text);
+	@include caps-badge;
 }
 
 .new-property-status {
 	background: var(--color-success);
 	color: white !important;
-	padding: 0.25rem 0.5rem;
-	border-radius: var(--border-radius-small);
-	font-size: 0.7rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
+	@include caps-badge;
 }
 
 .issues-badge {
 	background: var(--color-warning);
 	color: white !important;
-	padding: 0.25rem 0.5rem;
-	border-radius: var(--border-radius-small);
-	font-size: 0.7rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
+	@include caps-badge;
 }
 
 .type-warning {

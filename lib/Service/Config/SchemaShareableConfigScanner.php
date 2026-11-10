@@ -29,29 +29,27 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Config;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Config\Types\GenericObjectShareableConfigType;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Config\Types\ShareableTypeIdentity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * Discovers shareable-marked schemas and builds a type for each.
  */
-class SchemaShareableConfigScanner {
+class SchemaShareableConfigScanner implements SchemaShareableConfigScannerInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Enumerates schemas and their markers.
-	 * @param RegisterMapper $registerMapper Finds the registers a schema belongs to.
-	 * @param ObjectService $objectService Handed to each generated type.
+	 * @param SchemaCatalogInterface $catalog Enumerates schemas and their markers, and the registers a schema belongs to.
+	 * @param ObjectOperationsInterface $objectService Handed to each generated type.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly ObjectService $objectService,
+		private readonly SchemaCatalogInterface $catalog,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -66,8 +64,8 @@ class SchemaShareableConfigScanner {
 	 */
 	public function scan(): array {
 		try {
-			$schemas = $this->schemaMapper->findAll();
-			$registers = $this->registerMapper->findAll();
+			$schemas = $this->catalog->schemas()->findAll();
+			$registers = $this->catalog->registers()->findAll();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[SchemaShareableConfigScanner] Could not scan for shareable schemas: ' . $e->getMessage(),
@@ -102,9 +100,7 @@ class SchemaShareableConfigScanner {
 
 				$types[] = new GenericObjectShareableConfigType(
 					objectService: $this->objectService,
-					id: $id,
-					name: $name,
-					topic: $topic,
+					identity: new ShareableTypeIdentity(id: $id, name: $name, topic: $topic),
 					register: $registerSlug,
 					schema: $schemaSlug
 				);

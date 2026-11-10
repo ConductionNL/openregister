@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 
 declare(strict_types=1);
@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SubjectExport;
 use OCA\OpenRegister\Db\SubjectExportMapper;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
+use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportQueue;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
 use OCP\IGroupManager;
@@ -143,7 +144,7 @@ final class SubjectExportServiceTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn($admin);
 
-		return new SubjectExportService($mapper, $subjects, $jobList, $session, $groups, new NullLogger());
+		return new SubjectExportService(new SubjectExportQueue($mapper, $subjects, $jobList), $session, $groups, new NullLogger());
 	}//end service()
 
 	public function testArticle20IsAnsweredWithoutADatabaseExport(): void {

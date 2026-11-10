@@ -130,7 +130,7 @@ export default {
 		 *
 		 * @return {string|number} The reference.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		schemaReference() {
 			return this.schema.slug || this.schema.uuid || this.schema.id
@@ -156,7 +156,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		async load() {
 			this.loading = true
@@ -199,7 +199,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		open(rule) {
 			this.selected = rule
@@ -219,7 +219,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		async toggle(rule, enabled) {
 			this.switching = rule.id

@@ -16,10 +16,12 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\BackgroundJob\BlobMigrationJob;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -73,13 +75,13 @@ class BlobMigrationJobTest extends TestCase {
 		$this->registerService(IAppConfig::class, function () {
 			return $this->appConfig;
 		});
-		$this->registerService(RegisterMapper::class, function () {
+		$this->registerService(RegisterMapperInterface::class, function () {
 			return $this->registerMapper;
 		});
-		$this->registerService(SchemaMapper::class, function () {
+		$this->registerService(SchemaMapperInterface::class, function () {
 			return $this->schemaMapper;
 		});
-		$this->registerService(MagicMapper::class, function () {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () {
 			return $this->magicMapper;
 		});
 

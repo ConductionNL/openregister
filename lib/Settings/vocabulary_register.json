@@ -119,7 +119,7 @@
         "hardValidation": false,
         "authorization": {
           "read": [
-            "public"
+            {"group": "public", "crossOrganisation": true}
           ]
         }
       },
@@ -308,7 +308,7 @@
         "hardValidation": false,
         "authorization": {
           "read": [
-            "public"
+            {"group": "public", "crossOrganisation": true}
           ]
         }
       }

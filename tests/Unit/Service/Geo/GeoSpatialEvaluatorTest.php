@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace Unit\Service\Geo;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Geo\GeoFilter;
-use OCA\OpenRegister\Service\Geo\GeoSpatialEvaluator;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilter;
+use OCA\OpenRegister\Search\Service\Geo\GeoSpatialEvaluator;
 use PHPUnit\Framework\TestCase;
 
 class GeoSpatialEvaluatorTest extends TestCase {
@@ -112,7 +112,7 @@ class GeoSpatialEvaluatorTest extends TestCase {
 
 	public function testHaversineKnownDistance(): void {
 		// Amsterdam → Utrecht is roughly 35-40 km in real geography.
-		$d = $this->evaluator->haversineMeters(4.9041, 52.3676, 5.1214, 52.0907);
+		$d = $this->evaluator->haversineMeters(new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(4.9041, 52.3676), new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(5.1214, 52.0907));
 		$this->assertGreaterThan(30000, $d);
 		$this->assertLessThan(45000, $d);
 	}//end testHaversineKnownDistance()

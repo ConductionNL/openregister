@@ -15,14 +15,14 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
+ * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingMessage;
 use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingSymfonyMessage;
 use OCP\IUserManager;
@@ -31,7 +31,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OCA\OpenRegister\Service\Notification\EmailSender
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\EmailSender
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\UnsubscribeHeaders
  */
 class EmailSenderTest extends TestCase {
 

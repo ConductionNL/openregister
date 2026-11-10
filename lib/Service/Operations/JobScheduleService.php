@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -40,9 +40,9 @@ use OCP\IConfig;
  * that reported a next due time while disabled would be a console lying about
  * an instance it is the only window onto.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+ * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
  */
-class JobScheduleService {
+class JobScheduleService implements JobScheduleServiceInterface {
 
 	/**
 	 * The app the administered schedules belong to.
@@ -81,7 +81,7 @@ class JobScheduleService {
 	 *
 	 * @return array<string, mixed> The schedule as the console row carries it.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function describe(string $jobClass, int $lastRun = 0): array {
 		$schedule = $this->read(jobClass: $jobClass);
@@ -107,23 +107,19 @@ class JobScheduleService {
 	/**
 	 * Administer one job's schedule.
 	 *
-	 * @param string    $jobClass        The job class.
-	 * @param bool|null $enabled         Whether it may run at all.
-	 * @param int|null  $intervalSeconds How often it is due.
-	 * @param int|null  $windowStartHour The first hour it may run in, 0-23.
-	 * @param int|null  $windowEndHour   The last hour it may run in, 0-23.
+	 * @param string            $jobClass The job class.
+	 * @param JobScheduleChange $change   What to change; a null part is left as it is.
 	 *
 	 * @return array<string, mixed> The schedule now in force.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
-	public function administer(
-		string $jobClass,
-		?bool $enabled = null,
-		?int $intervalSeconds = null,
-		?int $windowStartHour = null,
-		?int $windowEndHour = null,
-	): array {
+	public function administer(string $jobClass, JobScheduleChange $change): array {
+		$enabled         = $change->enabled;
+		$intervalSeconds = $change->intervalSeconds;
+		$windowStartHour = $change->windowStartHour;
+		$windowEndHour   = $change->windowEndHour;
+
 		$schedule = $this->read(jobClass: $jobClass);
 
 		if ($enabled !== null) {
@@ -165,7 +161,7 @@ class JobScheduleService {
 	 *
 	 * @return bool True when the schedule allows it.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function mayRun(string $jobClass, DateTime $moment): bool {
 		$schedule = $this->read(jobClass: $jobClass);
@@ -286,6 +282,34 @@ class JobScheduleService {
 		return ($hour >= $start || $hour <= $end);
 
 	}//end insideWindow()
+
+	/**
+	 * Carry a job's administered schedule from its old class name to its new one.
+	 *
+	 * A job whose class moved would otherwise fall back to the default schedule,
+	 * because the setting is keyed by class name. A schedule already stored under
+	 * the new name wins; the old setting is removed either way.
+	 *
+	 * @param string $from The class name the schedule is stored under.
+	 * @param string $to   The class name the job now has.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Upgrade plumbing for moved job classes; the schedule itself is unchanged.
+	 */
+	public function moveSchedule(string $from, string $to): void {
+		$stored = $this->config->getAppValue(self::APP_ID, $this->key(jobClass: $from), '');
+		if ($stored === '') {
+			return;
+		}
+
+		if ($this->config->getAppValue(self::APP_ID, $this->key(jobClass: $to), '') === '') {
+			$this->config->setAppValue(self::APP_ID, $this->key(jobClass: $to), $stored);
+		}
+
+		$this->config->deleteAppValue(self::APP_ID, $this->key(jobClass: $from));
+
+	}//end moveSchedule()
 
 	/**
 	 * The setting key one job's schedule is stored under.

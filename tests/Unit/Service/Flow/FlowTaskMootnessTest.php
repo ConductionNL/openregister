@@ -15,6 +15,7 @@ use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowTaskMootness;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -35,7 +36,7 @@ class FlowTaskMootnessTest extends TestCase {
 	protected function setUp(): void {
 		$this->tasks = $this->createMock(TaskService::class);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(TaskService::class)->willReturn($this->tasks);
+		$container->method('get')->with(TaskServiceInterface::class)->willReturn($this->tasks);
 
 		$this->mootness = new FlowTaskMootness($container, new NullLogger());
 	}//end setUp()
@@ -143,6 +144,18 @@ class FlowTaskMootnessTest extends TestCase {
 
 		$this->assertSame(0, $count);
 	}//end testAPlaceThatWasNotClearedIsLeftAlone()
+
+	/**
+	 * A task-less slot under an all-digit node id (an int array key) is skipped, not a TypeError.
+	 */
+	public function testATaskLessSlotUnderANumericNodeIdIsSkipped(): void {
+		$state = new FlowResumeState(byNode: ['42' => ['note' => 'no task here']]);
+		$this->tasks->expects($this->never())->method('terminateAsMoot');
+
+		$count = $this->mootness->placesPruned(context: $this->context($state), places: ['42'], byTransition: 's');
+
+		$this->assertSame(0, $count);
+	}//end testATaskLessSlotUnderANumericNodeIdIsSkipped()
 
 	/**
 	 * Task bookkeeping must never fail a hop: a throwing service is logged

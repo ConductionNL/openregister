@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Tests\Unit\Service\Object\FilePropertyCalls;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -48,7 +49,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use stdClass;
 use Symfony\Component\Uid\Uuid;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Testable Schema subclass for SaveObjectRefactoredMethods tests.
@@ -187,8 +188,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 		$this->settingsService = $this->createMock(SettingsService::class);
 		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		// ArrayLoader is final, so we create a real instance instead of mocking.
-		$arrayLoader = new ArrayLoader([]);
+		$permissionHandler = $this->createMock(PermissionHandler::class);
 
 		// Create real entity instances (Entity __call methods cannot be mocked in PHPUnit 10+).
 		$this->mockRegister = new Register();
@@ -211,28 +211,48 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 
 		// Create SaveObject instance with positional params (correct constructor order).
 		$this->saveObject = new SaveObject(
-			$this->objectEntityMapper,
-			$this->unifiedObjectMapper,
-			$this->metaHydrationHandler,
-			$this->filePropertyHandler,
-			$this->createMock(LinkedEntityPropertyHandler::class),
-			$this->userSession,
-			$this->auditTrailMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->urlGenerator,
-			$this->organisationService,
-			$this->cacheHandler,
-			$this->settingsService,
-			$this->propertyRbacHandler,
-			$this->createMock(ComputedFieldHandler::class),
-			$this->createMock(TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->logger,
-			$this->createMock(TmloService::class),
-			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$arrayLoader
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						objectEntityMapper: $this->objectEntityMapper,
+						unifiedObjectMapper: $this->unifiedObjectMapper,
+						schemaMapper: $this->schemaMapper,
+						registerMapper: $this->registerMapper
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->auditTrailMapper,
+						settingsService: $this->settingsService,
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->cacheHandler
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->metaHydrationHandler,
+						filePropertyHandler: $this->filePropertyHandler,
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(TranslationHandler::class),
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->userSession,
+					urlGenerator: $this->urlGenerator,
+					logger: $this->logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->organisationService
+				)
+			),
+			propertyRbacHandler: $this->propertyRbacHandler,
+			permissionHandler: $permissionHandler,
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 
 		// Set up reflection for accessing private methods.
@@ -248,6 +268,10 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 	 * @return mixed The result of the method invocation.
 	 */
 	private function invokePrivateMethod(string $methodName, array $parameters = []): mixed {
+		if (in_array($methodName, FilePropertyCalls::METHODS, true) === true) {
+			return FilePropertyCalls::{$methodName}($this->saveObject, $parameters);
+		}
+
 		$method = $this->reflection->getMethod($methodName);
 		$method->setAccessible(true);
 
@@ -412,6 +436,43 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 	}
 
 	// ==================== findAndValidateExistingObject() Tests ====================
+
+	/**
+	 * A row the lookup finds by its id, slug or uri is another row: an explicit uuid names only its own row.
+	 *
+	 * @return void
+	 */
+	public function testARowFoundByAnotherIdentifierIsNotTheExistingObject(): void {
+		$other = new ObjectEntity();
+		$other->setUuid('own-4');
+		$other->setSlug('22222222-2222-2222-2222-222222222222');
+		$this->objectEntityMapper->expects($this->once())->method('find')->willReturn($other);
+
+		$result = $this->invokePrivateMethod(
+			'findAndValidateExistingObject',
+			['22222222-2222-2222-2222-222222222222', null, null, false, false]
+		);
+
+		$this->assertNull($result);
+	}
+
+	/**
+	 * The uuid matches whatever its case, as the lookup does.
+	 *
+	 * @return void
+	 */
+	public function testTheExistingObjectIsMatchedOnItsUuidWhateverTheCase(): void {
+		$stored = new ObjectEntity();
+		$stored->setUuid('9f7a4c1e-2b3d-4e5f-8a9b-0c1d2e3f4a5b');
+		$this->objectEntityMapper->method('find')->willReturn($stored);
+
+		$result = $this->invokePrivateMethod(
+			'findAndValidateExistingObject',
+			['9F7A4C1E-2B3D-4E5F-8A9B-0C1D2E3F4A5B', null, null, false, false]
+		);
+
+		$this->assertSame($stored, $result);
+	}
 
 	/**
 	 * Test findAndValidateExistingObject returns existing object.
@@ -599,7 +660,6 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 			$this->mockSchema,
 			$data,
 			$uuid,
-			null,
 			false,
 			false,
 			true,

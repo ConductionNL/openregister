@@ -1,0 +1,1130 @@
+{
+    "connect-error": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": null,
+                    "requestBody": null,
+                    "responseBody": null,
+                    "errorMessage": "Could not resolve host",
+                    "attempt": 1,
+                    "nextRetryAt": null,
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Unexpected error during webhook delivery",
+                {
+                    "webhook_id": 7,
+                    "event": "Golden\\Event",
+                    "error": "Could not resolve host"
+                }
+            ]
+        ]
+    },
+    "disabled": {
+        "result": false,
+        "calls": [
+            [
+                "logger.debug",
+                "[WebhookService] Webhook is disabled, skipping delivery",
+                {
+                    "webhook_id": 7,
+                    "event": "Golden\\Event"
+                }
+            ]
+        ]
+    },
+    "filters-mismatch": {
+        "result": false,
+        "calls": [
+            [
+                "logger.debug",
+                "[WebhookService] Webhook filters did not match, skipping delivery",
+                {
+                    "webhook_id": 7,
+                    "event": "Golden\\Event"
+                }
+            ]
+        ]
+    },
+    "request-error-json-error": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "error": "Client error: Forbidden",
+                    "error_details": {
+                        "status_code": 403,
+                        "response_body": "{\"error\":\"Forbidden\"}",
+                        "request_url": "https://93.184.216.34/hook",
+                        "request_method": "POST",
+                        "timeout": 30
+                    },
+                    "attempt": 1,
+                    "max_retries": 3,
+                    "exception_class": "GuzzleHttp\\Exception\\RequestException",
+                    "exception_code": 403
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "logger.info",
+                "[WebhookService] Scheduling webhook retry",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "attempt": 2,
+                    "delay": 300
+                }
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": 403,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}",
+                    "responseBody": "{\"error\":\"Forbidden\"}",
+                    "errorMessage": "Client error: Forbidden",
+                    "attempt": 1,
+                    "nextRetryAt": "<time>",
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
+    "request-error-json-message": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "error": "Client error: Invalid",
+                    "error_details": {
+                        "status_code": 422,
+                        "response_body": "{\"message\":\"Invalid\",\"error\":\"E\"}",
+                        "request_url": "https://93.184.216.34/hook",
+                        "request_method": "POST",
+                        "timeout": 30
+                    },
+                    "attempt": 1,
+                    "max_retries": 3,
+                    "exception_class": "GuzzleHttp\\Exception\\RequestException",
+                    "exception_code": 422
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "logger.info",
+                "[WebhookService] Scheduling webhook retry",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "attempt": 2,
+                    "delay": 300
+                }
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": 422,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}",
+                    "responseBody": "{\"message\":\"Invalid\",\"error\":\"E\"}",
+                    "errorMessage": "Client error: Invalid",
+                    "attempt": 1,
+                    "nextRetryAt": "<time>",
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
+    "request-error-json-without-keys": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "error": "Client error",
+                    "error_details": {
+                        "status_code": 400,
+                        "response_body": "{\"detail\":\"x\"}",
+                        "request_url": "https://93.184.216.34/hook",
+                        "request_method": "POST",
+                        "timeout": 30
+                    },
+                    "attempt": 1,
+                    "max_retries": 3,
+                    "exception_class": "GuzzleHttp\\Exception\\RequestException",
+                    "exception_code": 400
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "logger.info",
+                "[WebhookService] Scheduling webhook retry",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "attempt": 2,
+                    "delay": 300
+                }
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": 400,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}",
+                    "responseBody": "{\"detail\":\"x\"}",
+                    "errorMessage": "Client error",
+                    "attempt": 1,
+                    "nextRetryAt": "<time>",
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
+    "request-error-last-attempt": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "error": "Client error",
+                    "error_details": {
+                        "status_code": 503,
+                        "response_body": "",
+                        "request_url": "https://93.184.216.34/hook",
+                        "request_method": "POST",
+                        "timeout": 30
+                    },
+                    "attempt": 3,
+                    "max_retries": 3,
+                    "exception_class": "GuzzleHttp\\Exception\\RequestException",
+                    "exception_code": 503
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 3
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": 503,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":3}",
+                    "responseBody": "",
+                    "errorMessage": "Client error",
+                    "attempt": 3,
+                    "nextRetryAt": null,
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":3}"
+                }
+            ]
+        ]
+    },
+    "request-error-long-body": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "error": "Client error",
+                    "error_details": {
+                        "status_code": 500,
+                        "response_body": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx... [truncated]",
+                        "request_url": "https://93.184.216.34/hook",
+                        "request_method": "POST",
+                        "timeout": 30
+                    },
+                    "attempt": 1,
+                    "max_retries": 3,
+                    "exception_class": "GuzzleHttp\\Exception\\RequestException",
+                    "exception_code": 500
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "logger.info",
+                "[WebhookService] Scheduling webhook retry",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "attempt": 2,
+                    "delay": 300
+                }
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": 500,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}",
+                    "responseBody": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "errorMessage": "Client error",
+                    "attempt": 1,
+                    "nextRetryAt": "<time>",
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
+    "request-error-no-response-code": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "error": "Timed out",
+                    "error_details": {
+                        "connection_error": true,
+                        "error_code": 28,
+                        "request_url": "https://93.184.216.34/hook",
+                        "request_method": "POST",
+                        "timeout": 30
+                    },
+                    "attempt": 1,
+                    "max_retries": 3,
+                    "exception_class": "GuzzleHttp\\Exception\\RequestException",
+                    "exception_code": 28
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "logger.info",
+                "[WebhookService] Scheduling webhook retry",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "attempt": 2,
+                    "delay": 300
+                }
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": null,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}",
+                    "responseBody": null,
+                    "errorMessage": "Timed out",
+                    "attempt": 1,
+                    "nextRetryAt": "<time>",
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
+    "request-error-no-response-zero": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "error": "Reset",
+                    "error_details": {
+                        "connection_error": true,
+                        "request_url": "https://93.184.216.34/hook",
+                        "request_method": "POST",
+                        "timeout": 30
+                    },
+                    "attempt": 1,
+                    "max_retries": 1,
+                    "exception_class": "GuzzleHttp\\Exception\\RequestException",
+                    "exception_code": 0
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": null,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}",
+                    "responseBody": null,
+                    "errorMessage": "Reset",
+                    "attempt": 1,
+                    "nextRetryAt": null,
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
+    "request-error-plain-body": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "error": "Client error",
+                    "error_details": {
+                        "status_code": 500,
+                        "response_body": "Internal error",
+                        "request_url": "https://93.184.216.34/hook",
+                        "request_method": "POST",
+                        "timeout": 30
+                    },
+                    "attempt": 1,
+                    "max_retries": 1,
+                    "exception_class": "GuzzleHttp\\Exception\\RequestException",
+                    "exception_code": 500
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": 500,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}",
+                    "responseBody": "Internal error",
+                    "errorMessage": "Client error",
+                    "attempt": 1,
+                    "nextRetryAt": null,
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
+    "request-error-private-target": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "error": "Client error: inside",
+                    "error_details": {
+                        "status_code": 500,
+                        "response_body": "[redacted: webhook target is on an internal/private network]",
+                        "request_url": "http://10.0.0.5/hook",
+                        "request_method": "POST",
+                        "timeout": 30
+                    },
+                    "attempt": 1,
+                    "max_retries": 3,
+                    "exception_class": "GuzzleHttp\\Exception\\RequestException",
+                    "exception_code": 500
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "logger.info",
+                "[WebhookService] Scheduling webhook retry",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "attempt": 2,
+                    "delay": 300
+                }
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "http://10.0.0.5/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": 500,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}",
+                    "responseBody": "{\"message\":\"inside\"}",
+                    "errorMessage": "Client error: inside",
+                    "attempt": 1,
+                    "nextRetryAt": "<time>",
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
+    "status-199": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed with non-2xx status",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "status_code": 199,
+                    "attempt": 1,
+                    "max_retries": 3
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "logger.info",
+                "[WebhookService] Scheduling webhook retry",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "attempt": 2,
+                    "delay": 300
+                }
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": 199,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}",
+                    "responseBody": "early",
+                    "errorMessage": "Webhook endpoint returned non-2xx status: 199",
+                    "attempt": 1,
+                    "nextRetryAt": "<time>",
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
+    "status-302-last-attempt": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed with non-2xx status",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "status_code": 302,
+                    "attempt": 3,
+                    "max_retries": 3
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 3
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": 302,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":3}",
+                    "responseBody": "",
+                    "errorMessage": "Webhook endpoint returned non-2xx status: 302",
+                    "attempt": 3,
+                    "nextRetryAt": null,
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":3}"
+                }
+            ]
+        ]
+    },
+    "status-404-no-retry": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed with non-2xx status",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "status_code": 404,
+                    "attempt": 1,
+                    "max_retries": 1
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": 404,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}",
+                    "responseBody": "missing",
+                    "errorMessage": "Webhook endpoint returned non-2xx status: 404",
+                    "attempt": 1,
+                    "nextRetryAt": null,
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
+    "status-500-retry-left": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Webhook delivery failed with non-2xx status",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "status_code": 500,
+                    "attempt": 1,
+                    "max_retries": 3
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                false
+            ],
+            [
+                "logger.info",
+                "[WebhookService] Scheduling webhook retry",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "attempt": 2,
+                    "delay": 300
+                }
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": 500,
+                    "requestBody": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}",
+                    "responseBody": "{\"message\":\"boom\"}",
+                    "errorMessage": "Webhook endpoint returned non-2xx status: 500",
+                    "attempt": 1,
+                    "nextRetryAt": "<time>",
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
+    "success-200": {
+        "result": true,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.info",
+                "[WebhookService] Webhook delivered successfully",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "status_code": 200,
+                    "attempt": 1
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                true
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": true,
+                    "statusCode": 200,
+                    "requestBody": null,
+                    "responseBody": "{\"ok\":true}",
+                    "errorMessage": null,
+                    "attempt": 1,
+                    "nextRetryAt": null,
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ]
+        ]
+    },
+    "success-204-attempt-2": {
+        "result": true,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "logger.info",
+                "[WebhookService] Webhook delivered successfully",
+                {
+                    "webhook_id": 7,
+                    "webhook_name": "Golden hook",
+                    "event": "Golden\\Event",
+                    "status_code": 204,
+                    "attempt": 2
+                }
+            ],
+            [
+                "webhookMapper.updateStatistics",
+                7,
+                true
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 2
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": true,
+                    "statusCode": 204,
+                    "requestBody": null,
+                    "responseBody": "",
+                    "errorMessage": null,
+                    "attempt": 2,
+                    "nextRetryAt": null,
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":2}"
+                }
+            ]
+        ]
+    },
+    "unexpected-error": {
+        "result": false,
+        "calls": [
+            [
+                "client.request"
+            ],
+            [
+                "webhookLogMapper.insert",
+                {
+                    "id": null,
+                    "webhook": 7,
+                    "eventClass": "Golden\\Event",
+                    "payload": {
+                        "event": "Golden\\Event",
+                        "webhook": {
+                            "id": "webhook-uuid-7",
+                            "name": "Golden hook"
+                        },
+                        "data": {
+                            "kind": "thing",
+                            "id": 5
+                        },
+                        "timestamp": "<time>",
+                        "attempt": 1
+                    },
+                    "url": "https://93.184.216.34/hook",
+                    "method": "POST",
+                    "success": false,
+                    "statusCode": null,
+                    "requestBody": null,
+                    "responseBody": null,
+                    "errorMessage": "kaput",
+                    "attempt": 1,
+                    "nextRetryAt": null,
+                    "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
+                }
+            ],
+            [
+                "logger.error",
+                "[WebhookService] Unexpected error during webhook delivery",
+                {
+                    "webhook_id": 7,
+                    "event": "Golden\\Event",
+                    "error": "kaput"
+                }
+            ]
+        ]
+    }
+}

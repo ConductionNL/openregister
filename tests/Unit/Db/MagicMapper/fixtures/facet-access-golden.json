@@ -1,0 +1,2045 @@
+{
+    "explicit facets, salary withheld": {
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": [
+                    {
+                        "key": "a",
+                        "results": 2,
+                        "label": "a"
+                    }
+                ],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "born": {
+                "type": "date_histogram",
+                "interval": "year",
+                "buckets": [
+                    {
+                        "key": "2025",
+                        "results": 2,
+                        "from": "2025-01-01",
+                        "to": "2025-12-31"
+                    }
+                ]
+            }
+        },
+        "events": [
+            [
+                "ask",
+                "salary",
+                []
+            ],
+            [
+                "ask",
+                "name",
+                []
+            ],
+            [
+                "db",
+                "selectAlias",
+                [
+                    "name",
+                    "facet_value"
+                ]
+            ],
+            [
+                "db",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "db",
+                "from",
+                [
+                    "openregister_table_7_1",
+                    null
+                ]
+            ],
+            [
+                "db",
+                "groupBy",
+                [
+                    "name"
+                ]
+            ],
+            [
+                "db",
+                "orderBy",
+                [
+                    "CASE WHEN name IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "db",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "db",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "_deleted IS NULL"
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "1 = 0"
+                ]
+            ],
+            [
+                "buildFilteredQuery",
+                "openregister_table_7_1",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "scoped",
+                "selectAlias",
+                [
+                    "t.name",
+                    "facet_value"
+                ]
+            ],
+            [
+                "scoped",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "scoped",
+                "groupBy",
+                [
+                    "t.name"
+                ]
+            ],
+            [
+                "scoped",
+                "orderBy",
+                [
+                    "CASE WHEN t.name IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "scoped",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "scoped",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "scoped",
+                "executeQuery"
+            ],
+            [
+                "ask",
+                "born",
+                []
+            ],
+            [
+                "buildFilteredQuery",
+                "openregister_table_7_1",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "scoped",
+                "selectAlias",
+                [
+                    "TO_CHAR(t.born, 'YYYY')",
+                    "date_key"
+                ]
+            ],
+            [
+                "scoped",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "scoped",
+                "andWhere",
+                [
+                    "t.born IS NOT NULL"
+                ]
+            ],
+            [
+                "scoped",
+                "groupBy",
+                [
+                    "date_key"
+                ]
+            ],
+            [
+                "scoped",
+                "orderBy",
+                [
+                    "date_key",
+                    "ASC"
+                ]
+            ],
+            [
+                "scoped",
+                "executeQuery"
+            ]
+        ]
+    },
+    "explicit facets, salary readable": {
+        "facets": {
+            "salary": {
+                "type": "terms",
+                "buckets": [
+                    {
+                        "key": "a",
+                        "results": 2,
+                        "label": "a"
+                    }
+                ],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "name": {
+                "type": "terms",
+                "buckets": [
+                    {
+                        "key": "a",
+                        "results": 2,
+                        "label": "a"
+                    }
+                ],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "born": {
+                "type": "date_histogram",
+                "interval": "year",
+                "buckets": [
+                    {
+                        "key": "2025",
+                        "results": 2,
+                        "from": "2025-01-01",
+                        "to": "2025-12-31"
+                    }
+                ]
+            }
+        },
+        "events": [
+            [
+                "ask",
+                "salary",
+                []
+            ],
+            [
+                "db",
+                "selectAlias",
+                [
+                    "salary",
+                    "facet_value"
+                ]
+            ],
+            [
+                "db",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "db",
+                "from",
+                [
+                    "openregister_table_7_1",
+                    null
+                ]
+            ],
+            [
+                "db",
+                "groupBy",
+                [
+                    "salary"
+                ]
+            ],
+            [
+                "db",
+                "orderBy",
+                [
+                    "CASE WHEN salary IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "db",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "db",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "_deleted IS NULL"
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "1 = 0"
+                ]
+            ],
+            [
+                "buildFilteredQuery",
+                "openregister_table_7_1",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "scoped",
+                "selectAlias",
+                [
+                    "t.salary",
+                    "facet_value"
+                ]
+            ],
+            [
+                "scoped",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "scoped",
+                "groupBy",
+                [
+                    "t.salary"
+                ]
+            ],
+            [
+                "scoped",
+                "orderBy",
+                [
+                    "CASE WHEN t.salary IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "scoped",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "scoped",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "scoped",
+                "executeQuery"
+            ],
+            [
+                "ask",
+                "name",
+                []
+            ],
+            [
+                "db",
+                "selectAlias",
+                [
+                    "name",
+                    "facet_value"
+                ]
+            ],
+            [
+                "db",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "db",
+                "from",
+                [
+                    "openregister_table_7_1",
+                    null
+                ]
+            ],
+            [
+                "db",
+                "groupBy",
+                [
+                    "name"
+                ]
+            ],
+            [
+                "db",
+                "orderBy",
+                [
+                    "CASE WHEN name IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "db",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "db",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "_deleted IS NULL"
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "1 = 0"
+                ]
+            ],
+            [
+                "buildFilteredQuery",
+                "openregister_table_7_1",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "scoped",
+                "selectAlias",
+                [
+                    "t.name",
+                    "facet_value"
+                ]
+            ],
+            [
+                "scoped",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "scoped",
+                "groupBy",
+                [
+                    "t.name"
+                ]
+            ],
+            [
+                "scoped",
+                "orderBy",
+                [
+                    "CASE WHEN t.name IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "scoped",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "scoped",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "scoped",
+                "executeQuery"
+            ],
+            [
+                "ask",
+                "born",
+                []
+            ],
+            [
+                "buildFilteredQuery",
+                "openregister_table_7_1",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "scoped",
+                "selectAlias",
+                [
+                    "TO_CHAR(t.born, 'YYYY')",
+                    "date_key"
+                ]
+            ],
+            [
+                "scoped",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "scoped",
+                "andWhere",
+                [
+                    "t.born IS NOT NULL"
+                ]
+            ],
+            [
+                "scoped",
+                "groupBy",
+                [
+                    "date_key"
+                ]
+            ],
+            [
+                "scoped",
+                "orderBy",
+                [
+                    "date_key",
+                    "ASC"
+                ]
+            ],
+            [
+                "scoped",
+                "executeQuery"
+            ]
+        ]
+    },
+    "rbac and multitenancy off pass through": {
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": [
+                    {
+                        "key": "a",
+                        "results": 2,
+                        "label": "a"
+                    }
+                ],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "born": {
+                "type": "date_histogram",
+                "interval": "year",
+                "buckets": [
+                    {
+                        "key": "2025",
+                        "results": 2,
+                        "from": "2025-01-01",
+                        "to": "2025-12-31"
+                    }
+                ]
+            }
+        },
+        "events": [
+            [
+                "ask",
+                "salary",
+                []
+            ],
+            [
+                "ask",
+                "name",
+                []
+            ],
+            [
+                "db",
+                "selectAlias",
+                [
+                    "name",
+                    "facet_value"
+                ]
+            ],
+            [
+                "db",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "db",
+                "from",
+                [
+                    "openregister_table_7_1",
+                    null
+                ]
+            ],
+            [
+                "db",
+                "groupBy",
+                [
+                    "name"
+                ]
+            ],
+            [
+                "db",
+                "orderBy",
+                [
+                    "CASE WHEN name IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "db",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "db",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "_deleted IS NULL"
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "1 = 0"
+                ]
+            ],
+            [
+                "buildFilteredQuery",
+                "openregister_table_7_1",
+                7,
+                {
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "status": "open"
+                }
+            ],
+            [
+                "scoped",
+                "selectAlias",
+                [
+                    "t.name",
+                    "facet_value"
+                ]
+            ],
+            [
+                "scoped",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "scoped",
+                "groupBy",
+                [
+                    "t.name"
+                ]
+            ],
+            [
+                "scoped",
+                "orderBy",
+                [
+                    "CASE WHEN t.name IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "scoped",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "scoped",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "scoped",
+                "executeQuery"
+            ],
+            [
+                "ask",
+                "born",
+                []
+            ],
+            [
+                "buildFilteredQuery",
+                "openregister_table_7_1",
+                7,
+                {
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "status": "open"
+                }
+            ],
+            [
+                "scoped",
+                "selectAlias",
+                [
+                    "TO_CHAR(t.born, 'YYYY')",
+                    "date_key"
+                ]
+            ],
+            [
+                "scoped",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "scoped",
+                "andWhere",
+                [
+                    "t.born IS NOT NULL"
+                ]
+            ],
+            [
+                "scoped",
+                "groupBy",
+                [
+                    "date_key"
+                ]
+            ],
+            [
+                "scoped",
+                "orderBy",
+                [
+                    "date_key",
+                    "ASC"
+                ]
+            ],
+            [
+                "scoped",
+                "executeQuery"
+            ]
+        ]
+    },
+    "extend, salary withheld": {
+        "facets": {
+            "@self": {
+                "schema": {
+                    "type": "terms",
+                    "buckets": [],
+                    "missing": {
+                        "results": 0
+                    }
+                }
+            },
+            "name": {
+                "type": "terms",
+                "buckets": [
+                    {
+                        "key": "a",
+                        "results": 2,
+                        "label": "a"
+                    }
+                ],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "born": {
+                "type": "date_histogram",
+                "interval": "month",
+                "buckets": [
+                    {
+                        "key": "2025",
+                        "results": 2,
+                        "from": "2025-01-01",
+                        "to": "2025-01-31"
+                    }
+                ]
+            }
+        },
+        "events": [
+            [
+                "ask",
+                "name",
+                []
+            ],
+            [
+                "ask",
+                "salary",
+                []
+            ],
+            [
+                "ask",
+                "born",
+                []
+            ],
+            [
+                "ask",
+                "name",
+                []
+            ],
+            [
+                "db",
+                "selectAlias",
+                [
+                    "name",
+                    "facet_value"
+                ]
+            ],
+            [
+                "db",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "db",
+                "from",
+                [
+                    "openregister_table_7_1",
+                    null
+                ]
+            ],
+            [
+                "db",
+                "groupBy",
+                [
+                    "name"
+                ]
+            ],
+            [
+                "db",
+                "orderBy",
+                [
+                    "CASE WHEN name IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "db",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "db",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "_deleted IS NULL"
+                ]
+            ],
+            [
+                "buildFilteredQuery",
+                "openregister_table_7_1",
+                7,
+                []
+            ],
+            [
+                "scoped",
+                "selectAlias",
+                [
+                    "t.name",
+                    "facet_value"
+                ]
+            ],
+            [
+                "scoped",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "scoped",
+                "groupBy",
+                [
+                    "t.name"
+                ]
+            ],
+            [
+                "scoped",
+                "orderBy",
+                [
+                    "CASE WHEN t.name IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "scoped",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "scoped",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "scoped",
+                "executeQuery"
+            ],
+            [
+                "ask",
+                "born",
+                []
+            ],
+            [
+                "buildFilteredQuery",
+                "openregister_table_7_1",
+                7,
+                []
+            ],
+            [
+                "scoped",
+                "selectAlias",
+                [
+                    "TO_CHAR(t.born, 'YYYY-MM')",
+                    "date_key"
+                ]
+            ],
+            [
+                "scoped",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "scoped",
+                "andWhere",
+                [
+                    "t.born IS NOT NULL"
+                ]
+            ],
+            [
+                "scoped",
+                "groupBy",
+                [
+                    "date_key"
+                ]
+            ],
+            [
+                "scoped",
+                "orderBy",
+                [
+                    "date_key",
+                    "ASC"
+                ]
+            ],
+            [
+                "scoped",
+                "executeQuery"
+            ]
+        ]
+    },
+    "list config, salary withheld": {
+        "facets": {
+            "@self": [],
+            "name": {
+                "type": "terms",
+                "buckets": [
+                    {
+                        "key": "a",
+                        "results": 2,
+                        "label": "a"
+                    }
+                ],
+                "missing": {
+                    "results": 0
+                }
+            }
+        },
+        "events": [
+            [
+                "ask",
+                "salary",
+                []
+            ],
+            [
+                "ask",
+                "name",
+                []
+            ],
+            [
+                "db",
+                "selectAlias",
+                [
+                    "name",
+                    "facet_value"
+                ]
+            ],
+            [
+                "db",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "db",
+                "from",
+                [
+                    "openregister_table_7_1",
+                    null
+                ]
+            ],
+            [
+                "db",
+                "groupBy",
+                [
+                    "name"
+                ]
+            ],
+            [
+                "db",
+                "orderBy",
+                [
+                    "CASE WHEN name IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "db",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "db",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "_deleted IS NULL"
+                ]
+            ],
+            [
+                "buildFilteredQuery",
+                "openregister_table_7_1",
+                7,
+                []
+            ],
+            [
+                "scoped",
+                "selectAlias",
+                [
+                    "t.name",
+                    "facet_value"
+                ]
+            ],
+            [
+                "scoped",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "scoped",
+                "groupBy",
+                [
+                    "t.name"
+                ]
+            ],
+            [
+                "scoped",
+                "orderBy",
+                [
+                    "CASE WHEN t.name IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "scoped",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "scoped",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "scoped",
+                "executeQuery"
+            ]
+        ]
+    },
+    "rule throws": {
+        "facets": {
+            "born": {
+                "type": "date_histogram",
+                "interval": "year",
+                "buckets": [
+                    {
+                        "key": "2025",
+                        "results": 2,
+                        "from": "2025-01-01",
+                        "to": "2025-12-31"
+                    }
+                ]
+            }
+        },
+        "events": [
+            [
+                "ask",
+                "salary",
+                []
+            ],
+            [
+                "ask",
+                "name",
+                []
+            ],
+            [
+                "ask",
+                "born",
+                []
+            ],
+            [
+                "buildFilteredQuery",
+                "openregister_table_7_1",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "scoped",
+                "selectAlias",
+                [
+                    "TO_CHAR(t.born, 'YYYY')",
+                    "date_key"
+                ]
+            ],
+            [
+                "scoped",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "scoped",
+                "andWhere",
+                [
+                    "t.born IS NOT NULL"
+                ]
+            ],
+            [
+                "scoped",
+                "groupBy",
+                [
+                    "date_key"
+                ]
+            ],
+            [
+                "scoped",
+                "orderBy",
+                [
+                    "date_key",
+                    "ASC"
+                ]
+            ],
+            [
+                "scoped",
+                "executeQuery"
+            ]
+        ]
+    },
+    "no container, governed schema": {
+        "facets": [],
+        "events": []
+    },
+    "no container, open schema": {
+        "facets": {
+            "salary": {
+                "type": "terms",
+                "buckets": [
+                    {
+                        "key": "a",
+                        "results": 2,
+                        "label": "a"
+                    }
+                ],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "name": {
+                "type": "terms",
+                "buckets": [
+                    {
+                        "key": "a",
+                        "results": 2,
+                        "label": "a"
+                    }
+                ],
+                "missing": {
+                    "results": 0
+                }
+            }
+        },
+        "events": [
+            [
+                "db",
+                "selectAlias",
+                [
+                    "salary",
+                    "facet_value"
+                ]
+            ],
+            [
+                "db",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "db",
+                "from",
+                [
+                    "openregister_table_7_1",
+                    null
+                ]
+            ],
+            [
+                "db",
+                "groupBy",
+                [
+                    "salary"
+                ]
+            ],
+            [
+                "db",
+                "orderBy",
+                [
+                    "CASE WHEN salary IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "db",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "db",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "_deleted IS NULL"
+                ]
+            ],
+            [
+                "buildFilteredQuery",
+                "openregister_table_7_1",
+                7,
+                []
+            ],
+            [
+                "scoped",
+                "selectAlias",
+                [
+                    "t.salary",
+                    "facet_value"
+                ]
+            ],
+            [
+                "scoped",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "scoped",
+                "groupBy",
+                [
+                    "t.salary"
+                ]
+            ],
+            [
+                "scoped",
+                "orderBy",
+                [
+                    "CASE WHEN t.salary IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "scoped",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "scoped",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "scoped",
+                "executeQuery"
+            ],
+            [
+                "db",
+                "selectAlias",
+                [
+                    "name",
+                    "facet_value"
+                ]
+            ],
+            [
+                "db",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "db",
+                "from",
+                [
+                    "openregister_table_7_1",
+                    null
+                ]
+            ],
+            [
+                "db",
+                "groupBy",
+                [
+                    "name"
+                ]
+            ],
+            [
+                "db",
+                "orderBy",
+                [
+                    "CASE WHEN name IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "db",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "db",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "_deleted IS NULL"
+                ]
+            ],
+            [
+                "buildFilteredQuery",
+                "openregister_table_7_1",
+                7,
+                []
+            ],
+            [
+                "scoped",
+                "selectAlias",
+                [
+                    "t.name",
+                    "facet_value"
+                ]
+            ],
+            [
+                "scoped",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "scoped",
+                "groupBy",
+                [
+                    "t.name"
+                ]
+            ],
+            [
+                "scoped",
+                "orderBy",
+                [
+                    "CASE WHEN t.name IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "scoped",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "scoped",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "scoped",
+                "executeQuery"
+            ]
+        ]
+    },
+    "no search handler, open schema": {
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": [],
+                "missing": {
+                    "results": 0
+                }
+            }
+        },
+        "events": [
+            [
+                "db",
+                "selectAlias",
+                [
+                    "name",
+                    "facet_value"
+                ]
+            ],
+            [
+                "db",
+                "addSelect",
+                [
+                    "COUNT(*) as doc_count"
+                ]
+            ],
+            [
+                "db",
+                "from",
+                [
+                    "openregister_table_7_1",
+                    null
+                ]
+            ],
+            [
+                "db",
+                "groupBy",
+                [
+                    "name"
+                ]
+            ],
+            [
+                "db",
+                "orderBy",
+                [
+                    "CASE WHEN name IS NULL THEN 0 ELSE 1 END",
+                    "ASC"
+                ]
+            ],
+            [
+                "db",
+                "addOrderBy",
+                [
+                    "doc_count",
+                    "DESC"
+                ]
+            ],
+            [
+                "db",
+                "setMaxResults",
+                [
+                    10000
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "_deleted IS NULL"
+                ]
+            ],
+            [
+                "db",
+                "andWhere",
+                [
+                    "1 = 0"
+                ]
+            ],
+            [
+                "db",
+                "executeQuery"
+            ]
+        ]
+    },
+    "union, salary withheld on one schema": {
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": [
+                    {
+                        "key": "a",
+                        "results": 2,
+                        "label": "a"
+                    }
+                ],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "born": {
+                "type": "date_histogram",
+                "interval": "year",
+                "buckets": [
+                    {
+                        "key": "2025",
+                        "results": 2,
+                        "from": "2025-01-01",
+                        "to": "2025-12-31"
+                    }
+                ]
+            }
+        },
+        "events": [
+            [
+                "refuseRelatedRowFilters",
+                [
+                    "_facets",
+                    "status"
+                ]
+            ],
+            [
+                "ask",
+                "salary",
+                []
+            ],
+            [
+                "ask",
+                "name",
+                []
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_1",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_2",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "sql",
+                "SELECT facet_value, SUM(cnt) as doc_count FROM ( SELECT name::text as facet_value, COUNT(*) as cnt FROM oc_openregister_table_7_1 WHERE 1=1 GROUP BY name::text UNION ALL SELECT name::text as facet_value, COUNT(*) as cnt FROM oc_openregister_table_7_2 WHERE 1=1 GROUP BY name::text ) combined GROUP BY facet_value ORDER BY CASE WHEN facet_value IS NULL THEN 0 ELSE 1 END ASC, doc_count DESC LIMIT 10000"
+            ],
+            [
+                "ask",
+                "born",
+                []
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_1",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_2",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "sql",
+                "SELECT date_key, SUM(cnt) as doc_count FROM ( SELECT TO_CHAR(born, 'YYYY') as date_key, COUNT(*) as cnt FROM oc_openregister_table_7_1 WHERE born IS NOT NULL GROUP BY date_key UNION ALL SELECT TO_CHAR(born, 'YYYY') as date_key, COUNT(*) as cnt FROM oc_openregister_table_7_2 WHERE born IS NOT NULL GROUP BY date_key ) combined GROUP BY date_key ORDER BY date_key ASC"
+            ]
+        ]
+    },
+    "union, every schema readable": {
+        "facets": {
+            "salary": {
+                "type": "terms",
+                "buckets": [
+                    {
+                        "key": "a",
+                        "results": 2,
+                        "label": "a"
+                    }
+                ],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "name": {
+                "type": "terms",
+                "buckets": [
+                    {
+                        "key": "a",
+                        "results": 2,
+                        "label": "a"
+                    }
+                ],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "born": {
+                "type": "date_histogram",
+                "interval": "year",
+                "buckets": [
+                    {
+                        "key": "2025",
+                        "results": 2,
+                        "from": "2025-01-01",
+                        "to": "2025-12-31"
+                    }
+                ]
+            }
+        },
+        "events": [
+            [
+                "refuseRelatedRowFilters",
+                [
+                    "_facets",
+                    "status"
+                ]
+            ],
+            [
+                "ask",
+                "salary",
+                []
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_1",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_2",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "sql",
+                "SELECT facet_value, SUM(cnt) as doc_count FROM ( SELECT salary::text as facet_value, COUNT(*) as cnt FROM oc_openregister_table_7_1 WHERE 1=1 GROUP BY salary::text UNION ALL SELECT salary::text as facet_value, COUNT(*) as cnt FROM oc_openregister_table_7_2 WHERE 1=1 GROUP BY salary::text ) combined GROUP BY facet_value ORDER BY CASE WHEN facet_value IS NULL THEN 0 ELSE 1 END ASC, doc_count DESC LIMIT 10000"
+            ],
+            [
+                "ask",
+                "name",
+                []
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_1",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_2",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "sql",
+                "SELECT facet_value, SUM(cnt) as doc_count FROM ( SELECT name::text as facet_value, COUNT(*) as cnt FROM oc_openregister_table_7_1 WHERE 1=1 GROUP BY name::text UNION ALL SELECT name::text as facet_value, COUNT(*) as cnt FROM oc_openregister_table_7_2 WHERE 1=1 GROUP BY name::text ) combined GROUP BY facet_value ORDER BY CASE WHEN facet_value IS NULL THEN 0 ELSE 1 END ASC, doc_count DESC LIMIT 10000"
+            ],
+            [
+                "ask",
+                "born",
+                []
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_1",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_2",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "sql",
+                "SELECT date_key, SUM(cnt) as doc_count FROM ( SELECT TO_CHAR(born, 'YYYY') as date_key, COUNT(*) as cnt FROM oc_openregister_table_7_1 WHERE born IS NOT NULL GROUP BY date_key UNION ALL SELECT TO_CHAR(born, 'YYYY') as date_key, COUNT(*) as cnt FROM oc_openregister_table_7_2 WHERE born IS NOT NULL GROUP BY date_key ) combined GROUP BY date_key ORDER BY date_key ASC"
+            ]
+        ]
+    },
+    "union, extend": {
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": [
+                    {
+                        "key": "a",
+                        "results": 2,
+                        "label": "a"
+                    }
+                ],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "born": {
+                "type": "date_histogram",
+                "interval": "month",
+                "buckets": [
+                    {
+                        "key": "2025",
+                        "results": 2,
+                        "from": "2025-01-01",
+                        "to": "2025-01-31"
+                    }
+                ]
+            },
+            "@self": {
+                "schema": {
+                    "type": "terms",
+                    "buckets": [],
+                    "missing": {
+                        "results": 0
+                    }
+                }
+            }
+        },
+        "events": [
+            [
+                "refuseRelatedRowFilters",
+                [
+                    "_facets",
+                    "_rbac"
+                ]
+            ],
+            [
+                "ask",
+                "name",
+                []
+            ],
+            [
+                "ask",
+                "salary",
+                []
+            ],
+            [
+                "ask",
+                "born",
+                []
+            ],
+            [
+                "ask",
+                "name",
+                []
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_1",
+                7,
+                {
+                    "_rbac": false
+                }
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_2",
+                7,
+                {
+                    "_rbac": false
+                }
+            ],
+            [
+                "sql",
+                "SELECT facet_value, SUM(cnt) as doc_count FROM ( SELECT name::text as facet_value, COUNT(*) as cnt FROM oc_openregister_table_7_1 WHERE 1=1 GROUP BY name::text UNION ALL SELECT name::text as facet_value, COUNT(*) as cnt FROM oc_openregister_table_7_2 WHERE 1=1 GROUP BY name::text ) combined GROUP BY facet_value ORDER BY CASE WHEN facet_value IS NULL THEN 0 ELSE 1 END ASC, doc_count DESC LIMIT 10000"
+            ],
+            [
+                "ask",
+                "born",
+                []
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_1",
+                7,
+                {
+                    "_rbac": false
+                }
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_2",
+                7,
+                {
+                    "_rbac": false
+                }
+            ],
+            [
+                "sql",
+                "SELECT date_key, SUM(cnt) as doc_count FROM ( SELECT TO_CHAR(born, 'YYYY-MM') as date_key, COUNT(*) as cnt FROM oc_openregister_table_7_1 WHERE born IS NOT NULL GROUP BY date_key UNION ALL SELECT TO_CHAR(born, 'YYYY-MM') as date_key, COUNT(*) as cnt FROM oc_openregister_table_7_2 WHERE born IS NOT NULL GROUP BY date_key ) combined GROUP BY date_key ORDER BY date_key ASC"
+            ],
+            [
+                "ask",
+                "salary",
+                []
+            ]
+        ]
+    },
+    "union, a table ruled out by its filters": {
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": [
+                    {
+                        "key": "a",
+                        "results": 2,
+                        "label": "a"
+                    }
+                ],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "born": {
+                "type": "date_histogram",
+                "interval": "year",
+                "buckets": [
+                    {
+                        "key": "2025",
+                        "results": 2,
+                        "from": "2025-01-01",
+                        "to": "2025-12-31"
+                    }
+                ]
+            }
+        },
+        "events": [
+            [
+                "refuseRelatedRowFilters",
+                [
+                    "_facets",
+                    "status"
+                ]
+            ],
+            [
+                "ask",
+                "salary",
+                []
+            ],
+            [
+                "ask",
+                "name",
+                []
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_1",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_2",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "sql",
+                "SELECT facet_value, SUM(cnt) as doc_count FROM ( SELECT name::text as facet_value, COUNT(*) as cnt FROM oc_openregister_table_7_2 WHERE 1=1 AND _organisation = 'org-1' GROUP BY name::text ) combined GROUP BY facet_value ORDER BY CASE WHEN facet_value IS NULL THEN 0 ELSE 1 END ASC, doc_count DESC LIMIT 10000"
+            ],
+            [
+                "ask",
+                "born",
+                []
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_1",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "buildWhereConditionsSql",
+                "openregister_table_7_2",
+                7,
+                {
+                    "status": "open"
+                }
+            ],
+            [
+                "sql",
+                "SELECT date_key, SUM(cnt) as doc_count FROM ( SELECT TO_CHAR(born, 'YYYY') as date_key, COUNT(*) as cnt FROM oc_openregister_table_7_2 WHERE born IS NOT NULL AND _organisation = 'org-1' GROUP BY date_key ) combined GROUP BY date_key ORDER BY date_key ASC"
+            ]
+        ]
+    },
+    "union, related filter refused first": {
+        "refused": "OCA\\OpenRegister\\Exception\\RelatedRowFilterNotSupportedException",
+        "events": [
+            [
+                "refuseRelatedRowFilters",
+                [
+                    "_related",
+                    "_facets"
+                ]
+            ]
+        ]
+    }
+}

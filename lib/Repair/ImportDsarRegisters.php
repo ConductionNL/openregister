@@ -38,11 +38,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\ConfigurationService;
-use OCP\App\IAppManager;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -70,11 +68,11 @@ class ImportDsarRegisters implements IRepairStep {
 	 */
 	private const REGISTERS = [
 		'/lib/Settings/data_subject_request_register.json' => [
-			'appId' => 'openregister.dsar-cases',
+			'appId' => DescriptorConfigIdsInterface::DSAR_CASES,
 			'version' => '1.2.0',
 		],
 		'/lib/Settings/dsar_policy_pack_register.json' => [
-			'appId' => 'openregister.dsar-policy-packs',
+			'appId' => DescriptorConfigIdsInterface::DSAR_POLICY_PACKS,
 			'version' => '1.1.0',
 		],
 	];
@@ -82,16 +80,12 @@ class ImportDsarRegisters implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationService $configurationService The OR configuration importer.
-	 * @param IAppManager $appManager Resolves the openregister app path on disk.
-	 * @param LoggerInterface $logger Logger for import diagnostics.
+	 * @param RegisterDescriptorImport $import The importer, the app path on disk and the log.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ConfigurationService $configurationService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		private readonly RegisterDescriptorImport $import,
 	) {
 
 	}//end __construct()
@@ -123,7 +117,7 @@ class ImportDsarRegisters implements IRepairStep {
 			$version = $descriptor['version'];
 
 			try {
-				$path = $this->appManager->getAppPath('openregister') . $relativePath;
+				$path = $this->import->appManager->getAppPath('openregister') . $relativePath;
 				if (is_file($path) === false) {
 					$output->warning('DSAR register descriptor not found: ' . $path);
 					continue;
@@ -139,7 +133,7 @@ class ImportDsarRegisters implements IRepairStep {
 					continue;
 				}
 
-				$this->configurationService->importFromApp(
+				$this->import->configurationService->importFromApp(
 					appId: $descriptor['appId'],
 					data: $data,
 					version: $version,
@@ -148,7 +142,7 @@ class ImportDsarRegisters implements IRepairStep {
 
 				$output->info('DSAR register imported: ' . basename($relativePath) . ' (v' . $version . ')');
 			} catch (Throwable $e) {
-				$this->logger->warning('[ImportDsarRegisters] import failed for ' . $relativePath . ': ' . $e->getMessage());
+				$this->import->logger->warning('[ImportDsarRegisters] import failed for ' . $relativePath . ': ' . $e->getMessage());
 				$output->warning('DSAR register import skipped for ' . basename($relativePath) . ': ' . $e->getMessage());
 			}//end try
 		}//end foreach

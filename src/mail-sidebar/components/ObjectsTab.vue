@@ -106,6 +106,7 @@ import Close from 'vue-material-design-icons/Close.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import RemoveConnectionDialog from '../../dialogs/mail/RemoveConnectionDialog.vue'
+import { mailMessageTab } from '../composables/mailMessageTab.js'
 import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
 import { schemaIconComponent } from '../icons.js'
 
@@ -121,10 +122,7 @@ export default {
 		RemoveConnectionDialog,
 	},
 
-	props: {
-		accountId: { type: Number, default: null },
-		messageId: { type: Number, default: null },
-	},
+	mixins: [mailMessageTab('loadObjects')],
 
 	data() {
 		return {
@@ -137,19 +135,6 @@ export default {
 		}
 	},
 
-	watch: {
-		/**
-		 * @spec openspec/specs/mail-sidebar/spec.md
-		 */
-		messageId() {
-			this.loadObjects()
-		},
-	},
-
-	created() {
-		this.loadObjects()
-	},
-
 	methods: {
 		t,
 		schemaIconComponent,
@@ -157,7 +142,7 @@ export default {
 		 * OR sometimes derives object names as a JSON-encoded locale map
 		 * (e.g. `{"nl":"…"}`); unwrap it so the card shows the readable name.
 		 *
-		 * @param obj
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		displayName(obj) {
@@ -168,7 +153,7 @@ export default {
 						(v) => typeof v === 'string',
 					)
 					if (values.length > 0) return values[0]
-				} catch (e) {
+				} catch {
 					// not JSON — fall through to the raw value
 				}
 			}
@@ -181,7 +166,7 @@ export default {
 		 * deep-link registry); otherwise fall back to OpenRegister's own
 		 * object page.
 		 *
-		 * @param obj
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		objectUrl(obj) {
@@ -226,7 +211,7 @@ export default {
 		/**
 		 * Open the confirmation dialog for removing a connection.
 		 *
-		 * @param obj
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		promptUnlink(obj) {
@@ -275,7 +260,7 @@ export default {
 		},
 
 		/**
-		 * @param event
+		 * @param {DragEvent} event
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		onAttachmentDragOver(event) {
@@ -285,8 +270,8 @@ export default {
 		},
 
 		/**
-		 * @param event
-		 * @param obj
+		 * @param {DragEvent} event
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async onAttachmentDrop(event, obj) {
@@ -325,8 +310,8 @@ export default {
 		},
 
 		/**
-		 * @param attachment
-		 * @param target
+		 * @param {object} attachment
+		 * @param {object} target
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async uploadAttachmentToObject(attachment, target) {

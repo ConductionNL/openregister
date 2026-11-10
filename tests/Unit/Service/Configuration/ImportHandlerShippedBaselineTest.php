@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedDefinition;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -127,7 +128,8 @@ class ImportHandlerShippedBaselineTest extends TestCase {
 			])
 		);
 		$store->method('record')->willReturnCallback(
-			function (string $subject, array $definition): bool {
+			function (string $subject, ShippedDefinition $shipped): bool {
+				$definition = $shipped->definition;
 				$this->recorded[] = $definition;
 				return true;
 			}
@@ -153,11 +155,9 @@ class ImportHandlerShippedBaselineTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper: $this->createMock(MappingMapper::class),
-			client: $this->createMock(Client::class),
 			appConfig: $this->createMock(IAppConfig::class),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: '/tmp',
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $this->createMock(ObjectService::class),
 			shippedGuard: $guard
 		);

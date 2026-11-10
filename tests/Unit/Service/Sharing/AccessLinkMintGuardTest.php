@@ -39,13 +39,14 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
+use OCA\OpenRegister\Service\Sharing\AccessLinkViewReaders;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Db\View;
 
 /**
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
@@ -71,9 +72,7 @@ class AccessLinkMintGuardTest extends TestCase {
 		$this->guard = new AccessLinkMintGuard(
 			objects: $this->objects,
 			subjects: new AccessLinkSubject(),
-			views: $this->views,
-			registers: $this->registers,
-			schemas: $this->schemas,
+			viewReaders: new AccessLinkViewReaders(views: $this->views, registers: $this->registers, schemas: $this->schemas),
 		);
 	}
 

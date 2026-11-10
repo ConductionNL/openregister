@@ -91,7 +91,7 @@ Objects support standard CRUD operations:
 
 OpenRegister provides comprehensive version control capabilities:
 
-- Every change creates a new version with full audit trail
+- Every change creates a new version with full audit trail. The one exception is `occ openregister:backfill-slugs`, which writes the slug column without a per-object version and records one audit-trail entry per run that changed slugs, with the old and new slug of the objects it changed (the first 1,000, plus the total; the rest is in the log)
 - Changes are tracked at the field level
 - Previous versions can be viewed and compared
 - Objects can be reverted to any historical version
@@ -1283,10 +1283,10 @@ sequenceDiagram
     
     Note over SaveObject: 3. Set Defaults
     SaveObject->>SaveObject: setDefaultValues()
-    SaveObject->>SaveObject: generateSlug()
     
     Note over SaveObject: 4. Hydrate Metadata
     SaveObject->>SaveObject: hydrateObjectMetadata()
+    SaveObject->>SaveObject: ObjectSlugHandler::applyOnSave()
     
     Note over SaveObject: 5. Track Relations
     SaveObject->>SaveObject: scanForRelations()

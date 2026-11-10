@@ -179,6 +179,23 @@ class MessageDispatchProviderTest extends TestCase {
 		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
 	}//end testDispatchSetsAndResetsTheTargetSource()
 
+	public function testTheRouterSeesThePerCallSourceDuringDispatch(): void {
+		$seen = [];
+		$this->router->expects($this->once())->method('call')->willReturnCallback(
+			function (object $provider) use (&$seen): array {
+				$seen[] = $provider->getOpenConnectorSource();
+				return ['ok' => true];
+			}
+		);
+
+		$this->provider->dispatch(source: 'cmcom-sms', body: ['x' => 1], path: 'message');
+
+		// The router resolves the source through the provider while the call
+		// runs, so the provider's own getOpenConnectorSource() must answer the
+		// per-call source, not the advertised default.
+		$this->assertSame(['cmcom-sms'], $seen);
+	}//end testTheRouterSeesThePerCallSourceDuringDispatch()
+
 	public function testDispatchRejectsUnknownSourceBeforeRouter(): void {
 		$this->router->expects($this->never())->method('call');
 
@@ -215,6 +232,14 @@ class MessageDispatchProviderTest extends TestCase {
 		// Source still reset even on the degraded path.
 		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
 	}//end testDispatchDegradesOnUpstreamDown()
+
+	public function testDispatchDegradesOnATransportFailure(): void {
+		$this->router->method('call')->willThrowException(new \RuntimeException('connection reset'));
+
+		$result = $this->provider->dispatch(source: 'twilio-sms', body: ['x' => 1], path: 'messages');
+		$this->assertSame(['unavailable' => true, 'cause' => 'upstream-service-down'], $result);
+		$this->assertSame('whatsapp-cloud-api', $this->provider->getOpenConnectorSource());
+	}//end testDispatchDegradesOnATransportFailure()
 
 	public function testHealthDefersToRouterProbe(): void {
 		$probe = ['status' => 'ok', 'authStatus' => 'configured', 'message' => null];

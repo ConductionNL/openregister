@@ -1,0 +1,496 @@
+{
+    "nothing / mysql": {
+        "result": {
+            "columnsAdded": [],
+            "columnsDeRequired": [],
+            "columnsReRequired": [],
+            "columnsDropped": [],
+            "columnsRetyped": []
+        },
+        "trace": [
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[],\"columnsDeRequired\":[],\"columnsReRequired\":[],\"columnsDropped\":[],\"columnsRetyped\":[]}"
+        ]
+    },
+    "nothing / postgres": {
+        "result": {
+            "columnsAdded": [],
+            "columnsDeRequired": [],
+            "columnsReRequired": [],
+            "columnsDropped": [],
+            "columnsRetyped": []
+        },
+        "trace": [
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[],\"columnsDeRequired\":[],\"columnsReRequired\":[],\"columnsDropped\":[],\"columnsRetyped\":[]}"
+        ]
+    },
+    "all new / mysql": {
+        "thrown": "Exception: statement failed",
+        "trace": [
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"title\",\"columnName\":\"title\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `title` VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"count\",\"columnName\":\"count\",\"columnType\":\"integer\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `count` INTEGER NOT NULL DEFAULT 0 []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"flag\",\"columnName\":\"flag\",\"columnType\":\"boolean\"}",
+            "debug [MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"flag\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `flag` BOOLEAN []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"firstName\",\"columnName\":\"first_name\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `first_name` VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"lastName\",\"columnName\":\"last_name\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `last_name` VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"rules\",\"columnName\":\"rules\",\"columnType\":\"json_ordered\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `rules` JSON []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"plain\",\"columnName\":\"plain\",\"columnType\":\"json_ordered\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `plain` JSON []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"amount\",\"columnName\":\"amount\",\"columnType\":\"decimal\"}",
+            "debug [MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"amount\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `amount` DECIMAL(20,4) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newCol\",\"columnName\":\"new_col\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_col` VARCHAR(80) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq\",\"columnName\":\"new_req\",\"columnType\":\"integer\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_req` INTEGER NOT NULL DEFAULT 5 []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq2\",\"columnName\":\"new_req2\",\"columnType\":\"string\"}",
+            "debug [MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"new_req2\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_req2` VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newBool\",\"columnName\":\"new_bool\",\"columnType\":\"boolean\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_bool` BOOLEAN NOT NULL DEFAULT TRUE []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newText\",\"columnName\":\"new_text\",\"columnType\":\"text\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_text` TEXT NOT NULL DEFAULT 'it''s' []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"boom\",\"columnName\":\"boom\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `boom` VARCHAR(255) []"
+        ]
+    },
+    "all new / postgres": {
+        "thrown": "Exception: statement failed",
+        "trace": [
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"title\",\"columnName\":\"title\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"title\" VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"count\",\"columnName\":\"count\",\"columnType\":\"integer\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"count\" INTEGER NOT NULL DEFAULT 0 []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"flag\",\"columnName\":\"flag\",\"columnType\":\"boolean\"}",
+            "debug [MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"flag\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"flag\" BOOLEAN []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"firstName\",\"columnName\":\"first_name\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"first_name\" VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"lastName\",\"columnName\":\"last_name\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"last_name\" VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"rules\",\"columnName\":\"rules\",\"columnType\":\"json_ordered\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"rules\" JSON []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"plain\",\"columnName\":\"plain\",\"columnType\":\"json_ordered\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"plain\" JSON []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"amount\",\"columnName\":\"amount\",\"columnType\":\"decimal\"}",
+            "debug [MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"amount\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"amount\" DECIMAL(20,4) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newCol\",\"columnName\":\"new_col\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_col\" VARCHAR(80) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq\",\"columnName\":\"new_req\",\"columnType\":\"integer\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_req\" INTEGER NOT NULL DEFAULT 5 []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq2\",\"columnName\":\"new_req2\",\"columnType\":\"string\"}",
+            "debug [MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"new_req2\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_req2\" VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newBool\",\"columnName\":\"new_bool\",\"columnType\":\"boolean\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_bool\" BOOLEAN NOT NULL DEFAULT TRUE []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newText\",\"columnName\":\"new_text\",\"columnType\":\"text\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_text\" TEXT NOT NULL DEFAULT 'it''s' []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"boom\",\"columnName\":\"boom\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"boom\" VARCHAR(255) []"
+        ]
+    },
+    "in sync / mysql": {
+        "result": {
+            "columnsAdded": [],
+            "columnsDeRequired": [],
+            "columnsReRequired": [],
+            "columnsDropped": [],
+            "columnsRetyped": []
+        },
+        "trace": [
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[],\"columnsDeRequired\":[],\"columnsReRequired\":[],\"columnsDropped\":[],\"columnsRetyped\":[]}"
+        ]
+    },
+    "in sync / postgres": {
+        "result": {
+            "columnsAdded": [],
+            "columnsDeRequired": [],
+            "columnsReRequired": [],
+            "columnsDropped": [],
+            "columnsRetyped": []
+        },
+        "trace": [
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[],\"columnsDeRequired\":[],\"columnsReRequired\":[],\"columnsDropped\":[],\"columnsRetyped\":[]}"
+        ]
+    },
+    "mixed / mysql": {
+        "thrown": "Exception: statement failed",
+        "trace": [
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"lastName\",\"columnName\":\"last_name\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `last_name` VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newCol\",\"columnName\":\"new_col\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_col` VARCHAR(80) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq\",\"columnName\":\"new_req\",\"columnType\":\"integer\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_req` INTEGER NOT NULL DEFAULT 5 []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq2\",\"columnName\":\"new_req2\",\"columnType\":\"string\"}",
+            "debug [MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"new_req2\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_req2` VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newBool\",\"columnName\":\"new_bool\",\"columnType\":\"boolean\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_bool` BOOLEAN NOT NULL DEFAULT TRUE []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newText\",\"columnName\":\"new_text\",\"columnType\":\"text\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_text` TEXT NOT NULL DEFAULT 'it''s' []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"boomNew\",\"columnName\":\"boom_new\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `boom_new` VARCHAR(255) []"
+        ]
+    },
+    "mixed / postgres": {
+        "thrown": "Exception: statement failed",
+        "trace": [
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"lastName\",\"columnName\":\"last_name\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"last_name\" VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newCol\",\"columnName\":\"new_col\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_col\" VARCHAR(80) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq\",\"columnName\":\"new_req\",\"columnType\":\"integer\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_req\" INTEGER NOT NULL DEFAULT 5 []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq2\",\"columnName\":\"new_req2\",\"columnType\":\"string\"}",
+            "debug [MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"new_req2\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_req2\" VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newBool\",\"columnName\":\"new_bool\",\"columnType\":\"boolean\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_bool\" BOOLEAN NOT NULL DEFAULT TRUE []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newText\",\"columnName\":\"new_text\",\"columnType\":\"text\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_text\" TEXT NOT NULL DEFAULT 'it''s' []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"boomNew\",\"columnName\":\"boom_new\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"boom_new\" VARCHAR(255) []"
+        ]
+    },
+    "mixed, statements succeed / mysql": {
+        "result": {
+            "columnsAdded": [
+                "last_name",
+                "new_col",
+                "new_req",
+                "new_req2",
+                "new_bool",
+                "new_text"
+            ],
+            "columnsDeRequired": [
+                "title",
+                "lastName (obsolete)",
+                "legacy (obsolete)"
+            ],
+            "columnsReRequired": [
+                "count",
+                "flag"
+            ],
+            "columnsDropped": [
+                "firstName",
+                "lastName"
+            ],
+            "columnsRetyped": [
+                "amount"
+            ]
+        },
+        "trace": [
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"lastName\",\"columnName\":\"last_name\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `last_name` VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newCol\",\"columnName\":\"new_col\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_col` VARCHAR(80) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq\",\"columnName\":\"new_req\",\"columnType\":\"integer\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_req` INTEGER NOT NULL DEFAULT 5 []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq2\",\"columnName\":\"new_req2\",\"columnType\":\"string\"}",
+            "debug [MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"new_req2\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_req2` VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newBool\",\"columnName\":\"new_bool\",\"columnType\":\"boolean\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_bool` BOOLEAN NOT NULL DEFAULT TRUE []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newText\",\"columnName\":\"new_text\",\"columnType\":\"text\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_text` TEXT NOT NULL DEFAULT 'it''s' []",
+            "debug [MagicMapper] Making column nullable (no longer required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"title\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `title` VARCHAR(255) NULL []",
+            "debug [MagicMapper] Making column NOT NULL (now required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"count\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `count` INTEGER NOT NULL []",
+            "debug [MagicMapper] Making column NOT NULL (now required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"flag\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `flag` BOOLEAN NOT NULL []",
+            "debug [MagicMapper] Dropping duplicate camelCase column (snake_case version exists) {\"tableName\":\"openregister_table_1_2\",\"camelCaseCol\":\"firstName\",\"snakeCaseCol\":\"first_name\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` DROP COLUMN `firstName` []",
+            "debug [MagicMapper] Dropping duplicate camelCase column (snake_case version exists) {\"tableName\":\"openregister_table_1_2\",\"camelCaseCol\":\"lastName\",\"snakeCaseCol\":\"last_name\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` DROP COLUMN `lastName` []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"lastName\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `lastName` varchar NULL []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"legacy\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `legacy` text NULL []",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `amount` DECIMAL(20,4) NOT NULL DEFAULT 0.00 []",
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[\"last_name\",\"new_col\",\"new_req\",\"new_req2\",\"new_bool\",\"new_text\"],\"columnsDeRequired\":[\"title\",\"lastName (obsolete)\",\"legacy (obsolete)\"],\"columnsReRequired\":[\"count\",\"flag\"],\"columnsDropped\":[\"firstName\",\"lastName\"],\"columnsRetyped\":[\"amount\"]}"
+        ]
+    },
+    "mixed, statements succeed / postgres": {
+        "result": {
+            "columnsAdded": [
+                "last_name",
+                "new_col",
+                "new_req",
+                "new_req2",
+                "new_bool",
+                "new_text"
+            ],
+            "columnsDeRequired": [
+                "title",
+                "lastName (obsolete)",
+                "legacy (obsolete)"
+            ],
+            "columnsReRequired": [
+                "count",
+                "flag"
+            ],
+            "columnsDropped": [
+                "firstName",
+                "lastName"
+            ],
+            "columnsRetyped": [
+                "rules",
+                "amount"
+            ]
+        },
+        "trace": [
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"lastName\",\"columnName\":\"last_name\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"last_name\" VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newCol\",\"columnName\":\"new_col\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_col\" VARCHAR(80) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq\",\"columnName\":\"new_req\",\"columnType\":\"integer\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_req\" INTEGER NOT NULL DEFAULT 5 []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq2\",\"columnName\":\"new_req2\",\"columnType\":\"string\"}",
+            "debug [MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"new_req2\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_req2\" VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newBool\",\"columnName\":\"new_bool\",\"columnType\":\"boolean\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_bool\" BOOLEAN NOT NULL DEFAULT TRUE []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newText\",\"columnName\":\"new_text\",\"columnType\":\"text\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_text\" TEXT NOT NULL DEFAULT 'it''s' []",
+            "debug [MagicMapper] Making column nullable (no longer required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"title\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"title\" DROP NOT NULL []",
+            "debug [MagicMapper] Making column NOT NULL (now required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"count\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"count\" SET NOT NULL []",
+            "debug [MagicMapper] Making column NOT NULL (now required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"flag\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"flag\" SET NOT NULL []",
+            "debug [MagicMapper] Dropping duplicate camelCase column (snake_case version exists) {\"tableName\":\"openregister_table_1_2\",\"camelCaseCol\":\"firstName\",\"snakeCaseCol\":\"first_name\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" DROP COLUMN \"firstName\" []",
+            "debug [MagicMapper] Dropping duplicate camelCase column (snake_case version exists) {\"tableName\":\"openregister_table_1_2\",\"camelCaseCol\":\"lastName\",\"snakeCaseCol\":\"last_name\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" DROP COLUMN \"lastName\" []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"lastName\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"lastName\" DROP NOT NULL []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"legacy\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"legacy\" DROP NOT NULL []",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"rules\" TYPE JSON USING \"rules\"::text::json []",
+            "debug [MagicMapper] Migrated object-typed column from JSONB to JSON for key-order preservation {\"columnName\":\"rules\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"amount\" TYPE DECIMAL(20,4) []",
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[\"last_name\",\"new_col\",\"new_req\",\"new_req2\",\"new_bool\",\"new_text\"],\"columnsDeRequired\":[\"title\",\"lastName (obsolete)\",\"legacy (obsolete)\"],\"columnsReRequired\":[\"count\",\"flag\"],\"columnsDropped\":[\"firstName\",\"lastName\"],\"columnsRetyped\":[\"rules\",\"amount\"]}"
+        ]
+    },
+    "failing existing column / mysql": {
+        "result": {
+            "columnsAdded": [
+                "last_name",
+                "new_col",
+                "new_req",
+                "new_req2",
+                "new_bool",
+                "new_text"
+            ],
+            "columnsDeRequired": [
+                "title",
+                "lastName (obsolete)",
+                "legacy (obsolete)"
+            ],
+            "columnsReRequired": [
+                "count",
+                "flag"
+            ],
+            "columnsDropped": [
+                "firstName",
+                "lastName"
+            ],
+            "columnsRetyped": [
+                "amount"
+            ]
+        },
+        "trace": [
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"lastName\",\"columnName\":\"last_name\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `last_name` VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newCol\",\"columnName\":\"new_col\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_col` VARCHAR(80) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq\",\"columnName\":\"new_req\",\"columnType\":\"integer\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_req` INTEGER NOT NULL DEFAULT 5 []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq2\",\"columnName\":\"new_req2\",\"columnType\":\"string\"}",
+            "debug [MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"new_req2\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_req2` VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newBool\",\"columnName\":\"new_bool\",\"columnType\":\"boolean\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_bool` BOOLEAN NOT NULL DEFAULT TRUE []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newText\",\"columnName\":\"new_text\",\"columnType\":\"text\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `new_text` TEXT NOT NULL DEFAULT 'it''s' []",
+            "debug [MagicMapper] Making column nullable (no longer required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"title\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `title` VARCHAR(255) NULL []",
+            "debug [MagicMapper] Making column nullable (no longer required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"boom\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `boom` VARCHAR(255) NULL []",
+            "warning [MagicMapper] Failed to make column nullable {\"columnName\":\"boom\",\"error\":\"statement failed\"}",
+            "debug [MagicMapper] Making column NOT NULL (now required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"count\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `count` INTEGER NOT NULL []",
+            "debug [MagicMapper] Making column NOT NULL (now required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"flag\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `flag` BOOLEAN NOT NULL []",
+            "debug [MagicMapper] Dropping duplicate camelCase column (snake_case version exists) {\"tableName\":\"openregister_table_1_2\",\"camelCaseCol\":\"firstName\",\"snakeCaseCol\":\"first_name\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` DROP COLUMN `firstName` []",
+            "debug [MagicMapper] Dropping duplicate camelCase column (snake_case version exists) {\"tableName\":\"openregister_table_1_2\",\"camelCaseCol\":\"lastName\",\"snakeCaseCol\":\"last_name\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` DROP COLUMN `lastName` []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"lastName\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `lastName` varchar NULL []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"legacy\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `legacy` text NULL []",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `amount` DECIMAL(20,4) NOT NULL DEFAULT 0.00 []",
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[\"last_name\",\"new_col\",\"new_req\",\"new_req2\",\"new_bool\",\"new_text\"],\"columnsDeRequired\":[\"title\",\"lastName (obsolete)\",\"legacy (obsolete)\"],\"columnsReRequired\":[\"count\",\"flag\"],\"columnsDropped\":[\"firstName\",\"lastName\"],\"columnsRetyped\":[\"amount\"]}"
+        ]
+    },
+    "failing existing column / postgres": {
+        "result": {
+            "columnsAdded": [
+                "last_name",
+                "new_col",
+                "new_req",
+                "new_req2",
+                "new_bool",
+                "new_text"
+            ],
+            "columnsDeRequired": [
+                "title",
+                "lastName (obsolete)",
+                "legacy (obsolete)"
+            ],
+            "columnsReRequired": [
+                "count",
+                "flag"
+            ],
+            "columnsDropped": [
+                "firstName",
+                "lastName"
+            ],
+            "columnsRetyped": [
+                "rules",
+                "amount"
+            ]
+        },
+        "trace": [
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"lastName\",\"columnName\":\"last_name\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"last_name\" VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newCol\",\"columnName\":\"new_col\",\"columnType\":\"string\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_col\" VARCHAR(80) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq\",\"columnName\":\"new_req\",\"columnType\":\"integer\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_req\" INTEGER NOT NULL DEFAULT 5 []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newReq2\",\"columnName\":\"new_req2\",\"columnType\":\"string\"}",
+            "debug [MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"new_req2\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_req2\" VARCHAR(255) []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newBool\",\"columnName\":\"new_bool\",\"columnType\":\"boolean\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_bool\" BOOLEAN NOT NULL DEFAULT TRUE []",
+            "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"newText\",\"columnName\":\"new_text\",\"columnType\":\"text\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN \"new_text\" TEXT NOT NULL DEFAULT 'it''s' []",
+            "debug [MagicMapper] Making column nullable (no longer required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"title\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"title\" DROP NOT NULL []",
+            "debug [MagicMapper] Making column nullable (no longer required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"boom\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"boom\" DROP NOT NULL []",
+            "warning [MagicMapper] Failed to make column nullable {\"columnName\":\"boom\",\"error\":\"statement failed\"}",
+            "debug [MagicMapper] Making column NOT NULL (now required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"count\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"count\" SET NOT NULL []",
+            "debug [MagicMapper] Making column NOT NULL (now required) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"flag\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"flag\" SET NOT NULL []",
+            "debug [MagicMapper] Dropping duplicate camelCase column (snake_case version exists) {\"tableName\":\"openregister_table_1_2\",\"camelCaseCol\":\"firstName\",\"snakeCaseCol\":\"first_name\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" DROP COLUMN \"firstName\" []",
+            "debug [MagicMapper] Dropping duplicate camelCase column (snake_case version exists) {\"tableName\":\"openregister_table_1_2\",\"camelCaseCol\":\"lastName\",\"snakeCaseCol\":\"last_name\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" DROP COLUMN \"lastName\" []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"lastName\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"lastName\" DROP NOT NULL []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"legacy\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"legacy\" DROP NOT NULL []",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"rules\" TYPE JSON USING \"rules\"::text::json []",
+            "debug [MagicMapper] Migrated object-typed column from JSONB to JSON for key-order preservation {\"columnName\":\"rules\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"amount\" TYPE DECIMAL(20,4) []",
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[\"last_name\",\"new_col\",\"new_req\",\"new_req2\",\"new_bool\",\"new_text\"],\"columnsDeRequired\":[\"title\",\"lastName (obsolete)\",\"legacy (obsolete)\"],\"columnsReRequired\":[\"count\",\"flag\"],\"columnsDropped\":[\"firstName\",\"lastName\"],\"columnsRetyped\":[\"rules\",\"amount\"]}"
+        ]
+    },
+    "obsolete only / mysql": {
+        "result": {
+            "columnsAdded": [],
+            "columnsDeRequired": [
+                "title (obsolete)",
+                "lastName (obsolete)",
+                "legacy (obsolete)",
+                "amount (obsolete)"
+            ],
+            "columnsReRequired": [],
+            "columnsDropped": [],
+            "columnsRetyped": []
+        },
+        "trace": [
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"title\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `title` varchar NULL []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"lastName\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `lastName` varchar NULL []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"legacy\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `legacy` text NULL []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"amount\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `amount` decimal NULL []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"boom\"}",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `boom` varchar NULL []",
+            "warning [MagicMapper] Failed to make obsolete column nullable {\"columnName\":\"boom\",\"error\":\"statement failed\"}",
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[],\"columnsDeRequired\":[\"title (obsolete)\",\"lastName (obsolete)\",\"legacy (obsolete)\",\"amount (obsolete)\"],\"columnsReRequired\":[],\"columnsDropped\":[],\"columnsRetyped\":[]}"
+        ]
+    },
+    "obsolete only / postgres": {
+        "result": {
+            "columnsAdded": [],
+            "columnsDeRequired": [
+                "title (obsolete)",
+                "lastName (obsolete)",
+                "legacy (obsolete)",
+                "amount (obsolete)"
+            ],
+            "columnsReRequired": [],
+            "columnsDropped": [],
+            "columnsRetyped": []
+        },
+        "trace": [
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"title\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"title\" DROP NOT NULL []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"lastName\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"lastName\" DROP NOT NULL []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"legacy\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"legacy\" DROP NOT NULL []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"amount\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"amount\" DROP NOT NULL []",
+            "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"boom\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"boom\" DROP NOT NULL []",
+            "warning [MagicMapper] Failed to make obsolete column nullable {\"columnName\":\"boom\",\"error\":\"statement failed\"}",
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[],\"columnsDeRequired\":[\"title (obsolete)\",\"lastName (obsolete)\",\"legacy (obsolete)\",\"amount (obsolete)\"],\"columnsReRequired\":[],\"columnsDropped\":[],\"columnsRetyped\":[]}"
+        ]
+    },
+    "decimal only / mysql": {
+        "result": {
+            "columnsAdded": [],
+            "columnsDeRequired": [],
+            "columnsReRequired": [],
+            "columnsDropped": [],
+            "columnsRetyped": [
+                "amount"
+            ]
+        },
+        "trace": [
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `amount` DECIMAL(20,4) NOT NULL DEFAULT 0.00 []",
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[],\"columnsDeRequired\":[],\"columnsReRequired\":[],\"columnsDropped\":[],\"columnsRetyped\":[\"amount\"]}"
+        ]
+    },
+    "decimal only / postgres": {
+        "result": {
+            "columnsAdded": [],
+            "columnsDeRequired": [],
+            "columnsReRequired": [],
+            "columnsDropped": [],
+            "columnsRetyped": [
+                "amount"
+            ]
+        },
+        "trace": [
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"amount\" TYPE DECIMAL(20,4) []",
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[],\"columnsDeRequired\":[],\"columnsReRequired\":[],\"columnsDropped\":[],\"columnsRetyped\":[\"amount\"]}"
+        ]
+    }
+}

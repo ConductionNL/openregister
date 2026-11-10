@@ -3,7 +3,7 @@
 /**
  * ReferentialIntegrityService Coverage Tests
  *
- * Tests for uncovered branches: isValidOnDeleteAction, extractOnDelete,
+ * Tests for uncovered branches: extractOnDelete,
  * extractTargetRef, resolveSchemaRef, isRequiredProperty, getDefaultValue,
  * hasIncomingOnDeleteReferences, canDelete with no schema, logRestrictBlock,
  * and walkDeletionGraph edge cases.
@@ -30,6 +30,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -37,6 +40,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 class ReferentialIntegrityServiceCoverageTest extends TestCase {
 	private ReferentialIntegrityService $service;
@@ -54,14 +59,10 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new ReferentialIntegrityService(
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->objectMapper,
-			$this->auditTrailMapper,
-			$this->logger,
-			$this->createMock(IDBConnection::class),
-			$this->createNullCacheFactory(),
-			$this->makeArchivalGuard()
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->createNullCacheFactory()),
+			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: $this->makeArchivalGuard()),
+			logger: $this->logger
 		);
 	}
 
@@ -90,38 +91,6 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 		$p = $ref->getProperty($prop);
 		$p->setAccessible(true);
 		$p->setValue($obj, $value);
-	}
-
-	// =========================================================================
-	// isValidOnDeleteAction
-	// =========================================================================
-
-	public function testIsValidOnDeleteActionCascade(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('CASCADE'));
-	}
-
-	public function testIsValidOnDeleteActionRestrict(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('RESTRICT'));
-	}
-
-	public function testIsValidOnDeleteActionSetNull(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_NULL'));
-	}
-
-	public function testIsValidOnDeleteActionSetDefault(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_DEFAULT'));
-	}
-
-	public function testIsValidOnDeleteActionNoAction(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('NO_ACTION'));
-	}
-
-	public function testIsValidOnDeleteActionCaseInsensitive(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('cascade'));
-	}
-
-	public function testIsValidOnDeleteActionInvalid(): void {
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('DELETE'));
 	}
 
 	// =========================================================================

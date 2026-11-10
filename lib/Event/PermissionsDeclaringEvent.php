@@ -37,7 +37,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use OCP\EventDispatcher\Event;
  *         fires on about forty untouched files in this repo for the same
  *         reason, which is why `composer phpmd` is red on `development` too.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class PermissionsDeclaringEvent extends Event {
 
@@ -112,48 +112,66 @@ class PermissionsDeclaringEvent extends Event {
 	 *
 	 * @return bool True when the declaration was accepted.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function declareVerb(
-		string $verb,
-		string $app,
-		string $description,
-		array $levels = self::DEFAULT_LEVELS,
-	): bool {
-		if (preg_match(self::VERB_PATTERN, $verb) !== 1) {
-			$this->rejected[$verb] = sprintf(
-				'The app "%s" declared a verb the grammar does not accept.',
-				$app
-			);
-			return false;
-		}
+	public function declareVerb(string $verb, string $app, string $description, array $levels = self::DEFAULT_LEVELS): bool {
+		return $this->addVerb(declaration: new PermissionVerb(verb: $verb, app: $app, description: $description, levels: $levels));
+	}//end declareVerb()
 
-		if (isset($this->declared[$verb]) === true) {
-			$this->rejected[$verb] = sprintf(
-				'The app "%s" declared the verb "%s", which "%s" already owns.',
-				$app,
-				$verb,
-				$this->declared[$verb]['app']
-			);
+	/**
+	 * Declare one verb, as {@see declareVerb()}: a verb another app already
+	 * declared, or one outside the grammar, is refused and recorded.
+	 *
+	 * @param PermissionVerb $declaration The verb, its app, description and levels.
+	 *
+	 * @return bool True when the declaration was accepted.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function addVerb(PermissionVerb $declaration): bool {
+		$verb    = $declaration->verb;
+		$refusal = $this->refusalFor(verb: $verb, app: $declaration->app);
+		if ($refusal !== null) {
+			$this->rejected[$verb] = $refusal;
 			return false;
 		}
 
 		$this->declared[$verb] = [
 			'verb' => $verb,
-			'app' => $app,
-			'description' => $description,
-			'levels' => array_values(array_filter($levels, 'is_string')),
+			'app' => $declaration->app,
+			'description' => $declaration->description,
+			'levels' => array_values(array_filter($declaration->levels, 'is_string')),
 		];
 
 		return true;
-	}//end declareVerb()
+	}//end addVerb()
+
+	/**
+	 * Why a declaration is refused: a verb outside the grammar, or one another app owns.
+	 *
+	 * @param string $verb The declared verb.
+	 * @param string $app  The declaring app id.
+	 *
+	 * @return string|null The refusal, or null when the declaration may be accepted.
+	 */
+	private function refusalFor(string $verb, string $app): ?string {
+		if (preg_match(self::VERB_PATTERN, $verb) !== 1) {
+			return sprintf('The app "%s" declared a verb the grammar does not accept.', $app);
+		}
+
+		if (isset($this->declared[$verb]) === true) {
+			return sprintf('The app "%s" declared the verb "%s", which "%s" already owns.', $app, $verb, $this->declared[$verb]['app']);
+		}
+
+		return null;
+	}//end refusalFor()
 
 	/**
 	 * Every accepted declaration, keyed by verb.
 	 *
 	 * @return array<string, array{verb: string, app: string, description: string, levels: array<int, string>}> The declarations.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function getDeclared(): array {
 		return $this->declared;
@@ -164,7 +182,7 @@ class PermissionsDeclaringEvent extends Event {
 	 *
 	 * @return array<string, string> The refusals.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function getRejected(): array {
 		return $this->rejected;

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+ * @spec openspec/specs/linked-entity-types/spec.md
  */
 
 declare(strict_types=1);
@@ -83,8 +83,7 @@ final class LensResolverTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		return new LensResolver(
-			magicMapper: $magicMapper,
-			schemaMapper: $schemaMapper,
+			lookups: new \OCA\OpenRegister\Service\Hinge\LensLookups(magicMapper: $magicMapper, schemaMapper: $schemaMapper),
 			permissionHandler: $permissionHandler,
 			userSession: $userSession,
 			logger: new NullLogger()

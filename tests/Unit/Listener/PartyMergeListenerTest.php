@@ -25,7 +25,7 @@ use Psr\Log\LoggerInterface;
  * Two party records that turn out to be one person: the roles both held
  * carry over, and a reversal puts both back.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md
+ * @spec openspec/specs/mdm-merge/spec.md
  */
 class PartyMergeListenerTest extends TestCase {
 
@@ -175,7 +175,7 @@ class PartyMergeListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function testEveryRoleTheMergedPartyHeldCarriesOver(): void {
 		$this->loserLinks = [$this->loserLink(objectUuid: 'case-3', role: 'aanvrager')];
@@ -202,7 +202,7 @@ class PartyMergeListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function testADuplicateRoleIsAbsorbedRatherThanCollided(): void {
 		$held = new ContactLink();
@@ -231,7 +231,7 @@ class PartyMergeListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function testAReversalPutsAMovedRoleBack(): void {
 		$moved = new ContactLink();
@@ -261,7 +261,7 @@ class PartyMergeListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function testAReversalRestoresAnAbsorbedRow(): void {
 		$held = new ContactLink();
@@ -313,7 +313,7 @@ class PartyMergeListenerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-parties-merge-through-the-existing-merge-primitive-req-prm-005
 	 */
 	public function testAnotherMergesMemoIsLeftAlone(): void {
 		$other = new ContactLink();

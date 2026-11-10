@@ -33,7 +33,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<SchemaChangelog>
  */
-class SchemaChangelogMapper extends QBMapper {
+class SchemaChangelogMapper extends QBMapper implements SchemaChangelogMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -78,13 +78,7 @@ class SchemaChangelogMapper extends QBMapper {
 			->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
 			->orderBy('id', 'DESC');
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findBySchema()

@@ -29,10 +29,13 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DestructionListCreator;
+use OCA\OpenRegister\Service\Archival\DestructionListWriter;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionStores;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -90,17 +93,15 @@ class DestructionListCreatorTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$retention = new RetentionService(
-			$objectMapper,
-			$schemaMapper,
-			$registerMapper,
-			$this->createMock(AuditTrailMapper::class),
-			$settings,
-			$this->createMock(IAppConfig::class),
+			new RetentionStores(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper), $this->createMock(AuditTrailMapper::class)),
+			new RetentionRules(
+				$settings,
+				$this->createMock(RetentionRowScanner::class),
+				$this->createMock(ArchiveActionDateCalculator::class),
+				$this->createMock(SelectielijstResolver::class)
+			),
 			$session,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(RetentionRowScanner::class),
-			$this->createMock(ArchiveActionDateCalculator::class),
-			$this->createMock(SelectielijstResolver::class)
+			$this->createMock(LoggerInterface::class)
 		);
 
 		/** @var SaveObject&MockObject $saveObject */
@@ -117,8 +118,7 @@ class DestructionListCreatorTest extends TestCase {
 
 		$this->creator = new DestructionListCreator(
 			retention: $retention,
-			objectMapper: $objectMapper,
-			saveObject: $saveObject,
+			writer: new DestructionListWriter(objectMapper: $objectMapper, saveObject: $saveObject),
 			settingsHandler: $settings,
 			logger: $this->createMock(LoggerInterface::class)
 		);
@@ -169,7 +169,7 @@ class DestructionListCreatorTest extends TestCase {
 
 	public function testEveryRuleOfTheSweepRefusesWithItsOwnReason(): void {
 		$this->object('kept', ['archiefnominatie' => 'bewaren', 'archiefactiedatum' => '2020-01-01']);
-		$this->object('early', ['archiefnominatie' => 'vernietigen', 'archiefactiedatum' => '2999-01-01']);
+		$this->object('early', ['archiefnominatie' => 'vernietigen', 'archiefactiedatum' => date('Y-m-d', strtotime('+10 years'))]);
 		$this->object('gone', $this->due() + ['archiefstatus' => 'vernietigd']);
 		$this->object('listed', $this->due());
 		$this->object('ok', $this->due());

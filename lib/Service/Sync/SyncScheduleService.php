@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\Source;
  *
  * @spec openspec/specs/data-sync-harvesting/spec.md
  */
-final class SyncScheduleService {
+final class SyncScheduleService implements SyncScheduleInterface {
 
 	/**
 	 * Default interval (hours) used when a source has sync enabled but no

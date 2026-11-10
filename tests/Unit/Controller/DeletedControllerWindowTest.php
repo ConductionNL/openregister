@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+ * @spec openspec/specs/deletion-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -31,6 +31,7 @@ namespace Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\DeletedControllerFactory;
 use DateTimeImmutable;
 use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -41,7 +42,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Deletion\DeletionRetention;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
+use OCA\OpenRegister\Service\Deletion\DestructionServices;
 use OCA\OpenRegister\Service\Deletion\DeletionWindow;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
@@ -155,9 +158,8 @@ final class DeletedControllerWindowTest extends TestCase {
 		$deletion = new DeletionServiceBundle(
 			$this->windows,
 			$this->rights,
-			$this->scopes,
-			$this->recorder,
 			$this->clocks,
+			new DestructionServices($this->scopes, $this->recorder),
 		);
 
 		$authorizer = new DeletedObjectAuthorizer(
@@ -167,7 +169,7 @@ final class DeletedControllerWindowTest extends TestCase {
 			$this->createMock(PermissionHandler::class),
 		);
 
-		$this->controller = new DeletedController(
+		$this->controller = DeletedControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectMapper,
@@ -193,8 +195,7 @@ final class DeletedControllerWindowTest extends TestCase {
 		return new DeletionWindow(
 			new DateTimeImmutable('2026-04-18T09:00:00+00:00'),
 			$daysRemaining,
-			30,
-			DeletionWindow::SOURCE_INSTANCE,
+			new DeletionRetention(30, DeletionWindow::SOURCE_INSTANCE),
 			new DateTimeImmutable('2026-03-19T09:00:00+00:00')
 		);
 	}//end window()

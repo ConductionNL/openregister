@@ -24,7 +24,7 @@
 
 namespace OCA\OpenRegister\Service\Vectorization\Strategies;
 
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -41,44 +41,21 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  */
-class FileVectorizationStrategy implements VectorizationStrategyInterface {
-
-	/**
-	 * Chunk mapper
-	 *
-	 * @var ChunkMapper
-	 */
-	private ChunkMapper $chunkMapper;
-
-	/**
-	 * Database connection
-	 *
-	 * @var IDBConnection
-	 */
-	private IDBConnection $db;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
+class FileVectorizationStrategy implements FileVectorizationStrategyInterface {
 
 	/**
 	 * Constructor
 	 *
-	 * @param ChunkMapper $chunkMapper Chunk mapper
+	 * @param ChunkMapperInterface $chunkMapper Chunk mapper
 	 * @param IDBConnection $db Database connection
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		ChunkMapper $chunkMapper,
-		IDBConnection $db,
-		LoggerInterface $logger,
+		private readonly ChunkMapperInterface $chunkMapper,
+		private readonly IDBConnection $db,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->chunkMapper = $chunkMapper;
-		$this->db = $db;
-		$this->logger = $logger;
+
 	}//end __construct()
 
 	/**
@@ -86,9 +63,9 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface {
 	 *
 	 * @param array $options Options: max_files, file_types
 	 *
-	 * @return \OCA\OpenRegister\Db\Chunk[]
+	 * @return \OCA\OpenRegister\Files\Db\Chunk[]
 	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
+	 * @psalm-return list<\OCA\OpenRegister\Files\Db\Chunk>
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */

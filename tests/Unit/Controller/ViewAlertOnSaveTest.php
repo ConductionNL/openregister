@@ -26,13 +26,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Controller\ViewsController;
+use OCA\OpenRegister\Search\Controller\ViewsController;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
-use OCA\OpenRegister\Service\ViewPresentationService;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -42,8 +42,15 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 /**
- * @covers \OCA\OpenRegister\Controller\ViewsController
- * @covers \OCA\OpenRegister\Service\ViewService
+ * @covers \OCA\OpenRegister\Search\Controller\ViewsController
+ * @uses \OCA\OpenRegister\Search\Controller\Support\ViewPatch
+ * @covers \OCA\OpenRegister\Search\Service\ViewService
+ * @uses \OCA\OpenRegister\Search\Db\View
+ * @uses \OCA\OpenRegister\Exception\InvalidViewAlertException
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewShareResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
+ * @uses \OCA\OpenRegister\Service\View\ViewAlert
  */
 class ViewAlertOnSaveTest extends TestCase {
 
@@ -95,12 +102,13 @@ class ViewAlertOnSaveTest extends TestCase {
 		$logger = new NullLogger();
 
 		return new ViewsController(
-			'openregister',
 			$this->request,
-			new ViewService(viewMapper: $this->mapper, logger: $logger, schemaMapper: $this->createMock(SchemaMapper::class)),
-			$this->createMock(ViewPresentationService::class),
-			$logger,
-			new ViewerReachResolver(userSession: $session, groupManager: $groupManager, logger: $logger)
+			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
+				new ViewService(viewMapper: $this->mapper, logger: $logger, schemaMapper: $this->createMock(SchemaMapper::class)),
+				$this->createMock(ViewPresentationService::class),
+				$logger,
+				new ViewerReachResolver(caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($session, $groupManager), logger: $logger)
+			)
 		);
 	}//end controllerFor()
 
@@ -266,16 +274,18 @@ class ViewAlertOnSaveTest extends TestCase {
 	}//end testPatchWithoutAlertKeepsIt()
 
 	/**
-	 * A member with write on a shared view may set its alert.
+	 * A member with write on a shared view may set its alert, naming themselves.
+	 *
+	 * Naming anybody else is refused; ViewAlertRecipientsTest pins that.
 	 */
 	public function testAWriteMemberMaySetTheAlert(): void {
 		$this->stored(sharedWith: [['group' => 'sales', 'mode' => 'write']]);
-		$this->request->method('getParams')->willReturn(['alert' => self::ALERT]);
+		$this->request->method('getParams')->willReturn(['alert' => ['recipients' => ['user:member']] + self::ALERT]);
 
 		$response = $this->controllerFor(uid: 'member', groups: ['sales'])->patch('7');
 
 		$this->assertSame(200, $response->getStatus());
-		$this->assertSame(self::STORED_ALERT, $this->written?->getAlert());
+		$this->assertSame(expected: array_replace(self::STORED_ALERT, ['recipients' => ['user:member']]), actual: $this->written?->getAlert());
 	}//end testAWriteMemberMaySetTheAlert()
 
 	/**

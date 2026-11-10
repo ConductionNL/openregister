@@ -39,9 +39,17 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter;
+use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
+use OCA\OpenRegister\Service\Rbac\ObjectLookup;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
+use OCA\OpenRegister\Service\Rbac\OwnershipLog;
+use OCA\OpenRegister\Service\Rbac\OwnershipSources;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnerWriter;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\OwnershipGuards;
+use OCA\OpenRegister\Service\Rbac\OwnershipWriters;
+use OCA\OpenRegister\Service\Rbac\PrincipalDirectory;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -164,19 +172,19 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->userManager->method('userExists')->willReturn(true);
 
 		$this->service = new ObjectOwnershipService(
-			$this->userSession,
-			$this->userManager,
-			$this->groupManager,
-			new ObjectScopeResolver(),
-			$this->permissions,
-			$this->ownerWriter,
-			$this->authorizationWriter,
-			$this->auditTrailMapper,
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->notificationManager,
-			$this->createMock(LoggerInterface::class)
+			guards: new OwnershipGuards(
+				userSession: $this->userSession,
+				grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
+				permissions: $this->permissions
+			),
+			sources: new OwnershipSources(directory: new PrincipalDirectory(userManager: $this->userManager, groupManager: $this->groupManager), lookup: new ObjectLookup(magicMapper: $this->magicMapper, registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper)),
+			writers: new OwnershipWriters(
+				ownerWriter: $this->ownerWriter,
+				authorizationWriter: $this->authorizationWriter,
+				auditTrailMapper: $this->auditTrailMapper,
+				notificationManager: $this->notificationManager
+			),
+			log: new OwnershipLog(logger: $this->createMock(LoggerInterface::class))
 		);
 	}//end setUp()
 
@@ -401,6 +409,30 @@ class ObjectOwnershipServiceTest extends TestCase {
 			newOwner: 'carol'
 		);
 	}//end testOnlyAnAdministratorMayAssignToSomebodyElse()
+
+	/**
+	 * A trusted system operation (an example-set install under occ, with no
+	 * session user) may assign a record; the same call without the system
+	 * scope is refused as before.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 */
+	public function testTheSystemScopeMayAssignWithoutASessionUser(): void {
+		$this->signIn(null);
+		$this->expectNotification();
+		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->ownerWriter->expects($this->once())->method('writeOwner')->with($this->anything(), $this->anything(), 'uuid-1', 'carol');
+
+		$outcome = \OCA\OpenRegister\Service\SystemOperationContext::run(
+			fn () => $this->service->assign(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', '__system__'), newOwner: 'carol')
+		);
+		$this->assertSame('carol', $outcome['newOwner']);
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->service->assign(register: new Register(), schema: new Schema(), object: $this->record('uuid-2', '__system__'), newOwner: 'carol');
+	}//end testTheSystemScopeMayAssignWithoutASessionUser()
 
 	/**
 	 * An administrator assigns a record to a named owner.
@@ -669,19 +701,19 @@ class ObjectOwnershipServiceTest extends TestCase {
 			static fn (string $uid): bool => ($uid !== 'alice')
 		);
 		$service = new ObjectOwnershipService(
-			$this->userSession,
-			$this->userManager,
-			$this->groupManager,
-			new ObjectScopeResolver(),
-			$this->permissions,
-			$this->ownerWriter,
-			$this->authorizationWriter,
-			$this->auditTrailMapper,
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->notificationManager,
-			$this->createMock(LoggerInterface::class)
+			guards: new OwnershipGuards(
+				userSession: $this->userSession,
+				grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
+				permissions: $this->permissions
+			),
+			sources: new OwnershipSources(directory: new PrincipalDirectory(userManager: $this->userManager, groupManager: $this->groupManager), lookup: new ObjectLookup(magicMapper: $this->magicMapper, registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper)),
+			writers: new OwnershipWriters(
+				ownerWriter: $this->ownerWriter,
+				authorizationWriter: $this->authorizationWriter,
+				auditTrailMapper: $this->auditTrailMapper,
+				notificationManager: $this->notificationManager
+			),
+			log: new OwnershipLog(logger: $this->createMock(LoggerInterface::class))
 		);
 
 		$this->notificationManager->expects($this->never())->method('notify');
@@ -921,4 +953,81 @@ class ObjectOwnershipServiceTest extends TestCase {
 		);
 	}//end testAnUnknownOwningGroupIsRefused()
 
+	/**
+	 * A cascade down a long chain stops at the depth cap, and the outcome nests one level per generation.
+	 *
+	 * @return void
+	 */
+	public function testACascadeStopsAtTheDepthCapWithANestedOutcome(): void {
+		$this->signIn('root', ['admin']);
+		$this->expectNotification();
+		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->registerMapper->method('find')->willReturn(new Register());
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+
+		$chain = [];
+		for ($i = 0; $i < 8; $i++) {
+			$chain['uuid-'.$i] = $this->record('uuid-'.$i, 'alice');
+		}
+
+		$this->magicMapper->method('findByRelationUsingRelationsColumn')->willReturnCallback(
+			static function (string $uuid) use ($chain): array {
+				$next = 'uuid-'.((int)substr($uuid, 5) + 1);
+				return isset($chain[$next]) === true ? [$chain[$next]] : [];
+			}
+		);
+
+		$written = [];
+		$this->ownerWriter->method('writeOwner')->willReturnCallback(
+			static function ($register, $schema, string $objectUuid, string $owner) use (&$written): void {
+				$written[] = $objectUuid;
+			}
+		);
+
+		$outcome = $this->service->assign(
+			register: new Register(),
+			schema: new Schema(),
+			object: $chain['uuid-0'],
+			newOwner: 'carol',
+			cascade: true
+		);
+
+		$this->assertSame(['uuid-0', 'uuid-1', 'uuid-2', 'uuid-3', 'uuid-4', 'uuid-5'], $written);
+
+		$expected = ['uuid' => 'uuid-5', 'previousOwner' => 'alice', 'newOwner' => 'carol', 'changed' => true, 'children' => []];
+		for ($i = 4; $i >= 0; $i--) {
+			$expected = [
+				'uuid'          => 'uuid-'.$i,
+				'previousOwner' => 'alice',
+				'newOwner'      => 'carol',
+				'changed'       => true,
+				'children'      => [$expected],
+			];
+		}
+
+		$this->assertSame($expected, $outcome);
+	}//end testACascadeStopsAtTheDepthCapWithANestedOutcome()
+
+	/**
+	 * Taking a record you already own reports it unchanged with no children.
+	 *
+	 * @return void
+	 */
+	public function testAnUnchangedOutcomeHasItsFullShape(): void {
+		$this->signIn('root', ['admin']);
+		$this->ownerWriter->expects($this->never())->method('writeOwner');
+
+		$outcome = $this->service->assign(
+			register: new Register(),
+			schema: new Schema(),
+			object: $this->record('uuid-1', 'carol'),
+			newOwner: 'carol',
+			cascade: true
+		);
+
+		$this->assertSame(
+			['uuid' => 'uuid-1', 'previousOwner' => 'carol', 'newOwner' => 'carol', 'changed' => false, 'children' => []],
+			$outcome
+		);
+	}//end testAnUnchangedOutcomeHasItsFullShape()
 }//end class

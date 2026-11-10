@@ -33,21 +33,25 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionBackends;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
 
 /**
- * @covers \OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler
+ * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
+ * @uses \OCA\OpenRegister\Exception\AnalyzeRequestRejectedException
  */
 class OpenAnonymiserEntityTypesTest extends TestCase {
 
@@ -86,18 +90,19 @@ class OpenAnonymiserEntityTypesTest extends TestCase {
 		}
 
 		$handler = new EntityRecognitionHandler(
-			$this->createMock(ChunkMapper::class),
-			$this->createMock(GdprEntityMapper::class),
-			$this->createMock(EntityRelationMapper::class),
-			$this->createMock(IDBConnection::class),
-			$logger,
-			$settings,
-			$this->backend
+			stores: new EntityRecognitionStores(
+				chunkMapper: $this->createMock(ChunkMapper::class),
+				entityMapper: $this->createMock(GdprEntityMapper::class),
+				entityRelationMapper: $this->createMock(EntityRelationMapper::class),
+				db: $this->createMock(IDBConnection::class)
+			),
+			backends: new EntityRecognitionBackends(settingsService: $settings, anonymisationBackendService: $this->backend),
+			logger: $logger
 		);
 
 		$method = new ReflectionMethod(EntityRecognitionHandler::class, 'detectWithOpenAnonymiser');
 
-		return $method->invoke($handler, 'Jan de Vries, jan@example.nl, NL91ABNA0417164300', $entityTypes, 0.5);
+		return $method->invoke($handler, new EntityDetectionQuery('Jan de Vries, jan@example.nl, NL91ABNA0417164300', $entityTypes, 0.5));
 
 	}//end detect()
 

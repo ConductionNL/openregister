@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Config\Types;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
 
 /**
@@ -54,18 +54,14 @@ class GenericObjectShareableConfigType implements IShareableConfigType {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService Reads and writes the objects.
-	 * @param string $id The type id (e.g. `procest.casetype`).
-	 * @param string $name The display name.
-	 * @param string $topic The discovery topic.
+	 * @param ObjectOperationsInterface $objectService Reads and writes the objects.
+	 * @param ShareableTypeIdentity $identity The type id (e.g. `procest.casetype`), display name and topic.
 	 * @param string $register The register slug the objects live in.
 	 * @param string $schema The schema slug the objects are of.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
-		private readonly string $id,
-		private readonly string $name,
-		private readonly string $topic,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly ShareableTypeIdentity $identity,
 		private readonly string $register,
 		private readonly string $schema,
 	) {
@@ -78,7 +74,7 @@ class GenericObjectShareableConfigType implements IShareableConfigType {
 	 * @return string The id.
 	 */
 	public function getId(): string {
-		return $this->id;
+		return $this->identity->id;
 	}//end getId()
 
 	/**
@@ -87,7 +83,7 @@ class GenericObjectShareableConfigType implements IShareableConfigType {
 	 * @return string The name.
 	 */
 	public function getDisplayName(): string {
-		return $this->name;
+		return $this->identity->name;
 	}//end getDisplayName()
 
 	/**
@@ -96,7 +92,7 @@ class GenericObjectShareableConfigType implements IShareableConfigType {
 	 * @return string The topic.
 	 */
 	public function getTopic(): string {
-		return $this->topic;
+		return $this->identity->topic;
 	}//end getTopic()
 
 	/**
@@ -148,7 +144,7 @@ class GenericObjectShareableConfigType implements IShareableConfigType {
 		}
 
 		return [
-			'type' => $this->id,
+			'type' => $this->identity->id,
 			'version' => '1.0',
 			'register' => $this->register,
 			'schema' => $this->schema,

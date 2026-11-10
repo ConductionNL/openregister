@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowNodeRunControllerFactory;
 use OCA\OpenRegister\Controller\FlowNodeRunController;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
@@ -67,7 +68,7 @@ class FlowNodeRunControllerTest extends TestCase {
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$this->controller = new FlowNodeRunController(
+		$this->controller = FlowNodeRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			userSession: $this->userSession,
@@ -320,7 +321,7 @@ class FlowNodeRunControllerTest extends TestCase {
 		$done = new FlowRun();
 		$done->setStatus(FlowRun::STATUS_COMPLETED);
 		$this->runner->expects($this->once())->method('executeNode')
-			->with($queued, ['id' => 'f1', 'nodes' => []], $object, 'n1')
+			->with($queued, ['id' => 'f1', 'nodes' => []], $object, ['templateSlug' => 'welcome'])
 			->willReturn($done);
 
 		$response = $this->controller->run(id: 'f1', nodeId: 'n1');

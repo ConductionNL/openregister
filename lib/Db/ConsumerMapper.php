@@ -31,7 +31,10 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends                     QBMapper<Consumer>
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class ConsumerMapper extends QBMapper {
+class ConsumerMapper extends QBMapper implements ConsumerMapperInterface {
+
+	use ColumnFiltersTrait;
+
 	/**
 	 * ConsumerMapper constructor.
 	 *
@@ -67,17 +70,13 @@ class ConsumerMapper extends QBMapper {
 	 * @param int|null $limit Maximum number of results to return
 	 * @param int|null $offset Number of results to skip
 	 * @param array|null $filters Associative array of filters
-	 * @param array|null $searchConditions Array of search conditions
-	 * @param array|null $searchParams Array of search parameters
 	 *
 	 * @return array An array of Consumer entities
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $searchConditions = [],
-		?array $searchParams = [],
+		int|null $limit = null,
+		int|null $offset = null,
+		array|null $filters = [],
 	): array {
 		$qb = $this->db->getQueryBuilder();
 
@@ -86,26 +85,7 @@ class ConsumerMapper extends QBMapper {
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-		foreach ($filters as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-		}
-
-		if (empty($searchConditions) === false) {
-			$qb->andWhere('(' . implode(separator: ' OR ', array: $searchConditions) . ')');
-			foreach ($searchParams as $param => $value) {
-				$qb->setParameter($param, $value);
-			}
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()

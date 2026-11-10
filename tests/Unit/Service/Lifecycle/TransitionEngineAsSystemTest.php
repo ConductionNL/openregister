@@ -43,6 +43,7 @@ namespace Unit\Service\Lifecycle;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -55,6 +56,7 @@ use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary;
@@ -65,7 +67,7 @@ use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -81,9 +83,15 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Lifecycle\TransitionEngine
+ * @uses \OCA\OpenRegister\Listener\LifecycleAttempt
+ * @uses \OCA\OpenRegister\Listener\LifecycleDeclaration
+ * @uses \OCA\OpenRegister\Listener\LifecycleEdit
+ * @uses \OCA\OpenRegister\Listener\LifecycleEditReader
  */
 class TransitionEngineAsSystemTest extends TestCase {
 	private const OBJECT_ID = '00000000-0000-0000-0000-00000000a5e1';
@@ -182,14 +190,8 @@ class TransitionEngineAsSystemTest extends TestCase {
 			ast: new CalculationEvaluator(placeholders: new PlaceholderResolver(userSession: $this->createMock(IUserSession::class)))
 		);
 		$this->listener = new LifecycleValidationListener(
-			$this->schemaMapper,
-			new LifecycleGuardRegistry($this->guardContainer, $serverContainer, $this->logger),
-			$this->userSession,
-			$this->permission,
-			$this->logger,
-			new LifecycleConditionEvaluator($this->userSession, $groupManager, $l10n, $this->logger, $dialect),
-			new LifecycleTransitionResolver($this->actions),
-			new ConditionTracer(dialect: $dialect),
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new LifecycleTransitionResolver($this->actions), $this->logger), $this->userSession, $this->permission),
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guardContainer, $serverContainer, $this->logger), new LifecycleConditionEvaluator($this->userSession, $groupManager, new LifecycleConditionReporting($l10n, $this->logger), $dialect), new ConditionTracer(dialect: $dialect)),
 			$this->createMock(RuleRunRecorder::class)
 		);
 
@@ -262,16 +264,10 @@ class TransitionEngineAsSystemTest extends TestCase {
 	 */
 	private function engine(): TransitionEngine {
 		return new TransitionEngine(
-			$this->objectService,
-			$this->schemaMapper,
-			$this->createMock(IEventDispatcher::class),
-			$this->userSession,
-			$this->permission,
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(IAppConfig::class),
-			$this->logger,
-			new LifecycleWriteBoundary($this->actions),
-			$this->createMock(LifecycleActionProviderRegistry::class)
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->createMock(RegisterMapper::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->createMock(IEventDispatcher::class), new LifecycleWriteBoundary($this->actions), $this->createMock(LifecycleActionProviderRegistry::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->userSession, $this->createMock(IAppConfig::class), $this->logger),
+			$this->permission
 		);
 	}//end engine()
 
@@ -422,7 +418,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 			}
 		}
 
-		$controllers = array_values(array_filter($callers, static fn (string $path): bool => str_starts_with($path, 'Controller/')));
+		$controllers = array_values(array_filter($callers, static fn (string $path): bool => preg_match('~(^|/)Controller/~', $path) === 1));
 		$this->assertSame([], $controllers, 'A controller calls transitionAsSystem().');
 		$this->assertSame([], $callers, 'OpenRegister itself has no caller of transitionAsSystem(); it is for apps.');
 	}//end testNoControllerCallsTheSystemPath()
@@ -481,10 +477,9 @@ class TransitionEngineAsSystemTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$this->createMock(IDBConnection::class),
-			$container,
 			$this->userSession,
 			$request,
-			$this->createMock(LoggerInterface::class)
+			new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class))
 		);
 	}//end auditMapper()
 }//end class

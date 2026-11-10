@@ -21,17 +21,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class MapLinkMapper
  *
  * @template-extends QBMapper<MapLink>
+ * @method list<MapLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class MapLinkMapper extends QBMapper {
+class MapLinkMapper extends QBMapper implements MapLinkMapperInterface {
+
+	use ObjectKeyLinkTrait;
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -42,40 +45,6 @@ class MapLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find map links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return MapLink[] Array of map links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
-
-	/**
-	 * Find map links by favorite id.
-	 *
-	 * @param int $favoriteId The favorite id.
-	 *
-	 * @return MapLink[] Array of map links.
-	 */
-	public function findByFavoriteId(int $favoriteId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('favorite_id', $qb->createNamedParameter($favoriteId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByFavoriteId()
-
-	/**
 	 * Find a specific map link by object UUID and favorite id.
 	 *
 	 * @param string $objectUuid The object UUID.
@@ -84,33 +53,13 @@ class MapLinkMapper extends QBMapper {
 	 * @return MapLink|null The link or null if not found.
 	 */
 	public function findByObjectAndFavorite(string $objectUuid, int $favoriteId): ?MapLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('favorite_id', $qb->createNamedParameter($favoriteId, IQueryBuilder::PARAM_INT)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'favorite_id', value: $favoriteId));
+		if ($link instanceof MapLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndFavorite()
-
-	/**
-	 * Delete all map links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a map link by object UUID + favorite id (Tier-2 unlink path).
@@ -124,11 +73,6 @@ class MapLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndFavorite(string $objectUuid, int $favoriteId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('favorite_id', $qb->createNamedParameter($favoriteId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'favorite_id', value: $favoriteId));
 	}//end deleteByObjectAndFavorite()
 }//end class

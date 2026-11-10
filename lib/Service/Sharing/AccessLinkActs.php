@@ -37,16 +37,16 @@ namespace OCA\OpenRegister\Service\Sharing;
 
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Service\ObjectFilesInterface;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 
 /**
  * The comment and the upload a link may make.
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
  */
-class AccessLinkActs {
+class AccessLinkActs implements AccessLinkActsInterface {
 
 	/**
 	 * The comment actor type a link writes under.
@@ -58,12 +58,12 @@ class AccessLinkActs {
 	/**
 	 * Constructor.
 	 *
-	 * @param NoteService $notes Writes the comment.
-	 * @param FileService $files Stores the file.
+	 * @param NoteServiceInterface $notes Writes the comment.
+	 * @param ObjectFilesInterface $files Stores the file.
 	 */
 	public function __construct(
-		private readonly NoteService $notes,
-		private readonly FileService $files,
+		private readonly NoteServiceInterface $notes,
+		private readonly ObjectFilesInterface $files,
 	) {
 
 	}//end __construct()
@@ -87,7 +87,7 @@ class AccessLinkActs {
 			message: $message,
 			actorType: self::LINK_ACTOR_TYPE,
 			actorId: $link->principalId(),
-			visibility: TimelineVisibilityService::PUBLIC_ENTRY
+			visibility: TimelineVisibilityServiceInterface::PUBLIC_ENTRY
 		);
 	}//end comment()
 
@@ -110,14 +110,8 @@ class AccessLinkActs {
 	 */
 	public function upload(AccessLink $link, ObjectEntity $object, string $fileName, string $content): array {
 		unset($link);
+		$stored = $this->files->addFile(objectEntity: $object, fileName: $fileName, content: $content, share: false);
 
-		return $this->files->formatFile(
-			$this->files->addFile(
-				objectEntity: $object,
-				fileName: $fileName,
-				content: $content,
-				share: false
-			)
-		);
+		return $this->files->formatFile($stored);
 	}//end upload()
 }//end class

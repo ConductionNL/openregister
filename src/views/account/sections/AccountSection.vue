@@ -37,11 +37,7 @@
 			@update:reason="reason = $event"
 			@update:confirmUsername="confirmUsername = $event" />
 
-		<p
-			v-if="message"
-			:class="{ section__error: isError, section__success: !isError }">
-			{{ message }}
-		</p>
+		<SectionStatus :message="message" :isError="isError" />
 	</div>
 </template>
 
@@ -50,11 +46,16 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
+import SectionStatus from '../../../components/shared/SectionStatus.vue'
 import ConfirmDeactivationModal from '../../../modals/account/ConfirmDeactivationModal.vue'
+import { sectionStatus } from '../../../composables/sectionStatus.js'
 
 export default {
 	name: 'AccountSection',
-	components: { NcButton, ConfirmDeactivationModal },
+	components: { NcButton, ConfirmDeactivationModal, SectionStatus },
+
+	mixins: [sectionStatus],
+
 	data() {
 		return {
 			status: 'active',
@@ -63,8 +64,6 @@ export default {
 			showConfirmModal: false,
 			reason: '',
 			confirmUsername: '',
-			message: '',
-			isError: false,
 		}
 	},
 
@@ -87,7 +86,7 @@ export default {
 			this.username = userRes.data?.uid || ''
 			this.status = statusRes.data?.status || 'active'
 			this.requestedAt = statusRes.data?.pendingRequest?.requestedAt || null
-		} catch (e) {
+		} catch {
 			// Default to active.
 		}
 	},
@@ -111,13 +110,12 @@ export default {
 				this.status = 'pending'
 				this.requestedAt = new Date().toISOString()
 				this.showConfirmModal = false
-				this.message = t('openregister', 'Deactivation request submitted')
-				this.isError = false
+				this.setStatus(t('openregister', 'Deactivation request submitted'))
 			} catch (e) {
-				this.message =
-					e.response?.data?.error
-					|| t('openregister', 'Failed to request deactivation')
-				this.isError = true
+				this.setStatusError(
+					e,
+					t('openregister', 'Failed to request deactivation'),
+				)
 			}
 		},
 
@@ -134,13 +132,12 @@ export default {
 				)
 				this.status = 'active'
 				this.requestedAt = null
-				this.message = t('openregister', 'Deactivation request cancelled')
-				this.isError = false
+				this.setStatus(t('openregister', 'Deactivation request cancelled'))
 			} catch (e) {
-				this.message =
-					e.response?.data?.error
-					|| t('openregister', 'Failed to cancel deactivation')
-				this.isError = true
+				this.setStatusError(
+					e,
+					t('openregister', 'Failed to cancel deactivation'),
+				)
 			}
 		},
 
@@ -159,32 +156,19 @@ export default {
 }
 </script>
 
-<style scoped>
-.section {
-	margin-bottom: 32px;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../../styles/common.scss' as *;
+@use '../../../styles/views.scss' as *;
+
+@include section;
 
 .section__field {
 	margin-bottom: 12px;
 }
 
-.section__field label {
-	display: block;
-	margin-bottom: 4px;
-	font-weight: bold;
-}
+@include section-field-label;
 
-.section__error {
-	color: var(--color-error);
-	margin-top: 8px;
-}
-
-.section__success {
-	color: var(--color-success);
-	margin-top: 8px;
-}
+@include section-error-rules;
 
 .account-section__pending {
 	background: var(--color-warning-background, #fff3cd);

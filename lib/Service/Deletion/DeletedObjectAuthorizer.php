@@ -30,9 +30,9 @@ namespace OCA\OpenRegister\Service\Deletion;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 
@@ -46,22 +46,22 @@ use OCP\IUserSession;
  * @spec openspec/specs/deletion-audit-trail/spec.md
  * @spec openspec/specs/archival-annotation-vocabulary/spec.md
  */
-class DeletedObjectAuthorizer {
+class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 	/**
 	 * Wire the RBAC and schema collaborators.
 	 *
-	 * @param SchemaMapper $schemaMapper The schema mapper.
+	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
 	 * @param IUserSession $userSession The user session.
 	 * @param IGroupManager $groupManager The group manager for admin checks.
-	 * @param PermissionHandler $permissionHandler Handler for per-schema RBAC checks.
+	 * @param PermissionCheckInterface $permissionHandler Handler for per-schema RBAC checks.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionCheckInterface $permissionHandler,
 	) {
 	}//end __construct()
 
@@ -88,7 +88,7 @@ class DeletedObjectAuthorizer {
 	 * Refuses the call (returns false) when:
 	 *  - no user is authenticated, OR
 	 *  - the object lacks a resolvable register/schema context, OR
-	 *  - PermissionHandler denies the action for the caller.
+	 *  - PermissionHandlerInterface denies the action for the caller.
 	 *
 	 * Admin users always pass. This mirrors the fail-closed write-RBAC
 	 * pattern from #1949: when register/schema context cannot be derived,
@@ -152,7 +152,7 @@ class DeletedObjectAuthorizer {
 	 *
 	 * @return bool True when the caller may read it.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function userMayReadDestructionRecord(AuditTrail $record): bool {
 		$user = $this->userSession->getUser();
@@ -179,7 +179,7 @@ class DeletedObjectAuthorizer {
 	 *
 	 * @return array<int, AuditTrail> The readable ones.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function readableDestructionRecords(array $records): array {
 		return array_values(

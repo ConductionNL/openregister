@@ -15,7 +15,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+ * @spec openspec/specs/linked-entity-types/spec.md
  */
 
 declare(strict_types=1);
@@ -187,5 +187,24 @@ final class InheritedGeoCollectorTest extends TestCase {
 
 		$this->assertCount(2, $collected['features']);
 		$this->assertSame(['Point', 'ingang'], array_column(array_column($collected['features'], 'properties'), '_purpose'));
+	}
+
+	public function testAnIntegerLikePropertyNameKeepsItsKey(): void {
+		$address = $this->object('uuid-adres', [], [
+			'type' => 'Feature',
+			'geometry' => self::POINT_ADDRESS,
+			'properties' => ['7' => 'zeven'],
+		]);
+		$case = $this->object('uuid-zaak', ['adres' => 'uuid-adres']);
+
+		$collected = $this->collector(['uuid-adres' => $address])->collect(
+			$case,
+			$this->schema([Schema::GEO_INHERITANCE_ANNOTATION => ['from' => ['adres']]])
+		);
+
+		$properties = $collected['features'][0]['properties'];
+		$this->assertSame('zeven', ($properties[7] ?? null));
+		$this->assertArrayNotHasKey(0, $properties);
+		$this->assertSame('inherited', $properties['_source']);
 	}
 }

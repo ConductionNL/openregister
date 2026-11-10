@@ -38,33 +38,42 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\ConfigurationService;
-use OCP\App\IAppManager;
-use OCP\Migration\IOutput;
-use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
-use Throwable;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 
 /**
  * Import the MDM trust-configuration register from lib/Settings.
  *
  * @psalm-suppress UnusedClass Instantiated by the NC repair framework (appinfo/info.xml).
  */
-class ImportTrustConfigurationRegister implements IRepairStep {
+class ImportTrustConfigurationRegister extends AbstractRegisterImportStep {
 
 	/**
 	 * App-relative descriptor path.
 	 *
 	 * @var string
 	 */
-	private const REGISTER_PATH = '/lib/Settings/trust_configuration_register.json';
+	protected const REGISTER_PATH = '/lib/Settings/trust_configuration_register.json';
 
 	/**
 	 * Descriptor version passed to the importer's version_compare gate.
 	 *
 	 * @var string
 	 */
-	private const REGISTER_VERSION = '1.0.0';
+	protected const REGISTER_VERSION = '1.0.0';
+
+	/**
+	 * Name of the register in the step's output lines.
+	 *
+	 * @var string
+	 */
+	protected const LABEL = 'Trust-configuration';
+
+	/**
+	 * Output line after a successful import.
+	 *
+	 * @var string
+	 */
+	protected const IMPORTED = 'MDM trust-configuration register imported (trustConfiguration)';
 
 	/**
 	 * Configuration identity for the descriptor (its own appId so the
@@ -72,24 +81,7 @@ class ImportTrustConfigurationRegister implements IRepairStep {
 	 *
 	 * @var string
 	 */
-	private const CONFIG_APP_ID = 'openregister.trust-configuration';
-
-	/**
-	 * Constructor.
-	 *
-	 * @param ConfigurationService $configurationService The OR configuration importer.
-	 * @param IAppManager $appManager Resolves the openregister app path on disk.
-	 * @param LoggerInterface $logger Logger for import diagnostics.
-	 *
-	 * @return void
-	 */
-	public function __construct(
-		private readonly ConfigurationService $configurationService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
-	) {
-
-	}//end __construct()
+	protected const CONFIG_APP_ID = DescriptorConfigIdsInterface::TRUST_CONFIGURATION;
 
 	/**
 	 * Get the name of this repair step.
@@ -99,39 +91,4 @@ class ImportTrustConfigurationRegister implements IRepairStep {
 	public function getName(): string {
 		return 'Import OpenRegister MDM trust-configuration register (source trust tiers for survivorship)';
 	}//end getName()
-
-	/**
-	 * Run the repair step, importing the trust-configuration register descriptor.
-	 *
-	 * @param IOutput $output Output interface for status messages.
-	 *
-	 * @return void
-	 */
-	public function run(IOutput $output): void {
-		try {
-			$path = $this->appManager->getAppPath('openregister') . self::REGISTER_PATH;
-			if (is_file($path) === false) {
-				$output->warning('Trust-configuration register descriptor not found: ' . $path);
-				return;
-			}
-
-			$data = json_decode((string)file_get_contents($path), true);
-			if (is_array($data) === false) {
-				$output->warning('Trust-configuration register descriptor is not valid JSON: ' . $path);
-				return;
-			}
-
-			$this->configurationService->importFromApp(
-				appId: self::CONFIG_APP_ID,
-				data: $data,
-				version: self::REGISTER_VERSION,
-				force: false
-			);
-
-			$output->info('MDM trust-configuration register imported (trustConfiguration)');
-		} catch (Throwable $e) {
-			$this->logger->warning('[ImportTrustConfigurationRegister] import failed: ' . $e->getMessage());
-			$output->warning('Trust-configuration register import skipped: ' . $e->getMessage());
-		}//end try
-	}//end run()
 }//end class

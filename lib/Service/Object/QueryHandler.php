@@ -20,16 +20,15 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use ArrayObject;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\Search\HistoryNarrowing;
 use OCA\OpenRegister\Service\Search\HistoryPredicate;
 use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\IAppContainer;
-use OCP\IRequest;
-use Psr\Log\LoggerInterface;
 
 /**
  * Handles all query and search operations for ObjectService.
@@ -38,7 +37,6 @@ use Psr\Log\LoggerInterface;
  * - find(), findSilent(), findAll(), count()
  * - searchObjects(), searchObjectsPaginated()
  * - Async and sync pagination
- * - Solr vs Database routing
  * - Performance optimizations
  *
  * @category Service
@@ -57,13 +55,20 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Query methods handle complex operations that benefit from cohesion
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class QueryHandler {
+class QueryHandler implements QueryHandlerInterface {
 	/**
-	 * Hard maximum page size for list/search requests. A client-supplied
-	 * `_limit` above this is clamped down, so an oversized request (e.g.
-	 * `_limit=1000000`) cannot force an unbounded result load (DoS/OOM).
+	 * What a search answers when history left nothing to search in.
+	 *
+	 * @var array<string, mixed>
 	 */
-	public const MAX_PAGE_SIZE = 1000;
+	private const NO_SEARCH_RESULT = [
+		'results'        => [],
+		'total'          => 0,
+		'registers'      => [],
+		'schemas'        => [],
+		'ignoredFilters' => [],
+		'source'         => 'database',
+	];
 
 	/**
 	 * Page size a list/search request gets when it asks for none.
@@ -81,16 +86,13 @@ class QueryHandler {
 	/**
 	 * Constructor for QueryHandler.
 	 *
-	 * @param MagicMapper $objectMapper Unified mapper for objects.
-	 * @param GetObject $getHandler Get handler.
+	 * @param MagicMapperInterface $objectMapper Unified mapper for objects.
 	 * @param RenderObject $renderHandler Render handler.
 	 * @param SearchQueryHandler $searchQueryHandler Search handler.
 	 * @param FacetHandler $facetHandler Facet handler.
 	 * @param PerformanceOptimizationHandler $performanceHandler Performance handler.
 	 * @param ContentSearchHandler $contentSearchHandler Opt-in `_content_search` chunk fan-out handler.
 	 * @param IAppContainer $container App container.
-	 * @param LoggerInterface $logger Logger.
-	 * @param IRequest $request Request object.
 	 * @param HistoryNarrowing|null $historyNarrowing Resolves a history predicate to the ids the query keeps.
 	 * @param SearchDictionaryProvider|null $dictionary The administered synonym and stopword dictionary.
 	 * @param SearchReferenceResolver|null $referenceResolver Resolves a register/schema slug or uuid on a ready-made query.
@@ -100,16 +102,13 @@ class QueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
-		private readonly GetObject $getHandler,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly RenderObject $renderHandler,
 		private readonly SearchQueryHandler $searchQueryHandler,
 		private readonly FacetHandler $facetHandler,
 		private readonly PerformanceOptimizationHandler $performanceHandler,
 		private readonly ContentSearchHandler $contentSearchHandler,
 		private readonly IAppContainer $container,
-		private readonly LoggerInterface $logger,
-		private readonly IRequest $request,
 		// LAST AND NULLABLE on purpose: every existing construction of this
 		// handler, in production wiring and in tests, keeps working unchanged.
 		private readonly ?HistoryNarrowing $historyNarrowing = null,
@@ -251,7 +250,7 @@ class QueryHandler {
 		$query = $this->normaliseReferences(query: $query);
 
 		// Apply view filters if provided.
-		if ($views !== null && empty($views) === false) {
+		if (empty($views) === false) {
 			$query = $this->searchQueryHandler->applyViewsToQuery(
 				query: $query,
 				viewIds: $views,
@@ -262,78 +261,39 @@ class QueryHandler {
 			throw new Exception('Refusing a view-scoped search without a view to scope it by.');
 		}
 
-		// Detect if complex rendering is needed (extend, fields, filter, unset).
-		$hasComplexRendering = empty($query['_extend'] ?? []) === false
-			|| empty($query['_fields'] ?? null) === false
-			|| empty($query['_filter'] ?? null) === false
-			|| empty($query['_unset'] ?? null) === false;
-
-		// Get active organization context for multi-tenancy.
-		$activeOrgUuid = null;
-		if ($_multitenancy === true) {
-			$activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
-		}
-
 		// Execute database search.
 		$result = $this->objectMapper->searchObjects(
 			query: $query,
-			_activeOrgUuid: $activeOrgUuid,
+			_activeOrgUuid: $this->activeOrganisation(multitenancy: $_multitenancy),
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
 			ids: $ids,
 			uses: $uses
 		);
 
-		// If _count is requested, return count instead of objects.
-		if (($query['_count'] ?? false) === true || ($query['_count'] ?? false) === 'true') {
-			return count($result);
-		}
-
-		// Check if any result object has a schema with property-level authorization.
-		// If yes, we need to render to filter unauthorized properties.
-		if ($hasComplexRendering === false && is_array($result) === true && empty($result) === false) {
-			$schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
-			$checkedSchemas = [];
-			foreach ($result as $object) {
-				$schemaId = $object->getSchema();
-				if (isset($checkedSchemas[$schemaId]) === true) {
-					if ($checkedSchemas[$schemaId] === true) {
-						$hasComplexRendering = true;
-						break;
-					}
-
-					continue;
-				}
-
-				try {
-					$schema = $schemaMapper->find($schemaId);
-					$checkedSchemas[$schemaId] = $schema->hasPropertyAuthorization();
-					if ($checkedSchemas[$schemaId] === true) {
-						$hasComplexRendering = true;
-						break;
-					}
-				} catch (\Exception $e) {
-					$checkedSchemas[$schemaId] = false;
-				}
-			}//end foreach
-		}//end if
-
-		// Return early if no complex rendering is needed.
-		if ($hasComplexRendering === false) {
-			return $result;
-		}
-
-		// Apply complex rendering (extend, fields, filter, unset).
-		return $this->renderHandler->renderEntities(
-			entities: $result,
-			_extend: $query['_extend'] ?? [],
-			_filter: $query['_filter'] ?? null,
-			_fields: $query['_fields'] ?? null,
-			_unset: $query['_unset'] ?? null,
-			_rbac: $_rbac,
-			_multitenancy: $_multitenancy
+		$shaper = new SearchResultShaper(renderHandler: $this->renderHandler, container: $this->container);
+		return $shaper->shape(
+			result: $result,
+			request: new SearchRenderRequest(query: $query, rbac: $_rbac, multitenancy: $_multitenancy)
 		);
 	}//end searchObjects()
+
+	/**
+	 * The active organisation a search is scoped to, or null without multitenancy.
+	 *
+	 * @param bool $multitenancy Whether multitenancy filtering applies.
+	 *
+	 * @return string|null The organisation uuid of the session context.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function activeOrganisation(bool $multitenancy): ?string {
+		if ($multitenancy === false) {
+			return null;
+		}
+
+		return $this->performanceHandler->getActiveOrganisationForContext();
+	}//end activeOrganisation()
 
 	/**
 	 * Search objects with pagination (main entry point).
@@ -370,7 +330,7 @@ class QueryHandler {
 		?array $views = null,
 	): array {
 		// Apply view filters if provided.
-		if ($views !== null && empty($views) === false) {
+		if (empty($views) === false) {
 			$query = $this->searchQueryHandler->applyViewsToQuery(query: $query, viewIds: $views);
 		}
 
@@ -427,347 +387,332 @@ class QueryHandler {
 		?string $uses = null,
 	): array {
 		$startTime = microtime(true);
-		$metrics = [];
+		$metrics   = self::newMetrics();
 
 		// Same seam as searchObjects(): a register or schema reference that
 		// names nothing is refused here, never answered with an empty page.
 		$query = $this->normaliseReferences(query: $query);
 
-		// Extract pagination parameters (limit=0 is valid for count/facets-only requests).
-		// Clamp to MAX_PAGE_SIZE so an oversized `_limit` cannot force an unbounded load.
-		$limit = min(max(0, (int)($query['_limit'] ?? self::DEFAULT_PAGE_SIZE)), self::MAX_PAGE_SIZE);
-		$offset = $query['_offset'] ?? null;
-		$page = $query['_page'] ?? null;
-
-		// Calculate offset from page if provided.
-		if ($page !== null && $offset === null) {
-			$page = max(1, (int)$page);
-			$offset = ($page - 1) * $limit;
-		}
-
-		// Calculate page from offset if not provided (avoid division by zero).
-		if ($page === null && $offset !== null && $limit > 0) {
-			$page = (int)floor($offset / $limit) + 1;
-		}
-
-		// Default values.
-		$page = $page ?? 1;
-		$offset = $offset ?? 0;
-
-		// Prepare paginated query (remove pagination params for count query).
-		$paginatedQuery = array_merge($query, ['_limit' => $limit, '_offset' => $offset]);
-		unset($paginatedQuery['_page'], $paginatedQuery['_facetable'], $paginatedQuery['_extend']);
-
-		$countQuery = $query;
-		unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable'], $countQuery['_extend']);
-
-		// A history predicate is answered from the projection and applied as a
-		// NARROWING of the id set, never as a second result source: the query
-		// below is the one that enforces RBAC, tenant isolation and the
-		// published predicate, and an id set can only take objects away from
-		// what it already allows.
-		//
-		// The two filter keys are removed from both queries. Left in, they are
-		// unknown parameters that the search path reads as PROPERTY filters,
-		// and a property nothing has matches nothing — a wrong answer that
-		// looks exactly like a right one.
+		$paging           = new SearchPaging();
+		$reports          = new SearchResponseReports();
+		$window           = $paging->window(query: $query);
 		$historyPredicate = HistoryPredicate::parse(query: $query);
-		$historyNarrowed = false;
-		unset(
-			$paginatedQuery[HistoryPredicate::WAS_EVER],
-			$paginatedQuery[HistoryPredicate::CHANGED_BETWEEN],
-			$countQuery[HistoryPredicate::WAS_EVER],
-			$countQuery[HistoryPredicate::CHANGED_BETWEEN]
-		);
+		$expansion        = $this->expandSearchTerm(query: $query);
+		$queries          = self::withExpandedTerm(queries: $paging->queries(query: $query, window: $window), expansion: $expansion);
 
-		// The administered dictionary rewrites the TERM before it travels, so a
-		// change an administrator makes takes effect on the next search with no
-		// index to rebuild (ADR-007). A term already carrying operators is left
-		// exactly as typed: the person has said precisely what they want, and
-		// splicing synonyms into their brackets would answer a question they
-		// did not ask.
-		$expansion = $this->expandSearchTerm(query: $query);
+		$scope = ['rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'ids' => $ids, 'uses' => $uses];
+		$scope = $this->narrowByHistory(predicate: $historyPredicate, scope: $scope, metrics: $metrics);
+
+		$searchResult = $this->searchDatabase(queries: $queries, scope: $scope, metrics: $metrics);
+		$searchResult = $this->widenWithContentMatches(query: $query, searchResult: $searchResult, scope: $scope + $window, metrics: $metrics);
+		$results      = $this->renderListRows(query: $query, searchResult: $searchResult, scope: $scope, metrics: $metrics);
+
+		$paginatedResults = $paging->response(results: $results, searchResult: $searchResult, window: $window);
+		$paginatedResults['@self'] += $reports->searchReports(query: $query, historyPredicate: $historyPredicate, expansion: $expansion);
+		$paginatedResults['@self'] += $reports->requestedRegistersAndSchemas(query: $query, searchResult: $searchResult);
+		$paginatedResults['@self'] += $reports->ignoredFilterReport(ignoredFilters: $searchResult['ignoredFilters'] ?? []);
+		$paginatedResults           = $this->withFacets(query: $query, countQuery: $queries['count'], response: $paginatedResults, metrics: $metrics);
+
+		// Always add performance metrics to @self for debugging.
+		$metrics['total'] = round((microtime(true) - $startTime) * 1000, 2);
+		$paginatedResults['@self']['metrics'] = $metrics->getArrayCopy();
+
+		return $paginatedResults;
+	}//end searchObjectsPaginatedDatabase()
+
+	/**
+	 * An empty collector for the timings of one search, keyed by step.
+	 *
+	 * @return ArrayObject<string, mixed>
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
+	 */
+	private static function newMetrics(): ArrayObject {
+		return new ArrayObject();
+	}//end newMetrics()
+
+	/**
+	 * The queries with the search term the administered dictionary rewrote (ADR-007).
+	 *
+	 * @param array{search: array, count: array}                          $queries   The page and count queries
+	 * @param \OCA\OpenRegister\Service\Search\DictionaryExpansion|null $expansion The expansion, if any
+	 *
+	 * @return array{search: array, count: array}
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	private static function withExpandedTerm(array $queries, ?\OCA\OpenRegister\Service\Search\DictionaryExpansion $expansion): array {
 		if ($expansion !== null && $expansion->changed() === true) {
-			$paginatedQuery['_search'] = $expansion->term();
-			$countQuery['_search'] = $expansion->term();
+			$queries['search']['_search'] = $expansion->term();
+			$queries['count']['_search']  = $expansion->term();
 		}
 
-		if ($historyPredicate->narrows() === true && $this->historyNarrowing !== null) {
-			$historyStart = microtime(true);
-			$ids = $this->historyNarrowing->narrow(predicate: $historyPredicate, ids: $ids);
-			$historyNarrowed = ($ids === []);
-			$metrics['history'] = round((microtime(true) - $historyStart) * 1000, 2);
+		return $queries;
+	}//end withExpandedTerm()
+
+	/**
+	 * Narrow the id set by the history predicate, and resolve the active organisation.
+	 *
+	 * The narrowing only takes objects away from what the search allows; the
+	 * search still enforces RBAC, tenant isolation and the published predicate.
+	 * An empty narrowed set is marked `narrowedToNothing`, because an empty id
+	 * set passed on would read as "no id filter" and answer the whole register.
+	 *
+	 * @param HistoryPredicate $predicate The parsed history predicate
+	 * @param array            $scope     rbac, multitenancy, ids and uses of the search
+	 * @param ArrayObject     $metrics   Collects timings
+	 *
+	 * @return array The scope with `ids`, `narrowedToNothing` and `activeOrgUuid` set
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	private function narrowByHistory(HistoryPredicate $predicate, array $scope, ArrayObject $metrics): array {
+		$scope['narrowedToNothing'] = false;
+		if ($predicate->narrows() === true && $this->historyNarrowing !== null) {
+			$historyStart               = microtime(true);
+			$scope['ids']               = $this->historyNarrowing->narrow(predicate: $predicate, ids: $scope['ids']);
+			$scope['narrowedToNothing'] = ($scope['ids'] === []);
+			$metrics['history']         = round((microtime(true) - $historyStart) * 1000, 2);
 		}
 
-		// Get active organization context for multi-tenancy.
-		$activeOrgUuid = null;
-		if ($_multitenancy === true) {
-			$activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
+		$scope['activeOrgUuid'] = null;
+		if ($scope['multitenancy'] === true) {
+			$scope['activeOrgUuid'] = $this->performanceHandler->getActiveOrganisationForContext();
 		}
 
-		// Use optimized combined search+count that loads register/schema once.
-		$searchStart = microtime(true);
-		// The history predicate left no candidates. An EMPTY id set is not the
-		// same instruction as no id set: passed on, it is read as "no id
-		// filter" and would answer with the whole register. So the search is
-		// not issued at all.
-		$searchResult = [
-			'results' => [],
-			'total' => 0,
-			'registers' => [],
-			'schemas' => [],
-			'ignoredFilters' => [],
-			'source' => 'database',
-		];
+		return $scope;
+	}//end narrowByHistory()
 
-		if ($historyNarrowed === false) {
+	/**
+	 * Run the combined search and count, or answer an empty page when history left no candidates.
+	 *
+	 * @param array{search: array, count: array} $queries The page and count queries
+	 * @param array                              $scope   The narrowed search scope
+	 * @param ArrayObject                       $metrics Collects timings
+	 *
+	 * @return array The mapper's search result
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
+	 */
+	private function searchDatabase(array $queries, array $scope, ArrayObject $metrics): array {
+		$searchStart  = microtime(true);
+		$searchResult = self::NO_SEARCH_RESULT;
+		if ($scope['narrowedToNothing'] === false) {
 			$searchResult = $this->objectMapper->searchObjectsPaginated(
-				searchQuery: $paginatedQuery,
-				countQuery: $countQuery,
-				_activeOrgUuid: $activeOrgUuid,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy,
-				ids: $ids,
-				uses: $uses
+				searchQuery: $queries['search'],
+				countQuery: $queries['count'],
+				_activeOrgUuid: $scope['activeOrgUuid'],
+				_rbac: $scope['rbac'],
+				_multitenancy: $scope['multitenancy'],
+				ids: $scope['ids'],
+				uses: $scope['uses']
 			);
 		}
 
 		$metrics['search'] = round((microtime(true) - $searchStart) * 1000, 2);
+		self::recordMapperMetrics(searchResult: $searchResult, metrics: $metrics);
 
-		$results = $searchResult['results'];
-		$total = $searchResult['total'];
-		$registers = $searchResult['registers'] ?? [];
-		$schemas = $searchResult['schemas'] ?? [];
-		$ignoredFilters = $searchResult['ignoredFilters'] ?? [];
-		$source = $searchResult['source'] ?? 'database';
+		return $searchResult;
+	}//end searchDatabase()
 
-		// Include detailed metrics from mapper if available.
+	/**
+	 * Copy the timings a mapper reports into the metrics.
+	 *
+	 * @param array       $searchResult The mapper's answer.
+	 * @param ArrayObject $metrics      The metrics.
+	 *
+	 * @return void
+	 */
+	private static function recordMapperMetrics(array $searchResult, ArrayObject $metrics): void {
 		if (isset($searchResult['metrics']) === true) {
 			$metrics['db_search'] = $searchResult['metrics']['search_ms'] ?? null;
-			$metrics['db_count'] = $searchResult['metrics']['count_ms'] ?? null;
+			$metrics['db_count']  = $searchResult['metrics']['count_ms'] ?? null;
+		}
+	}//end recordMapperMetrics()
+
+	/**
+	 * Widen the result with objects whose chunk text matches `_search`, when `_content_search` asks for it.
+	 *
+	 * Opt-in (ZKN-CONTENT-001): without it no query touches openregister_chunks.
+	 * It runs before rendering so appended rows get the same `_extend`/`_fields`
+	 * treatment (ZKN-CONTENT-003).
+	 *
+	 * @param array        $query        The search query
+	 * @param array        $searchResult The mapper's search result
+	 * @param array        $scope        The search scope plus the pagination window
+	 * @param ArrayObject $metrics      Collects timings
+	 *
+	 * @return array The search result with `results` and `total` widened
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
+	 */
+	private function widenWithContentMatches(array $query, array $searchResult, array $scope, ArrayObject $metrics): array {
+		if (filter_var($query['_content_search'] ?? false, FILTER_VALIDATE_BOOLEAN) === false) {
+			return $searchResult;
 		}
 
-		// Opt-in `_content_search` fan-out (ZKN-CONTENT-001): widen the metadata-match
-		// result set with objects whose attached-file (or object) chunk body text
-		// matches `_search`. Absent or false is byte-identical to pre-change behaviour —
-		// no additional query is issued against openregister_chunks. Runs BEFORE the
-		// render/extend pipeline below so appended rows get the same `_extend`/`_fields`
-		// treatment as metadata-match rows (ZKN-CONTENT-003).
-		if (filter_var($query['_content_search'] ?? false, FILTER_VALIDATE_BOOLEAN) === true) {
-			$contentSearchStart = microtime(true);
-			$augmented = $this->contentSearchHandler->augmentWithChunkMatches(
-				query: $query,
-				results: $results,
-				total: $total,
-				limit: $limit,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy,
-				offset: $offset,
-				activeOrgUuid: $activeOrgUuid
-			);
-			$results = $augmented['results'];
-			$total = $augmented['total'];
-			$metrics['content_search'] = round((microtime(true) - $contentSearchStart) * 1000, 2);
+		$contentSearchStart = microtime(true);
+		$augmented          = $this->contentSearchHandler->augmentWithChunkMatches(
+			query: $query,
+			results: $searchResult['results'],
+			total: $searchResult['total'],
+			limit: $scope['limit'],
+			_rbac: $scope['rbac'],
+			_multitenancy: $scope['multitenancy'],
+			offset: $scope['offset'],
+			activeOrgUuid: $scope['activeOrgUuid']
+		);
+		$searchResult['results']   = $augmented['results'];
+		$searchResult['total']     = $augmented['total'];
+		$metrics['content_search'] = round((microtime(true) - $contentSearchStart) * 1000, 2);
+
+		return $searchResult;
+	}//end widenWithContentMatches()
+
+	/**
+	 * Render the rows when the request or a schema needs it, otherwise take the cheap path.
+	 *
+	 * Rendering is needed for `_extend` (other than the schema and register,
+	 * which the response carries at `@self` level), `_fields`, `_filter`,
+	 * `_unset`, property-level authorization or a lens.
+	 *
+	 * @param array        $query        The search query
+	 * @param array        $searchResult The search result
+	 * @param array        $scope        The search scope
+	 * @param ArrayObject $metrics      Collects timings
+	 *
+	 * @return mixed The rows
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
+	 */
+	private function renderListRows(array $query, array $searchResult, array $scope, ArrayObject $metrics): mixed {
+		$results       = $searchResult['results'];
+		$extend        = self::rowExtend(query: $query);
+		$renderNeed    = new SearchRenderNeed();
+		$needsRender   = $renderNeed->asked(query: $query, extend: $extend) || $renderNeed->declaredBy(schemas: ($searchResult['schemas'] ?? []));
+		if (is_array($results) === false) {
+			return $results;
 		}
 
-		// Detect if complex rendering is needed (extend, fields, filter, unset).
-		// Skip @self.register and @self.schema from extend since we include them in response @self.
+		if ($needsRender === false) {
+			$this->prepareCheapRows(results: $results, rbac: $scope['rbac'], metrics: $metrics);
+			return $results;
+		}
+
+		$renderStart = microtime(true);
+		$results     = $this->renderHandler->renderEntities(
+			entities: $results,
+			_extend: $extend,
+			_filter: $query['_filter'] ?? null,
+			_fields: $query['_fields'] ?? null,
+			_unset: $query['_unset'] ?? null,
+			_rbac: $scope['rbac'],
+			_multitenancy: $scope['multitenancy']
+		);
+		$metrics['render'] = round((microtime(true) - $renderStart) * 1000, 2);
+
+		return $results;
+	}//end renderListRows()
+
+	/**
+	 * The `_extend` list for the rows, without the schema and register the response carries itself.
+	 *
+	 * @param array $query The search query
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
+	 */
+	private static function rowExtend(array $query): array {
 		$extend = $query['_extend'] ?? [];
 		if (is_string($extend) === true) {
 			$extend = array_filter(array_map('trim', explode(',', $extend)));
 		}
 
-		// Remove schema and register extensions from extend - we provide them at response level.
-		// This prevents slow per-object extension; instead we batch-load once for all results.
-		// Supports multiple formats: @self.schema, @self.register, _schema, _register.
-		$extend = array_filter(
+		return array_filter(
 			$extend,
 			function (string $item): bool {
 				return !in_array($item, ['@self.schema', '@self.register', '_schema', '_register'], true);
 			}
 		);
+	}//end rowExtend()
 
-		// Check if any schema has property-level authorization.
-		// If yes, we need to render to filter unauthorized properties.
-		// Schemas may be Entity objects or serialized arrays from MagicMapper.
-		$hasPropAuth = false;
-		foreach ($schemas as $schema) {
-			if ($schema instanceof \OCA\OpenRegister\Db\Schema
-				&& $schema->hasPropertyAuthorization() === true
-			) {
-				$hasPropAuth = true;
-				break;
-			} elseif (is_array($schema) === true && isset($schema['properties']) === true) {
-				foreach ($schema['properties'] as $propertyConfig) {
-					if (is_array($propertyConfig) === true
-						&& isset($propertyConfig['authorization']) === true
-						&& empty($propertyConfig['authorization']) === false
-					) {
-						$hasPropAuth = true;
-						break 2;
-					}
-				}
-			}
+	/**
+	 * The cheap path for rows that skip renderEntities().
+	 *
+	 * Every list row must still carry `@self.files` (one batched lookup), have
+	 * its translatable properties projected to the negotiated language, and
+	 * have write-only properties redacted (openregister#380, ocon#147), so a
+	 * list read never shows what a single-object read would strip.
+	 *
+	 * @param array        $results The rows, modified in place
+	 * @param bool         $rbac    Whether access control applies
+	 * @param ArrayObject $metrics Collects timings
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The rbac flag gates the redaction
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
+	 */
+	private function prepareCheapRows(array &$results, bool $rbac, ArrayObject $metrics): void {
+		$filesStart = microtime(true);
+		$this->renderHandler->attachLightweightFilesToRows(rows: $results);
+		$metrics['lightweightFiles'] = round((microtime(true) - $filesStart) * 1000, 2);
+
+		$translateStart = microtime(true);
+		$this->renderHandler->resolveTranslationsForRows(rows: $results);
+		$metrics['translations'] = round((microtime(true) - $translateStart) * 1000, 2);
+
+		$redactStart = microtime(true);
+		$this->renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
+		$metrics['writeOnlyRedaction'] = round((microtime(true) - $redactStart) * 1000, 2);
+	}//end prepareCheapRows()
+
+	/**
+	 * Add facets and facetable fields when the query asks for them.
+	 *
+	 * @param array        $query      The search query
+	 * @param array        $countQuery The count query, which facets are computed over
+	 * @param array        $response   The response so far
+	 * @param ArrayObject $metrics    Collects timings
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
+	 */
+	private function withFacets(array $query, array $countQuery, array $response, ArrayObject $metrics): array {
+		if (empty($query['_facets']) === false) {
+			$response['facets'] = $this->facetResults(countQuery: $countQuery, metrics: $metrics);
 		}
 
-		$hasComplexRendering = empty($extend) === false
-			|| empty($query['_fields'] ?? null) === false
-			|| empty($query['_filter'] ?? null) === false
-			|| empty($query['_unset'] ?? null) === false
-			|| $hasPropAuth === true;
-
-		// Apply complex rendering if needed.
-		if ($hasComplexRendering === true && is_array($results) === true) {
-			$renderStart = microtime(true);
-			$results = $this->renderHandler->renderEntities(
-				entities: $results,
-				_extend: $extend,
-				_filter: $query['_filter'] ?? null,
-				_fields: $query['_fields'] ?? null,
-				_unset: $query['_unset'] ?? null,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy
-			);
-			$metrics['render'] = round((microtime(true) - $renderStart) * 1000, 2);
-		} elseif ($hasComplexRendering === false && is_array($results) === true) {
-			// Cheap path: rows did not go through renderEntities, so @self.files is
-			// absent or stale. Per the files-render-extension capability, every list
-			// row MUST carry @self.files (lightweight ID list by default). Issue a
-			// single batched FileMapper lookup and attach IDs to each row.
-			$filesStart = microtime(true);
-			$this->renderHandler->attachLightweightFilesToRows(rows: $results);
-			$metrics['lightweightFiles'] = round((microtime(true) - $filesStart) * 1000, 2);
-
-			// Cheap path also skips renderEntity, which is where translatable
-			// properties get projected to the negotiated language. Without this,
-			// list rows return raw language-keyed maps (e.g. {"nl":...}) while the
-			// single-object read returns a projected string. Resolve them here so
-			// both paths agree. No-op for `?_translations=all` and for schemas with
-			// no translatable properties (both early-return in the handler).
-			$translateStart = microtime(true);
-			$this->renderHandler->resolveTranslationsForRows(rows: $results);
-			$metrics['translations'] = round((microtime(true) - $translateStart) * 1000, 2);
-
-			// Cheap path also skips renderEntity, which is where write-only properties are
-			// redacted (openregister#380, ocon#147). Without this, a LIST read returns
-			// secrets that a single-object read would strip — and the OpenConnector leak
-			// was exactly a list read. Apply the same redaction to the raw rows here.
-			$redactStart = microtime(true);
-			$this->renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $_rbac);
-			$metrics['writeOnlyRedaction'] = round((microtime(true) - $redactStart) * 1000, 2);
-		}//end if
-
-		// Calculate total pages (avoid division by zero when limit=0).
-		$pages = 0;
-		if ($limit > 0) {
-			$pages = max(1, (int)ceil($total / $limit));
+		if (($query['_facetable'] ?? false) === true || ($query['_facetable'] ?? false) === 'true') {
+			$facetableStart        = microtime(true);
+			$response['facetable'] = $this->facetHandler->getFacetableFields(baseQuery: $countQuery, _sampleSize: 100);
+			$metrics['facetable']  = round((microtime(true) - $facetableStart) * 1000, 2);
 		}
 
-		// Build result structure with registers/schemas indexed by ID at response @self level.
-		$paginatedResults = [
-			'results' => $results,
-			'total' => $total,
-			'page' => $page,
-			'pages' => $pages,
-			'limit' => $limit,
-			'offset' => $offset,
-			'facets' => [],
-			'@self' => [
-				'source' => $source,
-			],
-		];
+		return $response;
+	}//end withFacets()
 
-		// Say what the history filter was understood to mean. A result nobody
-		// expected should carry its own reason, and a filter that did not read
-		// says so here instead of quietly doing nothing.
-		if ($historyPredicate->narrows() === true || $historyPredicate->unparsed() !== []) {
-			$paginatedResults['@self']['history'] = $historyPredicate->jsonSerialize();
+	/**
+	 * The facets of a search, timed.
+	 *
+	 * @param array       $countQuery The query without paging.
+	 * @param ArrayObject $metrics    The metrics.
+	 *
+	 * @return array The facets.
+	 */
+	private function facetResults(array $countQuery, ArrayObject $metrics): array {
+		$facetStart        = microtime(true);
+		$facetResult       = $this->facetHandler->getFacetsForObjects($countQuery);
+		$metrics['facets'] = round((microtime(true) - $facetStart) * 1000, 2);
+		if (isset($facetResult['performance_metadata']['facet_db_ms']) === true) {
+			$metrics['facets_breakdown'] = $facetResult['performance_metadata']['facet_db_ms'];
 		}
 
-		// Expansion is the one search feature that returns rows the searcher
-		// did not ask for. Unreported, that reads as a broken search and the
-		// person has no way to discover that an administrator taught it a word.
-		if ($expansion !== null && $expansion->isReportable() === true) {
-			$paginatedResults['@self']['dictionary'] = $expansion->jsonSerialize();
-		}
-
-		// Add registers and schemas indexed by ID to response @self.
-		// Only include when explicitly requested via _extend parameter.
-		// Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
-		$extend = $query['_extend'] ?? [];
-		if (is_string($extend) === true) {
-			$extend = explode(',', $extend);
-		}
-
-		// Check for register extension - supports multiple formats.
-		$wantsRegisters = in_array('_registers', $extend, true) === true
-			|| in_array('_register', $extend, true) === true
-			|| in_array('@self.registers', $extend, true) === true
-			|| in_array('@self.register', $extend, true) === true;
-		if ($wantsRegisters === true && empty($registers) === false) {
-			$paginatedResults['@self']['registers'] = $registers;
-		}
-
-		// Check for schema extension - supports multiple formats.
-		$wantsSchemas = in_array('_schemas', $extend, true) === true
-			|| in_array('_schema', $extend, true) === true
-			|| in_array('@self.schemas', $extend, true) === true
-			|| in_array('@self.schema', $extend, true) === true;
-		if ($wantsSchemas === true && empty($schemas) === false) {
-			$paginatedResults['@self']['schemas'] = $schemas;
-		}
-
-		// Add ignored filters to @self if any filters were ignored.
-		// This helps clients understand why they might be getting unexpected results.
-		if (empty($ignoredFilters) === false) {
-			$paginatedResults['@self']['ignoredFilters'] = $ignoredFilters;
-
-			// Check if any ignored filters look like control parameters missing the _ prefix.
-			$controlParams = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'filter', 'unset'];
-			$mistakenParams = array_intersect($ignoredFilters, $controlParams);
-			if (empty($mistakenParams) === false) {
-				$suggestions = array_map(fn ($param) => "_{$param}", $mistakenParams);
-				$paramList = implode(', ', $mistakenParams);
-				$sugList = implode(', ', $suggestions);
-				$msg1 = 'Query returned 0 results because ' . $paramList;
-				$msg2 = ' was treated as a property filter.';
-				$msg3 = ' Did you mean ' . $sugList;
-				$hint = $msg1 . $msg2 . $msg3 . '? Control params require underscore prefix.';
-				$paginatedResults['@self']['hint'] = $hint;
-			}
-		}
-
-		// Add facets if requested.
-		$hasFacets = empty($query['_facets']) === false;
-		$hasFacetable = ($query['_facetable'] ?? false) === true || ($query['_facetable'] ?? false) === 'true';
-
-		if ($hasFacets === true) {
-			$facetStart = microtime(true);
-			$facetResult = $this->facetHandler->getFacetsForObjects($countQuery);
-			$paginatedResults['facets'] = $facetResult['facets'] ?? [];
-			$metrics['facets'] = round((microtime(true) - $facetStart) * 1000, 2);
-
-			// Include per-facet timing breakdown if available.
-			if (isset($facetResult['performance_metadata']['facet_db_ms']) === true) {
-				$metrics['facets_breakdown'] = $facetResult['performance_metadata']['facet_db_ms'];
-			}
-		}
-
-		if ($hasFacetable === true) {
-			$facetableStart = microtime(true);
-			$paginatedResults['facetable'] = $this->facetHandler->getFacetableFields(
-				baseQuery: $countQuery,
-				_sampleSize: 100
-			);
-			$metrics['facetable'] = round((microtime(true) - $facetableStart) * 1000, 2);
-		}
-
-		// Always add performance metrics to @self for debugging.
-		$metrics['total'] = round((microtime(true) - $startTime) * 1000, 2);
-		$paginatedResults['@self']['metrics'] = $metrics;
-
-		return $paginatedResults;
-	}//end searchObjectsPaginatedDatabase()
+		return ($facetResult['facets'] ?? []);
+	}//end facetResults()
 
 	/**
 	 * Rewrite a plain search term through the administered dictionary.
@@ -789,16 +734,8 @@ class QueryHandler {
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	private function expandSearchTerm(array $query): ?\OCA\OpenRegister\Service\Search\DictionaryExpansion {
-		if ($this->dictionary === null) {
-			return null;
-		}
-
-		$term = ($query['_search'] ?? null);
-		if (is_string($term) === false || trim($term) === '') {
-			return null;
-		}
-
-		if ((new SearchTermParser())->needsParsing(term: trim($term)) === true) {
+		$term = self::plainSearchTerm(query: $query);
+		if ($this->dictionary === null || $term === null) {
 			return null;
 		}
 
@@ -808,9 +745,30 @@ class QueryHandler {
 		}
 
 		return $dictionary->expand(
-			term: trim($term),
+			term: $term,
 			perGroupCap: $this->dictionary->perGroupCap(),
 			perQueryCap: $this->dictionary->perQueryCap()
 		);
 	}//end expandSearchTerm()
+
+	/**
+	 * The search term, when it is plain words a dictionary can expand.
+	 *
+	 * @param array $query The query.
+	 *
+	 * @return string|null The trimmed term.
+	 */
+	private static function plainSearchTerm(array $query): ?string {
+		$term = ($query['_search'] ?? null);
+		if (is_string($term) === false || trim($term) === '') {
+			return null;
+		}
+
+		if ((new SearchTermParser())->needsParsing(term: trim($term)) === true) {
+			return null;
+		}
+
+		return trim($term);
+	}//end plainSearchTerm()
+
 }//end class

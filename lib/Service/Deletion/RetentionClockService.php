@@ -43,7 +43,7 @@ namespace OCA\OpenRegister\Service\Deletion;
 use DateInterval;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -74,13 +74,13 @@ class RetentionClockService {
 	/**
 	 * Wire the processing-activity catalogue.
 	 *
-	 * @param VerwerkingsactiviteitMapper $activityMapper Resolves the object's processing activity.
+	 * @param VerwerkingsactiviteitMapperInterface $activityMapper Resolves the object's processing activity.
 	 * @param LoggerInterface             $logger         PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly VerwerkingsactiviteitMapper $activityMapper,
+		private readonly VerwerkingsactiviteitMapperInterface $activityMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -93,7 +93,7 @@ class RetentionClockService {
 	 *
 	 * @return array<string, mixed> The two clocks, the hold and any conflict.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function clocksFor(ObjectEntity $object, ?DateTimeImmutable $now = null): array {
 		$moment = ($now ?? new DateTimeImmutable());
@@ -138,7 +138,7 @@ class RetentionClockService {
 	 *
 	 * @return DestructionRefusedException|null The refusal, or null when the clocks agree.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function refusalFor(ObjectEntity $object, ?DateTimeImmutable $now = null): ?DestructionRefusedException {
 		$clocks = $this->clocksFor(object: $object, now: $now);

@@ -8,7 +8,9 @@ status: done
 
 @e2e exclude backend aggregation service — covered by PHPUnit
 TBD - created by archiving change retrofit-2026-05-25-bw-svc-mid3. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: The system MUST validate aggregation-API request shapes and widget annotations before execution
 
 `TimeseriesRequestValidator::validate(array $input, Schema $schema): AggregationQuery` MUST guard the REST timeseries-aggregation request shape and return a validated `AggregationQuery` value object, throwing a client-safe `InvalidArgumentException` (mapped to HTTP 400) on any violation. It MUST require a non-empty `field`, and the `field` MUST be a declared property of `$schema` (allow-listed) — an undeclared field MUST be rejected. When `metric !== 'count'` it MUST require a `metricField` that is also a declared schema property; for `count` the value-object field MUST be null. When an `interval` is supplied it MUST be one of the closed interval vocabulary; a sub-day interval (e.g. hour/minute) MUST require the bucket field to have `format: date-time`; and `from` / `to` MUST be present and parseable ISO-8601 datetimes. An interval request MUST produce a `dateBucket` (and null `groupBy`); a no-interval request MUST produce a categorical `groupBy` on the field — never both (the value object rejects the combination).
@@ -322,3 +324,18 @@ For each such notification:
   `warning`
 - **AND** the evaluation of `B` MUST still execute on the same event
 
+### Requirement: An object write MUST evict the aggregations of its schema
+
+When an object is created, updated, deleted or transitioned, the cached
+aggregations of its register and schema SHALL be evicted under the same key
+the aggregation cache writes. The cache keys entries by register and schema
+slug; the object carries ids, so the eviction SHALL resolve the slugs first.
+A reference that is already a slug SHALL be used as it is. Aggregations of
+other schemas SHALL keep their entries.
+
+#### Scenario: a new line item shows in the next count
+
+- **GIVEN** pipelinq's `leadProduct` count was cached as 8
+- **WHEN** a person adds a line item (an object in register 20, schema 34)
+- **THEN** the next count reads 9 and is not served from the cache
+- @e2e exclude {cache eviction; covered by tests/Unit/Listener/AggregationCacheEvictionBySlugTest.php and a live check on :8099}

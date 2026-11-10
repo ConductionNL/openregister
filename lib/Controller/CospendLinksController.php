@@ -37,11 +37,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\CospendLinksControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\CospendLinkService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\CospendLinkServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -52,21 +56,35 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class CospendLinksController extends Controller {
+	use ObjectLinkActionsTrait;
+
+	/**
+	 * Backing service.
+	 *
+	 * @var CospendLinkServiceInterface
+	 */
+	private readonly CospendLinkServiceInterface $cospendLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param CospendLinkService $cospendLinkService Backing service.
-	 * @param ObjectService $objectService OR object resolver.
+	 * @param CospendLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly CospendLinkService $cospendLinkService,
-		private readonly ObjectService $objectService,
+		CospendLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->cospendLinkService = $services->cospendLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
@@ -86,33 +104,26 @@ class CospendLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * List linked Cospend entries for an object: the body of index() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexFor(ObjectRef $ref): JSONResponse {
 		if ($this->cospendLinkService->isCospendAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Cospend app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Cospend');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$results = $this->cospendLinkService->getLinkedEntries($object->getUuid());
-
-			return new JSONResponse(
-				[
-					'results' => $results,
-					'total' => count($results),
-				]
-			);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
-		}//end try
-	}//end index()
+		return $this->listLinkedObject(
+			route: $this->routeOf(ref: $ref),
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->cospendLinkService->getLinkedEntries($object->getUuid()))
+		);
+	}//end indexFor()
 
 	/**
 	 * Link an existing Cospend project or bill.
@@ -135,55 +146,45 @@ class CospendLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
+		return $this->linkFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end link()
+
+	/**
+	 * Link an existing Cospend project or bill: the body of link() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function linkFor(ObjectRef $ref): JSONResponse {
 		if ($this->cospendLinkService->isCospendAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Cospend app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Cospend');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
+		return $this->onLinkedObject(
+			route: $this->routeOf(ref: $ref),
+			action: function (ObjectEntity $object): JSONResponse {
+				$projectId = (string)$this->request->getParam('projectId', '');
+				if (trim($projectId) === '') {
+					return new JSONResponse(['error' => 'projectId is required'], 400);
+				}
 
-			$projectId = (string)$this->request->getParam('projectId', '');
-			if (trim($projectId) === '') {
-				return new JSONResponse(['error' => 'projectId is required'], 400);
-			}
+				$billIdParam = $this->request->getParam('billId');
+				$entryType = (string)$this->request->getParam('entryType', '');
 
-			$billIdParam = $this->request->getParam('billId');
-			$entryType = (string)$this->request->getParam('entryType', '');
+				$target = $this->linkTargetOf(object: $object);
 
-			$registerId = (int)$object->getRegister();
-			$schemaId = (int)$object->getSchema();
+				if (($billIdParam !== null && (int)$billIdParam !== 0) || $entryType === 'bill') {
+					$link = $this->cospendLinkService->linkBill($target, $projectId, (int)$billIdParam);
+					return new JSONResponse($link->jsonSerialize(), 201);
+				}
 
-			if (($billIdParam !== null && (int)$billIdParam !== 0) || $entryType === 'bill') {
-				$link = $this->cospendLinkService->linkBill(
-					$object->getUuid(),
-					$registerId,
-					$schemaId,
-					$projectId,
-					(int)$billIdParam
-				);
+				$link = $this->cospendLinkService->linkProject($target, $projectId);
+
 				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$link = $this->cospendLinkService->linkProject(
-				$object->getUuid(),
-				$registerId,
-				$schemaId,
-				$projectId
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
-	}//end link()
+		);
+	}//end linkFor()
 
 	/**
 	 * Create a new Cospend project and link it.
@@ -204,41 +205,41 @@ class CospendLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
+		return $this->createAndLinkFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end createAndLink()
+
+	/**
+	 * Create a new Cospend project and link it: the body of createAndLink() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function createAndLinkFor(ObjectRef $ref): JSONResponse {
 		if ($this->cospendLinkService->isCospendAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Cospend app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Cospend');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: $this->routeOf(ref: $ref),
+			action: function (ObjectEntity $object): JSONResponse {
+				$name = (string)$this->request->getParam('name', '');
+				if (trim($name) === '') {
+					return new JSONResponse(['error' => 'name is required'], 400);
+				}
+
+				$currency = (string)$this->request->getParam('currency', '');
+
+				$link = $this->cospendLinkService->createAndLinkProject(
+					$this->linkTargetOf(object: $object),
+					$name,
+					$currency
+				);
+
+				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$name = (string)$this->request->getParam('name', '');
-			if (trim($name) === '') {
-				return new JSONResponse(['error' => 'name is required'], 400);
-			}
-
-			$currency = (string)$this->request->getParam('currency', '');
-
-			$link = $this->cospendLinkService->createAndLinkProject(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$name,
-				$currency
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
-	}//end createAndLink()
+		);
+	}//end createAndLinkFor()
 
 	/**
 	 * Unlink a Cospend entry.
@@ -258,28 +259,31 @@ class CospendLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $entryId): JSONResponse {
+		return $this->destroyFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id), entryId: $entryId);
+	}//end destroy()
+
+	/**
+	 * Unlink a Cospend entry: the body of destroy() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 * @param string $entryId Link row id (numeric).
+	 *
+	 * @return JSONResponse
+	 */
+	private function destroyFor(ObjectRef $ref, string $entryId): JSONResponse {
 		if ($this->cospendLinkService->isCospendAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Cospend app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Cospend');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: $this->routeOf(ref: $ref),
+			action: function (ObjectEntity $object) use ($entryId): JSONResponse {
+				$this->cospendLinkService->unlink($object->getUuid(), (int)$entryId);
+
+				return new JSONResponse(['success' => true]);
 			}
-
-			$this->cospendLinkService->unlink($object->getUuid(), (int)$entryId);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
-	}//end destroy()
+		);
+	}//end destroyFor()
 
 	/**
 	 * List the current user's Cospend projects (picker source).
@@ -296,10 +300,7 @@ class CospendLinksController extends Controller {
 	 */
 	public function available(): JSONResponse {
 		if ($this->cospendLinkService->isCospendAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC Cospend app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'NC Cospend');
 		}
 
 		$search = $this->request->getParam('search');
@@ -310,31 +311,6 @@ class CospendLinksController extends Controller {
 		$projects = $this->cospendLinkService->getAvailableProjects($search);
 		return new JSONResponse(['results' => $projects, 'total' => count($projects)]);
 	}//end available()
-
-	/**
-	 * Resolve an OR object from register/schema/id.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object id.
-	 *
-	 * @return ObjectEntity|null
-	 *
-	 * @SuppressWarnings(PHPMD.ShortVariable) $id is the object identifier passed from the route
-	 * parameter; renaming would break consistency with caller method signatures.
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
-	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		return $this->objectService->getObject();
-	}//end validateObject()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -351,7 +327,7 @@ class CospendLinksController extends Controller {
 	 *
 	 * @return JSONResponse
 	 */
-	private function mapException(Exception $exception): JSONResponse {
+	protected function mapException(Exception $exception): JSONResponse {
 		$code = $exception->getCode();
 		if (in_array($code, [400, 401, 404, 409, 503], true) === true) {
 			return new JSONResponse(['error' => $exception->getMessage()], $code);
@@ -359,4 +335,15 @@ class CospendLinksController extends Controller {
 
 		return new JSONResponse(['error' => $exception->getMessage()], 400);
 	}//end mapException()
+
+	/**
+	 * The link route of the object a route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return ObjectLinkRoute The route the link traits resolve.
+	 */
+	private function routeOf(ObjectRef $ref): ObjectLinkRoute {
+		return new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+	}//end routeOf()
 }//end class

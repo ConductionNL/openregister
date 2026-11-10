@@ -47,6 +47,7 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Sequence extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The register the sequence is scoped to.
@@ -85,19 +86,4 @@ class Sequence extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'scopeKey', type: 'string');
 		$this->addType(fieldName: 'nextValue', type: 'integer');
 	}//end __construct()
-
-	/**
-	 * JSON serialization.
-	 *
-	 * @return array<string,mixed>
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'scopeKey' => $this->scopeKey,
-			'nextValue' => $this->nextValue,
-		];
-	}//end jsonSerialize()
 }//end class

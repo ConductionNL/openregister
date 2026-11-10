@@ -34,7 +34,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<BulkJob>
  */
-class BulkJobMapper extends QBMapper {
+class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -91,7 +91,7 @@ class BulkJobMapper extends QBMapper {
 	 *
 	 * @return array<string, int> State to count, for the states in use.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function countByState(): array {
 		$qb = $this->db->getQueryBuilder();
@@ -139,13 +139,7 @@ class BulkJobMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
 		}
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByActor()
@@ -169,13 +163,7 @@ class BulkJobMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
 		}
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findAllJobs()

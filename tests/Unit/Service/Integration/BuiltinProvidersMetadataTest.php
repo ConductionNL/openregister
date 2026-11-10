@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -41,7 +41,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IL10N;
@@ -49,6 +49,7 @@ use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices;
 
 /**
  * Unit tests for the built-in providers' contract metadata.
@@ -168,11 +169,13 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			->willReturn(['id' => 'cal/task.ics', 'summary' => 'Do the thing']);
 
 		$provider = new TasksProvider(
-			taskService: $taskService,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			objectService: $objectService,
-			l10n: $this->buildL10n()
+			services: new TasksProviderServices(
+				taskService: $taskService,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				objectService: $objectService,
+			),
+			l10n: $this->buildL10n(),
 		);
 
 		$result = $provider->create('my-register', 'my-schema', 'obj-uuid-1', [
@@ -214,11 +217,13 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			->willReturn(['id' => 'cal/task.ics']);
 
 		$provider = new TasksProvider(
-			taskService: $taskService,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			objectService: $objectService,
-			l10n: $this->buildL10n()
+			services: new TasksProviderServices(
+				taskService: $taskService,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				objectService: $objectService,
+			),
+			l10n: $this->buildL10n(),
 		);
 
 		$result = $provider->create('r', 's', 'missing-uuid', ['summary' => 'x']);
@@ -227,11 +232,13 @@ class BuiltinProvidersMetadataTest extends TestCase {
 
 	private function buildTasksProvider(TaskService $taskService): TasksProvider {
 		return new TasksProvider(
-			taskService: $taskService,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			objectService: $this->createMock(ObjectService::class),
-			l10n: $this->buildL10n()
+			services: new TasksProviderServices(
+				taskService: $taskService,
+				registerMapper: $this->createMock(RegisterMapper::class),
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				objectService: $this->createMock(ObjectService::class),
+			),
+			l10n: $this->buildL10n(),
 		);
 	}//end buildTasksProvider()
 
@@ -261,7 +268,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 
 	public function testAuditTrailProviderMetadata(): void {
 		$provider = new AuditTrailProvider(
-			$this->createMock(AuditTrailMapper::class),
+			$this->createMock(ObjectHistoryForReaders::class),
 			$this->buildL10n(),
 		);
 
@@ -273,16 +280,16 @@ class BuiltinProvidersMetadataTest extends TestCase {
 	}//end testAuditTrailProviderMetadata()
 
 	public function testAuditTrailProviderListSurfacesEmptyOnError(): void {
-		$mapper = $this->createMock(AuditTrailMapper::class);
-		// No method exists / no findAllByObject on mock — Should return [].
-		$provider = new AuditTrailProvider($mapper, $this->buildL10n());
+		$history = $this->createMock(ObjectHistoryForReaders::class);
+		$history->method('page')->willThrowException(new \RuntimeException('trail unreadable'));
+		$provider = new AuditTrailProvider($history, $this->buildL10n());
 
 		$this->assertSame([], $provider->list('r', 's', 'o'));
 	}//end testAuditTrailProviderListSurfacesEmptyOnError()
 
 	public function testAuditTrailProviderMutationsThrowNotImplemented(): void {
 		$provider = new AuditTrailProvider(
-			$this->createMock(AuditTrailMapper::class),
+			$this->createMock(ObjectHistoryForReaders::class),
 			$this->buildL10n(),
 		);
 

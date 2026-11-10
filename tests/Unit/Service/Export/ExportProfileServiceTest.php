@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -29,9 +29,11 @@ namespace Unit\Service\Export;
 
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ExportProfileMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
@@ -42,6 +44,8 @@ use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\ExportService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Export\ExportProfileStores;
+use OCA\OpenRegister\Service\Export\ExportProfileSteps;
 
 final class ExportProfileServiceTest extends TestCase {
 	private ExportRightService&MockObject $rights;
@@ -70,14 +74,17 @@ final class ExportProfileServiceTest extends TestCase {
 		$schemas->method('find')->willReturn(new Schema());
 
 		return new ExportProfileService(
-			$this->mapper,
-			$registers,
-			$schemas,
-			$this->exportService,
-			$this->writer,
+			new ExportProfileStores(
+				$this->mapper,
+				new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)),
+			),
+			new ExportProfileSteps(
+				$this->exportService,
+				$this->writer,
+				new ExportProfileValidator(),
+			),
 			$this->rights,
 			$this->recorder,
-			new ExportProfileValidator()
 		);
 	}//end service()
 
@@ -196,6 +203,47 @@ final class ExportProfileServiceTest extends TestCase {
 		self::assertSame(['b', 'a', 'c'], $profile->getFieldsArray());
 		self::assertSame(ExportProfile::MODE_STORED, $profile->getValueMode());
 	}//end testACreatedProfileGetsAUuidAnOwnerAndItsFieldOrder()
+
+	/**
+	 * A profile declares its file retention in days; a run copies it as
+	 * seconds. Absent keeps the files, and the value is bounded like the run's.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-export-expires-and-the-row-outlives-the-file
+	 */
+	public function testAProfileDeclaresHowLongItsFilesAreKept(): void {
+		$this->mapper->method('insert')->willReturnCallback(static fn (...$args) => $args[0]);
+		$this->mapper->method('update')->willReturnCallback(static fn (...$args) => $args[0]);
+
+		$kept = $this->service()->create(['name' => 'x', 'registerId' => 7, 'fields' => ['a']], 'eigenaar-1');
+		self::assertNull($kept->getRetentionSeconds(), 'no retention keeps the files');
+
+		$monthly = $this->service()->create(['name' => 'x', 'registerId' => 7, 'fields' => ['a'], 'retentionDays' => 30], 'eigenaar-1');
+		self::assertSame(30 * 86400, $monthly->getRetentionSeconds());
+		self::assertSame(30, $monthly->jsonSerialize()['retentionDays']);
+
+		$this->service()->update($monthly, ['name' => 'renamed']);
+		self::assertSame(30, $monthly->getRetentionDays(), 'an edit that does not name the retention leaves it');
+
+		$this->service()->update($monthly, ['retentionDays' => null]);
+		self::assertNull($monthly->getRetentionDays(), 'an explicit null goes back to keeping the files');
+	}//end testAProfileDeclaresHowLongItsFilesAreKept()
+
+	/**
+	 * @dataProvider badRetentions
+	 */
+	public function testARetentionOutsideOneToNinetyDaysIsRefused(mixed $days): void {
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('1 to 90 days');
+
+		$this->service()->create(['name' => 'x', 'registerId' => 7, 'fields' => ['a'], 'retentionDays' => $days], 'eigenaar-1');
+	}//end testARetentionOutsideOneToNinetyDaysIsRefused()
+
+	/**
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function badRetentions(): array {
+		return ['zero' => [0], 'negative' => [-5], 'beyond the cap' => [91], 'a string' => ['30'], 'not a number' => ['abc'], 'a fraction' => [1.5]];
+	}//end badRetentions()
 
 	public function testSomebodyElsesProfileIsRefused(): void {
 		$this->expectException(ExportRefusedException::class);

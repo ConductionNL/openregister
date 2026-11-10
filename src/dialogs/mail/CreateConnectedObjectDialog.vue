@@ -2,7 +2,7 @@
 	<NcDialog
 		v-if="show"
 		:name="t('openregister', 'New {name}', { name: schemaTitle })"
-		:canClose="!saving"
+		:noClose="saving"
 		size="normal"
 		class="or-create-connected-dialog"
 		@closing="$emit('cancel')">
@@ -60,12 +60,7 @@
 		</div>
 
 		<template #actions>
-			<NcButton :disabled="saving" @click="$emit('cancel')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<CloseCancelButton :label="t('openregister', 'Cancel')" :disabled="saving" @click="$emit('cancel')" />
 			<NcButton
 				:disabled="saving"
 				variant="primary"
@@ -92,8 +87,8 @@
  */
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'CreateConnectedObjectDialog',
@@ -101,7 +96,7 @@ export default {
 		NcButton,
 		NcDialog,
 		NcLoadingIcon,
-		Cancel,
+		CloseCancelButton,
 		Plus,
 	},
 
@@ -182,7 +177,7 @@ export default {
 	methods: {
 		t,
 		/**
-		 * @param key
+		 * @param {string} key
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		humanize(key) {
@@ -196,8 +191,8 @@ export default {
 		/**
 		 * Pick an input control for a property based on its schema type.
 		 *
-		 * @param key
-		 * @param def
+		 * @param {string} key
+		 * @param {object} def
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		controlFor(key, def) {

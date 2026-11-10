@@ -40,10 +40,10 @@ namespace OCA\OpenRegister\Service;
 use DateInterval;
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -58,13 +58,13 @@ use Psr\Log\LoggerInterface;
  * retention guard: the pass must ask whether a record is legally retained
  * before it erases it, and that question has one owner.
  */
-class AvgRetentionService {
+class AvgRetentionService implements AvgRetentionPassInterface {
 	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db DB for audit-trail aggregation.
-	 * @param VerwerkingsactiviteitMapper $vrwMapper Catalog reader.
-	 * @param MagicMapper $objectMapper Object loader.
+	 * @param VerwerkingsactiviteitMapperInterface $vrwMapper Catalog reader.
+	 * @param MagicMapperInterface $objectMapper Object loader.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ArchivalRetentionGuard $archivalGuard Refuses erasure of a held or legally retained record.
 	 * @param RetentionClockService|null $clocks Reports a disagreement between the AVG and Archiefwet clocks.
@@ -73,8 +73,8 @@ class AvgRetentionService {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly VerwerkingsactiviteitMapper $vrwMapper,
-		private readonly MagicMapper $objectMapper,
+		private readonly VerwerkingsactiviteitMapperInterface $vrwMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ArchivalRetentionGuard $archivalGuard,
 		private readonly ?RetentionClockService $clocks = null,

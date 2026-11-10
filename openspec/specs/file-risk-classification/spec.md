@@ -41,7 +41,7 @@ When the total number of detected entities exceeds `ESCALATION_THRESHOLD` (50) a
 
 ### Requirement: RiskLevelService MUST persist and expose risk levels through Nextcloud files metadata
 
-The computed risk level MUST be stored on the file using Nextcloud's `IFilesMetadata` API under the `METADATA_KEY` (`openregister-risk-level`). `RiskLevelService::updateRiskLevel(int $fileId)` MUST compute the level via `computeRiskLevel()`, write it as an indexed string metadata value, and return the computed level; a metadata write failure MUST be caught and logged at `warning` level WITHOUT propagating (the computed level is still returned). `RiskLevelService::getRiskLevel(int $fileId)` MUST return the stored level when the metadata key is present and MUST fall back to `RISK_NONE` ('none') when the key is absent or the metadata read throws. `RiskLevelService::initMetadataKey()` MUST register the metadata key with the files-metadata system as an indexed, edit-forbidden string type, and MUST be invoked from a repair step rather than during app boot. `RiskLevelService::getAllRiskLevels()` MUST return the map of every risk-level constant to its human-readable label for use in API documentation and frontend dropdowns.
+The computed risk level MUST be stored on the file using Nextcloud's `IFilesMetadata` API under the `METADATA_KEY` (`openregister-risk-level`). `RiskLevelService::updateRiskLevel(int $fileId)` MUST compute the level via `computeRiskLevel()`, write it as an indexed string metadata value, and return the computed level; a metadata write failure MUST be caught and logged at `warning` level WITHOUT propagating (the computed level is still returned). `RiskLevelService::getRiskLevel(int $fileId)` MUST return the stored level when the metadata key is present and MUST fall back to `RISK_NONE` ('none') when the key is absent or the metadata read throws. `RiskLevelService::initMetadataKey()` MUST register the metadata key with the files-metadata system as an indexed, edit-forbidden string type, and MUST be invoked from a repair step rather than during app boot.
 
 #### Scenario: updateRiskLevel returns the level even when persistence fails
 
@@ -56,10 +56,4 @@ The computed risk level MUST be stored on the file using Nextcloud's `IFilesMeta
 - **GIVEN** a file whose metadata does not contain the `openregister-risk-level` key
 - **WHEN** `getRiskLevel($fileId)` is called
 - **THEN** the result MUST be `none`
-
-#### Scenario: getAllRiskLevels enumerates every tier with a label
-
-- **WHEN** `RiskLevelService::getAllRiskLevels()` is called
-- **THEN** the result MUST contain keys `none`, `low`, `medium`, `high`, `very_high`
-- **AND** each MUST map to a non-empty human-readable label
 

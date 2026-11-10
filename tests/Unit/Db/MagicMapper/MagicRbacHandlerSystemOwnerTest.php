@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -99,7 +100,7 @@ class MagicRbacHandlerSystemOwnerTest extends TestCase {
 			->method('get')
 			->willReturnCallback(
 				function (string $id) {
-					if ($id === OrganisationService::class) {
+					if ($id === OrganisationServiceInterface::class) {
 						return $this->organisationService;
 					}
 

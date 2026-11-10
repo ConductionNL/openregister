@@ -30,14 +30,20 @@ use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
+use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
+use OCA\OpenRegister\Service\Case\CasePlanAnchorAccess;
+use OCA\OpenRegister\Service\Case\CasePlanBringOver;
+use OCA\OpenRegister\Service\Case\CasePlanMechanics;
+use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
@@ -63,8 +69,11 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Case\CasePlanTransitions
  * @uses \OCA\OpenRegister\Service\Case\CasePlanTree
  * @uses \OCA\OpenRegister\Service\Case\CaseSentryEvaluator
+ * @uses \OCA\OpenRegister\Service\Case\CaseSentryOnPart
+ * @uses \OCA\OpenRegister\Service\Case\CaseSentryMoment
  * @uses \OCA\OpenRegister\Service\Flow\EventCatalogService
  * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanEnsurer
  */
 class CasePlanServiceTest extends TestCase {
 
@@ -155,27 +164,30 @@ class CasePlanServiceTest extends TestCase {
 		$groups->method('groupExists')->willReturnCallback(static fn (string $gid): bool => $gid !== 'ghost');
 		$sentries = new CaseSentryEvaluator(catalog: new EventCatalogService());
 		$machine = new CasePlanStateMachine(
-			items: $this->items,
-			audits: $this->audits,
+			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()),
 			table: new CasePlanTransitions(),
-			realiser: $this->realiser,
-			writer: $this->writer,
-			db: $db,
-			logger: new NullLogger()
+			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->writer)
 		);
 
 		return new CasePlanService(
-			items: $this->items,
-			audits: $this->audits,
-			machine: $machine,
-			cascade: new CasePlanCascade(items: $this->items, machine: $machine, sentries: $sentries, realiser: $this->realiser, anchor: $this->anchor, db: $db, logger: new NullLogger()),
-			sentries: $sentries,
-			authorization: new CasePlanAuthorizationService(groupManager: $groups),
-			anchor: $this->anchor,
-			writer: $this->writer,
-			definitions: new CasePlanDefinition(sentries: $sentries),
-			db: $db,
-			logger: new NullLogger()
+			store: new CasePlanStore(
+				items: $this->items,
+				audits: $this->audits,
+				db: $db,
+				logger: new NullLogger()
+			),
+			mechanics: new CasePlanMechanics(
+				machine: $machine,
+				cascade: new CasePlanCascade(store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()), machine: $machine, readers: new CaseCascadeReaders(sentries: $sentries, realiser: $this->realiser, anchor: $this->anchor)),
+				sentries: $sentries,
+				definitions: new CasePlanDefinition(sentries: $sentries)
+			),
+			anchorAccess: new CasePlanAnchorAccess(
+				authorization: new CasePlanAuthorizationService(groupManager: $groups),
+				anchor: $this->anchor,
+				writer: $this->writer
+			),
+			bringOver: new CasePlanBringOver()
 		);
 	}//end service()
 
@@ -224,6 +236,7 @@ class CasePlanServiceTest extends TestCase {
 			$this->service()->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: 'alice');
 			$this->fail('one plan per object');
 		} catch (CaseValidationException $refusal) {
+			$this->assertInstanceOf(\OCA\OpenRegister\Exception\CasePlanExistsException::class, $refusal, 'An existing plan is told apart by type.');
 			$this->assertStringContainsString('already has a case plan', $refusal->getMessage());
 		}
 
@@ -544,4 +557,103 @@ class CasePlanServiceTest extends TestCase {
 		$completions = array_filter($this->audits->findForItem(2), static fn (CaseItemAudit $entry): bool => $entry->getToState() === CaseItem::STATE_COMPLETED);
 		$this->assertSame([], $completions);
 	}//end testEventDrivenEvaluationFailuresAreSwallowed()
+	/**
+	 * An app's own code acts without a session as `system:<app>`: it creates
+	 * and reads a plan nobody could see by visibility, the audit names the
+	 * app, and a malformed app id is refused. The user verbs keep refusing a
+	 * missing identity.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 *
+	 * @return void
+	 */
+	public function testSystemCallersActAsANamedApp(): void {
+		$this->anchor = $this->createMock(CaseAnchorReader::class);
+		$this->anchor->method('read')->willReturn(['status' => 'open']);
+		$this->anchor->method('mayRead')->willReturn(false);
+
+		$plan = $this->service()->createPlanAsSystem(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), app: 'dossiq');
+		$this->assertCount(7, $plan['items']);
+		$this->assertSame('system:dossiq', $this->audits->findForItem(1)[0]->getActor());
+		$this->assertCount(7, $this->service()->getPlanAsSystem(objectUuid: CaseFixtures::OBJECT, app: 'dossiq')['items']);
+
+		foreach (['', 'Dossiq', 'dos:siq', 'dos siq'] as $bad) {
+			try {
+				$this->service()->getPlanAsSystem(objectUuid: CaseFixtures::OBJECT, app: $bad);
+				$this->fail('app id refused: ' . $bad);
+			} catch (CaseValidationException $refusal) {
+				$this->assertStringContainsString('app id', $refusal->getMessage());
+			}
+		}
+
+		try {
+			$this->service()->createPlan(objectUuid: 'other-object', registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: null);
+			$this->fail('a null identity stays refused on the user verb');
+		} catch (CaseAccessDeniedException $denied) {
+			$this->assertStringContainsString('no acting identity', $denied->getMessage());
+		}
+
+		$this->expectException(DoesNotExistException::class);
+		$this->service()->getPlanAsSystem(objectUuid: 'no-plan', app: 'dossiq');
+	}//end testSystemCallersActAsANamedApp()
+
+	/**
+	 * ensureItems brings a plan over with its recorded states as the named
+	 * app and runs no cascade: an imported active stage does not enter its
+	 * children.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 *
+	 * @return void
+	 */
+	public function testEnsureItemsBringsAPlanOverAsTheApp(): void {
+		$result = $this->service()->ensureItems(
+			objectUuid: CaseFixtures::OBJECT,
+			registerId: 1,
+			schemaId: 1,
+			definition: CasePlanEnsurerTest::migrated(),
+			history: [],
+			app: 'dossiq'
+		);
+
+		$this->assertSame(['intake', 'check', 'beoordeling', 'volledig', 'besluit'], $result['created']);
+		$states = array_column($result['items'], 'state', 'key');
+		$this->assertSame('available', $states['besluit'], 'No cascade: nothing entered besluit.');
+		$this->assertSame('system:dossiq', $this->audits->findForItem(1)[0]->getActor());
+
+		$this->expectException(CaseValidationException::class);
+		$this->service()->ensureItems(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanEnsurerTest::migrated(), history: [], app: 'Not An App');
+	}//end testEnsureItemsBringsAPlanOverAsTheApp()
+	/**
+	 * An enforcing expiry terminates the item through the one transition
+	 * path, with the timer as the cause; an item already terminal, or gone,
+	 * is left alone.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 *
+	 * @return void
+	 */
+	public function testAnExpiredTimerTerminatesItsItem(): void {
+		$this->items->seed(
+			[
+				CaseFixtures::row(id: 1, key: 'intake', type: CaseItem::TYPE_STAGE, state: CaseItem::STATE_ACTIVE),
+				CaseFixtures::row(id: 2, key: 'check', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE, parentId: 1),
+				CaseFixtures::row(id: 3, key: 'done', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_COMPLETED, parentId: 1),
+			]
+		);
+
+		$this->assertTrue($this->service()->onTimerExpired(itemUuid: 'item-2', timerUuid: 'timer-9'));
+		$this->assertSame(CaseItem::STATE_TERMINATED, $this->items->findByUuid(uuid: 'item-2')->getState());
+		$last = $this->audits->findForItem(2)[count($this->audits->findForItem(2)) - 1];
+		$this->assertSame(CaseItemAudit::CAUSE_REALISATION, $last->getCause());
+		$this->assertSame('flow-timer:timer-9', $last->getCauseRef());
+
+		$this->assertFalse($this->service()->onTimerExpired(itemUuid: 'item-3', timerUuid: 'timer-9'), 'A terminal item is left alone.');
+		$this->assertSame(CaseItem::STATE_COMPLETED, $this->items->findByUuid(uuid: 'item-3')->getState());
+		$this->assertFalse($this->service()->onTimerExpired(itemUuid: 'item-404', timerUuid: 'timer-9'), 'A vanished item is not an error.');
+
+		$this->items->seed([CaseFixtures::row(id: 4, key: 'late', type: CaseItem::TYPE_MILESTONE, state: CaseItem::STATE_ENABLED, parentId: 1)]);
+		$this->assertFalse($this->service()->onTimerExpired(itemUuid: 'item-4', timerUuid: 'timer-9'), 'A term that cannot end its item is logged.');
+		$this->assertSame(CaseItem::STATE_ENABLED, $this->items->findByUuid(uuid: 'item-4')->getState());
+	}//end testAnExpiredTimerTerminatesItsItem()
 }//end class

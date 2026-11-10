@@ -47,7 +47,7 @@ class DestructionScopeReader {
 	 *
 	 * @return array{scope: array<int, string>, unknown: array<int, string>} Known members and the rest.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function declaredOn(?Schema $schema): array {
 		if ($schema === null) {

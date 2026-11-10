@@ -1,7 +1,7 @@
 # declared-actions Specification
 
 ## Purpose
-TBD - created by archiving change declared-actions-and-mcp-scope. Update Purpose after archive.
+A schema can declare actions beyond create, read, update and delete, such as a macro or a named flow. Only declared actions can be authorised. Every action raises an event, a macro run lists its changes in the audit trail, and the mcp scope says which actions may be offered to an assistant.
 
 ## Requirements
 
@@ -111,3 +111,28 @@ created, updated or deleted, and SHALL NOT rely on time-based expiry.
 - **WHEN** the index is missing
 - **THEN** it is rebuilt on read
 - **AND** no stale entry is served in the meantime
+
+### Requirement: A macro can name a flow its schema declares
+
+A macro binding's `flow` MAY name a flow the same schema declares in `x-openregister-flows`. Saving the schema SHALL
+accept it when that declaration has a manual trigger and SHALL refuse it when it has none; a name no stored or declared
+flow answers to SHALL be refused. Running the macro SHALL run the stored flow the declaration was imported as.
+
+#### Scenario: dossiq ships "Opschorten voor aanvulling"
+
+- **GIVEN** the case schema declares the flow "Opschorten voor aanvulling" with a manual trigger
+- **AND** the action `suspend-for-supplement` binds it by that name
+- **WHEN** the register is imported and a handler runs the macro
+- **THEN** OpenRegister runs the stored flow the declaration became
+
+### Requirement: A macro run's audit entry lists the changes it made
+
+The `action.macro` audit entry SHALL carry `changes`: one entry per completed step of the run that wrote an object,
+sent a message or created a task, in run order, each with the node's label (else its id) and the kind of change. Steps that changed
+nothing or did not complete SHALL NOT be listed.
+
+#### Scenario: Opschorten voor aanvulling
+
+- **GIVEN** a macro whose flow writes the case ("Termijn opgeschort") and sends an email ("Bericht verstuurd")
+- **WHEN** a handler runs it
+- **THEN** the audit entry's `changes` lists those two steps, a write and a message

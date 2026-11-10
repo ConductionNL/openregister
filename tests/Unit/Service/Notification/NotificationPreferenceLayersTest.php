@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -87,8 +88,7 @@ class NotificationPreferenceLayersTest extends TestCase {
 			$this->config,
 			$this->schemaMapper,
 			$this->logger,
-			$this->groupManager,
-			$this->userManager
+			new UserGroupServices($this->groupManager, $this->userManager)
 		);
 	}
 

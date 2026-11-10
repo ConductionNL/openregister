@@ -84,15 +84,16 @@ export async function updateFileMetadata({
 	schemaId,
 	objectId,
 	fileId,
-	description = null,
-	category = null,
-	labels = null,
+	description,
+	category,
+	labels,
 }) {
 	const url = buildFileUrl(registerId, schemaId, objectId, fileId)
-	const payload = {}
-	if (description !== null) payload.description = description
-	if (category !== null) payload.category = category
-	if (labels !== null) payload.labels = labels
+	const payload = Object.fromEntries(
+		Object.entries({ description, category, labels }).filter(
+			([, value]) => value !== null && value !== undefined,
+		),
+	)
 
 	const response = await fetch(url, {
 		method: 'PUT',

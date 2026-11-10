@@ -67,9 +67,96 @@ class FlowScheduleServiceTest extends TestCase {
 		);
 	}//end candidate()
 
-	private function schedule(string $id, string $cron, ?string $owner = null): array {
-		return $this->candidate($id, ['enabled' => true, 'trigger' => 'schedule', 'cron' => $cron, 'owner' => $owner]);
+	/**
+	 * An enabled schedule, saved an hour before the 10:00 tick most tests use.
+	 */
+	private function schedule(string $id, string $cron, ?string $owner = null, string $since = '2026-07-25T09:00:00+00:00'): array {
+		return $this->candidate($id, ['enabled' => true, 'trigger' => 'schedule', 'cron' => $cron, 'owner' => $owner, 'since' => $since]);
 	}//end schedule()
+
+	/**
+	 * A flow planned for a later date does not fire on the first tick that sees it.
+	 *
+	 * Planned on 2 November for 2 December (cron `0 6 2 12 *`), seen by the
+	 * scheduler six minutes after it was saved. Measuring the next occurrence
+	 * from the epoch made it due at once and opened the case a month early.
+	 *
+	 * @return void
+	 */
+	public function testANewFlowPlannedForALaterDateWaitsForThatDate(): void {
+		$this->registry->method('scheduledFlows')->willReturn(
+			[$this->schedule('planned', '0 6 2 12 *', 'pieter', '2026-11-02T21:02:39+00:00')]
+		);
+
+		$this->runs->expects($this->never())->method('queue');
+
+		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-11-02T21:08:54+00:00')));
+	}//end testANewFlowPlannedForALaterDateWaitsForThatDate()
+
+	/**
+	 * The same flow fires on the first tick after its date arrives.
+	 *
+	 * @return void
+	 */
+	public function testANewFlowFiresOnItsDate(): void {
+		$this->registry->method('scheduledFlows')->willReturn(
+			[$this->schedule('planned', '0 6 2 12 *', 'pieter', '2026-11-02T21:02:39+00:00')]
+		);
+
+		$this->runs->expects($this->once())->method('queue')->with('planned', $this->anything(), 'schedule', $this->anything());
+
+		$this->assertSame(['planned'], $this->service->fireDueFlows(new DateTimeImmutable('2026-12-02T06:03:00+00:00')));
+	}//end testANewFlowFiresOnItsDate()
+
+	/**
+	 * An occurrence between the save and the first tick is not lost.
+	 *
+	 * @return void
+	 */
+	public function testAnOccurrenceBetweenTheSaveAndTheFirstTickFires(): void {
+		$this->registry->method('scheduledFlows')->willReturn(
+			[$this->schedule('planned', '0 6 2 12 *', 'pieter', '2026-12-02T05:58:00+00:00')]
+		);
+
+		$this->runs->expects($this->once())->method('queue');
+
+		$this->assertSame(['planned'], $this->service->fireDueFlows(new DateTimeImmutable('2026-12-02T06:03:00+00:00')));
+	}//end testAnOccurrenceBetweenTheSaveAndTheFirstTickFires()
+
+	/**
+	 * A flow whose save time is unknown starts its clock on first sight.
+	 *
+	 * It does not fire on that tick, and fires on the first tick after its
+	 * next occurrence.
+	 *
+	 * @return void
+	 */
+	public function testAFlowWithoutASaveTimeStartsItsClockOnFirstSight(): void {
+		$this->registry->method('scheduledFlows')->willReturn([$this->schedule('f1', '0 6 2 12 *', 'pieter', '')]);
+
+		$this->runs->expects($this->once())->method('queue');
+
+		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-11-02T21:08:54+00:00')));
+		$this->assertSame('2026-11-02T21:08:54+00:00', $this->store['flow_sched_last_f1']);
+		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-12-01T06:03:00+00:00')));
+		$this->assertSame(['f1'], $this->service->fireDueFlows(new DateTimeImmutable('2026-12-02T06:03:00+00:00')));
+	}//end testAFlowWithoutASaveTimeStartsItsClockOnFirstSight()
+
+	/**
+	 * A recorded fire wins over the save time.
+	 *
+	 * @return void
+	 */
+	public function testTheLastFireWinsOverTheSaveTime(): void {
+		$this->store['flow_sched_last_f1'] = '2026-07-25T10:00:00+00:00';
+		$this->registry->method('scheduledFlows')->willReturn(
+			[$this->schedule('f1', '*/5 * * * *', null, '2026-07-25T08:00:00+00:00')]
+		);
+
+		$this->runs->expects($this->never())->method('queue');
+
+		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:02:00')));
+	}//end testTheLastFireWinsOverTheSaveTime()
 
 	/**
 	 * SINGLETON: a due flow whose previous run has not finished is skipped.
@@ -115,7 +202,7 @@ class FlowScheduleServiceTest extends TestCase {
 	}//end testSkippingDoesNotRecordAFireSoTheFlowStaysDue()
 
 	public function testADueScheduledFlowFiresAndRecordsTheFire(): void {
-		// No last-fire recorded -> due on first sight.
+		// Never fired; saved at 09:00, so the */5 occurrences since then are due.
 		$this->registry->method('scheduledFlows')->willReturn([$this->schedule('f1', '*/5 * * * *')]);
 
 		$this->runs->expects($this->once())->method('queue')

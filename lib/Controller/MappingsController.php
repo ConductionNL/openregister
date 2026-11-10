@@ -26,10 +26,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\MappingsControllerServices;
 use OCA\OpenRegister\Db\Mapping;
-use OCA\OpenRegister\Db\MappingMapper;
-use OCA\OpenRegister\Service\MappingService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Db\MappingMapperInterface;
+use OCA\OpenRegister\Service\MappingServiceInterface;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -60,16 +61,41 @@ use Psr\Log\LoggerInterface;
  */
 class MappingsController extends Controller {
 	/**
+	 * App configuration
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $config;
+
+	/**
+	 * Mapping mapper for database operations
+	 *
+	 * @var MappingMapperInterface
+	 */
+	private readonly MappingMapperInterface $mappingMapper;
+
+	/**
+	 * Mapping service for executing mappings
+	 *
+	 * @var MappingServiceInterface
+	 */
+	private readonly MappingServiceInterface $mappingService;
+
+	/**
+	 * Organisation service for multi-tenancy
+	 *
+	 * @var OrganisationServiceInterface
+	 */
+	private readonly OrganisationServiceInterface $organisationService;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for mapping operations.
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param IAppConfig $config App configuration
-	 * @param MappingMapper $mappingMapper Mapping mapper for database operations
-	 * @param MappingService $mappingService Mapping service for executing mappings
-	 * @param OrganisationService $organisationService Organisation service for multi-tenancy
+	 * @param MappingsControllerServices $services The mappings controller services.
 	 * @param LoggerInterface $logger Logger for error tracking
 	 *
 	 * @return void
@@ -77,13 +103,14 @@ class MappingsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IAppConfig $config,
-		private readonly MappingMapper $mappingMapper,
-		private readonly MappingService $mappingService,
-		private readonly OrganisationService $organisationService,
+		MappingsControllerServices $services,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->config = $services->config;
+		$this->mappingMapper = $services->mappingMapper;
+		$this->mappingService = $services->mappingService;
+		$this->organisationService = $services->organisationService;
 	}//end __construct()
 
 	/**

@@ -2,17 +2,20 @@
 
 namespace Unit\Service;
 
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLog;
 use OCA\OpenRegister\Db\EndpointLogMapper;
+use OCA\OpenRegister\Service\EndpointMappers;
 use OCA\OpenRegister\Service\EndpointService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\ToolRegistry;
-use OCA\OpenRegister\Tool\ToolInterface;
+use OCA\OpenRegister\Service\UserDirectory;
+use OCA\OpenRegister\Mcp\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Tool\ToolInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
+use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -45,13 +48,12 @@ class TestableEndpointService extends EndpointService {
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		AgentMapper $agentMapper,
+		IUserManager $userManager,
 	) {
 		parent::__construct(
-			endpointLogMapper: $endpointLogMapper,
+			mappers: new EndpointMappers($endpointLogMapper, $agentMapper),
 			logger: $logger,
-			userSession: $userSession,
-			groupManager: $groupManager,
-			agentMapper: $agentMapper
+			directory: new UserDirectory($userSession, $userManager, $groupManager)
 		);
 	}
 
@@ -79,7 +81,7 @@ class TestableEndpointService extends EndpointService {
 	public function publicLogEndpointCall(Endpoint $endpoint, array $request, array $result): void {
 		$method = new \ReflectionMethod(EndpointService::class, 'logEndpointCall');
 		$method->setAccessible(true);
-		$method->invoke($this, $endpoint, $request, $result);
+		$method->invoke($this, $endpoint, new \OCA\OpenRegister\Service\EndpointExchange($request, $result));
 	}
 }
 
@@ -131,7 +133,8 @@ class EndpointServiceTest extends TestCase {
 			$this->logger,
 			$this->userSession,
 			$this->groupManager,
-			$agentMapper
+			$agentMapper,
+			$this->createMock(IUserManager::class)
 		);
 	}
 
@@ -709,6 +712,27 @@ class EndpointServiceTest extends TestCase {
 		$this->assertSame(200, $result['statusCode']);
 	}
 
+	public function testTestEndpointLogsTheRequestItSent(): void {
+		$endpoint = $this->createEndpoint('view', 'POST', '/api/test', []);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$logged = null;
+		$this->endpointLogMapper->expects($this->once())->method('insert')
+			->willReturnCallback(function ($log) use (&$logged) {
+				$logged = $log;
+				return $log;
+			});
+
+		$this->service->testEndpoint($endpoint, ['q' => 1]);
+
+		$this->assertSame(
+			['method' => 'POST', 'path' => '/api/test', 'data' => ['q' => 1], 'headers' => []],
+			$logged->getRequest()
+		);
+	}
+
 	public function testTestEndpointAllowedWhenNoGroupsDefined(): void {
 		$endpoint = $this->createEndpoint('view', 'GET', '/api/test', []);
 
@@ -1008,6 +1032,33 @@ class EndpointServiceTest extends TestCase {
 
 		$this->service->publicLogEndpointCall($endpoint, $request, $result);
 	}
+
+	public function testLogEndpointCallStoresEveryField(): void {
+		$endpoint = $this->createEndpoint('view', 'GET', '/api/test', [], 10);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$logged = null;
+		$this->endpointLogMapper->expects($this->once())->method('insert')
+			->willReturnCallback(function ($log) use (&$logged) {
+				$logged = $log;
+				return $log;
+			});
+
+		$request = ['method' => 'GET', 'path' => '/api/x', 'data' => ['q' => 1], 'headers' => []];
+		$this->service->publicLogEndpointCall($endpoint, $request, ['statusCode' => 418, 'response' => ['b' => 2], 'error' => 'teapot']);
+
+		$this->assertSame(10, $logged->getEndpointId());
+		$this->assertSame('alice', $logged->getUserId());
+		$this->assertSame($request, $logged->getRequest());
+		$this->assertSame(['statusCode' => 418, 'body' => ['b' => 2]], $logged->getResponse());
+		$this->assertSame(418, $logged->getStatusCode());
+		$this->assertSame('teapot', $logged->getStatusMessage());
+		$this->assertSame(7, $logged->getCreated()->diff($logged->getExpires())->days);
+		$this->assertMatchesRegularExpression('/^[0-9a-f-]{36}$/', (string)$logged->getUuid());
+		$this->assertGreaterThan(0, (int)$logged->getSize());
+	}//end testLogEndpointCallStoresEveryField()
 
 	public function testLogEndpointCallWithoutUser(): void {
 		$endpoint = $this->createEndpoint('view', 'GET', '/api/test', [], 10);

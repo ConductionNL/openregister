@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Authorization;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class DeclaredGroupInventoryService {
+class DeclaredGroupInventoryService implements DeclaredGroupInventoryInterface {
 
 	/**
 	 * Constructor.

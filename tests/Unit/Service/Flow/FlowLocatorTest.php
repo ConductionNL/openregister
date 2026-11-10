@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorStores;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
@@ -62,11 +63,9 @@ class FlowLocatorTest extends TestCase {
 		// whose columns still decide. The cutover's own behaviour — nodes
 		// first, fallback second — is asserted in FlowLocatorTriggerCutoverTest.
 		return new FlowLocator(
-			$mapper,
-			$this->createMock(FlowTriggerMapper::class),
+			new FlowLocatorStores($mapper, $this->createMock(FlowTriggerMapper::class), $this->publishedVersions()),
 			$this->createMock(ObjectService::class),
-			new \Psr\Log\NullLogger(),
-			$this->publishedVersions()
+			new \Psr\Log\NullLogger()
 		);
 	}//end locator()
 
@@ -179,6 +178,24 @@ class FlowLocatorTest extends TestCase {
 		$this->assertSame('alice', $candidates[0]['owner']);
 	}//end testScheduledFlowsCarryTheirCronAndOwner()
 
+	public function testAScheduledFlowCarriesWhenItWasLastSaved(): void {
+		$saved = $this->flow(['uuid' => 's1', 'trigger' => 'schedule', 'cron' => '0 6 2 12 *']);
+		$saved->setCreated(new \DateTime('2026-11-02T21:02:38+00:00'));
+		$saved->setUpdated(new \DateTime('2026-11-02T21:02:39+00:00'));
+		$created = $this->flow(['uuid' => 's2', 'trigger' => 'schedule', 'cron' => '0 6 2 12 *']);
+		$created->setCreated(new \DateTime('2026-11-02T21:02:38+00:00'));
+		$unknown = $this->flow(['uuid' => 's3', 'trigger' => 'schedule', 'cron' => '0 6 2 12 *']);
+
+		$mapper = $this->createMock(FlowMapper::class);
+		$mapper->method('findScheduled')->willReturn([$saved, $created, $unknown]);
+
+		$candidates = $this->locator($mapper)->scheduledFlows();
+
+		$this->assertSame('2026-11-02T21:02:39+00:00', $candidates[0]['since']);
+		$this->assertSame('2026-11-02T21:02:38+00:00', $candidates[1]['since']);
+		$this->assertSame('', $candidates[2]['since']);
+	}//end testAScheduledFlowCarriesWhenItWasLastSaved()
+
 	public function testAnOwnerlessScheduledFlowIsNotDispatched(): void {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('findScheduled')->willReturn(
@@ -217,11 +234,9 @@ class FlowLocatorTest extends TestCase {
 		);
 
 		$locator = new FlowLocator(
-			$mapper,
-			$this->createMock(FlowTriggerMapper::class),
+			new FlowLocatorStores($mapper, $this->createMock(FlowTriggerMapper::class), $versions),
 			$this->createMock(ObjectService::class),
-			new \Psr\Log\NullLogger(),
-			$versions
+			new \Psr\Log\NullLogger()
 		);
 
 		$this->assertSame(['published-1'], $locator->flowsForTrigger('object.created', 'r', 's'));
@@ -239,11 +254,9 @@ class FlowLocatorTest extends TestCase {
 		$versions->method('findPublished')->willThrowException(new \RuntimeException('table gone'));
 
 		$locator = new FlowLocator(
-			$mapper,
-			$this->createMock(FlowTriggerMapper::class),
+			new FlowLocatorStores($mapper, $this->createMock(FlowTriggerMapper::class), $versions),
 			$this->createMock(ObjectService::class),
-			new \Psr\Log\NullLogger(),
-			$versions
+			new \Psr\Log\NullLogger()
 		);
 
 		$this->assertSame(['legacy-1'], $locator->flowsForTrigger('object.created', 'r', 's'));

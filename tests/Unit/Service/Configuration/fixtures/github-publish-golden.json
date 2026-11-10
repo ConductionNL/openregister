@@ -1,0 +1,701 @@
+{
+    "connect-failed": {
+        "threw": "Exception",
+        "message": "Failed to publish configuration: could not connect",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Publishing configuration to GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev",
+                    "is_update": false
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub API publish request",
+                {
+                    "url": "https://api.github.com/repos/org/app/contents/c.json",
+                    "path": "c.json",
+                    "encoded_path": "c.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "PUT",
+                "https://api.github.com/repos/org/app/contents/c.json",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "message": "Publish it",
+                        "content": "eyJhIjoxfQ==",
+                        "branch": "dev"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API publish failed",
+                {
+                    "error": "could not connect",
+                    "status_code": null,
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev"
+                }
+            ]
+        ]
+    },
+    "create": {
+        "returned": {
+            "success": true,
+            "commit_sha": "c1",
+            "file_sha": "f1",
+            "commit_url": "https://c",
+            "file_url": "https://f"
+        },
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Publishing configuration to GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "lib/Settings/config.json",
+                    "branch": "dev",
+                    "is_update": false
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub API publish request",
+                {
+                    "url": "https://api.github.com/repos/org/app/contents/lib/Settings/config.json",
+                    "path": "lib/Settings/config.json",
+                    "encoded_path": "lib/Settings/config.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "PUT",
+                "https://api.github.com/repos/org/app/contents/lib/Settings/config.json",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "message": "Publish it",
+                        "content": "eyJhIjoxfQ==",
+                        "branch": "dev"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Configuration published successfully",
+                {
+                    "commit_sha": "c1",
+                    "file_sha": "f1"
+                }
+            ]
+        ]
+    },
+    "forbidden": {
+        "threw": "Exception",
+        "message": "Failed to publish configuration: Forbidden - You may not have write access to repository 'org/app' or the branch 'dev' is protected",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Publishing configuration to GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev",
+                    "is_update": true
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub API publish request",
+                {
+                    "url": "https://api.github.com/repos/org/app/contents/c.json",
+                    "path": "c.json",
+                    "encoded_path": "c.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "PUT",
+                "https://api.github.com/repos/org/app/contents/c.json",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "message": "Publish it",
+                        "content": "eyJhIjoxfQ==",
+                        "branch": "dev",
+                        "sha": "abc"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API publish failed",
+                {
+                    "error": "Forbidden - You may not have write access to repository 'org/app' or the branch 'dev' is protected",
+                    "status_code": 403,
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev"
+                }
+            ]
+        ]
+    },
+    "invalid": {
+        "threw": "Exception",
+        "message": "Failed to publish configuration: Validation Error - GitHub says 422. Check that the branch 'dev' exists and the path 'c.json' is valid",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Publishing configuration to GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev",
+                    "is_update": false
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub API publish request",
+                {
+                    "url": "https://api.github.com/repos/org/app/contents/c.json",
+                    "path": "c.json",
+                    "encoded_path": "c.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "PUT",
+                "https://api.github.com/repos/org/app/contents/c.json",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "message": "Publish it",
+                        "content": "eyJhIjoxfQ==",
+                        "branch": "dev"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API publish failed",
+                {
+                    "error": "Validation Error - GitHub says 422. Check that the branch 'dev' exists and the path 'c.json' is valid",
+                    "status_code": 422,
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev"
+                }
+            ]
+        ]
+    },
+    "not-found": {
+        "threw": "Exception",
+        "message": "Failed to publish configuration: Not Found - Repository 'org/app', branch 'dev', or path 'c.json' may not exist or you may not have access",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Publishing configuration to GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev",
+                    "is_update": false
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub API publish request",
+                {
+                    "url": "https://api.github.com/repos/org/app/contents/c.json",
+                    "path": "c.json",
+                    "encoded_path": "c.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "PUT",
+                "https://api.github.com/repos/org/app/contents/c.json",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "message": "Publish it",
+                        "content": "eyJhIjoxfQ==",
+                        "branch": "dev"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API publish failed",
+                {
+                    "error": "Not Found - Repository 'org/app', branch 'dev', or path 'c.json' may not exist or you may not have access",
+                    "status_code": 404,
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev"
+                }
+            ]
+        ]
+    },
+    "not-found-no-message": {
+        "threw": "Exception",
+        "message": "Failed to publish configuration: HTTP 404",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Publishing configuration to GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev",
+                    "is_update": false
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub API publish request",
+                {
+                    "url": "https://api.github.com/repos/org/app/contents/c.json",
+                    "path": "c.json",
+                    "encoded_path": "c.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "PUT",
+                "https://api.github.com/repos/org/app/contents/c.json",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "message": "Publish it",
+                        "content": "eyJhIjoxfQ==",
+                        "branch": "dev"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API publish failed",
+                {
+                    "error": "HTTP 404",
+                    "status_code": 404,
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev"
+                }
+            ]
+        ]
+    },
+    "not-json": {
+        "threw": "Exception",
+        "message": "Failed to publish configuration: HTTP 409",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Publishing configuration to GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev",
+                    "is_update": false
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub API publish request",
+                {
+                    "url": "https://api.github.com/repos/org/app/contents/c.json",
+                    "path": "c.json",
+                    "encoded_path": "c.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "PUT",
+                "https://api.github.com/repos/org/app/contents/c.json",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "message": "Publish it",
+                        "content": "eyJhIjoxfQ==",
+                        "branch": "dev"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API publish failed",
+                {
+                    "error": "HTTP 409",
+                    "status_code": 409,
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev"
+                }
+            ]
+        ]
+    },
+    "odd-path": {
+        "returned": {
+            "success": true,
+            "commit_sha": "c1",
+            "file_sha": "f1",
+            "commit_url": "https://c",
+            "file_url": "https://f"
+        },
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Publishing configuration to GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "dir with space/ünï#?.json",
+                    "branch": "dev",
+                    "is_update": false
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub API publish request",
+                {
+                    "url": "https://api.github.com/repos/org/app/contents/dir%20with%20space/%C3%BCn%C3%AF%23%3F.json",
+                    "path": "dir with space/ünï#?.json",
+                    "encoded_path": "dir%20with%20space/%C3%BCn%C3%AF%23%3F.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "PUT",
+                "https://api.github.com/repos/org/app/contents/dir%20with%20space/%C3%BCn%C3%AF%23%3F.json",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "message": "Publish it",
+                        "content": "eyJhIjoxfQ==",
+                        "branch": "dev"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Configuration published successfully",
+                {
+                    "commit_sha": "c1",
+                    "file_sha": "f1"
+                }
+            ]
+        ]
+    },
+    "server-error": {
+        "threw": "Exception",
+        "message": "Failed to publish configuration: GitHub says 500",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Publishing configuration to GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev",
+                    "is_update": false
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub API publish request",
+                {
+                    "url": "https://api.github.com/repos/org/app/contents/c.json",
+                    "path": "c.json",
+                    "encoded_path": "c.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "PUT",
+                "https://api.github.com/repos/org/app/contents/c.json",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "message": "Publish it",
+                        "content": "eyJhIjoxfQ==",
+                        "branch": "dev"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API publish failed",
+                {
+                    "error": "GitHub says 500",
+                    "status_code": 500,
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev"
+                }
+            ]
+        ]
+    },
+    "sparse-response": {
+        "returned": {
+            "success": true,
+            "commit_sha": "c1",
+            "file_sha": null,
+            "commit_url": null,
+            "file_url": null
+        },
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Publishing configuration to GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "c.json",
+                    "branch": "dev",
+                    "is_update": false
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub API publish request",
+                {
+                    "url": "https://api.github.com/repos/org/app/contents/c.json",
+                    "path": "c.json",
+                    "encoded_path": "c.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "PUT",
+                "https://api.github.com/repos/org/app/contents/c.json",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "message": "Publish it",
+                        "content": "eyJhIjoxfQ==",
+                        "branch": "dev"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Configuration published successfully",
+                {
+                    "commit_sha": "c1",
+                    "file_sha": null
+                }
+            ]
+        ]
+    },
+    "update": {
+        "returned": {
+            "success": true,
+            "commit_sha": "c1",
+            "file_sha": "f1",
+            "commit_url": "https://c",
+            "file_url": "https://f"
+        },
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Publishing configuration to GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "lib/Settings/config.json",
+                    "branch": "dev",
+                    "is_update": true
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] GitHub API publish request",
+                {
+                    "url": "https://api.github.com/repos/org/app/contents/lib/Settings/config.json",
+                    "path": "lib/Settings/config.json",
+                    "encoded_path": "lib/Settings/config.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "PUT",
+                "https://api.github.com/repos/org/app/contents/lib/Settings/config.json",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    },
+                    "json": {
+                        "message": "Publish it",
+                        "content": "eyJhIjoxfQ==",
+                        "branch": "dev",
+                        "sha": "abc123"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Configuration published successfully",
+                {
+                    "commit_sha": "c1",
+                    "file_sha": "f1"
+                }
+            ]
+        ]
+    }
+}

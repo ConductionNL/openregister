@@ -13,17 +13,11 @@
  * the schema, and a property-level rule refusing a field would be defeated by
  * anybody willing to add a relation type.
  *
- * 🔑 THE DESIGN'S TWO SENTENCES ONLY LOOK CONTRADICTORY, so this is where the
- * reading is written down. D-4 says the exposed set is "the intersection of
- * what the link offers and what the reader could see", and the proposal says
- * "a reader holding NO other access to the far record sees exactly those
- * properties". Read as an intersection with OBJECT access those cannot both
- * hold: a reader with no object access would see nothing. The intersection is
- * with the PROPERTY-level rules, which is the only reading under which both
- * sentences are true — the link supplies the reach to the record, and the
- * property rules still say which of its fields this reader may see. So a
- * link can carry a reader to a record they could not otherwise open, and can
- * never show them a field their own rules withhold.
+ * 🔑 THE INTERSECTION IS WITH EVERYTHING THE READER MAY READ, object and
+ * property alike. A reader without the read right on the far record does not
+ * reach it through a link: the reference stays an identifier, as for any
+ * record they cannot read, in their own organisation or another. A reader who
+ * reaches it sees the declared properties their own rules allow.
  *
  * 🔴 AND A PROPERTY OUTSIDE THE SET READS AS WITHHELD, NOT ABSENT (D-5).
  * Empty reads as "there is no besluit"; withheld reads as "you may not see
@@ -54,7 +48,7 @@ namespace OCA\OpenRegister\Service\Relation;
  *
  * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
  */
-class LinkExposure {
+class LinkExposure implements LinkExposureInterface {
 
 	/**
 	 * The key a relation type declares its field set under.
@@ -72,6 +66,20 @@ class LinkExposure {
 	 * @var string
 	 */
 	public const WITHHELD = '__withheld__';
+
+	/**
+	 * The `@self` keys that say which record a link points at.
+	 *
+	 * @var string[]
+	 */
+	private const IDENTITY = ['id', 'register', 'schema'];
+
+	/**
+	 * The `@self` keys filled from properties of the record.
+	 *
+	 * @var string[]
+	 */
+	private const DISPLAY = ['name', 'description', 'summary', 'image', 'slug'];
 
 	/**
 	 * Whether a relation type declares a field set at all.
@@ -152,6 +160,33 @@ class LinkExposure {
 	}//end project()
 
 	/**
+	 * What stays of a far record's `@self` beside a projection.
+	 *
+	 * The identity stays. The other metadata is filled from properties or says
+	 * more about the record than the link declares, so it goes. A display field
+	 * stays only when its value is shown anyway: the source of `name` may be a
+	 * template over several properties, so the comparison is on the value.
+	 *
+	 * @param array<string, mixed> $self  The far record's `@self`.
+	 * @param array<string, mixed> $shown The projection.
+	 *
+	 * @return array<string, mixed> The narrowed `@self`.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/row-field-level-security/spec.md
+	 */
+	public function envelope(array $self, array $shown): array {
+		$identity = array_intersect_key($self, array_flip(self::IDENTITY));
+		$visible = [...array_values($identity), ...array_values($shown)];
+
+		$display = array_filter(
+			array_intersect_key($self, array_flip(self::DISPLAY)),
+			static fn (mixed $value): bool => $value !== self::WITHHELD && in_array($value, $visible, true)
+		);
+
+		return array_merge($identity, $display);
+	}//end envelope()
+
+	/**
 	 * Why a declared `exposes` may not be saved, or null when it may.
 	 *
 	 * @param array<string, mixed> $relationType    The relation type descriptor.
@@ -168,24 +203,37 @@ class LinkExposure {
 		}
 
 		foreach ($relationType[self::KEY] as $property) {
-			$property = (string)$property;
-
-			if ($property === '') {
-				return sprintf('relation type "%s" exposes an unnamed property', $typeName);
-			}
-
-			// Refused at SAVE, because a name that matches nothing is silently
-			// absent from every projection afterwards — the author sees a 200
-			// and a link that exposes one field fewer than they wrote.
-			if (in_array($property, $farProperties, true) === false) {
-				return sprintf(
-					'relation type "%s" exposes "%s", which the linked schema does not declare',
-					$typeName,
-					$property
-				);
+			$refusal = self::propertyRefusal(property: (string)$property, farProperties: $farProperties, typeName: $typeName);
+			if ($refusal !== null) {
+				return $refusal;
 			}
 		}
 
 		return null;
 	}//end refusalFor()
+
+
+	/**
+	 * Why one exposed property may not be saved, or null when it may.
+	 *
+	 * @param string             $property      The exposed property name.
+	 * @param array<int, string> $farProperties The far schema's declared properties.
+	 * @param string             $typeName      The type, for the message.
+	 *
+	 * @return string|null The reason.
+	 */
+	private static function propertyRefusal(string $property, array $farProperties, string $typeName): string|null {
+		if ($property === '') {
+			return sprintf('relation type "%s" exposes an unnamed property', $typeName);
+		}
+
+		// Refused at SAVE, because a name that matches nothing is silently
+		// absent from every projection afterwards — the author sees a 200
+		// and a link that exposes one field fewer than they wrote.
+		if (in_array($property, $farProperties, true) === false) {
+			return sprintf('relation type "%s" exposes "%s", which the linked schema does not declare', $typeName, $property);
+		}
+
+		return null;
+	}//end propertyRefusal()
 }//end class

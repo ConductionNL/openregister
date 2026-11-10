@@ -70,10 +70,11 @@ namespace OCA\OpenRegister\Service\Credential;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -151,13 +152,13 @@ class CredentialBrokerService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OR object CRUD (loads credential metadata).
+	 * @param ObjectOperationsInterface $objectService OR object CRUD (loads credential metadata).
 	 * @param CredentialStore $credentialStore Secret store leaf (reads the injected secret).
 	 * @param ProviderCatalogue $catalogue Read-only provider catalogue (host-lock + rules).
 	 * @param IUserSession $userSession Current session (owner guard identity).
 	 * @param IClientService $clientService NC HTTP client factory (the outbound call).
 	 * @param LoggerInterface $logger Logger for secret-free server-side diagnostics.
-	 * @param OrganisationService $organisationService Resolves organisation membership (organisation guard branch).
+	 * @param OrganisationServiceInterface $organisationService Resolves organisation membership (organisation guard branch).
 	 * @param IGroupManager|null $groupManager Resolves group principals for the share guard; null ⇒ group shares admit
 	 *                                         nobody.
 	 * @param IUserManager|null $userManager Resolves the asserted uid's groups on the sessionless path; null ⇒ no
@@ -172,13 +173,13 @@ class CredentialBrokerService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly CredentialStore $credentialStore,
 		private readonly ProviderCatalogue $catalogue,
 		private readonly IUserSession $userSession,
 		private readonly IClientService $clientService,
 		private readonly LoggerInterface $logger,
-		private readonly OrganisationService $organisationService,
+		private readonly OrganisationServiceInterface $organisationService,
 		// Optional collaborators for the share-principal guard branch. Nullable
 		// with a default so the eight existing call sites that construct this
 		// service directly keep working — a drifted constructor signature is a
@@ -673,12 +674,12 @@ class CredentialBrokerService {
 		?string $actingOrganisationId = null,
 	): ObjectEntity {
 		try {
-			$credential = $this->objectService->find(
+			$credential = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $credentialId,
 				register: self::REGISTER,
 				schema: self::SCHEMA,
 				_rbac: false
-			);
+			));
 		} catch (Throwable $e) {
 			// Log the REASON. A credential that is genuinely absent and a lookup
 			// that THREW are entirely different problems, and collapsing both

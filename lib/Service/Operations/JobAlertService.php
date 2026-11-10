@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -26,12 +26,9 @@ namespace OCA\OpenRegister\Service\Operations;
 
 use DateTime;
 use OCA\OpenRegister\Db\JobRun;
-use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IConfig;
-use OCP\IGroupManager;
-use OCP\Notification\IManager as INotificationManager;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -49,9 +46,9 @@ use Throwable;
  * the fourth, fifth and sixth failure each re-cross the threshold and each
  * raise an alert, which is the noise the threshold existed to prevent.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+ * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
  */
-class JobAlertService {
+class JobAlertService implements JobAlertServiceInterface {
 
 	/**
 	 * The app the administered settings belong to.
@@ -105,20 +102,16 @@ class JobAlertService {
 	/**
 	 * Constructor.
 	 *
-	 * @param JobRunMapper          $runs          The run log the count comes from.
-	 * @param IConfig               $config        Where the threshold and the marker live.
-	 * @param INotificationManager  $notifications Where the alert is delivered.
-	 * @param IGroupManager         $groups        Resolves who the administrators are.
-	 * @param ITimeFactory          $time          The clock, so a test can hold it still.
-	 * @param LoggerInterface       $logger        Where a failed delivery is reported.
+	 * @param JobRunMapperInterface $runs     The run log the count comes from.
+	 * @param IConfig               $config   Where the threshold and the marker live.
+	 * @param ITimeFactory          $time     The clock, so a test can hold it still.
+	 * @param JobAlertDelivery      $delivery The notifications, the administrators and the log.
 	 */
 	public function __construct(
-		private readonly JobRunMapper $runs,
+		private readonly JobRunMapperInterface $runs,
 		private readonly IConfig $config,
-		private readonly INotificationManager $notifications,
-		private readonly IGroupManager $groups,
 		private readonly ITimeFactory $time,
-		private readonly LoggerInterface $logger,
+		private readonly JobAlertDelivery $delivery,
 	) {
 	}//end __construct()
 
@@ -127,7 +120,7 @@ class JobAlertService {
 	 *
 	 * @return array{threshold: int, periodMinutes: int} The settings in force.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function settings(): array {
 		$threshold = (int)$this->config->getAppValue(
@@ -156,7 +149,7 @@ class JobAlertService {
 	 *
 	 * @return array{threshold: int, periodMinutes: int} The settings now in force.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function administer(?int $threshold, ?int $periodMinutes): array {
 		if ($threshold !== null) {
@@ -182,7 +175,7 @@ class JobAlertService {
 	 *
 	 * @return array<string, mixed>|null The alert raised, or null when nothing breached.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function observeFailure(string $jobClass): ?array {
 		$breach = $this->breach(jobClass: $jobClass);
@@ -214,7 +207,7 @@ class JobAlertService {
 	 *
 	 * @return array<int, array<string, mixed>> The breaches, one per job.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function alerts(array $jobClasses): array {
 		$alerts = [];
@@ -305,7 +298,7 @@ class JobAlertService {
 	private function deliver(array $breach): void {
 		try {
 			foreach ($this->administrators() as $uid) {
-				$notification = $this->notifications->createNotification();
+				$notification = $this->delivery->notifications->createNotification();
 				$notification->setApp(self::APP_ID)
 					->setUser($uid)
 					->setDateTime(new DateTime())
@@ -326,12 +319,12 @@ class JobAlertService {
 						]
 					);
 
-				$this->notifications->notify($notification);
+				$this->delivery->notifications->notify($notification);
 			}
 		} catch (Throwable $exception) {
 			// An alert that cannot be delivered must not take the failing job
 			// down with it; the breach is still readable on the console.
-			$this->logger->warning(
+			$this->delivery->logger->warning(
 				message: '[JobAlertService] Could not deliver the alert',
 				context: ['job' => $breach['job'], 'exception' => $exception]
 			);
@@ -345,7 +338,7 @@ class JobAlertService {
 	 * @return array<int, string> The administrators.
 	 */
 	private function administrators(): array {
-		$group = $this->groups->get('admin');
+		$group = $this->delivery->groups->get('admin');
 
 		if ($group === null) {
 			return [];

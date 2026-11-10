@@ -36,14 +36,15 @@ use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
-use OCA\OpenRegister\Service\Notification\EmailSender;
-use OCA\OpenRegister\Service\Notification\NcNotificationSender;
-use OCA\OpenRegister\Service\Notification\NotificationChannelPolicy;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
-use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
-use OCA\OpenRegister\Service\Notification\NotificationTemplating;
-use OCA\OpenRegister\Service\Notification\RateLimiter;
-use OCA\OpenRegister\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityFactory;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
+use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingMessage;
 use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingSymfonyMessage;
 use OCP\BackgroundJob\IJobList;
@@ -64,6 +65,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\FlowMessagingChannels;
+use OCA\OpenRegister\Service\Flow\FlowMessagingOverrides;
+use OCA\OpenRegister\Service\Flow\FlowMessagingPlatform;
+use OCA\OpenRegister\Service\Flow\FlowMessagingRecipients;
 
 /**
  * External recipients, FlowEmailSentEvent and role fields.
@@ -295,38 +300,47 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 		$config->method('getUserValue')->willReturnArgument(3);
 
 		return new FlowMessagingService(
-			channelPolicy: $policy,
-			recipientResolver: new NotificationRecipientResolver(
-				userManager: $this->userManager,
-				groupManager: $this->createMock(IGroupManager::class),
-				logger: $logger
+			channels: new FlowMessagingChannels(
+				channelPolicy: $policy,
+				ncSender: new NcNotificationSender(
+					notificationManager: $this->notificationManager,
+					logger: $logger,
+					userManager: $this->userManager,
+					jobList: $this->createMock(IJobList::class),
+					channelPolicy: $policy
+				),
+				emailSender: new EmailSender(
+					userManager: $this->userManager,
+					mailer: $this->mailer,
+					logger: $logger,
+					channelPolicy: $policy
+				),
+				talkSender: new TalkSender(httpClient: $this->createMock(IClientService::class), logger: $logger)
 			),
-			templating: new NotificationTemplating(logger: $logger),
-			ncSender: new NcNotificationSender(
-				notificationManager: $this->notificationManager,
+			recipients: new FlowMessagingRecipients(
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->userManager,
+					groupManager: $this->createMock(IGroupManager::class),
+					logger: $logger
+				),
+				preferences: new NotificationPreferenceService(
+					config: $config,
+					schemaMapper: $this->createMock(SchemaMapper::class),
+					logger: $logger
+				),
+				rateLimiter: new RateLimiter(cacheFactory: $cacheFactory, appConfig: $this->appConfig, logger: $logger),
+				userManager: $this->userManager
+			),
+			platform: new FlowMessagingPlatform(
+				templating: new NotificationTemplating(logger: $logger),
+				appConfig: $this->appConfig,
 				logger: $logger,
-				userManager: $this->userManager,
-				jobList: $this->createMock(IJobList::class),
-				channelPolicy: $policy
+				eventDispatcher: $this->dispatcher
 			),
-			emailSender: new EmailSender(
-				userManager: $this->userManager,
-				mailer: $this->mailer,
-				logger: $logger,
-				channelPolicy: $policy
-			),
-			talkSender: new TalkSender(httpClient: $this->createMock(IClientService::class), logger: $logger),
-			rateLimiter: new RateLimiter(cacheFactory: $cacheFactory, appConfig: $this->appConfig, logger: $logger),
-			preferences: new NotificationPreferenceService(
-				config: $config,
-				schemaMapper: $this->createMock(SchemaMapper::class),
-				logger: $logger
-			),
-			userManager: $this->userManager,
-			appConfig: $this->appConfig,
-			logger: $logger,
-			eventDispatcher: $this->dispatcher,
-			runContext: $this->runContext
+			overrides: new FlowMessagingOverrides(
+				runContext: $this->runContext,
+				optOut: OptOutAuthorityFactory::create(eventDispatcher: $this->dispatcher, appConfig: $this->appConfig, logger: $logger)
+			)
 		);
 	}//end makeService()
 
@@ -553,7 +567,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	// ---- Opt-out before send (opt-out-before-send) --------------------------
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function testAnOptedOutAddressIsSkippedAndNotAnnounced(): void {
 		$this->optedOut = ['jan@example.nl'];
@@ -579,7 +593,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	}//end testAnOptedOutAddressIsSkippedAndNotAnnounced()
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function testASkippedAddressDoesNotUseTheRateLimit(): void {
 		$this->optedOut = ['jan@example.nl'];
@@ -595,7 +609,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	}//end testASkippedAddressDoesNotUseTheRateLimit()
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function testWithoutIntegriqAServiceMailIsRefusedAndTheUserStillMailed(): void {
 		$this->integriq = 'ignore';
@@ -608,7 +622,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	}//end testWithoutIntegriqAServiceMailIsRefusedAndTheUserStillMailed()
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function testWithoutIntegriqABesluitIsSentWithoutALinkOrHeader(): void {
 		$this->integriq = 'ignore';
@@ -622,7 +636,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	}//end testWithoutIntegriqABesluitIsSentWithoutALinkOrHeader()
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
 	 */
 	public function testAServiceMailCarriesTheLinkAndTheHeaders(): void {
 		$this->sendEmail(config: ['recipients' => ['piet@example.nl'], 'externalRecipients' => 'any']);
@@ -635,7 +649,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	}//end testAServiceMailCarriesTheLinkAndTheHeaders()
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
 	 */
 	public function testABesluitMailCarriesNoLinkWithIntegriqPresent(): void {
 		$this->sendEmail(config: ['recipients' => ['piet@example.nl'], 'externalRecipients' => 'any', 'messageCategory' => 'besluit']);
@@ -646,7 +660,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	}//end testABesluitMailCarriesNoLinkWithIntegriqPresent()
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
 	 */
 	public function testAnOldStepAsksAsServiceAndAUserOnlyStepAsksNothing(): void {
 		$this->sendEmail(config: ['recipients' => ['piet@example.nl'], 'externalRecipients' => 'any']);

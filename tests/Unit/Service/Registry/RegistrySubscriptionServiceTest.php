@@ -10,6 +10,8 @@ use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\RegistrySubscriptionMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Registry\RegistryIdentity;
+use OCA\OpenRegister\Service\Registry\RegistryInboundServices;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionNotifier;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
 use OCA\OpenRegister\Service\Registry\RegistryUpdateTargetGuard;
@@ -43,9 +45,8 @@ class RegistrySubscriptionServiceTest extends TestCase {
 
 		$this->service = new RegistrySubscriptionService(
 			$this->subscriptionMapper,
-			$this->objectService,
 			$this->notifier,
-			$this->updateTargetGuard,
+			new RegistryInboundServices(objectService: $this->objectService, updateTargetGuard: $this->updateTargetGuard),
 			$this->createMock(LoggerInterface::class),
 		);
 	}
@@ -107,11 +108,8 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->notifier->expects($this->once())
 			->method('requested')
 			->with(
-				$this->anything(),
-				'dossiq',
-				'brpPerson',
-				'brp',
-				'999990019',
+				$this->callback(fn (ObjectEntity $object): bool => $object->getRegister() === 'dossiq' && $object->getSchema() === 'brpPerson'),
+				new RegistryIdentity('brp', '999990019'),
 			);
 
 		$row = $this->service->requestSubscription($this->personObject(), $this->brpSchema());
@@ -148,7 +146,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->subscriptionMapper->method('findForObject')->willReturn($row);
 		$this->subscriptionMapper->method('save')->willReturnArgument(0);
 
-		$this->notifier->expects($this->once())->method('ended')->with($this->anything(), 'brp', '999990019');
+		$this->notifier->expects($this->once())->method('ended')->with($this->anything(), new RegistryIdentity('brp', '999990019'));
 
 		$result = $this->service->endSubscription($this->personObject());
 
@@ -168,7 +166,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->assertSame([], $result['rejected']);
 	}
 
-	public function testApplyInboundUpdateAppliesOwnedPropertiesThroughSaveObject(): void {
+	public function testApplyInboundUpdatePatchesOnlyTheOwnedPropertiesItCarries(): void {
 		$row = new RegistrySubscription();
 		$row->setObjectUuid('obj-uuid-1');
 		$row->setRegister('dossiq');
@@ -188,24 +186,30 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		// service calls both methods with named arguments) would make the
 		// mock fall through unmatched and this test would then be
 		// exercising nothing.
+		// 🔴 A PATCH, NEVER saveObject(). saveObject() is PUT-semantic: a
+		// property absent from the payload is written as null. An inbound
+		// update carries only the properties the registry changed, so saving
+		// it whole would null the identity (the BSN this row is matched on)
+		// and every other field, on every update.
 		$saved = $this->personObject();
+		$this->objectService->expects($this->never())->method('saveObject');
 		$this->objectService->expects($this->once())
-			->method('saveObject')
-			->willReturnCallback(function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use ($saved) {
-				$this->assertSame(['address' => 'Dam 1'], $object);
+			->method('patchObject')
+			->willReturnCallback(function ($objectId, $data, $register = null, $schema = null) use ($saved) {
+				$this->assertSame('obj-uuid-1', $objectId);
+				$this->assertSame(['address' => 'Dam 1'], $data);
 				$this->assertSame('dossiq', $register);
 				$this->assertSame('brpPerson', $schema);
-				$this->assertSame('obj-uuid-1', $uuid);
 				return $saved;
 			});
 
 		$this->notifier->expects($this->once())
 			->method('auditInboundUpdate')
-			->willReturnCallback(function ($object, $registry, $eventReference, $properties) use ($saved) {
+			->willReturnCallback(function ($object, $update) use ($saved) {
 				$this->assertSame($saved, $object);
-				$this->assertSame('brp', $registry);
-				$this->assertSame('evt-1', $eventReference);
-				$this->assertSame(['address'], $properties);
+				$this->assertSame('brp', $update->identity->registry);
+				$this->assertSame('evt-1', $update->eventReference);
+				$this->assertSame(['address'], $update->propertyNames());
 			});
 
 		$result = $this->service->applyInboundUpdate('brp', '999990019', ['address' => 'Dam 1'], 'evt-1');
@@ -227,6 +231,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->updateTargetGuard->method('evaluate')->willReturn(['allowed' => false, 'rejected' => ['notes']]);
 
 		$this->objectService->expects($this->never())->method('saveObject');
+		$this->objectService->expects($this->never())->method('patchObject');
 
 		$result = $this->service->applyInboundUpdate('brp', '999990019', ['notes' => 'secret'], 'evt-1');
 
@@ -249,6 +254,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->updateTargetGuard->method('evaluate')->willReturn(['allowed' => true, 'rejected' => []]);
 
 		$this->objectService->expects($this->never())->method('saveObject');
+		$this->objectService->expects($this->never())->method('patchObject');
 		$this->notifier->expects($this->never())->method('auditInboundUpdate');
 
 		$result = $this->service->applyInboundUpdate('brp', '999990019', [], 'evt-1');

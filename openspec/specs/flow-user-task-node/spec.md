@@ -69,7 +69,11 @@ context's signal slot as an answer: a signal is one slot per run, consumed
 by the walk it wakes, and a flow with two user-task nodes would otherwise
 have the second read an answer given to the first.
 
-Completing the task SHALL make the run due. A completion that is delivered
+Completing the task SHALL make the run due. The wake SHALL carry the task's
+outcome bag (the same bag the node writes onto the items) in the run's signal
+slot, never an empty payload: the slot is still not an answer the node reads,
+but an empty wake overwrote whatever a leaf app had signalled about the same
+completion and left the run's context saying nothing about it. A completion that is delivered
 while the run is still mid-walk, or whose delivery fails, SHALL NOT strand
 the run: the node SHALL suspend with a heartbeat `resumeAt` so a lost wake
 costs one heartbeat interval rather than the flow. The node SHALL NOT
@@ -111,6 +115,12 @@ task and the run's suspension unchanged.
 - **WHEN** its persisted resume time is read
 - **THEN** it MUST NOT be null
 - @e2e exclude covered by a unit test asserting the thrown suspension
+
+#### Scenario: The wake carries the outcome bag
+- @e2e exclude bridge payload, covered by PHPUnit (FlowTaskBridgeTest)
+- **GIVEN** a run suspended on a user-task node
+- **WHEN** its task is completed with outcome `approved` by `alice`
+- **THEN** the run's signal slot SHALL hold the task's outcome bag, with `outcome: approved` and `completedBy: alice`
 
 ### Requirement: The outcome is written onto every item, not only onto the run
 

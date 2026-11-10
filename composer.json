@@ -60,6 +60,7 @@
 		"test:db": "if [ ! -f ../../lib/base.php ]; then echo 'SKIPPED: the Database suite needs a booted Nextcloud server and a live database (../../lib/base.php not found) - run from inside a Nextcloud checkout or in CI'; else ./vendor/bin/phpunit --testsuite=\"Database Tests\" --colors=always; fi",
 		"test:service": "if [ ! -f ../../lib/base.php ]; then echo 'SKIPPED: the Service suite needs a booted Nextcloud server container (../../lib/base.php not found) - run from inside a Nextcloud checkout or in CI'; else ./vendor/bin/phpunit --testsuite=\"Service Tests\" --colors=always; fi",
 		"test:all": "./vendor/bin/phpunit --colors=always",
+		"test:mutation": "vendor-bin/infection/run.sh",
 		"test:docker": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --colors=always'",
 		"test:api": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --testsuite=\"Integration Tests\" --colors=always'",
 		"test:newman": "bash tests/newman/run-all.sh",
@@ -106,7 +107,6 @@
 		"bamarni/composer-bin-plugin": "^1.8",
 		"cweagans/composer-patches": "^2.0",
 		"ddn/sapp": "dev-feat/chained-filter-text-replace#5c406e91254d6936f44372db35f1cc15e5a06c56",
-		"dompdf/dompdf": "^3.1",
 		"dragonmantank/cron-expression": "^3.3",
 		"elasticsearch/elasticsearch": "^v9.5.0",
 		"guzzlehttp/guzzle": "^7.0",
@@ -114,7 +114,7 @@
 		"minishlink/web-push": "^11.0",
 		"opis/json-schema": "^2.3",
 		"phpoffice/phpspreadsheet": "^5.0",
-		"phpoffice/phpword": "^1.2",
+		"phpseclib/phpseclib": "^3.0.58",
 		"react/async": "^4.3",
 		"react/event-loop": "^1.5",
 		"react/promise": "^3.2",
@@ -128,6 +128,9 @@
 		"web-token/jwt-library": "^4.1.9",
 		"webonyx/graphql-php": "^15.0",
 		"zbateson/mail-mime-parser": "^3.0"
+	},
+	"replace": {
+		"phpoffice/phpword": "*"
 	},
 	"require-dev": {
 		"conduction/coding-standard": "^1.0",

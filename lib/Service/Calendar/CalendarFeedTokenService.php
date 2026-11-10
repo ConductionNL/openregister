@@ -28,7 +28,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Calendar;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CalendarFeedToken;
-use OCA\OpenRegister\Db\CalendarFeedTokenMapper;
+use OCA\OpenRegister\Db\CalendarFeedTokenMapperInterface;
 use OCP\IURLGenerator;
 use OCP\Security\ISecureRandom;
 
@@ -49,7 +49,7 @@ use OCP\Security\ISecureRandom;
  *
  * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
-class CalendarFeedTokenService {
+class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 
 	/**
 	 * The length of the opaque token, in characters.
@@ -61,12 +61,12 @@ class CalendarFeedTokenService {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalendarFeedTokenMapper $mapper The token store.
+	 * @param CalendarFeedTokenMapperInterface $mapper The token store.
 	 * @param ISecureRandom $secureRandom Nextcloud's secure RNG.
 	 * @param IURLGenerator $urlGenerator The URL generator, for the subscribable link.
 	 */
 	public function __construct(
-		private readonly CalendarFeedTokenMapper $mapper,
+		private readonly CalendarFeedTokenMapperInterface $mapper,
 		private readonly ISecureRandom $secureRandom,
 		private readonly IURLGenerator $urlGenerator,
 	) {
@@ -82,26 +82,22 @@ class CalendarFeedTokenService {
 	 * so the identity the token will carry is decided at the HTTP boundary and
 	 * is visible there.
 	 *
-	 * @param string $userId The principal the token will name.
-	 * @param string $scopeType `schema` or `view`.
-	 * @param string $scopeId The schema id, or the view uuid.
-	 * @param string|null $label Optional human label.
-	 * @param int|null $ttlSeconds Seconds until the token expires; null never expires.
+	 * The caller names what the token covers on an unsaved token: its scope
+	 * type and scope id, and optionally a label. Everything else (the secret,
+	 * the principal, the moments) is set here.
+	 *
+	 * @param string            $userId     The principal the token will name.
+	 * @param CalendarFeedToken $draft      The unsaved token: scopeType (`schema` or `view`), scopeId and label.
+	 * @param int|null          $ttlSeconds Seconds until the token expires; null never expires.
 	 *
 	 * @return array<string, mixed> The token row plus its subscribable URL.
 	 *
 	 * @throws InvalidArgumentException When the scope is unusable or the caller is anonymous.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
-	public function mint(
-		string $userId,
-		string $scopeType,
-		string $scopeId,
-		?string $label = null,
-		?int $ttlSeconds = null,
-	): array {
-		$scopeType = trim($scopeType);
+	public function mint(string $userId, CalendarFeedToken $draft, ?int $ttlSeconds=null): array {
+		$scopeType = trim((string)$draft->getScopeType());
 		if (in_array($scopeType, CalendarFeedToken::SCOPE_TYPES, true) === false) {
 			throw new InvalidArgumentException(
 				sprintf(
@@ -112,7 +108,7 @@ class CalendarFeedTokenService {
 			);
 		}
 
-		$scopeId = trim($scopeId);
+		$scopeId = trim((string)$draft->getScopeId());
 		if ($scopeId === '') {
 			throw new InvalidArgumentException('A feed token must name the schema or view it covers.');
 		}
@@ -128,18 +124,16 @@ class CalendarFeedTokenService {
 			$expires = (clone $now)->modify('+' . $ttlSeconds . ' seconds');
 		}
 
-		$entity = new CalendarFeedToken();
-		$entity->setToken($this->secureRandom->generate(self::TOKEN_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC));
-		$entity->setUserId($userId);
-		$entity->setScopeType($scopeType);
-		$entity->setScopeId($scopeId);
-		$entity->setLabel($label);
-		$entity->setCreatedAt($now);
-		$entity->setExpiresAt($expires);
-		$entity->setRevokedAt(null);
-		$entity->setLastReadAt(null);
+		$draft->setToken($this->secureRandom->generate(self::TOKEN_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC));
+		$draft->setUserId($userId);
+		$draft->setScopeType($scopeType);
+		$draft->setScopeId($scopeId);
+		$draft->setCreatedAt($now);
+		$draft->setExpiresAt($expires);
+		$draft->setRevokedAt(null);
+		$draft->setLastReadAt(null);
 
-		$saved = $this->mapper->insert($entity);
+		$saved = $this->mapper->insert($draft);
 
 		$data = $saved->jsonSerialize();
 		$data['url'] = $this->feedUrl(token: (string)$saved->getToken());
@@ -157,7 +151,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return CalendarFeedToken|null The live token, or null.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function resolve(string $token): ?CalendarFeedToken {
 		$token = trim($token);
@@ -183,7 +177,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function noteRead(CalendarFeedToken $token): void {
 		try {
@@ -202,7 +196,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return bool True when a token was revoked, false when there was none to revoke.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function revoke(int $id, string $userId): bool {
 		if (trim($userId) === '') {
@@ -233,7 +227,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return array<int, array<string, mixed>> The serialised tokens, with their URLs.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function listForUser(string $userId): array {
 		$userId = trim($userId);
@@ -258,7 +252,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return string The absolute feed URL.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function feedUrl(string $token): string {
 		return $this->urlGenerator->getAbsoluteURL(

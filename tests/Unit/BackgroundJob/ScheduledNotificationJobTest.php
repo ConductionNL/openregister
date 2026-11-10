@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
-use OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationDelivery;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationJob;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledObjectSources;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\NotificationDedupeState;
-use OCA\OpenRegister\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeState;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\ICache;
@@ -20,6 +23,8 @@ use OCP\ICacheFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Verifies the scheduled notification job's correctness contract:
@@ -239,14 +244,9 @@ class ScheduledNotificationJobTest extends TestCase {
 	private function runJob(): void {
 		$job = new ScheduledNotificationJob(
 			$this->time,
-			$this->schemaMapper,
-			$this->objectMapper,
-			$this->dispatcher,
-			$this->logger,
-			$this->cacheFactory,
-			new ScheduledFilterEvaluator(logger: $this->logger),
-			$this->dedupeMapper,
-			$this->appConfig
+			new ScheduledObjectSources(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemaMapper, tables: $this->objectMapper), new ScheduledFilterEvaluator(logger: $this->logger)),
+			new ScheduledNotificationDelivery($this->dispatcher, $this->dedupeMapper, $this->appConfig, $this->logger),
+			$this->cacheFactory
 		);
 		$reflection = new \ReflectionClass($job);
 		$method = $reflection->getMethod('run');
@@ -297,9 +297,7 @@ class ScheduledNotificationJobTest extends TestCase {
 		$this->dedupeMapper->expects($this->once())
 			->method('upsert')
 			->with(
-				$this->equalTo(1),
-				$this->equalTo('scheduled-test'),
-				$this->equalTo($object->getUuid()),
+				$this->equalTo(new NotificationDedupeKey(1, 'scheduled-test', $object->getUuid())),
 				$this->isType('string'),
 				$this->isInstanceOf(\DateTime::class),
 				$this->equalTo(true)
@@ -342,8 +340,6 @@ class ScheduledNotificationJobTest extends TestCase {
 				$this->anything(),
 				$this->anything(),
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
 				$this->equalTo(false)
 			);
 
@@ -378,8 +374,6 @@ class ScheduledNotificationJobTest extends TestCase {
 		$this->dedupeMapper->expects($this->once())
 			->method('upsert')
 			->with(
-				$this->anything(),
-				$this->anything(),
 				$this->anything(),
 				$this->anything(),
 				$this->anything(),
@@ -488,14 +482,9 @@ class ScheduledNotificationJobTest extends TestCase {
 
 		$job = new ScheduledNotificationJob(
 			$this->time,
-			$this->schemaMapper,
-			$this->objectMapper,
-			$this->dispatcher,
-			$this->logger,
-			$this->cacheFactory,
-			new ScheduledFilterEvaluator(logger: $this->logger),
-			$this->dedupeMapper,
-			$appConfig
+			new ScheduledObjectSources(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemaMapper, tables: $this->objectMapper), new ScheduledFilterEvaluator(logger: $this->logger)),
+			new ScheduledNotificationDelivery($this->dispatcher, $this->dedupeMapper, $appConfig, $this->logger),
+			$this->cacheFactory
 		);
 		$reflection = new \ReflectionClass($job);
 		$method = $reflection->getMethod('run');

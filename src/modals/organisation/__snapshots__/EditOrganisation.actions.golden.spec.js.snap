@@ -1,0 +1,987 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EditOrganisation actions golden loads the stored organisation: emptyGroups 1`] = `
+{
+  "log": [
+    [
+      "initializeSpecialRights",
+    ],
+  ],
+  "state": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "active": true,
+      "description": "",
+      "groups": [],
+      "name": "",
+      "quota": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "slug": "",
+      "users": "notalist",
+      "uuid": "u1",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+}
+`;
+
+exports[`EditOrganisation actions golden loads the stored organisation: groups 1`] = `
+{
+  "log": [
+    [
+      "initializeSpecialRights",
+    ],
+  ],
+  "state": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "active": true,
+      "description": "",
+      "groups": [
+        "g1",
+        "g2",
+        {
+          "id": "g1",
+        },
+        {
+          "name": "named",
+        },
+        {
+          "id": "",
+          "name": "fallback",
+        },
+      ],
+      "name": "Org",
+      "quota": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "slug": "",
+      "uuid": "u1",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [
+      {
+        "id": "g1",
+        "name": "Group one",
+        "userCount": 3,
+      },
+      {
+        "id": "g2",
+        "name": "g2",
+        "userCount": 0,
+      },
+      {
+        "id": "g1",
+        "name": "Group one",
+        "userCount": 3,
+      },
+      {
+        "id": "named",
+        "name": "named",
+        "userCount": 0,
+      },
+      {
+        "id": "fallback",
+        "name": "fallback",
+        "userCount": 0,
+      },
+    ],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+}
+`;
+
+exports[`EditOrganisation actions golden loads the stored organisation: inactive 1`] = `
+{
+  "log": [
+    [
+      "initializeSpecialRights",
+    ],
+  ],
+  "state": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "active": false,
+      "description": "",
+      "groups": [],
+      "name": "Org",
+      "quota": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "slug": "",
+      "users": [
+        "a",
+        "b",
+      ],
+      "uuid": "u1",
+    },
+    "organisationUsers": [
+      "a",
+      "b",
+    ],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+}
+`;
+
+exports[`EditOrganisation actions golden loads the stored organisation: noUuid 1`] = `
+{
+  "log": [],
+  "state": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "active": true,
+      "description": "",
+      "groups": [],
+      "name": "",
+      "quota": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "slug": "",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+}
+`;
+
+exports[`EditOrganisation actions golden loads the stored organisation: none 1`] = `
+{
+  "log": [],
+  "state": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "active": true,
+      "description": "",
+      "groups": [],
+      "name": "",
+      "quota": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "slug": "",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+}
+`;
+
+exports[`EditOrganisation actions golden loads the stored organisation: plain 1`] = `
+{
+  "log": [
+    [
+      "initializeSpecialRights",
+    ],
+  ],
+  "state": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "active": true,
+      "description": "",
+      "groups": [],
+      "name": "Org",
+      "quota": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "slug": "",
+      "uuid": "u1",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+}
+`;
+
+exports[`EditOrganisation actions golden removes a member: networkDown 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/u1/leave",
+      {
+        "body": "{"userId":"a"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "error",
+      "[Failed to remove user from organisation]",
+    ],
+  ],
+  "state": {
+    "activeTab": 0,
+    "error": "[Failed to remove user from organisation]",
+    "loading": false,
+    "organisationItem": {
+      "uuid": "u1",
+    },
+    "organisationUsers": [
+      "a",
+    ],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": "a",
+  },
+}
+`;
+
+exports[`EditOrganisation actions golden removes a member: noOrganisation 1`] = `
+{
+  "log": [],
+  "state": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {},
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": "a",
+  },
+}
+`;
+
+exports[`EditOrganisation actions golden removes a member: noUser 1`] = `
+{
+  "log": [],
+  "state": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "uuid": "u1",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+}
+`;
+
+exports[`EditOrganisation actions golden removes a member: refused 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/u1/leave",
+      {
+        "body": "{"userId":"a"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "error",
+      "last admin",
+    ],
+  ],
+  "state": {
+    "activeTab": 0,
+    "error": "last admin",
+    "loading": false,
+    "organisationItem": {
+      "uuid": "u1",
+    },
+    "organisationUsers": [
+      "a",
+    ],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": "a",
+  },
+}
+`;
+
+exports[`EditOrganisation actions golden removes a member: refusedQuietly 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/u1/leave",
+      {
+        "body": "{"userId":"a"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "error",
+      "[Failed to remove user from organisation]",
+    ],
+  ],
+  "state": {
+    "activeTab": 0,
+    "error": "[Failed to remove user from organisation]",
+    "loading": false,
+    "organisationItem": {
+      "uuid": "u1",
+    },
+    "organisationUsers": [
+      "a",
+    ],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": "a",
+  },
+}
+`;
+
+exports[`EditOrganisation actions golden removes a member: removed 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/u1/leave",
+      {
+        "body": "{"userId":"a"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisations",
+    ],
+    [
+      "success",
+      "[User removed successfully]",
+    ],
+  ],
+  "state": {
+    "activeTab": 0,
+    "error": null,
+    "loading": false,
+    "organisationItem": {
+      "users": [
+        "b",
+      ],
+      "uuid": "u1",
+    },
+    "organisationUsers": [
+      "b",
+    ],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+}
+`;
+
+exports[`EditOrganisation actions golden removes a member: removedNoUsers 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/u1/leave",
+      {
+        "body": "{"userId":"a"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisations",
+    ],
+    [
+      "success",
+      "[User removed successfully]",
+    ],
+  ],
+  "state": {
+    "activeTab": 0,
+    "error": null,
+    "loading": false,
+    "organisationItem": {
+      "uuid": "u1",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+}
+`;
+
+exports[`EditOrganisation actions golden saves: blankName 1`] = `
+{
+  "after": {
+    "activeTab": 0,
+    "error": "[Organisation name is required]",
+    "loading": false,
+    "organisationItem": {
+      "name": "  ",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+  "after600": {
+    "activeTab": 0,
+    "error": "[Organisation name is required]",
+    "loading": false,
+    "organisationItem": {
+      "name": "  ",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+  "before": {
+    "activeTab": 0,
+    "error": "[Organisation name is required]",
+    "loading": false,
+    "organisationItem": {
+      "name": "  ",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+  "log": [],
+  "timer": false,
+}
+`;
+
+exports[`EditOrganisation actions golden saves: createAnother 1`] = `
+{
+  "after": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "active": true,
+      "description": "",
+      "groups": [],
+      "name": "",
+      "quota": {
+        "bandwidth": null,
+        "requests": null,
+        "storage": null,
+      },
+      "slug": "",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": null,
+    "userToRemove": null,
+  },
+  "after600": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "active": true,
+      "description": "",
+      "groups": [],
+      "name": "",
+      "quota": {
+        "bandwidth": null,
+        "requests": null,
+        "storage": null,
+      },
+      "slug": "",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": true,
+    "userToRemove": null,
+  },
+  "before": {
+    "activeTab": 2,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "name": "New",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [
+      "g1",
+    ],
+    "showRemoveUserDialog": false,
+    "success": true,
+    "userToRemove": null,
+  },
+  "log": [
+    [
+      "saveOrganisation",
+      {
+        "name": "New",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+    [
+      "getActiveOrganisation",
+    ],
+  ],
+  "timer": false,
+}
+`;
+
+exports[`EditOrganisation actions golden saves: createdAndClose 1`] = `
+{
+  "after": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "name": "New",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": true,
+    "userToRemove": null,
+  },
+  "after600": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "name": "New",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": true,
+    "userToRemove": null,
+  },
+  "before": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "name": "New",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": true,
+    "userToRemove": null,
+  },
+  "log": [
+    [
+      "saveOrganisation",
+      {
+        "name": "New",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+    [
+      "getActiveOrganisation",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+  "timer": true,
+}
+`;
+
+exports[`EditOrganisation actions golden saves: failsQuietly 1`] = `
+{
+  "after": {
+    "activeTab": 0,
+    "error": "[An error occurred while saving the organisation]",
+    "loading": false,
+    "organisationItem": {
+      "name": "Org",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+  "after600": {
+    "activeTab": 0,
+    "error": "[An error occurred while saving the organisation]",
+    "loading": false,
+    "organisationItem": {
+      "name": "Org",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+  "before": {
+    "activeTab": 0,
+    "error": "[An error occurred while saving the organisation]",
+    "loading": false,
+    "organisationItem": {
+      "name": "Org",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+  "log": [
+    [
+      "saveOrganisation",
+      {
+        "name": "Org",
+      },
+    ],
+  ],
+  "timer": false,
+}
+`;
+
+exports[`EditOrganisation actions golden saves: failsWithMessage 1`] = `
+{
+  "after": {
+    "activeTab": 0,
+    "error": "conflict",
+    "loading": false,
+    "organisationItem": {
+      "name": "Org",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+  "after600": {
+    "activeTab": 0,
+    "error": "conflict",
+    "loading": false,
+    "organisationItem": {
+      "name": "Org",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+  "before": {
+    "activeTab": 0,
+    "error": "conflict",
+    "loading": false,
+    "organisationItem": {
+      "name": "Org",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+  "log": [
+    [
+      "saveOrganisation",
+      {
+        "name": "Org",
+      },
+    ],
+  ],
+  "timer": false,
+}
+`;
+
+exports[`EditOrganisation actions golden saves: notOk 1`] = `
+{
+  "after": {
+    "activeTab": 0,
+    "error": null,
+    "loading": false,
+    "organisationItem": {
+      "name": "Org",
+      "uuid": "u1",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+  "after600": {
+    "activeTab": 0,
+    "error": null,
+    "loading": false,
+    "organisationItem": {
+      "name": "Org",
+      "uuid": "u1",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+  "before": {
+    "activeTab": 0,
+    "error": null,
+    "loading": false,
+    "organisationItem": {
+      "name": "Org",
+      "uuid": "u1",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": false,
+    "userToRemove": null,
+  },
+  "log": [
+    [
+      "saveOrganisation",
+      {
+        "name": "Org",
+        "uuid": "u1",
+      },
+    ],
+  ],
+  "timer": false,
+}
+`;
+
+exports[`EditOrganisation actions golden saves: updatedAndClose 1`] = `
+{
+  "after": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "name": "Org",
+      "uuid": "u1",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": true,
+    "userToRemove": null,
+  },
+  "after600": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "name": "Org",
+      "uuid": "u1",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": true,
+    "userToRemove": null,
+  },
+  "before": {
+    "activeTab": 0,
+    "error": false,
+    "loading": false,
+    "organisationItem": {
+      "name": "Org",
+      "uuid": "u1",
+    },
+    "organisationUsers": [],
+    "removingUser": null,
+    "selectedGroups": [],
+    "showRemoveUserDialog": false,
+    "success": true,
+    "userToRemove": null,
+  },
+  "log": [
+    [
+      "saveOrganisation",
+      {
+        "name": "Org",
+        "uuid": "u1",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+  "timer": true,
+}
+`;
+
+exports[`EditOrganisation actions golden toggles entity permissions 1`] = `
+[
+  {
+    "register": {
+      "read": [
+        "g1",
+      ],
+    },
+  },
+  {
+    "register": {
+      "read": [
+        "g1",
+      ],
+    },
+  },
+  {
+    "register": {
+      "read": [
+        "g1",
+        "g2",
+      ],
+    },
+  },
+  {
+    "register": {
+      "read": [
+        "g2",
+      ],
+    },
+  },
+  {
+    "register": {
+      "read": [
+        "g2",
+      ],
+    },
+  },
+  {
+    "register": {
+      "read": [
+        "g2",
+      ],
+    },
+    "schema": {
+      "update": [],
+    },
+  },
+  {
+    "register": {
+      "read": [
+        "g2",
+      ],
+    },
+    "schema": {
+      "create": [
+        "g1",
+      ],
+      "update": [],
+    },
+  },
+]
+`;

@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Queues a flow run for every flow wired to a fired event.
  */
-class FlowTriggerService {
+class FlowTriggerService implements FlowTriggerServiceInterface {
 
 	/**
 	 * The execution mode that runs a flow inline rather than queueing it.
@@ -56,12 +56,12 @@ class FlowTriggerService {
 	 * Constructor.
 	 *
 	 * @param FlowLocator $resolvers Finds flows wired to an event.
-	 * @param FlowRunService $runner Queues the runs.
+	 * @param FlowRunServiceInterface $runner Queues the runs.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly FlowLocator $resolvers,
-		private readonly FlowRunService $runner,
+		private readonly FlowRunServiceInterface $runner,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -175,7 +175,7 @@ class FlowTriggerService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openregister-flow-executionmode-and-token/specs/flow-execution-mode/spec.md
+	 * @spec openspec/specs/flow-execution-mode/spec.md
 	 */
 	private function runInline(FlowRun $run, string $flowId, array $subject): void {
 		$flow = $this->resolvers->resolveFlow($flowId);

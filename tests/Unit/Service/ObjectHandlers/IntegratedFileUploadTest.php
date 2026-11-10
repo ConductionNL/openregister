@@ -41,7 +41,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use stdClass;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Testable Schema subclass that allows overriding methods that depend on external services.
@@ -181,7 +181,7 @@ class IntegratedFileUploadTest extends TestCase {
 		$this->settingsService = $this->createMock(SettingsService::class);
 		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$arrayLoader = new ArrayLoader();
+		$permissionHandler = $this->createMock(PermissionHandler::class);
 
 		// Create real entity instances (Entity __call methods cannot be mocked in PHPUnit 10+).
 		$this->mockRegister = new Register();
@@ -209,28 +209,48 @@ class IntegratedFileUploadTest extends TestCase {
 
 		// Create SaveObject instance with correct constructor params.
 		$this->saveObject = new SaveObject(
-			$this->objectEntityMapper,
-			$this->unifiedObjectMapper,
-			$this->metaHydrationHandler,
-			$this->filePropertyHandler,
-			$linkedEntityHandler,
-			$this->userSession,
-			$this->auditTrailMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->urlGenerator,
-			$this->organisationService,
-			$this->cacheHandler,
-			$this->settingsService,
-			$this->propertyRbacHandler,
-			$computedFieldHandler,
-			$translationHandler,
-			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->logger,
-			$tmloService,
-			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$arrayLoader
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						objectEntityMapper: $this->objectEntityMapper,
+						unifiedObjectMapper: $this->unifiedObjectMapper,
+						schemaMapper: $this->schemaMapper,
+						registerMapper: $this->registerMapper
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->auditTrailMapper,
+						settingsService: $this->settingsService,
+						tmloService: $tmloService
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->cacheHandler
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->metaHydrationHandler,
+						filePropertyHandler: $this->filePropertyHandler,
+						linkedEntityHandler: $linkedEntityHandler,
+						computedFieldHandler: $computedFieldHandler
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $translationHandler,
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->userSession,
+					urlGenerator: $this->urlGenerator,
+					logger: $this->logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->organisationService
+				)
+			),
+			propertyRbacHandler: $this->propertyRbacHandler,
+			permissionHandler: $permissionHandler,
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 	}
 
@@ -304,7 +324,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockSchema,
 			$objectData,
 			null,
-			null,
 			false,
 			false,
 			true,
@@ -360,7 +379,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockSchema,
 			$objectData,
 			null,
-			null,
 			false,
 			false,
 			true,
@@ -407,7 +425,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockRegister,
 			$this->mockSchema,
 			$objectData,
-			null,
 			null,
 			false,
 			false,
@@ -488,7 +505,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockSchema,
 			$objectData,
 			null,
-			null,
 			false,
 			false,
 			true,
@@ -553,7 +569,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockSchema,
 			$objectData,
 			null,
-			null,
 			false,
 			false,
 			true,
@@ -611,7 +626,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockRegister,
 			$this->mockSchema,
 			$objectData,
-			null,
 			null,
 			false,
 			false,
@@ -680,7 +694,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockRegister,
 			$this->mockSchema,
 			$objectData,
-			null,
 			null,
 			false,
 			false,
@@ -753,7 +766,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockSchema,
 			[],
 			null,
-			null,
 			false,
 			false,
 			true,
@@ -806,7 +818,6 @@ class IntegratedFileUploadTest extends TestCase {
 			$this->mockRegister,
 			$this->mockSchema,
 			['pdf' => $dataUri],
-			null,
 			null,
 			false,
 			false,

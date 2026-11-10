@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 
 declare(strict_types=1);
@@ -42,9 +42,9 @@ use Throwable;
  * across paths on purpose: a caller that learns to read one refusal reads all
  * of them.
  *
- * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+ * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
  */
-class ExportGate {
+class ExportGate implements ExportGateInterface {
 
 	/**
 	 * Constructor.
@@ -61,13 +61,18 @@ class ExportGate {
 	/**
 	 * The refusal this export should return, or null when it may run.
 	 *
+	 * A refusal is recorded without letting the record fail the refusal. The
+	 * refusal is the control; the entry is the record of it. A trail that
+	 * cannot be written must not turn a refusal into a 500, because a 500 and
+	 * a 403 are acted on very differently by whoever meets them.
+	 *
 	 * @param Schema|null $schema     The schema being exported.
 	 * @param string      $profile    What the audit entry calls this export.
 	 * @param int|null    $registerId The register, for the audit entry.
 	 *
 	 * @return JSONResponse|null The refusal, or null when the export may run.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+	 * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
 	 */
 	public function refusalFor(?Schema $schema, string $profile, ?int $registerId = null): ?JSONResponse {
 		$refusal = $this->rights->refusalFor(schema: $schema);
@@ -76,48 +81,20 @@ class ExportGate {
 			return null;
 		}
 
-		$this->record(
-			refusal: $refusal,
-			profile: $profile,
-			registerId: $registerId,
-			schemaId: $schema?->getId()
-		);
-
-		return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
-
-	}//end refusalFor()
-
-	/**
-	 * Record the refusal, without letting the record fail the refusal.
-	 *
-	 * The refusal is the control; the entry is the record of it. A trail that
-	 * cannot be written must not turn a refusal into a 500, because a 500 and
-	 * a 403 are acted on very differently by whoever meets them.
-	 *
-	 * @param ExportRefusedException $refusal    The refusal.
-	 * @param string                 $profile    What this export is called.
-	 * @param int|null               $registerId The register.
-	 * @param int|null               $schemaId   The schema.
-	 *
-	 * @return void
-	 */
-	private function record(
-		ExportRefusedException $refusal,
-		string $profile,
-		?int $registerId,
-		?int $schemaId,
-	): void {
 		try {
 			$this->recorder->recordRefused(
 				profile: $profile,
 				rule: $refusal->getRule(),
 				reason: $refusal->getMessage(),
 				register: $registerId,
-				schema: $schemaId
+				schema: $schema?->getId()
 			);
 		} catch (Throwable $exception) {
-			return;
+			// The refusal below stands whether or not the trail took it.
 		}
 
-	}//end record()
+		return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
+
+	}//end refusalFor()
+
 }//end class

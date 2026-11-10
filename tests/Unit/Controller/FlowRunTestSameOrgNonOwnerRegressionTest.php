@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowTestRunControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -97,8 +98,7 @@ class FlowRunTestSameOrgNonOwnerRegressionTest extends TestCase {
 
 		$mapper = $this->createMock(FlowRunMapper::class);
 
-		$controller = new FlowTestRunController(
-			appName: 'openregister',
+		$controller = FlowTestRunControllerFactory::create(
 			request: $request,
 			runner: $runner,
 			resolvers: $resolvers,

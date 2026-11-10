@@ -7,7 +7,7 @@ jest.mock('@nextcloud/vue', () => ({
 	NcLoadingIcon: {},
 	NcNoteCard: {},
 	NcSelect: {},
-	NcSettingsSection: {},
+	NcAppSettingsSection: {},
 	NcTextField: {},
 }))
 

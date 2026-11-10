@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Repair\SeedTaskFixtures;
+use OCA\OpenRegister\Repair\TaskFixtureMappers;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -102,9 +103,7 @@ class SeedTaskFixturesTest extends TestCase {
 
 		return new SeedTaskFixtures(
 			appConfig: $config,
-			tasks: $this->tasks,
-			candidates: $this->candidates,
-			audits: $this->audits,
+			mappers: new TaskFixtureMappers(tasks: $this->tasks, candidates: $this->candidates, audits: $this->audits),
 			logger: new NullLogger()
 		);
 	}//end step()

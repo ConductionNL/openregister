@@ -32,7 +32,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -97,11 +98,9 @@ class TimelineVisibilityServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new TimelineVisibilityService(
-			$this->schemaMapper,
+			new TimelineVisibilityPlatform($this->schemaMapper, $this->userSession, $this->logger),
 			$this->permissionHandler,
-			$this->auditTrailMapper,
-			$this->userSession,
-			$this->logger
+			$this->auditTrailMapper
 		);
 	}
 

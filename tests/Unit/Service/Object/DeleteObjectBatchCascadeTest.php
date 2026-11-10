@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -223,7 +224,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 
 		$this->objectMapper
 			->expects($this->once())
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->with(['child-1', 'child-2'], true)
 			->willReturn([$childA, $childB]);
 
@@ -275,6 +276,103 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 	}//end testCascadeUsesBatchedPipelineForResolvedChildren()
 
 	/**
+	 * A child the delete guards refuse refuses the whole cascade: nothing is written.
+	 */
+	public function testARefusedChildStopsTheBatchedCascade(): void {
+		$parent = $this->makeEntity('parent-uuid', ['children' => ['child-1', 'child-2']]);
+		$context = [
+			'object' => $parent,
+			'register' => $this->makeRegister(),
+			'schema' => $this->makeSchema(['children' => ['cascade' => true, 'type' => 'array']]),
+		];
+		$this->objectMapper->method('findAcrossAllSources')->willReturn($context);
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')
+			->willReturn([$this->makeEntity('child-1'), $this->makeEntity('child-2')]);
+		$this->objectMapper->method('assertDeletable')->willReturnCallback(
+			static function (ObjectEntity $entity): void {
+				if ($entity->getUuid() === 'child-2') {
+					throw new HookStoppedException(message: 'kept');
+				}
+			}
+		);
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
+
+		$this->objectMapper->expects($this->never())->method('softDeleteMultipleObjectEntities');
+		$this->objectMapper->expects($this->never())->method('update');
+
+		$this->expectException(HookStoppedException::class);
+		$this->expectExceptionMessage('kept');
+
+		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-uuid');
+	}//end testARefusedChildStopsTheBatchedCascade()
+
+	/**
+	 * A child already soft-deleted is not asked: it is gone, and its guards have nothing to keep.
+	 */
+	public function testASoftDeletedChildIsNotAskedAgain(): void {
+		$parent = $this->makeEntity('parent-uuid', ['children' => ['child-1']]);
+		$child = $this->makeEntity('child-1');
+		$child->setDeleted(['deletedBy' => 'alice']);
+		$context = [
+			'object' => $parent,
+			'register' => $this->makeRegister(),
+			'schema' => $this->makeSchema(['children' => ['cascade' => true, 'type' => 'array']]),
+		];
+		$this->objectMapper->method('findAcrossAllSources')->willReturn($context);
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')->willReturn([$child]);
+		$this->objectMapper->method('softDeleteMultipleObjectEntities')->willReturnArgument(0);
+		$this->objectMapper->method('update')->willReturn($parent);
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
+		$this->withAuditTrailsEnabled(false);
+
+		$asked = [];
+		$this->objectMapper->method('assertDeletable')->willReturnCallback(
+			static function (ObjectEntity $entity) use (&$asked): void {
+				$asked[] = $entity->getUuid();
+			}
+		);
+
+		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-uuid');
+
+		$this->assertSame(['parent-uuid'], $asked);
+	}//end testASoftDeletedChildIsNotAskedAgain()
+
+	/**
+	 * The batched write gets an untouched copy of each stamped child as its old
+	 * state, and a resolved child without a uuid is never stamped.
+	 */
+	public function testBatchedCascadePassesUnstampedCopiesAndSkipsBlankUuids(): void {
+		$register = $this->makeRegister();
+		$schema = $this->makeSchema(['children' => ['cascade' => true, 'type' => 'array']]);
+		$parent = $this->makeEntity('parent-uuid', ['children' => ['child-1']]);
+		$childA = $this->makeEntity('child-1');
+		$blank = $this->makeEntity('');
+
+		$this->objectMapper->method('findAcrossAllSources')
+			->willReturn(['object' => $parent, 'register' => $register, 'schema' => $schema]);
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')->willReturn([$childA, $blank]);
+		$captured = null;
+		$this->objectMapper->expects($this->once())->method('softDeleteMultipleObjectEntities')
+			->willReturnCallback(
+				function (array $entities, array $oldEntities = []) use (&$captured): array {
+					$captured = $oldEntities;
+					return [];
+				}
+			);
+		$this->objectMapper->method('update')->willReturn($parent);
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
+		$this->withAuditTrailsEnabled(false);
+
+		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-uuid');
+
+		$this->assertSame(['child-1'], array_keys($captured));
+		$this->assertNotSame($childA, $captured['child-1']);
+		$this->assertEmpty($captured['child-1']->getDeleted());
+		$this->assertNotEmpty($childA->getDeleted());
+		$this->assertEmpty($blank->getDeleted());
+	}//end testBatchedCascadePassesUnstampedCopiesAndSkipsBlankUuids()
+
+	/**
 	 * Ids the uuid-based batch lookup cannot resolve (slugs, numeric ids,
 	 * vanished rows) keep the legacy per-id delete pipeline.
 	 */
@@ -303,7 +401,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 
 		// Batch lookup only resolves child-1.
 		$this->objectMapper
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->willReturn([$childA]);
 
 		$this->objectMapper
@@ -325,6 +423,44 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 
 		$this->assertTrue($result);
 	}//end testCascadeFallsBackToPerIdPipelineForUnresolvedIds()
+
+	/**
+	 * A child that is already in the bin keeps its deletion record: who deleted it,
+	 * when, and when it may be purged. Only the live child is written.
+	 */
+	public function testAChildAlreadyDeletedKeepsItsDeletionRecord(): void {
+		$register = $this->makeRegister();
+		$schema = $this->makeSchema(['children' => ['cascade' => true, 'type' => 'array']]);
+
+		$parent = $this->makeEntity('parent-uuid', ['children' => ['child-live', 'child-gone']]);
+		$live = $this->makeEntity('child-live');
+		$gone = $this->makeEntity('child-gone');
+		$record = ['deletedBy' => 'alice', 'deletedAt' => '2026-01-02T03:04:05+00:00', 'purgeDate' => '2028-01-02T03:04:05+00:00'];
+		$gone->setDeleted($record);
+
+		$this->objectMapper->method('findAcrossAllSources')
+			->willReturn(['object' => $parent, 'register' => $register, 'schema' => $schema]);
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')->willReturn([$live, $gone]);
+
+		$written = [];
+		$this->objectMapper->expects($this->once())
+			->method('softDeleteMultipleObjectEntities')
+			->willReturnCallback(
+				function (array $entities) use (&$written): array {
+					$written = array_map(static fn (ObjectEntity $entity): ?string => $entity->getUuid(), array_values($entities));
+					return $entities;
+				}
+			);
+		$this->objectMapper->expects($this->once())->method('update')->with($parent)->willReturn($parent);
+		$this->objectMapper->expects($this->exactly(2))->method('assertDeletable');
+
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
+		$this->withAuditTrailsEnabled(false);
+
+		$this->assertTrue($this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-uuid'));
+		$this->assertSame(['child-live'], $written);
+		$this->assertSame($record, $gone->getDeleted());
+	}//end testAChildAlreadyDeletedKeepsItsDeletionRecord()
 
 	/**
 	 * A total batched-write failure hands every child back to the per-id
@@ -351,7 +487,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 			);
 
 		$this->objectMapper
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->willReturn([$childA]);
 
 		$this->objectMapper

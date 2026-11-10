@@ -5,8 +5,8 @@
  * via the IntegrationProvider contract.
  *
  * Storage strategy is `query-time` (AD-22): audit-trail entries are
- * OR's own data; the provider always reads live from `AuditTrailMapper`
- * rather than maintaining a parallel link table. Mutation methods
+ * OR's own data; the provider always reads live, through the object's
+ * history for the caller, rather than maintaining a parallel link table. Mutation methods
  * throw NotImplementedException — audit-trail entries are immutable
  * by construction.
  *
@@ -32,9 +32,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\IL10N;
+use Throwable;
 
 /**
  * Audit-trail integration provider (read-only, query-time).
@@ -43,13 +45,13 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper $mapper Audit-trail mapper.
+	 * @param ObjectHistoryForReaders $history The object's history for the caller.
 	 * @param IL10N $l10n Localisation.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private AuditTrailMapper $mapper,
+		private ObjectHistoryForReaders $history,
 		private IL10N $l10n,
 	) {
 	}//end __construct()
@@ -118,13 +120,14 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	}//end isEnabled()
 
 	/**
-	 * List audit-trail entries for an OR object.
+	 * The object's audit-trail entries, as its history gives them to this caller.
 	 *
-	 * Best-effort delegation to `AuditTrailMapper::findAllByObject` /
-	 * `findAll` depending on the mapper's exposed API. Returns an
-	 * empty list rather than 500 when the mapper signature doesn't
-	 * match — the umbrella's controller refactor (tasks 18-22) will
-	 * tighten this.
+	 * Read through the reader path of the object's history, so the object is
+	 * read with the caller's RBAC and organisation, the doelbinding guard runs,
+	 * the properties the caller may not see are removed from each entry, and
+	 * `session`, `request` and `ipAddress` are withheld. A caller who may not
+	 * read the object, a refused purpose or an ambiguous identifier gets no
+	 * rows: the history is a soft surface and never blocks the detail page.
 	 *
 	 * @param string $register Register slug or numeric id.
 	 * @param string $schema Schema slug or numeric id.
@@ -133,74 +136,37 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
-	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-16
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $filters is part of the IntegrationProvider contract.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		try {
-			if (method_exists($this->mapper, 'findAllByObject') === true) {
-				$entries = $this->mapper->findAllByObject($objectId);
-				return $this->normalize(entries: $entries);
-			}
-
-			// No method_exists() probe for findAll(): AuditTrailMapper declares
-			// it. The findAllByObject() probe above IS needed — that one is not
-			// on the mapper.
-			//
-			// The audit table's `object` column is INTEGER (numeric object id)
-			// while `object_uuid` is the UUID string the sub-resource controller
-			// actually receives. Try the UUID-typed filter first and fall back to
-			// `object` for older schemas.
-			try {
-				$entries = $this->mapper->findAll(filters: ['object_uuid' => $objectId]);
-				if (count($entries) > 0) {
-					return $this->normalize(entries: $entries);
-				}
-			} catch (\Throwable $e) {
-				// Fall through to legacy filter.
-				unset($e);
-			}
-
-			$entries = $this->mapper->findAll(filters: ['object' => $objectId]);
-			return $this->normalize(entries: $entries);
-		} catch (\Throwable $e) {
-			// AuditTrail history is a soft surface — never block the
-			// detail page on a stale or missing audit row.
-		}//end try
-
-		return [];
+		return $this->historyOf(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId));
 	}//end list()
 
 	/**
-	 * Convert mapper output (Entity[] or array[]) into the shape
-	 * IntegrationProvider::list() promises.
+	 * The object's audit entries as this caller may read them; none when the history cannot be read.
 	 *
-	 * @param mixed $entries Mapper output.
+	 * @param ObjectRef $ref The object, by the register and schema path it was listed under.
 	 *
-	 * @return array<int, array<string, mixed>>
+	 * @return array<int,array<string,mixed>>
 	 */
-	private function normalize($entries): array {
-		if (is_array($entries) === false) {
+	private function historyOf(ObjectRef $ref): array {
+		try {
+			$page = $this->history->page(
+				register: (string)$ref->register,
+				schema: (string)$ref->schema,
+				id: $ref->id,
+				params: ['limit' => PHP_INT_MAX]
+			);
+		} catch (Throwable $e) {
 			return [];
 		}
 
-		$rows = [];
-		foreach ($entries as $entry) {
-			if (is_object($entry) === true && method_exists($entry, 'jsonSerialize') === true) {
-				$serialised = $entry->jsonSerialize();
-				$rowValue = ['value' => $serialised];
-				if (is_array($serialised) === true) {
-					$rowValue = $serialised;
-				}
-
-				$rows[] = $rowValue;
-				continue;
-			}
-
-			if (is_array($entry) === true) {
-				$rows[] = $entry;
-			}
+		if ($page === null) {
+			return [];
 		}
 
-		return $rows;
-	}//end normalize()
+		return array_values($page['results']);
+	}//end historyOf()
 }//end class

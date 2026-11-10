@@ -29,6 +29,7 @@ namespace Unit\Controller;
 use OCA\OpenRegister\Controller\FederatedConfigController;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FederatedConfigControllerFactory;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -40,6 +41,7 @@ use PHPUnit\Framework\TestCase;
  * The publish gate on the bundle endpoint.
  *
  * @covers \OCA\OpenRegister\Controller\FederatedConfigController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  */
 class FederatedConfigControllerBundleGateTest extends TestCase {
 
@@ -83,15 +85,13 @@ class FederatedConfigControllerBundleGateTest extends TestCase {
 		$this->access = $this->createMock(FederatedConfigAccess::class);
 		$this->request = $this->createMock(IRequest::class);
 
-		$this->controller = new FederatedConfigController(
+		$this->controller = FederatedConfigControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,
 			$this->access,
-			$this->createMock(IUserSession::class),
-			$this->createMock(IConfig::class),
-			$this->createMock(IGroupManager::class)
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(\Psr\Log\LoggerInterface::class)),
+			$this->createMock(IConfig::class));
 
 	}//end setUp()
 
@@ -133,4 +133,20 @@ class FederatedConfigControllerBundleGateTest extends TestCase {
 		$this->assertSame('openregister.flows', $response->getData()['type']);
 
 	}//end testACallerWhoMayPublishStillGetsTheBundle()
+
+	/**
+	 * A bundle refused for its crossing rule answers 403, not 500.
+	 *
+	 * @return void
+	 */
+	public function testAnInstallRefusedForACrossingRuleIsAForbidden(): void {
+		$this->access->method('canInstall')->willReturn(true);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => ($key === 'type' ? 'demo.type' : $default)
+		);
+		$this->service->method('install')->willThrowException(new \RuntimeException('Only an administrator may ... (crossOrganisation: true)'));
+
+		$this->assertSame(403, $this->controller->install()->getStatus());
+
+	}//end testAnInstallRefusedForACrossingRuleIsAForbidden()
 }//end class

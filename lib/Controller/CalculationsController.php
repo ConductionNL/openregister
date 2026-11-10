@@ -26,13 +26,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Controller\Support\CalculationsControllerServices;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
-use OCA\OpenRegister\Service\Calculation\OperatorCatalogue;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
+use OCA\OpenRegister\Service\Calculation\OperatorCatalogueInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -44,28 +45,54 @@ use Throwable;
 class CalculationsController extends Controller {
 
 	/**
+	 * The published operator catalogue.
+	 *
+	 * @var OperatorCatalogueInterface
+	 */
+	private readonly OperatorCatalogueInterface $catalogue;
+
+	/**
+	 * Dry-run evaluation of an unsaved declaration.
+	 *
+	 * @var CalculationTrialServiceInterface
+	 */
+	private readonly CalculationTrialServiceInterface $trials;
+
+	/**
+	 * Register lookup, scoped to the caller.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup, scoped to the caller.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param OperatorCatalogue $catalogue The published operator catalogue.
-	 * @param CalculationTrialService $trials Dry-run evaluation of an unsaved declaration.
-	 * @param RegisterMapper $registerMapper Register lookup, scoped to the caller.
-	 * @param SchemaMapper $schemaMapper Schema lookup, scoped to the caller.
-	 * @param MagicMapper $objectMapper Object lookup, scoped to the caller by RBAC and tenancy.
+	 * @param CalculationsControllerServices $services The calculations controller services.
+	 * @param MagicTableRowReaderInterface $objectMapper Object lookup, scoped to the caller by RBAC and tenancy.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly OperatorCatalogue $catalogue,
-		private readonly CalculationTrialService $trials,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicMapper $objectMapper,
+		CalculationsControllerServices $services,
+		private readonly MagicTableRowReaderInterface $objectMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->catalogue = $services->catalogue;
+		$this->trials = $services->trials;
+		$this->registerMapper = $services->registerMapper;
+		$this->schemaMapper = $services->schemaMapper;
 
 	}//end __construct()
 
@@ -82,7 +109,7 @@ class CalculationsController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function operators(): JSONResponse {
 		return new JSONResponse(
@@ -112,7 +139,7 @@ class CalculationsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function evaluate(): JSONResponse {
 		$declaration = $this->request->getParam('calculation');

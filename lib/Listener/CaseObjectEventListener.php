@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Case\CasePlanService;
+use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -47,10 +47,10 @@ class CaseObjectEventListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param CasePlanService $plans The case layer.
+	 * @param CasePlanServiceInterface $plans The case layer.
 	 */
 	public function __construct(
-		private readonly CasePlanService $plans,
+		private readonly CasePlanServiceInterface $plans,
 	) {
 
 	}//end __construct()

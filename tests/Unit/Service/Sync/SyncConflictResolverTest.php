@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Unit\Service\Sync;
 
 use DateTime;
+use OCA\OpenRegister\Service\Sync\SyncConflict;
 use OCA\OpenRegister\Service\Sync\SyncConflictResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -39,7 +40,7 @@ class SyncConflictResolverTest extends TestCase {
 		foreach (SyncConflictResolver::strategies() as $strategy) {
 			$this->assertSame(
 				SyncConflictResolver::APPLY_SOURCE,
-				$this->resolver->resolve(strategy: $strategy, localChanged: false),
+				$this->resolver->resolve(strategy: $strategy, conflict: new SyncConflict(localChanged: false)),
 				"Strategy {$strategy} should apply source when local is unchanged"
 			);
 		}
@@ -48,30 +49,32 @@ class SyncConflictResolverTest extends TestCase {
 	public function testSourceWinsOverwritesLocal(): void {
 		$this->assertSame(
 			SyncConflictResolver::APPLY_SOURCE,
-			$this->resolver->resolve(strategy: SyncConflictResolver::SOURCE_WINS, localChanged: true)
+			$this->resolver->resolve(strategy: SyncConflictResolver::SOURCE_WINS, conflict: new SyncConflict(localChanged: true))
 		);
 	}//end testSourceWinsOverwritesLocal()
 
 	public function testLocalWinsKeepsLocal(): void {
 		$this->assertSame(
 			SyncConflictResolver::KEEP_LOCAL,
-			$this->resolver->resolve(strategy: SyncConflictResolver::LOCAL_WINS, localChanged: true)
+			$this->resolver->resolve(strategy: SyncConflictResolver::LOCAL_WINS, conflict: new SyncConflict(localChanged: true))
 		);
 	}//end testLocalWinsKeepsLocal()
 
 	public function testManualDefers(): void {
 		$this->assertSame(
 			SyncConflictResolver::DEFER,
-			$this->resolver->resolve(strategy: SyncConflictResolver::MANUAL, localChanged: true)
+			$this->resolver->resolve(strategy: SyncConflictResolver::MANUAL, conflict: new SyncConflict(localChanged: true))
 		);
 	}//end testManualDefers()
 
 	public function testNewestWinsSourceNewer(): void {
 		$decision = $this->resolver->resolve(
 			strategy: SyncConflictResolver::NEWEST_WINS,
-			localChanged: true,
-			sourceModified: new DateTime('2026-03-18T16:00:00Z'),
-			localModified: new DateTime('2026-03-18T14:00:00Z')
+			conflict: new SyncConflict(
+				localChanged: true,
+				sourceModified: new DateTime('2026-03-18T16:00:00Z'),
+				localModified: new DateTime('2026-03-18T14:00:00Z')
+			)
 		);
 		$this->assertSame(SyncConflictResolver::APPLY_SOURCE, $decision);
 	}//end testNewestWinsSourceNewer()
@@ -79,9 +82,11 @@ class SyncConflictResolverTest extends TestCase {
 	public function testNewestWinsLocalNewer(): void {
 		$decision = $this->resolver->resolve(
 			strategy: SyncConflictResolver::NEWEST_WINS,
-			localChanged: true,
-			sourceModified: new DateTime('2026-03-18T10:00:00Z'),
-			localModified: new DateTime('2026-03-18T14:00:00Z')
+			conflict: new SyncConflict(
+				localChanged: true,
+				sourceModified: new DateTime('2026-03-18T10:00:00Z'),
+				localModified: new DateTime('2026-03-18T14:00:00Z')
+			)
 		);
 		$this->assertSame(SyncConflictResolver::KEEP_LOCAL, $decision);
 	}//end testNewestWinsLocalNewer()
@@ -90,9 +95,11 @@ class SyncConflictResolverTest extends TestCase {
 		$ts = new DateTime('2026-03-18T12:00:00Z');
 		$decision = $this->resolver->resolve(
 			strategy: SyncConflictResolver::NEWEST_WINS,
-			localChanged: true,
-			sourceModified: $ts,
-			localModified: clone $ts
+			conflict: new SyncConflict(
+				localChanged: true,
+				sourceModified: $ts,
+				localModified: clone $ts
+			)
 		);
 		$this->assertSame(SyncConflictResolver::APPLY_SOURCE, $decision);
 	}//end testNewestWinsTiePrefersSource()
@@ -100,9 +107,11 @@ class SyncConflictResolverTest extends TestCase {
 	public function testNewestWinsMissingTimestampsDefers(): void {
 		$decision = $this->resolver->resolve(
 			strategy: SyncConflictResolver::NEWEST_WINS,
-			localChanged: true,
-			sourceModified: null,
-			localModified: null
+			conflict: new SyncConflict(
+				localChanged: true,
+				sourceModified: null,
+				localModified: null
+			)
 		);
 		$this->assertSame(SyncConflictResolver::DEFER, $decision);
 	}//end testNewestWinsMissingTimestampsDefers()
@@ -110,7 +119,7 @@ class SyncConflictResolverTest extends TestCase {
 	public function testUnknownStrategyDefers(): void {
 		$this->assertSame(
 			SyncConflictResolver::DEFER,
-			$this->resolver->resolve(strategy: 'made-up', localChanged: true)
+			$this->resolver->resolve(strategy: 'made-up', conflict: new SyncConflict(localChanged: true))
 		);
 		$this->assertFalse($this->resolver->isValidStrategy('made-up'));
 	}//end testUnknownStrategyDefers()

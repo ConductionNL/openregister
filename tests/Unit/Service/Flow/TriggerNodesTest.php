@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -46,6 +47,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode
  * @uses \OCA\OpenRegister\Service\Flow\FlowNextHint
+ * @uses \OCA\OpenRegister\Service\Rules\RuleScope
  */
 class TriggerNodesTest extends TestCase {
 
@@ -79,7 +81,7 @@ class TriggerNodesTest extends TestCase {
 		);
 
 		$this->object = new TriggerObjectNode($l10n, $urls);
-		$this->schedule = new TriggerScheduleNode($l10n, $urls, $userManager);
+		$this->schedule = new TriggerScheduleNode(new FlowNodePresentation($l10n, $urls), $userManager);
 		$this->manual = new TriggerManualNode($l10n, $urls);
 
 	}//end setUp()
@@ -211,9 +213,32 @@ class TriggerNodesTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheObjectTriggerNamesItsVocabulary(): void {
-		$this->assertSame(['event', 'register', 'schema'], $this->object->configKeys());
+		$this->assertSame(['event', 'register', 'schema', 'scope'], $this->object->configKeys());
 
 	}//end testTheObjectTriggerNamesItsVocabulary()
+
+	/**
+	 * A trigger may say which objects of its schema it is about; a scope
+	 * without a property or with a non-scalar value is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function testAnObjectTriggerScopeNamesOnePropertyAndValue(): void {
+		$config = ['event' => 'object.updated', 'register' => 'zaken', 'schema' => 'case'];
+		$this->object->validateConfig(array_merge($config, ['scope' => ['property' => 'caseType', 'value' => 'a']]));
+
+		foreach ([['value' => 'a'], ['property' => '', 'value' => 'a'], ['property' => 'caseType', 'value' => ['a']], 'a'] as $scope) {
+			try {
+				$this->object->validateConfig(array_merge($config, ['scope' => $scope]));
+				$this->fail('a malformed scope was accepted: ' . json_encode($scope));
+			} catch (InvalidArgumentException $e) {
+				$this->assertStringContainsString('scope', $e->getMessage());
+			}
+		}
+
+	}//end testAnObjectTriggerScopeNamesOnePropertyAndValue()
 
 	/**
 	 * A five-field cron expression is accepted; anything else is refused.

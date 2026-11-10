@@ -10,6 +10,7 @@
 - [x] 2.2 Implement `normalize(mixed $value): ?DateTimeImmutable` with rules: `null` → null, trim + empty → null, `DateTimeInterface` → pass through as immutable, parse failures → null + debug log
 - [x] 2.3 Implement `formatForDatabase(mixed $value): ?string` returning `Y-m-d H:i:s` or `null`
 - [x] 2.4 Implement `formatForIso8601(mixed $value): ?string` returning ISO 8601 with offset or `null`
+      Since removed: nothing called it. Read paths use `formatDatabaseValueForIso8601()`.
 - [x] 2.5 Register as an injectable service (no static state; DI via constructor)
 - [x] 2.6 Add a class docblock stating that all user-datetime conversion MUST go through this class and referencing this change
 
@@ -25,7 +26,7 @@
 - [x] 3.8 Existing `DateTime`/`DateTimeImmutable` passthrough → immutable instance
 - [x] 3.9 Garbled string → null + debug log
 - [x] 3.10 Numeric/array/object input → null + debug log
-- [x] 3.11 `formatForDatabase` and `formatForIso8601` with each of the above inputs
+- [x] 3.11 `formatForDatabase` and `formatForIso8601` with each of the above inputs (the `formatForIso8601` cases left with the method)
 
 ## 4. Migrate call sites (read path — primary fix)
 

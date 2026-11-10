@@ -1512,18 +1512,6 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$this->service->getVectorizationStatistics();
 	}
 
-	/**
-	 * Test getVectorizationCount throws disabled exception
-	 *
-	 * @return void
-	 */
-	public function testGetVectorizationCountThrowsDisabled(): void {
-		$this->expectException(\Exception::class);
-		$this->expectExceptionMessage('Vectorization temporarily disabled');
-
-		$this->service->getVectorizationCount();
-	}
-
 	// =========================================================================
 	// CRUD convenience method tests
 	// =========================================================================

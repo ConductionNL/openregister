@@ -29,6 +29,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\IResult;
 use OCP\IAppConfig;
@@ -129,23 +132,29 @@ class CacheHandlerTest extends TestCase {
 		$container = $this->createMock(\OCP\AppFramework\IAppContainer::class);
 		$container->method('get')
 			->willReturnCallback(function (string $class) {
-				if ($class === MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $this->objectMapper;
 				}
 				return $this->createMock($class);
 			});
 
 		$this->handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$this->cacheFactory,
-			$this->userSession,
-			$container,
-			null,
-			null,
-			null,
-			null,
-			$this->appConfig
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: null,
+				schemaMapper: null,
+				db: null
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $this->cacheFactory,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession,
+				groupManager: null,
+				appConfig: $this->appConfig
+			)
 		);
 	}
 
@@ -246,7 +255,7 @@ class CacheHandlerTest extends TestCase {
 			$container = $this->createMock(\OCP\AppFramework\IAppContainer::class);
 			$container->method('get')
 				->willReturnCallback(function (string $class) {
-					if ($class === MagicMapper::class) {
+					if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 						return $this->objectMapper;
 					}
 					return $this->createMock($class);
@@ -254,16 +263,22 @@ class CacheHandlerTest extends TestCase {
 		}
 
 		return new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$this->cacheFactory,
-			$this->userSession,
-			$container,
-			$registerMapper,
-			$schemaMapper,
-			$db,
-			null,
-			$this->appConfig
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				db: $db
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $this->cacheFactory,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession,
+				groupManager: null,
+				appConfig: $this->appConfig
+			)
 		);
 	}
 
@@ -378,6 +393,49 @@ class CacheHandlerTest extends TestCase {
 		$result = $this->handler->preloadObjects([1, 2]);
 
 		$this->assertCount(2, $result);
+	}
+
+	/**
+	 * With a register, preload looks in that register's tables and nowhere else
+	 * when every identifier is found there.
+	 *
+	 * @return void
+	 */
+	public function testPreloadWithARegisterLooksInItsTablesOnly(): void {
+		$entity1 = $this->createObjectEntity(id: 1, uuid: 'uuid-1');
+
+		$this->objectMapper->expects($this->once())
+			->method('findMultipleAcrossAllMagicTables')
+			->with(['uuid-1'], false, 23)
+			->willReturn([$entity1]);
+		$this->objectMapper->expects($this->never())->method('findMultiple');
+
+		$result = $this->handler->preloadObjects(identifiers: ['uuid-1'], registerId: 23);
+
+		$this->assertCount(expectedCount: 1, haystack: $result);
+	}
+
+	/**
+	 * With a register, only the identifiers not found there go to every table.
+	 *
+	 * @return void
+	 */
+	public function testPreloadWithARegisterLooksEverywhereOnlyForTheRest(): void {
+		$entity1 = $this->createObjectEntity(id: 1, uuid: 'uuid-1');
+		$entity2 = $this->createObjectEntity(id: 2, uuid: 'uuid-2');
+
+		$this->objectMapper->expects($this->once())
+			->method('findMultipleAcrossAllMagicTables')
+			->with(['uuid-1', 'uuid-2'], false, 23)
+			->willReturn([$entity1]);
+		$this->objectMapper->expects($this->once())
+			->method('findMultiple')
+			->with(['uuid-2'])
+			->willReturn([$entity2]);
+
+		$result = $this->handler->preloadObjects(identifiers: ['uuid-1', 'uuid-2'], registerId: 23);
+
+		$this->assertCount(expectedCount: 2, haystack: $result);
 	}
 
 	/**
@@ -673,10 +731,16 @@ class CacheHandlerTest extends TestCase {
 	 */
 	public function testClearSearchCacheWithoutDistributedCache(): void {
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			null,
-			$this->userSession
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: null
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		// Should not throw.
@@ -1200,15 +1264,15 @@ class CacheHandlerTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testSetObjectNameEnforcesMaxTtl(): void {
-		// TTL greater than MAX_CACHE_TTL should be clamped.
+	public function testSetObjectNameCachesForMaxTtl(): void {
+		// Names are always cached for MAX_CACHE_TTL.
 		// SEC-CTRL-2 step 2: the KEY is unchanged; the VALUE is a tenancy-bearing
 		// envelope so a shared distributed cache cannot disclose across tenants.
 		$this->nameDistributedCache->expects($this->once())
 			->method('set')
 			->with('name_uuid-1', ['n' => 'Name', 'o' => null, 's' => null], 86400);  // MAX_CACHE_TTL = 86400
 
-		$this->handler->setObjectName('uuid-1', 'Name', 999999);
+		$this->handler->setObjectName('uuid-1', 'Name');
 	}
 
 	/**
@@ -1228,19 +1292,6 @@ class CacheHandlerTest extends TestCase {
 
 		$name = $this->handler->getSingleObjectName('uuid-1');
 		$this->assertSame('Test Name', $name);
-	}
-
-	/**
-	 * Test setObjectName with TTL within limit.
-	 *
-	 * @return void
-	 */
-	public function testSetObjectNameWithTtlWithinLimit(): void {
-		$this->nameDistributedCache->expects($this->once())
-			->method('set')
-			->with('name_uuid-1', ['n' => 'Name', 'o' => null, 's' => null], 3600);
-
-		$this->handler->setObjectName('uuid-1', 'Name', 3600);
 	}
 
 	/**
@@ -1968,10 +2019,16 @@ class CacheHandlerTest extends TestCase {
 	 */
 	public function testConstructorWithoutCacheFactory(): void {
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			null,
-			$this->userSession
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: null
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		// Should still work without distributed cache.
@@ -1993,10 +2050,16 @@ class CacheHandlerTest extends TestCase {
 			->method('warning');
 
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$failingCacheFactory,
-			$this->userSession
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $failingCacheFactory
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		$stats = $handler->getStats();
@@ -2010,10 +2073,16 @@ class CacheHandlerTest extends TestCase {
 	 */
 	public function testConstructorWithNullCacheFactoryAndUserSession(): void {
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			null,
-			$this->userSession
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: null
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		$stats = $handler->getStats();
@@ -2076,10 +2145,16 @@ class CacheHandlerTest extends TestCase {
 	 */
 	public function testGetDistributedNameCacheCountWithoutDistributedCache(): void {
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			null,
-			$this->userSession
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: null
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		$count = $handler->getDistributedNameCacheCount();
@@ -2185,18 +2260,24 @@ class CacheHandlerTest extends TestCase {
 		$container = $this->createMock(\OCP\AppFramework\IAppContainer::class);
 		$container->method('get')
 			->willReturnCallback(function (string $class) {
-				if ($class === MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $this->objectMapper;
 				}
 				return $this->createMock($class);
 			});
 
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			null,
-			$this->userSession,
-			$container
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: null,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		$handler->setObjectName('uuid-a', 'Name A', source: '1:1');
@@ -2505,7 +2586,7 @@ class CacheHandlerTest extends TestCase {
 		$method = $ref->getMethod('queryTableForNames');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->handler, 'test_table', []);
+		$result = $method->invoke($this->handler, new \OCA\OpenRegister\Service\Object\NameTableQuery(tableName: 'test_table', uuids: [], source: null));
 		$this->assertSame([], $result);
 	}
 
@@ -2856,14 +2937,20 @@ class CacheHandlerTest extends TestCase {
 			});
 
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$this->cacheFactory,
-			$this->userSession,
-			null,
-			null,
-			null,
-			$db
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: null,
+				schemaMapper: null,
+				db: $db
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $this->cacheFactory,
+				container: null
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		// Call queryTableForNames directly via reflection.
@@ -2871,7 +2958,7 @@ class CacheHandlerTest extends TestCase {
 		$method = $ref->getMethod('queryTableForNames');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($handler, 'test_table', ['fallback-uuid-1']);
+		$result = $method->invoke($handler, new \OCA\OpenRegister\Service\Object\NameTableQuery(tableName: 'test_table', uuids: ['fallback-uuid-1'], source: null));
 
 		// After 2 failures + 1 success, should have found the name.
 		$this->assertIsArray($result);
@@ -2902,21 +2989,27 @@ class CacheHandlerTest extends TestCase {
 			->willReturn($stmt);
 
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$this->cacheFactory,
-			$this->userSession,
-			null,
-			null,
-			null,
-			$db
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: null,
+				schemaMapper: null,
+				db: $db
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $this->cacheFactory,
+				container: null
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		$ref = new ReflectionClass($handler);
 		$method = $ref->getMethod('queryTableForNames');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($handler, 'oc_test_table', ['direct-uuid-1']);
+		$result = $method->invoke($handler, new \OCA\OpenRegister\Service\Object\NameTableQuery(tableName: 'oc_test_table', uuids: ['direct-uuid-1'], source: null));
 
 		$this->assertIsArray($result);
 		// If mock worked correctly, name should be resolved.
@@ -3035,5 +3128,87 @@ class CacheHandlerTest extends TestCase {
 		// Either way, the test verifies the code path without crashing.
 		$this->assertIsInt($count);
 		$this->assertGreaterThanOrEqual(0, $count);
+	}
+
+	/**
+	 * Warmup records how many organisations, objects and magic rows it read, and the unique names cached.
+	 *
+	 * @return void
+	 */
+	public function testWarmupNameCacheRecordsBreakdownPerSource(): void {
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$db = $this->createMock(IDBConnection::class);
+
+		$org = new Organisation();
+		$org->setUuid('org-uuid-1');
+		$org->setName('Org One');
+		$this->organisationMapper->method('findAllWithUserCount')
+			->willReturn([$org]);
+		$this->objectMapper->method('findAll')
+			->willReturn([$this->createObjectEntity(1, 'obj-uuid-1'), $this->createObjectEntity(2, 'org-uuid-1')]);
+
+		$registerMapper->method('findAll')
+			->willReturn([$this->createRegister(1, [5], ['schemas' => ['test-schema' => ['magicMapping' => true]]])]);
+		$schemaMapper->method('find')
+			->willReturn($this->createSchema(5, 'test-schema'));
+		$queryResult = $this->createMock(IResult::class);
+		$queryResult->method('fetch')
+			->willReturnOnConsecutiveCalls(
+				['_uuid' => 'magic-uuid-1', '_name' => 'Magic Name 1'],
+				['_uuid' => 'obj-uuid-1', '_name' => ' '],
+				['_name' => 'no uuid'],
+				false
+			);
+		$db->method('executeQuery')
+			->willReturn($queryResult);
+
+		$handler = $this->createHandlerWithDbDeps(null, $registerMapper, $schemaMapper, $db);
+
+		$this->assertSame(3, $handler->warmupNameCache());
+		$this->assertSame(
+			['organisations' => 1, 'objects_table' => 2, 'magic_tables' => 2, 'total_unique' => 3],
+			$handler->getStats()['warmup_breakdown']
+		);
+	}
+
+	/**
+	 * A delete removes the object's distributed name under its UUID and id, once when the name is
+	 * cleared and once more for the delete itself.
+	 *
+	 * @return void
+	 */
+	public function testInvalidateForObjectChangeDeleteRemovesDistributedNamesTwice(): void {
+		$removed = [];
+		$this->nameDistributedCache->method('remove')
+			->willReturnCallback(function (string $key) use (&$removed): bool {
+				$removed[] = $key;
+				return true;
+			});
+
+		$this->handler->invalidateForObjectChange($this->createObjectEntity(7, 'uuid-7'), 'delete');
+
+		$this->assertSame(['name_uuid-7', 'name_7', 'name_uuid-7', 'name_7'], $removed);
+	}
+
+	/**
+	 * An update clears the distributed name once and caches the fresh name under both the UUID and the database id.
+	 *
+	 * @return void
+	 */
+	public function testInvalidateForObjectChangeUpdateCachesNameUnderUuidAndId(): void {
+		$removed = [];
+		$this->nameDistributedCache->method('remove')
+			->willReturnCallback(function (string $key) use (&$removed): bool {
+				$removed[] = $key;
+				return true;
+			});
+		$entity = $this->createObjectEntity(7, 'uuid-7');
+		$entity->setName('Fresh');
+
+		$this->handler->invalidateForObjectChange($entity, 'update');
+
+		$this->assertSame(['name_uuid-7', 'name_7'], $removed);
+		$this->assertSame(2, $this->handler->getStats()['name_cache_size']);
 	}
 }

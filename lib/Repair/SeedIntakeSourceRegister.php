@@ -25,14 +25,14 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+ * @spec openspec/specs/linked-entity-types/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -42,7 +42,7 @@ use Throwable;
 /**
  * Imports the intake-sources register descriptor idempotently on upgrade/install.
  */
-class SeedIntakeSourceRegister implements IRepairStep {
+class SeedIntakeSourceRegister implements IRepairStep, IntakeSourceRegisterSlugsInterface {
 
 	/**
 	 * App-relative path to the register descriptor imported by this step.
@@ -50,20 +50,6 @@ class SeedIntakeSourceRegister implements IRepairStep {
 	 * @var string
 	 */
 	public const REGISTER_PATH = '/lib/Settings/intake_source_register.json';
-
-	/**
-	 * The register slug this step materialises.
-	 *
-	 * @var string
-	 */
-	public const REGISTER_SLUG = 'intake-sources';
-
-	/**
-	 * The schema slug an intake source is an object of.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_SLUG = 'intake-source';
 
 	/**
 	 * Descriptor version passed to the importer's version_compare gate.
@@ -80,14 +66,14 @@ class SeedIntakeSourceRegister implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationService $configurationService The OR configuration importer.
+	 * @param AppConfigurationImporterInterface $configurationService The OR configuration importer.
 	 * @param IAppManager          $appManager           Resolves the openregister app path on disk.
 	 * @param LoggerInterface      $logger               Logger for import diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ConfigurationService $configurationService,
+		private readonly AppConfigurationImporterInterface $configurationService,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {
@@ -98,7 +84,7 @@ class SeedIntakeSourceRegister implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getName(): string {
 		return 'Seed the intake-sources register (one object per watched folder, mailbox or endpoint)';
@@ -111,7 +97,7 @@ class SeedIntakeSourceRegister implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function run(IOutput $output): void {
 		try {

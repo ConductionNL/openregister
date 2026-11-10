@@ -26,6 +26,10 @@ declare(strict_types=1);
 namespace Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleWrite;
+use OCA\OpenRegister\Service\Lifecycle\TransitionAttempt;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IUser;
@@ -48,12 +52,12 @@ class LifecycleConditionEvaluatorHoldsTest extends TestCase {
 	 *
 	 * @return \OCA\OpenRegister\Service\Rules\ConditionDialect The dialect over the real AST evaluator.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function realConditionDialect(): \OCA\OpenRegister\Service\Rules\ConditionDialect {
 		return new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 			ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
-				placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+				placeholders: new \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver(
 					userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
 				)
 			)
@@ -91,8 +95,7 @@ class LifecycleConditionEvaluatorHoldsTest extends TestCase {
 		$this->evaluator = new LifecycleConditionEvaluator(
 			$this->userSession,
 			$groupManager,
-			$l10n,
-			$this->logger,
+			new LifecycleConditionReporting($l10n, $this->logger),
 			$this->realConditionDialect()
 		);
 	}//end setUp()
@@ -109,13 +112,7 @@ class LifecycleConditionEvaluatorHoldsTest extends TestCase {
 	private function holds(mixed $rule, array $object = [], array $previous = []): bool {
 		return $this->evaluator->holds(
 			rule: $rule,
-			newData: $object,
-			oldData: $previous,
-			action: 'beslissen',
-			from: 'in-behandeling',
-			to: 'besloten',
-			schemaSlug: 'bezwaar',
-			field: 'status'
+			attempt: new TransitionAttempt(write: new LifecycleWrite(newData: $object, oldData: $previous, schemaSlug: 'bezwaar', field: 'status'), move: new TransitionMove(action: 'beslissen', from: 'in-behandeling', to: 'besloten'))
 		);
 	}//end holds()
 

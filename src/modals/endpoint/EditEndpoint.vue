@@ -12,7 +12,6 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 				: t('openregister', 'Add Endpoint')
 		"
 		size="large"
-		:canClose="true"
 		@update:open="navigationStore.setModal(false)">
 		<div class="formContainer">
 			<div class="form">
@@ -65,12 +64,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 					" />
 			</div>
 			<div class="modalFooter">
-				<NcButton @click="navigationStore.setModal(false)">
-					<template #icon>
-						<Cancel :size="20" />
-					</template>
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
+				<CloseCancelButton :label="t('openregister', 'Cancel')" @click="navigationStore.setModal(false)" />
 				<NcButton
 					:disabled="
 						!endpointStore.endpointItem.name
@@ -98,8 +92,8 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'EditEndpoint',
@@ -110,7 +104,7 @@ export default {
 		NcButton,
 		NcSelect,
 		ContentSaveOutline,
-		Cancel,
+		CloseCancelButton,
 	},
 
 	data() {

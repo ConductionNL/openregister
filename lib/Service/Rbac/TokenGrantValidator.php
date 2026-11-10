@@ -53,10 +53,10 @@ class TokenGrantValidator {
 	/**
 	 * Constructor.
 	 *
-	 * @param PermissionCatalogue $catalogue The canonical verb vocabulary.
+	 * @param PermissionCatalogueInterface $catalogue The canonical verb vocabulary.
 	 */
 	public function __construct(
-		private readonly PermissionCatalogue $catalogue,
+		private readonly PermissionCatalogueInterface $catalogue,
 	) {
 	}//end __construct()
 

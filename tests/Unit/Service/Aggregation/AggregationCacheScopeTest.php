@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Aggregation;
 
-use OCA\OpenRegister\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\ICache;
 use OCP\ICacheFactory;

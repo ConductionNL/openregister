@@ -24,10 +24,6 @@
 
 namespace OCA\OpenRegister\Service\Settings;
 
-use InvalidArgumentException;
-use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
-
 /**
  * Handler for search backend settings operations.
  *
@@ -49,56 +45,6 @@ use Psr\Log\LoggerInterface;
 class SearchBackendHandler {
 
 	/**
-	 * Configuration service
-	 *
-	 * @var IAppConfig
-	 */
-	private IAppConfig $appConfig;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
-	 * Application name
-	 *
-	 * @var string
-	 */
-	private string $appName;
-
-	/**
-	 * Records every save on the audit trail (openregister#4100).
-	 *
-	 * @var OwnSettingsChangeRecorder|null
-	 */
-	private ?OwnSettingsChangeRecorder $changeRecorder;
-
-	/**
-	 * Constructor for SearchBackendHandler
-	 *
-	 * @param IAppConfig $appConfig Configuration service.
-	 * @param LoggerInterface $logger Logger.
-	 * @param string $appName Application name.
-	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail.
-	 *
-	 * @return void
-	 */
-	public function __construct(
-		IAppConfig $appConfig,
-		LoggerInterface $logger,
-		string $appName = 'openregister',
-		?OwnSettingsChangeRecorder $changeRecorder = null,
-	) {
-		$this->appConfig = $appConfig;
-		$this->logger = $logger;
-		$this->appName = $appName;
-		$this->changeRecorder = $changeRecorder;
-	}//end __construct()
-
-	/**
 	 * Get search backend configuration.
 	 *
 	 * The external Solr/Elasticsearch backends were removed; the built-in
@@ -116,53 +62,4 @@ class SearchBackendHandler {
 			'available' => ['database'],
 		];
 	}//end getSearchBackendConfig()
-
-	/**
-	 * Update search backend configuration.
-	 *
-	 * Retained for API compatibility. The database backend is the only option,
-	 * so any backend other than 'database' is rejected.
-	 *
-	 * @param string $backend Backend name (only 'database' is valid).
-	 *
-	 * @return (int|string[])[] Updated backend configuration.
-	 *
-	 * @throws \InvalidArgumentException If a non-database backend is requested.
-	 *
-	 * @psalm-return array{active: 'database', available: list{'database'}, updated: int<1, max>}
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-backend-agnostic-search-architecture
-	 */
-	public function updateSearchBackendConfig(string $backend): array {
-		$availableBackends = ['database'];
-
-		if (in_array($backend, $availableBackends, true) === false) {
-			throw new InvalidArgumentException(
-				"Invalid backend '$backend'. Must be one of: " . implode(', ', $availableBackends)
-			);
-		}
-
-		$backendConfig = [
-			'active' => 'database',
-			'available' => $availableBackends,
-			'updated' => time(),
-		];
-
-		$before = $this->changeRecorder?->snapshot(keys: ['search_backend']);
-		$this->appConfig->setValueString($this->appName, 'search_backend', json_encode($backendConfig));
-		if ($before !== null) {
-			$this->changeRecorder?->record(before: $before, keys: ['search_backend']);
-		}
-
-		$this->logger->info(
-			message: '[SearchBackendHandler] Search backend set to: database',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'app' => 'openregister',
-			]
-		);
-
-		return $backendConfig;
-	}//end updateSearchBackendConfig()
 }//end class

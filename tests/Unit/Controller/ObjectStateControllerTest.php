@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectStateController;
+use OCA\OpenRegister\Controller\Support\ObjectStateControllerServices;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
@@ -40,6 +41,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectStateController
  * @uses \OCA\OpenRegister\Exception\ArchiveNotOfferedException
+ * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  */
 final class ObjectStateControllerTest extends TestCase {
 
@@ -82,7 +84,7 @@ final class ObjectStateControllerTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		return new ObjectStateController('openregister', $this->request, $this->handler, $session);
+		return new ObjectStateController($this->request, new ObjectStateControllerServices($this->handler, $session));
 	}//end controller()
 
 	/**

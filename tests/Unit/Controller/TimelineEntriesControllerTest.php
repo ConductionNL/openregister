@@ -28,17 +28,18 @@ namespace Unit\Controller;
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- PHPUnit fixture properties are named by their type.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Controller\TimelineEntriesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TimelineEntriesControllerFactory;
+use OCA\OpenRegister\Notifications\Controller\TimelineEntriesController;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\TimelineEntry;
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Timeline\ReferenceService;
-use OCA\OpenRegister\Service\Timeline\TimelineEntrySearchService;
-use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
-use OCA\OpenRegister\Service\Timeline\TimelinePermissionException;
-use OCA\OpenRegister\Service\Timeline\TimelineValidationException;
-use OCA\OpenRegister\Service\Timeline\TimelineWriteService;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntrySearchService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelinePermissionException;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -83,8 +84,7 @@ class TimelineEntriesControllerTest extends TestCase {
 			}
 		);
 
-		$this->controller = new TimelineEntriesController(
-			'openregister',
+		$this->controller = TimelineEntriesControllerFactory::create(
 			$this->request,
 			$this->objects,
 			$this->entries,

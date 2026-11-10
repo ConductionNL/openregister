@@ -77,28 +77,18 @@
 			<p v-if="!hasWrites" class="muted">
 				{{ t('openregister', 'Nothing. This rule writes no value.') }}
 			</p>
-			<table v-else class="writeTable">
-				<thead>
-					<tr>
-						<th scope="col">
-							{{ t('openregister', 'Property') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Value') }}
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="(value, key) in result.writes" :key="key">
-						<td>
-							<code>{{ key }}</code>
-						</td>
-						<td>
-							<code>{{ renderValue(value) }}</code>
-						</td>
-					</tr>
-				</tbody>
-			</table>
+			<CnDataTable
+				v-else
+				class="writeTable"
+				:columns="writeColumns"
+				:rows="writeRows">
+				<template #column-id="{ value }">
+					<code>{{ value }}</code>
+				</template>
+				<template #column-value="{ value }">
+					<code>{{ renderValue(value) }}</code>
+				</template>
+			</CnDataTable>
 		</div>
 
 		<p v-if="error" class="refusal">
@@ -108,6 +98,7 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
 import RuleTraceView from './RuleTraceView.vue'
@@ -124,6 +115,7 @@ export default {
 	name: 'RuleTrialPanel',
 
 	components: {
+		CnDataTable,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcTextField,
@@ -167,7 +159,7 @@ export default {
 		 *
 		 * @return {string} The placeholder.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		samplePlaceholder() {
 			return '{\n  "ontvangstdatum": "2026-01-01",\n  "bedrag": 900\n}'
@@ -178,10 +170,31 @@ export default {
 		 *
 		 * @return {boolean} True when there is a write to show.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		hasWrites() {
 			return this.result?.writes && Object.keys(this.result.writes).length > 0
+		},
+
+		/**
+		 * The write table's columns: the property and the value written.
+		 *
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		writeColumns() {
+			return [
+				{ key: 'id', label: t('openregister', 'Property'), cellClass: 'cn-cell--wrap' },
+				{ key: 'value', label: t('openregister', 'Value'), cellClass: 'cn-cell--wrap' },
+			]
+		},
+
+		/**
+		 * The writes as table rows, keyed by property.
+		 *
+		 * @return {Array<object>} One `{ id, value }` per write
+		 */
+		writeRows() {
+			return Object.entries(this.result?.writes || {}).map(([id, value]) => ({ id, value }))
 		},
 	},
 
@@ -191,7 +204,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		ruleId() {
 			this.result = null
@@ -205,7 +218,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		draft() {
 			this.result = null
@@ -222,7 +235,7 @@ export default {
 		 *
 		 * @return {string} The rendered value.
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		renderValue(value) {
 			if (value === null || value === undefined) {
@@ -243,34 +256,16 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+		 * @spec openspec/specs/flow-engine/spec.md
 		 */
 		async run() {
 			this.error = ''
 			this.sampleError = ''
 			this.result = null
 
-			let payload
-			if (this.target === 'sample') {
-				try {
-					payload = {
-						object:
-							this.sample.trim() === '' ? {} : JSON.parse(this.sample),
-					}
-				} catch (parseFailure) {
-					this.sampleError = t(
-						'openregister',
-						'That is not valid JSON: {reason}',
-						{ reason: parseFailure.message },
-					)
-					return
-				}
-			} else {
-				payload = { register: this.register, objectId: this.objectId }
-			}
-
-			if (this.draft !== null) {
-				payload.rule = { expression: this.draft }
+			const payload = this.trialPayload()
+			if (payload === null) {
+				return
 			}
 
 			this.running = true
@@ -291,19 +286,62 @@ export default {
 				this.running = false
 			}
 		},
+
+		/**
+		 * The payload for a trial: the parsed sample or the stored object, plus
+		 * the unsaved draft when there is one.
+		 *
+		 * @return {object|null} The payload, or null when the sample is not valid JSON
+		 *
+		 * @spec openspec/specs/flow-engine/spec.md
+		 */
+		trialPayload() {
+			const payload =
+				this.target === 'sample'
+					? this.samplePayload()
+					: { register: this.register, objectId: this.objectId }
+			if (payload !== null && this.draft !== null) {
+				payload.rule = { expression: this.draft }
+			}
+			return payload
+		},
+
+		/**
+		 * The sample as an object to try the rule on. An empty sample is an
+		 * empty object; a sample that does not parse sets the sample error.
+		 *
+		 * @return {object|null} The payload, or null when the sample is not valid JSON
+		 *
+		 * @spec openspec/specs/flow-engine/spec.md
+		 */
+		samplePayload() {
+			try {
+				return {
+					object: this.sample.trim() === '' ? {} : JSON.parse(this.sample),
+				}
+			} catch (parseFailure) {
+				this.sampleError = t(
+					'openregister',
+					'That is not valid JSON: {reason}',
+					{
+						reason: parseFailure.message,
+					},
+				)
+				return null
+			}
+		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
+
 .ruleTrial {
 	margin-bottom: 24px;
 }
 
-.lead {
-	color: var(--color-text-maxcontrast);
-	margin-bottom: 12px;
-}
+@include lead;
 
 .trialTarget {
 	border: none;
@@ -318,18 +356,6 @@ export default {
 .trialField textarea {
 	width: 100%;
 	font-family: monospace;
-}
-
-.writeTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.writeTable th,
-.writeTable td {
-	text-align: start;
-	padding: 6px 10px;
-	border-bottom: 1px solid var(--color-border);
 }
 
 .refusal {

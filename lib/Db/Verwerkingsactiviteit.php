@@ -88,6 +88,7 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class Verwerkingsactiviteit extends Entity implements JsonSerializable {
+	use StatusVocabularyTrait;
 
 	/**
 	 * Article 6 GDPR legal-basis vocabulary.
@@ -283,21 +284,6 @@ class Verwerkingsactiviteit extends Entity implements JsonSerializable {
 
 		return in_array(needle: $legalBasis, haystack: self::LEGAL_BASIS_VOCABULARY, strict: true);
 	}//end isValidLegalBasis()
-
-	/**
-	 * Whether the supplied status string is in the lifecycle vocabulary.
-	 *
-	 * @param string|null $status Candidate status string.
-	 *
-	 * @return bool
-	 */
-	public static function isValidStatus(?string $status): bool {
-		if ($status === null || $status === '') {
-			return false;
-		}
-
-		return in_array(needle: $status, haystack: self::STATUS_VOCABULARY, strict: true);
-	}//end isValidStatus()
 
 	/**
 	 * Render the entity as the canonical AVG Art 30 JSON shape.

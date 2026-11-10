@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Case;
 
 use DateTime;
 use OCA\OpenRegister\Db\CaseItem;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
  * Mirrors status and result onto the anchoring object.
@@ -46,10 +46,10 @@ class CaseBusinessStateWriter {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The ordinary object write path.
+	 * @param ObjectOperationsInterface $objects The ordinary object write path.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 	) {
 
 	}//end __construct()

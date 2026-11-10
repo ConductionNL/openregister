@@ -38,6 +38,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 use Exception;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\CardDraft;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\Integration\Providers\DeckProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -48,6 +50,7 @@ use RuntimeException;
  * Unit tests for DeckProvider.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) Many small AAA tests, one per behaviour.
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class DeckProviderTest extends TestCase {
 
@@ -121,7 +124,7 @@ class DeckProviderTest extends TestCase {
 		$linkService
 			->expects($this->once())
 			->method('linkCard')
-			->with('obj-uuid', 10, 20, 42)
+			->with($this->equalTo((new LinkTarget('obj-uuid', 10))->inSchema(20)), 42)
 			->willReturn($this->buildDeckLink(42));
 
 		$linkService->expects($this->never())->method('createAndLinkCard');
@@ -149,7 +152,10 @@ class DeckProviderTest extends TestCase {
 		$linkService
 			->expects($this->once())
 			->method('createAndLinkCard')
-			->with('obj-uuid', 10, 20, 1, 2, 'Hello', 'desc', '2026-12-31')
+			->with(
+				(new LinkTarget('obj-uuid', 10))->inSchema(20),
+				(new CardDraft('Hello', 2))->onBoard(1)->withDetails('desc', '2026-12-31')
+			)
 			->willReturn($this->buildDeckLink(99));
 
 		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
@@ -172,6 +178,51 @@ class DeckProviderTest extends TestCase {
 		$this->assertIsArray($result);
 		$this->assertSame(99, $result['cardId']);
 	}//end testCreateCreatesAndLinksWhenBoardStackPresent()
+
+	public function testCreateDefaultsTheTitleAndLeavesAbsentDetailsNull(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService
+			->expects($this->once())
+			->method('createAndLinkCard')
+			->with(
+				(new LinkTarget('obj-uuid', 5))->inSchema(6),
+				(new CardDraft('Untitled', 2))->onBoard(1)->withDetails(null, null)
+			)
+			->willReturn($this->buildDeckLink(1));
+
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
+
+		$provider->create('5', '6', 'obj-uuid', ['boardId' => 1, 'stackId' => 2]);
+	}//end testCreateDefaultsTheTitleAndLeavesAbsentDetailsNull()
+
+	public function testCreateNeedsBothBoardAndStack(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService->expects($this->never())->method('createAndLinkCard');
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
+
+		foreach ([['boardId' => 1], ['stackId' => 2]] as $payload) {
+			try {
+				$provider->create('5', '6', 'obj-uuid', $payload);
+				$this->fail('expected a refusal');
+			} catch (Exception $e) {
+				$this->assertSame('Either cardId or boardId+stackId is required', $e->getMessage());
+				$this->assertSame(400, $e->getCode());
+			}
+		}
+	}//end testCreateNeedsBothBoardAndStack()
+
+	public function testCreatePrefersAnExistingCardOverBoardData(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService->expects($this->never())->method('createAndLinkCard');
+		$linkService
+			->expects($this->once())
+			->method('linkCard')
+			->with(target: (new LinkTarget('obj-uuid', 5))->inSchema(6), cardId: 9)
+			->willReturn($this->buildDeckLink(9));
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
+
+		$provider->create('5', '6', 'obj-uuid', ['cardId' => '9', 'boardId' => 1, 'stackId' => 2]);
+	}//end testCreatePrefersAnExistingCardOverBoardData()
 
 	public function testCreateThrowsWhenPayloadMissing(): void {
 		$linkService = $this->createMock(DeckLinkService::class);

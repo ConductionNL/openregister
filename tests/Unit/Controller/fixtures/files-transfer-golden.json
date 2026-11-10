@@ -1,0 +1,2540 @@
+{
+    "copy: same register": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.copyFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            },
+            {
+                "fileService.getAuditHandler": true
+            },
+            {
+                "audit.logFileAction": [
+                    "source-uuid",
+                    42,
+                    "file.copied",
+                    {
+                        "targetObjectUuid": "target-uuid",
+                        "targetRegister": "reg",
+                        "targetSchema": "sch"
+                    }
+                ]
+            },
+            {
+                "audit.logFileAction": [
+                    "target-uuid",
+                    99,
+                    "file.copied_in",
+                    {
+                        "sourceObjectUuid": "source-uuid",
+                        "sourceFileId": 42
+                    }
+                ]
+            },
+            {
+                "dispatcher.dispatchTyped": [
+                    "OCA\\OpenRegister\\Event\\FileCopiedEvent",
+                    "source-uuid",
+                    42,
+                    {
+                        "targetObjectUuid": "target-uuid"
+                    }
+                ]
+            },
+            {
+                "fileService.formatFile": 99
+            }
+        ],
+        "status": 201,
+        "data": {
+            "id": 99,
+            "name": "copied.pdf"
+        }
+    },
+    "copy: other register": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg2",
+                    "sch2",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg2"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch2"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.copyFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            },
+            {
+                "fileService.getAuditHandler": true
+            },
+            {
+                "audit.logFileAction": [
+                    "source-uuid",
+                    42,
+                    "file.copied",
+                    {
+                        "targetObjectUuid": "target-uuid",
+                        "targetRegister": "reg2",
+                        "targetSchema": "sch2"
+                    }
+                ]
+            },
+            {
+                "audit.logFileAction": [
+                    "target-uuid",
+                    99,
+                    "file.copied_in",
+                    {
+                        "sourceObjectUuid": "source-uuid",
+                        "sourceFileId": 42
+                    }
+                ]
+            },
+            {
+                "dispatcher.dispatchTyped": [
+                    "OCA\\OpenRegister\\Event\\FileCopiedEvent",
+                    "source-uuid",
+                    42,
+                    {
+                        "targetObjectUuid": "target-uuid"
+                    }
+                ]
+            },
+            {
+                "fileService.formatFile": 99
+            }
+        ],
+        "status": 201,
+        "data": {
+            "id": 99,
+            "name": "copied.pdf"
+        }
+    },
+    "copy: no target id": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "Target object ID is required"
+        }
+    },
+    "copy: empty target id": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "Target object ID is required"
+        }
+    },
+    "copy: anonymous": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "You do not have access to this object"
+        }
+    },
+    "copy: legacy wiring without the access guard": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "objectService.find": [
+                    "source-uuid",
+                    "array",
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "objectService.find": [
+                    "target-uuid",
+                    "array",
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "found-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.copyFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            },
+            {
+                "fileService.getAuditHandler": true
+            },
+            {
+                "audit.logFileAction": [
+                    "source-uuid",
+                    42,
+                    "file.copied",
+                    {
+                        "targetObjectUuid": "target-uuid",
+                        "targetRegister": "reg",
+                        "targetSchema": "sch"
+                    }
+                ]
+            },
+            {
+                "audit.logFileAction": [
+                    "target-uuid",
+                    99,
+                    "file.copied_in",
+                    {
+                        "sourceObjectUuid": "source-uuid",
+                        "sourceFileId": 42
+                    }
+                ]
+            },
+            {
+                "dispatcher.dispatchTyped": [
+                    "OCA\\OpenRegister\\Event\\FileCopiedEvent",
+                    "source-uuid",
+                    42,
+                    {
+                        "targetObjectUuid": "target-uuid"
+                    }
+                ]
+            },
+            {
+                "fileService.formatFile": 99
+            }
+        ],
+        "status": 201,
+        "data": {
+            "id": 99,
+            "name": "copied.pdf"
+        }
+    },
+    "copy: restricted file": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        }
+    },
+    "copy: source not readable": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        }
+    },
+    "copy: source not changeable": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "You do not have access to this object"
+        }
+    },
+    "copy: target not changeable": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "You do not have access to this object"
+        }
+    },
+    "copy: target not readable": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        }
+    },
+    "copy: target frozen": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            }
+        ],
+        "status": 409,
+        "data": {
+            "error": "Object is frozen",
+            "state": null,
+            "by": null,
+            "at": null,
+            "reason": null
+        }
+    },
+    "copy: source frozen": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.copyFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            },
+            {
+                "fileService.getAuditHandler": true
+            },
+            {
+                "audit.logFileAction": [
+                    "source-uuid",
+                    42,
+                    "file.copied",
+                    {
+                        "targetObjectUuid": "target-uuid",
+                        "targetRegister": "reg",
+                        "targetSchema": "sch"
+                    }
+                ]
+            },
+            {
+                "audit.logFileAction": [
+                    "target-uuid",
+                    99,
+                    "file.copied_in",
+                    {
+                        "sourceObjectUuid": "source-uuid",
+                        "sourceFileId": 42
+                    }
+                ]
+            },
+            {
+                "dispatcher.dispatchTyped": [
+                    "OCA\\OpenRegister\\Event\\FileCopiedEvent",
+                    "source-uuid",
+                    42,
+                    {
+                        "targetObjectUuid": "target-uuid"
+                    }
+                ]
+            },
+            {
+                "fileService.formatFile": 99
+            }
+        ],
+        "status": 201,
+        "data": {
+            "id": 99,
+            "name": "copied.pdf"
+        }
+    },
+    "copy: source object missing": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": null
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Source object not found"
+        }
+    },
+    "copy: target object missing": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": null
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Target object not found"
+        }
+    },
+    "copy: service says not found": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.copyFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "File 42 not found"
+        }
+    },
+    "copy: service says locked": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.copyFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "File is locked by user-2"
+        }
+    },
+    "copy: service fails otherwise": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.copyFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "disk full"
+        }
+    },
+    "copy: service refuses the state": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.copyFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            }
+        ],
+        "status": 409,
+        "data": {
+            "error": "Target is archived",
+            "state": null,
+            "by": null,
+            "at": null,
+            "reason": null
+        }
+    },
+    "copy: service refuses access": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.readable": [
+                    "reg",
+                    "sch",
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.copyFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "You do not have access to this object"
+        }
+    },
+    "move: same register": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.moveFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            },
+            {
+                "fileService.getAuditHandler": true
+            },
+            {
+                "audit.logFileAction": [
+                    "source-uuid",
+                    42,
+                    "file.moved",
+                    {
+                        "targetObjectUuid": "target-uuid",
+                        "targetRegister": "reg",
+                        "targetSchema": "sch"
+                    }
+                ]
+            },
+            {
+                "audit.logFileAction": [
+                    "target-uuid",
+                    99,
+                    "file.moved_in",
+                    {
+                        "sourceObjectUuid": "source-uuid",
+                        "sourceFileId": 42
+                    }
+                ]
+            },
+            {
+                "dispatcher.dispatchTyped": [
+                    "OCA\\OpenRegister\\Event\\FileMovedEvent",
+                    "source-uuid",
+                    42,
+                    {
+                        "targetObjectUuid": "target-uuid"
+                    }
+                ]
+            },
+            {
+                "fileService.formatFile": 99
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 99,
+            "name": "copied.pdf"
+        }
+    },
+    "move: other register": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg2",
+                    "sch2",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg2"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch2"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.moveFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            },
+            {
+                "fileService.getAuditHandler": true
+            },
+            {
+                "audit.logFileAction": [
+                    "source-uuid",
+                    42,
+                    "file.moved",
+                    {
+                        "targetObjectUuid": "target-uuid",
+                        "targetRegister": "reg2",
+                        "targetSchema": "sch2"
+                    }
+                ]
+            },
+            {
+                "audit.logFileAction": [
+                    "target-uuid",
+                    99,
+                    "file.moved_in",
+                    {
+                        "sourceObjectUuid": "source-uuid",
+                        "sourceFileId": 42
+                    }
+                ]
+            },
+            {
+                "dispatcher.dispatchTyped": [
+                    "OCA\\OpenRegister\\Event\\FileMovedEvent",
+                    "source-uuid",
+                    42,
+                    {
+                        "targetObjectUuid": "target-uuid"
+                    }
+                ]
+            },
+            {
+                "fileService.formatFile": 99
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 99,
+            "name": "copied.pdf"
+        }
+    },
+    "move: no target id": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "Target object ID is required"
+        }
+    },
+    "move: empty target id": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "Target object ID is required"
+        }
+    },
+    "move: anonymous": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "You do not have access to this object"
+        }
+    },
+    "move: legacy wiring without the access guard": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "objectService.find": [
+                    "source-uuid",
+                    "array",
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "found-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "objectService.find": [
+                    "target-uuid",
+                    "array",
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "found-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.moveFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            },
+            {
+                "fileService.getAuditHandler": true
+            },
+            {
+                "audit.logFileAction": [
+                    "source-uuid",
+                    42,
+                    "file.moved",
+                    {
+                        "targetObjectUuid": "target-uuid",
+                        "targetRegister": "reg",
+                        "targetSchema": "sch"
+                    }
+                ]
+            },
+            {
+                "audit.logFileAction": [
+                    "target-uuid",
+                    99,
+                    "file.moved_in",
+                    {
+                        "sourceObjectUuid": "source-uuid",
+                        "sourceFileId": 42
+                    }
+                ]
+            },
+            {
+                "dispatcher.dispatchTyped": [
+                    "OCA\\OpenRegister\\Event\\FileMovedEvent",
+                    "source-uuid",
+                    42,
+                    {
+                        "targetObjectUuid": "target-uuid"
+                    }
+                ]
+            },
+            {
+                "fileService.formatFile": 99
+            }
+        ],
+        "status": 200,
+        "data": {
+            "id": 99,
+            "name": "copied.pdf"
+        }
+    },
+    "move: restricted file": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        }
+    },
+    "move: source not readable": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        }
+    },
+    "move: source not changeable": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "You do not have access to this object"
+        }
+    },
+    "move: target not changeable": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "You do not have access to this object"
+        }
+    },
+    "move: target not readable": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Object not found"
+        }
+    },
+    "move: target frozen": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            }
+        ],
+        "status": 409,
+        "data": {
+            "error": "Object is frozen",
+            "state": null,
+            "by": null,
+            "at": null,
+            "reason": null
+        }
+    },
+    "move: source frozen": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            }
+        ],
+        "status": 409,
+        "data": {
+            "error": "Object is frozen",
+            "state": null,
+            "by": null,
+            "at": null,
+            "reason": null
+        }
+    },
+    "move: source object missing": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": null
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Source object not found"
+        }
+    },
+    "move: target object missing": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": null
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Target object not found"
+        }
+    },
+    "move: service says not found": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.moveFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "File 42 not found"
+        }
+    },
+    "move: service says locked": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.moveFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            }
+        ],
+        "status": 423,
+        "data": {
+            "error": "File is locked by user-2"
+        }
+    },
+    "move: service fails otherwise": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.moveFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "disk full"
+        }
+    },
+    "move: service refuses the state": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.moveFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            }
+        ],
+        "status": 409,
+        "data": {
+            "error": "Target is archived",
+            "state": null,
+            "by": null,
+            "at": null,
+            "reason": null
+        }
+    },
+    "move: service refuses access": {
+        "calls": [
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "restrictions.mayRead": 42
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "source-uuid",
+                    "deleteFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-source-uuid"
+            },
+            {
+                "objectService.setObject": [
+                    "source-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "source"
+            },
+            {
+                "request.getParams": true
+            },
+            {
+                "access.changeable": [
+                    "reg",
+                    "sch",
+                    "target-uuid",
+                    "addFiles"
+                ]
+            },
+            {
+                "writeGuard.assertWritable": "checked-target-uuid"
+            },
+            {
+                "objectService.setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "objectService.setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "objectService.setObject": [
+                    "target-uuid"
+                ]
+            },
+            {
+                "objectService.getObject": "target"
+            },
+            {
+                "fileService.moveFile": [
+                    "source-uuid",
+                    42,
+                    "target-uuid"
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "You do not have access to this object"
+        }
+    }
+}

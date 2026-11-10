@@ -1,11 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import {
-	navigationStore,
-	objectStore,
-	registerStore,
-	schemaStore,
-} from '../../store/store.js'
+import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -196,6 +191,11 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import {
+	liveCollectionLifecycle,
+	liveCollectionMethods,
+} from '../../composables/liveCollectionSubscription.js'
+import { openAddObjectModal } from '../../composables/openAddObject.js'
 
 export default {
 	name: 'ObjectsList',
@@ -216,6 +216,8 @@ export default {
 		LockOutline,
 		LockOpenOutline,
 	},
+
+	mixins: [liveCollectionLifecycle],
 
 	data() {
 		return {
@@ -248,30 +250,11 @@ export default {
 
 	watch: {
 		/**
-		 * Re-scope the live collection subscription when the user switches
-		 * register/schema.
-		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 */
-		liveCollectionType() {
-			this.syncLiveSubscription()
-		},
-
-		/**
 		 * @param {number} newVal The new page number
 		 * @spec exclude list-view watcher; reloads the object list on page change (object-lifecycle contract)
 		 */
 		currentPage(newVal) {
-			this.loading = true
-			objectStore
-				.refreshObjectList({
-					limit: this.limit,
-					page: newVal,
-					search: this.search,
-				})
-				.finally(() => {
-					this.loading = false
-				})
+			this.reloadList(newVal, this.search)
 		},
 
 		/**
@@ -281,16 +264,7 @@ export default {
 		search(newVal) {
 			clearTimeout(this.searchTimeout)
 			this.searchTimeout = setTimeout(() => {
-				this.loading = true
-				objectStore
-					.refreshObjectList({
-						limit: this.limit,
-						page: this.currentPage,
-						search: newVal,
-					})
-					.finally(() => {
-						this.loading = false
-					})
+				this.reloadList(this.currentPage, newVal)
 			}, 700)
 		},
 	},
@@ -312,113 +286,35 @@ export default {
 			this.loading = false
 			return
 		}
-		this.loading = true
-		objectStore
-			.refreshObjectList({
-				limit: this.limit,
-				page: this.currentPage,
-				search: this.search,
-			})
-			.finally(() => {
-				this.loading = false
-			})
-	},
-
-	/**
-	 * Lifecycle hook: release the live collection subscription on unmount.
-	 *
-	 * @spec openspec/specs/realtime-updates/spec.md
-	 * @return {void}
-	 */
-	beforeUnmount() {
-		this.releaseLiveSubscription()
+		this.reloadList(this.currentPage, this.search)
 	},
 
 	methods: {
-		/**
-		 * Subscribe to live updates for the currently scoped register+schema
-		 * collection (adopt-live-updates-ui). Events are refetch hints only:
-		 * the liveUpdatesPlugin re-runs fetchCollection with the last-used
-		 * params, so the rendered collection state refreshes reactively.
-		 * Idempotent per type; releases the previous subscription when the
-		 * scope changes. Uses notify_push when available, visibility-gated
-		 * polling otherwise.
-		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
-		 * @return {Promise<void>}
-		 */
-		async syncLiveSubscription() {
-			const type = objectStore.currentType
-			if (typeof objectStore.subscribe !== 'function') {
-				return
-			}
-			if (!type) {
-				this.releaseLiveSubscription()
-				return
-			}
-			if (this.liveHandle && this.liveType === type) {
-				return
-			}
-			if (this.livePendingType === type) {
-				// A subscribe for this exact scope is already in flight —
-				// re-subscribing here would leak the first handle.
-				return
-			}
-			this.releaseLiveSubscription()
-			try {
-				// Subscription is independent of refreshObjectList timing:
-				// register the type ourselves when it is not known yet.
-				if (!objectStore.objectTypes.includes(type)) {
-					const registerId = registerStore.registerItem?.id
-					const schemaId = schemaStore.schemaItem?.id
-					if (!registerId || !schemaId) {
-						return
-					}
-					objectStore.registerObjectType(type, schemaId, registerId)
-				}
-				const epoch = this.liveEpoch
-				this.livePendingType = type
-				this.liveType = type
-				const handle = await objectStore.subscribe(type)
-				if (this.livePendingType === type) {
-					this.livePendingType = ''
-				}
-				if (this.liveEpoch !== epoch) {
-					// released while awaiting (scope change / destroy) — drop
-					// the now-stale subscription instead of leaking it.
-					objectStore.unsubscribe(handle)
-					return
-				}
-				this.liveHandle = handle
-			} catch (e) {
-				if (this.livePendingType === type) {
-					this.livePendingType = ''
-				}
-				this.liveHandle = null
-				this.liveType = ''
-				console.warn(
-					'[ObjectsList] live subscription failed:',
-					e?.message ?? e,
-				)
-			}
-		},
+		...liveCollectionMethods({
+			tag: '[ObjectsList]',
+			currentType: () => objectStore.currentType,
+		}),
 
 		/**
-		 * Release the current live collection subscription, if any, and
-		 * invalidate any in-flight subscribe (its resolution unsubscribes
-		 * itself via the epoch check).
+		 * Refetch the object list with the current limit, showing the loader
+		 * while it runs.
 		 *
-		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @spec exclude list-view plumbing; reloads the object list (object-lifecycle contract)
+		 * @param {number} page The page to load
+		 * @param {string} search The search term
 		 * @return {void}
 		 */
-		releaseLiveSubscription() {
-			this.liveEpoch += 1
-			this.livePendingType = ''
-			if (this.liveHandle && typeof objectStore.unsubscribe === 'function') {
-				objectStore.unsubscribe(this.liveHandle)
-			}
-			this.liveHandle = null
-			this.liveType = ''
+		reloadList(page, search) {
+			this.loading = true
+			objectStore
+				.refreshObjectList({
+					limit: this.limit,
+					page,
+					search,
+				})
+				.finally(() => {
+					this.loading = false
+				})
 		},
 
 		/**
@@ -440,32 +336,14 @@ export default {
 				this.currentPage = 1
 				return
 			}
-			this.loading = true
-			objectStore
-				.refreshObjectList({
-					limit: this.limit,
-					page: 1,
-					search: this.search,
-				})
-				.finally(() => {
-					this.loading = false
-				})
+			this.reloadList(1, this.search)
 		},
 
 		/**
 		 * @spec exclude list-view action; opens the add-object modal with register/schema context (object-lifecycle contract)
 		 */
 		addObject() {
-			// Clear any existing object and open the add object modal
-			objectStore.setObjectItem(null)
-			// Ensure register and schema are set for new object creation
-			if (registerStore.registerItem) {
-				registerStore.setRegisterItem(registerStore.registerItem)
-			}
-			if (schemaStore.schemaItem) {
-				schemaStore.setSchemaItem(schemaStore.schemaItem)
-			}
-			navigationStore.setModal('viewObject')
+			openAddObjectModal()
 		},
 	},
 }

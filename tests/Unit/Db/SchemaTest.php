@@ -838,6 +838,28 @@ class SchemaTest extends TestCase {
 		$this->schema->validateAuthorization();
 	}
 
+	public function testValidateAuthorizationAcceptsABooleanCrossOrganisationMarker(): void {
+		$this->schema->setAuthorization([
+			'read' => [
+				['group' => 'vng-raadpleger', 'crossOrganisation' => true],
+				['group' => 'team', 'match' => ['status' => 'open'], 'crossOrganisation' => false],
+			],
+		]);
+		$this->assertTrue($this->schema->validateAuthorization());
+	}
+
+	public function testValidateAuthorizationRejectsANonBooleanCrossOrganisationMarker(): void {
+		$this->schema->setAuthorization([
+			'read' => [['group' => 'hr', 'crossOrganisation' => 'yes']],
+		]);
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage(
+			"Authorization 'crossOrganisation' for action 'read' in schema must be true or false;"
+			. " set it to true only on a rule that may read other organisations' rows"
+		);
+		$this->schema->validateAuthorization();
+	}
+
 	public function testValidateAuthorizationRejectsUnknownAction(): void {
 		$this->schema->setAuthorization([
 			'frobnicate' => ['admin'],

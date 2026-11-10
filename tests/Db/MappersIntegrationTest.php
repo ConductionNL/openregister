@@ -14,13 +14,13 @@
 namespace OCA\OpenRegister\Tests\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -395,39 +395,12 @@ class MappersIntegrationTest extends TestCase {
 		$this->assertGreaterThanOrEqual(1, $count);
 	}
 
-	public function testChunkMapperCountUnindexed(): void {
-		$this->insertChunkDirectly('file', 1, 0, false);
-
-		$count = $this->chunkMapper->countUnindexed();
-		$this->assertIsInt($count);
-		$this->assertGreaterThanOrEqual(1, $count);
-	}
-
 	public function testChunkMapperCountVectorized(): void {
 		$this->insertChunkDirectly('file', 1, 0, false, true);
 
 		$count = $this->chunkMapper->countVectorized();
 		$this->assertIsInt($count);
 		$this->assertGreaterThanOrEqual(1, $count);
-	}
-
-	public function testChunkMapperFindUnindexed(): void {
-		$this->insertChunkDirectly('file', 1, 0, false);
-
-		$results = $this->chunkMapper->findUnindexed(10);
-		$this->assertIsArray($results);
-		$this->assertGreaterThanOrEqual(1, count($results));
-		foreach ($results as $chunk) {
-			$this->assertInstanceOf(Chunk::class, $chunk);
-		}
-	}
-
-	public function testChunkMapperFindUnindexedWithLimitAndOffset(): void {
-		$this->insertChunkDirectly('file', 1, 0, false);
-		$this->insertChunkDirectly('file', 1, 1, false);
-
-		$results = $this->chunkMapper->findUnindexed(1, 0);
-		$this->assertCount(1, $results);
 	}
 
 	public function testChunkMapperCountFileSourceSummaries(): void {
@@ -808,14 +781,6 @@ class MappersIntegrationTest extends TestCase {
 
 		$this->assertTrue($config->hasUpdateAvailable());
 		$this->assertTrue($config->isRemoteSource());
-		$this->assertFalse($config->isLocalSource());
-		$this->assertFalse($config->isManualSource());
-
-		$config->setSourceType('local');
-		$this->assertTrue($config->isLocalSource());
-
-		$config->setSourceType('manual');
-		$this->assertTrue($config->isManualSource());
 
 		$this->assertSame('Test Config', (string)$config);
 	}
@@ -825,11 +790,6 @@ class MappersIntegrationTest extends TestCase {
 
 		$config->hydrate(['type' => 'special']);
 		$this->assertSame('Config: special', (string)$config);
-	}
-
-	public function testConfigurationEntityIsValidUuid(): void {
-		$this->assertTrue(Configuration::isValidUuid(Uuid::v4()->toRfc4122()));
-		$this->assertFalse(Configuration::isValidUuid('not-a-uuid'));
 	}
 
 	public function testConfigurationEntityGetJsonFields(): void {

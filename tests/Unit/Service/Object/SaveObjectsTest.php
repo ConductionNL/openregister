@@ -19,8 +19,15 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationRun;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -70,13 +77,10 @@ class SaveObjectsTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new SaveObjects(
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->saveHandler,
-			$this->userSession,
-			$this->organisationService,
-			$this->logger
+			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->saveHandler),
+			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService),
+			reporting: new BulkSaveReporting(logger: $this->logger),
+			checks: new BulkRowChecks()
 		);
 
 		// Clear static caches between tests.
@@ -175,10 +179,23 @@ class SaveObjectsTest extends TestCase {
 	 * @return mixed
 	 */
 	private function invokePrivate(string $method, array $args = []) {
-		$ref = new ReflectionClass($this->handler);
+		if ($method === 'scanForRelations') {
+			return (new BulkRelationScanner())->scan(data: $args[0], run: new BulkRelationRun(prefix: $args[1], schema: $args[2]));
+		}
+
+		if ($method === 'performComprehensiveSchemaAnalysis') {
+			return (new BulkSchemaAnalysis())->analyse($args[0]);
+		}
+
+		$target = $this->handler;
+		if ($method === 'isRecordableReference') {
+			$target = new BulkRelationScanner();
+		}
+
+		$ref = new ReflectionClass($target);
 		$m = $ref->getMethod($method);
 		$m->setAccessible(true);
-		return $m->invokeArgs($this->handler, $args);
+		return $m->invokeArgs($target, $args);
 	}
 
 	// =========================================================================
@@ -2103,4 +2120,196 @@ class SaveObjectsTest extends TestCase {
 		$this->expectException(\Exception::class);
 		$this->handler->saveObjects([['name' => 'bad']]);
 	}
+
+	// =========================================================================
+	// saveObjects — the whole result of a run, timings aside
+	// =========================================================================
+
+	/**
+	 * A bulk result with its timings and speeds blanked, so it can be compared.
+	 *
+	 * @param array $result The result of saveObjects().
+	 *
+	 * @return array
+	 */
+	private function untimed(array $result): array {
+		foreach (['totalTime', 'totalTimeMs', 'objectsPerSecond', 'safeguardsMs', 'prepareMs'] as $key) {
+			if (array_key_exists($key, $result['performance'] ?? []) === true) {
+				$result['performance'][$key] = 't';
+			}
+		}
+
+		foreach (($result['chunkStatistics'] ?? []) as $index => $chunk) {
+			$result['chunkStatistics'][$index]['processingTime'] = 't';
+			$result['chunkStatistics'][$index]['speed'] = 't';
+			$result['chunkStatistics'][$index]['phaseMs'] = 't';
+		}
+
+		return json_decode(json_encode($result), true);
+	}
+
+	/**
+	 * Run saveObjects() on a single schema with a bulk save answering saved, updated and unchanged rows.
+	 *
+	 * @param array $rows  The rows to save.
+	 * @param array $flags Named switches for saveObjects().
+	 *
+	 * @return array The untimed result.
+	 */
+	private function runSingleSchemaSave(array $rows, array $flags = []): array {
+		$schema = $this->createSchema(1);
+		$schema->setProperties([]);
+		$schema->setConfiguration([]);
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-uuid-123');
+		$this->setupBulkSaveMock(savedCount: 2, updatedCount: 1, unchangedCount: 1);
+
+		return $this->untimed($this->handler->saveObjects($rows, $this->createRegister(1), $schema, ...$flags));
+	}
+
+	/**
+	 * A single-schema run merges the chunk outcome, counts and metrics into one result.
+	 *
+	 * @return void
+	 */
+	public function testSaveObjectsMergesTheChunkOutcomeIntoTheResult(): void {
+		$rows = [['name' => 'a'], ['name' => 'b'], ['name' => 'c'], ['name' => 'd']];
+		$result = $this->runSingleSchemaSave($rows, ['_rbac' => false, '_multitenancy' => false]);
+
+		$row = static fn (string $uuid): array => ['uuid' => $uuid, 'created' => '2024-01-01T00:00:00+00:00', 'updated' => '2024-01-01T00:00:00+00:00'];
+		$this->assertSame([$row('saved-uuid-0'), $row('saved-uuid-1')], $result['saved']);
+		$this->assertSame([$row('updated-uuid-0')], $result['updated']);
+		$this->assertSame([$row('unchanged-uuid-0')], $result['unchanged']);
+		$this->assertSame([], $result['invalid']);
+		$this->assertSame([], $result['errors']);
+		$this->assertSame(
+			['totalProcessed' => 4, 'saved' => 2, 'updated' => 1, 'unchanged' => 1, 'invalid' => 0, 'errors' => 0, 'processingTimeMs' => 0],
+			$result['statistics']
+		);
+		$this->assertSame(
+			[['chunkIndex' => 0, 'count' => 4, 'saved' => 2, 'updated' => 1, 'unchanged' => 1, 'invalid' => 0, 'processingTime' => 't', 'speed' => 't', 'phaseMs' => 't']],
+			$result['chunkStatistics']
+		);
+		$this->assertSame(
+			[
+				'totalTime' => 't', 'totalTimeMs' => 't', 'objectsPerSecond' => 't', 'totalProcessed' => 4, 'totalRequested' => 4,
+				'efficiency' => 100, 'safeguardsMs' => 't', 'prepareMs' => 't', 'deduplicationEfficiency' => '25% operations avoided',
+			],
+			$result['performance']
+		);
+	}
+
+	/**
+	 * A mixed-schema run whose bulk save answers nothing still counts the row and reports its metrics.
+	 *
+	 * @return void
+	 */
+	public function testSaveObjectsMixedRunWithAnEmptyBulkAnswerReportsItsMetrics(): void {
+		$this->schemaMapper->method('find')->willReturn($this->createSchema(1));
+		$result = $this->untimed($this->handler->saveObjects([['@self' => ['schema' => 1], 'name' => 'a']], null, null, false));
+
+		$this->assertSame(['totalProcessed' => 1, 'saved' => 0, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0, 'processingTimeMs' => 0], $result['statistics']);
+		$this->assertSame([['chunkIndex' => 0, 'count' => 1, 'saved' => 0, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'processingTime' => 't', 'speed' => 't', 'phaseMs' => 't']], $result['chunkStatistics']);
+		$this->assertSame(
+			['totalTime' => 't', 'totalTimeMs' => 't', 'objectsPerSecond' => 't', 'totalProcessed' => 1, 'totalRequested' => 1, 'efficiency' => 100, 'safeguardsMs' => 't', 'prepareMs' => 't'],
+			$result['performance']
+		);
+	}
+
+	/**
+	 * The bulk write reads pre-update state only when audit or events need it.
+	 *
+	 * @return void
+	 */
+	public function testSaveObjectsAsksForPreUpdateStateOnlyForAuditOrEvents(): void {
+		$schema = $this->createSchema(1);
+		$schema->setProperties([]);
+		$schema->setConfiguration([]);
+		$asked = [];
+		$this->objectMapper->method('ultraFastBulkSave')->willReturnCallback(
+			static function (array $insertObjects = [], array $updateObjects = [], $register = null, $schema = null, bool $needsPreUpdateState = true) use (&$asked): array {
+				$asked[] = $needsPreUpdateState;
+				return [];
+			}
+		);
+
+		$this->handler->saveObjects([['name' => 'a']], $this->createRegister(1), $schema, _rbac: false, _audit: false);
+		$this->handler->saveObjects([['name' => 'a']], $this->createRegister(1), $schema, _rbac: false);
+		$this->handler->saveObjects([['name' => 'a']], $this->createRegister(1), $schema, _rbac: false, _events: true, _audit: false);
+
+		$this->assertSame([false, true, true], $asked);
+	}
+
+	/**
+	 * A handler whose permission check refuses every create, for a caller that is or is not an administrator.
+	 *
+	 * @param bool $admin Whether the caller is an administrator.
+	 *
+	 * @return SaveObjects
+	 */
+	private function createRefusingHandler(bool $admin): SaveObjects {
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('bob');
+		$this->userSession->method('getUser')->willReturn($user);
+		$groups = $this->createMock(\OCP\IGroupManager::class);
+		$groups->method('isAdmin')->willReturn($admin);
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
+		$permissions->method('hasPermission')->willReturnCallback(static fn (...$args): bool => $args[1] !== 'create');
+
+		$stored = new \OCA\OpenRegister\Db\ObjectEntity();
+		$stored->setUuid('11111111-1111-1111-1111-111111111111');
+		$stored->setOwner('bob');
+		$stored->setObject(['name' => 'stored']);
+		$this->objectMapper->method('findObjectsByUuidsInRegisterSchema')->willReturn(['11111111-1111-1111-1111-111111111111' => $stored]);
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
+		$this->setupBulkSaveMock(savedCount: 1);
+
+		return new SaveObjects(
+			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->saveHandler),
+			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: $groups),
+			reporting: new BulkSaveReporting(logger: $this->logger),
+			checks: new BulkRowChecks(permissionHandler: $permissions)
+		);
+	}
+
+	/**
+	 * A row the safeguards refuse is counted out of the processed rows and the efficiency; the chunk refuses the other row itself.
+	 *
+	 * @return void
+	 */
+	public function testSaveObjectsCountsOnlyTheRowsTheSafeguardsPass(): void {
+		$schema = $this->createSchema(1);
+		$schema->setProperties([]);
+		$schema->setConfiguration([]);
+		$rows = [['name' => 'new'], ['@self' => ['uuid' => '11111111-1111-1111-1111-111111111111'], 'name' => 'changed']];
+
+		$result = $this->untimed($this->createRefusingHandler(admin: false)->saveObjects($rows, $this->createRegister(1), $schema));
+
+		$this->assertSame(['BulkSafeguardException', 'PermissionDeniedException'], array_column($result['invalid'], 'type'));
+		$this->assertSame(1, $result['statistics']['totalProcessed']);
+		$this->assertSame(2, $result['performance']['totalRequested']);
+		$this->assertSame(1, $result['performance']['totalProcessed']);
+		$this->assertEquals(50, $result['performance']['efficiency']);
+	}
+
+	/**
+	 * An administrator who asks to skip RBAC gets the create through; one who does not ask is refused.
+	 *
+	 * @return void
+	 */
+	public function testSaveObjectsHandsTheRbacSwitchToTheSafeguards(): void {
+		$schema = $this->createSchema(1);
+		$schema->setProperties([]);
+		$schema->setConfiguration([]);
+
+		$skipped = $this->untimed($this->createRefusingHandler(admin: true)->saveObjects([['name' => 'new']], $this->createRegister(1), $schema, _rbac: false));
+		$this->assertSame([], $skipped['invalid']);
+		$this->assertSame(1, $skipped['statistics']['totalProcessed']);
+
+		$checked = $this->untimed($this->createRefusingHandler(admin: true)->saveObjects([['name' => 'new']], $this->createRegister(1), $schema));
+		$this->assertCount(1, $checked['invalid']);
+	}
 }
+

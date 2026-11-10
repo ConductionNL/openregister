@@ -49,7 +49,7 @@ use OCP\IDBConnection;
  * delete guard asks of the table, with its own predicate set, exactly as
  * {@see FlowRunMapper} argues.
  */
-class FlowTimerMapper extends QBMapper {
+class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 
 	/**
 	 * Constructor.
@@ -233,25 +233,6 @@ class FlowTimerMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findOpenByRun()
-
-	/**
-	 * The successors of a timer: rows that supersede it, newest first.
-	 *
-	 * @param string $uuid The superseded timer's uuid.
-	 *
-	 * @return array<int, FlowTimer> The successors.
-	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-deadlines-anchor-is-stored-so-a-moved-anchor-re-arms-the-timer
-	 */
-	public function findSuccessors(string $uuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('supersedes_uuid', $qb->createNamedParameter($uuid)))
-			->orderBy('id', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findSuccessors()
 
 	/**
 	 * Every timer in a state, paged by id, for the invariant check.

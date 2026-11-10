@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\DsarCaseControllerFactory;
 use OCA\OpenRegister\Controller\DsarCaseController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
@@ -104,7 +105,7 @@ class DsarCaseControllerTest extends TestCase {
 			$userSession->method('getUser')->willReturn($user);
 		}
 
-		return new DsarCaseController(
+		return DsarCaseControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(ObjectService::class),
@@ -230,7 +231,7 @@ class DsarCaseControllerTest extends TestCase {
 		$harvest = $this->createMock(EvidenceHarvestService::class);
 		$harvest->expects($this->never())->method('harvest');
 
-		$controller = new DsarCaseController(
+		$controller = DsarCaseControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(ObjectService::class),
@@ -373,7 +374,7 @@ class DsarCaseControllerTest extends TestCase {
 		IdentityVerifyRegistry $identityRegistry,
 		RegulatorEscalateRegistry $regulatorRegistry,
 	): DsarCaseController {
-		return new DsarCaseController(
+		return DsarCaseControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(ObjectService::class),
@@ -434,7 +435,7 @@ class DsarCaseControllerTest extends TestCase {
 		$access = $this->createMock(CaseAccessControl::class);
 		$access->method('mayAct')->willReturn($mayAct);
 
-		return new DsarCaseController(
+		return DsarCaseControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(ObjectService::class),
@@ -580,7 +581,7 @@ class DsarCaseControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testDownloadBundleReturnsTheSignedBytes(): void {
-		$bundle = new SignedBundle('%PDF-1.7 bytes', 'sha256:abc', false, 'unsigned', 'application/pdf');
+		$bundle = new SignedBundle('%PDF-1.7 bytes', 'sha256:abc', false, 'unsigned');
 
 		$bundles = $this->createMock(ExportBundleService::class);
 		$bundles->expects($this->once())

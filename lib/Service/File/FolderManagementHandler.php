@@ -23,14 +23,14 @@ namespace OCA\OpenRegister\Service\File;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterFolderRecorder;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\Files\Config\IUserMountCache;
 use OCP\Files\Folder;
@@ -90,17 +90,17 @@ class FolderManagementHandler {
 	 * Constructor for FolderManagementHandler.
 	 *
 	 * @param IRootFolder $rootFolder Root folder for file operations.
-	 * @param MagicMapper $objectEntityMapper Mapper for object entities.
-	 * @param RegisterMapper $registerMapper Mapper for registers.
+	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities.
+	 * @param RegisterMapperInterface $registerMapper Mapper for registers.
 	 * @param IUserSession $userSession User session for user context.
 	 * @param IGroupManager $groupManager Group manager for group operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param AuditTrailMapper $auditTrailMapper Mapper for writing forensic audit-trail entries on folder-access denials.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Mapper for writing forensic audit-trail entries on folder-access denials.
 	 * @param IUserMountCache $mountCache Mount cache, used to recognise a folder OpenRegister manages
 	 *                                    without setting up the owning user's mounts.
 	 * @param RegisterFolderRecorder $folderRecorder Records a register's folder id as bookkeeping, so a
 	 *                                               first upload needs no register-update permission.
-	 * @param FileService|null $fileService File service facade for cross-handler coordination
+	 * @param FileHandlerSupportInterface|null $fileService File service facade for cross-handler coordination
 	 *                                      (injected lazily to avoid circular dependency).
 	 * @param ContainerInterface|null $container Resolves the facade on first use when nothing
 	 *                                           has injected it yet (see fileService()).
@@ -109,15 +109,15 @@ class FolderManagementHandler {
 	 */
 	public function __construct(
 		private readonly IRootFolder $rootFolder,
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserMountCache $mountCache,
 		private readonly RegisterFolderRecorder $folderRecorder,
-		private ?FileService $fileService = null,
+		private ?FileHandlerSupportInterface $fileService = null,
 		private readonly ?ContainerInterface $container = null,
 	) {
 	}//end __construct()
@@ -128,14 +128,14 @@ class FolderManagementHandler {
 	 * This allows accessing other handlers (ownership, sharing) through the facade.
 	 * Called by FileService after construction to avoid circular dependencies.
 	 *
-	 * @param FileService $fileService The file service facade.
+	 * @param FileHandlerSupportInterface $fileService The file service facade.
 	 *
 	 * @return void
 	 *
 	 * @psalm-return   void
 	 * @phpstan-return void
 	 */
-	public function setFileService(FileService $fileService): void {
+	public function setFileService(FileHandlerSupportInterface $fileService): void {
 		$this->fileService = $fileService;
 	}//end setFileService()
 
@@ -149,21 +149,21 @@ class FolderManagementHandler {
 	 * failed with "The OpenRegister account is not available". Resolving
 	 * FileService here builds it, and its constructor wires itself back in.
 	 *
-	 * @return FileService|null The facade, or null when it cannot be resolved.
+	 * @return FileHandlerSupportInterface|null The facade, or null when it cannot be resolved.
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
 	 */
-	private function fileService(): ?FileService {
+	private function fileService(): ?FileHandlerSupportInterface {
 		if ($this->fileService !== null || $this->container === null) {
 			return $this->fileService;
 		}
 
 		try {
-			$resolved = $this->container->get(FileService::class);
+			$resolved = $this->container->get(FileHandlerSupportInterface::class);
 			// Building FileService has normally wired it in already; setting the
 			// same instance again is harmless and covers a container that hands
 			// back an already-built one.
-			if (($resolved instanceof FileService) === true) {
+			if (($resolved instanceof FileHandlerSupportInterface) === true) {
 				$this->setFileService(fileService: $resolved);
 			}
 		} catch (\Throwable $e) {
@@ -306,72 +306,118 @@ class FolderManagementHandler {
 		?IUser $currentUser = null,
 		int|string|null $registerId = null,
 	): Folder {
-		$folderProperty = null;
-		if ($objectEntity instanceof ObjectEntity === true) {
-			$folderProperty = $objectEntity->getFolder();
-		}
-
-		// Three branches per `self-folder-access-control` spec:
-		// (a) empty               → fall through to auto-create (unchanged legacy behaviour).
-		// (b) non-digit-string     → legacy path-style value, fall through to auto-create.
-		// (c) bare-integer node ID → caller-supplied node ID; require a positive read-access
-		// check. On failure, propagate FolderAccessDeniedException —
-		// do NOT fall through to auto-create (would silently mask
-		// a cross-tenant bind attempt).
-		// Gate on ctype_digit (not is_numeric) so "42.5"/"4e2"/"+42" don't slip
-		// through and get (int)-truncated to a different node than was validated.
-		if ($folderProperty !== null && $folderProperty !== '' && ctype_digit((string)$folderProperty) === true) {
-			$existingFolder = $this->assertFolderIsAccessible(
-				folderId: $folderProperty,
-				currentUser: $currentUser,
-				objectEntity: $objectEntity
-			);
-			$this->logger->debug(
-				message: '[FolderManagementHandler] Object folder bind verified (ID: ' . $folderProperty . ')',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		$existingFolder = $this->findExistingObjectFolder(objectEntity: $objectEntity, currentUser: $currentUser);
+		if ($existingFolder !== null) {
 			return $existingFolder;
 		}
 
-		// Empty / legacy non-numeric → unchanged auto-create flow below. `getExistingFolderFromProperty`
-		// returns null for both, so the rest of the method handles them as before.
+		$register = $this->getRegisterFromObjectOrId(objectEntity: $objectEntity, registerId: $registerId);
+		$registerFolder = $this->createRegisterFolderById(register: $register, currentUser: $currentUser);
+		return $this->createObjectFolderUnder(registerFolder: $registerFolder, objectEntity: $objectEntity);
+	}//end createObjectFolderById()
+
+	/**
+	 * The object's folder when its folder value already names one, else null.
+	 *
+	 * Three branches per `self-folder-access-control` spec:
+	 * (a) empty               → null, so the caller auto-creates (unchanged legacy behaviour).
+	 * (b) non-digit-string     → legacy path-style value, null, so the caller auto-creates.
+	 * (c) bare-integer node ID → caller-supplied node ID; require a positive read-access
+	 * check. On failure, propagate FolderAccessDeniedException —
+	 * do NOT fall through to auto-create (would silently mask
+	 * a cross-tenant bind attempt).
+	 * Gate on ctype_digit (not is_numeric) so "42.5"/"4e2"/"+42" don't slip
+	 * through and get (int)-truncated to a different node than was validated;
+	 * ctype_digit('') is false, so an empty value never reaches the check.
+	 *
+	 * @param ObjectEntity|string $objectEntity The object entity or UUID.
+	 * @param IUser|null          $currentUser  The acting user for a caller-supplied folder id.
+	 *
+	 * @return Folder|null The bound folder, or null when one has to be created.
+	 *
+	 * @throws FolderAccessDeniedException When a caller-supplied folder id is not accessible.
+	 */
+	private function findExistingObjectFolder(ObjectEntity|string $objectEntity, ?IUser $currentUser): ?Folder {
+		$folderProperty = $this->folderValueOf(objectEntity: $objectEntity);
+		if (ctype_digit((string)$folderProperty) === true) {
+			return $this->verifySuppliedObjectFolder(objectEntity: $objectEntity, currentUser: $currentUser);
+		}
+
 		$existingFolder = $this->getExistingFolderFromProperty(folderProperty: $folderProperty);
 		if ($existingFolder !== null) {
 			$this->logger->debug(
 				message: '[FolderManagementHandler] Object folder already exists with ID: ' . $folderProperty,
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			return $existingFolder;
 		}
 
-		// Ensure register folder exists first.
-		$register = $this->getRegisterFromObjectOrId(objectEntity: $objectEntity, registerId: $registerId);
-		$registerFolder = $this->createRegisterFolderById(register: $register, currentUser: $currentUser);
+		return $existingFolder;
+	}//end findExistingObjectFolder()
 
+	/**
+	 * The folder a caller-supplied numeric folder value names, once the acting user may read it.
+	 *
+	 * @param ObjectEntity|string $objectEntity The object entity carrying the folder id.
+	 * @param IUser|null          $currentUser  The acting user.
+	 *
+	 * @return Folder The verified folder.
+	 *
+	 * @throws FolderAccessDeniedException When the folder is not accessible.
+	 */
+	private function verifySuppliedObjectFolder(ObjectEntity|string $objectEntity, ?IUser $currentUser): Folder {
+		$folderId = (string)$this->folderValueOf(objectEntity: $objectEntity);
+		$existingFolder = $this->assertFolderIsAccessible(folderId: $folderId, currentUser: $currentUser, objectEntity: $objectEntity);
+		$this->logger->debug(
+			message: '[FolderManagementHandler] Object folder bind verified (ID: ' . $folderId . ')',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		return $existingFolder;
+	}//end verifySuppliedObjectFolder()
+
+	/**
+	 * The folder value an object carries; a bare UUID carries none.
+	 *
+	 * @param ObjectEntity|string $objectEntity The object entity or UUID.
+	 *
+	 * @return string|null The folder value.
+	 */
+	private function folderValueOf(ObjectEntity|string $objectEntity): ?string {
+		if ($objectEntity instanceof ObjectEntity === true) {
+			return $objectEntity->getFolder();
+		}
+
+		return null;
+	}//end folderValueOf()
+
+	/**
+	 * Create the object's folder in its register folder and record its id on the object.
+	 *
+	 * @param Node                $registerFolder The register folder.
+	 * @param ObjectEntity|string $objectEntity   The object entity or UUID.
+	 *
+	 * @return Folder The created or existing object folder.
+	 *
+	 * @throws Exception When the register folder is not a folder.
+	 */
+	private function createObjectFolderUnder(Node $registerFolder, ObjectEntity|string $objectEntity): Folder {
 		if (($registerFolder instanceof Folder) === false) {
 			throw new Exception('Failed to create or access register folder');
 		}
 
-		// Create object folder within the register folder.
 		$objectFolder = $this->createObjectFolderInRegister(registerFolder: $registerFolder, objectEntity: $objectEntity);
 
 		// Store the folder ID as bookkeeping: one column, no lifecycle events, so
 		// a request that only reads the object's files does not save the object.
 		if ($objectEntity instanceof ObjectEntity === true) {
-			$this->recordObjectFolder(
-				objectEntity: $objectEntity,
-				expected: $folderProperty,
-				folderId: (string)$objectFolder->getId()
-			);
+			$this->recordObjectFolder(objectEntity: $objectEntity, folderId: (string)$objectFolder->getId());
 		}
 
 		$this->logger->debug(
 			message: '[FolderManagementHandler] Created object folder with ID: ' . $objectFolder->getId(),
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-
 		return $objectFolder;
-	}//end createObjectFolderById()
+	}//end createObjectFolderUnder()
 
 	/**
 	 * Get the register folder by ID.
@@ -896,6 +942,9 @@ class FolderManagementHandler {
 	 * and the object records that folder's id. Both must agree, so a folder
 	 * that merely carries another object's name is not taken for its folder.
 	 *
+	 * Any failure reads as "no object": a caller that must tell an unowned
+	 * file from a lookup that failed uses {@see ManagedFileOwnerLookup::find()}.
+	 *
 	 * @param Node $file The file.
 	 *
 	 * @return ObjectEntity|null The object, or null when no object owns the file.
@@ -904,51 +953,11 @@ class FolderManagementHandler {
 	 */
 	public function getObjectForFile(Node $file): ?ObjectEntity {
 		try {
-			$parent = $file->getParent();
-			$found = $this->objectEntityMapper->findAcrossAllSources(
-				identifier: $parent->getName(),
-				_rbac: false,
-				_multitenancy: false
-			);
+			return (new ManagedFileOwnerLookup(objects: $this->objectEntityMapper))->find(file: $file);
 		} catch (\Throwable $e) {
 			return null;
 		}
-
-		$object = ($found['object'] ?? null);
-		if ($object instanceof ObjectEntity === false) {
-			return null;
-		}
-
-		if ((string)$object->getFolder() !== (string)$parent->getId()) {
-			return null;
-		}
-
-		return $object;
 	}//end getObjectForFile()
-
-	/**
-	 * Get node type from node (file or folder).
-	 *
-	 * @param Node $node The node to check.
-	 *
-	 * @return string Node type ('file' or 'folder').
-	 *
-	 * @psalm-return   'file'|'folder'|'unknown'
-	 * @phpstan-return 'file'|'folder'|'unknown'
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function getNodeTypeFromFolder(Node $node): string {
-		if ($node instanceof Folder) {
-			return 'folder';
-		}
-
-		if ($node instanceof \OCP\Files\File) {
-			return 'file';
-		}
-
-		return 'unknown';
-	}//end getNodeTypeFromFolder()
 
 	/**
 	 * The openregister account, which holds every managed folder.
@@ -1058,96 +1067,119 @@ class FolderManagementHandler {
 	 * rather than overriding this one.
 	 *
 	 * @spec openspec/specs/self-folder-access-control/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is a
-	 * process-scoped flag with no instance to inject; it is deliberately static so
-	 * the scope cannot be entered from request data. Annotated here with its reason
-	 * rather than added to phpmd.baseline.xml, where the same call in
-	 * MultiTenancyTrait and PermissionHandler is invisible.
 	 */
 	final public function assertFolderIsAccessible(
 		string $folderId,
 		?IUser $currentUser = null,
 		ObjectEntity|string|null $objectEntity = null,
 	): Folder {
-		$actingUser = $currentUser ?? $this->getCurrentUser();
+		$bind = new FolderBindRun(folderId: $folderId, actingUser: $this->resolveActingUser(currentUser: $currentUser), objectEntity: $objectEntity);
+		return $this->readableBoundFolder(bind: $bind);
+	}//end assertFolderIsAccessible()
 
-		// A system operation has no user by definition, and until now that was
-		// indistinguishable here from an anonymous request. Both landed on the
-		// default-deny below, so a repair step or cron job saving an object
-		// with a bound folder could not run at all: the step caught the denial,
-		// logged "could not run", and `occ upgrade` still reported success.
-		//
-		// The scope is entered from PHP code only (never from request data) —
-		// the same signal `MultiTenancyTrait::hasRbacPermission()` and
-		// `PermissionHandler::hasPermission()` already trust for exactly this
-		// reason. Recognising it resolves the app's OWN principal and then runs
-		// the SAME four checks below against that principal's mount. The guard
-		// is not skipped and not widened: an anonymous request still has no
-		// principal to resolve and still falls through to the denial.
+	/**
+	 * The user a folder bind is checked for: the explicit user, else the session
+	 * user, else the app's own principal inside a system operation.
+	 *
+	 * A system operation has no user by definition, and until now that was
+	 * indistinguishable here from an anonymous request. Both landed on the
+	 * default-deny, so a repair step or cron job saving an object with a bound
+	 * folder could not run at all: the step caught the denial, logged "could
+	 * not run", and `occ upgrade` still reported success.
+	 *
+	 * The scope is entered from PHP code only (never from request data) —
+	 * the same signal `MultiTenancyTrait::hasRbacPermission()` and
+	 * `PermissionHandlerInterface::hasPermission()` already trust for exactly this
+	 * reason. Recognising it resolves the app's OWN principal and then runs
+	 * the SAME four checks against that principal's mount. The guard is not
+	 * skipped and not widened: an anonymous request still has no principal to
+	 * resolve and still falls through to the denial.
+	 *
+	 * @param IUser|null $currentUser Explicit acting user.
+	 *
+	 * @return IUser|null The acting user, or null when there is none (denied).
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is a
+	 * process-scoped flag with no instance to inject; it is deliberately static so
+	 * the scope cannot be entered from request data. Annotated here with its reason
+	 * rather than added to phpmd.baseline.xml, where the same call in
+	 * MultiTenancyTrait and PermissionHandlerInterface is invisible.
+	 */
+	private function resolveActingUser(?IUser $currentUser): ?IUser {
+		$actingUser = $currentUser ?? $this->getCurrentUser();
 		if ($actingUser === null && SystemOperationContext::isActive() === true) {
 			$actingUser = $this->resolveSystemPrincipal();
 		}
 
-		if ($actingUser === null) {
-			$this->logFolderAccessDenied(
-				folderId: $folderId,
-				currentUser: null,
-				objectEntity: $objectEntity,
-				reason: 'no acting user (default-deny when no IUser is present)'
-			);
-			throw new FolderAccessDeniedException(attemptedFolderId: $folderId);
+		return $actingUser;
+	}//end resolveActingUser()
+
+	/**
+	 * The bound folder, once the four checks pass; every failure is audited and refused.
+	 *
+	 * @param FolderBindRun $bind The bind under check.
+	 *
+	 * @return Folder The folder, found in the acting user's mount and readable.
+	 *
+	 * @throws FolderAccessDeniedException When there is no acting user, or the node is missing, not a folder or unreadable.
+	 */
+	private function readableBoundFolder(FolderBindRun $bind): Folder {
+		if ($bind->actingUser === null) {
+			throw $this->folderBindDenied(bind: $bind, reason: 'no acting user (default-deny when no IUser is present)');
 		}
 
-		try {
-			$userFolder = $this->rootFolder->getUserFolder($actingUser->getUID());
-			$nodes = $userFolder->getById((int)$folderId);
-		} catch (Exception $e) {
-			$this->logFolderAccessDenied(
-				folderId: $folderId,
-				currentUser: $actingUser,
-				objectEntity: $objectEntity,
-				reason: 'lookup error: ' . $e->getMessage()
-			);
-			throw new FolderAccessDeniedException(
-				attemptedFolderId: $folderId,
-				previous: $e
-			);
-		}
-
+		$nodes = $this->findInActorMount(actingUser: $bind->actingUser, bind: $bind);
 		if (empty($nodes) === true) {
-			$this->logFolderAccessDenied(
-				folderId: $folderId,
-				currentUser: $actingUser,
-				objectEntity: $objectEntity,
-				reason: 'not found in user folder mount'
-			);
-			throw new FolderAccessDeniedException(attemptedFolderId: $folderId);
+			throw $this->folderBindDenied(bind: $bind, reason: 'not found in user folder mount');
 		}
 
 		$node = reset($nodes);
 		if ($node instanceof Folder === false) {
-			$this->logFolderAccessDenied(
-				folderId: $folderId,
-				currentUser: $actingUser,
-				objectEntity: $objectEntity,
-				reason: 'resolved node is not a Folder (file ID supplied?)'
-			);
-			throw new FolderAccessDeniedException(attemptedFolderId: $folderId);
+			throw $this->folderBindDenied(bind: $bind, reason: 'resolved node is not a Folder (file ID supplied?)');
 		}
 
 		if ($node->isReadable() === false) {
-			$this->logFolderAccessDenied(
-				folderId: $folderId,
-				currentUser: $actingUser,
-				objectEntity: $objectEntity,
-				reason: 'folder not readable for acting user'
-			);
-			throw new FolderAccessDeniedException(attemptedFolderId: $folderId);
+			throw $this->folderBindDenied(bind: $bind, reason: 'folder not readable for acting user');
 		}
 
 		return $node;
-	}//end assertFolderIsAccessible()
+	}//end readableBoundFolder()
+
+	/**
+	 * The nodes the bound folder id resolves to in the acting user's own mount only.
+	 *
+	 * @param IUser         $actingUser The acting user.
+	 * @param FolderBindRun $bind       The bind under check.
+	 *
+	 * @return Node[] The nodes found, possibly none.
+	 *
+	 * @throws FolderAccessDeniedException When the lookup fails: a lookup error is a denial, never a pass.
+	 */
+	private function findInActorMount(IUser $actingUser, FolderBindRun $bind): array {
+		try {
+			$userFolder = $this->rootFolder->getUserFolder($actingUser->getUID());
+			return $userFolder->getById((int)$bind->folderId);
+		} catch (Exception $e) {
+			$this->logFolderAccessDenied(bind: $bind, reason: 'lookup error: ' . $e->getMessage());
+			throw new FolderAccessDeniedException(
+				attemptedFolderId: $bind->folderId,
+				previous: $e
+			);
+		}
+	}//end findInActorMount()
+
+	/**
+	 * Audit a refused bind and return the denial for the caller to throw.
+	 *
+	 * @param FolderBindRun $bind   The bind under check.
+	 * @param string        $reason Why it is refused.
+	 *
+	 * @return FolderAccessDeniedException The denial, built after the audit row is written.
+	 */
+	private function folderBindDenied(FolderBindRun $bind, string $reason): FolderAccessDeniedException {
+		$this->logFolderAccessDenied(bind: $bind, reason: $reason);
+		return new FolderAccessDeniedException(attemptedFolderId: $bind->folderId);
+	}//end folderBindDenied()
 
 	/**
 	 * Resolve the OpenRegister system principal for a sessionless system operation.
@@ -1351,21 +1383,17 @@ class FolderManagementHandler {
 	 * so even a caller that catches the exception still has the forensic
 	 * record of the denial.
 	 *
-	 * @param string $folderId The folder ID the caller attempted to bind to.
-	 * @param IUser|null $currentUser The acting user, if present (otherwise actor is `system`).
-	 * @param ObjectEntity|string|null $objectEntity The object entity the bind would have attached to.
+	 * @param FolderBindRun $bind The refused bind: its folder, its acting user (none means
+	 *                            actor `system`) and the object it would have attached to.
 	 * @param string $reason Human-readable reason for the denial (`not found`, `not a folder`,
 	 *                       …).
 	 *
 	 * @return void
 	 */
-	private function logFolderAccessDenied(
-		string $folderId,
-		?IUser $currentUser,
-		ObjectEntity|string|null $objectEntity,
-		string $reason,
-	): void {
-		$actorUid = $currentUser?->getUID() ?? 'system';
+	private function logFolderAccessDenied(FolderBindRun $bind, string $reason): void {
+		$folderId     = $bind->folderId;
+		$objectEntity = $bind->objectEntity;
+		$actorUid     = $bind->actingUser?->getUID() ?? 'system';
 
 		try {
 			// Use positional args throughout — Nextcloud Entity setters route through __call,
@@ -1506,16 +1534,18 @@ class FolderManagementHandler {
 	 * Record an object's folder id as bookkeeping: one column, no lifecycle
 	 * events, so a request that only reads the object's files never saves it.
 	 *
+	 * The folder value still on the object is the one read before the folder was
+	 * created, so it is the value the recording compares against.
+	 *
 	 * @param ObjectEntity $objectEntity The object the folder belongs to.
-	 * @param string|null  $expected     The folder value read before creating the folder.
 	 * @param string       $folderId     The id of the folder that now exists.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#requirement-reading-an-objects-files-never-saves-the-object-req-ofib-002
 	 */
-	private function recordObjectFolder(ObjectEntity $objectEntity, ?string $expected, string $folderId): void {
-		$recorded = $this->objectEntityMapper->recordFolder(entity: $objectEntity, expected: $expected, folderId: $folderId);
+	private function recordObjectFolder(ObjectEntity $objectEntity, string $folderId): void {
+		$recorded = $this->objectEntityMapper->recordFolder(entity: $objectEntity, expected: $objectEntity->getFolder(), folderId: $folderId);
 		$objectEntity->setFolder($folderId);
 		if ($recorded === false) {
 			$this->logger->debug(

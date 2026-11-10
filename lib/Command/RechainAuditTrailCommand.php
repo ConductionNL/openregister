@@ -33,7 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\AuditHashService;
+use OCA\OpenRegister\Service\AuditRechainInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
@@ -48,10 +48,10 @@ class RechainAuditTrailCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditHashService $hashes Performs the re-chain.
+	 * @param AuditRechainInterface $hashes Performs the re-chain.
 	 */
 	public function __construct(
-		private readonly AuditHashService $hashes,
+		private readonly AuditRechainInterface $hashes,
 	) {
 		parent::__construct();
 

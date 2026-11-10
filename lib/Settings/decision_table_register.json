@@ -1,0 +1,109 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Decision Tables",
+    "description": "Named decision tables any app can author and any flow step can use by reference. A table stored here is read by DecisionTableStore and evaluated by DecisionTableEvaluator; the flow step `openregister.decision-table` takes either an inline table or a `tableRef` naming one of these by key or uuid. RBAC-scoped and auditable through OpenRegister's object infrastructure (ADR-022) rather than a bespoke table.",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "core",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Foundational decision-table register shipped by OpenRegister so a table is authored once and used by every flow and app that needs it (decision 186)."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "decision-tables": {
+        "slug": "decision-tables",
+        "title": "Decision Tables",
+        "version": "1.0.0",
+        "description": "One row per named decision table.",
+        "published": "2026-01-01T00:00:00+00:00",
+        "schemas": [
+          "decision-table"
+        ],
+        "folder": "Open Registers/Decision Tables"
+      }
+    },
+    "schemas": {
+      "decision-table": {
+        "slug": "decision-table",
+        "x-openregister-demo-data": "Decision tables are the rules an administrator or an app ships, not sample content: a generated table would be evaluated by real flows.",
+        "title": "Decision Table",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A table of rules that recommends an outcome from its inputs.",
+        "description": "A DMN-style decision table: a hit policy, input and output columns, and rules whose cells are unary tests. Saving refuses a table the evaluator cannot execute, with the same validator the inline flow step uses. A flow step references a table by its key, so the table can be corrected in one place.",
+        "required": [
+          "key",
+          "name",
+          "hitPolicy",
+          "inputs",
+          "outputs",
+          "rules"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Stable reference a flow step or an app uses for this table, for example `enforcement-intervention`. Unique within the register.",
+            "maxLength": 255,
+            "pattern": "^[a-z0-9][a-z0-9._-]*$",
+            "facetable": true,
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name shown to the people who author and read the table.",
+            "maxLength": 255,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "What the table decides and where its rules come from.",
+            "title": "Description"
+          },
+          "hitPolicy": {
+            "type": "string",
+            "enum": ["UNIQUE", "FIRST", "COLLECT", "PRIORITY", "ANY"],
+            "default": "UNIQUE",
+            "description": "How the matching rules become one answer.",
+            "facetable": true,
+            "title": "Hit policy"
+          },
+          "inputs": {
+            "type": "array",
+            "description": "Input columns, each with a `name` and an optional `type`.",
+            "items": {
+              "type": "object"
+            },
+            "title": "Inputs"
+          },
+          "outputs": {
+            "type": "array",
+            "description": "Output columns, each with a `name` and, for PRIORITY, an ordered `values` list.",
+            "items": {
+              "type": "object"
+            },
+            "title": "Outputs"
+          },
+          "rules": {
+            "type": "array",
+            "description": "Rules, each with an `id`, `inputEntries` (one unary test per input) and `outputEntries` (one value per output).",
+            "items": {
+              "type": "object"
+            },
+            "title": "Rules"
+          },
+          "owner": {
+            "type": "string",
+            "description": "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Owner"
+          }
+        }
+      }
+    }
+  }
+}

@@ -56,7 +56,8 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
-class CaseItemMapper extends QBMapper {
+class CaseItemMapper extends QBMapper implements CaseItemMapperInterface {
+	use DeleteByObjectTrait;
 
 	/**
 	 * Constructor.
@@ -258,7 +259,7 @@ class CaseItemMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName());
-		$this->applyTypeAndState(qb: $qb, type: $type, state: $state);
+		$this->applyTypeAndState(qb: $qb, filters: ['plan_item_type' => $type, 'state' => $state]);
 		$qb->orderBy('id', 'ASC')
 			->setMaxResults(max(1, $limit))
 			->setFirstResult(max(0, $offset));
@@ -280,7 +281,7 @@ class CaseItemMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'total'))
 			->from($this->getTableName());
-		$this->applyTypeAndState(qb: $qb, type: $type, state: $state);
+		$this->applyTypeAndState(qb: $qb, filters: ['plan_item_type' => $type, 'state' => $state]);
 
 		$result = $qb->executeQuery();
 		$total = (int)$result->fetchOne();
@@ -290,41 +291,18 @@ class CaseItemMapper extends QBMapper {
 	}//end countByTypeAndState()
 
 	/**
-	 * Delete every plan item of one object. The audit is NOT touched: it is
-	 * append-only and outlives the rows it describes.
-	 *
-	 * @param string $objectUuid The anchoring object's uuid.
-	 *
-	 * @return int How many rows were deleted.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
-	 */
-	public function deleteByObject(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObject()
-
-	/**
 	 * The shared predicate of the stuck-where page and its total.
 	 *
-	 * @param IQueryBuilder $qb The query under construction.
-	 * @param string|null $type The type filter, or null.
-	 * @param string|null $state The state filter, or null.
+	 * @param IQueryBuilder              $qb      The query under construction.
+	 * @param array<string, string|null> $filters The type and state columns and their filters; null or blank filters nothing.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
-	private function applyTypeAndState(IQueryBuilder $qb, ?string $type, ?string $state): void {
-		if ($type !== null && trim($type) !== '') {
-			$qb->andWhere($qb->expr()->eq('plan_item_type', $qb->createNamedParameter($type)));
-		}
-
-		if ($state !== null && trim($state) !== '') {
-			$qb->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
+	private function applyTypeAndState(IQueryBuilder $qb, array $filters): void {
+		foreach ($filters as $column => $value) {
+			if ($value !== null && trim($value) !== '') {
+				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+			}
 		}
 	}//end applyTypeAndState()
 }//end class

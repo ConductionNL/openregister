@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use Exception;
  * the property. It never stores a table an author believes is enforcing
  * something.
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class DependentValueDeclarationException extends Exception {
 
@@ -60,7 +60,7 @@ final class DependentValueDeclarationException extends Exception {
 	 *
 	 * @return array<int, array{code: string, message: string}> The blocking validation errors.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getErrors(): array {
 		return $this->errors;

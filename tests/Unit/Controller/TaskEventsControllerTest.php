@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TaskEventsControllerFactory;
 use OCA\OpenRegister\Controller\TaskEventsController;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\Task;
@@ -54,6 +55,7 @@ use PHPUnit\Framework\TestCase;
  * Authorization and HTTP translation for /api/flow-tasks/{uuid}/events.
  *
  * @covers \OCA\OpenRegister\Controller\TaskEventsController
+ * @uses \OCA\OpenRegister\Controller\Support\TaskEventsControllerServices
  * @uses \OCA\OpenRegister\Db\Task
  */
 class TaskEventsControllerTest extends TestCase {
@@ -114,7 +116,7 @@ class TaskEventsControllerTest extends TestCase {
 		$request = $this->createMock(originalClassName: IRequest::class);
 		$request->method('getParams')->willReturn($params);
 
-		return new TaskEventsController(
+		return TaskEventsControllerFactory::create(
 			appName: 'openregister',
 			request: $request,
 			tasks: $this->tasks,

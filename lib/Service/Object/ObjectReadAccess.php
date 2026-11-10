@@ -24,8 +24,10 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\WriteCause;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IUserSession;
 
@@ -45,19 +47,19 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
-class ObjectReadAccess {
+class ObjectReadAccess implements ObjectReadAccessInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService Reads objects, with RBAC.
+	 * @param ObjectOperationsInterface $objectService Reads objects, with RBAC.
 	 * @param IUserSession  $userSession   Current-user session.
-	 * @param SchemaMapper  $schemaMapper  Resolves the object's schema, whose rule carries the verb.
+	 * @param SchemaMapperInterface  $schemaMapper  Resolves the object's schema, whose rule carries the verb.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly IUserSession $userSession,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 
@@ -71,8 +73,34 @@ class ObjectReadAccess {
 	 * @return ObjectEntity|null The object, or null when it is not readable.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function readable(string $register, string $schema, string $id): ?ObjectEntity {
+		try {
+			return $this->readableOrAmbiguous(register: $register, schema: $schema, id: $id);
+		} catch (MultipleObjectsReturnedException $e) {
+			return null;
+		}
+	}//end readable()
+
+	/**
+	 * As readable(), but an identifier two objects of the register and schema hold is
+	 * refused as ambiguous instead of answered as not readable (#4037).
+	 *
+	 * @param string $register The register slug or id.
+	 * @param string $schema   The schema slug or id.
+	 * @param string $id       The object's id, uuid or slug.
+	 *
+	 * @return ObjectEntity|null The object, or null when it is not readable.
+	 *
+	 * @throws MultipleObjectsReturnedException When the slug is held by more than one object.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	public function readableOrAmbiguous(string $register, string $schema, string $id): ?ObjectEntity {
 		if ($this->userSession->getUser() === null) {
 			return null;
 		}
@@ -84,17 +112,19 @@ class ObjectReadAccess {
 			$this->objectService->setRegister(register: $register);
 			$this->objectService->setSchema(schema: $schema);
 
-			return $this->objectService->find(
+			return WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
 				register: $register,
 				schema: $schema,
 				_rbac: true,
 				_multitenancy: true
-			);
+			));
+		} catch (MultipleObjectsReturnedException $e) {
+			throw $e;
 		} catch (\Exception $e) {
 			return null;
 		}
-	}//end readable()
+	}//end readableOrAmbiguous()
 
 	/**
 	 * The schema an object belongs to, when it resolves.
@@ -108,7 +138,7 @@ class ObjectReadAccess {
 	 *
 	 * @return Schema|null The schema.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+	 * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
 	 */
 	public function schemaOf(ObjectEntity $object): ?Schema {
 		try {
@@ -119,13 +149,34 @@ class ObjectReadAccess {
 	}//end schemaOf()
 
 	/**
+	 * The schema with this id, under the caller's own RBAC, or null when it does not resolve.
+	 *
+	 * @param string|int|null $schemaId The schema id.
+	 *
+	 * @return Schema|null The schema.
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
+	 */
+	public function schemaById(string|int|null $schemaId): ?Schema {
+		if ($schemaId === null || $schemaId === '') {
+			return null;
+		}
+
+		try {
+			return $this->schemaMapper->find($schemaId);
+		} catch (\Throwable $exception) {
+			return null;
+		}
+	}//end schemaById()
+
+	/**
 	 * The register an object belongs to, as an id, for the audit entry.
 	 *
 	 * @param ObjectEntity $object The object.
 	 *
 	 * @return int|null The register id.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function registerIdOf(ObjectEntity $object): ?int {
 		$register = $object->getRegister();

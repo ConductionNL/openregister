@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Oas;
 
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Service\Rbac\EffectiveAuthorization;
 use Psr\Log\LoggerInterface;
@@ -63,14 +63,14 @@ class OasRbacAnnotator {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper           $registerMapper Resolves the register a schema's authorization falls back to.
+	 * @param RegisterMapperInterface           $registerMapper Resolves the register a schema's authorization falls back to.
 	 * @param LoggerInterface|null     $logger         Where an unreadable rule is noted.
-	 * @param PropertyRbacHandler|null $propertyRbac   Withholds a property the caller may not read.
+	 * @param PropertyRbacHandlerInterface|null $propertyRbac   Withholds a property the caller may not read.
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
+		RegisterMapperInterface $registerMapper,
 		private readonly ?LoggerInterface $logger = null,
-		private readonly ?PropertyRbacHandler $propertyRbac = null,
+		private readonly ?PropertyRbacHandlerInterface $propertyRbac = null,
 	) {
 		$this->authorization = new EffectiveAuthorization(registerMapper: $registerMapper);
 	}//end __construct()

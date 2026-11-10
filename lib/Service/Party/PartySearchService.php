@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 
 declare(strict_types=1);
@@ -28,17 +28,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Party;
 
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IAppConfig;
 use Throwable;
 
 /**
  * Runs a party query against the cap.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+ * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
  */
-class PartySearchService {
+class PartySearchService implements PartySearchInterface {
 
 	/**
 	 * The app config key holding the cap.
@@ -53,15 +54,15 @@ class PartySearchService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The object layer party records live in.
-	 * @param PartyService $parties The party schemas.
-	 * @param AuditTrailMapper $audit The audit trail, for a refused attempt.
+	 * @param ObjectOperationsInterface $objects The object layer party records live in.
+	 * @param PartySchemaCatalogueInterface $parties The party schemas.
+	 * @param AuditTrailMapperInterface $audit The audit trail, for a refused attempt.
 	 * @param IAppConfig $config The administered cap.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
-		private readonly PartyService $parties,
-		private readonly AuditTrailMapper $audit,
+		private readonly ObjectOperationsInterface $objects,
+		private readonly PartySchemaCatalogueInterface $parties,
+		private readonly AuditTrailMapperInterface $audit,
 		private readonly IAppConfig $config,
 	) {
 	}//end __construct()
@@ -71,7 +72,7 @@ class PartySearchService {
 	 *
 	 * @return int The cap, at least one.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function cap(): int {
 		$cap = $this->config->getValueInt('openregister', self::CAP_KEY, self::DEFAULT_CAP);
@@ -95,7 +96,7 @@ class PartySearchService {
 	 *
 	 * @throws Exception 400 when the query is empty, 403 naming the cap when it is exceeded.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function search(string $query, int|string|null $schemaId = null): array {
 		$term = trim($query);
@@ -108,43 +109,86 @@ class PartySearchService {
 			return ['results' => [], 'total' => 0, 'cap' => $this->cap()];
 		}
 
-		$cap = $this->cap();
+		$cap   = $this->cap();
+		$total = $this->countAll(schemaIds: $schemaIds, term: $term);
+		if ($total > $cap) {
+			$this->refuseOverCap(term: $term, cap: $cap, total: $total, schemaIds: $schemaIds);
+		}
+
+		return ['results' => $this->findAll(schemaIds: $schemaIds, term: $term, limit: $cap), 'total' => $total, 'cap' => $cap];
+	}//end search()
+
+	/**
+	 * How many parties the term matches over the schemas.
+	 *
+	 * @param array<int, int> $schemaIds The schemas.
+	 * @param string $term The search term.
+	 *
+	 * @return int The total.
+	 */
+	private function countAll(array $schemaIds, string $term): int {
 		$total = 0;
 		foreach ($schemaIds as $id) {
 			$total += $this->countIn(schemaId: $id, term: $term);
 		}
 
-		if ($total > $cap) {
-			// Only name a schema when the query ran over exactly one, so the
-			// trail never implies a scope the caller did not ask for.
-			$searched = null;
-			if (count($schemaIds) === 1) {
-				$searched = $schemaIds[0];
-			}
+		return $total;
+	}//end countAll()
 
-			$this->audit->createPartyQueryRefusalEntry(
-				query: $term,
-				cap: $cap,
-				would: $total,
-				schema: $searched
-			);
-
-			throw new Exception(
-				'The query matches ' . $total . ' parties, over the administered cap of ' . $cap
-				. '. Narrow the query: results are refused, never truncated.',
-				403
-			);
+	/**
+	 * Record the refused attempt on the trail and refuse it.
+	 *
+	 * Only name a schema when the query ran over exactly one, so the trail
+	 * never implies a scope the caller did not ask for.
+	 *
+	 * @param string $term The search term.
+	 * @param int $cap The cap.
+	 * @param int $total How many parties the term matches.
+	 * @param array<int, int> $schemaIds The schemas searched.
+	 *
+	 * @return never
+	 *
+	 * @throws Exception 403, always.
+	 */
+	private function refuseOverCap(string $term, int $cap, int $total, array $schemaIds): never {
+		$searched = null;
+		if (count($schemaIds) === 1) {
+			$searched = $schemaIds[0];
 		}
 
+		$this->audit->createPartyQueryRefusalEntry(
+			query: $term,
+			cap: $cap,
+			would: $total,
+			schema: $searched
+		);
+
+		throw new Exception(
+			'The query matches ' . $total . ' parties, over the administered cap of ' . $cap
+			. '. Narrow the query: results are refused, never truncated.',
+			403
+		);
+	}//end refuseOverCap()
+
+	/**
+	 * The matches of every schema, in schema order.
+	 *
+	 * @param array<int, int> $schemaIds The schemas.
+	 * @param string $term The search term.
+	 * @param int $limit The cap.
+	 *
+	 * @return array<int, mixed> The matches.
+	 */
+	private function findAll(array $schemaIds, string $term, int $limit): array {
 		$results = [];
 		foreach ($schemaIds as $id) {
-			foreach ($this->findIn(schemaId: $id, term: $term, limit: $cap) as $party) {
+			foreach ($this->findIn(schemaId: $id, term: $term, limit: $limit) as $party) {
 				$results[] = $party;
 			}
 		}
 
-		return ['results' => $results, 'total' => $total, 'cap' => $cap];
-	}//end search()
+		return $results;
+	}//end findAll()
 
 	/**
 	 * The party schema ids a query runs over.
@@ -157,17 +201,30 @@ class PartySearchService {
 		$ids = [];
 		foreach ($this->parties->partySchemas() as $party) {
 			$id = (int)$party['schema']->getId();
-			if ($schemaId === null
-				|| (string)$schemaId === (string)$id
-				|| (string)$schemaId === (string)$party['schema']->getSlug()
-				|| (string)$schemaId === (string)$party['schema']->getUuid()
-			) {
+			if (self::selects(schemaId: $schemaId, id: $id, schema: $party['schema']) === true) {
 				$ids[] = $id;
 			}
 		}
 
 		return $ids;
 	}//end schemaIds()
+
+	/**
+	 * Whether a filter selects a schema: no filter, or its id, slug or uuid.
+	 *
+	 * @param int|string|null $schemaId The filter.
+	 * @param int $id The schema's id.
+	 * @param Schema $schema The schema.
+	 *
+	 * @return bool Whether the schema is searched.
+	 */
+	private static function selects(int|string|null $schemaId, int $id, Schema $schema): bool {
+		if ($schemaId === null) {
+			return true;
+		}
+
+		return in_array((string)$schemaId, [(string)$id, (string)$schema->getSlug(), (string)$schema->getUuid()], true);
+	}//end selects()
 
 	/**
 	 * How many parties of one schema the term matches.

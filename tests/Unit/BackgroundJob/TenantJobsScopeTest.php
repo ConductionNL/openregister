@@ -22,6 +22,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\BackgroundJob\Support\TenantPurgeStores;
 
 /**
  * What the three tenant background jobs consider a tenant.
@@ -113,10 +114,9 @@ class TenantJobsScopeTest extends TestCase {
 
 		$job = new TenantPurgeJob(
 			$this->createMock(ITimeFactory::class),
-			$mapper,
-			$this->createMock(TenantUsageMapper::class),
+			new TenantPurgeStores($mapper, $this->createMock(TenantUsageMapper::class)),
 			$appConfig,
-			$this->createMock(LoggerInterface::class),
+			$this->createMock(LoggerInterface::class)
 		);
 
 		$this->runJob($job);
@@ -149,10 +149,9 @@ class TenantJobsScopeTest extends TestCase {
 		$this->runJob(
 			new TenantPurgeJob(
 				$this->createMock(ITimeFactory::class),
-				$mapper,
-				$this->createMock(TenantUsageMapper::class),
+				new TenantPurgeStores($mapper, $this->createMock(TenantUsageMapper::class)),
 				$appConfig,
-				$this->createMock(LoggerInterface::class),
+				$this->createMock(LoggerInterface::class)
 			)
 		);
 
@@ -185,10 +184,9 @@ class TenantJobsScopeTest extends TestCase {
 		$this->runJob(
 			new TenantPurgeJob(
 				$this->createMock(ITimeFactory::class),
-				$mapper,
-				$this->createMock(TenantUsageMapper::class),
+				new TenantPurgeStores($mapper, $this->createMock(TenantUsageMapper::class)),
 				$appConfig,
-				$this->createMock(LoggerInterface::class),
+				$this->createMock(LoggerInterface::class)
 			)
 		);
 
@@ -221,17 +219,6 @@ class TenantJobsScopeTest extends TestCase {
 		);
 
 		$usage = $this->createMock(TenantUsageMapper::class);
-		// The installation-wide sweep must never be the purge's delete: it has
-		// no organisation in its WHERE clause. It is recorded rather than
-		// forbidden with never(), because the job catches \Exception and would
-		// swallow the mock's failure, hiding the reason a test went red.
-		$usage->method('deleteOlderThan')->willReturnCallback(
-			static function () use (&$deletedUsage): int {
-				$deletedUsage[] = '*every organisation*';
-
-				return 0;
-			}
-		);
 		$usage->method('deleteByOrganisation')->willReturnCallback(
 			static function (string $organisationUuid) use (&$deletedUsage): int {
 				$deletedUsage[] = $organisationUuid;
@@ -245,10 +232,9 @@ class TenantJobsScopeTest extends TestCase {
 
 		return new TenantPurgeJob(
 			$this->createMock(ITimeFactory::class),
-			$mapper,
-			$usage,
+			new TenantPurgeStores($mapper, $usage),
 			$appConfig,
-			$this->createMock(LoggerInterface::class),
+			$this->createMock(LoggerInterface::class)
 		);
 
 	}//end purgeJobOver()

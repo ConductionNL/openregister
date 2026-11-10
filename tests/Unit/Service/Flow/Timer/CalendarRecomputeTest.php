@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarDependency;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeSources;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
@@ -153,9 +154,11 @@ class CalendarRecomputeTest extends TestCase {
 		$calendars = $this->calendars(calendar: $calendar, throws: $throws);
 
 		return new CalendarRecompute(
-			dependency: new CalendarDependency(calendars: $calendars),
-			calendars: $calendars,
-			calculator: new SlaCalculator(),
+			sources: new CalendarRecomputeSources(
+				dependency: new CalendarDependency(calendars: $calendars),
+				calendars: $calendars,
+				calculator: new SlaCalculator()
+			),
 			appConfig: $this->appConfig(),
 			logger: $this->createMock(LoggerInterface::class)
 		);
@@ -448,23 +451,6 @@ class CalendarRecomputeTest extends TestCase {
 		$this->assertSame(1, $counts['moved']);
 		$this->assertSame(1, $counts['unresolvable']);
 	}//end testOneFailingTimerDoesNotAbandonTheBatch()
-
-	/**
-	 * The candidate narrowing: only an unnamed slug or the changed one needs
-	 * the resolver asked.
-	 *
-	 * @return void
-	 */
-	public function testTheCandidateNarrowingIsWhatAnIndexCanDo(): void {
-		$dependency = new CalendarDependency(calendars: $this->calendars(calendar: $this->calendar));
-
-		$this->assertTrue($dependency->isCandidate(timerCalendarSlug: null, changedSlug: 'nl-national'));
-		$this->assertTrue($dependency->isCandidate(timerCalendarSlug: 'nl-national', changedSlug: 'nl-national'));
-		$this->assertFalse(
-			$dependency->isCandidate(timerCalendarSlug: 'other', changedSlug: 'nl-national'),
-			'a named slug short-circuits the resolution order, so another name cannot resolve to this one'
-		);
-	}//end testTheCandidateNarrowingIsWhatAnIndexCanDo()
 
 	/**
 	 * The projection is the engine's own formula: budget minus consumed, from

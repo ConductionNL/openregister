@@ -55,6 +55,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class CredentialBrokerSessionlessOrganisationTest extends TestCase {
 	private const UUID = 'cred-org-inject-1';

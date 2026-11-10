@@ -32,10 +32,11 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Archival\Appraisal;
-use OCA\OpenRegister\Service\Archival\RecordState;
-use OCA\OpenRegister\Service\RetentionService;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Archival\AppraisalInterface;
+use OCA\OpenRegister\Service\Archival\RecordStateInterface;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IGroupManager;
@@ -78,7 +79,7 @@ class DestructionCheckJob extends TimedJob {
 		parent::__construct(time: $time);
 
 		try {
-			$handler = $this->container->get(ObjectRetentionHandler::class);
+			$handler = $this->container->get(ArchivalSettingsReaderInterface::class);
 			$settings = $handler->getArchivalSettingsOnly();
 			$interval = (int)($settings['destructionCheckInterval'] ?? self::DEFAULT_INTERVAL);
 		} catch (Exception $e) {
@@ -107,8 +108,8 @@ class DestructionCheckJob extends TimedJob {
 		$logger->info('[DestructionCheckJob] Starting destruction check');
 
 		try {
-			$retentionService = $this->container->get(RetentionService::class);
-			$settingsHandler = $this->container->get(ObjectRetentionHandler::class);
+			$retentionService = $this->container->get(RetentionServiceInterface::class);
+			$settingsHandler = $this->container->get(ArchivalSettingsReaderInterface::class);
 			$settings = $settingsHandler->getArchivalSettingsOnly();
 
 			if (empty($settings['destructionListRegister']) === true
@@ -143,12 +144,11 @@ class DestructionCheckJob extends TimedJob {
 				return;
 			}
 
-			$saveObject = $this->container->get(\OCA\OpenRegister\Service\Object\SaveObject::class);
+			$saveObject = $this->container->get(SaveObjectWriterInterface::class);
 			$savedList = $saveObject->saveObject(
 				$settings['destructionListRegister'],
 				$settings['destructionListSchema'],
 				$listData,
-				null,
 				null,
 				false,
 				false,
@@ -189,7 +189,7 @@ class DestructionCheckJob extends TimedJob {
 		$today = (new DateTime())->format('Y-m-d');
 
 		try {
-			$retentionService = $this->container->get(RetentionService::class);
+			$retentionService = $this->container->get(RetentionServiceInterface::class);
 
 			$appConfig = $this->container->get(\OCP\IAppConfig::class);
 			$notifiedJson = $appConfig->getValueString('openregister', self::NOTIFIED_KEY, '[]');
@@ -218,7 +218,7 @@ class DestructionCheckJob extends TimedJob {
 					// pre-destruction warning, so the first a records officer
 					// would hear of a destruction is after it happened.
 					$status = ($retention['archiefstatus'] ?? null);
-					if ($actionDate === null || in_array($status, RecordState::ACTIVE_ALIASES, true) === false) {
+					if ($actionDate === null || in_array($status, RecordStateInterface::ACTIVE_ALIASES, true) === false) {
 						return false;
 					}
 
@@ -241,27 +241,7 @@ class DestructionCheckJob extends TimedJob {
 					continue;
 				}
 
-				$subject = 'Object approaching destruction date';
-				if (in_array(($retention['archiefnominatie'] ?? null), Appraisal::RETAIN_PERMANENTLY_ALIASES, true) === true) {
-					$subject = 'Object requires e-Depot transfer';
-				}
-
-				$this->sendObjectNotification(
-					uuid: $uuid,
-					subject: $subject,
-					// 🔴 NOT `getTitle()`. `ObjectEntity` HAS NO `title`
-					// PROPERTY, so Entity's magic accessor threw
-					// "title is not a valid attribute" on the first object it
-					// reached. Inside this try that aborted the entire
-					// notification pass; in `createDestructionList()` the same
-					// call took down the whole job. `name` is the property that
-					// exists, and `getObjectArray()` already falls back to the
-					// uuid the same way.
-					title: $object->getName() ?? $uuid,
-					actionDate: (string)($retention['archiefactiedatum'] ?? ''),
-					classification: $retention['classification'] ?? null,
-					logger: $logger
-				);
+				$this->sendObjectNotification(object: $object, logger: $logger);
 
 				$newNotified[$uuid] = true;
 				$newCount++;
@@ -287,13 +267,12 @@ class DestructionCheckJob extends TimedJob {
 	}//end sendPreDestructionNotifications()
 
 	/**
-	 * Send a notification about a specific object.
+	 * Send a notification about one approaching object to every archivist.
 	 *
-	 * @param string $uuid Object UUID
-	 * @param string $subject Notification subject
-	 * @param string $title Object title
-	 * @param string $actionDate Archiefactiedatum
-	 * @param string|null $classification Selectielijst category
+	 * The subject is a destruction warning, or an e-Depot transfer for a
+	 * permanently retained record. The title is the object's name, else its uuid.
+	 *
+	 * @param ObjectEntity $object The approaching object.
 	 * @param LoggerInterface $logger Logger
 	 *
 	 * @return void
@@ -301,14 +280,24 @@ class DestructionCheckJob extends TimedJob {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	private function sendObjectNotification(
-		string $uuid,
-		string $subject,
-		string $title,
-		string $actionDate,
-		?string $classification,
-		LoggerInterface $logger,
-	): void {
+	private function sendObjectNotification(ObjectEntity $object, LoggerInterface $logger): void {
+		$retention = ($object->getRetention() ?? []);
+		$uuid = $object->getUuid();
+		$parameters = [
+			'subject' => self::subjectOf(retention: $retention),
+			// 🔴 NOT `getTitle()`. `ObjectEntity` HAS NO `title`
+			// PROPERTY, so Entity's magic accessor threw
+			// "title is not a valid attribute" on the first object it
+			// reached. Inside this try that aborted the entire
+			// notification pass; in `createDestructionList()` the same
+			// call took down the whole job. `name` is the property that
+			// exists, and `getObjectArray()` already falls back to the
+			// uuid the same way.
+			'title' => self::titleOf(name: $object->getName(), uuid: $uuid),
+			'actieDate' => (string)($retention['archiefactiedatum'] ?? ''),
+			'classification' => (self::classificationOf(retention: $retention) ?? ''),
+		];
+
 		try {
 			$notificationManager = $this->container->get(INotificationManager::class);
 			$groupManager = $this->container->get(IGroupManager::class);
@@ -324,21 +313,51 @@ class DestructionCheckJob extends TimedJob {
 					->setUser($user->getUID())
 					->setDateTime(new DateTime())
 					->setObject('retention', $uuid)
-					->setSubject(
-						'retention_approaching',
-						[
-							'subject' => $subject,
-							'title' => $title,
-							'actieDate' => $actionDate,
-							'classification' => $classification ?? '',
-						]
-					);
+					->setSubject('retention_approaching', $parameters);
 				$notificationManager->notify($notification);
 			}
 		} catch (Exception $e) {
 			$logger->warning('[DestructionCheckJob] Notification send error: ' . $e->getMessage());
 		}//end try
 	}//end sendObjectNotification()
+
+	/**
+	 * The subject an approaching object is announced with.
+	 *
+	 * @param array<string, mixed> $retention The object's retention block.
+	 *
+	 * @return string An e-Depot transfer for a permanently retained record, else a destruction warning.
+	 */
+	private static function subjectOf(array $retention): string {
+		if (in_array(($retention['archiefnominatie'] ?? null), AppraisalInterface::RETAIN_PERMANENTLY_ALIASES, true) === true) {
+			return 'Object requires e-Depot transfer';
+		}
+
+		return 'Object approaching destruction date';
+	}//end subjectOf()
+
+	/**
+	 * The title an approaching object is announced with.
+	 *
+	 * @param string|null $name The object's name.
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return string The name, else the uuid.
+	 */
+	private static function titleOf(?string $name, string $uuid): string {
+		return ($name ?? $uuid);
+	}//end titleOf()
+
+	/**
+	 * The selectielijst category of an approaching object, typed as the payload requires.
+	 *
+	 * @param array<string, mixed> $retention The object's retention block.
+	 *
+	 * @return string|null The category, or null when none is recorded.
+	 */
+	private static function classificationOf(array $retention): ?string {
+		return ($retention['classification'] ?? null);
+	}//end classificationOf()
 
 	/**
 	 * Send review notification for new destruction list.

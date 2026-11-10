@@ -6,7 +6,7 @@
  * Tests for uncovered branches in MappingService: encodeArrayKeys recursive,
  * executeMapping list mode, cast operations (bool, ?bool, json, jsonToArray,
  * moneyStringToInt, intToMoneyString, unsetIfValue, setNullIfValue, countValue,
- * keyCantBeValue, coordinateStringToArray), areAllArrayKeysNull, invalidateMappingCache,
+ * keyCantBeValue, coordinateStringToArray), areAllArrayKeysNull,
  * getMapping with cache hit/miss, and getCachedTemplate.
  *
  * @category Tests
@@ -452,28 +452,6 @@ class MappingServiceCoverageTest extends TestCase {
 	public function testAreAllArrayKeysNullHasValue(): void {
 		$result = $this->invokeMethod($this->service, 'areAllArrayKeysNull', [['a' => 'hello']]);
 		$this->assertFalse($result);
-	}
-
-	// =========================================================================
-	// invalidateMappingCache
-	// =========================================================================
-
-	public function testInvalidateMappingCacheCallsRemove(): void {
-		$this->cache->expects($this->once())->method('remove')->with('123');
-		$this->service->invalidateMappingCache(123);
-	}
-
-	public function testInvalidateMappingCacheNoCache(): void {
-		// Create service without cache (exception during creation)
-		$failingFactory = $this->createMock(ICacheFactory::class);
-		$failingFactory->method('createDistributed')
-			->willThrowException(new \Exception('No cache'));
-
-		$service = new MappingService($this->mappingMapper, $failingFactory, $this->logger);
-
-		// Should not throw
-		$service->invalidateMappingCache('test');
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================

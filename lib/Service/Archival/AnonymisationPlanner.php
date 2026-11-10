@@ -41,6 +41,14 @@ use InvalidArgumentException;
 class AnonymisationPlanner {
 
 	/**
+	 * The refusal for a profile naming a property the schema does not declare.
+	 *
+	 * @var string
+	 */
+	private const UNDECLARED = 'The anonymisation profile names "%s", which this schema does not declare. It would be '
+		.'skipped and the run would report success over a record that still holds it.';
+
+	/**
 	 * Read the profile out of a schema's archival annotation.
 	 *
 	 * @param array<string, mixed> $annotation The `x-openregister-archival` block.
@@ -57,20 +65,28 @@ class AnonymisationPlanner {
 
 		$read = [];
 		foreach ($profile as $property => $treatment) {
-			if (is_string($property) === false || $property === '') {
-				continue;
+			if (is_string($property) === true && $property !== '') {
+				$read[$property] = $this->ruleOf(treatment: $treatment);
 			}
-
-			if (is_array($treatment) === true) {
-				$read[$property] = $treatment;
-				continue;
-			}
-
-			$read[$property] = ['treatment' => $treatment];
 		}
 
 		return $read;
 	}//end profileOf()
+
+	/**
+	 * One declared treatment as a rule: a bare treatment name becomes `['treatment' => name]`.
+	 *
+	 * @param mixed $treatment The declared treatment.
+	 *
+	 * @return array<string, mixed> The rule.
+	 */
+	private function ruleOf(mixed $treatment): array {
+		if (is_array($treatment) === true) {
+			return $treatment;
+		}
+
+		return ['treatment' => $treatment];
+	}//end ruleOf()
 
 	/**
 	 * Refuse a profile that cannot mean what it says.
@@ -96,15 +112,11 @@ class AnonymisationPlanner {
 
 		foreach ($this->profileOf(annotation: $annotation) as $property => $rule) {
 			if (isset($declared[$property]) === false) {
-				$refusals[] = sprintf(
-					'The anonymisation profile names "%s", which this schema does not declare. It would be '
-					.'skipped and the run would report success over a record that still holds it.',
-					$property
-				);
+				$refusals[] = sprintf(self::UNDECLARED, $property);
 				continue;
 			}
 
-			$refusals = array_merge($refusals, $this->refuseRule(property: $property, rule: $rule));
+			array_push($refusals, ...$this->refuseRule(property: $property, rule: $rule));
 		}
 
 		return $refusals;
@@ -147,48 +159,67 @@ class AnonymisationPlanner {
 	/**
 	 * Refuse one rule that cannot be carried out.
 	 *
-	 * @param string $property The property it is declared on.
-	 * @param mixed  $rule     The declared rule.
+	 * @param string               $property The property it is declared on.
+	 * @param array<string, mixed> $rule     The declared rule, as profileOf() reads it.
 	 *
 	 * @return string[] The refusals for this rule.
 	 */
-	private function refuseRule(string $property, mixed $rule): array {
-		$treatment = $rule;
-		if (is_array($rule) === true) {
-			$treatment = ($rule['treatment'] ?? null);
-		}
-
+	private function refuseRule(string $property, array $rule): array {
+		$treatment = ($rule['treatment'] ?? null);
 		if (in_array($treatment, AnonymisationProfile::TREATMENTS, true) === false) {
-			return [
-				sprintf(
-					'The anonymisation profile gives "%s" the treatment "%s", which is not one of: %s.',
-					$property,
-					$this->describe(value: $treatment),
-					implode(', ', AnonymisationProfile::TREATMENTS)
-				),
-			];
+			return [$this->unknownTreatment(property: $property, treatment: $treatment)];
 		}
 
-		if ($treatment === AnonymisationProfile::FIXED && array_key_exists('value', (array)$rule) === false) {
+		return $this->refuseParameters(property: $property, rule: $rule);
+	}//end refuseRule()
+
+	/**
+	 * Refuse a known treatment declared without what it needs to be carried out.
+	 *
+	 * @param string               $property The property it is declared on.
+	 * @param array<string, mixed> $rule     The declared rule, whose treatment is a known one.
+	 *
+	 * @return string[] The refusals for this rule.
+	 */
+	private function refuseParameters(string $property, array $rule): array {
+		$treatment = $rule['treatment'];
+		if ($treatment === AnonymisationProfile::FIXED && array_key_exists('value', $rule) === false) {
 			return [sprintf('The anonymisation profile gives "%s" the treatment "fixed" without saying which value to write.', $property)];
 		}
 
-		if ($treatment === AnonymisationProfile::GENERALISE) {
-			$grain = ((array)$rule)['grain'] ?? null;
-			if (in_array($grain, AnonymisationProfile::GRAINS, true) === false) {
-				return [
-					sprintf(
-						'The anonymisation profile generalises "%s" to "%s", which is not one of: %s.',
-						$property,
-						$this->describe(value: $grain),
-						implode(', ', AnonymisationProfile::GRAINS)
-					),
-				];
-			}
+		$grain = ($rule['grain'] ?? null);
+		if ($treatment === AnonymisationProfile::GENERALISE && in_array($grain, AnonymisationProfile::GRAINS, true) === false) {
+			return [$this->unknownGrain(property: $property, grain: $grain)];
 		}
 
 		return [];
-	}//end refuseRule()
+	}//end refuseParameters()
+
+	/**
+	 * The refusal for a treatment the vocabulary does not know.
+	 *
+	 * @param string $property  The property the rule is declared on.
+	 * @param mixed  $treatment The declared treatment.
+	 *
+	 * @return string The refusal.
+	 */
+	private function unknownTreatment(string $property, mixed $treatment): string {
+		$format = 'The anonymisation profile gives "%s" the treatment "%s", which is not one of: %s.';
+		return sprintf($format, $property, $this->describe(value: $treatment), implode(', ', AnonymisationProfile::TREATMENTS));
+	}//end unknownTreatment()
+
+	/**
+	 * The refusal for a generalisation to a grain the vocabulary does not know.
+	 *
+	 * @param string $property The property the rule is declared on.
+	 * @param mixed  $grain    The declared grain.
+	 *
+	 * @return string The refusal.
+	 */
+	private function unknownGrain(string $property, mixed $grain): string {
+		$format = 'The anonymisation profile generalises "%s" to "%s", which is not one of: %s.';
+		return sprintf($format, $property, $this->describe(value: $grain), implode(', ', AnonymisationProfile::GRAINS));
+	}//end unknownGrain()
 
 	/**
 	 * One value as something a refusal can name.

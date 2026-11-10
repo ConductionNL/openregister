@@ -27,6 +27,8 @@ namespace Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\TransitionAttempt;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IUserSession;
@@ -48,12 +50,12 @@ class AutoTransitionSelectorTest extends TestCase {
 	 *
 	 * @return \OCA\OpenRegister\Service\Rules\ConditionDialect The dialect over the real AST evaluator.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function realConditionDialect(): \OCA\OpenRegister\Service\Rules\ConditionDialect {
 		return new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 			ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
-				placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+				placeholders: new \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver(
 					userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
 				)
 			)
@@ -90,8 +92,7 @@ class AutoTransitionSelectorTest extends TestCase {
 		return new LifecycleConditionEvaluator(
 			$this->createMock(IUserSession::class),
 			$groupManager,
-			$l10n,
-			$this->createMock(LoggerInterface::class),
+			new LifecycleConditionReporting($l10n, $this->createMock(LoggerInterface::class)),
 			$this->realConditionDialect()
 		);
 	}//end realEvaluator()
@@ -368,8 +369,7 @@ class AutoTransitionSelectorTest extends TestCase {
 		$evaluator = new class (
 			$this->createMock(IUserSession::class),
 			$this->createMock(IGroupManager::class),
-			$this->createMock(IL10N::class),
-			$this->createMock(LoggerInterface::class),
+			new LifecycleConditionReporting($this->createMock(IL10N::class), $this->createMock(LoggerInterface::class)),
 			$this->realConditionDialect()
 		) extends LifecycleConditionEvaluator {
 			/**
@@ -383,26 +383,11 @@ class AutoTransitionSelectorTest extends TestCase {
 			 * Answer true for every rule, without evaluating it.
 			 *
 			 * @param mixed $rule The rule.
-			 * @param array<string, mixed> $newData The object.
-			 * @param array<string, mixed> $oldData The previous object.
-			 * @param string $action The transition name.
-			 * @param string $from The state being left.
-			 * @param string $to The state being entered.
-			 * @param string $schemaSlug The schema slug.
-			 * @param string $field The lifecycle field.
+			 * @param TransitionAttempt $attempt The write and the transition it attempts.
 			 *
 			 * @return bool Always true.
 			 */
-			public function holds(
-				mixed $rule,
-				array $newData,
-				array $oldData,
-				string $action,
-				string $from,
-				string $to,
-				string $schemaSlug,
-				string $field,
-			): bool {
+			public function holds(mixed $rule, TransitionAttempt $attempt): bool {
 				$this->asked[] = $rule;
 				return true;
 			}

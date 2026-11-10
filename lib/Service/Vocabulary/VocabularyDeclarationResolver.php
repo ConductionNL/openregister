@@ -22,36 +22,34 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCP\IRequest;
 use Throwable;
 
 /**
  * Resolves the coded declaration a vocabulary-options read is about.
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
-class VocabularyDeclarationResolver {
+class VocabularyDeclarationResolver implements VocabularyDeclarationResolverInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Reads the schema a coded property is declared on.
-	 * @param CodedPropertyDeclarationFactory $declarationFactory Builds a declaration off a schema property.
-	 * @param IRequest $request Current request (the unsaved path reads its knobs off the query).
+	 * @param CodedSchemaTables $tables  Reads the schema a coded property is declared on and builds its declaration.
+	 * @param IRequest          $request Current request (the unsaved path reads its knobs off the query).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
-		private readonly CodedPropertyDeclarationFactory $declarationFactory,
+		private readonly CodedSchemaTables $tables,
 		private readonly IRequest $request,
 	) {
 	}//end __construct()
@@ -71,33 +69,68 @@ class VocabularyDeclarationResolver {
 	 *
 	 * @return CodedPropertyDeclaration|null The declaration, or null when neither source yields one.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function resolveDeclaration(string $schemaRef, string $property, string $schemeUri): ?CodedPropertyDeclaration {
-		if ($schemaRef !== '' && $property !== '') {
-			try {
-				$schema = $this->schemaMapper->find(id: $schemaRef);
-			} catch (Throwable $missing) {
-				return null;
-			}
-
-			$properties = ($schema->getProperties() ?? []);
-			$declaration = $this->declarationFactory->fromProperty(property: ($properties[$property] ?? null));
-			if ($declaration !== null) {
-				return $declaration;
-			}
+		if ($schemaRef === '' || $property === '') {
+			return $this->unsavedDeclaration(schemeUri: $schemeUri);
 		}
 
+		$schema = $this->findSchema(schemaRef: $schemaRef);
+		if ($schema === null) {
+			return null;
+		}
+
+		return ($this->savedDeclaration(schema: $schema, property: $property) ?? $this->unsavedDeclaration(schemeUri: $schemeUri));
+	}//end resolveDeclaration()
+
+	/**
+	 * The schema a reference names, or null when it cannot be read.
+	 *
+	 * @param string $schemaRef The schema id or slug.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function findSchema(string $schemaRef): ?Schema {
+		try {
+			return $this->tables->schemas->find(id: $schemaRef);
+		} catch (Throwable $missing) {
+			return null;
+		}
+	}//end findSchema()
+
+	/**
+	 * The declaration a saved schema property carries, or null when it is not coded.
+	 *
+	 * @param Schema $schema   The schema the property is declared on.
+	 * @param string $property The property name.
+	 *
+	 * @return CodedPropertyDeclaration|null The declaration.
+	 */
+	private function savedDeclaration(Schema $schema, string $property): ?CodedPropertyDeclaration {
+		$properties = ($schema->getProperties() ?? []);
+
+		return $this->tables->declarations->fromProperty(property: ($properties[$property] ?? null));
+	}//end savedDeclaration()
+
+	/**
+	 * The declaration of a scheme named on the query, or null when none is named.
+	 *
+	 * @param string $schemeUri The scheme uri, empty when none was given.
+	 *
+	 * @return CodedPropertyDeclaration|null The declaration.
+	 */
+	private function unsavedDeclaration(string $schemeUri): ?CodedPropertyDeclaration {
 		if ($schemeUri === '') {
 			return null;
 		}
 
-		return $this->declarationFactory->fromProperty(
+		return $this->tables->declarations->fromProperty(
 			property: [
 				CodedPropertyDeclaration::ANNOTATION => $this->declarationFromQuery(scheme: $schemeUri),
 			]
 		);
-	}//end resolveDeclaration()
+	}//end unsavedDeclaration()
 
 	/**
 	 * Build a declaration from the query, for a property that is not saved yet.
@@ -106,7 +139,7 @@ class VocabularyDeclarationResolver {
 	 *
 	 * @return array<string,mixed> The declaration.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	private function declarationFromQuery(string $scheme): array {
 		$declaration = ['scheme' => $scheme];

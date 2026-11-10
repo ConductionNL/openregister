@@ -1,0 +1,203 @@
+{
+    "array rule value kept": {
+        "output": {
+            "fixed": {
+                "k": "v"
+            }
+        }
+    },
+    "cast array list": {
+        "output": {
+            "age": "36"
+        }
+    },
+    "cast missing key": {
+        "output": {
+            "who": "Ada"
+        }
+    },
+    "cast string list": {
+        "output": {
+            "age": 36,
+            "who": "QWRh"
+        }
+    },
+    "cast unset if value": {
+        "output": {
+            "age": "36"
+        }
+    },
+    "dot rule": {
+        "output": {
+            "city": "Delft",
+            "who": "Ada"
+        }
+    },
+    "empty recipe": {
+        "output": []
+    },
+    "entity in template text": {
+        "output": {
+            "t": "x & y"
+        }
+    },
+    "input key with dot": {
+        "output": {
+            "a.b": "dotted",
+            "c": 1,
+            "o": "dotted"
+        }
+    },
+    "list empty": {
+        "output": []
+    },
+    "list input empty extras": {
+        "output": [
+            {
+                "v": "value"
+            }
+        ]
+    },
+    "list input with extras": {
+        "output": [
+            {
+                "v": {
+                    "name": "A"
+                },
+                "n": "A",
+                "c": "shared"
+            },
+            {
+                "v": "raw",
+                "n": "name",
+                "c": "shared"
+            }
+        ]
+    },
+    "list keyed": {
+        "output": {
+            "x": {
+                "who": "A"
+            },
+            "y": {
+                "who": "B"
+            }
+        }
+    },
+    "list of arrays": {
+        "output": [
+            {
+                "who": "A"
+            },
+            {
+                "who": "B"
+            }
+        ]
+    },
+    "list of nulls": {
+        "output": [
+            {
+                "v": null
+            }
+        ]
+    },
+    "list of scalars": {
+        "output": [
+            {
+                "v": "p"
+            },
+            {
+                "v": "q"
+            }
+        ]
+    },
+    "missing path renders as text": {
+        "output": {
+            "x": "not.there"
+        }
+    },
+    "nested output key": {
+        "output": {
+            "out": {
+                "inner": {
+                    "city": "Delft"
+                }
+            }
+        }
+    },
+    "numeric rule value": {
+        "output": {
+            "n": "5"
+        }
+    },
+    "pass through": {
+        "output": {
+            "name": "Ada",
+            "age": "36",
+            "address": {
+                "city": "Delft",
+                "zip": "2611"
+            },
+            "tags": [
+                "a",
+                "b"
+            ],
+            "who": "Ada"
+        }
+    },
+    "pass through plus unset": {
+        "output": {
+            "name": "Ada",
+            "address": {
+                "city": "Delft"
+            },
+            "tags": [
+                "a",
+                "b"
+            ]
+        }
+    },
+    "root hash array": {
+        "output": {
+            "city": "Delft",
+            "zip": "2611"
+        }
+    },
+    "root hash null": {
+        "output": []
+    },
+    "root hash scalar": {
+        "output": [
+            "Ada"
+        ]
+    },
+    "root hash with other key": {
+        "output": {
+            "#": "Ada",
+            "b": "36"
+        }
+    },
+    "twig entity decoded": {
+        "output": {
+            "t": "a & b"
+        }
+    },
+    "twig error": {
+        "threw": "Exception",
+        "message": "Error for mapping: GoldenMapping, key: bad, value: {{ name | nosuchfilter }} and message: Unknown \"nosuchfilter\" filter in \"__string_template__38c38e7f9bfd461347f8da7f546cde45\" at line 1."
+    },
+    "twig error unnamed": {
+        "threw": "Exception",
+        "message": "Error for mapping: Unknown, key: bad, value: {% nosuchtag %} and message: Unknown \"nosuchtag\" tag in \"__string_template__72c4be35ffd21c5eb2cd54fcf2d2cfe6\" at line 1."
+    },
+    "twig template": {
+        "output": {
+            "greeting": "Hi Ada from Delft"
+        }
+    },
+    "unset mapped key": {
+        "output": {
+            "city": "Delft"
+        }
+    }
+}

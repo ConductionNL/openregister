@@ -1,0 +1,3630 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`configuration getBranches golden error with text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching branches:",
+      "HTTP error! status: 422",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 422",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=o&repo=r",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration getBranches golden error without text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching branches:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=o&repo=r",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration getBranches golden network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching branches:",
+      "offline",
+    ],
+  ],
+  "outcome": {
+    "thrown": "offline",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=o&repo=r",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration getBranches golden ok empty object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=o&repo=r",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration getBranches golden ok null 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching branches:",
+      "Cannot read properties of null (reading 'branches')",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Cannot read properties of null (reading 'branches')",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=o&repo=r",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration getBranches golden ok object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [
+      "main",
+    ],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=o&repo=r",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration getBranches golden ok string 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=o&repo=r",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration getConfigurationFiles golden error with text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching configuration files:",
+      "HTTP error! status: 422",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 422",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/gitlab/files?branch=main",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration getConfigurationFiles golden error without text 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching configuration files:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/gitlab/files?branch=main",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration getConfigurationFiles golden network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching configuration files:",
+      "offline",
+    ],
+  ],
+  "outcome": {
+    "thrown": "offline",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/gitlab/files?branch=main",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration getConfigurationFiles golden ok empty object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/gitlab/files?branch=main",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration getConfigurationFiles golden ok null 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching configuration files:",
+      "Cannot read properties of null (reading 'files')",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Cannot read properties of null (reading 'files')",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/gitlab/files?branch=main",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration getConfigurationFiles golden ok object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [
+      "a.json",
+    ],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/gitlab/files?branch=main",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration getConfigurationFiles golden ok string 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/gitlab/files?branch=main",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitHub golden error with text 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitHub:",
+      "Bad input",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Bad input",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/github",
+      {
+        "body": "{"owner":"o","repo":"r"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitHub golden error without text 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitHub:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/github",
+      {
+        "body": "{"owner":"o","repo":"r"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitHub golden network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitHub:",
+      "offline",
+    ],
+  ],
+  "outcome": {
+    "thrown": "offline",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/github",
+      {
+        "body": "{"owner":"o","repo":"r"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitHub golden ok empty object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {},
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/github",
+      {
+        "body": "{"owner":"o","repo":"r"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitHub golden ok null 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/github",
+      {
+        "body": "{"owner":"o","repo":"r"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitHub golden ok object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "branches": [
+        "main",
+      ],
+      "files": [
+        "a.json",
+      ],
+      "id": 5,
+      "results": [
+        {
+          "id": 1,
+        },
+      ],
+      "title": "T",
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/github",
+      {
+        "body": "{"owner":"o","repo":"r"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitHub golden ok string 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": "text",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/github",
+      {
+        "body": "{"owner":"o","repo":"r"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitLab golden error with text 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitLab:",
+      "Bad input",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Bad input",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/gitlab",
+      {
+        "body": "{"project":"p"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitLab golden error without text 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitLab:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/gitlab",
+      {
+        "body": "{"project":"p"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitLab golden network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitLab:",
+      "offline",
+    ],
+  ],
+  "outcome": {
+    "thrown": "offline",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/gitlab",
+      {
+        "body": "{"project":"p"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitLab golden ok empty object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {},
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/gitlab",
+      {
+        "body": "{"project":"p"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitLab golden ok null 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/gitlab",
+      {
+        "body": "{"project":"p"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitLab golden ok object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "branches": [
+        "main",
+      ],
+      "files": [
+        "a.json",
+      ],
+      "id": 5,
+      "results": [
+        {
+          "id": 1,
+        },
+      ],
+      "title": "T",
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/gitlab",
+      {
+        "body": "{"project":"p"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromGitLab golden ok string 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": "text",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/gitlab",
+      {
+        "body": "{"project":"p"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromUrl golden error with text 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from URL:",
+      "Bad input",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Bad input",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/url",
+      {
+        "body": "{"url":"https://example.com/c.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromUrl golden error without text 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from URL:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/url",
+      {
+        "body": "{"url":"https://example.com/c.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromUrl golden network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from URL:",
+      "offline",
+    ],
+  ],
+  "outcome": {
+    "thrown": "offline",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/url",
+      {
+        "body": "{"url":"https://example.com/c.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromUrl golden ok empty object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {},
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/url",
+      {
+        "body": "{"url":"https://example.com/c.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromUrl golden ok null 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": null,
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/url",
+      {
+        "body": "{"url":"https://example.com/c.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromUrl golden ok object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "branches": [
+        "main",
+      ],
+      "files": [
+        "a.json",
+      ],
+      "id": 5,
+      "results": [
+        {
+          "id": 1,
+        },
+      ],
+      "title": "T",
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/url",
+      {
+        "body": "{"url":"https://example.com/c.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration importFromUrl golden ok string 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": "text",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/url",
+      {
+        "body": "{"url":"https://example.com/c.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration existing golden error with text 1`] = `
+{
+  "logged": [
+    [
+      "Error saving configuration:",
+      "HTTP error! status: 422",
+    ],
+  ],
+  "outcome": {
+    "cause": "HTTP error! status: 422",
+    "thrown": "Failed to save configuration: HTTP error! status: 422",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/9",
+      {
+        "body": "{"title":"e"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration existing golden error without text 1`] = `
+{
+  "logged": [
+    [
+      "Error saving configuration:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to save configuration: HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/9",
+      {
+        "body": "{"title":"e"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration existing golden network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error saving configuration:",
+      "offline",
+    ],
+  ],
+  "outcome": {
+    "cause": "offline",
+    "thrown": "Failed to save configuration: offline",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/9",
+      {
+        "body": "{"title":"e"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration existing golden ok empty object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/9",
+      {
+        "body": "{"title":"e"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "application": "",
+      "created": "",
+      "description": null,
+      "githubBranch": null,
+      "githubPath": null,
+      "githubRepo": null,
+      "id": "",
+      "lastSyncDate": null,
+      "localVersion": null,
+      "organisation": null,
+      "owner": "",
+      "registers": [],
+      "remoteVersion": null,
+      "schemas": [],
+      "sourceUrl": null,
+      "title": "",
+      "type": "",
+      "updated": "",
+      "version": null,
+    },
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration existing golden ok null 1`] = `
+{
+  "logged": [
+    [
+      "Error saving configuration:",
+      "Invalid response data",
+    ],
+  ],
+  "outcome": {
+    "cause": "Invalid response data",
+    "thrown": "Failed to save configuration: Invalid response data",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/9",
+      {
+        "body": "{"title":"e"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration existing golden ok object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": 5,
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "T",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/9",
+      {
+        "body": "{"title":"e"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "application": "",
+      "created": "",
+      "description": null,
+      "githubBranch": null,
+      "githubPath": null,
+      "githubRepo": null,
+      "id": 5,
+      "lastSyncDate": null,
+      "localVersion": null,
+      "organisation": null,
+      "owner": "",
+      "registers": [],
+      "remoteVersion": null,
+      "schemas": [],
+      "sourceUrl": null,
+      "title": "T",
+      "type": "",
+      "updated": "",
+      "version": null,
+    },
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration existing golden ok string 1`] = `
+{
+  "logged": [
+    [
+      "Error saving configuration:",
+      "Invalid response data",
+    ],
+  ],
+  "outcome": {
+    "cause": "Invalid response data",
+    "thrown": "Failed to save configuration: Invalid response data",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/9",
+      {
+        "body": "{"title":"e"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration missing golden error with text 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to save",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration missing golden error without text 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to save",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration missing golden network failure 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to save",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration missing golden ok empty object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to save",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration missing golden ok null 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to save",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration missing golden ok object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to save",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration missing golden ok string 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to save",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration new golden error with text 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "body": "{"title":"n"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "application": "",
+      "created": "",
+      "description": null,
+      "githubBranch": null,
+      "githubPath": null,
+      "githubRepo": null,
+      "id": "",
+      "lastSyncDate": null,
+      "localVersion": null,
+      "organisation": null,
+      "owner": "",
+      "registers": [],
+      "remoteVersion": null,
+      "schemas": [],
+      "sourceUrl": null,
+      "title": "",
+      "type": "",
+      "updated": "",
+      "version": null,
+    },
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration new golden error without text 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "body": "{"title":"n"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "application": "",
+      "created": "",
+      "description": null,
+      "githubBranch": null,
+      "githubPath": null,
+      "githubRepo": null,
+      "id": "",
+      "lastSyncDate": null,
+      "localVersion": null,
+      "organisation": null,
+      "owner": "",
+      "registers": [],
+      "remoteVersion": null,
+      "schemas": [],
+      "sourceUrl": null,
+      "title": "",
+      "type": "",
+      "updated": "",
+      "version": null,
+    },
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration new golden network failure 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "body": "{"title":"n"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "application": "",
+      "created": "",
+      "description": null,
+      "githubBranch": null,
+      "githubPath": null,
+      "githubRepo": null,
+      "id": "",
+      "lastSyncDate": null,
+      "localVersion": null,
+      "organisation": null,
+      "owner": "",
+      "registers": [],
+      "remoteVersion": null,
+      "schemas": [],
+      "sourceUrl": null,
+      "title": "",
+      "type": "",
+      "updated": "",
+      "version": null,
+    },
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration new golden ok empty object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "body": "{"title":"n"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "application": "",
+      "created": "",
+      "description": null,
+      "githubBranch": null,
+      "githubPath": null,
+      "githubRepo": null,
+      "id": "",
+      "lastSyncDate": null,
+      "localVersion": null,
+      "organisation": null,
+      "owner": "",
+      "registers": [],
+      "remoteVersion": null,
+      "schemas": [],
+      "sourceUrl": null,
+      "title": "",
+      "type": "",
+      "updated": "",
+      "version": null,
+    },
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration new golden ok null 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "body": "{"title":"n"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "application": "",
+      "created": "",
+      "description": null,
+      "githubBranch": null,
+      "githubPath": null,
+      "githubRepo": null,
+      "id": "",
+      "lastSyncDate": null,
+      "localVersion": null,
+      "organisation": null,
+      "owner": "",
+      "registers": [],
+      "remoteVersion": null,
+      "schemas": [],
+      "sourceUrl": null,
+      "title": "",
+      "type": "",
+      "updated": "",
+      "version": null,
+    },
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration new golden ok object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "body": "{"title":"n"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "application": "",
+      "created": "",
+      "description": null,
+      "githubBranch": null,
+      "githubPath": null,
+      "githubRepo": null,
+      "id": "",
+      "lastSyncDate": null,
+      "localVersion": null,
+      "organisation": null,
+      "owner": "",
+      "registers": [],
+      "remoteVersion": null,
+      "schemas": [],
+      "sourceUrl": null,
+      "title": "",
+      "type": "",
+      "updated": "",
+      "version": null,
+    },
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration saveConfiguration new golden ok string 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "body": "{"title":"n"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "application": "",
+      "created": "",
+      "description": null,
+      "githubBranch": null,
+      "githubPath": null,
+      "githubRepo": null,
+      "id": "",
+      "lastSyncDate": null,
+      "localVersion": null,
+      "organisation": null,
+      "owner": "",
+      "registers": [],
+      "remoteVersion": null,
+      "schemas": [],
+      "sourceUrl": null,
+      "title": "",
+      "type": "",
+      "updated": "",
+      "version": null,
+    },
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration existing golden error with text 1`] = `
+{
+  "logged": [
+    [
+      "Error uploading configuration:",
+      "HTTP error! status: 422",
+    ],
+  ],
+  "outcome": {
+    "cause": "HTTP error! status: 422",
+    "thrown": "Failed to upload configuration: HTTP error! status: 422",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload/4",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "id": 4,
+    },
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration existing golden error without text 1`] = `
+{
+  "logged": [
+    [
+      "Error uploading configuration:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to upload configuration: HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload/4",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "id": 4,
+    },
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration existing golden network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error uploading configuration:",
+      "offline",
+    ],
+  ],
+  "outcome": {
+    "cause": "offline",
+    "thrown": "Failed to upload configuration: offline",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload/4",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "id": 4,
+    },
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration existing golden ok empty object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload/4",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "application": "",
+      "created": "",
+      "description": null,
+      "githubBranch": null,
+      "githubPath": null,
+      "githubRepo": null,
+      "id": "",
+      "lastSyncDate": null,
+      "localVersion": null,
+      "organisation": null,
+      "owner": "",
+      "registers": [],
+      "remoteVersion": null,
+      "schemas": [],
+      "sourceUrl": null,
+      "title": "",
+      "type": "",
+      "updated": "",
+      "version": null,
+    },
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration existing golden ok null 1`] = `
+{
+  "logged": [
+    [
+      "Error uploading configuration:",
+      "Invalid response data",
+    ],
+  ],
+  "outcome": {
+    "cause": "Invalid response data",
+    "thrown": "Failed to upload configuration: Invalid response data",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload/4",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "id": 4,
+    },
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration existing golden ok object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": 5,
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "T",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload/4",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "application": "",
+      "created": "",
+      "description": null,
+      "githubBranch": null,
+      "githubPath": null,
+      "githubRepo": null,
+      "id": 5,
+      "lastSyncDate": null,
+      "localVersion": null,
+      "organisation": null,
+      "owner": "",
+      "registers": [],
+      "remoteVersion": null,
+      "schemas": [],
+      "sourceUrl": null,
+      "title": "T",
+      "type": "",
+      "updated": "",
+      "version": null,
+    },
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration existing golden ok string 1`] = `
+{
+  "logged": [
+    [
+      "Error uploading configuration:",
+      "Invalid response data",
+    ],
+  ],
+  "outcome": {
+    "cause": "Invalid response data",
+    "thrown": "Failed to upload configuration: Invalid response data",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload/4",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "id": 4,
+    },
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration missing golden error with text 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to upload",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration missing golden error without text 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to upload",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration missing golden network failure 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to upload",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration missing golden ok empty object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to upload",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration missing golden ok null 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to upload",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration missing golden ok object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to upload",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration missing golden ok string 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "thrown": "No configuration item to upload",
+  },
+  "requests": [],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration new golden error with text 1`] = `
+{
+  "logged": [
+    [
+      "Error uploading configuration:",
+      "HTTP error! status: 422",
+    ],
+  ],
+  "outcome": {
+    "cause": "HTTP error! status: 422",
+    "thrown": "Failed to upload configuration: HTTP error! status: 422",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration new golden error without text 1`] = `
+{
+  "logged": [
+    [
+      "Error uploading configuration:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to upload configuration: HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration new golden network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error uploading configuration:",
+      "offline",
+    ],
+  ],
+  "outcome": {
+    "cause": "offline",
+    "thrown": "Failed to upload configuration: offline",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration new golden ok empty object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "application": "",
+      "created": "",
+      "description": null,
+      "githubBranch": null,
+      "githubPath": null,
+      "githubRepo": null,
+      "id": "",
+      "lastSyncDate": null,
+      "localVersion": null,
+      "organisation": null,
+      "owner": "",
+      "registers": [],
+      "remoteVersion": null,
+      "schemas": [],
+      "sourceUrl": null,
+      "title": "",
+      "type": "",
+      "updated": "",
+      "version": null,
+    },
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration new golden ok null 1`] = `
+{
+  "logged": [
+    [
+      "Error uploading configuration:",
+      "Invalid response data",
+    ],
+  ],
+  "outcome": {
+    "cause": "Invalid response data",
+    "thrown": "Failed to upload configuration: Invalid response data",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration new golden ok object 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": 5,
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "T",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": {
+      "application": "",
+      "created": "",
+      "description": null,
+      "githubBranch": null,
+      "githubPath": null,
+      "githubRepo": null,
+      "id": 5,
+      "lastSyncDate": null,
+      "localVersion": null,
+      "organisation": null,
+      "owner": "",
+      "registers": [],
+      "remoteVersion": null,
+      "schemas": [],
+      "sourceUrl": null,
+      "title": "T",
+      "type": "",
+      "updated": "",
+      "version": null,
+    },
+    "configurationList": [
+      {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": "listed",
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+    ],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;
+
+exports[`configuration uploadConfiguration new golden ok string 1`] = `
+{
+  "logged": [
+    [
+      "Error uploading configuration:",
+      "Invalid response data",
+    ],
+  ],
+  "outcome": {
+    "cause": "Invalid response data",
+    "thrown": "Failed to upload configuration: Invalid response data",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/upload",
+      {
+        "body": "{"json":"{}"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "configurationItem": false,
+    "configurationList": [],
+    "filters": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+  },
+}
+`;

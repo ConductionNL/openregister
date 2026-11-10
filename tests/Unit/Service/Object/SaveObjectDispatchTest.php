@@ -212,7 +212,15 @@ class SaveObjectDispatchTest extends TestCase {
 		$method = $reflection->getMethod('delegateObjectSourceWrite');
 		$method->setAccessible(true);
 
-		return $method->invoke($service, $register, $schema, $objectSource, ['status' => 'submitted'], $uuid, true);
+		$call = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall();
+		$call->register = $register;
+		$call->schema   = $schema;
+		$call->data     = ['status' => 'submitted'];
+		$call->uuid     = $uuid;
+		$call->flags    = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags();
+		$call->flags->silent = true;
+
+		return $method->invoke($service, $call, $objectSource);
 	}//end delegate()
 
 	/**

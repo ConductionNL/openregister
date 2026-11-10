@@ -22,14 +22,10 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load related entities')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Empty state -->
 		<NcEmptyContent
@@ -94,15 +90,16 @@ SPDX-License-Identifier: EUPL-1.2
 <script>
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CalendarOutline from 'vue-material-design-icons/CalendarOutline.vue'
 import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
+import { relationLoad } from './relationLoad.js'
+import { relationTab } from './relationTab.js'
 
 /**
  * Fallback counter for the timeline row key below.
@@ -116,6 +113,32 @@ import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
  * @type {number}
  */
 let fallbackRelationId = 0
+
+/** The fields a relation row's title, subtitle and timestamp come from, first set wins. */
+const RELATION_FIELDS = {
+	title: ['title', 'subject', 'summary', 'displayName', 'name'],
+	subtitle: ['subtitle'],
+	timestamp: ['timestamp', 'receivedAt', 'startsAt', 'createdAt', 'updatedAt'],
+}
+
+/** Per relation type, the fields its title and subtitle fall back to. */
+const TYPE_FALLBACK_FIELDS = new Map([
+	['email', { title: [], subtitle: ['fromEmail', 'from'] }],
+	['contact', { title: ['fullName', 'email'], subtitle: [] }],
+])
+
+const NO_FALLBACK_FIELDS = { title: [], subtitle: [] }
+
+/**
+ * The first set value among some fields of a raw relation.
+ *
+ * @param {object} raw The raw relation.
+ * @param {Array<string>} fields The fields, in order.
+ * @return {*} The first truthy value, or undefined.
+ */
+function firstSet(raw, fields) {
+	return fields.map((field) => raw[field]).find(Boolean)
+}
 
 /**
  * RelationsTab — unified timeline of every entity linked to an object.
@@ -135,10 +158,10 @@ export default {
 	name: 'RelationsTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
-		AlertCircleOutline,
 		LinkVariant,
 		LinkVariantOff,
 		EmailOutline,
@@ -147,28 +170,11 @@ export default {
 		TableLargePlus,
 	},
 
-	props: {
-		register: {
-			type: [String, Number],
-			required: true,
-		},
-
-		schema: {
-			type: [String, Number],
-			required: true,
-		},
-
-		objectId: {
-			type: String,
-			required: true,
-		},
-	},
+	mixins: [relationTab, relationLoad],
 
 	data() {
 		return {
 			loading: false,
-			error: false,
-			errorMessage: '',
 			relations: [],
 			selectedTypes: ['email', 'event', 'contact', 'deck'],
 			typeLabels: {
@@ -207,59 +213,24 @@ export default {
 		},
 	},
 
-	watch: {
-		objectId: {
-			immediate: true,
-			/**
-			 * @param newId
-			 * @spec exclude watcher refetching relations on objectId change, UI plumbing
-			 */
-			handler(newId) {
-				if (newId) {
-					this.fetchRelations()
-				}
-			},
-		},
-	},
-
 	methods: {
-		t,
-
 		/**
 		 * Fetch the unified relations payload (view=timeline) for the current object.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-3
 		 * @return {Promise<void>}
 		 */
-		async fetchRelations() {
-			this.loading = true
-			this.error = false
-			this.errorMessage = ''
-
-			const url = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/relations',
-				{
-					register: this.register,
-					schema: this.schema,
-					id: this.objectId,
-				},
-			)
-
-			try {
-				const response = await axios.get(url, {
+		async load() {
+			await this.runLoad(async () => {
+				const response = await axios.get(this.objectApiUrl('/relations'), {
 					params: { view: 'timeline' },
 				})
 				this.relations = this.normaliseResponse(response.data)
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
-			} finally {
-				this.loading = false
-			}
+			})
 		},
 
 		/**
-		 * @param data
+		 * @param {Array<object>|object} data
 		 * @spec exclude client-side normalisation of timeline/envelope response shapes for display, UI plumbing
 		 */
 		normaliseResponse(data) {
@@ -298,41 +269,26 @@ export default {
 		},
 
 		/**
-		 * @param raw
+		 * @param {object} raw
 		 * @spec exclude client-side normalisation of a single relation entry for display, UI plumbing
 		 */
 		normaliseEntry(raw) {
-			const type = raw.type || raw.entityType || 'unknown'
-			let title =
-				raw.title
-				|| raw.subject
-				|| raw.summary
-				|| raw.displayName
-				|| raw.name
+			const type = firstSet(raw, ['type', 'entityType']) || 'unknown'
+			const fallback = TYPE_FALLBACK_FIELDS.get(type) || NO_FALLBACK_FIELDS
+			const title =
+				firstSet(raw, [...RELATION_FIELDS.title, ...fallback.title]) || ''
+			const subtitle =
+				firstSet(raw, [...RELATION_FIELDS.subtitle, ...fallback.subtitle])
 				|| ''
-			let subtitle = raw.subtitle || ''
-			const timestamp =
-				raw.timestamp
-				|| raw.receivedAt
-				|| raw.startsAt
-				|| raw.createdAt
-				|| raw.updatedAt
-				|| null
-
-			if (type === 'email' && !subtitle) {
-				subtitle = raw.fromEmail || raw.from || ''
-			}
-
-			if (type === 'contact' && !title) {
-				title = raw.fullName || raw.email || ''
-			}
+			const timestamp = firstSet(raw, RELATION_FIELDS.timestamp) || null
 
 			// Hoisted so the property stays on one line: prettier wraps a long
 			// `id:` across lines, and eslint's vue/new-line-between-multi-line-property
 			// then demands a blank line after it. The `||` chain still
 			// short-circuits, so the counter only advances when it is used.
 			const id =
-				raw.id || raw.uid || raw.uuid || `${type}-${++fallbackRelationId}`
+				firstSet(raw, ['id', 'uid', 'uuid'])
+				|| `${type}-${++fallbackRelationId}`
 
 			return {
 				id,
@@ -344,7 +300,7 @@ export default {
 		},
 
 		/**
-		 * @param type
+		 * @param {string} type
 		 * @spec exclude local type-filter toggle plumbing, UI plumbing
 		 */
 		toggleType(type) {
@@ -352,27 +308,6 @@ export default {
 				this.selectedTypes = this.selectedTypes.filter((t) => t !== type)
 			} else {
 				this.selectedTypes = [...this.selectedTypes, type]
-			}
-		},
-
-		/**
-		 * @param value
-		 * @spec exclude computed date-format display helper, UI plumbing
-		 */
-		formatDate(value) {
-			if (!value) {
-				return ''
-			}
-
-			try {
-				const d = new Date(value)
-				if (Number.isNaN(d.getTime())) {
-					return value
-				}
-
-				return d.toLocaleString()
-			} catch (e) {
-				return value
 			}
 		},
 	},

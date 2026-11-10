@@ -62,6 +62,7 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class ObjectReadState extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The reading user's uid.
@@ -133,26 +134,13 @@ class ObjectReadState extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * JSON serialization.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * The row is only ever returned to the user it belongs to, so it says what
-	 * that user saw and when, and carries no object body.
-	 *
-	 * @return array<string, mixed> The row as the API returns it.
-	 *
-	 * @spec openspec/specs/object-read-state/spec.md
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'userId' => $this->userId,
-			'objectUuid' => $this->objectUuid,
-			'register' => $this->register,
-			'schema' => $this->schema,
-			'lastSeenAt' => $this->lastSeenAt?->format(DateTime::ATOM),
 			'subSeen' => ($this->subSeen ?? []),
-			'created' => $this->created?->format(DateTime::ATOM),
 		];
-
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

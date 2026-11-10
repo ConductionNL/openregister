@@ -22,8 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCP\IGroupManager;
-use OCP\IUserSession;
+use OCA\OpenRegister\Exception\ViewAlertRecipientException;
+use OCA\OpenRegister\Service\View\ViewAlert;
+use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -43,32 +44,40 @@ use Throwable;
  *
  * @spec openspec/specs/saved-search-views/spec.md
  */
-class ViewerReachResolver {
+class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCheckInterface {
 
 	/**
-	 * The stateless resolver that reads a view's own share block.
+	 * The stateless resolver that reads a view's own share block, made on first use.
 	 *
-	 * @var ViewShareResolver
+	 * @var ViewShareResolver|null
 	 */
-	private ViewShareResolver $shares;
+	private ?ViewShareResolver $shares = null;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param IUserSession    $userSession  Who is signed in.
-	 * @param IGroupManager   $groupManager Their groups, and whether they administer the instance.
-	 * @param LoggerInterface $logger       Where an unreadable membership is noted.
+	 * @param CallerContext     $caller      Who is signed in, their groups, and whether they administer the instance.
+	 * @param LoggerInterface   $logger      Where an unreadable membership is noted.
+	 * @param IUserManager|null $userManager Which users exist, for user shares; without it no user share is accepted.
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly CallerContext $caller,
 		private readonly LoggerInterface $logger,
+		private readonly ?IUserManager $userManager=null,
 	) {
-		$this->shares = new ViewShareResolver();
 	}//end __construct()
 
 	/**
-	 * Findings for a share list about to be written, against the groups that exist.
+	 * The resolver that reads a view's own share block.
+	 *
+	 * @return ViewShareResolver The resolver.
+	 */
+	private function shares(): ViewShareResolver {
+		return $this->shares ??= new ViewShareResolver();
+	}//end shares()
+
+	/**
+	 * Findings for a share list about to be written, against the users and groups that exist.
 	 *
 	 * @param mixed $sharedWith The declared share list.
 	 *
@@ -77,9 +86,12 @@ class ViewerReachResolver {
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function shareFindings(mixed $sharedWith): array {
-		return $this->shares->validateShares(
+		return $this->shares()->validateShares(
 			sharedWith: $sharedWith,
-			groupExists: fn (string $gid): bool => $this->groupManager->groupExists($gid)
+			lookup: new ShareTargetLookup(
+				groupExists: fn (string $gid): bool => $this->caller->groupManager->groupExists($gid),
+				userExists: fn (string $uid): bool => $this->userManager?->userExists($uid) === true
+			)
 		);
 	}//end shareFindings()
 
@@ -95,7 +107,7 @@ class ViewerReachResolver {
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function currentUid(): string {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return '';
 		}
@@ -121,10 +133,10 @@ class ViewerReachResolver {
 		$isAdmin = false;
 
 		try {
-			$isAdmin = ($this->groupManager->isAdmin($userId) === true);
-			$user = $this->userSession->getUser();
+			$isAdmin = ($this->caller->groupManager->isAdmin($userId) === true);
+			$user = $this->caller->userSession->getUser();
 			if ($user !== null) {
-				$groups = $this->groupManager->getUserGroupIds($user);
+				$groups = $this->caller->groupManager->getUserGroupIds($user);
 			}
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -153,7 +165,7 @@ class ViewerReachResolver {
 			return true;
 		}
 
-		return $this->shares->accessFor(view: $view, userId: $reach->userId, userGroups: $reach->groups) !== null;
+		return $this->shares()->accessOf(view: $view, reach: $reach) !== null;
 	}//end reaches()
 
 	/**
@@ -174,29 +186,194 @@ class ViewerReachResolver {
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function refusedFields(array $view, ViewerReach $reach, array $update): array {
-		$mayAdminister = $this->shares->mayAdminister(
-			view: $view,
-			userId: $reach->userId,
-			isAdmin: $reach->isAdmin
-		);
+		return $this->refusedFieldsOf(reached: new ReachedView(view: $view, reach: $reach), update: $update);
+	}//end refusedFields()
 
+	/**
+	 * The fields of an update the reach may not change on the view.
+	 *
+	 * @param ReachedView          $reached The view and the caller's reach.
+	 * @param array<string, mixed> $update  The fields the caller sent.
+	 *
+	 * @return array<int, string> The refused field names, empty when the update may proceed.
+	 */
+	private function refusedFieldsOf(ReachedView $reached, array $update): array {
 		// An owner or an administrator may change everything: no difference
 		// to compute.
-		if ($mayAdminister === true) {
+		if ($this->shares()->mayAdministerAs(view: $reached->view, reach: $reached->reach) === true) {
 			return [];
 		}
 
-		$access = $this->shares->accessFor(
-			view: $view,
-			userId: $reach->userId,
-			userGroups: $reach->groups
+		$access = $this->shares()->accessOf(view: $reached->view, reach: $reached->reach);
+
+		return $this->shares()->refusedFields(
+			update: $this->shares()->changedFields(update: $update, view: $reached->view),
+			access: ($access ?? '')
+		);
+	}//end refusedFieldsOf()
+
+	/**
+	 * Refuse a save whose alert names recipients this caller may not add.
+	 *
+	 * The view is judged as it will be saved: the stored view (or, on create,
+	 * just its owner) with the body's `isPublic` and `sharedWith` laid over it;
+	 * a caller replacing the whole view (PUT) lays over the `isPublic` the save
+	 * will write. The stored alert's recipients are not judged as additions, but
+	 * one the save itself stops reaching is refused.
+	 *
+	 * @param array<string, mixed> $view  The stored view, or `['owner' => <uid>]` on create.
+	 * @param ViewerReach          $reach The caller's reach.
+	 * @param array<string, mixed> $data  The request body.
+	 *
+	 * @return void
+	 *
+	 * @throws ViewAlertRecipientException When a recipient may not be added.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function assertMayNameRecipients(array $view, ViewerReach $reach, array $data): void {
+		$this->assertRecipientsOnSave(reached: new ReachedView(view: $view, reach: $reach), data: $data);
+	}//end assertMayNameRecipients()
+
+	/**
+	 * Refuse a save that would leave recipients on the view's alert it may not name.
+	 *
+	 * @param ReachedView          $reached The stored view and the caller's reach.
+	 * @param array<string, mixed> $data    The request body.
+	 *
+	 * @return void
+	 *
+	 * @throws ViewAlertRecipientException Naming every refused recipient.
+	 */
+	private function assertRecipientsOnSave(ReachedView $reached, array $data): void {
+		$refused = $this->refusedOnSave(reached: $reached, data: $data);
+		if ($refused !== []) {
+			throw new ViewAlertRecipientException(recipients: $refused);
+		}
+	}//end assertRecipientsOnSave()
+
+	/**
+	 * The recipients a save may not leave on the view's alert.
+	 *
+	 * @param ReachedView          $reached The stored view and the caller's reach.
+	 * @param array<string, mixed> $data    The request body.
+	 *
+	 * @return array<int, string> The refused recipients.
+	 */
+	private function refusedOnSave(ReachedView $reached, array $data): array {
+		$view     = $reached->view;
+		$previous = array_values(array_filter((array)($view['alert']['recipients'] ?? []), 'is_string'));
+		$saved    = array_merge($view, array_intersect_key($data, ['isPublic' => true, 'sharedWith' => true]));
+		$refused  = $this->refusedRecipients(
+			reached: new ReachedView(view: $saved, reach: $reached->reach),
+			change: new AlertRecipientChange(alert: ViewAlert::declaredIn(body: $data), previous: $previous)
 		);
 
-		return $this->shares->refusedFields(
-			update: $this->shares->changedFields(update: $update, view: $view),
-			access: ($access ?? ''),
-			mayAdminister: $mayAdminister
-		);
-	}//end refusedFields()
+		// 🔴 A SAVE THAT NARROWS REACH RE-JUDGES THE RECIPIENTS ALREADY STORED.
+		// Stored recipients are exempt from the "may this caller add them" test,
+		// and an update with no `alert` key declares none, so un-publishing a
+		// view or removing a share left a recipient who could no longer read it.
+		// A stored recipient who read the view as stored but would not read it as
+		// saved is refused here, so the owner removes them in the same request
+		// rather than leaving them on an alert about a view they cannot open.
+		foreach ($previous as $recipient) {
+			if ($this->recipientReads(view: $view, recipient: $recipient) === true
+				&& $this->recipientReads(view: $saved, recipient: $recipient) === false
+			) {
+				$refused[] = $recipient;
+			}
+		}
+
+		return array_values(array_unique($refused));
+	}//end refusedOnSave()
+
+	/**
+	 * The alert recipients this caller may not add to one view.
+	 *
+	 * An alert tells its recipients the view's name and count, so a recipient
+	 * must be someone the view already reaches. The owner and an administrator
+	 * may add any user or group the view reaches; a write member may add only
+	 * themselves. Recipients already on the stored alert are not judged again,
+	 * so a member can change the threshold of an alert the owner set up.
+	 *
+	 * @param ReachedView          $reached The view as it will be saved (owner, isPublic, sharedWith) and the caller's reach.
+	 * @param AlertRecipientChange $change  The declared alert (null when the body carries none) and the recipients on the stored alert.
+	 *
+	 * @return array<int, string> The refused recipients, empty when the alert may be saved.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function refusedRecipients(ReachedView $reached, AlertRecipientChange $change): array {
+		$view     = $reached->view;
+		$reach    = $reached->reach;
+		$declared = ($change->alert['recipients'] ?? []);
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		$mayAdminister = $this->shares()->mayAdministerAs(view: $view, reach: $reach);
+
+		$refused = [];
+		foreach ($declared as $recipient) {
+			if (is_string($recipient) === false || in_array($recipient, $change->previous, true) === true) {
+				continue;
+			}
+
+			$allowed = ($recipient === ViewAlert::USER_PREFIX.$reach->userId);
+			if ($mayAdminister === true) {
+				$allowed = $this->recipientReads(view: $view, recipient: $recipient);
+			}
+
+			if ($allowed === false) {
+				$refused[] = $recipient;
+			}
+		}
+
+		return array_values(array_unique($refused));
+	}//end refusedRecipients()
+
+	/**
+	 * Whether a recipient, a `user:<uid>` or a group id, may read the view.
+	 *
+	 * @param array<string, mixed> $view      The view.
+	 * @param string               $recipient The recipient.
+	 *
+	 * @return bool True when the view reaches every person the recipient names.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function recipientReads(array $view, string $recipient): bool {
+		if (str_starts_with($recipient, ViewAlert::USER_PREFIX) === false) {
+			// A group reads the view when the view is shared with it or public.
+			return $this->shares()->accessFor(view: $view, userId: '', userGroups: [$recipient]) !== null;
+		}
+
+		$uid = substr($recipient, strlen(ViewAlert::USER_PREFIX));
+		if ($uid === '') {
+			return false;
+		}
+
+		try {
+			if ($this->caller->groupManager->isAdmin($uid) === true) {
+				return true;
+			}
+
+			$groups = array_values(
+				array_filter(
+					$this->shares()->shareGroups(view: $view),
+					fn (string $gid): bool => $this->caller->groupManager->isInGroup($uid, $gid) === true
+				)
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'[ViewerReachResolver] Could not read the groups of alert recipient {uid}; refusing it: {error}',
+				['uid' => $uid, 'error' => $e->getMessage()]
+			);
+
+			return false;
+		}
+
+		return $this->shares()->accessFor(view: $view, userId: $uid, userGroups: $groups) !== null;
+	}//end recipientReads()
 
 }//end class

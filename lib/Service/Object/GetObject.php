@@ -30,14 +30,14 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCP\AppFramework\Db\DoesNotExistException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -57,44 +57,56 @@ use Psr\Log\LoggerInterface;
 class GetObject
 {
     /**
+     * Registry of object-source providers (virtual schemas).
+     *
+     * @var ObjectSourceRegistry
+     */
+    private readonly ObjectSourceRegistry $objectSourceRegistry;
+
+    /**
+     * Logger for object-source delegation warnings.
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
+
+    /**
      * Constructor for GetObject handler.
      *
-     * @param MagicMapper          $objectMapper         Object entity data mapper.
-     * @param AuditTrailMapper     $auditTrailMapper     Audit trail mapper for logs.
-     * @param SettingsService      $settingsService      Settings service for accessing trail settings.
-     * @param ObjectSourceRegistry $objectSourceRegistry Registry of object-source providers (virtual schemas).
-     * @param LoggerInterface      $logger               Logger for object-source delegation warnings.
+     * @param MagicObjectFinderInterface $objectMapper     Object entity data mapper.
+     * @param AuditTrailMapperInterface  $auditTrailMapper Audit trail mapper for logs.
+     * @param ReadHistoryService         $readHistory      The one read registration (audit trail and AVG log).
+     * @param GetObjectSources           $sources          Object-source registry and the logger for its warnings.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
-        private readonly MagicMapper $objectMapper,
-        private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly SettingsService $settingsService,
-        private readonly ObjectSourceRegistry $objectSourceRegistry,
-        private readonly LoggerInterface $logger
+        private readonly MagicObjectFinderInterface $objectMapper,
+        private readonly AuditTrailMapperInterface $auditTrailMapper,
+        private readonly ReadHistoryService $readHistory,
+        GetObjectSources $sources
     ) {
+        $this->objectSourceRegistry = $sources->objectSourceRegistry;
+        $this->logger = $sources->logger;
     }//end __construct()
 
     /**
-     * Resolve the ObjectSourceProvider for a schema, or null when the schema is
+     * The object source a read is served from, or null when the schema is
      * served from the magic table (no `x-openregister-object-source`).
      *
      * When a schema declares an object source whose provider is missing or
-     * disabled, this logs a warning and returns null WITH `$sourced` set true,
+     * disabled, this logs a warning and returns a binding WITHOUT a provider,
      * so the caller degrades to an empty result instead of reading the database.
      *
-     * @param Schema|null $schema  The schema being read (null = magic table).
-     * @param bool        $sourced Set true when the schema declares an object source.
+     * @param ReadScope $scope The register and schema being read (no schema = magic table).
      *
-     * @return \OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider|null
-     *         An enabled provider, or null (see $sourced).
+     * @return ObjectSourceBinding|null The binding, or null for the magic table.
      *
      * @spec openspec/changes/object-source-providers/tasks.md#task-3.1
      */
-    private function resolveObjectSource(?Schema $schema, bool &$sourced): ?object
+    private function sourceBinding(ReadScope $scope): ?ObjectSourceBinding
     {
-        $sourced = false;
+        $schema = $scope->schema;
         if ($schema === null) {
             return null;
         }
@@ -104,7 +116,25 @@ class GetObject
             return null;
         }
 
-        $sourced  = true;
+        return new ObjectSourceBinding(
+            provider: $this->enabledProvider(schema: $schema, source: $source),
+            register: $scope->register,
+            schema: $schema
+        );
+    }//end sourceBinding()
+
+    /**
+     * The enabled provider an object-source declaration names, or null (logged) when missing or disabled.
+     *
+     * @param Schema $schema The schema declaring the object source.
+     * @param array  $source The object-source declaration.
+     *
+     * @return object|null The provider
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function enabledProvider(Schema $schema, array $source): ?object
+    {
         $provider = $this->objectSourceRegistry->get($source['provider']);
         if ($provider === null || $provider->isEnabled() === false) {
             $this->logger->warning(
@@ -118,7 +148,7 @@ class GetObject
         }
 
         return $provider;
-    }//end resolveObjectSource()
+    }//end enabledProvider()
 
     /**
      * Gets an object by its ID with optional extensions.
@@ -159,33 +189,18 @@ class GetObject
         // Object-source delegation: for a schema served from an external source
         // (x-openregister-object-source) the object is fetched live from the
         // provider and never read from the magic table. Absent/denied → 404.
-        $sourced  = false;
-        $provider = $this->resolveObjectSource(schema: $schema, sourced: $sourced);
-        if ($sourced === true) {
-            $config  = ($schema->getObjectSource()['config'] ?? []);
-            $virtual = $provider?->find(register: $register, schema: $schema, id: $id, config: $config);
-            if ($virtual === null) {
-                throw new DoesNotExistException(sprintf('Object %s not found', $id));
-            }
-
-            return $virtual;
+        $scope  = new ReadScope(register: $register, schema: $schema);
+        $source = $this->sourceBinding(scope: $scope);
+        if ($source !== null) {
+            return $this->findInSource(source: $source, id: $id);
         }
 
-        $object = $this->objectMapper->find(
-            identifier: $id,
-            register: $register,
-            schema: $schema,
-            includeDeleted: false,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+        $object = $this->findInTable(
+            request: new ObjectFindRequest(id: $id, extend: $_extend, files: $files, rbac: $_rbac, multitenancy: $_multitenancy, audit: $_audit),
+            scope: $scope
         );
 
-        if ($files === true) {
-            $object = $this->hydrateFiles(object: $object, files: []);
-            // TODO.
-        }
-
-        // Create an audit trail for the 'read' action if audit trails are enabled.
+        // Register the read on the audit trail (read-history-on-audit-trail).
         //
         // `$_audit` is the PER-CALL opt-out. The instance setting is all or
         // nothing, so a bulk synchronisation reading thousands of objects had no
@@ -194,13 +209,82 @@ class GetObject
         // 3,153,490 rows, in a table carrying 1,596MB of indexes over 1,089MB of
         // data). Machine-to-machine reads inside one operation are not the thing
         // an audit trail exists to record; a person opening an object is.
-        if ($_audit === true && $this->isAuditTrailsEnabled() === true) {
-            $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $object, action: 'read');
+        //
+        // The same row is what "recently opened" (the `_recent` lens) reads
+        // back, so this is the only place a view is recorded.
+        return $this->withReadRegistered(object: $object, audit: $_audit);
+    }//end find()
+
+    /**
+     * Fetch one object live from its object-source provider; a missing provider or object is a 404.
+     *
+     * @param ObjectSourceBinding $source The provider (null when missing or disabled), register and schema.
+     * @param string              $id     The object id.
+     *
+     * @return ObjectEntity The object
+     *
+     * @throws DoesNotExistException When the provider is unavailable or has no such object.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function findInSource(ObjectSourceBinding $source, string $id): ObjectEntity
+    {
+        $virtual = $source->provider?->find(register: $source->register, schema: $source->schema, id: $id, config: $source->config());
+        if ($virtual === null) {
+            throw new DoesNotExistException(sprintf('Object %s not found', $id));
+        }
+
+        return $virtual;
+    }//end findInSource()
+
+    /**
+     * Read one object from the magic table, hydrating files when asked.
+     *
+     * @param ObjectFindRequest $request The id and read flags.
+     * @param ReadScope         $scope   The register and schema, either may be absent.
+     *
+     * @return ObjectEntity The object
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function findInTable(ObjectFindRequest $request, ReadScope $scope): ObjectEntity
+    {
+        $object = $this->objectMapper->find(
+            identifier: $request->id,
+            register: $scope->register,
+            schema: $scope->schema,
+            includeDeleted: false,
+            _rbac: $request->rbac,
+            _multitenancy: $request->multitenancy
+        );
+
+        if ($request->files === true) {
+            $object = $this->hydrateFiles(object: $object, files: []);
+            // TODO.
+        }
+
+        return $object;
+    }//end findInTable()
+
+    /**
+     * Register a read on the audit trail and attach the audit row as the object's last log.
+     *
+     * @param ObjectEntity $object The object read.
+     * @param bool         $audit  The per-call audit opt-out.
+     *
+     * @return ObjectEntity The object
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function withReadRegistered(ObjectEntity $object, bool $audit): ObjectEntity
+    {
+        $log = $this->readHistory->registerAuditRead(object: $object, audit: $audit);
+        if ($log !== null) {
             $object->setLastLog($log->jsonSerialize());
         }
 
         return $object;
-    }//end find()
+    }//end withReadRegistered()
 
     /**
      * Gets an object by its ID without creating an audit trail.
@@ -235,34 +319,17 @@ class GetObject
         bool $_multitenancy=true
     ): ObjectEntity {
         // Object-source delegation (silent read, no audit) — see find().
-        $sourced  = false;
-        $provider = $this->resolveObjectSource(schema: $schema, sourced: $sourced);
-        if ($sourced === true) {
-            $config  = ($schema->getObjectSource()['config'] ?? []);
-            $virtual = $provider?->find(register: $register, schema: $schema, id: $id, config: $config);
-            if ($virtual === null) {
-                throw new DoesNotExistException(sprintf('Object %s not found', $id));
-            }
-
-            return $virtual;
-        }
-
-        $object = $this->objectMapper->find(
-            identifier: $id,
-            register: $register,
-            schema: $schema,
-            includeDeleted: false,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
-        );
-
-        if ($files === true) {
-            $object = $this->hydrateFiles(object: $object, files: []);
-            // TODO.
+        $scope  = new ReadScope(register: $register, schema: $schema);
+        $source = $this->sourceBinding(scope: $scope);
+        if ($source !== null) {
+            return $this->findInSource(source: $source, id: $id);
         }
 
         // No audit trail creation - this is a silent read.
-        return $object;
+        return $this->findInTable(
+            request: new ObjectFindRequest(id: $id, extend: $_extend, files: $files, rbac: $_rbac, multitenancy: $_multitenancy, audit: false),
+            scope: $scope
+        );
     }//end findSilent()
 
     /**
@@ -309,61 +376,56 @@ class GetObject
         // Object-source delegation: a schema served from an external source
         // lists live from the provider, never the magic table. A missing/disabled
         // provider degrades to an empty list (resolveObjectSource logs it).
-        $sourced  = false;
-        $provider = $this->resolveObjectSource(schema: $schema, sourced: $sourced);
-        if ($sourced === true) {
-            if ($provider === null) {
-                return [];
-            }
-
-            $source = $schema->getObjectSource();
-            $query  = [
-                'limit'   => $limit,
-                'offset'  => $offset,
-                'filters' => $filters,
-                'sort'    => $sort,
-                'search'  => $search,
-                'ids'     => $ids,
-            ];
-
-            return $provider->findAll(
-                register: $register,
-                schema: $schema,
-                query: $query,
-                config: ($source['config'] ?? [])
-            );
-        }//end if
+        $source = $this->sourceBinding(scope: new ReadScope(register: $register, schema: $schema));
+        if ($source !== null) {
+            $query = ['limit' => $limit, 'offset' => $offset, 'filters' => $filters, 'sort' => $sort, 'search' => $search, 'ids' => $ids];
+            return $this->findAllInSource(source: $source, query: $query);
+        }
 
         // Thread the RBAC / multitenancy posture into the filters so the search
         // handler honours them. These are read from the query array downstream;
         // passing them only as method arguments left them silently dropped, so
         // a caller's `_rbac:false` (e.g. installer/system context) had no effect.
-        $filters['_rbac']         = $_rbac;
-        $filters['_multitenancy'] = $_multitenancy;
-
-        // Retrieve objects using the objectEntityMapper with optional register, schema, and ids.
         $objects = $this->objectMapper->findAll(
-            limit: $limit,
-            offset: $offset,
-            filters: $filters,
-            sort: $sort,
-            search: $search,
-            ids: $ids,
-            uses: $uses,
-            register: $register,
-            schema: $schema
+            limit: $limit, offset: $offset, filters: array_merge($filters, ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy]),
+            sort: $sort, search: $search, ids: $ids, uses: $uses, register: $register, schema: $schema
         );
+        return $this->withFilesHydrated(objects: $objects, files: $files);
+    }//end findAll()
 
-        // If files are to be included, hydrate each object with its file information.
+    /**
+     * List objects live from their object-source provider; a missing provider lists nothing.
+     *
+     * @param ObjectSourceBinding $source The provider (null when missing or disabled), register and schema.
+     * @param array               $query  Limit, offset, filters, sort, search and ids.
+     *
+     * @return array The objects
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function findAllInSource(ObjectSourceBinding $source, array $query): array
+    {
+        return $source->provider?->findAll(register: $source->register, schema: $source->schema, query: $query, config: $source->config()) ?? [];
+    }//end findAllInSource()
+
+    /**
+     * Hydrate files onto every listed object when asked.
+     *
+     * @param array $objects The objects.
+     * @param bool  $files   Whether to hydrate files.
+     *
+     * @return array The objects
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function withFilesHydrated(array $objects, bool $files): array
+    {
         if ($files === true) {
-            foreach ($objects as &$object) {
-                $object = $this->hydrateFiles(object: $object, files: []);
-                // TODO.
-            }
+            return array_map(fn (ObjectEntity $object): ObjectEntity => $this->hydrateFiles(object: $object, files: []), $objects);
         }
 
         return $objects;
-    }//end findAll()
+    }//end withFilesHydrated()
 
     /**
      * Hydrates an object with its file information.
@@ -428,8 +490,10 @@ class GetObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
-        // Ensure object ID is always included in filters.
-        $filters['object'] = $object->getId();
+        // The uuid is the only identity an object keeps across a move: register,
+        // schema and numeric id all belong to the table it lives in now.
+        unset($filters['object'], $filters['register'], $filters['schema']);
+        $filters['object_uuid'] = $object->getUuid();
 
         // Get audit trails using all available options.
         return $this->auditTrailMapper->findAll(
@@ -440,22 +504,4 @@ class GetObject
             search: $search
         );
     }//end findLogs()
-
-    /**
-     * Check if audit trails are enabled in the settings
-     *
-     * @return bool True if audit trails are enabled, false otherwise
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    private function isAuditTrailsEnabled(): bool
-    {
-        try {
-            $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
-            return $retentionSettings['auditTrailsEnabled'] ?? true;
-        } catch (\Exception $e) {
-            // If we can't get settings, default to enabled for safety.
-            return true;
-        }
-    }//end isAuditTrailsEnabled()
 }//end class

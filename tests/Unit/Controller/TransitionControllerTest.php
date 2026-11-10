@@ -268,6 +268,21 @@ class TransitionControllerTest extends TestCase {
 	}//end testTransitionReturns400OnInvalidTransitionInput()
 
 	/**
+	 * The old list keeps its shape for one release and names its successor.
+	 *
+	 * @return void
+	 */
+	public function testAvailableActionsIsDeprecatedTowardsTheActionsList(): void {
+		$this->engine->method('availableActions')->willReturn([['action' => 'finish']]);
+
+		$response = $this->controller->availableActions('obj-1');
+
+		$this->assertSame(['actions' => [['action' => 'finish']]], $response->getData());
+		$this->assertSame('true', $response->getHeaders()['Deprecation']);
+		$this->assertStringContainsString('/actions>; rel="successor-version"', $response->getHeaders()['Link']);
+	}//end testAvailableActionsIsDeprecatedTowardsTheActionsList()
+
+	/**
 	 * R08 / F03 contract: availableActions also surfaces 403 on denial.
 	 *
 	 * @return void

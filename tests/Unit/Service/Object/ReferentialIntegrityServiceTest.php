@@ -27,19 +27,27 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
+use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode;
+use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Unit tests for ReferentialIntegrityService
  *
  * Tests referential integrity enforcement: canDelete analysis, applyDeletionActions,
- * logRestrictBlock, hasIncomingOnDeleteReferences, isValidOnDeleteAction,
+ * logRestrictBlock, hasIncomingOnDeleteReferences,
  * and all internal helpers via reflection.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -79,14 +87,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$this->db = $this->createMock(IDBConnection::class);
 
 		$this->service = new ReferentialIntegrityService(
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->objectMapper,
-			$this->auditTrailMapper,
-			$this->logger,
-			$this->db,
-			$this->createNullCacheFactory(),
-			$this->makeArchivalGuard()
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->createNullCacheFactory()),
+			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->db),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: $this->makeArchivalGuard()),
+			logger: $this->logger
 		);
 	}
 
@@ -283,34 +287,6 @@ class ReferentialIntegrityServiceTest extends TestCase {
 	}
 
 	// =========================================================================
-	// isValidOnDeleteAction (static method)
-	// =========================================================================
-
-	public function testIsValidOnDeleteActionWithValidActions(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('CASCADE'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('RESTRICT'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_NULL'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_DEFAULT'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('NO_ACTION'));
-	}
-
-	public function testIsValidOnDeleteActionCaseInsensitive(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('cascade'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('restrict'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('set_null'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('Set_Default'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('no_action'));
-	}
-
-	public function testIsValidOnDeleteActionWithInvalidActions(): void {
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction(''));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('DELETE'));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('TRUNCATE'));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('SET NULL'));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('cascade_delete'));
-	}
-
-	// =========================================================================
 	// VALID_ON_DELETE_ACTIONS constant
 	// =========================================================================
 
@@ -370,6 +346,13 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			['$ref' => 'direct-schema', 'items' => ['$ref' => 'items-schema']],
 		]);
 		$this->assertSame('direct-schema', $result);
+	}
+
+	public function testExtractTargetRefReadsReferenceSchemaFromItems(): void {
+		$result = $this->invokeMethod('extractTargetRef', [
+			['type' => 'array', 'items' => ['referenceSchema' => 'code-list']],
+		]);
+		$this->assertSame('code-list', $result);
 	}
 
 	public function testExtractTargetRefReturnsNullForEmptyItems(): void {
@@ -1102,7 +1085,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 	// canDelete — findByRelation exception handling
 	// =========================================================================
 
-	public function testCanDeleteHandlesFindByRelationException(): void {
+	/**
+	 * A failing broad lookup does not read as "nothing cites it": the RESTRICT delete is refused as unverifiable.
+	 */
+	public function testCanDeleteRefusesWhenFindByRelationFails(): void {
 		$schema1 = $this->createSchema(1, [
 			'parentRef' => ['$ref' => '2', 'onDelete' => 'RESTRICT'],
 		]);
@@ -1129,7 +1115,41 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$targetObj = $this->createObjectEntity('target-uuid', '2');
 		$result = $this->service->canDelete($targetObj);
 
-		$this->assertTrue($result->deletable);
+		$this->assertFalse($result->deletable);
+		$this->assertSame('unverifiable', $result->blockers[0]['reason'] ?? null);
+	}
+
+	/**
+	 * The targeted lookup that fails on a table that exists refuses the delete; a table that does not exist yet has
+	 * nothing in it to cite the object. Goes red when the catch answers an empty list again.
+	 */
+	public function testCanDeleteRefusesWhenTheTargetedLookupFailsOnAnExistingTable(): void {
+		$schema1 = $this->createSchema(1, [
+			'parentRef' => ['$ref' => '2', 'onDelete' => 'RESTRICT'],
+		]);
+		$schema2 = $this->createSchema(2);
+
+		$this->setRelationIndex(
+			[
+				'2' => [[
+					'sourceSchemaId' => '1',
+					'property' => 'parentRef',
+					'onDelete' => 'RESTRICT',
+					'isArray' => false,
+				]],
+			],
+			['1' => $schema1, '2' => $schema2],
+			['1' => $this->createRegister(5)]
+		);
+
+		$this->db->method('getQueryBuilder')->willThrowException(new \Exception('SQL error'));
+		$this->db->method('tableExists')->willReturnOnConsecutiveCalls(true, false);
+
+		$result = $this->service->canDelete($this->createObjectEntity('target-uuid', '2'));
+		$this->assertFalse($result->deletable);
+		$this->assertSame('unverifiable', $result->blockers[0]['reason'] ?? null);
+
+		$this->assertTrue($this->service->canDelete($this->createObjectEntity('target-uuid', '2'))->deletable, 'no table, no citer');
 	}
 
 	// =========================================================================
@@ -1236,7 +1256,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		// Invoke walkDeletionGraph directly at depth=10 (MAX_DEPTH).
 		$obj = $this->createObjectEntity('deep-uuid', '1', '1', ['selfRef' => 'x']);
-		$visited = [];
+		$walk = new DeletionGraphWalk();
 
 		$this->logger->expects($this->once())
 			->method('warning')
@@ -1249,12 +1269,8 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$method = $ref->getMethod('walkDeletionGraph');
 		$method->setAccessible(true);
 
-		$result = $method->invokeArgs($this->service, [
-			$obj,
-			&$visited,
-			[],
-			10,
-		]);
+		$method->invoke($this->service, new DeletionGraphNode(object: $obj, walk: $walk, chain: [], depth: 10));
+		$result = $walk->toAnalysis();
 
 		$this->assertTrue($result->deletable);
 		$this->assertEmpty($result->cascadeTargets);
@@ -1407,13 +1423,15 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [[
-				'objectUuid' => 'dep-uuid',
-				'schema' => '1',
-				'property' => 'parentRef',
-				'isArray' => false,
-				'sourceUuid' => 'source-uuid',
-			]]
+			effects: new DeletionEffects(
+				nullifyTargets: [[
+					'objectUuid' => 'dep-uuid',
+					'schema' => '1',
+					'property' => 'parentRef',
+					'isArray' => false,
+					'sourceUuid' => 'source-uuid',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
@@ -1450,13 +1468,15 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [[
-				'objectUuid' => 'dep-uuid',
-				'schema' => '1',
-				'property' => 'tags',
-				'isArray' => true,
-				'sourceUuid' => 'source-uuid',
-			]]
+			effects: new DeletionEffects(
+				nullifyTargets: [[
+					'objectUuid' => 'dep-uuid',
+					'schema' => '1',
+					'property' => 'tags',
+					'isArray' => true,
+					'sourceUuid' => 'source-uuid',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
@@ -1471,13 +1491,15 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [[
-				'objectUuid' => 'dep-uuid',
-				'schema' => '1',
-				'property' => 'parentRef',
-				'isArray' => false,
-				'sourceUuid' => 'source-uuid',
-			]]
+			effects: new DeletionEffects(
+				nullifyTargets: [[
+					'objectUuid' => 'dep-uuid',
+					'schema' => '1',
+					'property' => 'parentRef',
+					'isArray' => false,
+					'sourceUuid' => 'source-uuid',
+				]]
+			)
 		);
 
 		// Should not throw.
@@ -1513,12 +1535,14 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			defaultTargets: [[
-				'objectUuid' => 'dep-uuid',
-				'schema' => '1',
-				'property' => 'parentRef',
-				'defaultValue' => 'default-uuid',
-			]]
+			effects: new DeletionEffects(
+				defaultTargets: [[
+					'objectUuid' => 'dep-uuid',
+					'schema' => '1',
+					'property' => 'parentRef',
+					'defaultValue' => 'default-uuid',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
@@ -1533,12 +1557,14 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			defaultTargets: [[
-				'objectUuid' => 'dep-uuid',
-				'schema' => '1',
-				'property' => 'parentRef',
-				'defaultValue' => 'default-uuid',
-			]]
+			effects: new DeletionEffects(
+				defaultTargets: [[
+					'objectUuid' => 'dep-uuid',
+					'schema' => '1',
+					'property' => 'parentRef',
+					'defaultValue' => 'default-uuid',
+				]]
+			)
 		);
 
 		// Should not throw.
@@ -1567,12 +1593,14 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [[
-				'objectUuid' => 'cascade-uuid',
-				'register' => '5',
-				'schema' => '10',
-				'property' => 'parentRef',
-			]]
+			effects: new DeletionEffects(
+				cascadeTargets: [[
+					'objectUuid' => 'cascade-uuid',
+					'register' => '5',
+					'schema' => '10',
+					'property' => 'parentRef',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid', null, 'trigger-slug');
@@ -1598,20 +1626,22 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [
-				[
-					'objectUuid' => 'cascade-uuid-1',
-					'register' => '5',
-					'schema' => '10',
-					'property' => 'ref1',
-				],
-				[
-					'objectUuid' => 'cascade-uuid-2',
-					'register' => '5',
-					'schema' => '10',
-					'property' => 'ref2',
-				],
-			]
+			effects: new DeletionEffects(
+				cascadeTargets: [
+					[
+						'objectUuid' => 'cascade-uuid-1',
+						'register' => '5',
+						'schema' => '10',
+						'property' => 'ref1',
+					],
+					[
+						'objectUuid' => 'cascade-uuid-2',
+						'register' => '5',
+						'schema' => '10',
+						'property' => 'ref2',
+					],
+				]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
@@ -1632,12 +1662,14 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		// fixture assert schema-resolution behaviour it never meant to cover.
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [[
-				'objectUuid' => 'cascade-uuid',
-				'register' => null,
-				'schema' => '77',
-				'property' => 'parentRef',
-			]]
+			effects: new DeletionEffects(
+				cascadeTargets: [[
+					'objectUuid' => 'cascade-uuid',
+					'register' => null,
+					'schema' => '77',
+					'property' => 'parentRef',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
@@ -1652,12 +1684,14 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [[
-				'objectUuid' => 'cascade-uuid',
-				'register' => '99',
-				'schema' => '99',
-				'property' => 'ref',
-			]]
+			effects: new DeletionEffects(
+				cascadeTargets: [[
+					'objectUuid' => 'cascade-uuid',
+					'register' => '99',
+					'schema' => '99',
+					'property' => 'ref',
+				]]
+			)
 		);
 
 		// Should not throw.
@@ -1690,13 +1724,15 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [[
-				'objectUuid' => 'dep-uuid',
-				'schema' => '1',
-				'property' => 'parentRef',
-				'isArray' => false,
-				'sourceUuid' => 'source-uuid',
-			]]
+			effects: new DeletionEffects(
+				nullifyTargets: [[
+					'objectUuid' => 'dep-uuid',
+					'schema' => '1',
+					'property' => 'parentRef',
+					'isArray' => false,
+					'sourceUuid' => 'source-uuid',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid', null, 'test-slug');
@@ -1722,12 +1758,14 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			defaultTargets: [[
-				'objectUuid' => 'dep-uuid',
-				'schema' => '1',
-				'property' => 'parentRef',
-				'defaultValue' => 'default-uuid',
-			]]
+			effects: new DeletionEffects(
+				defaultTargets: [[
+					'objectUuid' => 'dep-uuid',
+					'schema' => '1',
+					'property' => 'parentRef',
+					'defaultValue' => 'default-uuid',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
@@ -1752,12 +1790,14 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [[
-				'objectUuid' => 'cascade-uuid',
-				'register' => '5',
-				'schema' => '10',
-				'property' => 'parentRef',
-			]]
+			effects: new DeletionEffects(
+				cascadeTargets: [[
+					'objectUuid' => 'cascade-uuid',
+					'register' => '5',
+					'schema' => '10',
+					'property' => 'parentRef',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid', null, 'test-slug');
@@ -1822,25 +1862,27 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [[
-				'objectUuid' => 'null-uuid',
-				'schema' => '1',
-				'property' => 'ref1',
-				'isArray' => false,
-				'sourceUuid' => 'src',
-			]],
-			defaultTargets: [[
-				'objectUuid' => 'def-uuid',
-				'schema' => '1',
-				'property' => 'ref2',
-				'defaultValue' => 'def-val',
-			]],
-			cascadeTargets: [[
-				'objectUuid' => 'casc-uuid',
-				'register' => '5',
-				'schema' => '10',
-				'property' => 'ref3',
-			]]
+			effects: new DeletionEffects(
+				cascadeTargets: [[
+					'objectUuid' => 'casc-uuid',
+					'register' => '5',
+					'schema' => '10',
+					'property' => 'ref3',
+				]],
+				nullifyTargets: [[
+					'objectUuid' => 'null-uuid',
+					'schema' => '1',
+					'property' => 'ref1',
+					'isArray' => false,
+					'sourceUuid' => 'src',
+				]],
+				defaultTargets: [[
+					'objectUuid' => 'def-uuid',
+					'schema' => '1',
+					'property' => 'ref2',
+					'defaultValue' => 'def-val',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
@@ -1878,12 +1920,14 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		// Target without 'isArray' key.
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [[
-				'objectUuid' => 'dep-uuid',
-				'schema' => '1',
-				'property' => 'ref',
-				'sourceUuid' => 'src-uuid',
-			]]
+			effects: new DeletionEffects(
+				nullifyTargets: [[
+					'objectUuid' => 'dep-uuid',
+					'schema' => '1',
+					'property' => 'ref',
+					'sourceUuid' => 'src-uuid',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
@@ -1915,20 +1959,22 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [
-				[
-					'objectUuid' => 'uuid-a',
-					'register' => '1',
-					'schema' => '10',
-					'property' => 'ref',
-				],
-				[
-					'objectUuid' => 'uuid-b',
-					'register' => '2',
-					'schema' => '20',
-					'property' => 'ref',
-				],
-			]
+			effects: new DeletionEffects(
+				cascadeTargets: [
+					[
+						'objectUuid' => 'uuid-a',
+						'register' => '1',
+						'schema' => '10',
+						'property' => 'ref',
+					],
+					[
+						'objectUuid' => 'uuid-b',
+						'register' => '2',
+						'schema' => '20',
+						'property' => 'ref',
+					],
+				]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
@@ -1959,13 +2005,15 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [[
-				'objectUuid' => 'dep-uuid',
-				'schema' => '1',
-				'property' => 'ref',
-				'isArray' => false,
-				'sourceUuid' => 'src',
-			]]
+			effects: new DeletionEffects(
+				nullifyTargets: [[
+					'objectUuid' => 'dep-uuid',
+					'schema' => '1',
+					'property' => 'ref',
+					'isArray' => false,
+					'sourceUuid' => 'src',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions(
@@ -2311,13 +2359,15 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [[
-				'objectUuid' => 'dep-uuid',
-				'schema' => '1',
-				'property' => 'tags',
-				'isArray' => true,
-				'sourceUuid' => 'source-uuid',
-			]]
+			effects: new DeletionEffects(
+				nullifyTargets: [[
+					'objectUuid' => 'dep-uuid',
+					'schema' => '1',
+					'property' => 'tags',
+					'isArray' => true,
+					'sourceUuid' => 'source-uuid',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
@@ -2353,13 +2403,15 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [[
-				'objectUuid' => 'dep-uuid',
-				'schema' => '1',
-				'property' => 'ref',
-				'isArray' => false,
-				'sourceUuid' => 'src',
-			]]
+			effects: new DeletionEffects(
+				nullifyTargets: [[
+					'objectUuid' => 'dep-uuid',
+					'schema' => '1',
+					'property' => 'ref',
+					'isArray' => false,
+					'sourceUuid' => 'src',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
@@ -2486,13 +2538,15 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			nullifyTargets: [[
-				'objectUuid' => 'dep-uuid',
-				'schema' => '1',
-				'property' => 'tags',
-				'isArray' => true,
-				'sourceUuid' => 'source-uuid',
-			]]
+			effects: new DeletionEffects(
+				nullifyTargets: [[
+					'objectUuid' => 'dep-uuid',
+					'schema' => '1',
+					'property' => 'tags',
+					'isArray' => true,
+					'sourceUuid' => 'source-uuid',
+				]]
+			)
 		);
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');

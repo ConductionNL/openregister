@@ -1,12 +1,11 @@
 <?php
 
 /**
- * Seals audit-trail rows that were left unsealed on the write path.
+ * Seals audit-trail rows, which the write path leaves unsealed on purpose.
  *
- * `sealRow()` and `sealRows()` are fail-soft: when the seal lock cannot be
- * acquired they log, leave the row unsealed, and say "a later seal pass will
- * chain it". Until this job existed there was no later pass — nothing swept
- * unsealed rows, so every fail-soft skip was permanent. Measured on the instance
+ * This job is the only sealer: inserting a row does not seal it (see
+ * `AuditTrailMapper::insertHashChained()`). Before it existed nothing swept
+ * unsealed rows, so every one stayed unsealed for good. Measured on the instance
  * this was written against: 49,123 of 308,937 audit rows (15.9%) had no hash.
  *
  * A row with no hash is a row the chain cannot vouch for. The point of hash
@@ -34,8 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\AuditHashService;
-use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\Service\AuditSealInterface;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -71,18 +69,24 @@ class AuditSealJob extends TimedJob {
 	private const PASSES_PER_RUN = 10;
 
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory for TimedJob.
-	 * @param AuditHashService $hashes Seals the rows.
-	 * @param LoggerInterface $logger Reports progress and a growing backlog.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
+	 * @param AuditSealInterface $hashes Seals the rows.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		private readonly AuditHashService $hashes,
-		private readonly LoggerInterface $logger,
+		JobRuntime $runtime,
+		private readonly AuditSealInterface $hashes,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 
 	}//end __construct()

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -27,6 +27,7 @@ use OCA\OpenRegister\Controller\ApiCallersController;
 use OCA\OpenRegister\Db\ApiCallRecord;
 use OCA\OpenRegister\Db\ApiCallRecordMapper;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ApiCallersControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -39,6 +40,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ApiCallersController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\ApiCallRecord
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
@@ -88,15 +90,13 @@ class ApiCallersControllerTest extends TestCase {
 			static fn (string $name, mixed $default = null): mixed => ($params[$name] ?? $default)
 		);
 
-		$controller = new ApiCallersController(
+		$controller = ApiCallersControllerFactory::create(
 			'openregister',
 			$request,
 			$mapper,
 			new ApiVersionCatalogue($appConfig, $this->createMock(LoggerInterface::class)),
 			$appConfig,
-			$session,
-			$groups,
-			$this->createMock(LoggerInterface::class),
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($session, $groups, $this->createMock(LoggerInterface::class)),
 		);
 
 		return [$controller, $mapper];

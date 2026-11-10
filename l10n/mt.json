@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} fallew",
         "0 = unlimited": "0 = bla limitu",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Fluss imexxi sensiela ta' passi meta jiġri xi ħaġa — oġġett jinbidel, skeda tiskatta, jew tmexxih int stess. Din il-lista turi l-flussi ta' kull app.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "Par ta' ċwievet VAPID huwa kkonfigurat. L-utenti jistgħu jattivaw in-notifiki tal-browser mill-issettjar personali tagħhom, u dawn jiġu kkunsinnati anke meta t-tab tal-browser ikun magħluq.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "Par ta' ċwievet VAPID huwa kkonfigurat. L-utenti jistgħu jattivaw in-notifiki tal-browser mill-issettjar tal-utent tagħhom, u dawn jiġu kkunsinnati anke meta t-tab tal-browser ikun magħluq.",
         "A deactivation request is pending.": "Talba għad-diżattivazzjoni qiegħda pendenti.",
         "AI Assistant": "Assistent tal-IA",
         "AI Chat": "Chat tal-IA",
@@ -2925,7 +2925,7 @@
         "Complete: {outcome}": "Lesti: {outcome}",
         "Could not load the task": "Ma setax jitgħabba l-kompitu",
         "The task refused that action": "Il-kompitu rrifjuta dik l-azzjoni",
-        "Store": "Ħanut",
+        "Marketplace": "Ħanut",
         "Install registers, schemas and flows that other organisations have published.": "Installa reġistri, skemi u flussi ppubblikati minn organizzazzjonijiet oħra.",
         "No such run": "M'hemm l-ebda eżekuzzjoni bħal din",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L-eżekuzzjoni ma teżistix, jew m'għandekx permess taraha. Meta tħassar fluss, jitħassru wkoll l-eżekuzzjonijiet tiegħu.",
@@ -3351,7 +3351,10 @@
         "{schema} {title} deleted": "{schema} {title} imħassar",
         "Object \"%1$s\" created": "Oġġett \"%1$s\" maħluq",
         "Object \"%1$s\" updated": "Oġġett \"%1$s\" aġġornat",
-        "Object \"%1$s\" assigned to you": "Oġġett \"%1$s\" assenjat lilek"
+        "Object \"%1$s\" assigned to you": "Oġġett \"%1$s\" assenjat lilek",
+        "Audit trail export ready": "L-esportazzjoni tar-reġistru tal-awditjar hija lesta",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "L-esportazzjoni tiegħek tar-reġistru tal-awditjar b'%1$s entrati ġiet issejvjata f'%2$s%3$s.",
+        "Open Files": "Iftaħ il-Fajls"
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);",
     "plurals": {

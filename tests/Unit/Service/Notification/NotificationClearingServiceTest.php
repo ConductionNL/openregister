@@ -20,19 +20,22 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use DateTime;
-use OCA\OpenRegister\Db\NotificationHistory;
-use OCA\OpenRegister\Db\NotificationHistoryMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationHistory;
+use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Notification\NotificationClearingService;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
+use OCP\IUserManager;
+use OCP\IGroupManager;
 
 /**
  * Doing the work empties the bell, and archiving is never reading.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Notification\NotificationClearingService
+ * @coversDefaultClass \OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService
  */
 class NotificationClearingServiceTest extends TestCase {
 
@@ -72,7 +75,7 @@ class NotificationClearingServiceTest extends TestCase {
 
 		return new NotificationClearingService(
 			mapper: $this->mapper,
-			userSession: $session,
+			principals: new PrincipalDirectory($this->createMock(IUserManager::class), $this->createMock(IGroupManager::class), $session),
 			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 

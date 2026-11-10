@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { Source } from '../../entities/index.js'
+import { getJson, objectAnswer, sendJson } from '../../services/listPage.js'
 
 export const useSourceStore = defineStore('source', {
 	state: () => ({
@@ -29,12 +30,11 @@ export const useSourceStore = defineStore('source', {
 		 * Refresh the source list from the API
 		 *
 		 * @param {string|null} search - Optional search term
-		 * @param {boolean} _soft - If true, don't show loading state (default: false)
 		 * @return {Promise} Promise with source list
 		 * @spec exclude API passthrough to GET /api/sources (list)
 		 */
 		/* istanbul ignore next */ // ignore this for Jest until moved into a service
-		async refreshSourceList(search = null, _soft = false) {
+		async refreshSourceList(search = null) {
 			// @todo this might belong in a service?
 			let endpoint = '/index.php/apps/openregister/api/sources'
 			if (search !== null && search !== '') {
@@ -63,10 +63,7 @@ export const useSourceStore = defineStore('source', {
 		async getSource(id) {
 			const endpoint = `/index.php/apps/openregister/api/sources/${id}`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-				const data = await response.json()
+				const data = await getJson(endpoint)
 				this.setSourceItem(data)
 				return data
 			} catch (err) {
@@ -92,15 +89,7 @@ export const useSourceStore = defineStore('source', {
 				method: 'DELETE',
 			})
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const responseData = await response.json()
-
-			if (!responseData || typeof responseData !== 'object') {
-				throw new Error('Invalid response data')
-			}
+			const responseData = await objectAnswer(response)
 
 			this.refreshSourceList()
 			this.setSourceItem(null)
@@ -127,23 +116,9 @@ export const useSourceStore = defineStore('source', {
 
 			sourceItem.updated = new Date().toISOString()
 
-			const response = await fetch(endpoint, {
-				method,
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(sourceItem),
-			})
+			const response = await sendJson(endpoint, { method, body: sourceItem })
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const responseData = await response.json()
-
-			if (!responseData || typeof responseData !== 'object') {
-				throw new Error('Invalid response data')
-			}
+			const responseData = await objectAnswer(response)
 
 			const data = new Source(responseData)
 

@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
@@ -39,6 +40,9 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
  * @covers \OCA\OpenRegister\Db\AuditTrailPayloadHelper
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
  */
 class AuditTrailMapperRevertQueryTest extends TestCase {
 	private const OBJECT = '11111111-1111-4111-8111-111111111111';
@@ -57,15 +61,14 @@ class AuditTrailMapperRevertQueryTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			fn (string $id) => $id === MagicMapper::class ? $this->magicMapper : null
+			fn (string $id) => $id === \OCA\OpenRegister\Db\MagicMapperInterface::class ? $this->magicMapper : null
 		);
 
 		$this->mapper = new AuditTrailMapper(
 			db: $this->database->idbConnection(),
-			container: $container,
 			userSession: $this->createMock(IUserSession::class),
 			request: $this->createMock(IRequest::class),
-			logger: new NullLogger()
+			services: new AuditTrailMapperServices(container: $container, logger: new NullLogger())
 		);
 
 		// The object was created, then edited twice; another object was edited in between.

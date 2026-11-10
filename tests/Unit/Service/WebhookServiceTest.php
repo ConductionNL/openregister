@@ -38,8 +38,12 @@ use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
-use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
+use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
+use OCA\OpenRegister\Service\WebhookRequestOptions;
+use OCA\OpenRegister\Service\WebhookDispatchServices;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Service\WebhookStores;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -122,12 +126,16 @@ class WebhookServiceTest extends TestCase {
 		$this->jobList = $this->createMock(IJobList::class);
 
 		$this->service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList
+			),
+			logger: $this->logger
 		);
 
 		$this->reflection = new \ReflectionClass($this->service);
@@ -206,6 +214,20 @@ class WebhookServiceTest extends TestCase {
 	}//end createTestMapping()
 
 	/**
+	 * The X-Webhook-Signature header a delivery with this payload and secret carries.
+	 *
+	 * @param array  $payload Payload to sign.
+	 * @param string $secret  Secret key.
+	 *
+	 * @return string
+	 */
+	private function signatureFor(array $payload, string $secret): string {
+		$webhook = new Webhook();
+		$webhook->setSecret($secret);
+		return (new WebhookRequestOptions(webhook: $webhook))->headers(payload: $payload)['X-Webhook-Signature'];
+	}//end signatureFor()
+
+	/**
 	 * Invoke a private method on the service via reflection.
 	 *
 	 * @param string $methodName Method to invoke.
@@ -218,6 +240,21 @@ class WebhookServiceTest extends TestCase {
 		$method->setAccessible(true);
 		return $method->invokeArgs($this->service, $args);
 	}//end invokePrivateMethod()
+
+	/**
+	 * Invoke a private method of the service's delivery recorder.
+	 *
+	 * @param string $methodName The method name
+	 * @param array  $args       Named arguments
+	 *
+	 * @return mixed
+	 */
+	private function invokeRecorderMethod(string $methodName, array $args): mixed {
+		$recorder = $this->invokePrivateMethod(methodName: 'deliveryRecorder', args: []);
+		$method = new \ReflectionMethod(objectOrMethod: $recorder, method: $methodName);
+		$method->setAccessible(true);
+		return $method->invokeArgs($recorder, $args);
+	}//end invokeRecorderMethod()
 
 	// ─── buildPayload tests ──────────────────────────────────────────
 
@@ -380,13 +417,17 @@ class WebhookServiceTest extends TestCase {
 		// Create service WITH CloudEventFormatter.
 		$cloudEventFormatter = $this->createMock(CloudEventFormatter::class);
 		$service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList,
-			cloudEventFormatter: $cloudEventFormatter
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList,
+				cloudEventFormatter: $cloudEventFormatter
+			),
+			logger: $this->logger
 		);
 
 		$reflection = new \ReflectionClass($service);
@@ -576,13 +617,17 @@ class WebhookServiceTest extends TestCase {
 	public function testBuildPayloadWithNullMappingUsesCloudEventsWhenConfigured(): void {
 		$cloudEventFormatter = $this->createMock(CloudEventFormatter::class);
 		$service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList,
-			cloudEventFormatter: $cloudEventFormatter
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList,
+				cloudEventFormatter: $cloudEventFormatter
+			),
+			logger: $this->logger
 		);
 
 		$reflection = new \ReflectionClass($service);
@@ -674,6 +719,26 @@ class WebhookServiceTest extends TestCase {
 		$this->assertSame(1, $enqueued[0][1]['webhook_id']);
 		$this->assertSame('OCA\\OpenRegister\\Event\\ObjectCreatedEvent', $enqueued[0][1]['event_name']);
 		$this->assertSame(2, $enqueued[1][1]['webhook_id']);
+	}
+
+	public function testARefusedJobArgumentDoesNotStopTheOtherWebhooks(): void {
+		$event = $this->createMock(\OCP\EventDispatcher\Event::class);
+		$this->webhookMapper->method('findForEvent')->willReturn([$this->createTestWebhook(id: 1), $this->createTestWebhook(id: 2)]);
+
+		$enqueued = [];
+		$this->jobList->method('add')->willReturnCallback(function (string $job, array $arg) use (&$enqueued) {
+			if ($arg['webhook_id'] === 1) {
+				throw new \InvalidArgumentException("Background job arguments can't exceed 4000 characters (json encoded)");
+			}
+
+			$enqueued[] = $arg['webhook_id'];
+		});
+		$this->logger->expects($this->atLeastOnce())->method('error')
+			->with($this->stringContains('could not be enqueued'), $this->callback(static fn (array $context): bool => $context['webhook_id'] === 1));
+
+		$this->service->dispatchEvent($event, 'SomeEvent', ['test' => str_repeat('x', 5000)]);
+
+		$this->assertSame([2], $enqueued, 'the refusal is contained to the one delivery');
 	}
 
 	// ─── deliverWebhook tests ────────────────────────────────────────
@@ -794,13 +859,13 @@ class WebhookServiceTest extends TestCase {
 		$webhook = $this->createTestWebhook();
 		$webhook->setRetryPolicy('exponential');
 
-		$delay = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 1,
 		]);
 		$this->assertSame(120, $delay); // 2^1 * 60
 
-		$delay2 = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay2 = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 3,
 		]);
@@ -811,7 +876,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook = $this->createTestWebhook();
 		$webhook->setRetryPolicy('linear');
 
-		$delay = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 2,
 		]);
@@ -822,7 +887,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook = $this->createTestWebhook();
 		$webhook->setRetryPolicy('fixed');
 
-		$delay = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 5,
 		]);
@@ -833,7 +898,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook = $this->createTestWebhook();
 		$webhook->setRetryPolicy('unknown_policy');
 
-		$delay = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 1,
 		]);
@@ -847,7 +912,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook->setRetryPolicy('fixed');
 
 		$before = new \DateTime();
-		$result = $this->invokePrivateMethod('calculateNextRetryTime', [
+		$result = $this->invokeRecorderMethod('calculateNextRetryTime', [
 			'webhook' => $webhook,
 			'attempt' => 1,
 		]);
@@ -914,10 +979,7 @@ class WebhookServiceTest extends TestCase {
 		$payload = ['key' => 'value'];
 		$secret = 'my-secret';
 
-		$result = $this->invokePrivateMethod('generateSignature', [
-			'payload' => $payload,
-			'secret' => $secret,
-		]);
+		$result = $this->signatureFor(payload: $payload, secret: $secret);
 
 		$expected = hash_hmac('sha256', json_encode($payload), $secret);
 		$this->assertSame($expected, $result);
@@ -926,14 +988,8 @@ class WebhookServiceTest extends TestCase {
 	public function testGenerateSignatureDifferentSecretsProduceDifferentResults(): void {
 		$payload = ['key' => 'value'];
 
-		$sig1 = $this->invokePrivateMethod('generateSignature', [
-			'payload' => $payload,
-			'secret' => 'secret1',
-		]);
-		$sig2 = $this->invokePrivateMethod('generateSignature', [
-			'payload' => $payload,
-			'secret' => 'secret2',
-		]);
+		$sig1 = $this->signatureFor(payload: $payload, secret: 'secret1');
+		$sig2 = $this->signatureFor(payload: $payload, secret: 'secret2');
 
 		$this->assertNotSame($sig1, $sig2);
 	}
@@ -1483,10 +1539,11 @@ class WebhookServiceTest extends TestCase {
 				})
 			);
 
-		$this->invokePrivateMethod('scheduleRetry', [
-			'webhook' => $webhook,
-			'eventName' => 'SomeEvent',
-			'_payload' => ['data' => 'test'],
+		$log = new WebhookLog();
+		$log->setEventClass('SomeEvent');
+
+		$this->invokeRecorderMethod('scheduleRetry', [
+			'delivery' => new \OCA\OpenRegister\Service\WebhookDeliveryAttempt(webhook: $webhook, log: $log),
 			'attempt' => 2,
 		]);
 	}//end testScheduleRetryLogsInfo()
@@ -1629,13 +1686,17 @@ class WebhookServiceTest extends TestCase {
 	public function testInterceptRequestWithCloudEventFormatter(): void {
 		$cloudEventFormatter = $this->createMock(CloudEventFormatter::class);
 		$service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList,
-			cloudEventFormatter: $cloudEventFormatter
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList,
+				cloudEventFormatter: $cloudEventFormatter
+			),
+			logger: $this->logger
 		);
 
 		$request = $this->createMock(\OCP\IRequest::class);
@@ -1947,7 +2008,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook = $this->createTestWebhook();
 		$webhook->setRetryPolicy('exponential');
 
-		$delay = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 0,
 		]);
@@ -1964,7 +2025,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook = $this->createTestWebhook();
 		$webhook->setRetryPolicy('linear');
 
-		$delay = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 1,
 		]);
@@ -1984,7 +2045,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook->setRetryPolicy('exponential');
 
 		$before = new \DateTime();
-		$result = $this->invokePrivateMethod('calculateNextRetryTime', [
+		$result = $this->invokeRecorderMethod('calculateNextRetryTime', [
 			'webhook' => $webhook,
 			'attempt' => 2,
 		]);
@@ -2004,10 +2065,7 @@ class WebhookServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testGenerateSignatureWithEmptyPayload(): void {
-		$result = $this->invokePrivateMethod('generateSignature', [
-			'payload' => [],
-			'secret' => 'secret',
-		]);
+		$result = $this->signatureFor(payload: [], secret: 'secret');
 
 		$expected = hash_hmac('sha256', json_encode([]), 'secret');
 		$this->assertSame($expected, $result);
@@ -2020,10 +2078,7 @@ class WebhookServiceTest extends TestCase {
 	 */
 	public function testGenerateSignatureWithNestedPayload(): void {
 		$payload = ['a' => ['b' => 'c'], 'd' => [1, 2, 3]];
-		$result = $this->invokePrivateMethod('generateSignature', [
-			'payload' => $payload,
-			'secret' => 'secret',
-		]);
+		$result = $this->signatureFor(payload: $payload, secret: 'secret');
 
 		$expected = hash_hmac('sha256', json_encode($payload), 'secret');
 		$this->assertSame($expected, $result);
@@ -2139,13 +2194,17 @@ class WebhookServiceTest extends TestCase {
 	public function testInterceptRequestUsesCloudEventFormatterWhenAvailable(): void {
 		$cloudEventFormatter = $this->createMock(CloudEventFormatter::class);
 		$service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList,
-			cloudEventFormatter: $cloudEventFormatter
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList,
+				cloudEventFormatter: $cloudEventFormatter
+			),
+			logger: $this->logger
 		);
 
 		$webhook = $this->createTestWebhook(id: 1, enabled: true);
@@ -2319,13 +2378,66 @@ class WebhookServiceTest extends TestCase {
 	 * A normal external HTTPS URL must pass the SSRF guard.
 	 */
 	public function testAssertSafeWebhookUriAllowsPublicHttps(): void {
-		// No exception expected.
-		$this->invokePrivateMethod(
-			'assertSafeWebhookUri',
+		// DNS is the class boundary: pin example.com to a public address.
+		$this->resolveHostTo('example.com', ['93.184.215.14']);
+
+		$this->assertWebhookUriAccepted(
 			['uri' => 'https://example.com/webhook']
 		);
-		$this->addToAssertionCount(1);
 	}//end testAssertSafeWebhookUriAllowsPublicHttps()
+
+	/**
+	 * Run the SSRF guard and assert it let the URL through (the refusal tests
+	 * flip host or allowPrivate and expect a RuntimeException).
+	 *
+	 * @param array<string, mixed> $args Named arguments for assertSafeWebhookUri.
+	 *
+	 * @return void
+	 */
+	private function assertWebhookUriAccepted(array $args): void {
+		$thrown = null;
+		try {
+			$this->invokePrivateMethod('assertSafeWebhookUri', $args);
+		} catch (\RuntimeException $e) {
+			$thrown = $e;
+		}
+
+		$this->assertNull($thrown, 'SSRF guard refused '.$args['uri'].': '.($thrown?->getMessage() ?? ''));
+	}//end assertWebhookUriAccepted()
+
+	/**
+	 * Refusal pair for testAssertSafeWebhookUriAllowsPublicHttps: the same
+	 * public-looking name refused once any of its records is private.
+	 *
+	 * @return void
+	 */
+	public function testAssertSafeWebhookUriRefusesAPublicNameResolvingPrivate(): void {
+		$this->resolveHostTo('example.com', ['93.184.215.14', '10.0.0.5']);
+
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessage('blocked IP range');
+
+		$this->invokePrivateMethod('assertSafeWebhookUri', ['uri' => 'https://example.com/webhook']);
+	}//end testAssertSafeWebhookUriRefusesAPublicNameResolvingPrivate()
+
+	/**
+	 * Replace DNS resolution in the service's address guard for one host.
+	 *
+	 * @param string        $host The host the guard is asked about.
+	 * @param array<string> $ips  The addresses it resolves to.
+	 *
+	 * @return void
+	 */
+	private function resolveHostTo(string $host, array $ips): void {
+		$guard = $this->getMockBuilder(OutboundAddressGuard::class)
+			->onlyMethods(['addressesOf'])
+			->getMock();
+		$guard->method('addressesOf')->with($host)->willReturn($ips);
+
+		$property = $this->reflection->getProperty('addressGuard');
+		$property->setAccessible(true);
+		$property->setValue($this->service, $guard);
+	}//end resolveHostTo()
 
 	/**
 	 * Response-body cap (MAX_RESPONSE_BODY_BYTES = 1 MB) for persistent storage.
@@ -2431,12 +2543,61 @@ class WebhookServiceTest extends TestCase {
 	 */
 	public function testAssertSafeWebhookUriAllowsPublicIpv6(): void {
 		// 2606:4700::1 is a real Cloudflare anycast address (public, not reserved).
-		$this->invokePrivateMethod(
-			'assertSafeWebhookUri',
+		$this->assertWebhookUriAccepted(
 			['uri' => 'https://[2606:4700::1]/webhook']
 		);
-		$this->addToAssertionCount(1);
 	}//end testAssertSafeWebhookUriAllowsPublicIpv6()
+
+	/**
+	 * Provider: reserved and embedded-IPv4 targets the URL check must reject.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function reservedWebhookUrls(): array {
+		return [
+			'unspecified IPv4' => ['http://0.0.0.0:8080/webhook'],
+			'this-network IPv4' => ['http://0.1.2.3/webhook'],
+			'shared address space' => ['http://100.64.0.1/webhook'],
+			'benchmarking range' => ['http://198.18.0.1/webhook'],
+			'IETF protocol range' => ['http://192.0.0.1/webhook'],
+			'IPv4-compatible loopback' => ['http://[::127.0.0.1]/webhook'],
+			'NAT64 private' => ['http://[64:ff9b::a00:1]/webhook'],
+		];
+	}//end reservedWebhookUrls()
+
+	/**
+	 * assertSafeWebhookUri must reject reserved ranges and embedded IPv4 forms.
+	 *
+	 * @param string $url URL to validate.
+	 *
+	 * @dataProvider reservedWebhookUrls
+	 */
+	public function testAssertSafeWebhookUriBlocksReservedRanges(string $url): void {
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessage('blocked IP range');
+		$this->invokePrivateMethod('assertSafeWebhookUri', ['uri' => $url]);
+	}//end testAssertSafeWebhookUriBlocksReservedRanges()
+
+	/**
+	 * assertSafeWebhookUri must reject a host that does not resolve.
+	 */
+	public function testAssertSafeWebhookUriRejectsAnUnresolvableHost(): void {
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessage('could not be resolved');
+		$this->invokePrivateMethod('assertSafeWebhookUri', ['uri' => 'https://no-such-host.invalid/webhook']);
+	}//end testAssertSafeWebhookUriRejectsAnUnresolvableHost()
+
+	/**
+	 * The log preview treats a reserved target as private.
+	 */
+	public function testPreviewResponseBodyRedactsReservedTargets(): void {
+		$result = $this->invokePrivateMethod(
+			'previewResponseBody',
+			['body' => 'internal-secret-data', 'url' => 'http://0.0.0.0:8080/probe']
+		);
+
+		$this->assertStringNotContainsString('internal-secret-data', $result);
+	}//end testPreviewResponseBodyRedactsReservedTargets()
 
 	// ─── Per-hook allowPrivateTargets opt-in (SSRF bypass) ──────────────
 	//
@@ -2470,11 +2631,9 @@ class WebhookServiceTest extends TestCase {
 	 */
 	public function testAssertSafeWebhookUriAllowsPrivateWhenOptedIn(string $url): void {
 		// No exception expected when the per-hook flag is set.
-		$this->invokePrivateMethod(
-			'assertSafeWebhookUri',
+		$this->assertWebhookUriAccepted(
 			['uri' => $url, 'allowPrivate' => true]
 		);
-		$this->addToAssertionCount(1);
 	}//end testAssertSafeWebhookUriAllowsPrivateWhenOptedIn()
 
 	/**

@@ -46,7 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Store;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -61,12 +61,12 @@ class GenericStoreInstaller {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService   $objectService The OpenRegister write path.
+	 * @param ObjectOperationsInterface   $objectService The OpenRegister write path.
 	 * @param IAppConfig      $appConfig     The declaring app's config store.
 	 * @param LoggerInterface $logger        PSR logger, server-side detail only.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {

@@ -11,7 +11,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		name="export-configuration-dialog"
 		:title="t('openregister', 'Export Configuration')"
 		size="small"
-		:canClose="false">
+		noClose>
 		<NcNoteCard v-if="errorMessage" type="error">
 			<p>{{ errorMessage }}</p>
 		</NcNoteCard>
@@ -27,47 +27,73 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
-			<NcButton
+			<CloseCancelButton label="Cancel" @click="closeModal" />
+			<BusyButton
+				:busy="loading"
 				:disabled="loading || !isValid"
 				variant="primary"
 				@click="exportConfiguration">
 				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Export v-else :size="20" />
+					<Export :size="20" />
 				</template>
 				Export
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
+/**
+ * The file name of an export: the one the server names, or a dated default.
+ *
+ * @param {object} response The export response
+ * @param {string|number} id The configuration id
+ * @return {string} The file name
+ */
+function exportFilename(response, id) {
+	const contentDisposition = response.headers['content-disposition']
+	return contentDisposition
+		? contentDisposition.split('filename=')[1].replace(/"/g, '')
+		: `configuration_${id}_${new Date().toISOString().split('T')[0]}.json`
+}
+
+/**
+ * Hand an export to the browser as a JSON file download.
+ *
+ * @param {object} response The export response
+ * @param {string|number} id The configuration id
+ * @return {void}
+ */
+function downloadExport(response, id) {
+	const blob = new Blob([response.data], { type: 'application/json' })
+	const downloadUrl = window.URL.createObjectURL(blob)
+	const link = document.createElement('a')
+	link.href = downloadUrl
+	link.download = exportFilename(response, id)
+	document.body.appendChild(link)
+	link.click()
+	document.body.removeChild(link)
+	window.URL.revokeObjectURL(downloadUrl)
+}
+
 import {
-	NcButton,
 	NcCheckboxRadioSwitch,
 	NcDialog,
-	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Export from 'vue-material-design-icons/Export.vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'ExportConfiguration',
 	components: {
 		NcDialog,
-		NcButton,
-		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		// Icons
-		Cancel,
+		BusyButton,
+		CloseCancelButton,
 		Export,
 	},
 
@@ -147,24 +173,7 @@ export default {
 					responseType: 'blob', // Important for file download
 				})
 
-				// Create a download link
-				const blob = new Blob([response.data], { type: 'application/json' })
-				const downloadUrl = window.URL.createObjectURL(blob)
-				const link = document.createElement('a')
-
-				// Get filename from response headers or generate a default one
-				const contentDisposition = response.headers['content-disposition']
-				const filename = contentDisposition
-					? contentDisposition.split('filename=')[1].replace(/"/g, '')
-					: `configuration_${item.id}_${new Date().toISOString().split('T')[0]}.json`
-
-				link.href = downloadUrl
-				link.download = filename
-				document.body.appendChild(link)
-				link.click()
-				document.body.removeChild(link)
-				window.URL.revokeObjectURL(downloadUrl)
-
+				downloadExport(response, item.id)
 				this.closeModal()
 			} catch (error) {
 				this.error =
@@ -179,10 +188,8 @@ export default {
 }
 </script>
 
-<style>
-.formContainer {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-}
+<style lang="scss">
+@use '../../styles/modals.scss' as *;
+
+@include form-container;
 </style>

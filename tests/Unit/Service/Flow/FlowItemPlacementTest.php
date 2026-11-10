@@ -30,7 +30,10 @@ namespace Unit\Service\Flow;
 use OCA\OpenRegister\Service\Flow\FlowItemPlacement;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Workflow\Definition;
+use Symfony\Component\Workflow\Marking;
 use Symfony\Component\Workflow\Transition;
+use Symfony\Component\Workflow\Workflow;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowItemPlacement
@@ -180,4 +183,45 @@ final class FlowItemPlacementTest extends TestCase {
 
 	}//end testAnUntaggedItemStillReachesEveryTakenOutput()
 
+	/**
+	 * Seeding: a place the last commit stored items for keeps them, every other
+	 * marked place gets the seed, and an empty marking seeds the initial places.
+	 *
+	 * @return void
+	 */
+	public function testSeedingPrefersStoredItemsAndFallsBackToTheInitialPlaces(): void {
+		$seed = [['json' => ['n' => 1]]];
+		$stored = ['left' => [['json' => ['n' => 'left']]]];
+
+		$marked = $this->workflowMarking(places: ['left' => 1, 'right' => 1]);
+		$this->assertSame(
+			['left' => [['json' => ['n' => 'left']]], 'right' => $seed],
+			$this->placement->seedPlaceItems(workflow: $marked, subject: new \stdClass(), items: $seed, stored: $stored)
+		);
+		$this->assertSame(
+			['left' => $seed, 'right' => $seed],
+			$this->placement->seedPlaceItems(workflow: $marked, subject: new \stdClass(), items: $seed)
+		);
+
+		$empty = $this->workflowMarking(places: []);
+		$this->assertSame(
+			['start' => $seed],
+			$this->placement->seedPlaceItems(workflow: $empty, subject: new \stdClass(), items: $seed, stored: $stored)
+		);
+	}//end testSeedingPrefersStoredItemsAndFallsBackToTheInitialPlaces()
+
+	/**
+	 * A workflow whose subject is marked on the given places; `start` is its initial place.
+	 *
+	 * @param array<string, int> $places The marked places.
+	 *
+	 * @return Workflow
+	 */
+	private function workflowMarking(array $places): Workflow {
+		$workflow = $this->createMock(Workflow::class);
+		$workflow->method('getMarking')->willReturn(new Marking($places));
+		$workflow->method('getDefinition')->willReturn(new Definition(['start', 'left', 'right'], [], ['start']));
+
+		return $workflow;
+	}//end workflowMarking()
 }//end class

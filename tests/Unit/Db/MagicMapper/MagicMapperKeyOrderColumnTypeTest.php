@@ -18,6 +18,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicSchemaColumns;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\SettingsService;
@@ -116,6 +117,10 @@ class MagicMapperKeyOrderColumnTypeTest extends TestCase {
 		return $mapper;
 	}//end buildMapperWithoutConstructor()
 
+	private function column(string $propertyName, array $propertyConfig): array {
+		return (new MagicSchemaColumns(logger: $this->createMock(LoggerInterface::class)))->forProperty(propertyName: $propertyName, propertyConfig: $propertyConfig);
+	}//end column()
+
 	/**
 	 * Invoke a private MagicMapper method by name.
 	 *
@@ -140,13 +145,7 @@ class MagicMapperKeyOrderColumnTypeTest extends TestCase {
 	 * @return void
 	 */
 	public function testObjectTypedPropertyMapsToOrderPreservingType(): void {
-		$mapper = $this->buildMapperWithoutConstructor();
-
-		$result = $this->invokePrivate(
-			$mapper,
-			'mapSchemaPropertyToColumn',
-			['mapping', ['type' => 'object']]
-		);
+		$result = $this->column('mapping', ['type' => 'object']);
 
 		$this->assertSame('mapping', $result['name']);
 		$this->assertSame('json_ordered', $result['type']);
@@ -162,13 +161,7 @@ class MagicMapperKeyOrderColumnTypeTest extends TestCase {
 	 * @return void
 	 */
 	public function testArrayTypedPropertyKeepsLegacyJsonType(): void {
-		$mapper = $this->buildMapperWithoutConstructor();
-
-		$result = $this->invokePrivate(
-			$mapper,
-			'mapSchemaPropertyToColumn',
-			['unset', ['type' => 'array']]
-		);
+		$result = $this->column('unset', ['type' => 'array']);
 
 		$this->assertSame('unset', $result['name']);
 		$this->assertSame('json', $result['type']);
@@ -182,18 +175,12 @@ class MagicMapperKeyOrderColumnTypeTest extends TestCase {
 	 * @return void
 	 */
 	public function testRelatedObjectReferenceStillMapsToVarchar(): void {
-		$mapper = $this->buildMapperWithoutConstructor();
-
-		$result = $this->invokePrivate(
-			$mapper,
-			'mapSchemaPropertyToColumn',
+		$result = $this->column(
+			'parent',
 			[
-				'parent',
-				[
-					'type' => 'object',
-					'$ref' => '#/components/schemas/other',
-					'objectConfiguration' => ['handling' => 'related-object'],
-				],
+				'type' => 'object',
+				'$ref' => '#/components/schemas/other',
+				'objectConfiguration' => ['handling' => 'related-object'],
 			]
 		);
 

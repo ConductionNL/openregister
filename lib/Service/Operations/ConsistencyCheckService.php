@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -45,9 +45,9 @@ use Throwable;
  * The probes ship as a default list so the service is usable without wiring,
  * and are injectable so a test can hand in one that misbehaves.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+ * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
  */
-class ConsistencyCheckService {
+class ConsistencyCheckService implements ConsistencyCheckServiceInterface {
 
 	/**
 	 * How many offending rows one probe reports.
@@ -85,7 +85,7 @@ class ConsistencyCheckService {
 	 *
 	 * @return array<string, mixed> The findings, and what was checked.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	public function check(): array {
 		$findings = [];
@@ -109,7 +109,7 @@ class ConsistencyCheckService {
 	 *
 	 * @return array<string, mixed>|null The finding, or null when no such probe.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	public function checkOne(string $slug): ?array {
 		if (array_key_exists($slug, $this->probes) === false) {
@@ -125,7 +125,7 @@ class ConsistencyCheckService {
 	 *
 	 * @return array<int, string> The probe slugs.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	public function slugs(): array {
 		return array_keys($this->probes);
@@ -236,17 +236,20 @@ class ConsistencyCheckService {
 						);
 				},
 			],
-			'orphan-favourites' => [
-				'title' => 'Favourites on an object that is gone',
-				'description' => 'A favourite row whose object no longer exists in the object table.',
-				'repair' => 'Delete the favourite rows.',
-				'table' => 'openregister_object_favourites',
+			// It was `orphan-favourites` on `openregister_object_favourites`, a
+			// table no migration ever created. Favourites are follows now
+			// (`merge-follow-and-favourites`), so the probe reads the follows.
+			'orphan-follows' => [
+				'title' => 'Follows on an object that is gone',
+				'description' => 'A follow row whose object no longer exists in the object table.',
+				'repair' => 'Delete the follow rows.',
+				'table' => 'openregister_watchers',
 				'query' => static function (IQueryBuilder $qb): IQueryBuilder {
 					$sub = $qb->getConnection()->getQueryBuilder();
 					$sub->select('uuid')->from('openregister_objects');
 
 					return $qb->select('id', 'object_uuid', 'user_id')
-						->from('openregister_object_favourites')
+						->from('openregister_watchers')
 						->where($qb->expr()->isNotNull('object_uuid'))
 						->andWhere(
 							$qb->expr()->notIn(
@@ -287,7 +290,7 @@ class ConsistencyCheckService {
 	 *
 	 * @return array<string, mixed>|null The repair plan, or null when no such probe.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	public function repairPlan(string $slug): ?array {
 		if (array_key_exists($slug, $this->probes) === false) {

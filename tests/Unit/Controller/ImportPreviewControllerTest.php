@@ -29,6 +29,7 @@ namespace Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ImportPreviewControllerFactory;
 use OCA\OpenRegister\Controller\ImportPreviewController;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
@@ -153,7 +154,7 @@ final class ImportPreviewControllerTest extends TestCase {
 	}
 
 	private function controller(): ImportPreviewController {
-		return new ImportPreviewController(
+		return ImportPreviewControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,
@@ -280,7 +281,7 @@ final class ImportPreviewControllerTest extends TestCase {
 
 		$refused = new ImportPreviewRow();
 		$refused->setPreviewId(7);
-		$refused->setRowNumber(2);
+		$refused->setSourceRow(2);
 		$refused->setDecision(ImportPreviewRow::DECISION_REFUSE);
 		$refused->setReason('The match key hits more than one object: object-a, object-b.');
 		$refused->setCandidates(['object-a', 'object-b']);

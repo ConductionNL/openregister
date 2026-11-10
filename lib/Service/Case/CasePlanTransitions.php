@@ -97,6 +97,7 @@ class CasePlanTransitions {
 	private const TABLE = [
 		CaseItem::TYPE_STAGE => self::WORK_ITEM_EDGES,
 		CaseItem::TYPE_HUMAN_TASK => self::WORK_ITEM_EDGES,
+		CaseItem::TYPE_PROCESS_TASK => self::WORK_ITEM_EDGES,
 		CaseItem::TYPE_MILESTONE => self::MILESTONE_EDGES,
 	];
 
@@ -148,15 +149,8 @@ class CasePlanTransitions {
 			return;
 		}
 
-		throw new CaseTransitionException(
-			message: sprintf(
-				"Plan item '%s' (%s) cannot move from '%s' to '%s': no such transition exists in the lifecycle table.",
-				(string)$item->getUuid(),
-				$type,
-				$from,
-				$to
-			)
-		);
+		$format = "Plan item '%s' (%s) cannot move from '%s' to '%s': no such transition exists in the lifecycle table.";
+		throw new CaseTransitionException(message: sprintf($format, (string)$item->getUuid(), $type, $from, $to));
 	}//end assertLegal()
 
 	/**

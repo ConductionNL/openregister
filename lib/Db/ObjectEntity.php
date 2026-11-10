@@ -100,6 +100,8 @@ use OCP\IUserSession;
  * @method void setArchived(?array $archived)
  * @method array|null getFrozen()
  * @method void setFrozen(?array $frozen)
+ * @method string|null getStatus()
+ * @method void setStatus(?string $status)
  * @method array|null getGeo()
  * @method void setGeo(?array $geo)
  * @method array|null getRetention()
@@ -136,6 +138,8 @@ use OCP\IUserSession;
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
+ * @method DateTime|null getLastUserActivity()
+ * @method void setLastUserActivity(?DateTime $lastUserActivity)
  * @method DateTime|null getModified()
  * @method void setModified(?DateTime $modified)
  * @method float|null getRelevance()
@@ -165,6 +169,22 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInterface {
+	use JsonFieldsTrait;
+
+	/**
+	 * Lifecycle status: saved to carry on later, not yet received (decision 180).
+	 *
+	 * @var string
+	 */
+	public const STATUS_DRAFT = 'draft';
+
+	/**
+	 * Lifecycle status: left draft through a submit, received.
+	 *
+	 * @var string
+	 */
+	public const STATUS_ACTIVE = 'active';
+
 
 	/**
 	 * Unique identifier for the object.
@@ -348,6 +368,18 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $frozen = [];
 
 	/**
+	 * The explicit lifecycle status, when one is stored (decision 180).
+	 *
+	 * `draft`: the object may miss required properties, is never type-invalid,
+	 * and is visible to its owner only unless the schema says otherwise.
+	 * `active`: it left draft through a submit. Null: no explicit status, so the
+	 * status is deduced from the object's dates exactly as before.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $status = null;
+
+	/**
 	 * Geographical details for the object.
 	 *
 	 * @var array|null Array describing geographical details
@@ -448,6 +480,19 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @var DateTime|null Last update timestamp
 	 */
 	protected ?DateTime $updated = null;
+
+	/**
+	 * When a person last wrote this object.
+	 *
+	 * Unlike `updated`, which moves on every write, this moves only on a write
+	 * made by a signed-in user in a web request. A background job, an occ
+	 * command, a repair step, a system-elevated write or a write labelled with
+	 * a non-person {@see \OCA\OpenRegister\Service\WriteCause} leaves it as
+	 * it was. Null until a person writes the object.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $lastUserActivity = null;
 
 	/**
 	 * Creation timestamp.
@@ -706,25 +751,34 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $unreadCounts = null;
 
 	/**
-	 * Whether the current user has starred this object (`favourites-and-recent`).
+	 * Whether the current user's follow of this object notifies them.
 	 *
-	 * Transient, populated by the render layer from
-	 * `FavouriteService::isStarredByCaller()`. Not persisted: a star is
-	 * per-user, per-object state living in `openregister_favourites`, which is
-	 * what keeps starring an object out of its own audit trail and versions.
-	 * Exposed in @self as `favourite`, and omitted for an anonymous read, where
-	 * there is no "you" to answer for and a hard false would read as "you have
-	 * not starred this", which is a different claim.
+	 * Transient, set with the follow marker by `setWatching()`, and only when
+	 * the reader follows the object (`merge-follow-and-favourites`). Exposed
+	 * as `watchNotify` in the self envelope. The deprecated `favourite` marker
+	 * is no longer a property of its own: it is `watching` under its old name
+	 * for one release.
 	 *
 	 * @var boolean|null
 	 */
-	protected ?bool $favourite = null;
+	protected ?bool $watchNotify = null;
 
 	/**
-	 * What the reader may do with this object, as `{"update": bool}`.
+	 * When the reader last opened this object, as ISO 8601.
+	 *
+	 * Transient, set only on a `_recent=true` page from the read history the
+	 * lens was resolved with (the audit trail's `read` rows). Exposed in @self
+	 * as `viewedAt`, and absent on every other read.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $viewedAt = null;
+
+	/**
+	 * What the reader may do with this object, as `{"update": bool, "<declared action>": bool}`.
 	 *
 	 * Transient, populated by the render layer only when the request asks for
-	 * it (`_extend[]=@self.can`), from PermissionHandler's own verdict. Exposed
+	 * it (`_extend[]=@self.can`), for the reader of that request. Exposed
 	 * in @self as `can`. The records list reads it to decide where a cell may
 	 * be edited in place (REQ-RFCE-002).
 	 *
@@ -884,7 +938,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return array<string, mixed>|null The clocks, or null when not resolved.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function getRetentionClocks(): ?array {
 		return $this->retentionClocks;
@@ -899,7 +953,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function setRetentionClocks(?array $clocks): void {
 		$this->retentionClocks = $clocks;
@@ -961,16 +1015,25 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * at PHPMD's public-member ceiling, and a getter nothing calls is what it is
 	 * there to stop.
 	 *
-	 * Surfaced in the @self envelope as `watching` by getObjectArray().
+	 * Surfaced in the @self envelope as `watching` (and, deprecated, as
+	 * `favourite`) by getObjectArray(). The follow's notification switch rides
+	 * along as the second argument rather than a setter of its own, for the
+	 * same public-member ceiling; it is surfaced as `watchNotify` only when the
+	 * reader follows the object.
 	 *
 	 * @param boolean|null $watching Whether the current user follows this object.
+	 * @param boolean|null $notify   Whether that follow notifies them, or null when not following.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
-	public function setWatching(?bool $watching): void {
+	public function setWatching(?bool $watching, ?bool $notify = null): void {
 		$this->watching = $watching;
+		$this->watchNotify = null;
+		if ($watching === true) {
+			$this->watchNotify = $notify;
+		}
 	}//end setWatching()
 
 	/**
@@ -1028,29 +1091,25 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end setUnreadCounts()
 
 	/**
-	 * Write the current user's favourite marker.
+	 * Write when the reader last opened this object.
 	 *
-	 * Write-only, for the same reason as `setUnread()` above:
-	 * `mergeTransientRenderFields()` reads the property directly, so a public
-	 * getter would have no caller and this entity is already at PHPMD's
-	 * public-member ceiling.
+	 * Write-only, like setWatching(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `viewedAt`.
 	 *
-	 * Surfaced in the @self envelope as `favourite` by getObjectArray().
-	 *
-	 * @param boolean|null $favourite Whether the current user has starred the object.
+	 * @param string|null $viewedAt ISO 8601 moment of the reader's latest read.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
 	 */
-	public function setFavourite(?bool $favourite): void {
-		$this->favourite = $favourite;
-	}//end setFavourite()
+	public function setViewedAt(?string $viewedAt): void {
+		$this->viewedAt = $viewedAt;
+	}//end setViewedAt()
 
 	/**
 	 * Write what the reader may do with this object.
 	 *
-	 * Write-only, like setFavourite(): mergeTransientRenderFields() reads the
+	 * Write-only, like setWatching(): mergeTransientRenderFields() reads the
 	 * property directly. Surfaced in the @self envelope as `can`.
 	 *
 	 * @param array<string, bool>|null $can The reader's rights, e.g. `['update' => true]`.
@@ -1087,6 +1146,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$this->addType(fieldName: 'deleted', type: 'json');
 		$this->addType(fieldName: 'archived', type: 'json');
 		$this->addType(fieldName: 'frozen', type: 'json');
+		$this->addType(fieldName: 'status', type: 'string');
 		$this->addType(fieldName: 'geo', type: 'json');
 		$this->addType(fieldName: 'retention', type: 'json');
 		$this->addType(fieldName: 'tmlo', type: 'json');
@@ -1104,6 +1164,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$this->addType(fieldName: 'summary', type: 'string');
 		$this->addType(fieldName: 'image', type: 'string');
 		$this->addType(fieldName: 'updated', type: 'datetime');
+		$this->addType(fieldName: 'lastUserActivity', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'groups', type: 'json');
 		$this->addType(fieldName: 'expires', type: 'datetime');
@@ -1162,8 +1223,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		// Initialize the object data with an empty array if null.
 		$objectData = $this->object ?? [];
 
-		// Ensure 'id' is the first field by setting it before merging with object data.
-		$objectData = array_merge(['id' => $this->uuid], $objectData);
+		// Ensure 'id' is the first field; array_replace keeps numeric property keys.
+		$objectData = array_replace(['id' => $this->uuid], $objectData);
 
 		return $objectData;
 	}//end getObject()
@@ -1236,24 +1297,6 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function getOwner(): ?string {
 		return $this->owner;
 	}//end getOwner()
-
-	/**
-	 * Get array of field names that are JSON type
-	 *
-	 * @return string[] List of field names that are JSON type
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
 
 	/**
 	 * Hydrate the entity from an array of data
@@ -1405,10 +1448,12 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'tmlo' => $this->getTmlo(),
 			'size' => $this->size,
 			'updated' => $this->getFormattedDate(date: $this->updated),
+			'lastUserActivity' => $this->getFormattedDate(date: $this->lastUserActivity),
 			'created' => $this->getFormattedDate(date: $this->created),
 			'deleted' => $this->getDeleted(),
 			'archived' => $this->getArchived(),
 			'frozen' => $this->getFrozen(),
+			'status' => $this->status,
 			'source' => $this->source,
 			'mail' => $this->getMail(),
 			'contacts' => $this->getContacts(),
@@ -1449,6 +1494,64 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		return $objectArray;
 	}//end getObjectArray()
+
+	/**
+	 * The record as an access rule's `match` reads it: its data, with `@self` set from its own metadata.
+	 *
+	 * A rule on `_owner`, `_organisation`, `_schema` or another underscore-prefixed
+	 * field reads `@self`, and an object without `@self` the body key of that name.
+	 * Both can come from whoever wrote the data, so the data's own `@self` is replaced
+	 * and the body keys that name a metadata field are dropped: the record answers for
+	 * its metadata, also when a field is empty. The envelope also carries the
+	 * record's `expires`, which the rendered `@self` does not, so a delegation
+	 * can end on `_expires`.
+	 *
+	 * @return array<int|string, mixed>
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function getMatchEnvelope(): array {
+		$envelope = $this->getObject();
+		$metadata = $this->getObjectArray();
+		$metadata['expires'] = $this->getFormattedDate(date: $this->expires);
+		foreach (array_keys($metadata) as $field) {
+			unset($envelope['_' . $field]);
+		}
+
+		$envelope['@self'] = $metadata;
+
+		return $envelope;
+	}//end getMatchEnvelope()
+
+	/**
+	 * Run a property filter over data, with the rules reading this record's own metadata.
+	 *
+	 * The filter sees the data with `@self` set from the record, so a rule on
+	 * `_organisation` or `_owner` is not answered by a `@self` the data carries.
+	 * The result carries the data's own `@self` again, or none when it had none.
+	 *
+	 * @param array<int|string, mixed>                                       $data   The data to filter.
+	 * @param callable(array<int|string, mixed>): array<int|string, mixed> $filter The property filter.
+	 *
+	 * @return array<int|string, mixed> The filtered data.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function filterAsRecord(array $data, callable $filter): array {
+		$probe = $data;
+		$probe['@self'] = $this->getObjectArray();
+
+		$filtered = $filter($probe);
+		if (array_key_exists('@self', $data) === true) {
+			$filtered['@self'] = $data['@self'];
+
+			return $filtered;
+		}
+
+		unset($filtered['@self']);
+
+		return $filtered;
+	}//end filterAsRecord()
 
 	/**
 	 * Merge the transient, render-layer-populated `@self` fields: fuzzy
@@ -1492,9 +1595,12 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		// - unread: whether the reader has seen this object since it last
 		//   changed (`object-read-state`). Absent for an anonymous read, where
 		//   there is no "you" to answer for.
-		// - favourite: whether the reader has starred this object
-		//   (`favourites-and-recent`). Absent for an anonymous read, for the
-		//   same reason unread is.
+		// - watchNotify: whether the reader's follow notifies them, present only
+		//   when they follow (`merge-follow-and-favourites`).
+		// - favourite: DEPRECATED, `watching` under its old name for one
+		//   release, so a client that still reads the star keeps working.
+		// - viewedAt: when the reader last opened this object, on a
+		//   `_recent=true` page only (`read-history-on-audit-trail`).
 		//
 		// This is a map rather than a chain of ifs because the chain grew one
 		// branch per feature and ran past the complexity budget.
@@ -1509,7 +1615,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'watching'                => $this->watching,
 			'watcherCount'            => $this->watcherCount,
 			'unread'                  => $this->unread,
-			'favourite'               => $this->favourite,
+			'watchNotify'             => $this->watchNotify,
+			'favourite'               => $this->watching,
+			'viewedAt'                => $this->viewedAt,
 			'can'                     => $this->can,
 		];
 
@@ -1744,13 +1852,15 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 			// Same holder: extend the lock.
 			$this->setLocked(
-				$this->lockPayload(
-					kind: $kind,
-					runUuid: $runUuid,
-					userId: $userId,
-					process: ($process ?? $lock['process']),
-					created: $lock['created'],
-					duration: $duration,
+				$this->withExpiration(
+					payload: [
+						'kind' => $kind,
+						'runUuid' => $runUuid,
+						'user' => $userId,
+						'process' => ($process ?? $lock['process']),
+						'created' => $lock['created'],
+						'duration' => $duration,
+					],
 					now: $now
 				)
 			);
@@ -1759,13 +1869,15 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		// Create new lock.
 		$this->setLocked(
-			$this->lockPayload(
-				kind: $kind,
-				runUuid: $runUuid,
-				userId: $userId,
-				process: $process,
-				created: $now->format('c'),
-				duration: $duration,
+			$this->withExpiration(
+				payload: [
+					'kind' => $kind,
+					'runUuid' => $runUuid,
+					'user' => $userId,
+					'process' => $process,
+					'created' => $now->format('c'),
+					'duration' => $duration,
+				],
 				now: $now
 			)
 		);
@@ -1793,36 +1905,16 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * means. The `?? 0` was writing an expiration precisely so that branch
 	 * could never be reached.
 	 *
-	 * @param string      $kind     User lock or run lock.
-	 * @param string|null $runUuid  The holding run, for a run lock.
-	 * @param string      $userId   The holder.
-	 * @param string|null $process  What the lock was taken for.
-	 * @param mixed       $created  When the lock was first taken.
-	 * @param int|null    $duration How long it lasts, or null for "until released".
-	 * @param DateTime    $now      The clock, so a take and an extend agree.
+	 * @param array{kind: string, runUuid: ?string, user: string, process: ?string, created: mixed, duration: ?int} $payload The
+	 *        lock as stored: kind, holding run, holder, process, first taken, and how long it lasts (null for "until released").
+	 * @param DateTime $now The clock, so a take and an extend agree.
 	 *
 	 * @return array<string, mixed> The payload to store.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	private function lockPayload(
-		string $kind,
-		?string $runUuid,
-		string $userId,
-		?string $process,
-		mixed $created,
-		?int $duration,
-		DateTime $now,
-	): array {
-		$payload = [
-			'kind' => $kind,
-			'runUuid' => ($runUuid ?? null),
-			'user' => $userId,
-			'process' => $process,
-			'created' => $created,
-			'duration' => $duration,
-		];
-
+	private function withExpiration(array $payload, DateTime $now): array {
+		$duration = $payload['duration'];
 		if ($duration === null) {
 			// No expiration key at all. See the note above: a zero-second one
 			// is not "no expiry", it is "expired".
@@ -1834,7 +1926,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$payload['expiration'] = $expiration->format('c');
 
 		return $payload;
-	}//end lockPayload()
+	}//end withExpiration()
 
 	/**
 	 * Unlock the object
@@ -1964,7 +2056,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return static Returns the entity
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
 		$currentUser = $userSession->getUser();
@@ -2079,6 +2171,20 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function isFrozen(): bool {
 		return $this->frozen !== null && $this->frozen !== [];
 	}//end isFrozen()
+
+	/**
+	 * Whether this object is a draft (decision 180).
+	 *
+	 * An object with no stored status is never a draft: its status is deduced
+	 * from its dates, as it was before the field existed.
+	 *
+	 * @return bool True for a stored `draft` status.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	public function isDraft(): bool {
+		return $this->status === self::STATUS_DRAFT;
+	}//end isDraft()
 
 	/**
 	 * Archive the object.

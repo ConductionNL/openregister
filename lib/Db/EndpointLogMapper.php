@@ -60,7 +60,9 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<EndpointLog>
  */
-class EndpointLogMapper extends QBMapper {
+class EndpointLogMapper extends QBMapper implements EndpointLogMapperInterface {
+	use FindAllNewestFirstTrait;
+
 	/**
 	 * Constructor
 	 *
@@ -77,42 +79,6 @@ class EndpointLogMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find all endpoint logs
-	 *
-	 * Retrieves all endpoint execution logs with optional pagination.
-	 * Results are ordered by creation date descending (newest first).
-	 *
-	 * @param int|null $limit Maximum number of results to return (null = no limit)
-	 * @param int|null $offset Starting offset for pagination (null = no offset)
-	 *
-	 * @return EndpointLog[]
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\EndpointLog>
-	 */
-	public function findAll(?int $limit = null, ?int $offset = null): array {
-		// Step 1: Get query builder instance.
-		$qb = $this->db->getQueryBuilder();
-
-		// Step 2: Build SELECT query for all columns.
-		$qb->select('*')
-			->from($this->getTableName())
-			->orderBy('created', 'DESC');
-
-		// Step 3: Apply pagination if limit specified.
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		// Step 4: Apply offset if specified.
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
-
-		// Step 5: Execute query and return entities.
-		return $this->findEntities(query: $qb);
-	}//end findAll()
-
-	/**
 	 * Find logs by endpoint ID
 	 *
 	 * Retrieves all execution logs for a specific endpoint with optional pagination.
@@ -125,30 +91,94 @@ class EndpointLogMapper extends QBMapper {
 	 * @return EndpointLog[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\EndpointLog>
+	 *
+	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
 	 */
 	public function findByEndpoint(int $endpointId, ?int $limit = null, ?int $offset = null): array {
+		return $this->findByEndpoints(endpointIds: [$endpointId], limit: $limit, offset: $offset);
+	}//end findByEndpoint()
+
+	/**
+	 * Find logs of any of the given endpoints, newest first
+	 *
+	 * @param int[]    $endpointIds Endpoint IDs to filter logs by; an empty list matches nothing
+	 * @param int|null $limit       Maximum number of results to return (null = no limit)
+	 * @param int|null $offset      Starting offset for pagination (null = no offset)
+	 *
+	 * @return EndpointLog[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\EndpointLog>
+	 *
+	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
+	 */
+	public function findByEndpoints(array $endpointIds, int|null $limit = null, int|null $offset = null): array {
+		if ($endpointIds === []) {
+			return [];
+		}
+
 		// Step 1: Get query builder instance.
 		$qb = $this->db->getQueryBuilder();
 
 		// Step 2: Build SELECT query with endpoint ID filter.
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($qb->expr()->eq('endpoint_id', $qb->createNamedParameter($endpointId, IQueryBuilder::PARAM_INT)))
+			->where(
+				$qb->expr()->in(
+					'endpoint_id',
+					$qb->createNamedParameter(array_values($endpointIds), IQueryBuilder::PARAM_INT_ARRAY)
+				)
+			)
 			->orderBy('created', 'DESC');
 
-		// Step 3: Apply pagination if limit specified.
+		// Step 3: Apply pagination: a limit and an offset, each only when given.
+		$this->applyPaging(qb: $qb, limit: $limit, offset: $offset);
+
+		// Step 4: Execute query and return entities.
+		return $this->findEntities(query: $qb);
+	}//end findByEndpoints()
+
+	/**
+	 * Apply a limit and an offset, each only when given.
+	 *
+	 * @param IQueryBuilder $qb     The query.
+	 * @param int|null      $limit  Maximum rows, or null for no limit.
+	 * @param int|null      $offset Rows to skip, or null for none.
+	 *
+	 * @return void
+	 */
+	private function applyPaging(IQueryBuilder $qb, int|null $limit, int|null $offset): void {
 		if ($limit !== null) {
 			$qb->setMaxResults($limit);
 		}
 
-		// Step 4: Apply offset if specified.
 		if ($offset !== null) {
 			$qb->setFirstResult($offset);
 		}
+	}//end applyPaging()
 
-		// Step 5: Execute query and return entities.
-		return $this->findEntities(query: $qb);
-	}//end findByEndpoint()
+	/**
+	 * One page of logs, and their total, of the given visible endpoints or of one of them
+	 *
+	 * @param int[]    $visibleIds The endpoints the caller can see
+	 * @param int|null $endpointId One endpoint to narrow to, or null for all visible ones
+	 * @param int|null $limit      Maximum number of results to return (null = no limit)
+	 * @param int|null $offset     Starting offset for pagination (null = no offset)
+	 *
+	 * @return array{0: list<EndpointLog>, 1: int<0, max>} The page and the total; empty when the endpoint is not visible
+	 *
+	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
+	 */
+	public function findPageWithin(array $visibleIds, ?int $endpointId, ?int $limit = null, ?int $offset = null): array {
+		$endpointIds = $visibleIds;
+		if ($endpointId !== null) {
+			$endpointIds = array_values(array_intersect([$endpointId], $visibleIds));
+		}
+
+		return [
+			$this->findByEndpoints(endpointIds: $endpointIds, limit: $limit, offset: $offset),
+			count($this->findByEndpoints(endpointIds: $endpointIds)),
+		];
+	}//end findPageWithin()
 
 	/**
 	 * Find a single log by ID

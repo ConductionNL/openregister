@@ -31,7 +31,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deletion;
 
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * The declared destruction scope vocabulary.
@@ -41,7 +40,7 @@ use OCA\OpenRegister\Db\Schema;
  *
  * @spec openspec/specs/deletion-audit-trail/spec.md
  */
-final class DestructionScope {
+final class DestructionScope implements DestructionActionInterface {
 	/**
 	 * The object's version history, held as audit rows.
 	 *
@@ -102,17 +101,6 @@ final class DestructionScope {
 	];
 
 	/**
-	 * The audit action that records a destruction.
-	 *
-	 * A destruction record with no object is the point, so this row is never
-	 * inside a scope. Every handler that touches audit rows excludes it from
-	 * this one definition.
-	 *
-	 * @var string
-	 */
-	public const DESTRUCTION_ACTION = 'object.destroyed';
-
-	/**
 	 * The audit actions that ARE the evidence, excluded from every scope.
 	 *
 	 * @var array<int, string>
@@ -134,57 +122,6 @@ final class DestructionScope {
 	public const VERSION_ACTIONS = ['create', 'update'];
 
 	/**
-	 * Read the scope a schema declares, keeping only known members.
-	 *
-	 * An instance that declares nothing gets an empty scope, which destroys
-	 * exactly what it destroyed before this change: the object row and its
-	 * bound folder, through the existing delete path.
-	 *
-	 * @param Schema|null $schema The schema, when it resolves.
-	 *
-	 * @return array{scope: array<int, string>, unknown: array<int, string>} Known members and the rest.
-	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
-	 */
-	public static function declaredOn(?Schema $schema): array {
-		if ($schema === null) {
-			return [
-				'scope' => [],
-				'unknown' => [],
-			];
-		}
-
-		$declared = ($schema->getArchive()[self::SCHEMA_KEY] ?? []);
-		if (is_array($declared) === false) {
-			return [
-				'scope' => [],
-				'unknown' => [],
-			];
-		}
-
-		$scope = [];
-		$unknown = [];
-		foreach ($declared as $member) {
-			if (is_string($member) === false) {
-				continue;
-			}
-
-			$name = trim($member);
-			if (in_array(needle: $name, haystack: self::MEMBERS, strict: true) === true) {
-				$scope[] = $name;
-				continue;
-			}
-
-			$unknown[] = $name;
-		}
-
-		return [
-			'scope' => array_values(array_unique($scope)),
-			'unknown' => array_values(array_unique($unknown)),
-		];
-	}//end declaredOn()
-
-	/**
 	 * Whether an audit action is evidence of a destruction and therefore
 	 * outside every scope.
 	 *
@@ -192,7 +129,7 @@ final class DestructionScope {
 	 *
 	 * @return bool True when the row is evidence.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public static function isEvidence(?string $action): bool {
 		return in_array(needle: (string)$action, haystack: self::EVIDENCE_ACTIONS, strict: true);

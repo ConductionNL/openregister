@@ -59,7 +59,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  */
 
 declare(strict_types=1);
@@ -68,9 +68,9 @@ namespace OCA\OpenRegister\Repair;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -80,7 +80,7 @@ use Throwable;
 /**
  * Copies register-authored flows into the table every subsystem reads.
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  *
  * @psalm-suppress UnusedClass Instantiated by the NC repair framework (appinfo/info.xml).
  */
@@ -124,15 +124,15 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper      $flowMapper    Writes into the canonical flow store.
-	 * @param ObjectService   $objectService Reads the register-authored flows.
+	 * @param FlowMapperInterface      $flowMapper    Writes into the canonical flow store.
+	 * @param ObjectOperationsInterface   $objectService Reads the register-authored flows.
 	 * @param LoggerInterface $logger        Records what moved and what did not.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly FlowMapper $flowMapper,
-		private readonly ObjectService $objectService,
+		private readonly FlowMapperInterface $flowMapper,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -142,7 +142,7 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function getName(): string {
 		return 'Migrate register-authored flows into the flow table (one store per flow)';
@@ -159,7 +159,7 @@ class MigrateRegisterFlowsToTable implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function run(IOutput $output): void {
 		try {

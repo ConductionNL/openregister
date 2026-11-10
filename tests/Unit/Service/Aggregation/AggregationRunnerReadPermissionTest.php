@@ -45,8 +45,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Aggregation\AggregationCache;
-use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\LanguageService;
@@ -55,7 +55,7 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\DB\IPreparedStatement;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -111,7 +111,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$this->pdo->exec(
 			'CREATE TABLE "oc_' . self::TABLE . '" ('
 			. '_uuid TEXT, _owner TEXT, _organisation TEXT, _authorization TEXT,'
-			. ' _deleted TEXT, _archived TEXT, learner_id TEXT, level TEXT)'
+			. ' _deleted TEXT, _archived TEXT, _status TEXT, learner_id TEXT, level TEXT)'
 		);
 		$rows = [
 			['u1', 'learner-a', 'low'],
@@ -456,9 +456,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$translationHandler = $this->createMock(TranslationHandler::class);
 
 		return new AggregationRunner(
-			magicMapper: $magicMapper,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
 			placeholders: new PlaceholderResolver($userSession),
 			db: $db,
 			cache: $cache,
@@ -479,7 +477,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 	 * @return IPreparedStatement The statement.
 	 */
 	private function statement(string $sql): IPreparedStatement {
-		$pdoStatement = $this->pdo->prepare($sql);
+		$pdoStatement = $this->pdo->prepare(str_replace('*PREFIX*', 'oc_', $sql));
 		$statement = $this->createMock(IPreparedStatement::class);
 		$statement->method('execute')->willReturnCallback(
 			function (?array $params = null) use ($pdoStatement) {

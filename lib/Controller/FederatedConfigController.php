@@ -27,15 +27,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
-use OCA\OpenRegister\Service\Config\FederatedConfigService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices;
+use OCA\OpenRegister\Service\Config\ConfigPublishTarget;
+use OCA\OpenRegister\Service\Config\FederatedConfigAccessInterface;
+use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
@@ -58,27 +61,57 @@ class FederatedConfigController extends Controller {
 	private const CREDENTIAL_PREF = 'pref_federated-config-credential';
 
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The federation engine.
+	 *
+	 * @var FederatedConfigServiceInterface
+	 */
+	private readonly FederatedConfigServiceInterface $service;
+
+	/**
+	 * Per-org publish/install gating.
+	 *
+	 * @var FederatedConfigAccessInterface
+	 */
+	private readonly FederatedConfigAccessInterface $access;
+
+	/**
+	 * Reads the user's chosen store credential.
+	 *
+	 * @var IConfig
+	 */
+	private readonly IConfig $config;
+
+	/**
+	 * The session bundle; the user session and the admin check come from it.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
-	 * @param IRequest $request The request.
-	 * @param FederatedConfigService $service The federation engine.
-	 * @param FederatedConfigAccess $access Per-org publish/install gating.
-	 * @param IUserSession $userSession The current user.
-	 * @param IConfig $config Reads the user's chosen store credential.
-	 * @param IGroupManager $groupManager Gates the trust-governance endpoints to admins.
+	 * @param IRequest                        $request The request.
+	 * @param FederatedConfigControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly FederatedConfigService $service,
-		private readonly FederatedConfigAccess $access,
-		private readonly IUserSession $userSession,
-		private readonly IConfig $config,
-		private readonly IGroupManager $groupManager,
+		FederatedConfigControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->service = $services->service;
+		$this->access = $services->access;
+		$this->config = $services->config;
 
+		$this->session = $services->session;
+		$this->userSession = $services->session->userSession;
 	}//end __construct()
 
 	/**
@@ -163,13 +196,14 @@ class FederatedConfigController extends Controller {
 		} catch (UnexpectedValueException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		} catch (Throwable $e) {
-			// A blocked source, an untrusted key, or a bad signature is a 403;
-			// anything else a 500.
+			// A blocked source, an untrusted key, a bad signature or a crossing rule
+			// is a 403; anything else a 500.
 			$status = Http::STATUS_INTERNAL_SERVER_ERROR;
 			$message = $e->getMessage();
 			if (str_contains($message, 'allowlist') === true
 				|| str_contains($message, 'trusted') === true
 				|| str_contains($message, 'signature') === true
+				|| str_contains($message, 'crossOrganisation') === true
 			) {
 				$status = Http::STATUS_FORBIDDEN;
 			}
@@ -230,11 +264,8 @@ class FederatedConfigController extends Controller {
 			$result = $this->service->publish(
 				typeId: $type,
 				selection: (array)$this->request->getParam('selection', []),
-				repo: $repo,
-				path: $path,
-				credentialId: $credentialId,
-				branch: $branch,
-				private: $private
+				target: new ConfigPublishTarget(repo: $repo, path: $path, branch: $branch, private: $private),
+				credentialId: $credentialId
 			);
 		} catch (UnexpectedValueException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
@@ -318,8 +349,7 @@ class FederatedConfigController extends Controller {
 	 * @return boolean Whether the caller is an admin.
 	 */
 	private function isAdmin(): bool {
-		$user = $this->userSession->getUser();
-		return $user !== null && $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isAdmin()
 
 	/**

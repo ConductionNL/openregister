@@ -170,4 +170,21 @@ class TaskStateTest extends TestCase {
 		$this->assertFalse(TaskState::isRejectingOutcome(outcome: 'approved'));
 		$this->assertFalse(TaskState::isRejectingOutcome(outcome: null));
 	}//end testRejectingOutcomes()
+
+	/**
+	 * Approving outcomes: the default set, a declared set, and rejection never approving.
+	 *
+	 * @return void
+	 */
+	public function testApprovingOutcomes(): void {
+		$this->assertSame(['approved', 'done'], TaskState::APPROVING_OUTCOMES);
+		$this->assertTrue(TaskState::isApprovingOutcome(outcome: 'approved'));
+		$this->assertTrue(TaskState::isApprovingOutcome(outcome: ' Done '));
+		$this->assertFalse(TaskState::isApprovingOutcome(outcome: 'resolved'));
+		$this->assertFalse(TaskState::isApprovingOutcome(outcome: ''));
+		$this->assertFalse(TaskState::isApprovingOutcome(outcome: null));
+		$this->assertTrue(TaskState::isApprovingOutcome(outcome: 'SIGNED', approving: ['signed']));
+		$this->assertFalse(TaskState::isApprovingOutcome(outcome: 'done', approving: ['approved']));
+		$this->assertFalse(TaskState::isApprovingOutcome(outcome: 'rejected', approving: ['approved', 'rejected']));
+	}//end testApprovingOutcomes()
 }//end class

@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
@@ -35,7 +36,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<ConfigurationDraft>
  */
-class ConfigurationDraftMapper extends QBMapper {
+class ConfigurationDraftMapper extends QBMapper implements ConfigurationDraftMapperInterface {
 
 	/**
 	 * Constructor.
@@ -96,7 +97,21 @@ class ConfigurationDraftMapper extends QBMapper {
 			->andWhere($qb->expr()->eq('layer', $qb->createNamedParameter($layer)))
 			->andWhere($qb->expr()->eq('config_key', $qb->createNamedParameter($configKey)))
 			->setMaxResults(1);
+		$this->whereLayerRef(qb: $qb, layerRef: $layerRef);
 
+		return $this->findOneOrNull(qb: $qb);
+
+	}//end findAtAddress()
+
+	/**
+	 * Match the layer reference; a null reference matches the rows without one.
+	 *
+	 * @param IQueryBuilder $qb       The query.
+	 * @param string|null   $layerRef The layer reference.
+	 *
+	 * @return void
+	 */
+	private function whereLayerRef(IQueryBuilder $qb, ?string $layerRef): void {
 		$layerRefClause = $qb->expr()->isNull('layer_ref');
 		if ($layerRef !== null) {
 			$layerRefClause = $qb->expr()->eq('layer_ref', $qb->createNamedParameter($layerRef));
@@ -104,13 +119,23 @@ class ConfigurationDraftMapper extends QBMapper {
 
 		$qb->andWhere($layerRefClause);
 
+	}//end whereLayerRef()
+
+	/**
+	 * The one draft the query selects, or null when there is none.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return ConfigurationDraft|null The draft.
+	 */
+	private function findOneOrNull(IQueryBuilder $qb): ?ConfigurationDraft {
 		try {
 			return $this->findEntity(query: $qb);
 		} catch (DoesNotExistException $exception) {
 			return null;
 		}
 
-	}//end findAtAddress()
+	}//end findOneOrNull()
 
 	/**
 	 * Find a draft by its uuid.

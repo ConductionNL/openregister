@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -122,9 +123,15 @@ class ObjectQuotaListenerTest extends TestCase {
 		return $object;
 	}//end newObject()
 
-	private function service(?MagicMapper $objects = null): ObjectQuotaService {
+	private function registerSeven(): Register {
 		$register = new Register();
 		$register->setId(7);
+
+		return $register;
+	}//end registerSeven()
+
+	private function service(?MagicMapper $objects = null): ObjectQuotaService {
+		$register = $this->registerSeven();
 		$registers = $this->createMock(RegisterMapper::class);
 		$registers->method('find')->willReturn($register);
 
@@ -267,7 +274,7 @@ class ObjectQuotaListenerTest extends TestCase {
 
 		$this->assertSame(
 			['count' => 3, 'limit' => 3, 'atLimit' => true],
-			$this->service()->status(registerId: 7, schema: $schema, organisationUuid: self::ORG)
+			$this->service()->status(table: new RegisterSchema(register: $this->registerSeven(), schema: $schema), organisationUuid: self::ORG)
 		);
 	}//end testStatusReportsCountLimitAndAtLimit()
 
@@ -277,7 +284,7 @@ class ObjectQuotaListenerTest extends TestCase {
 
 		$this->assertSame(
 			['count' => 3, 'limit' => null, 'atLimit' => false],
-			$this->service()->status(registerId: 7, schema: $schema, organisationUuid: self::ORG)
+			$this->service()->status(table: new RegisterSchema(register: $this->registerSeven(), schema: $schema), organisationUuid: self::ORG)
 		);
 	}//end testStatusWithoutAQuotaHasNoLimit()
 
@@ -299,7 +306,7 @@ class ObjectQuotaListenerTest extends TestCase {
 	 * and the listener is registered for it.
 	 */
 	public function testTheListenerIsSubscribedToObjectCreatingEvent(): void {
-		$application = file_get_contents(__DIR__ . '/../../../lib/AppInfo/Application.php');
+		$application = file_get_contents(__DIR__ . '/../../../lib/Listener/ListenerRegistrar.php');
 
 		$this->assertIsString($application);
 		$this->assertStringContainsString(

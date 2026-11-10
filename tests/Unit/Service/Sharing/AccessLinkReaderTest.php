@@ -43,8 +43,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCA\OpenRegister\Service\Timeline\PublicTimeline;
-use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderSources;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -76,11 +78,15 @@ class AccessLinkReaderTest extends TestCase {
 		$this->schemas->method('find')->willReturn($this->createMock(Schema::class));
 
 		$this->reader = new AccessLinkReader(
-			objects: $this->objects,
-			schemas: $this->schemas,
-			properties: $this->properties,
-			timeline: $this->timeline,
-			subjects: new AccessLinkSubject(),
+			sources: new AccessLinkReaderSources(
+				objects: $this->objects,
+				subjects: new AccessLinkSubject()
+			),
+			filters: new AccessLinkReaderFilters(
+				schemas: $this->schemas,
+				properties: $this->properties,
+				timeline: $this->timeline
+			),
 			logger: $this->logger
 		);
 	}
@@ -137,11 +143,15 @@ class AccessLinkReaderTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willThrowException(new RuntimeException('gone'));
 		$reader = new AccessLinkReader(
-			objects: $this->objects,
-			schemas: $schemas,
-			properties: $this->properties,
-			timeline: $this->timeline,
-			subjects: new AccessLinkSubject(),
+			sources: new AccessLinkReaderSources(
+				objects: $this->objects,
+				subjects: new AccessLinkSubject()
+			),
+			filters: new AccessLinkReaderFilters(
+				schemas: $schemas,
+				properties: $this->properties,
+				timeline: $this->timeline
+			),
 			logger: $this->logger
 		);
 
@@ -332,4 +342,25 @@ class AccessLinkReaderTest extends TestCase {
 			);
 		}
 	}
+
+	/**
+	 * The property rules read the record's own metadata, and the data keeps its own `@self`.
+	 *
+	 * @return void
+	 */
+	public function testThePropertyRulesReadTheRecordsOwnMetadata(): void {
+		$this->objects->method('find')->willReturn($this->object(['onderwerp' => 'Bezwaar', '@self' => ['organisation' => 'elders']]));
+		$this->timeline->method('forObject')->willReturn([]);
+		$seen = null;
+		$this->properties->method('filterReadableProperties')->willReturnCallback(
+			static function (Schema $schema, array $object) use (&$seen): array {
+				$seen = $object;
+				return $object;
+			}
+		);
+
+		$this->reader->read(link: $this->link());
+
+		$this->assertSame('gemeente', $seen['@self']['organisation'] ?? null);
+	}//end testThePropertyRulesReadTheRecordsOwnMetadata()
 }

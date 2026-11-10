@@ -1,10 +1,12 @@
 module.exports = {
 	transform: {
 		'^.+\\.vue$': '@vue/vue3-jest',
-		// .babelrc is file-relative, so it never reaches node_modules. The
-		// connection formatter spec imports a nextcloud-vue built-in from the
-		// package's ESM source, which needs its own preset.
-		'/node_modules/@conduction/nextcloud-vue/src/.+\\.js$': [
+		// .babelrc is file-relative, so it never reaches node_modules. Every
+		// package that transformIgnorePatterns below lets through (the ESM-only
+		// @nextcloud/* and @conduction/* packages, @nextcloud/axios 2.6 among
+		// them) therefore needs the preset passed explicitly, or Jest parses
+		// its `import` statements raw and the suite fails to run.
+		'/node_modules/.+\\.[cm]?js$': [
 			'babel-jest',
 			{ presets: ['@babel/preset-env'] },
 		],
@@ -90,5 +92,12 @@ module.exports = {
 		'<rootDir>/\\.migration/',
 	],
 	coveragePathIgnorePatterns: ['index.js', 'index.ts'],
+	// Without this, a file no spec imports is left out of the total entirely.
+	collectCoverageFrom: [
+		'src/**/*.{js,ts,vue}',
+		'!src/**/*.spec.{js,ts}',
+		'!src/**/*.test.{js,ts}',
+		'!src/tests/**',
+	],
 	coverageDirectory: '<rootDir>/coverage-frontend/',
 }

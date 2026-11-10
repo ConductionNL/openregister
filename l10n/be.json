@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} неудачно",
         "0 = unlimited": "0 = неограниченно",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Паток запускае серыю крокаў, калі нешта адбываецца — аб'ект змяняецца, спрацоўвае расклад, або вы запускаеце яго самі. Гэты спіс паказвае патокі ўсіх праграм.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "Пара ключоў VAPID наладжана. Карыстальнікі могуць уключыць апавяшчэнні браўзера ва ўласных наладах; яны дастаўляюцца нават тады, калі ўкладка браўзера закрыта.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "Пара ключоў VAPID наладжана. Карыстальнікі могуць уключыць апавяшчэнні браўзера ў наладах карыстальніка; яны дастаўляюцца нават тады, калі ўкладка браўзера закрыта.",
         "A deactivation request is pending.": "Запрос на деактивацию ожидает обработки.",
         "AI Assistant": "ИИ-помощник",
         "AI Chat": "ИИ-чат",
@@ -2925,7 +2925,7 @@
         "Complete: {outcome}": "Завяршыць: {outcome}",
         "Could not load the task": "Не ўдалося загрузіць задачу",
         "The task refused that action": "Задача адхіліла гэта дзеянне",
-        "Store": "Крама",
+        "Marketplace": "Крама",
         "Install registers, schemas and flows that other organisations have published.": "Усталюйце рэестры, схемы і патокі, апублікаваныя іншымі арганізацыямі.",
         "No such run": "Няма такога запуску",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Запуск не існуе, або вы не маеце права яго бачыць. Выдаленне патоку выдаляе і яго запускі.",
@@ -3351,7 +3351,10 @@
         "{schema} {title} deleted": "{schema} {title} выдалены",
         "Object \"%1$s\" created": "Аб’ект \"%1$s\" створаны",
         "Object \"%1$s\" updated": "Аб’ект \"%1$s\" абноўлены",
-        "Object \"%1$s\" assigned to you": "Аб’ект \"%1$s\" прызначаны вам"
+        "Object \"%1$s\" assigned to you": "Аб’ект \"%1$s\" прызначаны вам",
+        "Audit trail export ready": "Экспарт журнала аўдыту гатовы",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Ваш экспарт журнала аўдыту (%1$s запісаў) захаваны ў %2$s%3$s.",
+        "Open Files": "Адкрыць Файлы"
     },
     "pluralForm": "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);",
     "plurals": {

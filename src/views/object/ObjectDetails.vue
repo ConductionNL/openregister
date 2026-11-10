@@ -175,20 +175,12 @@
 						-->
 						<AppTab :title="t('openregister', 'Uses')">
 							<div v-if="objectStore.uses?.results?.length">
-								<NcListItem
+								<ObjectRelationItem
 									v-for="(relation, key) in objectStore.uses
 										.results"
 									:key="`uses-${relationKey(relation, key)}`"
 									:name="relationTitle(relation)"
-									:bold="false"
-									:forceDisplayActions="true">
-									<template #icon>
-										<CubeOutline disableMenu :size="44" />
-									</template>
-									<template #subname>
-										{{ relationLabel(relation) }}
-									</template>
-								</NcListItem>
+									:subname="relationLabel(relation)" />
 							</div>
 							<div v-else class="tabPanel">
 								{{ t('openregister', 'No relations found') }}
@@ -196,20 +188,12 @@
 						</AppTab>
 						<AppTab :title="t('openregister', 'Used by')">
 							<div v-if="objectStore.used?.results?.length">
-								<NcListItem
+								<ObjectRelationItem
 									v-for="(relation, key) in objectStore.used
 										.results"
 									:key="`used-${relationKey(relation, key)}`"
 									:name="relationTitle(relation)"
-									:bold="false"
-									:forceDisplayActions="true">
-									<template #icon>
-										<CubeOutline disableMenu :size="44" />
-									</template>
-									<template #subname>
-										{{ relationLabel(relation) }}
-									</template>
-								</NcListItem>
+									:subname="relationLabel(relation)" />
 								<CnPagination
 									v-if="
 										!relationsLoading
@@ -544,7 +528,6 @@ import {
 	NcNoteCard,
 } from '@nextcloud/vue'
 import { computed } from 'vue'
-import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
@@ -565,6 +548,8 @@ import ReferencedByTab from '../../components/object-relations/ReferencedByTab.v
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import ObjectRelationItem from './ObjectRelationItem.vue'
+import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { navigationStore, objectStore } from '../../store/store.js'
 
 export default {
@@ -584,7 +569,6 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		TimelineQuestionOutline,
-		CubeOutline,
 		Eye,
 		LockOutline,
 		LockOpenOutline,
@@ -602,6 +586,7 @@ export default {
 		CnObjectAccessTab,
 		CnObjectMetadataWidget,
 		ObjectAccessLinks,
+		ObjectRelationItem,
 	},
 
 	/**
@@ -855,67 +840,131 @@ export default {
 			if (typeof objectStore.subscribe !== 'function') {
 				return
 			}
-			const ctx = this.relationContext
-			const item = objectStore.objectItem
-			// The push event key is or-object-{uuid} — prefer the uuid over a
-			// numeric id when both are present.
-			const uuid = item?.['@self']?.uuid ?? item?.uuid ?? ctx?.id
-			if (!ctx || !uuid) {
+			const target = this.liveTarget()
+			if (!target) {
 				this.releaseLiveSubscription()
 				return
 			}
-			const type = `${ctx.register}-${ctx.schema}`
-			const key = `${type}::${uuid}`
-			if (this.liveHandle && this.liveKey === key) {
-				return
-			}
-			if (this.livePendingKey === key) {
-				// A subscribe for this exact object is already in flight —
-				// re-subscribing here would leak the first handle + watcher.
+			if (this.isLiveFor(target.key)) {
 				return
 			}
 			this.releaseLiveSubscription()
 			try {
-				// Subscription is independent of the list view's registration
-				// timing: register the type ourselves when it is not known yet.
-				if (!objectStore.objectTypes.includes(type)) {
-					objectStore.registerObjectType(type, ctx.schema, ctx.register)
-				}
-				const epoch = this.liveEpoch
-				this.livePendingKey = key
-				this.liveKey = key
-				const handle = await objectStore.subscribe(type, uuid)
-				if (this.livePendingKey === key) {
-					this.livePendingKey = ''
-				}
-				if (this.liveEpoch !== epoch) {
-					// Released while awaiting (another object opened, or the
-					// component was destroyed) — drop the stale subscription.
-					objectStore.unsubscribe(handle)
-					return
-				}
-				this.liveHandle = handle
-				// Bridge: event → plugin refetch → objects[type][uuid] cache →
-				// objectItem (which this template renders).
-				this.liveUnwatch = this.$watch(
-					() => objectStore.getObject(type, uuid),
-					(fresh) => {
-						if (fresh && this.liveKey === key) {
-							objectStore.setObjectItem(fresh)
-						}
-					},
-				)
+				await this.subscribeLive(target)
 			} catch (e) {
-				if (this.livePendingKey === key) {
-					this.livePendingKey = ''
-				}
-				this.liveHandle = null
-				this.liveKey = ''
-				console.warn(
-					'[ObjectDetails] live subscription failed:',
-					e?.message ?? e,
+				this.liveFailed(target.key, e)
+			}
+		},
+
+		/**
+		 * The object to follow live: its type, uuid and subscription key, or
+		 * null when no saved object is open. The push event key is
+		 * or-object-{uuid}, so the uuid is preferred over a numeric id.
+		 *
+		 * @return {{ctx: object, uuid: string, type: string, key: string}|null} The target
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		liveTarget() {
+			const ctx = this.relationContext
+			const item = objectStore.objectItem
+			const uuid = item?.['@self']?.uuid ?? item?.uuid ?? ctx?.id
+			if (!ctx || !uuid) {
+				return null
+			}
+			const type = `${ctx.register}-${ctx.schema}`
+			return { ctx, uuid, type, key: `${type}::${uuid}` }
+		},
+
+		/**
+		 * Whether this object is already followed, or a subscribe for it is in
+		 * flight (re-subscribing would leak the first handle and watcher).
+		 *
+		 * @param {string} key The subscription key
+		 * @return {boolean} Whether to leave the subscription as it is
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		isLiveFor(key) {
+			return (
+				Boolean(this.liveHandle && this.liveKey === key)
+				|| this.livePendingKey === key
+			)
+		},
+
+		/**
+		 * Subscribe to the object and bridge fresh copies into the view. The
+		 * type is registered here when the list view has not done so yet. A
+		 * subscription released while it was awaited is dropped.
+		 *
+		 * @param {object} target The target from liveTarget()
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		async subscribeLive(target) {
+			if (!objectStore.objectTypes.includes(target.type)) {
+				objectStore.registerObjectType(
+					target.type,
+					target.ctx.schema,
+					target.ctx.register,
 				)
 			}
+			const epoch = this.liveEpoch
+			this.livePendingKey = target.key
+			this.liveKey = target.key
+			const handle = await objectStore.subscribe(target.type, target.uuid)
+			this.clearLivePending(target.key)
+			if (this.liveEpoch !== epoch) {
+				objectStore.unsubscribe(handle)
+				return
+			}
+			this.liveHandle = handle
+			this.bridgeLiveObject(target)
+		},
+
+		/**
+		 * Bridge: event, plugin refetch, objects[type][uuid] cache, then
+		 * objectItem, which this template renders.
+		 *
+		 * @param {object} target The target from liveTarget()
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		bridgeLiveObject(target) {
+			this.liveUnwatch = this.$watch(
+				() => objectStore.getObject(target.type, target.uuid),
+				(fresh) => {
+					if (fresh && this.liveKey === target.key) {
+						objectStore.setObjectItem(fresh)
+					}
+				},
+			)
+		},
+
+		/**
+		 * Forget the pending subscribe for a key, unless a newer one replaced it.
+		 *
+		 * @param {string} key The subscription key
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		clearLivePending(key) {
+			if (this.livePendingKey === key) {
+				this.livePendingKey = ''
+			}
+		},
+
+		/**
+		 * Reset the live state after a failed subscribe.
+		 *
+		 * @param {string} key The subscription key
+		 * @param {*} e The failure
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		liveFailed(key, e) {
+			this.clearLivePending(key)
+			this.liveHandle = null
+			this.liveKey = ''
+			console.warn(
+				'[ObjectDetails] live subscription failed:',
+				e?.message ?? e,
+			)
 		},
 
 		/**
@@ -1150,64 +1199,9 @@ export default {
 			this.getRelations()
 		},
 
-		/**
-		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format
-		 *
-		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
-		 * @spec exclude UI plumbing — opens the Nextcloud Files app in a new tab
-		 */
-		openFolder(url) {
-			// Parse the encoded URL by replacing escaped characters
-			const decodedUrl = url.replace(/\\\//g, '/')
-
-			// Ensure URL starts with forward slash
-			const normalizedUrl = decodedUrl.startsWith('/')
-				? decodedUrl
-				: '/' + decodedUrl
-
-			// Construct the proper Nextcloud Files app URL with the normalized path
-			// Use window.location.origin to get the current domain instead of hardcoding
-			const nextcloudUrl = `${window.location.origin}/index.php/apps/files/files?dir=${encodeURIComponent(normalizedUrl)}`
-
-			// Open URL in new tab
-			window.open(nextcloudUrl, '_blank')
-		},
-
-		/**
-		 * Opens a file in the Nextcloud Files app
-		 *
-		 * @param {object} file - The file object containing id, path, and other metadata
-		 * @spec exclude UI plumbing — opens the Nextcloud Files app in a new tab
-		 */
-		openFile(file) {
-			// Extract the directory path without the filename
-			const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
-
-			// Remove the '/admin/files/' prefix if it exists
-			const cleanPath = dirPath.replace(/^\/admin\/files\//, '/')
-
-			// Construct the proper Nextcloud Files app URL with file ID and openfile parameter
-			const filesAppUrl = `/index.php/apps/files/files/${file.id}?dir=${encodeURIComponent(cleanPath)}&openfile=true`
-
-			// Open URL in new tab
-			window.open(filesAppUrl, '_blank')
-		},
-
-		/**
-		 * Formats a file size in bytes to a human readable string
-		 *
-		 * @param {number} bytes - The file size in bytes
-		 * @spec exclude UI plumbing — pure presentation helper
-		 * @return {string} Formatted file size (e.g. "1.5 MB")
-		 */
-		formatFileSize(bytes) {
-			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-			if (bytes === 0) return 'n/a'
-			const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
-			if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
-			if (i === 0) return bytes + ' ' + sizes[i]
-			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
-		},
+		openFolder: nextcloudFiles.openFolder,
+		openFile: nextcloudFiles.openFile,
+		formatFileSize: nextcloudFiles.formatFileSize,
 	},
 }
 </script>

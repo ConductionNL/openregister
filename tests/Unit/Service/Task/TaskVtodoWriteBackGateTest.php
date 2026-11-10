@@ -29,13 +29,18 @@ use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\TaskNotificationRules;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskProjectionService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
+use OCA\OpenRegister\Service\Task\WriteBack\WriteBackRefusal;
+use OCA\OpenRegister\Service\Task\WriteBack\WriteBackRefusalAudit;
+use OCA\OpenRegister\Service\Task\WriteBack\WriteBackRefusalNotice;
+use OCA\OpenRegister\Service\Task\WriteBack\WriteBackTaskResolver;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -73,16 +78,21 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 		$inbox = $this->createMock(TaskInboxService::class);
 		$inbox->method('enrich')->willReturn(['displayTitle' => 'Approve the permit']);
 
+		$logger = new NullLogger();
+
 		return new TaskVtodoWriteBackGate(
-			$this->tasks,
-			$this->mapper,
-			$this->audits,
-			$this->projector,
-			$this->projections,
-			$inbox,
-			$this->dispatcher,
-			new TaskNotificationRules(),
-			new NullLogger()
+			tasks: $this->tasks,
+			resolver: new WriteBackTaskResolver(mapper: $this->mapper, logger: $logger),
+			projector: $this->projector,
+			refusal: new WriteBackRefusal(
+				audit: new WriteBackRefusalAudit(audits: $this->audits, logger: $logger),
+				projections: $this->projections,
+				notice: new WriteBackRefusalNotice(
+					notifier: new TaskTransitionNotifier(dispatcher: $this->dispatcher, rules: new TaskNotificationRules(), inbox: $inbox),
+					logger: $logger
+				),
+				logger: $logger
+			)
 		);
 	}
 

@@ -64,7 +64,6 @@ class BpmnVocabularyAndReportTest extends TestCase {
 	public function testAnUndeclaredNodeTypeExportsAsATask(): void {
 		$vocabulary = $this->vocabulary();
 
-		$this->assertFalse($vocabulary->exportsDirectly(nodeType: 'openregister.send-email'));
 		$this->assertSame(
 			BpmnVocabulary::FALLBACK,
 			$vocabulary->elementFor(nodeType: 'openregister.send-email'),

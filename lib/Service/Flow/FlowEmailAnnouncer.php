@@ -61,55 +61,16 @@ class FlowEmailAnnouncer {
 	 * listener that throws is logged and does not fail the step, because the
 	 * step's retry would send the email a second time.
 	 *
-	 * @param string $recipient The uid or address.
-	 * @param string $kind The channel kind (FlowEmailSentEvent::KIND_*).
-	 * @param string $subject The rendered subject.
-	 * @param string $body The rendered body.
-	 * @param array $json The item's json.
-	 * @param array $context The run context.
-	 * @param string $stepName The step's type id.
-	 * @param string $actor The acting user.
+	 * @param FlowSend     $send The send: its context, step name and acting user.
+	 * @param FlowSendItem $item The item: its json, recipient, channel kind, subject and body.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One argument per field of the event contract.
-	 *
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
-	public function announce(
-		string $recipient,
-		string $kind,
-		string $subject,
-		string $body,
-		array $json,
-		array $context,
-		string $stepName,
-		string $actor,
-	): void {
-		$self = (array)($json['@self'] ?? []);
-
-		$frame = $this->runContext?->current();
-		$step = $stepName;
-		if (is_array($frame) === true && trim((string)($frame['node'] ?? '')) !== '') {
-			$step = (string)$frame['node'];
-		}
-
-		$event = new FlowEmailSentEvent(
-			register: $this->stringOrNull(value: ($self['register'] ?? null)),
-			schema: $this->stringOrNull(value: ($self['schema'] ?? null)),
-			objectUuid: $this->stringOrNull(value: ($self['id'] ?? ($json['uuid'] ?? null))),
-			recipient: $recipient,
-			channelKind: $kind,
-			subject: $subject,
-			body: $body,
-			flowId: $this->stringOrNull(value: ($context[FlowRunService::FLOW_ID_CONTEXT_KEY] ?? null)),
-			runId: $this->stringOrNull(value: ($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? null))),
-			stepName: $step,
-			actingUser: $actor
-		);
-
+	public function announce(FlowSend $send, FlowSendItem $item): void {
 		try {
-			$this->eventDispatcher->dispatchTyped($event);
+			$this->eventDispatcher->dispatchTyped($this->event(send: $send, item: $item));
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				sprintf('[FlowEmailAnnouncer] a FlowEmailSentEvent listener failed after the email was sent: %s', $e->getMessage()),
@@ -117,6 +78,53 @@ class FlowEmailAnnouncer {
 			);
 		}
 	}//end announce()
+
+	/**
+	 * The event for one sent email.
+	 *
+	 * @param FlowSend     $send The send.
+	 * @param FlowSendItem $item The item.
+	 *
+	 * @return FlowEmailSentEvent The event.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
+	 */
+	private function event(FlowSend $send, FlowSendItem $item): FlowEmailSentEvent {
+		$self = (array)($item->json['@self'] ?? []);
+		$context = $send->context;
+
+		return new FlowEmailSentEvent(
+			register: $this->stringOrNull(value: ($self['register'] ?? null)),
+			schema: $this->stringOrNull(value: ($self['schema'] ?? null)),
+			objectUuid: $this->stringOrNull(value: ($self['id'] ?? ($item->json['uuid'] ?? null))),
+			recipient: $item->recipient,
+			channelKind: $item->kind,
+			subject: $item->title,
+			body: $item->body,
+			flowId: $this->stringOrNull(value: ($context[FlowRunServiceInterface::FLOW_ID_CONTEXT_KEY] ?? null)),
+			runId: $this->stringOrNull(value: ($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? null))),
+			stepName: $this->stepName(fallback: $send->stepName),
+			actingUser: $send->actor
+		);
+	}//end event()
+
+	/**
+	 * The running node's name from the run context, or the fallback.
+	 *
+	 * @param string $fallback The step's type id.
+	 *
+	 * @return string The step name.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
+	 */
+	private function stepName(string $fallback): string {
+		$frame = $this->runContext?->current();
+		if (is_array($frame) === true && trim((string)($frame['node'] ?? '')) !== '') {
+			return (string)$frame['node'];
+		}
+
+		return $fallback;
+	}//end stepName()
 
 	/**
 	 * A scalar as a non-empty string, or null.

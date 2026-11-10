@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ArchivalControllerFactory;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\ArchivalController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -31,6 +32,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCA\OpenRegister\Service\Archival\DestructionListCreator;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
@@ -46,6 +48,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 class ArchivalCertificatesTest extends TestCase {
 
@@ -106,9 +109,7 @@ class ArchivalCertificatesTest extends TestCase {
 		$schemaMapper->method('find')->willReturn(new Schema());
 
 		$repository = new DestructionListRepository(
-			$objectMapper,
-			$registerMapper,
-			$schemaMapper,
+			new ArchivalRegisterMappers(new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper)),
 			$settings,
 			$this->createMock(LoggerInterface::class)
 		);
@@ -123,7 +124,7 @@ class ArchivalCertificatesTest extends TestCase {
 
 		$this->creator = $this->createMock(DestructionListCreator::class);
 
-		$this->controller = new ArchivalController(
+		$this->controller = ArchivalControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(DestructionService::class),

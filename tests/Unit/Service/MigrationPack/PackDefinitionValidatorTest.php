@@ -25,15 +25,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\MigrationPack;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
 use OCA\OpenRegister\Service\MigrationPack\PackDefinitionValidator;
 use PHPUnit\Framework\TestCase;
 
 class PackDefinitionValidatorTest extends TestCase {
+	use PassThroughL10nTrait;
+
 	private PackDefinitionValidator $validator;
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->validator = new PackDefinitionValidator();
+		$this->validator = new PackDefinitionValidator($this->passThroughL10n());
 	}
 
 	/**
@@ -131,13 +134,13 @@ class PackDefinitionValidatorTest extends TestCase {
 	public function testFieldMappingWithoutSourceIsRejected(): void {
 		$errors = $this->validator->validate($this->validPack(['fieldMappings' => [['target' => 'title']]]));
 		$this->assertNotEmpty($errors);
-		$this->assertStringContainsString('.source', implode(' ', $errors));
+		$this->assertContains('Mapping row 1: source is required and must be a non-empty string', $errors);
 	}
 
 	public function testFieldMappingWithoutTargetIsRejected(): void {
 		$errors = $this->validator->validate($this->validPack(['fieldMappings' => [['source' => 'Name']]]));
 		$this->assertNotEmpty($errors);
-		$this->assertStringContainsString('.target', implode(' ', $errors));
+		$this->assertContains('Mapping row 1: target is required and must be a non-empty string', $errors);
 	}
 
 	public function testUnknownTransformTypeIsRejected(): void {
@@ -151,7 +154,30 @@ class PackDefinitionValidatorTest extends TestCase {
 			)
 		);
 		$this->assertNotEmpty($errors);
-		$this->assertStringContainsString('.transform.type', implode(' ', $errors));
+		$this->assertStringContainsString('Mapping row 1: transform.type', implode(' ', $errors));
+	}
+
+	public function testMappingRowsAreCountedFromOneAsTheEditorTableShowsThem(): void {
+		$errors = $this->validator->validate(
+			$this->validPack(
+				[
+					'fieldMappings' => [
+						['source' => 'Name', 'target' => 'title'],
+						['source' => 'Code', 'target' => 'code'],
+						'not an object',
+						['source' => 'Status', 'target' => 'status', 'transform' => ['type' => 'lookup']],
+					],
+				]
+			)
+		);
+
+		$this->assertSame(
+			[
+				'Mapping row 3 must be an object',
+				'Mapping row 4: transform.map is required and must be a non-empty object for a lookup transform',
+			],
+			$errors
+		);
 	}
 
 	/**
@@ -242,8 +268,59 @@ class PackDefinitionValidatorTest extends TestCase {
 		$this->validator->assertValid(['id' => '']);
 	}
 
+	public function testAssertValidCarriesEveryErrorSeparately(): void {
+		$definition = $this->validPack(['name' => '', 'version' => '1.0']);
+
+		try {
+			$this->validator->assertValid($definition);
+			$this->fail('An invalid pack must be refused');
+		} catch (InvalidPackDefinitionException $e) {
+			$this->assertSame($this->validator->validate($definition), $e->getErrors());
+			$this->assertCount(2, $e->getErrors());
+		}
+	}
+
 	public function testAssertValidDoesNotThrowForAValidPack(): void {
 		$this->validator->assertValid($this->validPack());
 		$this->addToAssertionCount(1);
 	}
+
+	/**
+	 * Every finding goes through the app's translations: the pack editor lists them under the save error, and a
+	 * Dutch administrator would otherwise read English findings on a Dutch page.
+	 *
+	 * @return void
+	 */
+	public function testEveryFindingIsTranslated(): void {
+		$validator = new PackDefinitionValidator($this->passThroughL10n(prefix: 'NL:'));
+		$errors = $validator->validate(
+			[
+				'id' => 'Not A Slug',
+				'name' => '',
+				'sourceFormat' => 'xml',
+				'version' => '1',
+				'fieldMappings' => [
+					'not an object',
+					['source' => '', 'target' => '', 'required' => 'yes', 'transform' => 'nope'],
+					['source' => 'a', 'target' => 'b', 'transform' => ['type' => 'weird']],
+					['source' => 'a', 'target' => 'b', 'transform' => ['type' => 'date', 'sourceFormat' => 5, 'targetFormat' => 5]],
+					['source' => 'a', 'target' => 'b', 'transform' => ['type' => 'lookup']],
+					['source' => 'a', 'target' => 'b', 'transform' => ['type' => 'concat', 'fields' => ['']]],
+					['source' => 'a', 'target' => 'b', 'transform' => ['type' => 'const']],
+				],
+				'defaults' => 'x',
+				'skipRows' => [0],
+				'idStrategy' => ['type' => 'sourceField'],
+			]
+		);
+
+		$this->assertGreaterThan(15, count($errors));
+		foreach ($errors as $error) {
+			$this->assertStringStartsWith('NL:', $error);
+		}
+
+		// The row label is part of the translated message, with the 1-based number the editor shows.
+		$this->assertContains('NL:Mapping row 1 must be an object', $errors);
+		$this->assertContains('NL:Mapping row 2: source is required and must be a non-empty string', $errors);
+	}//end testEveryFindingIsTranslated()
 }

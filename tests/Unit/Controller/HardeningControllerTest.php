@@ -26,11 +26,14 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Controller\HardeningController;
 use OCA\OpenRegister\Controller\HardeningStatementController;
 use OCA\OpenRegister\Service\Hardening\ElevationService;
+use OCA\OpenRegister\Service\Hardening\FloorBreach;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorException;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\Hardening\HardeningReportService;
 use OCA\OpenRegister\Service\Hardening\HardeningSettingsService;
 use OCA\OpenRegister\Service\Hardening\StatementService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\HardeningControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\HardeningStatementControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
 use OCP\IRequest;
@@ -44,6 +47,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Controller\HardeningStatementController
  * @uses \OCA\OpenRegister\Service\Hardening\ElevationRequiredException
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningPolicy
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningFloorException
  */
 class HardeningControllerTest extends TestCase {
 
@@ -129,8 +133,7 @@ class HardeningControllerTest extends TestCase {
 			$userSession->method('getUser')->willReturn(null);
 		}
 
-		return new HardeningController(
-			'openregister',
+		return HardeningControllerFactory::create(
 			$request,
 			$this->reportService,
 			$this->settings,
@@ -170,8 +173,7 @@ class HardeningControllerTest extends TestCase {
 			$userSession->method('getUser')->willReturn(null);
 		}
 
-		return new HardeningStatementController(
-			'openregister',
+		return HardeningStatementControllerFactory::create(
 			$request,
 			$this->statements,
 			$this->elevation,
@@ -212,10 +214,7 @@ class HardeningControllerTest extends TestCase {
 		$controller = $this->controller(body: ['controls' => ['auth.rateLimit.lockoutSeconds' => 60]]);
 		$this->settings->method('setControl')->willThrowException(
 			new HardeningFloorException(
-				control: 'auth.rateLimit.lockoutSeconds',
-				floor: 900,
-				proposed: 60,
-				comparator: 'atLeast',
+				breach: new FloorBreach(control: 'auth.rateLimit.lockoutSeconds', floor: 900, proposed: 60, comparator: 'atLeast'),
 				message: 'This instance declared a floor of at least 900 for auth.rateLimit.lockoutSeconds.',
 			)
 		);
@@ -265,10 +264,7 @@ class HardeningControllerTest extends TestCase {
 		$controller = $this->controller(body: ['floors' => ['auth.rateLimit.attemptsPerIdentity' => 200]]);
 		$this->settings->method('setFloor')->willThrowException(
 			new HardeningFloorException(
-				control: 'auth.rateLimit.attemptsPerIdentity',
-				floor: 20,
-				proposed: 200,
-				comparator: 'atMost',
+				breach: new FloorBreach(control: 'auth.rateLimit.attemptsPerIdentity', floor: 20, proposed: 200, comparator: 'atMost'),
 				message: 'The floor may not be weaker than the shipped baseline of 20.',
 			)
 		);

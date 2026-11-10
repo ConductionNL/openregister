@@ -31,9 +31,12 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Service\EmailLinkService;
-use OCA\OpenRegister\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Throwable;
@@ -44,6 +47,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class EmailProvider extends AbstractIntegrationProvider {
+	use LinkTableAppDescriptor;
 
 	/**
 	 * NC app id required for this integration.
@@ -60,7 +64,7 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 * and the Tier-2 {@see EmailLinkService} (idempotent upsert keyed
 	 * on the full composite tuple, plus cursor pagination).
 	 *
-	 * @param EmailService $emailService Legacy service (list + search).
+	 * @param EmailServiceInterface $emailService Legacy service (list + search).
 	 * @param EmailLinkService $emailLinkService Tier-2 link-table service.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IL10N $l10n Localisation.
@@ -68,7 +72,7 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private EmailService $emailService,
+		private EmailServiceInterface $emailService,
 		private EmailLinkService $emailLinkService,
 		private IAppManager $appManager,
 		private IL10N $l10n,
@@ -90,14 +94,6 @@ class EmailProvider extends AbstractIntegrationProvider {
 	public function getGroup(): ?string {
 		return 'comms';
 	}//end getGroup()
-
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
 
 	public function isEnabled(): bool {
 		return $this->emailLinkService->isMailAvailable();
@@ -138,32 +134,20 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-email/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		$limit = null;
-		if (isset($filters['_limit']) === true) {
-			$limit = (int)$filters['_limit'];
-		}
+		return $this->emailPage(objectId: $objectId, paging: new EmailListPaging(filters: $filters));
+	}//end list()
 
-		$page = 0;
-		if (isset($filters['_page']) === true) {
-			$page = max(0, (int)$filters['_page']);
-		}
-
-		$offset = 0;
-		if ($limit !== null) {
-			$offset = ($page * $limit);
-		}
-
-		$offsetArg = null;
-		if ($limit !== null) {
-			$offsetArg = $offset;
-		}
-
+	/**
+	 * One page of the mails linked to an object.
+	 *
+	 * @param string          $objectId Owning object uuid.
+	 * @param EmailListPaging $paging   The page the caller asked for.
+	 *
+	 * @return array{items: array<int,array<string,mixed>>, total: int, nextCursor: ?string}
+	 */
+	private function emailPage(string $objectId, EmailListPaging $paging): array {
 		try {
-			$result = $this->emailService->getEmailsForObject(
-				objectUuid: $objectId,
-				limit: $limit,
-				offset: $offsetArg
-			);
+			$result = $this->emailService->getEmailsForObject(objectUuid: $objectId, limit: $paging->limit(), offset: $paging->offset());
 		} catch (Throwable $e) {
 			return ['items' => [], 'total' => 0, 'nextCursor' => null];
 		}
@@ -171,21 +155,12 @@ class EmailProvider extends AbstractIntegrationProvider {
 		$items = $result['results'];
 		$total = (int)$result['total'];
 
-		// A further page exists when the rows seen so far (offset + this
-		// batch) is still short of the total. The cursor is the next
-		// zero-indexed page number consumed by `_page`. Paging only
-		// applies when a limit (and therefore a concrete offset) is set.
-		$nextCursor = null;
-		if ($limit !== null && (($offset + count($items)) < $total)) {
-			$nextCursor = (string)($page + 1);
-		}
-
 		return [
 			'items' => $items,
 			'total' => $total,
-			'nextCursor' => $nextCursor,
+			'nextCursor' => $paging->nextCursor(seen: count($items), total: $total),
 		];
-	}//end list()
+	}//end emailPage()
 
 	/**
 	 * Link an existing email to an OR object.
@@ -212,8 +187,20 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-email/spec.md
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		$registerId = (int)($payload['registerId'] ?? $register);
-		$schemaId = (int)($payload['schemaId'] ?? $schema);
+		return $this->linkEmailFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), payload: $payload);
+	}//end create()
+
+	/**
+	 * Link one mail message to an object.
+	 *
+	 * @param ObjectRef           $ref     The owning object; the payload may name its register and schema ids.
+	 * @param array<string,mixed> $payload The mail account and message id or uid (Tier-2 or legacy names).
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function linkEmailFor(ObjectRef $ref, array $payload): array {
+		$registerId = (int)($payload['registerId'] ?? $ref->register);
+		$schemaId = (int)($payload['schemaId'] ?? $ref->schema);
 		$mailAccountId = (int)($payload['mailAccountId'] ?? 0);
 
 		// Tier-2 fields first, legacy fall-through second.
@@ -221,16 +208,12 @@ class EmailProvider extends AbstractIntegrationProvider {
 		$messageUid = (string)($payload['messageUid'] ?? $payload['mailMessageUid'] ?? '');
 
 		$link = $this->emailLinkService->linkEmail(
-			objectUuid: $objectId,
-			registerId: $registerId,
-			schemaId: $schemaId,
-			mailAccountId: $mailAccountId,
-			messageId: $messageId,
-			messageUid: $messageUid
+			target: (new LinkTarget(objectUuid: $ref->id, registerId: $registerId))->inSchema(schemaId: $schemaId),
+			message: (new EmailMessageRef(mailAccountId: $mailAccountId, messageId: $messageId))->withUid(uid: $messageUid)
 		);
 
 		return $link->jsonSerialize();
-	}//end create()
+	}//end linkEmailFor()
 
 	/**
 	 * Unlink an email from an OR object. The message stays in NC Mail.
@@ -257,22 +240,6 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 *              the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$available = $this->emailLinkService->isMailAvailable();
-
-		$status = 'unavailable';
-		if ($available === true) {
-			$status = 'ok';
-		}
-
-		$message = 'NC Mail app is not installed';
-		if ($available === true) {
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->emailLinkService->isMailAvailable(), missing: 'NC Mail app is not installed');
 	}//end health()
 }//end class

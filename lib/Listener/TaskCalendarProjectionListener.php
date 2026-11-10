@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
-use OCA\OpenRegister\Service\Task\TaskProjectionService;
+use OCA\OpenRegister\Service\Task\TaskProjectionServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -42,10 +42,10 @@ class TaskCalendarProjectionListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskProjectionService $projections The failure-isolated fan-out.
+	 * @param TaskProjectionServiceInterface $projections The failure-isolated fan-out.
 	 */
 	public function __construct(
-		private readonly TaskProjectionService $projections,
+		private readonly TaskProjectionServiceInterface $projections,
 	) {
 
 	}//end __construct()

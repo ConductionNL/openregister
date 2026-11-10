@@ -24,11 +24,11 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Controller\Support\ConfigurationsControllerServices;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -56,28 +56,44 @@ class ConfigurationsController extends Controller {
 	private readonly ?string $userId;
 
 	/**
+	 * The configuration mapper instance
+	 *
+	 * @var ConfigurationMapperInterface
+	 */
+	private readonly ConfigurationMapperInterface $configurationMapper;
+
+	/**
+	 * The configuration service instance
+	 *
+	 * @var ConfigurationServiceInterface
+	 */
+	private readonly ConfigurationServiceInterface $configurationService;
+
+	/**
+	 * The controller's injected services.
+	 *
+	 * @var ConfigurationsControllerServices
+	 */
+	private readonly ConfigurationsControllerServices $services;
+
+	/**
 	 * Constructor for ConfigurationController.
 	 *
-	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param ConfigurationMapper $configurationMapper The configuration mapper instance
-	 * @param ConfigurationService $configurationService The configuration service instance
-	 * @param UploadService $uploadService The upload service instance
+	 * @param ConfigurationsControllerServices $services The configurations controller services.
 	 * @param string|null $userId The current user ID
-	 * @param IUserSession $userSession User session for admin checks
 	 * @param IGroupManager $groupManager Group manager for admin checks
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ConfigurationMapper $configurationMapper,
-		private readonly ConfigurationService $configurationService,
-		private readonly UploadService $uploadService,
+		ConfigurationsControllerServices $services,
 		?string $userId,
-		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
+		$this->services = $services;
+		$this->configurationMapper = $services->configurationMapper;
+		$this->configurationService = $services->configurationService;
 		$this->userId = $userId;
 	}//end __construct()
 
@@ -87,7 +103,7 @@ class ConfigurationsController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
+		$user = $this->services->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}
@@ -338,60 +354,6 @@ class ConfigurationsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Failed to delete configuration: ' . $e->getMessage()], statusCode: 400);
 		}
 	}//end destroy()
-
-	/**
-	 * Export a configuration
-	 *
-	 * @param int $id Configuration ID.
-	 * @param bool $includeObjects Whether to include objects in the export.
-	 *
-	 * @return DataDownloadResponse|JSONResponse
-	 *
-	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
-	 *
-	 * @psalm-return DataDownloadResponse<200, 'application/json',
-	 *     array<never, never>>|JSONResponse<400|403, array{error: string},
-	 *     array<never, never>>
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Toggle to include/exclude objects in export
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
-	 */
-	public function export(int $id, bool $includeObjects = false): JSONResponse|DataDownloadResponse {
-		try {
-			// Find the configuration.
-			$configuration = $this->configurationMapper->find($id);
-
-			// Export the configuration and its related data.
-			$exportData = $this->configurationService->exportConfig(input: $configuration, includeObjects: $includeObjects);
-
-			// Convert to JSON.
-			$jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-			if ($jsonContent === false) {
-				throw new Exception('Failed to encode configuration data to JSON');
-			}
-
-			// Generate filename. `date()` rather than a DateTime instance: the
-			// two produce the same string from the same default timezone, and
-			// this was the class's fourteenth coupled type.
-			$filename = sprintf(
-				'configuration_%s_%s.json',
-				$configuration->getTitle() ?? 'unknown',
-				date('Y-m-d_His')
-			);
-
-			// Return as downloadable file.
-			return new DataDownloadResponse(
-				$jsonContent,
-				$filename,
-				'application/json'
-			);
-		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => 'Failed to export configuration: ' . $e->getMessage()], statusCode: 400);
-		}//end try
-	}//end export()
 
 	/**
 	 * Import a configuration from uploaded file or JSON data

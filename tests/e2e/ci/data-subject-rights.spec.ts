@@ -7,7 +7,7 @@ import type { APIRequestContext } from '@playwright/test'
  * DATA SUBJECT RIGHTS ACROSS THE INSTANCE — end to end, over the HTTP API.
  *
  * Scenario anchors, in the portable `<spec>::<slug>` form so they still resolve
- * once `openspec/changes/data-subject-rights-across-the-instance/specs/` is
+ * once `openspec/changes/archive/2026-10-30-data-subject-rights-across-the-instance/specs/` is
  * archived into `openspec/specs/`:
  *
  * @e2e gdpr-data-subject-rights::an-unapproved-erasure-does-not-run

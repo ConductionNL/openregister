@@ -23,7 +23,7 @@ const BASE = '/apps/openregister/api'
  *
  * @return {Promise<object>} The three closed sets.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 export async function fetchVocabulary() {
 	const { data } = await axios.get(generateUrl(`${BASE}/rules/vocabulary`))
@@ -38,7 +38,7 @@ export async function fetchVocabulary() {
  *
  * @return {Promise<object>} The schema slug and its rules.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 export async function fetchInventory(schema, idleDays) {
 	const url = generateUrl(`${BASE}/schemas/{schema}/rules`, { schema })
@@ -59,7 +59,7 @@ export async function fetchInventory(schema, idleDays) {
  *
  * @return {Promise<object>} The rule as it now stands, with the audit entry.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 export async function setRuleEnabled(schema, ruleId, enabled) {
 	const url = generateUrl(`${BASE}/schemas/{schema}/rules/{ruleId}`, {
@@ -79,7 +79,7 @@ export async function setRuleEnabled(schema, ruleId, enabled) {
  *
  * @return {Promise<object>} The verdict, the trace and the writes it would make.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 export async function evaluateRule(schema, ruleId, payload) {
 	const url = generateUrl(`${BASE}/schemas/{schema}/rules/{ruleId}/evaluate`, {
@@ -102,7 +102,7 @@ export async function evaluateRule(schema, ruleId, payload) {
  *
  * @return {Promise<object>} The previewed job, or the refusal.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 export async function replayRule(schema, ruleId, payload) {
 	const url = generateUrl(`${BASE}/schemas/{schema}/rules/{ruleId}/replay`, {
@@ -121,7 +121,7 @@ export async function replayRule(schema, ruleId, payload) {
  *
  * @return {Promise<object>} The runs and how many matched.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 export async function fetchRuns(ruleId, filters = {}) {
 	const url = generateUrl(`${BASE}/rules/{ruleId}/runs`, { ruleId })
@@ -139,7 +139,7 @@ export async function fetchRuns(ruleId, filters = {}) {
  *
  * @return {Promise<Array<object>>} The operator rows, or an empty list.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 export async function fetchOperators() {
 	const { data } = await axios.get(
@@ -160,7 +160,7 @@ export async function fetchOperators() {
  *
  * @return {string} The message.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 export function messageFor(error, fallback) {
 	return (

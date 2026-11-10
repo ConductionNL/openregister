@@ -28,12 +28,8 @@ namespace OCA\OpenRegister\Service\Export;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ExportProfile;
-use OCA\OpenRegister\Db\ExportProfileMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ExportService;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
@@ -48,33 +44,25 @@ use Throwable;
  *     Splitting the run across two classes would move the collaborators, not
  *     reduce them.
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
-class ExportProfileService {
+class ExportProfileService implements ExportProfileServiceInterface {
 
 	/**
 	 * Wire the collaborators.
 	 *
-	 * @param ExportProfileMapper  $mapper        Profile persistence.
-	 * @param RegisterMapper       $registerMapper Register lookups.
-	 * @param SchemaMapper         $schemaMapper  Schema lookups.
-	 * @param ExportService        $exportService The selection every export shares.
-	 * @param ExportProfileWriter  $writer        Projection and file writing.
-	 * @param ExportRightService    $rightService  The export verb.
-	 * @param ExportAuditRecorder   $recorder      The audit trail.
-	 * @param ExportProfileValidator $validator    Judges a submitted profile.
+	 * @param ExportProfileStores $stores       Profile, register and schema lookups.
+	 * @param ExportProfileSteps  $steps        Selection, projection and file writing, and profile validation.
+	 * @param ExportRightService  $rightService The export verb.
+	 * @param ExportAuditRecorder $recorder     The audit trail.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ExportProfileMapper $mapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly ExportService $exportService,
-		private readonly ExportProfileWriter $writer,
+		private readonly ExportProfileStores $stores,
+		private readonly ExportProfileSteps $steps,
 		private readonly ExportRightService $rightService,
 		private readonly ExportAuditRecorder $recorder,
-		private readonly ExportProfileValidator $validator,
 	) {
 	}//end __construct()
 
@@ -87,10 +75,10 @@ class ExportProfileService {
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no row matches.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function find(int $id): ExportProfile {
-		return $this->mapper->find($id);
+		return $this->stores->mapper->find($id);
 	}//end find()
 
 	/**
@@ -101,17 +89,17 @@ class ExportProfileService {
 	 *
 	 * @return ExportProfile[] The profiles.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The admin listing is the
 	 *     same listing with a wider scope, not a second method.
 	 */
 	public function listFor(string $callerUid, bool $callerIsAdmin): array {
 		if ($callerIsAdmin === true) {
-			return $this->mapper->findAll();
+			return $this->stores->mapper->findAll();
 		}
 
-		return $this->mapper->findByOwner($callerUid);
+		return $this->stores->mapper->findByOwner($callerUid);
 	}//end listFor()
 
 	/**
@@ -127,10 +115,10 @@ class ExportProfileService {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID
 	 *     pattern, as AuditTrailMapper::createToolInvocationEntry().
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function create(array $data, string $ownerUid): ExportProfile {
-		$this->validator->validate(data: $data, partial: false);
+		$this->steps->validator->validate(data: $data, partial: false);
 
 		$profile = new ExportProfile();
 		$profile->setUuid((string)Uuid::v4());
@@ -139,7 +127,7 @@ class ExportProfileService {
 		$profile->setUpdatedAt(new DateTime());
 		$this->apply(profile: $profile, data: $data);
 
-		return $this->mapper->insert($profile);
+		return $this->stores->mapper->insert($profile);
 	}//end create()
 
 	/**
@@ -152,14 +140,14 @@ class ExportProfileService {
 	 *
 	 * @throws InvalidArgumentException When the submission does not make sense.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function update(ExportProfile $profile, array $data): ExportProfile {
-		$this->validator->validate(data: $data, partial: true);
+		$this->steps->validator->validate(data: $data, partial: true);
 		$this->apply(profile: $profile, data: $data);
 		$profile->setUpdatedAt(new DateTime());
 
-		return $this->mapper->update($profile);
+		return $this->stores->mapper->update($profile);
 	}//end update()
 
 	/**
@@ -169,10 +157,10 @@ class ExportProfileService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function delete(ExportProfile $profile): void {
-		$this->mapper->delete($profile);
+		$this->stores->mapper->delete($profile);
 	}//end delete()
 
 	/**
@@ -186,7 +174,7 @@ class ExportProfileService {
 	 *
 	 * @throws ExportRefusedException When the caller may not touch the profile.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The administrator bypass is
 	 *     a property of the caller, not a second code path.
@@ -213,7 +201,7 @@ class ExportProfileService {
 	 *
 	 * @throws ExportRefusedException When the principal does not hold the export verb.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function run(ExportProfile $profile, string $actorUid): array {
 		$register = $this->registerOf(profile: $profile);
@@ -233,13 +221,13 @@ class ExportProfileService {
 			throw $refusal;
 		}
 
-		$objects = $this->exportService->fetchExportObjects(
+		$objects = $this->steps->exportService->fetchExportObjects(
 			register: $register,
 			schema: $schema,
 			filters: $profile->getFiltersArray()
 		);
 
-		$written = $this->writer->write(profile: $profile, objects: $objects, schema: $schema);
+		$written = $this->steps->writer->write(profile: $profile, objects: $objects, schema: $schema);
 
 		$this->recorder->recordCompleted(
 			profile: ($profile->getName() ?? ''),
@@ -263,7 +251,7 @@ class ExportProfileService {
 	 *
 	 * @return string The filename.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function filenameFor(ExportProfile $profile): string {
 		$slug = preg_replace('/[^a-z0-9]+/i', '-', (string)($profile->getName() ?? 'export'));
@@ -283,7 +271,7 @@ class ExportProfileService {
 	 *
 	 * @return Register|null The register.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function registerOf(ExportProfile $profile): ?Register {
 		if ($profile->getRegisterId() === null) {
@@ -291,7 +279,7 @@ class ExportProfileService {
 		}
 
 		try {
-			return $this->registerMapper->find($profile->getRegisterId(), _rbac: false, _multitenancy: false);
+			return $this->stores->registerMapper->find($profile->getRegisterId(), _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -304,7 +292,7 @@ class ExportProfileService {
 	 *
 	 * @return Schema|null The schema.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function schemaOf(ExportProfile $profile): ?Schema {
 		if ($profile->getSchemaId() === null) {
@@ -312,7 +300,7 @@ class ExportProfileService {
 		}
 
 		try {
-			return $this->schemaMapper->find($profile->getSchemaId(), _rbac: false, _multitenancy: false);
+			return $this->stores->schemaMapper->find($profile->getSchemaId(), _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -412,5 +400,15 @@ class ExportProfileService {
 
 		$profile->setValueMode((string)($data['valueMode'] ?? $profile->getValueMode() ?? ExportProfile::MODE_STORED));
 		$profile->setFormat((string)($data['format'] ?? $profile->getFormat() ?? 'csv'));
+
+		// Present and null means "keep the files"; absent leaves it alone.
+		if (array_key_exists('retentionDays', $data) === true) {
+			$retention = null;
+			if ($data['retentionDays'] !== null) {
+				$retention = (int)$data['retentionDays'];
+			}
+
+			$profile->setRetentionDays($retention);
+		}
 	}//end applyShape()
 }//end class

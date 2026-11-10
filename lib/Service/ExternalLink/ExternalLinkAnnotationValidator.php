@@ -35,7 +35,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ namespace OCA\OpenRegister\Service\ExternalLink;
  *         reach one stateless parse would add a dependency with nothing behind
  *         it, and duplicating the regex is precisely how the two would drift.
  */
-final class ExternalLinkAnnotationValidator {
+final class ExternalLinkAnnotationValidator implements ExternalLinkAnnotationValidatorInterface {
 
 	/**
 	 * Schemes a rendered link may use.
@@ -86,7 +86,7 @@ final class ExternalLinkAnnotationValidator {
 	 *
 	 * @return array<int, string> The errors; an empty list means valid.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
 	 */
 	public function validate(array $shape): array {
 		$declarations = ($shape[ExternalLinkResolver::ANNOTATION] ?? null);

@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BulkAction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
 
@@ -50,11 +50,11 @@ abstract class AbstractPropertyWriteAction implements ReversibleBulkActionInterf
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService The object write path.
+	 * @param ObjectOperationsInterface $objectService The object write path.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		protected readonly ObjectService $objectService,
+		protected readonly ObjectOperationsInterface $objectService,
 		protected readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -92,7 +92,7 @@ abstract class AbstractPropertyWriteAction implements ReversibleBulkActionInterf
 	 * private __construct exists so an outcome cannot be built without
 	 * saying which of the four it is.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
 		$patch = $this->patchFor(parameters: $parameters);

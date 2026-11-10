@@ -488,6 +488,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use '../../styles/views.scss' as *;
+
 .pageHeaderContainer {
 	display: flex;
 	align-items: center;
@@ -509,25 +511,9 @@ export default {
 	padding: 20px;
 }
 
-.chartCard {
-	background: var(--color-main-background);
-	border-radius: 8px;
-	padding: 20px;
-	box-shadow: 0 2px 8px var(--color-box-shadow);
-	border: 1px solid var(--color-border);
+@include chart-card;
 
-	h3 {
-		margin: 0 0 20px 0;
-		font-size: 1.2em;
-		color: var(--color-main-text);
-	}
-}
-
-@media screen and (max-width: 1024px) {
-	.chartGrid {
-		grid-template-columns: 1fr;
-	}
-}
+@include media-screen-and-max-width-1024px;
 
 .statsContainer {
 	margin-bottom: 30px;

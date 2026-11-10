@@ -10,9 +10,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Quality\DismissedPairStore;
-use OCA\OpenRegister\Service\Quality\DuplicateDetectionService;
-use OCA\OpenRegister\Service\Quality\SimilarityCalculator;
+use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
+use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
+use OCA\OpenRegister\Search\Service\Quality\SimilarityCalculator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -45,9 +45,7 @@ class DuplicateDetectionServiceTest extends TestCase {
 		$this->dismissals->method('activeFor')->willReturn([]);
 		$this->service = new DuplicateDetectionService(
 			$this->objectService,
-			$this->schemaMapper,
-			$this->registerMapper,
-			new SimilarityCalculator(),
+			new \OCA\OpenRegister\Search\Service\Quality\DedupScoringSources(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)), new SimilarityCalculator()),
 			$this->dismissals,
 			$this->createMock(LoggerInterface::class)
 		);

@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\ICompositeExpression;
@@ -141,10 +141,14 @@ class IdOrUuidBindingTest extends TestCase {
 	private function views(array $row): ViewMapper {
 		return new ViewMapper(
 			$this->connection($row),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
+			new \OCA\OpenRegister\Search\Db\ViewMapperAccess(
+				new \OCA\OpenRegister\Db\Tenancy\TenancyServices(
+					$this->createMock(OrganisationMapper::class),
+					$this->createMock(IUserSession::class),
+					$this->createMock(IGroupManager::class)
+				),
+				$this->createMock(IAppConfig::class)
+			),
 			$this->createMock(IEventDispatcher::class)
 		);
 	}//end views()

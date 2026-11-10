@@ -33,14 +33,7 @@ namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 /**
  * The layer vocabulary and its precedence order.
  */
-final class ConfigurationLayer {
-
-	/**
-	 * The whole instance. One address per key, so it carries no reference.
-	 *
-	 * @var string
-	 */
-	public const INSTANCE = 'instance';
+final class ConfigurationLayer implements ConfigurationLayerInterface {
 
 	/**
 	 * One register.

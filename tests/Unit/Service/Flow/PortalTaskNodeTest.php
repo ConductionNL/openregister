@@ -37,8 +37,10 @@ use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskConfig;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskServices;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
 use OCP\IL10N;
@@ -54,6 +56,7 @@ use UnexpectedValueException;
  *
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskConfig
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskRound
  * @covers \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
  * @covers \OCA\OpenRegister\Service\Flow\FlowResumeState
@@ -118,7 +121,7 @@ class PortalTaskNodeTest extends TestCase {
 			}
 		);
 
-		$this->node = new PortalTaskNode($this->bridge, $this->parties, $this->delivery, $l10n, $this->createMock(IURLGenerator::class));
+		$this->node = new PortalTaskNode(new PortalTaskServices($this->bridge, $this->parties, $this->delivery), new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class)));
 	}//end setUp()
 
 	/**

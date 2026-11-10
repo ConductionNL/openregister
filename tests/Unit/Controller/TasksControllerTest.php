@@ -7,6 +7,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TasksControllerFactory;
 use OCA\OpenRegister\Controller\TasksController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
@@ -23,6 +24,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
 
 class TasksControllerTest extends TestCase {
 	/**
@@ -60,7 +62,7 @@ class TasksControllerTest extends TestCase {
 		$this->taskService = $this->createMock(TaskService::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
-		$this->controller = new TasksController(
+		$this->controller = TasksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->taskService,
@@ -293,7 +295,7 @@ class TasksControllerTest extends TestCase {
 				}
 			);
 
-		$controller = new TasksController(
+		$controller = TasksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->taskService,
@@ -320,7 +322,9 @@ class TasksControllerTest extends TestCase {
 		$captured = null;
 		$inbox->expects($this->once())->method('inbox')
 			->willReturnCallback(
-				static function (TaskInboxCriteria $criteria, int $limit, int $offset) use (&$captured, $payload) {
+				static function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$captured, $payload) {
+					$limit = $page->limit;
+					$offset = $page->offset;
 					$captured = [$criteria, $limit, $offset];
 					return $payload;
 				}
@@ -353,7 +357,9 @@ class TasksControllerTest extends TestCase {
 		$captured = null;
 		$inbox->method('inbox')
 			->willReturnCallback(
-				static function (TaskInboxCriteria $criteria, int $limit, int $offset) use (&$captured) {
+				static function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$captured) {
+					$limit = $page->limit;
+					$offset = $page->offset;
 					$captured = [$criteria, $limit, $offset];
 					return ['results' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset];
 				}
@@ -370,7 +376,7 @@ class TasksControllerTest extends TestCase {
 		[$controller, $inbox] = $this->inboxController('alice', ['limit' => '15', 'offset' => '5']);
 
 		$inbox->expects($this->once())->method('inbox')
-			->with($this->anything(), 15, 5)
+			->with($this->anything(), new TaskInboxPage(limit: 15, offset: 5))
 			->willReturn(['results' => [], 'total' => 0, 'limit' => 15, 'offset' => 5]);
 
 		$controller->allUserTasks();
@@ -380,7 +386,7 @@ class TasksControllerTest extends TestCase {
 		[$controller, $inbox] = $this->inboxController('alice', ['_limit' => '100000']);
 
 		$inbox->expects($this->once())->method('inbox')
-			->with($this->anything(), 200, 0)
+			->with($this->anything(), new TaskInboxPage(limit: 200, offset: 0))
 			->willReturn(['results' => [], 'total' => 0, 'limit' => 200, 'offset' => 0]);
 
 		$controller->allUserTasks();

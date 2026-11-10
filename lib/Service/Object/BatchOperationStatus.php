@@ -48,7 +48,7 @@ namespace OCA\OpenRegister\Service\Object;
  * Mutable, in-memory aggregation of per-row outcomes for a streaming
  * bulk-upsert batch.
  */
-class BatchOperationStatus {
+class BatchOperationStatus implements BatchOperationStatusInterface {
 
 	/**
 	 * Wall-clock start timestamp in seconds (nullable until `start()`).

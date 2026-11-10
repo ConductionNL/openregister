@@ -6,8 +6,8 @@ namespace Unit\Service;
 
 use Exception;
 use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
-use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

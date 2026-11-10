@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Service\RiskLevelService;
-use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCP\FilesMetadata\IFilesMetadataManager;
 use OCP\FilesMetadata\Model\IFilesMetadata;
 use OCP\FilesMetadata\Model\IMetadataValueWrapper;
@@ -167,14 +167,5 @@ class RiskLevelServiceTest extends TestCase {
 			);
 
 		$this->service->initMetadataKey();
-	}
-
-	// ── getAllRiskLevels ──
-
-	public function testGetAllRiskLevelsReturnsExpectedLevels(): void {
-		$levels = RiskLevelService::getAllRiskLevels();
-		$this->assertCount(5, $levels);
-		$this->assertArrayHasKey(RiskLevelService::RISK_NONE, $levels);
-		$this->assertArrayHasKey(RiskLevelService::RISK_VERY_HIGH, $levels);
 	}
 }

@@ -37,8 +37,12 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
+use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\IL10N;
@@ -51,6 +55,8 @@ use PHPUnit\Framework\TestCase;
  * Wiring tests for the two recording nodes.
  *
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlan
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteItem
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
@@ -100,18 +106,12 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 	private function spy(): FlowRunSubjectRecorder {
 		$spy = $this->createMock(FlowRunSubjectRecorder::class);
 		$spy->method('recordOne')->willReturnCallback(
-			function (
-				array $context,
-				string $role,
-				array $uuids,
-				string $register = '',
-				string $schema = ''
-			): void {
+			function (array $context, FlowSubjectCandidates $candidates): void {
 				$this->recorded[] = [
-					'role' => $role,
-					'uuids' => $uuids,
-					'register' => $register,
-					'schema' => $schema,
+					'role' => $candidates->role,
+					'uuids' => $candidates->uuids,
+					'register' => $candidates->register,
+					'schema' => $candidates->schema,
 				];
 			}
 		);
@@ -186,13 +186,9 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 		);
 
 		return new ObjectWriteNode(
-			$this->objects,
-			$registers,
-			$schemas,
-			$this->users(),
-			$appConfig,
-			$this->l10n(),
-			$this->createMock(IURLGenerator::class),
+			new ObjectWriteStores($this->objects, $registers, $schemas),
+			new ObjectWritePlatform($this->users(), $appConfig),
+			new FlowNodePresentation($this->l10n(), $this->createMock(IURLGenerator::class)),
 			$recorder
 		);
 	}//end writeNode()
@@ -363,8 +359,7 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 		return new LockObjectNode(
 			$this->objects,
 			$this->users(),
-			$this->l10n(),
-			$this->createMock(IURLGenerator::class),
+			new FlowNodePresentation($this->l10n(), $this->createMock(IURLGenerator::class)),
 			$recorder
 		);
 	}//end lockNode()

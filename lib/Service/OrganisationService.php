@@ -26,7 +26,8 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IConfig;
@@ -55,7 +56,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/saas-multi-tenant/spec.md
  */
-class OrganisationService {
+class OrganisationService implements OrganisationServiceInterface {
 	/**
 	 * App name for user configuration storage
 	 */
@@ -133,9 +134,9 @@ class OrganisationService {
 	/**
 	 * Organisation mapper for database operations
 	 *
-	 * @var OrganisationMapper
+	 * @var OrganisationMapperInterface
 	 */
-	private OrganisationMapper $organisationMapper;
+	private OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * App config for storing user preferences
@@ -189,14 +190,21 @@ class OrganisationService {
 	/**
 	 * Settings service for application configuration
 	 *
-	 * @var SettingsService|null
+	 * @var SettingsServiceInterface|null
 	 */
-	private ?SettingsService $settingsService = null;
+	private ?SettingsServiceInterface $settingsService = null;
+
+	/**
+	 * Organisations named by an organisation context, by uuid (null = not found).
+	 *
+	 * @var array<string, Organisation|null>
+	 */
+	private array $contextOrganisations = [];
 
 	/**
 	 * OrganisationService constructor
 	 *
-	 * @param OrganisationMapper $organisationMapper Organisation database mapper
+	 * @param OrganisationMapperInterface $organisationMapper Organisation database mapper
 	 * @param IUserSession $userSession User session service
 	 * @param ISession $session Session storage service for caching
 	 * @param IConfig $config Configuration service for persistent storage
@@ -204,10 +212,10 @@ class OrganisationService {
 	 * @param IGroupManager $groupManager Group manager service
 	 * @param IUserManager $userManager User manager service
 	 * @param LoggerInterface $logger Logger service
-	 * @param SettingsService|null $settingsService Settings service (optional)
+	 * @param SettingsServiceInterface|null $settingsService Settings service (optional)
 	 */
 	public function __construct(
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		IUserSession $userSession,
 		ISession $session,
 		IConfig $config,
@@ -215,7 +223,7 @@ class OrganisationService {
 		IGroupManager $groupManager,
 		IUserManager $userManager,
 		LoggerInterface $logger,
-		?SettingsService $settingsService = null,
+		?SettingsServiceInterface $settingsService = null,
 	) {
 		$this->organisationMapper = $organisationMapper;
 		$this->userSession = $userSession;
@@ -350,11 +358,7 @@ class OrganisationService {
 					$defaultOrg = $this->organisationMapper->findByUuid($defaultOrgUuid);
 				} catch (DoesNotExistException $e) {
 					// UUID in settings doesn't exist, create new default.
-					$defaultOrg = $this->createOrganisation(
-						name: 'Default Organisation',
-						description: 'Auto-generated default organisation',
-						addCurrentUser: false
-					);
+					$defaultOrg = $this->createDefaultOrganisation();
 					$isNewlyCreated = true;
 
 					// Update settings with new UUID.
@@ -370,11 +374,7 @@ class OrganisationService {
 
 			if ($defaultOrgUuid === null) {
 				// No UUID in settings, create a new default organisation.
-				$defaultOrg = $this->createOrganisation(
-					name: 'Default Organisation',
-					description: 'Auto-generated default organisation',
-					addCurrentUser: false
-				);
+				$defaultOrg = $this->createDefaultOrganisation();
 				$isNewlyCreated = true;
 
 				// Store in settings.
@@ -418,6 +418,27 @@ class OrganisationService {
 			throw $e;
 		}//end try
 	}//end fetchDefaultOrganisationFromDatabase()
+
+	/**
+	 * Create the default organisation, or use the one already holding its slug
+	 *
+	 * The organisation holding the slug is returned as it is; it is not rewritten.
+	 *
+	 * @return Organisation The default organisation
+	 *
+	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-organisationservice-must-resolve-per-user-organisation-membership-and-active-context
+	 */
+	private function createDefaultOrganisation(): Organisation {
+		try {
+			return $this->createOrganisation(
+				name: 'Default Organisation',
+				description: 'Auto-generated default organisation',
+				addCurrentUser: false
+			);
+		} catch (OrganisationSlugConflictException $e) {
+			return $this->organisationMapper->findBySlug($e->getSlug());
+		}
+	}//end createDefaultOrganisation()
 
 	/**
 	 * Cache default organisation in static memory for performance
@@ -501,8 +522,16 @@ class OrganisationService {
 	 * @return Organisation|null The active organisation or null.
 	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	public function getActiveOrganisation(?array $preloadedOrgs = null): ?Organisation {
+		// Code acting for an organisation answers with that organisation,
+		// whoever holds the session.
+		$contextUuid = OrganisationContext::current();
+		if ($contextUuid !== null) {
+			return $this->findContextOrganisation(uuid: $contextUuid);
+		}
+
 		$user = $this->getCurrentUser();
 		if ($user === null) {
 			return null;
@@ -536,6 +565,34 @@ class OrganisationService {
 
 		return $organisation;
 	}//end getActiveOrganisation()
+
+	/**
+	 * The organisation an organisation context acts for.
+	 *
+	 * Memoised per request by uuid. An organisation that does not exist answers
+	 * null, so the organisation filter admits nothing.
+	 *
+	 * @param string $uuid The organisation uuid the context names.
+	 *
+	 * @return Organisation|null The organisation, or null when it does not exist.
+	 *
+	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
+	 */
+	public function findContextOrganisation(string $uuid): ?Organisation {
+		if (array_key_exists($uuid, $this->contextOrganisations) === true) {
+			return $this->contextOrganisations[$uuid];
+		}
+
+		try {
+			$organisation = $this->organisationMapper->findByUuid($uuid);
+		} catch (DoesNotExistException $e) {
+			$organisation = null;
+		}
+
+		$this->contextOrganisations[$uuid] = $organisation;
+
+		return $organisation;
+	}//end findContextOrganisation()
 
 	/**
 	 * Set the active organisation for the current user
@@ -732,7 +789,8 @@ class OrganisationService {
 	 *
 	 * @return Organisation The created organisation
 	 *
-	 * @throws Exception If user not logged in or organisation creation fails
+	 * @throws OrganisationSlugConflictException If another organisation holds the slug the name gives
+	 * @throws Exception                         If user not logged in or organisation creation fails
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::isValid is standard Symfony UID pattern
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls whether to add current user to organisation
@@ -780,49 +838,7 @@ class OrganisationService {
 		// Add admin group to RBAC authorization with full permissions.
 		$organisation = $this->addAdminGroupToAuthorization(organisation: $organisation);
 
-		try {
-			$saved = $this->organisationMapper->save($organisation);
-		} catch (\OC\DB\Exceptions\DbalException $e) {
-			// Handle slug collision: if an organisation with the same slug already exists,.
-			// return the existing one instead of crashing.
-			if (str_contains($e->getMessage(), 'organisations_slug_unique') === true
-				|| str_contains($e->getMessage(), 'Unique violation') === true
-			) {
-				$slug = $this->generateSlug(name: $name);
-				$this->logger->info(
-					message: '[OrganisationService] Slug collision, returning existing organisation',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $slug, 'name' => $name]
-				);
-
-				try {
-					$existingBySlug = $this->organisationMapper->findBySlug($slug);
-
-					// If a specific UUID was requested and differs from the existing entity,.
-					// update the entity's UUID to match the requested one (the object UUID is canonical).
-					if ($uuid !== '' && $existingBySlug->getUuid() !== $uuid) {
-						$this->logger->info(
-							message: '[OrganisationService] Updating existing entity UUID to match requested UUID',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'oldUuid' => $existingBySlug->getUuid(),
-								'newUuid' => $uuid,
-								'slug' => $slug,
-							]
-						);
-						$existingBySlug->setUuid($uuid);
-						$this->organisationMapper->save($existingBySlug);
-					}
-
-					return $existingBySlug;
-				} catch (DoesNotExistException $findException) {
-					// Slug not found either — re-throw the original error.
-					throw $e;
-				}//end try
-			}//end if
-
-			throw $e;
-		}//end try
+		$saved = $this->organisationMapper->save($organisation);
 
 		// If there's no default organisation set, make this one the default.
 		$defaultOrgId = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
@@ -1255,123 +1271,130 @@ class OrganisationService {
 	/**
 	 * Fetch active organisation from database (cache miss fallback)
 	 *
+	 * The stored active organisation wins while the user is still a member; otherwise the
+	 * oldest of the user's organisations becomes active, and a user without organisations
+	 * joins the default organisation.
+	 *
 	 * @param string $userId The user ID to fetch active organisation for.
 	 * @param array|null $preloadedOrgs Pre-loaded organisations to avoid extra queries.
 	 *
 	 * @return Organisation|null The active organisation or null
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Active org logic requires comprehensive fallback chain
-	 * Else clause needed for clear invalid access handling
 	 */
 	private function fetchActiveOrganisationFromDatabase(string $userId, ?array $preloadedOrgs = null): ?Organisation {
-		// Get active organisation UUID from user configuration (persistent).
+		$stored = $this->findStoredActiveOrganisation(userId: $userId);
+		if ($stored !== null) {
+			return $stored;
+		}
+
+		$organisations = $preloadedOrgs ?? $this->getUserOrganisations();
+		if (empty($organisations) === false) {
+			return $this->activateOldestOrganisation(userId: $userId, organisations: $organisations);
+		}
+
+		return $this->activateDefaultOrganisation(userId: $userId);
+	}//end fetchActiveOrganisationFromDatabase()
+
+	/**
+	 * The active organisation stored in user config, when it exists and the user is a member.
+	 *
+	 * A stored organisation that is gone, or that the user is no longer a member of, is
+	 * cleared from config and cache.
+	 *
+	 * @param string $userId The user ID.
+	 *
+	 * @return Organisation|null The stored active organisation, or null.
+	 */
+	private function findStoredActiveOrganisation(string $userId): ?Organisation {
 		$activeUuid = $this->config->getUserValue(
 			$userId,
 			self::APP_NAME,
 			self::CONFIG_ACTIVE_ORGANISATION,
 			''
 		);
+		if ($activeUuid === '') {
+			return null;
+		}
 
-		if ($activeUuid !== '') {
-			try {
-				$organisation = $this->organisationMapper->findByUuid($activeUuid);
+		try {
+			// Follow the merge chain BEFORE the UUID is used as a scope. A
+			// merged-away organisation no longer owns its data, so using the
+			// stored UUID literally would run every scoped query for this
+			// user under a tenant boundary that no longer applies.
+			$organisation = $this->followMerge(organisation: $this->organisationMapper->findByUuid($activeUuid));
 
-				// Follow the merge chain BEFORE the UUID is used as a scope. A
-				// merged-away organisation no longer owns its data, so using the
-				// stored UUID literally would run every scoped query for this
-				// user under a tenant boundary that no longer applies.
-				$organisation = $this->followMerge(organisation: $organisation);
+			// Membership of the SURVIVOR: a user the merge did not carry over
+			// falls through to their own organisation list, which fails closed.
+			if ($organisation->hasUser($userId) === true) {
+				$this->persistFollowedMerge(userId: $userId, storedUuid: $activeUuid, organisation: $organisation);
+				return $organisation;
+			}
 
-				// Verify user still has access to this organisation. Note this is
-				// membership of the SURVIVOR: a user the merge did not carry over
-				// falls through to their own organisation list, which fails closed.
-				if ($organisation->hasUser($userId) === true) {
-					$this->persistFollowedMerge(
-						userId: $userId,
-						storedUuid: $activeUuid,
-						organisation: $organisation
-					);
-					return $organisation;
-				}
+			$reason = 'invalid';
+		} catch (DoesNotExistException $e) {
+			$reason = 'non-existent';
+		}
 
-				// User no longer has access, clear the setting and cache.
-				$this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
-				$this->clearActiveOrganisationCache(userId: $userId);
-				$this->logger->debug(
-					message: '[OrganisationService] Cleared invalid active organisation',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'userId' => $userId,
-						'organisationUuid' => $activeUuid,
-					]
-				);
-			} catch (DoesNotExistException $e) {
-				// Active organisation no longer exists, clear from config and cache.
-				$this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
-				$this->clearActiveOrganisationCache(userId: $userId);
-				$this->logger->debug(
-					message: '[OrganisationService] Cleared non-existent active organisation',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'userId' => $userId,
-						'organisationUuid' => $activeUuid,
-					]
-				);
-			}//end try
-		}//end if
+		$this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
+		$this->clearActiveOrganisationCache(userId: $userId);
+		$this->logger->debug(
+			message: "[OrganisationService] Cleared {$reason} active organisation",
+			context: ['file' => __FILE__, 'line' => __LINE__, 'userId' => $userId, 'organisationUuid' => $activeUuid]
+		);
 
-		// No valid active organisation set, try to set the oldest one from user's organisations.
-		$organisations = $preloadedOrgs ?? $this->getUserOrganisations();
-		if (empty($organisations) === false) {
-			// Sort by created date and take the oldest.
-			usort(
-				$organisations,
-				function ($a, $b) {
-					return $a->getCreated() <=> $b->getCreated();
-				}
-			);
+		return null;
+	}//end findStoredActiveOrganisation()
 
-			// The user's membership list can still name a merged-away
-			// organisation, so the auto-pick resolves too — otherwise the very
-			// first login after a merge writes the dead UUID back into config.
-			$oldestOrg = $this->followMerge(organisation: $organisations[0]);
+	/**
+	 * Make the oldest of the user's organisations active and store it in user config.
+	 *
+	 * @param string         $userId        The user ID.
+	 * @param Organisation[] $organisations The user's organisations, not empty.
+	 *
+	 * @return Organisation The organisation made active.
+	 */
+	private function activateOldestOrganisation(string $userId, array $organisations): Organisation {
+		usort(
+			$organisations,
+			function ($a, $b) {
+				return $a->getCreated() <=> $b->getCreated();
+			}
+		);
 
-			// Set in user configuration.
-			$this->config->setUserValue(
-				$userId,
-				self::APP_NAME,
-				self::CONFIG_ACTIVE_ORGANISATION,
-				$oldestOrg->getUuid()
-			);
+		// The user's membership list can still name a merged-away
+		// organisation, so the auto-pick resolves too — otherwise the very
+		// first login after a merge writes the dead UUID back into config.
+		$oldestOrg = $this->followMerge(organisation: $organisations[0]);
+		$this->config->setUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION, $oldestOrg->getUuid());
 
-			$this->logger->info(
-				message: '[OrganisationService] Auto-set active organisation to oldest',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'userId' => $userId,
-					'organisationUuid' => $oldestOrg->getUuid(),
-					'organisationName' => $oldestOrg->getName(),
-				]
-			);
+		$this->logger->info(
+			message: '[OrganisationService] Auto-set active organisation to oldest',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'userId' => $userId,
+				'organisationUuid' => $oldestOrg->getUuid(),
+				'organisationName' => $oldestOrg->getName(),
+			]
+		);
 
-			return $oldestOrg;
-		}//end if
+		return $oldestOrg;
+	}//end activateOldestOrganisation()
 
-		// Fallback: User has no organisations, use default organisation.
-		// This ensures all users always have at least one organisation.
+	/**
+	 * Make the default organisation active for a user without organisations, adding the user to it.
+	 *
+	 * This ensures all users always have at least one organisation.
+	 *
+	 * @param string $userId The user ID.
+	 *
+	 * @return Organisation|null The default organisation, or null when it could not be set.
+	 */
+	private function activateDefaultOrganisation(string $userId): ?Organisation {
 		try {
 			$defaultOrg = $this->ensureDefaultOrganisation();
-
-			// Add user to default organisation.
 			if ($defaultOrg->hasUser($userId) === false) {
-				$users = $defaultOrg->getUsers() ?? [];
-				$users[] = $userId;
-				$defaultOrg->setUsers($users);
+				$defaultOrg->setUsers(array_merge($defaultOrg->getUsers() ?? [], [$userId]));
 				$this->organisationMapper->update($defaultOrg);
-
 				$this->logger->info(
 					message: '[OrganisationService] Added user to default organisation',
 					context: [
@@ -1384,14 +1407,7 @@ class OrganisationService {
 				);
 			}
 
-			// Set as active organisation.
-			$this->config->setUserValue(
-				$userId,
-				self::APP_NAME,
-				self::CONFIG_ACTIVE_ORGANISATION,
-				$defaultOrg->getUuid()
-			);
-
+			$this->config->setUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION, $defaultOrg->getUuid());
 			$this->logger->info(
 				message: '[OrganisationService] Auto-set active organisation to default',
 				context: [
@@ -1407,16 +1423,11 @@ class OrganisationService {
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[OrganisationService] Failed to set default organisation for user',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'userId' => $userId,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'userId' => $userId, 'error' => $e->getMessage()]
 			);
 			return null;
 		}//end try
-	}//end fetchActiveOrganisationFromDatabase()
+	}//end activateDefaultOrganisation()
 
 	/**
 	 * Cache active organisation in session for performance

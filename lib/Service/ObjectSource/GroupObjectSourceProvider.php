@@ -43,6 +43,8 @@ use Throwable;
  * Read-only object-source provider backed by the Nextcloud group directory.
  */
 class GroupObjectSourceProvider implements ObjectSourceProvider {
+
+	use CountsThroughFindAll;
 	/**
 	 * Constructor.
 	 *
@@ -102,6 +104,18 @@ class GroupObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.2
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+		return $this->findGroup(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	}//end find()
+
+	/**
+	 * Read one object for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param string               $id      The object id.
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
+	 */
+	private function findGroup(SourcedObjectBinding $binding, string $id): ?ObjectEntity {
 		try {
 			$group = $this->groupManager->get($id);
 		} catch (Throwable $e) {
@@ -113,8 +127,8 @@ class GroupObjectSourceProvider implements ObjectSourceProvider {
 			return null;
 		}
 
-		return $this->toObjectEntity(register: $register, schema: $schema, group: $group);
-	}//end find()
+		return $this->toObjectEntity(binding: $binding, group: $group);
+	}//end findGroup()
 
 	/**
 	 * {@inheritDoc}
@@ -134,29 +148,25 @@ class GroupObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.2
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$objects = [];
-		foreach ($this->readGroups(query: $query) as $group) {
-			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, group: $group);
-		}
-
-		return $objects;
+		return $this->listGroups(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
 	}//end findAll()
 
 	/**
-	 * {@inheritDoc}
+	 * Read one page of objects for the bound register and schema.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $query Query (filters/search).
-	 * @param array<string, mixed> $config The object-source config block (unused).
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param array<string, mixed> $query   Query (filters/search/limit/offset).
 	 *
-	 * @return int The number of matching virtual objects.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.2
+	 * @return ObjectEntity[] The matching virtual objects.
 	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return count($this->findAll(register: $register, schema: $schema, query: $query, config: $config));
-	}//end count()
+	private function listGroups(SourcedObjectBinding $binding, array $query): array {
+		$objects = [];
+		foreach ($this->readGroups(query: $query) as $group) {
+			$objects[] = $this->toObjectEntity(binding: $binding, group: $group);
+		}
+
+		return $objects;
+	}//end listGroups()
 
 	/**
 	 * Read the groups visible to the acting user, failing closed to an empty list.
@@ -235,28 +245,16 @@ class GroupObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * Map a Nextcloud group onto a non-persisted virtual ObjectEntity.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
-	 * @param IGroup $group The Nextcloud group.
+	 * @param SourcedObjectBinding $binding The bound register and schema.
+	 * @param IGroup               $group   The Nextcloud group.
 	 *
 	 * @return ObjectEntity The virtual object (never saved).
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.2
 	 */
-	private function toObjectEntity(Register $register, Schema $schema, IGroup $group): ObjectEntity {
+	private function toObjectEntity(SourcedObjectBinding $binding, IGroup $group): ObjectEntity {
 		$gid = $group->getGID();
 
-		$data = [
-			'id' => $gid,
-			'displayName' => $group->getDisplayName(),
-		];
-
-		$entity = new ObjectEntity();
-		$entity->setUuid($gid);
-		$entity->setRegister((string)$register->getId());
-		$entity->setSchema((string)$schema->getId());
-		$entity->setObject($data);
-
-		return $entity;
+		return $binding->toEntity(uuid: $gid, data: ['id' => $gid, 'displayName' => $group->getDisplayName()]);
 	}//end toObjectEntity()
 }//end class

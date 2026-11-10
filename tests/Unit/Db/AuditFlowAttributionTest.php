@@ -46,6 +46,36 @@ class AuditFlowAttributionTest extends TestCase {
 		return new AuditFlowAttribution($this->createMock(IDBConnection::class), $container);
 	}//end stamper()
 
+	/**
+	 * The run's writes are what `findByRun()` reports, so a run with hop
+	 * auditing on must not gain a hop row per step in that list.
+	 */
+	public function testFindByRunLeavesOutHopRows(): void {
+		$result = $this->createMock(\OCP\DB\IResult::class);
+		$result->method('fetch')->willReturn(false);
+
+		$expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+		$expr->expects($this->once())->method('neq')->with('action', AuditFlowAttribution::ACTION_HOP)->willReturn('not a hop');
+		$expr->method('eq')->willReturn('this run');
+
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		foreach (['select', 'from', 'where', 'orderBy', 'setMaxResults'] as $method) {
+			$qb->method($method)->willReturnSelf();
+		}
+
+		$qb->method('expr')->willReturn($expr);
+		$qb->method('createNamedParameter')->willReturnArgument(0);
+		$qb->method('executeQuery')->willReturn($result);
+		$qb->expects($this->once())->method('andWhere')->with('not a hop')->willReturnSelf();
+
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')->willReturn($qb);
+
+		$mapper = new AuditFlowAttribution($db, $this->createMock(ContainerInterface::class));
+
+		$this->assertSame([], $mapper->findByRun(runUuid: 'run-1'));
+	}//end testFindByRunLeavesOutHopRows()
+
 	public function testAnExecutingStepIsStampedOntoTheRow(): void {
 		$context = new FlowRunContext();
 		$context->push(runUuid: 'run-abc', nodeId: 'node-1', sequence: 7);

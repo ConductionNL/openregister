@@ -25,14 +25,21 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
+use OCA\OpenRegister\Mcp\McpLeafApp;
+use OCA\OpenRegister\Mcp\ToolScanSubject;
+use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AnnotationFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\HintScopeFixtureService;
+use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\ReachFixtureService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
+require_once __DIR__ . '/Fixtures/AnnotationFixtureService.php';
 require_once __DIR__ . '/Fixtures/AttributeFixtureService.php';
 require_once __DIR__ . '/Fixtures/HintScopeFixtureService.php';
+require_once __DIR__ . '/Fixtures/ReachFixtureService.php';
 
 /**
  * Unit tests for AttributeToolScanner.
@@ -56,9 +63,7 @@ class AttributeToolScannerTest extends TestCase {
 	 */
 	private function scanFixture(): array {
 		$descriptors = $this->scanner->scanClass(
-			appId: 'pipelinq',
-			className: AttributeFixtureService::class,
-			logger: $this->logger
+			subject: new ToolScanSubject(appId: 'pipelinq', className: AttributeFixtureService::class, logger: $this->logger)
 		);
 
 		$byName = [];
@@ -198,9 +203,7 @@ class AttributeToolScannerTest extends TestCase {
 			->with($this->stringContains('does not exist'));
 
 		$descriptors = $this->scanner->scanClass(
-			appId: 'pipelinq',
-			className: 'OCA\\Pipelinq\\Service\\DoesNotExist',
-			logger: $this->logger
+			subject: new ToolScanSubject(appId: 'pipelinq', className: 'OCA\\Pipelinq\\Service\\DoesNotExist', logger: $this->logger)
 		);
 
 		$this->assertSame([], $descriptors);
@@ -209,9 +212,8 @@ class AttributeToolScannerTest extends TestCase {
 
 	public function testScanClassesAggregatesAcrossMultipleClassesAndSkipsInvalidNames(): void {
 		$descriptors = $this->scanner->scanClasses(
-			appId: 'pipelinq',
-			classNames: [AttributeFixtureService::class, '', 'Not\\A\\Real\\Class'],
-			logger: $this->logger
+			app: new McpLeafApp(appId: 'pipelinq', container: $this->createMock(ContainerInterface::class), logger: $this->logger),
+			classNames: [AttributeFixtureService::class, '', 'Not\\A\\Real\\Class']
 		);
 
 		$names = array_column($descriptors, 'name');
@@ -227,9 +229,7 @@ class AttributeToolScannerTest extends TestCase {
 	 */
 	private function scanHintScopeFixture(): array {
 		$descriptors = $this->scanner->scanClass(
-			appId: 'pipelinq',
-			className: HintScopeFixtureService::class,
-			logger: $this->logger
+			subject: new ToolScanSubject(appId: 'pipelinq', className: HintScopeFixtureService::class, logger: $this->logger)
 		);
 
 		$byName = [];
@@ -280,4 +280,125 @@ class AttributeToolScannerTest extends TestCase {
 		$this->assertArrayHasKey('getLead', $descriptors);
 
 	}//end testUnknownScopeDoesNotSuppressSiblingValidTools()
+
+	// ── Declared reach (REQ-ATTR-006) ────────────────────────────────
+
+	/**
+	 * @return array<string, array<string, mixed>> descriptor keyed by `name`
+	 */
+	private function scanReachFixture(): array {
+		$byName = [];
+		foreach ($this->scanner->scanClass(subject: new ToolScanSubject(appId: 'dossiq', className: ReachFixtureService::class, logger: $this->logger)) as $descriptor) {
+			$byName[$descriptor['name']] = $descriptor;
+		}
+
+		return $byName;
+	}//end scanReachFixture()
+
+	public function testDescriptorForwardsDeclaredReach(): void {
+		$descriptor = $this->scanReachFixture()['getWorkload'];
+
+		$this->assertSame('user', $descriptor['reach']);
+		$this->assertSame('read', $descriptor['scope']);
+
+	}//end testDescriptorForwardsDeclaredReach()
+
+	public function testUndeclaredReachStaysOmittedNeverDefaulted(): void {
+		$descriptor = $this->scanReachFixture()['reassignCase'];
+
+		$this->assertArrayNotHasKey('reach', $descriptor);
+
+	}//end testUndeclaredReachStaysOmittedNeverDefaulted()
+
+	public function testUnknownReachIsRejectedAndLogged(): void {
+		$this->logger->expects($this->once())
+			->method('warning')
+			->with($this->stringContains('unrecognised `reach`'));
+
+		$descriptors = $this->scanReachFixture();
+
+		$this->assertArrayNotHasKey('badReachTool', $descriptors);
+		$this->assertArrayHasKey('getWorkload', $descriptors);
+		$this->assertArrayHasKey('reassignCase', $descriptors);
+
+	}//end testUnknownReachIsRejectedAndLogged()
+
+	// ── Declared annotations (REQ-ATTR-007) ──────────────────────────
+
+	/**
+	 * @return array<string, array<string, mixed>> descriptor keyed by `name`
+	 */
+	private function scanAnnotationFixture(): array {
+		$byName = [];
+		foreach ($this->scanner->scanClass(subject: new ToolScanSubject(appId: 'dossiq', className: AnnotationFixtureService::class, logger: $this->logger)) as $descriptor) {
+			$byName[$descriptor['name']] = $descriptor;
+		}
+
+		return $byName;
+	}//end scanAnnotationFixture()
+
+	public function testDescriptorForwardsDeclaredAnnotations(): void {
+		$descriptor = $this->scanAnnotationFixture()['fileCase'];
+
+		$this->assertSame(['citizenIntake' => true], $descriptor['annotations']);
+		$this->assertSame('create', $descriptor['scope']);
+		$this->assertSame('create', $descriptor['action']);
+
+	}//end testDescriptorForwardsDeclaredAnnotations()
+
+	public function testUndeclaredAnnotationsStayOmitted(): void {
+		$this->assertArrayNotHasKey('annotations', $this->scanAnnotationFixture()['reassignCase']);
+
+	}//end testUndeclaredAnnotationsStayOmitted()
+
+	public function testMalformedAnnotationsAreRejectedAndLogged(): void {
+		$this->logger->expects($this->exactly(2))
+			->method('warning')
+			->with($this->stringContains('unrecognised `annotations`'));
+
+		$descriptors = $this->scanAnnotationFixture();
+
+		$this->assertArrayNotHasKey('badAnnotationTool', $descriptors);
+		$this->assertArrayHasKey('fileCase', $descriptors);
+		$this->assertArrayHasKey('reassignCase', $descriptors);
+
+	}//end testMalformedAnnotationsAreRejectedAndLogged()
+
+	public function testAReservedMcpHintKeyInAnnotationsIsRejectedAndLogged(): void {
+		$logged = [];
+		$this->logger->method('warning')->willReturnCallback(
+			function (string $message, array $context = []) use (&$logged): void {
+				$logged[] = ['message' => $message, 'context' => $context];
+			}
+		);
+
+		$descriptors = $this->scanAnnotationFixture();
+
+		$this->assertArrayNotHasKey('hintClaimingTool', $descriptors);
+		$this->assertArrayHasKey('fileCase', $descriptors);
+		$named = array_values(array_filter($logged, static fn (array $entry): bool => (($entry['context']['method'] ?? '') === 'hintClaimingTool')));
+		$this->assertCount(1, $named);
+		$this->assertStringContainsString('unrecognised `annotations`', $named[0]['message']);
+		$this->assertSame('readOnlyHint', $named[0]['context']['annotations']);
+
+	}//end testAReservedMcpHintKeyInAnnotationsIsRejectedAndLogged()
+
+	// ── Declared title (the MCP descriptor's top-level `title`) ──────
+
+	public function testADeclaredTitleIsTheDescriptorsTopLevelTitle(): void {
+		$descriptor = $this->scanAnnotationFixture()['createTask'];
+
+		$this->assertSame('Create a task', $descriptor['title']);
+		$this->assertSame(['citizenIntake' => true], $descriptor['annotations'], 'the annotations stay as declared');
+		$this->assertArrayNotHasKey('title', $descriptor['annotations']);
+
+	}//end testADeclaredTitleIsTheDescriptorsTopLevelTitle()
+
+	public function testAnUndeclaredOrBlankTitleStaysOmitted(): void {
+		$descriptors = $this->scanAnnotationFixture();
+
+		$this->assertArrayNotHasKey('title', $descriptors['reassignCase']);
+		$this->assertArrayNotHasKey('title', $descriptors['blankTitleTool']);
+
+	}//end testAnUndeclaredOrBlankTitleStaysOmitted()
 }//end class

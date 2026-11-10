@@ -30,10 +30,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\Files\Config\IUserMountCache;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -79,13 +79,13 @@ class FolderManagementHandlerLazyFileServiceTest extends TestCase {
 		$account = $this->createMock(IUser::class);
 		$account->method('getUID')->willReturn('openregister');
 
-		$fileService = $this->createMock(FileService::class);
+		$fileService = $this->createMock(FileHandlerSupportInterface::class);
 		$fileService->method('getUser')->willReturn($account);
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->expects($this->once())
 			->method('get')
-			->with(FileService::class)
+			->with(FileHandlerSupportInterface::class)
 			->willReturn($fileService);
 
 		$folder = $this->createMock(Folder::class);

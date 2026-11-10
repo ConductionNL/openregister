@@ -53,16 +53,9 @@
 							</template>
 							{{ t('openregister', 'New activity') }}
 						</NcButton>
-						<NcButton
-							variant="tertiary"
-							:disabled="loading"
-							@click="refreshActivities">
-							<template #icon>
-								<NcLoadingIcon v-if="loading" :size="20" />
-								<Refresh v-else :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcButton>
+						<RefreshButton
+							:loading="loading"
+							@click="refreshActivities" />
 					</div>
 				</div>
 
@@ -82,28 +75,15 @@
 					</NcEmptyContent>
 
 					<table v-else class="avgTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Name') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Code') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Legal basis') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Retention period') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Status') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Actions') }}
-								</th>
-							</tr>
-						</thead>
+						<TableHeadRow
+							:labels="[
+								t('openregister', 'Name'),
+								t('openregister', 'Code'),
+								t('openregister', 'Legal basis'),
+								t('openregister', 'Retention period'),
+								t('openregister', 'Status'),
+								t('openregister', 'Actions'),
+							]" />
 						<tbody>
 							<tr v-for="a in activities" :key="a.uuid">
 								<td>{{ a.name }}</td>
@@ -186,34 +166,17 @@
 					</NcEmptyContent>
 
 					<table v-else class="avgTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Activity') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Legal basis') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Retention period') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Total events') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Create') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Update') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Delete') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Read') }}
-								</th>
-							</tr>
-						</thead>
+						<TableHeadRow
+							:labels="[
+								t('openregister', 'Activity'),
+								t('openregister', 'Legal basis'),
+								t('openregister', 'Retention period'),
+								t('openregister', 'Total events'),
+								t('openregister', 'Create'),
+								t('openregister', 'Update'),
+								t('openregister', 'Delete'),
+								t('openregister', 'Read'),
+							]" />
 						<tbody>
 							<tr
 								v-for="row in accountability.activities"
@@ -395,16 +358,12 @@
 						</span>
 					</div>
 					<div class="viewActions">
-						<NcButton
+						<RefreshButton
 							variant="primary"
-							:disabled="loading"
+							:loading="loading"
 							@click="loadCompliance">
-							<template #icon>
-								<NcLoadingIcon v-if="loading" :size="20" />
-								<Refresh v-else :size="20" />
-							</template>
 							{{ t('openregister', 'Run compliance scan') }}
-						</NcButton>
+						</RefreshButton>
 					</div>
 				</div>
 
@@ -440,25 +399,14 @@
 					</NcEmptyContent>
 
 					<table v-else class="avgTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Schema') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Register') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'PII rows') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Schema annotation') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Register annotation') }}
-								</th>
-							</tr>
-						</thead>
+						<TableHeadRow
+							:labels="[
+								t('openregister', 'Schema'),
+								t('openregister', 'Register'),
+								t('openregister', 'PII rows'),
+								t('openregister', 'Schema annotation'),
+								t('openregister', 'Register annotation'),
+							]" />
 						<tbody>
 							<tr
 								v-for="issue in complianceReport.issues
@@ -527,16 +475,9 @@
 							</span>
 						</div>
 						<div class="viewActions">
-							<NcButton
-								variant="tertiary"
-								:disabled="loading"
-								@click="refreshCases">
-								<template #icon>
-									<NcLoadingIcon v-if="loading" :size="20" />
-									<Refresh v-else :size="20" />
-								</template>
-								{{ t('openregister', 'Refresh') }}
-							</NcButton>
+							<RefreshButton
+								:loading="loading"
+								@click="refreshCases" />
 						</div>
 					</div>
 
@@ -589,31 +530,16 @@
 						</NcEmptyContent>
 
 						<table v-else class="avgTable">
-							<thead>
-								<tr>
-									<th scope="col">
-										{{ t('openregister', 'Subject') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Type') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Status') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Handler') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Deadline') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Escalation') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Actions') }}
-									</th>
-								</tr>
-							</thead>
+							<TableHeadRow
+								:labels="[
+									t('openregister', 'Subject'),
+									t('openregister', 'Type'),
+									t('openregister', 'Status'),
+									t('openregister', 'Handler'),
+									t('openregister', 'Deadline'),
+									t('openregister', 'Escalation'),
+									t('openregister', 'Actions'),
+								]" />
 							<tbody>
 								<tr v-for="c in filteredCases" :key="caseId(c)">
 									<td>{{ c.subjectId || '—' }}</td>
@@ -666,16 +592,9 @@
 							</NcButton>
 						</div>
 						<div class="viewActions">
-							<NcButton
-								variant="tertiary"
-								:disabled="loading"
-								@click="reloadSelectedCase">
-								<template #icon>
-									<NcLoadingIcon v-if="loading" :size="20" />
-									<Refresh v-else :size="20" />
-								</template>
-								{{ t('openregister', 'Refresh') }}
-							</NcButton>
+							<RefreshButton
+								:loading="loading"
+								@click="reloadSelectedCase" />
 						</div>
 					</div>
 
@@ -886,16 +805,11 @@
 								{{ t('openregister', 'No evidence collected yet.') }}
 							</p>
 							<table v-else class="avgTable">
-								<thead>
-									<tr>
-										<th scope="col">
-											{{ t('openregister', 'Source') }}
-										</th>
-										<th scope="col">
-											{{ t('openregister', 'Status') }}
-										</th>
-									</tr>
-								</thead>
+								<TableHeadRow
+									:labels="[
+										t('openregister', 'Source'),
+										t('openregister', 'Status'),
+									]" />
 								<tbody>
 									<tr v-for="(ev, i) in caseEvidence" :key="i">
 										<td>
@@ -929,16 +843,11 @@
 								{{ t('openregister', 'No redactions applied.') }}
 							</p>
 							<table v-else class="avgTable">
-								<thead>
-									<tr>
-										<th scope="col">
-											{{ t('openregister', 'Field') }}
-										</th>
-										<th scope="col">
-											{{ t('openregister', 'Ground') }}
-										</th>
-									</tr>
-								</thead>
+								<TableHeadRow
+									:labels="[
+										t('openregister', 'Field'),
+										t('openregister', 'Ground'),
+									]" />
 								<tbody>
 									<tr v-for="(r, i) in caseRedactions" :key="i">
 										<td>
@@ -1091,13 +1000,14 @@ import MarkerIcon from 'vue-material-design-icons/Marker.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import ShieldAlertOutline from 'vue-material-design-icons/ShieldAlertOutline.vue'
 import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import RefreshButton from '../../components/shared/RefreshButton.vue'
 import DenialComposerDialog from '../../dialogs/avg/DenialComposerDialog.vue'
 import EditActivityDialog from '../../dialogs/avg/EditActivityDialog.vue'
 import RedactionDialog from '../../dialogs/avg/RedactionDialog.vue'
+import TableHeadRow from './TableHeadRow.vue'
 import {
 	CASE_LIFECYCLE_TRANSITIONS,
 	CASE_STATUS_VOCABULARY,
@@ -1107,10 +1017,40 @@ import {
 } from '../../store/modules/avg.js'
 import { avgStore } from '../../store/store.js'
 
+/**
+ * The icon of each escalation tier; any other tier is on track.
+ */
+const TIER_ICONS = {
+	breached: 'AlertCircleOutline',
+	escalation: 'AlertOutline',
+	reminder: 'ClockOutline',
+}
+
+/**
+ * Run a case seam (identity check, regulator escalation) for the selected
+ * case, keep its result on the view and reload the case. A failure is
+ * surfaced through the store error, so it is swallowed here.
+ *
+ * @spec exclude UI plumbing — delegates to the given avgStore seam
+ * @param {object} view The AVG view
+ * @param {string} field The view property that keeps the seam result
+ * @param {function(string): Promise<object>} seam The store call, given the selected case id
+ * @return {Promise<void>}
+ */
+async function runSeam(view, field, seam) {
+	try {
+		view[field] = await seam(view.selectedCaseId)
+		await view.reloadSelectedCase()
+	} catch (e) {
+		// surfaced via store error
+	}
+}
+
 export default {
 	name: 'AvgIndex',
 
 	components: {
+		TableHeadRow,
 		NcAppContent,
 		NcButton,
 		NcActions,
@@ -1124,7 +1064,7 @@ export default {
 		Plus,
 		Pencil,
 		Archive,
-		Refresh,
+		RefreshButton,
 		ShieldLockOutline,
 		ShieldAlertOutline,
 		FileDocumentOutline,
@@ -1838,16 +1778,9 @@ export default {
 		 * @return {string}
 		 */
 		tierIcon(tier) {
-			switch (tier) {
-				case 'breached':
-					return 'AlertCircleOutline'
-				case 'escalation':
-					return 'AlertOutline'
-				case 'reminder':
-					return 'ClockOutline'
-				default:
-					return 'CheckboxMarkedCircleOutline'
-			}
+			return Object.hasOwn(TIER_ICONS, tier)
+				? TIER_ICONS[tier]
+				: 'CheckboxMarkedCircleOutline'
 		},
 
 		/**
@@ -2027,14 +1960,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async runVerifyIdentity() {
-			try {
-				this.identityResult = await avgStore.verifyIdentity(
-					this.selectedCaseId,
-				)
-				await this.reloadSelectedCase()
-			} catch (e) {
-				// surfaced via store error
-			}
+			await runSeam(this, 'identityResult', (id) => avgStore.verifyIdentity(id))
 		},
 
 		/**
@@ -2044,31 +1970,19 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async runEscalate() {
-			try {
-				this.escalateResult = await avgStore.escalateRegulator(
-					this.selectedCaseId,
-				)
-				await this.reloadSelectedCase()
-			} catch (e) {
-				// surfaced via store error
-			}
+			await runSeam(this, 'escalateResult', (id) =>
+				avgStore.escalateRegulator(id),
+			)
 		},
 	},
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+@use './pillBadge.scss' as *;
 
-.viewHeader {
-	border-bottom: 1px solid var(--color-border);
-	padding-bottom: 12px;
-}
+@include view-container-rules;
 
 .viewHeaderTitle {
 	display: flex;
@@ -2097,10 +2011,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-.viewActions {
-	display: flex;
-	gap: 8px;
-}
+@include view-actions;
 
 .tableContainer {
 	border: 1px solid var(--color-border);
@@ -2113,7 +2024,7 @@ export default {
 	border-collapse: collapse;
 }
 
-.avgTable th,
+.avgTable :deep(th),
 .avgTable td {
 	padding: 10px 12px;
 	border-bottom: 1px solid var(--color-border);
@@ -2131,18 +2042,10 @@ export default {
 
 .badge {
 	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 12px;
-	background: var(--color-background-darker);
-	font-size: 11px;
-	font-weight: 600;
-	text-transform: uppercase;
+	@include pill-badge;
 }
 
-.badge-status-published {
-	background: var(--color-success);
-	color: var(--color-primary-text);
-}
+@include badge-status-published;
 
 .badge-status-archived {
 	background: var(--color-warning);

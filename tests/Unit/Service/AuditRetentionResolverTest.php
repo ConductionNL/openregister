@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use DateInterval;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -76,7 +77,7 @@ class AuditRetentionResolverTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $class) use ($schemaMapper): object {
-				if ($class === SchemaMapper::class) {
+				if ($class === SchemaMapperInterface::class) {
 					return $schemaMapper;
 				}
 

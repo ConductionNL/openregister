@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use RuntimeException;
  * refusal is a caller that can write the first object anyway, which is the
  * partial mutation D-4 refuses.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleCeilingException extends RuntimeException {
 
@@ -65,7 +65,7 @@ final class RuleCeilingException extends RuntimeException {
 	 *
 	 * @return string The derived rule id.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getRuleId(): string {
 		return $this->ruleId;
@@ -76,7 +76,7 @@ final class RuleCeilingException extends RuntimeException {
 	 *
 	 * @return int The ceiling.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getCeiling(): int {
 		return $this->ceiling;
@@ -87,7 +87,7 @@ final class RuleCeilingException extends RuntimeException {
 	 *
 	 * @return int The count taken before the first write.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getCount(): int {
 		return $this->count;
@@ -98,7 +98,7 @@ final class RuleCeilingException extends RuntimeException {
 	 *
 	 * @return array<string, mixed> The refusal envelope.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function toArray(): array {
 		return [

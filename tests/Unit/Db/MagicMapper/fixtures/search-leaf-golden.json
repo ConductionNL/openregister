@@ -1,0 +1,536 @@
+{
+    "union pg fuzzy=false foo columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(\"title\"::text ILIKE '%foo%' OR \"case\"::text ILIKE '%foo%' OR \"first_name\"::text ILIKE '%foo%' OR \"code\"::text ILIKE 'foo' OR \"prefixed\"::text ILIKE 'foo%' OR similarity(\"naam\", 'foo') > 0.1 OR \"flag\"::text ILIKE 'foo' OR _name::text ILIKE '%foo%' OR _description::text ILIKE '%foo%' OR _summary::text ILIKE '%foo%')"
+    ],
+    "union pg fuzzy=false foo columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(\"title\"::text ILIKE '%foo%' OR \"case\"::text ILIKE '%foo%' OR \"code\"::text ILIKE 'foo' OR similarity(\"naam\", 'foo') > 0.1 OR _name::text ILIKE '%foo%' OR _description::text ILIKE '%foo%' OR _summary::text ILIKE '%foo%')"
+    ],
+    "qb pg fuzzy=false foo": [
+        "or: like(LOWER(t.\"title\"),:p1=\"%foo%\")",
+        "or: like(LOWER(t.\"case\"),:p1=\"%foo%\")",
+        "or: like(LOWER(t.\"first_name\"),:p1=\"%foo%\")",
+        "or: like(LOWER(t.\"code\"),:p1=\"%foo%\")",
+        "or: like(LOWER(t.\"prefixed\"),:p1=\"%foo%\")",
+        "or: like(LOWER(t.\"naam\"),:p1=\"%foo%\")",
+        "or: like(LOWER(t._name),:p1=\"%foo%\")",
+        "or: like(LOWER(t._description),:p1=\"%foo%\")",
+        "or: like(LOWER(t._summary),:p1=\"%foo%\")",
+        "and: composite"
+    ],
+    "union pg fuzzy=false o'brien columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(\"title\"::text ILIKE '%o'brien%' OR \"case\"::text ILIKE '%o'brien%' OR \"first_name\"::text ILIKE '%o'brien%' OR \"code\"::text ILIKE 'o'brien' OR \"prefixed\"::text ILIKE 'o'brien%' OR similarity(\"naam\", 'o'brien') > 0.1 OR \"flag\"::text ILIKE 'o'brien' OR _name::text ILIKE '%o'brien%' OR _description::text ILIKE '%o'brien%' OR _summary::text ILIKE '%o'brien%')"
+    ],
+    "union pg fuzzy=false o'brien columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(\"title\"::text ILIKE '%o'brien%' OR \"case\"::text ILIKE '%o'brien%' OR \"code\"::text ILIKE 'o'brien' OR similarity(\"naam\", 'o'brien') > 0.1 OR _name::text ILIKE '%o'brien%' OR _description::text ILIKE '%o'brien%' OR _summary::text ILIKE '%o'brien%')"
+    ],
+    "qb pg fuzzy=false o'brien": [
+        "or: like(LOWER(t.\"title\"),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.\"case\"),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.\"first_name\"),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.\"code\"),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.\"prefixed\"),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.\"naam\"),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t._name),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t._description),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t._summary),:p1=\"%o'brien%\")",
+        "and: composite"
+    ],
+    "union pg fuzzy=false dak AND NOT geweigerd columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(((COALESCE(\"title\"::text, '') ILIKE '%dak%' OR COALESCE(\"case\"::text, '') ILIKE '%dak%' OR COALESCE(\"first_name\"::text, '') ILIKE '%dak%' OR COALESCE(\"code\"::text, '') ILIKE 'dak' OR COALESCE(\"prefixed\"::text, '') ILIKE 'dak%' OR similarity(COALESCE(\"naam\"::text, ''), 'dak') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'dak' OR COALESCE(_name::text, '') ILIKE '%dak%' OR COALESCE(_description::text, '') ILIKE '%dak%' OR COALESCE(_summary::text, '') ILIKE '%dak%')) AND (NOT ((COALESCE(\"title\"::text, '') ILIKE '%geweigerd%' OR COALESCE(\"case\"::text, '') ILIKE '%geweigerd%' OR COALESCE(\"first_name\"::text, '') ILIKE '%geweigerd%' OR COALESCE(\"code\"::text, '') ILIKE 'geweigerd' OR COALESCE(\"prefixed\"::text, '') ILIKE 'geweigerd%' OR similarity(COALESCE(\"naam\"::text, ''), 'geweigerd') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'geweigerd' OR COALESCE(_name::text, '') ILIKE '%geweigerd%' OR COALESCE(_description::text, '') ILIKE '%geweigerd%' OR COALESCE(_summary::text, '') ILIKE '%geweigerd%'))))"
+    ],
+    "union pg fuzzy=false dak AND NOT geweigerd columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(((COALESCE(\"title\"::text, '') ILIKE '%dak%' OR COALESCE(\"case\"::text, '') ILIKE '%dak%' OR COALESCE(\"code\"::text, '') ILIKE 'dak' OR similarity(COALESCE(\"naam\"::text, ''), 'dak') > 0.1 OR COALESCE(_name::text, '') ILIKE '%dak%' OR COALESCE(_description::text, '') ILIKE '%dak%' OR COALESCE(_summary::text, '') ILIKE '%dak%')) AND (NOT ((COALESCE(\"title\"::text, '') ILIKE '%geweigerd%' OR COALESCE(\"case\"::text, '') ILIKE '%geweigerd%' OR COALESCE(\"code\"::text, '') ILIKE 'geweigerd' OR similarity(COALESCE(\"naam\"::text, ''), 'geweigerd') > 0.1 OR COALESCE(_name::text, '') ILIKE '%geweigerd%' OR COALESCE(_description::text, '') ILIKE '%geweigerd%' OR COALESCE(_summary::text, '') ILIKE '%geweigerd%'))))"
+    ],
+    "qb pg fuzzy=false dak AND NOT geweigerd": [
+        "and: (((LOWER(COALESCE(t.\"title\", '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p2=\"dak\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p3=\"dak%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p4=\"dak\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p5=\"dak\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"%dak%\")) AND (NOT ((LOWER(COALESCE(t.\"title\", '')) LIKE :p6=\"%geweigerd%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p6=\"%geweigerd%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p6=\"%geweigerd%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p7=\"geweigerd\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p8=\"geweigerd%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p9=\"geweigerd\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p10=\"geweigerd\" OR LOWER(COALESCE(t._name, '')) LIKE :p6=\"%geweigerd%\" OR LOWER(COALESCE(t._description, '')) LIKE :p6=\"%geweigerd%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p6=\"%geweigerd%\"))))"
+    ],
+    "union pg fuzzy=false dak* columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((COALESCE(\"title\"::text, '') ILIKE 'dak%' OR COALESCE(\"case\"::text, '') ILIKE 'dak%' OR COALESCE(\"first_name\"::text, '') ILIKE 'dak%' OR COALESCE(\"code\"::text, '') ILIKE 'dak' OR COALESCE(\"prefixed\"::text, '') ILIKE 'dak%' OR similarity(COALESCE(\"naam\"::text, ''), 'dak') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'dak' OR COALESCE(_name::text, '') ILIKE 'dak%' OR COALESCE(_description::text, '') ILIKE 'dak%' OR COALESCE(_summary::text, '') ILIKE 'dak%'))"
+    ],
+    "union pg fuzzy=false dak* columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((COALESCE(\"title\"::text, '') ILIKE 'dak%' OR COALESCE(\"case\"::text, '') ILIKE 'dak%' OR COALESCE(\"code\"::text, '') ILIKE 'dak' OR similarity(COALESCE(\"naam\"::text, ''), 'dak') > 0.1 OR COALESCE(_name::text, '') ILIKE 'dak%' OR COALESCE(_description::text, '') ILIKE 'dak%' OR COALESCE(_summary::text, '') ILIKE 'dak%'))"
+    ],
+    "qb pg fuzzy=false dak*": [
+        "and: ((LOWER(COALESCE(t.\"title\", '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p2=\"dak\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p3=\"dak%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p4=\"dak\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p5=\"dak\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"dak%\"))"
+    ],
+    "union pg fuzzy=false \"twee woorden\" columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((COALESCE(\"title\"::text, '') ILIKE '%twee woorden%' OR COALESCE(\"case\"::text, '') ILIKE '%twee woorden%' OR COALESCE(\"first_name\"::text, '') ILIKE '%twee woorden%' OR COALESCE(\"code\"::text, '') ILIKE 'twee woorden' OR COALESCE(\"prefixed\"::text, '') ILIKE 'twee woorden%' OR similarity(COALESCE(\"naam\"::text, ''), 'twee woorden') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'twee woorden' OR COALESCE(_name::text, '') ILIKE '%twee woorden%' OR COALESCE(_description::text, '') ILIKE '%twee woorden%' OR COALESCE(_summary::text, '') ILIKE '%twee woorden%'))"
+    ],
+    "union pg fuzzy=false \"twee woorden\" columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((COALESCE(\"title\"::text, '') ILIKE '%twee woorden%' OR COALESCE(\"case\"::text, '') ILIKE '%twee woorden%' OR COALESCE(\"code\"::text, '') ILIKE 'twee woorden' OR similarity(COALESCE(\"naam\"::text, ''), 'twee woorden') > 0.1 OR COALESCE(_name::text, '') ILIKE '%twee woorden%' OR COALESCE(_description::text, '') ILIKE '%twee woorden%' OR COALESCE(_summary::text, '') ILIKE '%twee woorden%'))"
+    ],
+    "qb pg fuzzy=false \"twee woorden\"": [
+        "and: ((LOWER(COALESCE(t.\"title\", '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p2=\"twee woorden\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p3=\"twee woorden%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p4=\"twee woorden\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p5=\"twee woorden\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"%twee woorden%\"))"
+    ],
+    "union pg fuzzy=false (a OR b) AND c columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((((COALESCE(\"title\"::text, '') ILIKE '%a%' OR COALESCE(\"case\"::text, '') ILIKE '%a%' OR COALESCE(\"first_name\"::text, '') ILIKE '%a%' OR COALESCE(\"code\"::text, '') ILIKE 'a' OR COALESCE(\"prefixed\"::text, '') ILIKE 'a%' OR similarity(COALESCE(\"naam\"::text, ''), 'a') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'a' OR COALESCE(_name::text, '') ILIKE '%a%' OR COALESCE(_description::text, '') ILIKE '%a%' OR COALESCE(_summary::text, '') ILIKE '%a%')) OR ((COALESCE(\"title\"::text, '') ILIKE '%b%' OR COALESCE(\"case\"::text, '') ILIKE '%b%' OR COALESCE(\"first_name\"::text, '') ILIKE '%b%' OR COALESCE(\"code\"::text, '') ILIKE 'b' OR COALESCE(\"prefixed\"::text, '') ILIKE 'b%' OR similarity(COALESCE(\"naam\"::text, ''), 'b') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'b' OR COALESCE(_name::text, '') ILIKE '%b%' OR COALESCE(_description::text, '') ILIKE '%b%' OR COALESCE(_summary::text, '') ILIKE '%b%'))) AND ((COALESCE(\"title\"::text, '') ILIKE '%c%' OR COALESCE(\"case\"::text, '') ILIKE '%c%' OR COALESCE(\"first_name\"::text, '') ILIKE '%c%' OR COALESCE(\"code\"::text, '') ILIKE 'c' OR COALESCE(\"prefixed\"::text, '') ILIKE 'c%' OR similarity(COALESCE(\"naam\"::text, ''), 'c') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'c' OR COALESCE(_name::text, '') ILIKE '%c%' OR COALESCE(_description::text, '') ILIKE '%c%' OR COALESCE(_summary::text, '') ILIKE '%c%')))"
+    ],
+    "union pg fuzzy=false (a OR b) AND c columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((((COALESCE(\"title\"::text, '') ILIKE '%a%' OR COALESCE(\"case\"::text, '') ILIKE '%a%' OR COALESCE(\"code\"::text, '') ILIKE 'a' OR similarity(COALESCE(\"naam\"::text, ''), 'a') > 0.1 OR COALESCE(_name::text, '') ILIKE '%a%' OR COALESCE(_description::text, '') ILIKE '%a%' OR COALESCE(_summary::text, '') ILIKE '%a%')) OR ((COALESCE(\"title\"::text, '') ILIKE '%b%' OR COALESCE(\"case\"::text, '') ILIKE '%b%' OR COALESCE(\"code\"::text, '') ILIKE 'b' OR similarity(COALESCE(\"naam\"::text, ''), 'b') > 0.1 OR COALESCE(_name::text, '') ILIKE '%b%' OR COALESCE(_description::text, '') ILIKE '%b%' OR COALESCE(_summary::text, '') ILIKE '%b%'))) AND ((COALESCE(\"title\"::text, '') ILIKE '%c%' OR COALESCE(\"case\"::text, '') ILIKE '%c%' OR COALESCE(\"code\"::text, '') ILIKE 'c' OR similarity(COALESCE(\"naam\"::text, ''), 'c') > 0.1 OR COALESCE(_name::text, '') ILIKE '%c%' OR COALESCE(_description::text, '') ILIKE '%c%' OR COALESCE(_summary::text, '') ILIKE '%c%')))"
+    ],
+    "qb pg fuzzy=false (a OR b) AND c": [
+        "and: ((((LOWER(COALESCE(t.\"title\", '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p2=\"a\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p3=\"a%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p4=\"a\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p5=\"a\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"%a%\")) OR ((LOWER(COALESCE(t.\"title\", '')) LIKE :p6=\"%b%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p6=\"%b%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p6=\"%b%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p7=\"b\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p8=\"b%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p9=\"b\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p10=\"b\" OR LOWER(COALESCE(t._name, '')) LIKE :p6=\"%b%\" OR LOWER(COALESCE(t._description, '')) LIKE :p6=\"%b%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p6=\"%b%\"))) AND ((LOWER(COALESCE(t.\"title\", '')) LIKE :p11=\"%c%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p11=\"%c%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p11=\"%c%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p12=\"c\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p13=\"c%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p14=\"c\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p15=\"c\" OR LOWER(COALESCE(t._name, '')) LIKE :p11=\"%c%\" OR LOWER(COALESCE(t._description, '')) LIKE :p11=\"%c%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p11=\"%c%\")))"
+    ],
+    "union pg fuzzy=false x_% columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(\"title\"::text ILIKE '%x_%%' OR \"case\"::text ILIKE '%x_%%' OR \"first_name\"::text ILIKE '%x_%%' OR \"code\"::text ILIKE 'x\\_\\%' OR \"prefixed\"::text ILIKE 'x\\_\\%%' OR similarity(\"naam\", 'x_%') > 0.1 OR \"flag\"::text ILIKE 'x\\_\\%' OR _name::text ILIKE '%x_%%' OR _description::text ILIKE '%x_%%' OR _summary::text ILIKE '%x_%%')"
+    ],
+    "union pg fuzzy=false x_% columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(\"title\"::text ILIKE '%x_%%' OR \"case\"::text ILIKE '%x_%%' OR \"code\"::text ILIKE 'x\\_\\%' OR similarity(\"naam\", 'x_%') > 0.1 OR _name::text ILIKE '%x_%%' OR _description::text ILIKE '%x_%%' OR _summary::text ILIKE '%x_%%')"
+    ],
+    "qb pg fuzzy=false x_%": [
+        "or: like(LOWER(t.\"title\"),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.\"case\"),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.\"first_name\"),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.\"code\"),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.\"prefixed\"),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.\"naam\"),:p1=\"%x_%%\")",
+        "or: like(LOWER(t._name),:p1=\"%x_%%\")",
+        "or: like(LOWER(t._description),:p1=\"%x_%%\")",
+        "or: like(LOWER(t._summary),:p1=\"%x_%%\")",
+        "and: composite"
+    ],
+    "union pg fuzzy=true foo columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(\"title\"::text ILIKE '%foo%' OR \"case\"::text ILIKE '%foo%' OR \"first_name\"::text ILIKE '%foo%' OR \"code\"::text ILIKE 'foo' OR \"prefixed\"::text ILIKE 'foo%' OR similarity(\"naam\", 'foo') > 0.1 OR \"flag\"::text ILIKE 'foo' OR _name::text ILIKE '%foo%' OR _description::text ILIKE '%foo%' OR _summary::text ILIKE '%foo%' OR similarity(_name::text, 'foo') > 0.1)"
+    ],
+    "union pg fuzzy=true foo columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(\"title\"::text ILIKE '%foo%' OR \"case\"::text ILIKE '%foo%' OR \"code\"::text ILIKE 'foo' OR similarity(\"naam\", 'foo') > 0.1 OR _name::text ILIKE '%foo%' OR _description::text ILIKE '%foo%' OR _summary::text ILIKE '%foo%' OR similarity(_name::text, 'foo') > 0.1)"
+    ],
+    "qb pg fuzzy=true foo": [
+        "or: like(LOWER(t.\"title\"),:p1=\"%foo%\")",
+        "or: like(LOWER(t.\"case\"),:p1=\"%foo%\")",
+        "or: like(LOWER(t.\"first_name\"),:p1=\"%foo%\")",
+        "or: like(LOWER(t.\"code\"),:p1=\"%foo%\")",
+        "or: like(LOWER(t.\"prefixed\"),:p1=\"%foo%\")",
+        "or: like(LOWER(t.\"naam\"),:p1=\"%foo%\")",
+        "or: like(LOWER(t._name),:p1=\"%foo%\")",
+        "or: like(LOWER(t._description),:p1=\"%foo%\")",
+        "or: like(LOWER(t._summary),:p1=\"%foo%\")",
+        "or: similarity(t._name::text, :p2=\"foo\") > 0.1",
+        "and: composite"
+    ],
+    "union pg fuzzy=true o'brien columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(\"title\"::text ILIKE '%o'brien%' OR \"case\"::text ILIKE '%o'brien%' OR \"first_name\"::text ILIKE '%o'brien%' OR \"code\"::text ILIKE 'o'brien' OR \"prefixed\"::text ILIKE 'o'brien%' OR similarity(\"naam\", 'o'brien') > 0.1 OR \"flag\"::text ILIKE 'o'brien' OR _name::text ILIKE '%o'brien%' OR _description::text ILIKE '%o'brien%' OR _summary::text ILIKE '%o'brien%' OR similarity(_name::text, 'o'brien') > 0.1)"
+    ],
+    "union pg fuzzy=true o'brien columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(\"title\"::text ILIKE '%o'brien%' OR \"case\"::text ILIKE '%o'brien%' OR \"code\"::text ILIKE 'o'brien' OR similarity(\"naam\", 'o'brien') > 0.1 OR _name::text ILIKE '%o'brien%' OR _description::text ILIKE '%o'brien%' OR _summary::text ILIKE '%o'brien%' OR similarity(_name::text, 'o'brien') > 0.1)"
+    ],
+    "qb pg fuzzy=true o'brien": [
+        "or: like(LOWER(t.\"title\"),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.\"case\"),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.\"first_name\"),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.\"code\"),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.\"prefixed\"),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.\"naam\"),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t._name),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t._description),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t._summary),:p1=\"%o'brien%\")",
+        "or: similarity(t._name::text, :p2=\"o'brien\") > 0.1",
+        "and: composite"
+    ],
+    "union pg fuzzy=true dak AND NOT geweigerd columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(((COALESCE(\"title\"::text, '') ILIKE '%dak%' OR COALESCE(\"case\"::text, '') ILIKE '%dak%' OR COALESCE(\"first_name\"::text, '') ILIKE '%dak%' OR COALESCE(\"code\"::text, '') ILIKE 'dak' OR COALESCE(\"prefixed\"::text, '') ILIKE 'dak%' OR similarity(COALESCE(\"naam\"::text, ''), 'dak') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'dak' OR COALESCE(_name::text, '') ILIKE '%dak%' OR COALESCE(_description::text, '') ILIKE '%dak%' OR COALESCE(_summary::text, '') ILIKE '%dak%' OR similarity(COALESCE(_name::text, ''), 'dak') > 0.1)) AND (NOT ((COALESCE(\"title\"::text, '') ILIKE '%geweigerd%' OR COALESCE(\"case\"::text, '') ILIKE '%geweigerd%' OR COALESCE(\"first_name\"::text, '') ILIKE '%geweigerd%' OR COALESCE(\"code\"::text, '') ILIKE 'geweigerd' OR COALESCE(\"prefixed\"::text, '') ILIKE 'geweigerd%' OR similarity(COALESCE(\"naam\"::text, ''), 'geweigerd') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'geweigerd' OR COALESCE(_name::text, '') ILIKE '%geweigerd%' OR COALESCE(_description::text, '') ILIKE '%geweigerd%' OR COALESCE(_summary::text, '') ILIKE '%geweigerd%' OR similarity(COALESCE(_name::text, ''), 'geweigerd') > 0.1))))"
+    ],
+    "union pg fuzzy=true dak AND NOT geweigerd columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(((COALESCE(\"title\"::text, '') ILIKE '%dak%' OR COALESCE(\"case\"::text, '') ILIKE '%dak%' OR COALESCE(\"code\"::text, '') ILIKE 'dak' OR similarity(COALESCE(\"naam\"::text, ''), 'dak') > 0.1 OR COALESCE(_name::text, '') ILIKE '%dak%' OR COALESCE(_description::text, '') ILIKE '%dak%' OR COALESCE(_summary::text, '') ILIKE '%dak%' OR similarity(COALESCE(_name::text, ''), 'dak') > 0.1)) AND (NOT ((COALESCE(\"title\"::text, '') ILIKE '%geweigerd%' OR COALESCE(\"case\"::text, '') ILIKE '%geweigerd%' OR COALESCE(\"code\"::text, '') ILIKE 'geweigerd' OR similarity(COALESCE(\"naam\"::text, ''), 'geweigerd') > 0.1 OR COALESCE(_name::text, '') ILIKE '%geweigerd%' OR COALESCE(_description::text, '') ILIKE '%geweigerd%' OR COALESCE(_summary::text, '') ILIKE '%geweigerd%' OR similarity(COALESCE(_name::text, ''), 'geweigerd') > 0.1))))"
+    ],
+    "qb pg fuzzy=true dak AND NOT geweigerd": [
+        "and: (((LOWER(COALESCE(t.\"title\", '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p2=\"dak\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p3=\"dak%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p4=\"dak\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p5=\"dak\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"%dak%\" OR similarity(COALESCE(t._name::text, ''), :p6=\"dak\") > 0.1)) AND (NOT ((LOWER(COALESCE(t.\"title\", '')) LIKE :p7=\"%geweigerd%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p7=\"%geweigerd%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p7=\"%geweigerd%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p8=\"geweigerd\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p9=\"geweigerd%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p10=\"geweigerd\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p11=\"geweigerd\" OR LOWER(COALESCE(t._name, '')) LIKE :p7=\"%geweigerd%\" OR LOWER(COALESCE(t._description, '')) LIKE :p7=\"%geweigerd%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p7=\"%geweigerd%\" OR similarity(COALESCE(t._name::text, ''), :p12=\"geweigerd\") > 0.1))))"
+    ],
+    "union pg fuzzy=true dak* columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((COALESCE(\"title\"::text, '') ILIKE 'dak%' OR COALESCE(\"case\"::text, '') ILIKE 'dak%' OR COALESCE(\"first_name\"::text, '') ILIKE 'dak%' OR COALESCE(\"code\"::text, '') ILIKE 'dak' OR COALESCE(\"prefixed\"::text, '') ILIKE 'dak%' OR similarity(COALESCE(\"naam\"::text, ''), 'dak') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'dak' OR COALESCE(_name::text, '') ILIKE 'dak%' OR COALESCE(_description::text, '') ILIKE 'dak%' OR COALESCE(_summary::text, '') ILIKE 'dak%' OR similarity(COALESCE(_name::text, ''), 'dak') > 0.1))"
+    ],
+    "union pg fuzzy=true dak* columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((COALESCE(\"title\"::text, '') ILIKE 'dak%' OR COALESCE(\"case\"::text, '') ILIKE 'dak%' OR COALESCE(\"code\"::text, '') ILIKE 'dak' OR similarity(COALESCE(\"naam\"::text, ''), 'dak') > 0.1 OR COALESCE(_name::text, '') ILIKE 'dak%' OR COALESCE(_description::text, '') ILIKE 'dak%' OR COALESCE(_summary::text, '') ILIKE 'dak%' OR similarity(COALESCE(_name::text, ''), 'dak') > 0.1))"
+    ],
+    "qb pg fuzzy=true dak*": [
+        "and: ((LOWER(COALESCE(t.\"title\", '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p2=\"dak\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p3=\"dak%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p4=\"dak\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p5=\"dak\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"dak%\" OR similarity(COALESCE(t._name::text, ''), :p6=\"dak\") > 0.1))"
+    ],
+    "union pg fuzzy=true \"twee woorden\" columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((COALESCE(\"title\"::text, '') ILIKE '%twee woorden%' OR COALESCE(\"case\"::text, '') ILIKE '%twee woorden%' OR COALESCE(\"first_name\"::text, '') ILIKE '%twee woorden%' OR COALESCE(\"code\"::text, '') ILIKE 'twee woorden' OR COALESCE(\"prefixed\"::text, '') ILIKE 'twee woorden%' OR similarity(COALESCE(\"naam\"::text, ''), 'twee woorden') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'twee woorden' OR COALESCE(_name::text, '') ILIKE '%twee woorden%' OR COALESCE(_description::text, '') ILIKE '%twee woorden%' OR COALESCE(_summary::text, '') ILIKE '%twee woorden%' OR similarity(COALESCE(_name::text, ''), 'twee woorden') > 0.1))"
+    ],
+    "union pg fuzzy=true \"twee woorden\" columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((COALESCE(\"title\"::text, '') ILIKE '%twee woorden%' OR COALESCE(\"case\"::text, '') ILIKE '%twee woorden%' OR COALESCE(\"code\"::text, '') ILIKE 'twee woorden' OR similarity(COALESCE(\"naam\"::text, ''), 'twee woorden') > 0.1 OR COALESCE(_name::text, '') ILIKE '%twee woorden%' OR COALESCE(_description::text, '') ILIKE '%twee woorden%' OR COALESCE(_summary::text, '') ILIKE '%twee woorden%' OR similarity(COALESCE(_name::text, ''), 'twee woorden') > 0.1))"
+    ],
+    "qb pg fuzzy=true \"twee woorden\"": [
+        "and: ((LOWER(COALESCE(t.\"title\", '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p2=\"twee woorden\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p3=\"twee woorden%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p4=\"twee woorden\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p5=\"twee woorden\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"%twee woorden%\" OR similarity(COALESCE(t._name::text, ''), :p6=\"twee woorden\") > 0.1))"
+    ],
+    "union pg fuzzy=true (a OR b) AND c columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((((COALESCE(\"title\"::text, '') ILIKE '%a%' OR COALESCE(\"case\"::text, '') ILIKE '%a%' OR COALESCE(\"first_name\"::text, '') ILIKE '%a%' OR COALESCE(\"code\"::text, '') ILIKE 'a' OR COALESCE(\"prefixed\"::text, '') ILIKE 'a%' OR similarity(COALESCE(\"naam\"::text, ''), 'a') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'a' OR COALESCE(_name::text, '') ILIKE '%a%' OR COALESCE(_description::text, '') ILIKE '%a%' OR COALESCE(_summary::text, '') ILIKE '%a%' OR similarity(COALESCE(_name::text, ''), 'a') > 0.1)) OR ((COALESCE(\"title\"::text, '') ILIKE '%b%' OR COALESCE(\"case\"::text, '') ILIKE '%b%' OR COALESCE(\"first_name\"::text, '') ILIKE '%b%' OR COALESCE(\"code\"::text, '') ILIKE 'b' OR COALESCE(\"prefixed\"::text, '') ILIKE 'b%' OR similarity(COALESCE(\"naam\"::text, ''), 'b') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'b' OR COALESCE(_name::text, '') ILIKE '%b%' OR COALESCE(_description::text, '') ILIKE '%b%' OR COALESCE(_summary::text, '') ILIKE '%b%' OR similarity(COALESCE(_name::text, ''), 'b') > 0.1))) AND ((COALESCE(\"title\"::text, '') ILIKE '%c%' OR COALESCE(\"case\"::text, '') ILIKE '%c%' OR COALESCE(\"first_name\"::text, '') ILIKE '%c%' OR COALESCE(\"code\"::text, '') ILIKE 'c' OR COALESCE(\"prefixed\"::text, '') ILIKE 'c%' OR similarity(COALESCE(\"naam\"::text, ''), 'c') > 0.1 OR COALESCE(\"flag\"::text, '') ILIKE 'c' OR COALESCE(_name::text, '') ILIKE '%c%' OR COALESCE(_description::text, '') ILIKE '%c%' OR COALESCE(_summary::text, '') ILIKE '%c%' OR similarity(COALESCE(_name::text, ''), 'c') > 0.1)))"
+    ],
+    "union pg fuzzy=true (a OR b) AND c columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((((COALESCE(\"title\"::text, '') ILIKE '%a%' OR COALESCE(\"case\"::text, '') ILIKE '%a%' OR COALESCE(\"code\"::text, '') ILIKE 'a' OR similarity(COALESCE(\"naam\"::text, ''), 'a') > 0.1 OR COALESCE(_name::text, '') ILIKE '%a%' OR COALESCE(_description::text, '') ILIKE '%a%' OR COALESCE(_summary::text, '') ILIKE '%a%' OR similarity(COALESCE(_name::text, ''), 'a') > 0.1)) OR ((COALESCE(\"title\"::text, '') ILIKE '%b%' OR COALESCE(\"case\"::text, '') ILIKE '%b%' OR COALESCE(\"code\"::text, '') ILIKE 'b' OR similarity(COALESCE(\"naam\"::text, ''), 'b') > 0.1 OR COALESCE(_name::text, '') ILIKE '%b%' OR COALESCE(_description::text, '') ILIKE '%b%' OR COALESCE(_summary::text, '') ILIKE '%b%' OR similarity(COALESCE(_name::text, ''), 'b') > 0.1))) AND ((COALESCE(\"title\"::text, '') ILIKE '%c%' OR COALESCE(\"case\"::text, '') ILIKE '%c%' OR COALESCE(\"code\"::text, '') ILIKE 'c' OR similarity(COALESCE(\"naam\"::text, ''), 'c') > 0.1 OR COALESCE(_name::text, '') ILIKE '%c%' OR COALESCE(_description::text, '') ILIKE '%c%' OR COALESCE(_summary::text, '') ILIKE '%c%' OR similarity(COALESCE(_name::text, ''), 'c') > 0.1)))"
+    ],
+    "qb pg fuzzy=true (a OR b) AND c": [
+        "and: ((((LOWER(COALESCE(t.\"title\", '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p2=\"a\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p3=\"a%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p4=\"a\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p5=\"a\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"%a%\" OR similarity(COALESCE(t._name::text, ''), :p6=\"a\") > 0.1)) OR ((LOWER(COALESCE(t.\"title\", '')) LIKE :p7=\"%b%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p7=\"%b%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p7=\"%b%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p8=\"b\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p9=\"b%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p10=\"b\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p11=\"b\" OR LOWER(COALESCE(t._name, '')) LIKE :p7=\"%b%\" OR LOWER(COALESCE(t._description, '')) LIKE :p7=\"%b%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p7=\"%b%\" OR similarity(COALESCE(t._name::text, ''), :p12=\"b\") > 0.1))) AND ((LOWER(COALESCE(t.\"title\", '')) LIKE :p13=\"%c%\" OR LOWER(COALESCE(t.\"case\", '')) LIKE :p13=\"%c%\" OR LOWER(COALESCE(t.\"first_name\", '')) LIKE :p13=\"%c%\" OR LOWER(COALESCE(t.\"code\", '')) LIKE :p14=\"c\" OR LOWER(COALESCE(t.\"prefixed\", '')) LIKE :p15=\"c%\" OR similarity(COALESCE(t.\"naam\"::text, ''), :p16=\"c\") > 0.1 OR LOWER(COALESCE(t.\"flag\", '')) LIKE :p17=\"c\" OR LOWER(COALESCE(t._name, '')) LIKE :p13=\"%c%\" OR LOWER(COALESCE(t._description, '')) LIKE :p13=\"%c%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p13=\"%c%\" OR similarity(COALESCE(t._name::text, ''), :p18=\"c\") > 0.1)))"
+    ],
+    "union pg fuzzy=true x_% columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(\"title\"::text ILIKE '%x_%%' OR \"case\"::text ILIKE '%x_%%' OR \"first_name\"::text ILIKE '%x_%%' OR \"code\"::text ILIKE 'x\\_\\%' OR \"prefixed\"::text ILIKE 'x\\_\\%%' OR similarity(\"naam\", 'x_%') > 0.1 OR \"flag\"::text ILIKE 'x\\_\\%' OR _name::text ILIKE '%x_%%' OR _description::text ILIKE '%x_%%' OR _summary::text ILIKE '%x_%%' OR similarity(_name::text, 'x_%') > 0.1)"
+    ],
+    "union pg fuzzy=true x_% columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(\"title\"::text ILIKE '%x_%%' OR \"case\"::text ILIKE '%x_%%' OR \"code\"::text ILIKE 'x\\_\\%' OR similarity(\"naam\", 'x_%') > 0.1 OR _name::text ILIKE '%x_%%' OR _description::text ILIKE '%x_%%' OR _summary::text ILIKE '%x_%%' OR similarity(_name::text, 'x_%') > 0.1)"
+    ],
+    "qb pg fuzzy=true x_%": [
+        "or: like(LOWER(t.\"title\"),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.\"case\"),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.\"first_name\"),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.\"code\"),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.\"prefixed\"),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.\"naam\"),:p1=\"%x_%%\")",
+        "or: like(LOWER(t._name),:p1=\"%x_%%\")",
+        "or: like(LOWER(t._description),:p1=\"%x_%%\")",
+        "or: like(LOWER(t._summary),:p1=\"%x_%%\")",
+        "or: similarity(t._name::text, :p2=\"x_%\") > 0.1",
+        "and: composite"
+    ],
+    "union mysql fuzzy=false foo columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(LOWER(CAST(`title` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(`case` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(`first_name` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(`code` AS CHAR)) LIKE LOWER('foo') OR LOWER(CAST(`prefixed` AS CHAR)) LIKE LOWER('foo%') OR LOWER(CAST(`naam` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(`flag` AS CHAR)) LIKE LOWER('foo') OR LOWER(CAST(_name AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(_description AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(_summary AS CHAR)) LIKE LOWER('%foo%'))"
+    ],
+    "union mysql fuzzy=false foo columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(LOWER(CAST(`title` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(`case` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(`code` AS CHAR)) LIKE LOWER('foo') OR LOWER(CAST(`naam` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(_name AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(_description AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(_summary AS CHAR)) LIKE LOWER('%foo%'))"
+    ],
+    "qb mysql fuzzy=false foo": [
+        "or: like(LOWER(t.`title`),:p1=\"%foo%\")",
+        "or: like(LOWER(t.`case`),:p1=\"%foo%\")",
+        "or: like(LOWER(t.`first_name`),:p1=\"%foo%\")",
+        "or: like(LOWER(t.`code`),:p1=\"%foo%\")",
+        "or: like(LOWER(t.`prefixed`),:p1=\"%foo%\")",
+        "or: like(LOWER(t.`naam`),:p1=\"%foo%\")",
+        "or: like(LOWER(t._name),:p1=\"%foo%\")",
+        "or: like(LOWER(t._description),:p1=\"%foo%\")",
+        "or: like(LOWER(t._summary),:p1=\"%foo%\")",
+        "and: composite"
+    ],
+    "union mysql fuzzy=false o'brien columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(LOWER(CAST(`title` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(`case` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(`first_name` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(`code` AS CHAR)) LIKE LOWER('o'brien') OR LOWER(CAST(`prefixed` AS CHAR)) LIKE LOWER('o'brien%') OR LOWER(CAST(`naam` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(`flag` AS CHAR)) LIKE LOWER('o'brien') OR LOWER(CAST(_name AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(_description AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(_summary AS CHAR)) LIKE LOWER('%o'brien%'))"
+    ],
+    "union mysql fuzzy=false o'brien columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(LOWER(CAST(`title` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(`case` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(`code` AS CHAR)) LIKE LOWER('o'brien') OR LOWER(CAST(`naam` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(_name AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(_description AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(_summary AS CHAR)) LIKE LOWER('%o'brien%'))"
+    ],
+    "qb mysql fuzzy=false o'brien": [
+        "or: like(LOWER(t.`title`),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.`case`),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.`first_name`),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.`code`),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.`prefixed`),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.`naam`),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t._name),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t._description),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t._summary),:p1=\"%o'brien%\")",
+        "and: composite"
+    ],
+    "union mysql fuzzy=false dak AND NOT geweigerd columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('dak') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('dak') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%dak%'))) AND (NOT ((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('geweigerd') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('geweigerd%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('geweigerd') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%geweigerd%')))))"
+    ],
+    "union mysql fuzzy=false dak AND NOT geweigerd columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('dak') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%dak%'))) AND (NOT ((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('geweigerd') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%geweigerd%')))))"
+    ],
+    "qb mysql fuzzy=false dak AND NOT geweigerd": [
+        "and: (((LOWER(COALESCE(t.`title`, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p2=\"dak\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p3=\"dak%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p4=\"%dak%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p5=\"dak\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"%dak%\")) AND (NOT ((LOWER(COALESCE(t.`title`, '')) LIKE :p6=\"%geweigerd%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p6=\"%geweigerd%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p6=\"%geweigerd%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p7=\"geweigerd\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p8=\"geweigerd%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p9=\"%geweigerd%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p10=\"geweigerd\" OR LOWER(COALESCE(t._name, '')) LIKE :p6=\"%geweigerd%\" OR LOWER(COALESCE(t._description, '')) LIKE :p6=\"%geweigerd%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p6=\"%geweigerd%\"))))"
+    ],
+    "union mysql fuzzy=false dak* columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('dak') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('dak') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('dak%')))"
+    ],
+    "union mysql fuzzy=false dak* columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('dak') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('dak%')))"
+    ],
+    "qb mysql fuzzy=false dak*": [
+        "and: ((LOWER(COALESCE(t.`title`, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p2=\"dak\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p3=\"dak%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p4=\"dak%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p5=\"dak\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"dak%\"))"
+    ],
+    "union mysql fuzzy=false \"twee woorden\" columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('twee woorden') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('twee woorden%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('twee woorden') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%twee woorden%')))"
+    ],
+    "union mysql fuzzy=false \"twee woorden\" columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('twee woorden') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%twee woorden%')))"
+    ],
+    "qb mysql fuzzy=false \"twee woorden\"": [
+        "and: ((LOWER(COALESCE(t.`title`, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p2=\"twee woorden\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p3=\"twee woorden%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p4=\"%twee woorden%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p5=\"twee woorden\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"%twee woorden%\"))"
+    ],
+    "union mysql fuzzy=false (a OR b) AND c columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('a') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('a%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('a') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%a%'))) OR ((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('b') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('b%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('b') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%b%')))) AND ((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('c') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('c%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('c') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%c%'))))"
+    ],
+    "union mysql fuzzy=false (a OR b) AND c columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('a') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%a%'))) OR ((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('b') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%b%')))) AND ((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('c') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%c%'))))"
+    ],
+    "qb mysql fuzzy=false (a OR b) AND c": [
+        "and: ((((LOWER(COALESCE(t.`title`, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p2=\"a\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p3=\"a%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p4=\"%a%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p5=\"a\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"%a%\")) OR ((LOWER(COALESCE(t.`title`, '')) LIKE :p6=\"%b%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p6=\"%b%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p6=\"%b%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p7=\"b\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p8=\"b%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p9=\"%b%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p10=\"b\" OR LOWER(COALESCE(t._name, '')) LIKE :p6=\"%b%\" OR LOWER(COALESCE(t._description, '')) LIKE :p6=\"%b%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p6=\"%b%\"))) AND ((LOWER(COALESCE(t.`title`, '')) LIKE :p11=\"%c%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p11=\"%c%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p11=\"%c%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p12=\"c\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p13=\"c%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p14=\"%c%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p15=\"c\" OR LOWER(COALESCE(t._name, '')) LIKE :p11=\"%c%\" OR LOWER(COALESCE(t._description, '')) LIKE :p11=\"%c%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p11=\"%c%\")))"
+    ],
+    "union mysql fuzzy=false x_% columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(LOWER(CAST(`title` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(`case` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(`first_name` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(`code` AS CHAR)) LIKE LOWER('x\\_\\%') OR LOWER(CAST(`prefixed` AS CHAR)) LIKE LOWER('x\\_\\%%') OR LOWER(CAST(`naam` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(`flag` AS CHAR)) LIKE LOWER('x\\_\\%') OR LOWER(CAST(_name AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(_description AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(_summary AS CHAR)) LIKE LOWER('%x_%%'))"
+    ],
+    "union mysql fuzzy=false x_% columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(LOWER(CAST(`title` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(`case` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(`code` AS CHAR)) LIKE LOWER('x\\_\\%') OR LOWER(CAST(`naam` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(_name AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(_description AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(_summary AS CHAR)) LIKE LOWER('%x_%%'))"
+    ],
+    "qb mysql fuzzy=false x_%": [
+        "or: like(LOWER(t.`title`),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.`case`),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.`first_name`),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.`code`),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.`prefixed`),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.`naam`),:p1=\"%x_%%\")",
+        "or: like(LOWER(t._name),:p1=\"%x_%%\")",
+        "or: like(LOWER(t._description),:p1=\"%x_%%\")",
+        "or: like(LOWER(t._summary),:p1=\"%x_%%\")",
+        "and: composite"
+    ],
+    "union mysql fuzzy=true foo columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(LOWER(CAST(`title` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(`case` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(`first_name` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(`code` AS CHAR)) LIKE LOWER('foo') OR LOWER(CAST(`prefixed` AS CHAR)) LIKE LOWER('foo%') OR LOWER(CAST(`naam` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(`flag` AS CHAR)) LIKE LOWER('foo') OR LOWER(CAST(_name AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(_description AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(_summary AS CHAR)) LIKE LOWER('%foo%') OR similarity(_name::text, 'foo') > 0.1)"
+    ],
+    "union mysql fuzzy=true foo columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(LOWER(CAST(`title` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(`case` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(`code` AS CHAR)) LIKE LOWER('foo') OR LOWER(CAST(`naam` AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(_name AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(_description AS CHAR)) LIKE LOWER('%foo%') OR LOWER(CAST(_summary AS CHAR)) LIKE LOWER('%foo%') OR similarity(_name::text, 'foo') > 0.1)"
+    ],
+    "qb mysql fuzzy=true foo": [
+        "or: like(LOWER(t.`title`),:p1=\"%foo%\")",
+        "or: like(LOWER(t.`case`),:p1=\"%foo%\")",
+        "or: like(LOWER(t.`first_name`),:p1=\"%foo%\")",
+        "or: like(LOWER(t.`code`),:p1=\"%foo%\")",
+        "or: like(LOWER(t.`prefixed`),:p1=\"%foo%\")",
+        "or: like(LOWER(t.`naam`),:p1=\"%foo%\")",
+        "or: like(LOWER(t._name),:p1=\"%foo%\")",
+        "or: like(LOWER(t._description),:p1=\"%foo%\")",
+        "or: like(LOWER(t._summary),:p1=\"%foo%\")",
+        "or: similarity(t._name::text, :p2=\"foo\") > 0.1",
+        "and: composite"
+    ],
+    "union mysql fuzzy=true o'brien columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(LOWER(CAST(`title` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(`case` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(`first_name` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(`code` AS CHAR)) LIKE LOWER('o'brien') OR LOWER(CAST(`prefixed` AS CHAR)) LIKE LOWER('o'brien%') OR LOWER(CAST(`naam` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(`flag` AS CHAR)) LIKE LOWER('o'brien') OR LOWER(CAST(_name AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(_description AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(_summary AS CHAR)) LIKE LOWER('%o'brien%') OR similarity(_name::text, 'o'brien') > 0.1)"
+    ],
+    "union mysql fuzzy=true o'brien columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(LOWER(CAST(`title` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(`case` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(`code` AS CHAR)) LIKE LOWER('o'brien') OR LOWER(CAST(`naam` AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(_name AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(_description AS CHAR)) LIKE LOWER('%o'brien%') OR LOWER(CAST(_summary AS CHAR)) LIKE LOWER('%o'brien%') OR similarity(_name::text, 'o'brien') > 0.1)"
+    ],
+    "qb mysql fuzzy=true o'brien": [
+        "or: like(LOWER(t.`title`),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.`case`),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.`first_name`),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.`code`),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.`prefixed`),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t.`naam`),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t._name),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t._description),:p1=\"%o'brien%\")",
+        "or: like(LOWER(t._summary),:p1=\"%o'brien%\")",
+        "or: similarity(t._name::text, :p2=\"o'brien\") > 0.1",
+        "and: composite"
+    ],
+    "union mysql fuzzy=true dak AND NOT geweigerd columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('dak') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('dak') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%dak%') OR similarity(COALESCE(_name::text, ''), 'dak') > 0.1)) AND (NOT ((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('geweigerd') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('geweigerd%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('geweigerd') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR similarity(COALESCE(_name::text, ''), 'geweigerd') > 0.1))))"
+    ],
+    "union mysql fuzzy=true dak AND NOT geweigerd columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('dak') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%dak%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%dak%') OR similarity(COALESCE(_name::text, ''), 'dak') > 0.1)) AND (NOT ((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('geweigerd') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%geweigerd%') OR similarity(COALESCE(_name::text, ''), 'geweigerd') > 0.1))))"
+    ],
+    "qb mysql fuzzy=true dak AND NOT geweigerd": [
+        "and: (((LOWER(COALESCE(t.`title`, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p2=\"dak\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p3=\"dak%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p4=\"%dak%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p5=\"dak\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"%dak%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"%dak%\" OR similarity(COALESCE(t._name::text, ''), :p6=\"dak\") > 0.1)) AND (NOT ((LOWER(COALESCE(t.`title`, '')) LIKE :p7=\"%geweigerd%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p7=\"%geweigerd%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p7=\"%geweigerd%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p8=\"geweigerd\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p9=\"geweigerd%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p10=\"%geweigerd%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p11=\"geweigerd\" OR LOWER(COALESCE(t._name, '')) LIKE :p7=\"%geweigerd%\" OR LOWER(COALESCE(t._description, '')) LIKE :p7=\"%geweigerd%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p7=\"%geweigerd%\" OR similarity(COALESCE(t._name::text, ''), :p12=\"geweigerd\") > 0.1))))"
+    ],
+    "union mysql fuzzy=true dak* columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('dak') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('dak') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('dak%') OR similarity(COALESCE(_name::text, ''), 'dak') > 0.1))"
+    ],
+    "union mysql fuzzy=true dak* columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('dak') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('dak%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('dak%') OR similarity(COALESCE(_name::text, ''), 'dak') > 0.1))"
+    ],
+    "qb mysql fuzzy=true dak*": [
+        "and: ((LOWER(COALESCE(t.`title`, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p2=\"dak\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p3=\"dak%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p4=\"dak%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p5=\"dak\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"dak%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"dak%\" OR similarity(COALESCE(t._name::text, ''), :p6=\"dak\") > 0.1))"
+    ],
+    "union mysql fuzzy=true \"twee woorden\" columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('twee woorden') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('twee woorden%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('twee woorden') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR similarity(COALESCE(_name::text, ''), 'twee woorden') > 0.1))"
+    ],
+    "union mysql fuzzy=true \"twee woorden\" columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('twee woorden') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%twee woorden%') OR similarity(COALESCE(_name::text, ''), 'twee woorden') > 0.1))"
+    ],
+    "qb mysql fuzzy=true \"twee woorden\"": [
+        "and: ((LOWER(COALESCE(t.`title`, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p2=\"twee woorden\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p3=\"twee woorden%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p4=\"%twee woorden%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p5=\"twee woorden\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"%twee woorden%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"%twee woorden%\" OR similarity(COALESCE(t._name::text, ''), :p6=\"twee woorden\") > 0.1))"
+    ],
+    "union mysql fuzzy=true (a OR b) AND c columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('a') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('a%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('a') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%a%') OR similarity(COALESCE(_name::text, ''), 'a') > 0.1)) OR ((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('b') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('b%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('b') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%b%') OR similarity(COALESCE(_name::text, ''), 'b') > 0.1))) AND ((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(`first_name`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('c') OR LOWER(CAST(COALESCE(`prefixed`, '') AS CHAR)) LIKE LOWER('c%') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(`flag`, '') AS CHAR)) LIKE LOWER('c') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%c%') OR similarity(COALESCE(_name::text, ''), 'c') > 0.1)))"
+    ],
+    "union mysql fuzzy=true (a OR b) AND c columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "((((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('a') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%a%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%a%') OR similarity(COALESCE(_name::text, ''), 'a') > 0.1)) OR ((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('b') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%b%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%b%') OR similarity(COALESCE(_name::text, ''), 'b') > 0.1))) AND ((LOWER(CAST(COALESCE(`title`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(`case`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(`code`, '') AS CHAR)) LIKE LOWER('c') OR LOWER(CAST(COALESCE(`naam`, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(_name, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(_description, '') AS CHAR)) LIKE LOWER('%c%') OR LOWER(CAST(COALESCE(_summary, '') AS CHAR)) LIKE LOWER('%c%') OR similarity(COALESCE(_name::text, ''), 'c') > 0.1)))"
+    ],
+    "qb mysql fuzzy=true (a OR b) AND c": [
+        "and: ((((LOWER(COALESCE(t.`title`, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p2=\"a\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p3=\"a%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p4=\"%a%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p5=\"a\" OR LOWER(COALESCE(t._name, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t._description, '')) LIKE :p1=\"%a%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p1=\"%a%\" OR similarity(COALESCE(t._name::text, ''), :p6=\"a\") > 0.1)) OR ((LOWER(COALESCE(t.`title`, '')) LIKE :p7=\"%b%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p7=\"%b%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p7=\"%b%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p8=\"b\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p9=\"b%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p10=\"%b%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p11=\"b\" OR LOWER(COALESCE(t._name, '')) LIKE :p7=\"%b%\" OR LOWER(COALESCE(t._description, '')) LIKE :p7=\"%b%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p7=\"%b%\" OR similarity(COALESCE(t._name::text, ''), :p12=\"b\") > 0.1))) AND ((LOWER(COALESCE(t.`title`, '')) LIKE :p13=\"%c%\" OR LOWER(COALESCE(t.`case`, '')) LIKE :p13=\"%c%\" OR LOWER(COALESCE(t.`first_name`, '')) LIKE :p13=\"%c%\" OR LOWER(COALESCE(t.`code`, '')) LIKE :p14=\"c\" OR LOWER(COALESCE(t.`prefixed`, '')) LIKE :p15=\"c%\" OR LOWER(COALESCE(t.`naam`, '')) LIKE :p16=\"%c%\" OR LOWER(COALESCE(t.`flag`, '')) LIKE :p17=\"c\" OR LOWER(COALESCE(t._name, '')) LIKE :p13=\"%c%\" OR LOWER(COALESCE(t._description, '')) LIKE :p13=\"%c%\" OR LOWER(COALESCE(t._summary, '')) LIKE :p13=\"%c%\" OR similarity(COALESCE(t._name::text, ''), :p18=\"c\") > 0.1)))"
+    ],
+    "union mysql fuzzy=true x_% columns=null": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(LOWER(CAST(`title` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(`case` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(`first_name` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(`code` AS CHAR)) LIKE LOWER('x\\_\\%') OR LOWER(CAST(`prefixed` AS CHAR)) LIKE LOWER('x\\_\\%%') OR LOWER(CAST(`naam` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(`flag` AS CHAR)) LIKE LOWER('x\\_\\%') OR LOWER(CAST(_name AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(_description AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(_summary AS CHAR)) LIKE LOWER('%x_%%') OR similarity(_name::text, 'x_%') > 0.1)"
+    ],
+    "union mysql fuzzy=true x_% columns=[\"title\",\"case\",\"naam\",\"code\"]": [
+        "_deleted IS NULL",
+        "_archived IS NULL",
+        "(_status IS NULL OR _status <> 'draft')",
+        "(LOWER(CAST(`title` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(`case` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(`code` AS CHAR)) LIKE LOWER('x\\_\\%') OR LOWER(CAST(`naam` AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(_name AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(_description AS CHAR)) LIKE LOWER('%x_%%') OR LOWER(CAST(_summary AS CHAR)) LIKE LOWER('%x_%%') OR similarity(_name::text, 'x_%') > 0.1)"
+    ],
+    "qb mysql fuzzy=true x_%": [
+        "or: like(LOWER(t.`title`),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.`case`),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.`first_name`),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.`code`),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.`prefixed`),:p1=\"%x_%%\")",
+        "or: like(LOWER(t.`naam`),:p1=\"%x_%%\")",
+        "or: like(LOWER(t._name),:p1=\"%x_%%\")",
+        "or: like(LOWER(t._description),:p1=\"%x_%%\")",
+        "or: like(LOWER(t._summary),:p1=\"%x_%%\")",
+        "or: similarity(t._name::text, :p2=\"x_%\") > 0.1",
+        "and: composite"
+    ]
+}
