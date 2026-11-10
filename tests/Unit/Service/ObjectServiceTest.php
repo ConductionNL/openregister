@@ -80,6 +80,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
 
 /**
  * Comprehensive unit tests for ObjectService.
@@ -2502,7 +2503,7 @@ class ObjectServiceTest extends TestCase {
 			});
 
 		try {
-			$this->service->patchObject('42', ['title' => 'Updated Title']);
+			$this->service->patchObject(patch: new ObjectPatch(objectId: '42', data: ['title' => 'Updated Title']));
 		} catch (\Throwable $e) {
 			// Expected — deep pipeline.
 		}

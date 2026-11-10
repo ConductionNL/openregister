@@ -33,6 +33,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Behaviour of the reversal action beyond its four headline outcomes.
@@ -181,7 +183,7 @@ class RestorePriorValuesActionBehaviourTest extends TestCase {
 			->willReturn($this->record(['status' => 'open'], ['status' => 'closed']));
 		$this->objectService->expects($this->once())
 			->method('patchObject')
-			->with('case-9', ['status' => 'open'], '11', '22', true, true, $actor)
+			->with(new ObjectPatch(objectId: 'case-9', data: ['status' => 'open'], target: new ObjectFindTarget(register: '11', schema: '22'), currentUser: $actor), true, true)
 			->willReturn(new ObjectEntity());
 
 		$result = $this->action()->apply($this->object(['status' => 'closed']), $this->parameters(), true, $actor);

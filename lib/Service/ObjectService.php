@@ -7484,22 +7484,20 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *    merge corrupts any reordered list.
      *
      * The identifier is NOT cast to int. It is resolved as a uuid, a slug or a
-     * numeric id, scoped to exactly one magic table when both `$register` and
-     * `$schema` are supplied (the #1638 defect class).
+     * numeric id, scoped to exactly one magic table when both the register and
+     * the schema of the patch target are supplied (the #1638 defect class).
      *
      * The merged result goes through `saveObject()`, so schema validation, the
      * audit trail and event dispatch all apply — a patch is a save of a
      * different shape, not a privileged shortcut around one.
      *
-     * @param string                   $objectId      Object id, uuid or slug.
-     * @param array                    $data          Partial object data to merge.
-     * @param Register|string|int|null $register      Optional register scope (object, id, uuid or slug).
-     * @param Schema|string|int|null   $schema        Optional schema scope (object, id, uuid or slug).
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
-     * @param IUser|null               $currentUser   Explicit acting user, forwarded to `saveObject()`.
-     *                                                Non-HTTP callers (cron, flow runs, import pipelines)
-     *                                                MUST pass one to avoid the default-deny fall-through.
+     * @param ObjectPatch $patch         The object id, uuid or slug, the partial data to merge, the
+     *                                   optional register and schema scope, and the explicit acting
+     *                                   user forwarded to `saveObject()`. Non-HTTP callers (cron, flow
+     *                                   runs, import pipelines) MUST set one to avoid the default-deny
+     *                                   fall-through.
+     * @param bool        $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity Patched object entity
      *
@@ -7507,17 +7505,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
-    public function patchObject(
-        string $objectId,
-        array $data,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
-        bool $_rbac=true,
-        bool $_multitenancy=true,
-        ?IUser $currentUser=null
-    ): ObjectEntity {
-        $target = new ObjectFindTarget(register: $register, schema: $schema);
-        $patch  = new ObjectPatch(objectId: $objectId, data: $data, target: $target, currentUser: $currentUser);
+    public function patchObject(ObjectPatch $patch, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
+    {
         $access = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
         return $this->preservingScope(operation: fn (): ObjectEntity => $this->patchWithinScope(patch: $patch, access: $access));
     }//end patchObject()

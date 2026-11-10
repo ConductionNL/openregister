@@ -32,6 +32,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Behaviour of the two property-writing bulk actions and their shared base.
@@ -170,7 +172,7 @@ class PropertyWriteActionsBehaviourTest extends TestCase {
 		$actor = $this->createMock(IUser::class);
 		$this->objectService->expects($this->once())
 			->method('patchObject')
-			->with('zaak-4', ['handler' => null], '3', '5', true, true, $actor)
+			->with(new ObjectPatch(objectId: 'zaak-4', data: ['handler' => null], target: new ObjectFindTarget(register: '3', schema: '5'), currentUser: $actor), true, true)
 			->willReturn(new ObjectEntity());
 
 		$result = $this->assign()->apply(

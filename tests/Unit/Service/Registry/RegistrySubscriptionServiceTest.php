@@ -20,6 +20,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
 
 /**
  * Orchestration tests for RegistrySubscriptionService. The event/audit
@@ -196,7 +197,11 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObject');
 		$this->objectService->expects($this->once())
 			->method('patchObject')
-			->willReturnCallback(function ($objectId, $data, $register = null, $schema = null) use ($saved) {
+			->willReturnCallback(function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true) use ($saved) {
+				$objectId = $patch->objectId;
+				$data = $patch->data;
+				$register = $patch->target->register;
+				$schema = $patch->target->schema;
 				$this->assertSame('obj-uuid-1', $objectId);
 				$this->assertSame(['address' => 'Dam 1'], $data);
 				$this->assertSame('dossiq', $register);

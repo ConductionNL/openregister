@@ -70,6 +70,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
 
 /**
  * Tests for the appendOnly schema flag enforcement in ObjectService.
@@ -582,7 +583,7 @@ class AppendOnlyTest extends TestCase {
 
 		$this->expectException(AppendOnlyException::class);
 
-		$this->service->patchObject(objectId: 'stored-uuid', data: ['name' => 'changed']);
+		$this->service->patchObject(patch: new ObjectPatch(objectId: 'stored-uuid', data: ['name' => 'changed']));
 	}//end testPatchOfExistingObjectRefusedOnAppendOnlySchema()
 
 	/**

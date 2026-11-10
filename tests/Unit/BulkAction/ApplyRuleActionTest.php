@@ -33,6 +33,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Rules\ApplyRuleServices;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
 
 /**
  * Pins what the apply-rule bulk action validates, skips, previews and writes.
@@ -179,7 +180,7 @@ class ApplyRuleActionTest extends TestCase {
 		$this->inventory->method('find')->willReturn($this->rule(RuleVocabulary::KIND_CALCULATION));
 		$this->evaluator->method('evaluate')->willReturn(3);
 		$this->objects->expects($this->once())->method('patchObject')
-			->with('o-1', ['total' => 3]);
+			->with($this->callback(static fn (ObjectPatch $patch): bool => $patch->objectId === 'o-1' && $patch->data === ['total' => 3]));
 		$result = $this->action->apply($this->object(['total' => 1]), ['schema' => 'orders', 'ruleId' => 'r-1'], true);
 		$this->assertTrue($result->isApplied());
 	}//end testACommitWritesTheDerivedValue()

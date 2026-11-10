@@ -66,6 +66,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Tests for ObjectService::patchObject() and its merge rules.
@@ -300,10 +302,11 @@ class ObjectServicePatchObjectTest extends TestCase {
 
 		try {
 			$this->service->patchObject(
-				objectId: $uuid,
-				data: ['status' => 'closed'],
-				register: $this->register,
-				schema: $this->schema
+				patch: new ObjectPatch(
+					objectId: $uuid,
+					data: ['status' => 'closed'],
+					target: new ObjectFindTarget(register: $this->register, schema: $this->schema)
+				)
 			);
 		} catch (Throwable $e) {
 			// The deep saveObject pipeline is not the subject here; the lookup is.
@@ -334,7 +337,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 		);
 
 		try {
-			$this->service->patchObject(objectId: 'u-1', data: ['title' => 'Beta', 'contact' => ['email' => 'b@example.org']]);
+			$this->service->patchObject(patch: new ObjectPatch(objectId: 'u-1', data: ['title' => 'Beta', 'contact' => ['email' => 'b@example.org']]));
 		} catch (Throwable $e) {
 			// Expected — the rest of the save pipeline is mocked out.
 		}
@@ -402,7 +405,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 		);
 
 		try {
-			$this->service->patchObject(objectId: 'u-1', data: $patch);
+			$this->service->patchObject(patch: new ObjectPatch(objectId: 'u-1', data: $patch));
 		} catch (Throwable $e) {
 			// Expected — the rest of the save pipeline is mocked out.
 		}
@@ -523,7 +526,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 		);
 
 		try {
-			$this->service->patchObject(objectId: 'u-1', data: ['title' => 'Beta'], _rbac: false);
+			$this->service->patchObject(patch: new ObjectPatch(objectId: 'u-1', data: ['title' => 'Beta']), _rbac: false);
 		} catch (Throwable $e) {
 			// Expected — the rest of the save pipeline is mocked out.
 		}
@@ -540,13 +543,10 @@ class ObjectServicePatchObjectTest extends TestCase {
 			$names[] = $parameter->getName();
 		}
 
-		$this->assertSame(
-			['objectId', 'data', 'register', 'schema', '_rbac', '_multitenancy', 'currentUser'],
-			$names,
-			'the signature mirrors saveObject()\'s parameter vocabulary'
-		);
+		$this->assertSame(['patch', '_rbac', '_multitenancy'], $names, 'the patch travels as one ObjectPatch');
 
-		$currentUser = $method->getParameters()[6];
+		$currentUser = (new \ReflectionClass(ObjectPatch::class))->getConstructor()->getParameters()[3];
+		$this->assertSame('currentUser', $currentUser->getName());
 		$this->assertSame(IUser::class, (string)$currentUser->getType()->getName());
 		$this->assertTrue($currentUser->allowsNull());
 

@@ -45,6 +45,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
 
 /**
  * @covers \OCA\OpenRegister\Service\Registry\RegistrySubscriptionService
@@ -125,7 +126,8 @@ class RegistrySubscriptionStateTest extends TestCase {
 		$working = self::row('o-ok', RegistrySubscription::STATE_REQUESTED);
 		$this->mapper->method('findActiveByIdentity')->with('brp', '999990019')->willReturn([$failing, $working]);
 		$this->guard->method('evaluate')->willReturn(['allowed' => true, 'rejected' => []]);
-		$this->objects->method('patchObject')->willReturnCallback(static function (string $objectId): ObjectEntity {
+		$this->objects->method('patchObject')->willReturnCallback(static function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+			$objectId = $patch->objectId;
 			if ($objectId === 'o-fail') {
 				throw new RuntimeException('locked');
 			}

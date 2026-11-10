@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * A bulk action that writes a set of properties on each member.
@@ -108,11 +110,12 @@ abstract class AbstractPropertyWriteAction implements ReversibleBulkActionInterf
 
 		try {
 			$this->objectService->patchObject(
-				objectId: (string)$object->getUuid(),
-				data: $patch,
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				currentUser: $actor
+				patch: new ObjectPatch(
+					objectId: (string)$object->getUuid(),
+					data: $patch,
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					currentUser: $actor
+				)
 			);
 		} catch (\Throwable $exception) {
 			$this->logger->warning(

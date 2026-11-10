@@ -47,6 +47,7 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
@@ -289,7 +290,9 @@ final class ObjectWriteBulkGoldenTest extends TestCase {
 			}
 		);
 		$store->method('patchObject')->willReturnCallback(
-			function (string $objectId, array $data): ObjectEntity {
+			function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$objectId = $patch->objectId;
+				$data = $patch->data;
 				$this->calls[] = ['patchObject' => $objectId, 'data' => $data];
 				return $this->entity(data: $data);
 			}

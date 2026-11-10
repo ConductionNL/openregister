@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
 
 /**
  * The timestamp is checked by shape and range, never pinned.
@@ -54,7 +55,11 @@ class CaseBusinessStateWriterResultTest extends TestCase
         $objects->expects($this->once())
             ->method('patchObject')
             ->willReturnCallback(
-                static function (string $objectId, array $data, mixed $register, mixed $schema, bool $_rbac) use (&$written): ObjectEntity {
+                static function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true) use (&$written): ObjectEntity {
+                    $objectId = $patch->objectId;
+                    $data = $patch->data;
+                    $register = $patch->target->register;
+                    $schema = $patch->target->schema;
                     $written = [$objectId, $data, $register, $schema, $_rbac];
                     return new ObjectEntity();
                 }

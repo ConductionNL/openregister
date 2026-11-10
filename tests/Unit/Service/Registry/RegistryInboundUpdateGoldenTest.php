@@ -34,6 +34,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
 
 /**
  * Pins the allowed, refused and failed outcomes of one inbound update that
@@ -83,7 +84,8 @@ class RegistryInboundUpdateGoldenTest extends TestCase {
 		$updated->setUuid('applied');
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('patchObject')->willReturnCallback(
-			function (string $objectId) use ($updated): ObjectEntity {
+			function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true) use ($updated): ObjectEntity {
+				$objectId = $patch->objectId;
 				if ($objectId === 'failing') {
 					throw new RuntimeException('db gone');
 				}

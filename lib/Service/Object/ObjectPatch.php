@@ -49,8 +49,8 @@ final class ObjectPatch {
 	public function __construct(
 		public readonly string $objectId,
 		public readonly array $data,
-		public readonly ObjectFindTarget $target,
-		public readonly ?IUser $currentUser,
+		public readonly ObjectFindTarget $target=new ObjectFindTarget(),
+		public readonly ?IUser $currentUser=null,
 	) {
 	}//end __construct()
 }//end class

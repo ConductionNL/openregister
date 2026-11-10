@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
 
 final class RestorePriorValuesActionTest extends TestCase {
 
@@ -72,7 +73,9 @@ final class RestorePriorValuesActionTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->objectService->method('patchObject')->willReturnCallback(
-			function (string $objectId, array $data) {
+			function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true) {
+				$objectId = $patch->objectId;
+				$data = $patch->data;
 				$this->writes[] = ['uuid' => $objectId, 'data' => $data];
 
 				return new ObjectEntity();

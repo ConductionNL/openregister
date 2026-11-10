@@ -35,6 +35,8 @@ namespace OCA\OpenRegister\Service\Case;
 use DateTime;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Mirrors status and result onto the anchoring object.
@@ -139,10 +141,11 @@ class CaseBusinessStateWriter {
 	 */
 	private function patch(CaseItem $item, array $data): void {
 		$this->objects->patchObject(
-			objectId: (string)$item->getObjectUuid(),
-			data: $data,
-			register: $item->getRegisterId(),
-			schema: $item->getSchemaId(),
+			patch: new ObjectPatch(
+				objectId: (string)$item->getObjectUuid(),
+				data: $data,
+				target: new ObjectFindTarget(register: $item->getRegisterId(), schema: $item->getSchemaId())
+			),
 			_rbac: false
 		);
 	}//end patch()

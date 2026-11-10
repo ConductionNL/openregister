@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
 
 /**
  * Coverage of CaseAnchorReader and CaseBusinessStateWriter.
@@ -88,7 +89,9 @@ class CaseAnchorAndWriterTest extends TestCase {
 		$objects = $this->createMock(ObjectService::class);
 		$patches = [];
 		$objects->method('patchObject')->willReturnCallback(
-			static function (string $objectId, array $data) use (&$patches): ObjectEntity {
+			static function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true) use (&$patches): ObjectEntity {
+				$objectId = $patch->objectId;
+				$data = $patch->data;
 				$patches[] = [$objectId, $data];
 
 				return new ObjectEntity();

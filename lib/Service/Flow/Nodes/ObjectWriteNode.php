@@ -146,6 +146,8 @@ use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Writes one OpenRegister object per flow item, as the run's owner.
@@ -872,11 +874,12 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 		}
 
 		return $this->objects->patchObject(
-			objectId: (string)$item->matched->getUuid(),
-			data: $item->payload,
-			register: $plan->register,
-			schema: $plan->schema,
-			currentUser: $plan->owner
+			patch: new ObjectPatch(
+				objectId: (string)$item->matched->getUuid(),
+				data: $item->payload,
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				currentUser: $plan->owner
+			)
 		);
 	}//end persist()
 

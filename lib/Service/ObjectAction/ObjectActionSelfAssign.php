@@ -35,6 +35,8 @@ use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUserSession;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * The write of a self-assign action.
@@ -81,12 +83,13 @@ class ObjectActionSelfAssign {
 		EmptyPropertyClaim::hold(uuid: $uuid, property: $field);
 		try {
 			return $this->objects->patchObject(
-				objectId: $uuid,
-				data: [$field => $user->getUID()],
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				_rbac: false,
-				currentUser: $user
+				patch: new ObjectPatch(
+					objectId: $uuid,
+					data: [$field => $user->getUID()],
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					currentUser: $user
+				),
+				_rbac: false
 			);
 		} finally {
 			EmptyPropertyClaim::consume(uuid: $uuid);

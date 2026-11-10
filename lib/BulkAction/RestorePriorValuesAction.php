@@ -41,6 +41,8 @@ use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IUser;
+use OCA\OpenRegister\Service\Object\ObjectPatch;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * The built-in inverse of a reversible bulk job.
@@ -286,11 +288,12 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface, Restore
 		$object = $step->object;
 		try {
 			$this->access->objects->patchObject(
-				objectId: (string)$object->getUuid(),
-				data: $restore,
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				currentUser: $step->actor
+				patch: new ObjectPatch(
+					objectId: (string)$object->getUuid(),
+					data: $restore,
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					currentUser: $step->actor
+				)
 			);
 		} catch (\Throwable $exception) {
 			$this->access->logger->warning(

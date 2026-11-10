@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contract;
 
+use OCA\OpenRegister\Service\Object\ObjectPatch;
 use OCP\IUser;
 
 /**
@@ -571,15 +572,13 @@ interface ObjectServiceInterface {
 	 * The merged result goes through the same save path as `saveObject()`, so
 	 * schema validation, the audit trail and event dispatch all still apply.
 	 *
-	 * @param string          $objectId      Object id, UUID or slug.
-	 * @param array           $data          The partial data to merge. Omitted keys are PRESERVED.
-	 * @param string|int|null $register      Register id, UUID or slug.
-	 * @param string|int|null $schema        Schema id, UUID or slug.
-	 * @param bool            $_rbac         Apply register RBAC.
-	 * @param bool            $_multitenancy Apply organisation scoping.
-	 * @param ?IUser          $currentUser   Explicit acting user; null uses the session.
-	 *                                       Non-HTTP callers (cron, flow runs, imports)
-	 *                                       should pass one to avoid a default-deny.
+	 * @param ObjectPatch $patch         The object id, UUID or slug, the partial data to merge
+	 *                                   (omitted keys are PRESERVED), the optional register and
+	 *                                   schema scope, and the explicit acting user (null uses the
+	 *                                   session; non-HTTP callers such as cron, flow runs and
+	 *                                   imports should pass one to avoid a default-deny).
+	 * @param bool        $_rbac         Apply register RBAC.
+	 * @param bool        $_multitenancy Apply organisation scoping.
 	 *
 	 * @return ObjectEntityInterface The patched object.
 	 *
@@ -598,15 +597,7 @@ interface ObjectServiceInterface {
 	 * not on this merge, because leaf apps read it from vendor/: land those
 	 * three doubles before the release, or pin.
 	 */
-	public function patchObject(
-		string $objectId,
-		array $data,
-		string|int|null $register=null,
-		string|int|null $schema=null,
-		bool $_rbac=true,
-		bool $_multitenancy=true,
-		?IUser $currentUser=null
-	): ObjectEntityInterface;
+	public function patchObject(ObjectPatch $patch, bool $_rbac=true, bool $_multitenancy=true): ObjectEntityInterface;
 
 	/**
 	 * The objects this object refers to.
