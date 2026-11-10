@@ -98,47 +98,107 @@ class RelatedRowAccess {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function predicate(IQueryBuilder $qb, RelatedRowSource $source): string {
-		$scope         = $source->scope;
-		$alias         = $source->alias;
 		$rbacPredicate = $this->rbac->buildRbacPredicateForAlias(
 			schema: $source->schema,
-			rows: new AliasedRows(alias: $alias, action: 'read', tableName: $source->tableName)
+			rows: new AliasedRows(alias: $source->alias, action: 'read', tableName: $source->tableName)
 		);
-		$column        = $alias . '._organisation';
-		$mode   = ($scope['mode'] ?? null);
 
-		if ($mode === OrganisationScopeResolverInterface::SCOPE_ALL) {
+		$term = $this->organisationTerm(qb: $qb, source: $source);
+		if ($term === null) {
 			return $rbacPredicate;
 		}
 
-		if ($mode === OrganisationScopeResolverInterface::SCOPE_NULL_ONLY) {
-			return '(' . $rbacPredicate . ') AND ' . $column . ' IS NULL';
+		return '(' . $rbacPredicate . ') AND ' . $term;
+	}//end predicate()
+
+	/**
+	 * The organisation boundary for the related alias, or null when the scope admits every organisation.
+	 *
+	 * @param IQueryBuilder    $qb     The query, which receives the organisation parameters.
+	 * @param RelatedRowSource $source The related row's alias and the decided organisation scope.
+	 *
+	 * @return string|null The term, ANDed onto the row predicate.
+	 */
+	private function organisationTerm(IQueryBuilder $qb, RelatedRowSource $source): ?string {
+		$mode = ($source->scope['mode'] ?? null);
+		if ($mode === OrganisationScopeResolverInterface::SCOPE_ALL) {
+			return null;
 		}
 
-		$uuids = array_values(array_filter(
+		if ($mode === OrganisationScopeResolverInterface::SCOPE_NULL_ONLY) {
+			return self::organisationColumn(source: $source) . ' IS NULL';
+		}
+
+		if (self::namesOrganisations(scope: $source->scope) === false) {
+			// SCOPE_NONE, an unknown mode, or "in these organisations" naming none.
+			return '1 = 0';
+		}
+
+		return $this->membershipTerm(qb: $qb, source: $source);
+	}//end organisationTerm()
+
+	/**
+	 * Whether the scope is "in these organisations" (with or without NULL) and names at least one.
+	 *
+	 * @param array<string, mixed> $scope The decided organisation scope.
+	 *
+	 * @return bool True when the scope restricts to named organisations.
+	 */
+	private static function namesOrganisations(array $scope): bool {
+		$scoped = [OrganisationScopeResolverInterface::SCOPE_IN, OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL];
+
+		return (in_array(($scope['mode'] ?? null), $scoped, true) === true && self::scopedUuids(scope: $scope) !== []);
+	}//end namesOrganisations()
+
+	/**
+	 * The organisation uuids the scope names, without empties or non-strings.
+	 *
+	 * @param array<string, mixed> $scope The decided organisation scope.
+	 *
+	 * @return array<int, string> The uuids.
+	 */
+	private static function scopedUuids(array $scope): array {
+		return array_values(array_filter(
 			($scope['uuids'] ?? []),
 			static fn ($uuid): bool => is_string($uuid) === true && $uuid !== ''
 		));
-		$scoped = [OrganisationScopeResolverInterface::SCOPE_IN, OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL];
-		if (in_array($mode, $scoped, true) === false || $uuids === []) {
-			// SCOPE_NONE, an unknown mode, or "in these organisations" naming none.
-			return '(' . $rbacPredicate . ') AND 1 = 0';
-		}
+	}//end scopedUuids()
 
+	/**
+	 * The related alias's organisation IN its named organisations, bound as parameters; OR NULL for that mode.
+	 *
+	 * @param IQueryBuilder    $qb     The query, which receives the organisation parameters.
+	 * @param RelatedRowSource $source The related row's alias and an "in these organisations" scope.
+	 *
+	 * @return string The term.
+	 */
+	private function membershipTerm(IQueryBuilder $qb, RelatedRowSource $source): string {
+		$column       = self::organisationColumn(source: $source);
 		$placeholders = [];
-		foreach ($uuids as $position => $uuid) {
-			$name           = sprintf('%s_org%d', $alias, $position);
+		foreach (self::scopedUuids(scope: $source->scope) as $position => $uuid) {
+			$name           = sprintf('%s_org%d', $source->alias, $position);
 			$placeholders[] = ':' . $name;
 			$qb->setParameter($name, $uuid);
 		}
 
 		$term = $column . ' IN (' . implode(', ', $placeholders) . ')';
-		if ($mode === OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL) {
+		if (($source->scope['mode'] ?? null) === OrganisationScopeResolverInterface::SCOPE_IN_OR_NULL) {
 			$term = '(' . $term . ' OR ' . $column . ' IS NULL)';
 		}
 
-		return '(' . $rbacPredicate . ') AND ' . $term;
-	}//end predicate()
+		return $term;
+	}//end membershipTerm()
+
+	/**
+	 * The related alias's organisation column.
+	 *
+	 * @param RelatedRowSource $source The related row's alias.
+	 *
+	 * @return string The qualified column.
+	 */
+	private static function organisationColumn(RelatedRowSource $source): string {
+		return $source->alias . '._organisation';
+	}//end organisationColumn()
 
 	/**
 	 * Refuse a block that names a field that is not a readable property of the related schema.
