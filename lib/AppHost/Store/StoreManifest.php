@@ -267,20 +267,8 @@ class StoreManifest {
 		StoreManifestContent $content=new StoreManifestContent(),
 		StoreManifestPermissions $permissions=new StoreManifestPermissions(),
 	) {
-		$this->appId   = $appId;
-		$this->enabled = $enabled;
-		$this->assignContent(content: $content);
-		$this->assignPermissions(permissions: $permissions);
-	}//end __construct()
-
-	/**
-	 * Expose the target, catalogue and discovery keys as their own properties.
-	 *
-	 * @param StoreManifestContent $content Target, catalogue and discovery.
-	 *
-	 * @return void
-	 */
-	private function assignContent(StoreManifestContent $content): void {
+		$this->appId         = $appId;
+		$this->enabled       = $enabled;
 		$this->schema        = $content->target->schema;
 		$this->register      = $content->target->register;
 		$this->localRegister = $content->target->localRegister;
@@ -291,21 +279,11 @@ class StoreManifest {
 		$this->types         = $content->discovery->types;
 		$this->source        = $content->discovery->source;
 		$this->topics        = $content->discovery->topics;
-	}//end assignContent()
-
-	/**
-	 * Expose the install and publish posture as their own properties.
-	 *
-	 * @param StoreManifestPermissions $permissions Install and publish posture.
-	 *
-	 * @return void
-	 */
-	private function assignPermissions(StoreManifestPermissions $permissions): void {
 		$this->installAuth   = $permissions->installAuth;
 		$this->configurable  = $permissions->configurable;
 		$this->publishFields = $permissions->publishFields;
 		$this->publishGroups = $permissions->publishGroups;
-	}//end assignPermissions()
+	}//end __construct()
 
 	/**
 	 * Parse the `store` block out of a leaf app's manifest.
