@@ -188,36 +188,34 @@ class TaskSubjectLocator implements TaskSubjectLocatorInterface {
 	public function readLocated(array $tasks): array {
 		$found = [];
 		foreach ($this->locatedGroups(tasks: $tasks) as $pair => $uuids) {
-			$found = $this->mergePair(found: $found, pair: (string)$pair, uuids: $uuids);
+			$found = array_merge($found, $this->readPairOrNone(pair: (string)$pair, uuids: $uuids));
 		}
 
 		return $found;
 	}//end readLocated()
 
 	/**
-	 * Add one register and schema pair's subjects to those found so far.
-	 *
-	 * A pair that cannot be read is logged and leaves its subjects to the
+	 * One register and schema pair's subjects, or none when the pair cannot
+	 * be read: the failure is logged and its subjects are left to the
 	 * caller's fallback.
 	 *
-	 * @param array<string, mixed> $found The subjects found so far.
 	 * @param string $pair The `registerId:schemaId` pair.
 	 * @param array<int, string> $uuids The pair's subject uuids.
 	 *
-	 * @return array<string, mixed> The subjects found, this pair's included.
+	 * @return array<string, mixed> The pair's subjects, or an empty array.
 	 */
-	private function mergePair(array $found, string $pair, array $uuids): array {
+	private function readPairOrNone(string $pair, array $uuids): array {
 		try {
-			return array_merge($found, $this->readPair(pair: $pair, uuids: $uuids));
+			return $this->readPair(pair: $pair, uuids: $uuids);
 		} catch (Throwable $failure) {
 			$this->logger->debug(
 				'[TaskSubjectLocator] Could not read located subjects: ' . $failure->getMessage(),
 				['pair' => $pair]
 			);
 
-			return $found;
+			return [];
 		}
-	}//end mergePair()
+	}//end readPairOrNone()
 
 	/**
 	 * One register and schema pair's subjects, read from their own table.

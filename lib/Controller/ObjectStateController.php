@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ObjectStateControllerServices;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\ArchiveHandlerInterface;
@@ -54,22 +55,34 @@ use OCP\IUserSession;
 class ObjectStateController extends Controller {
 
 	/**
-	 * Constructor for the ObjectStateController.
+	 * The archive and freeze verbs.
 	 *
-	 * @param IRequest $request The request object.
-	 * @param ArchiveHandlerInterface $archiveHandler The archive and freeze verbs.
-	 * @param IUserSession $userSession The user session.
+	 * @var ArchiveHandlerInterface
+	 */
+	private readonly ArchiveHandlerInterface $archiveHandler;
+
+	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest                      $request  The request object.
+	 * @param ObjectStateControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly ArchiveHandlerInterface $archiveHandler,
-		private readonly IUserSession $userSession,
+		ObjectStateControllerServices $services,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->archiveHandler = $services->archiveHandler;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**

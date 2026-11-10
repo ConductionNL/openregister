@@ -34,63 +34,19 @@ use OCA\OpenRegister\Db\CaseItemAudit;
 final class CaseCascadeStep {
 
 	/**
-	 * The row that moves.
-	 *
-	 * @var CaseItem
-	 */
-	public readonly CaseItem $item;
-
-	/**
-	 * The target state.
-	 *
-	 * @var string
-	 */
-	public readonly string $to;
-
-	/**
-	 * The audit cause.
-	 *
-	 * @var string
-	 */
-	public readonly string $cause;
-
-	/**
-	 * What caused it.
-	 *
-	 * @var string|null
-	 */
-	public readonly ?string $causeRef;
-
-	/**
-	 * Who, or null for the system.
-	 *
-	 * @var string|null
-	 */
-	public readonly ?string $actor;
-
-	/**
-	 * Why, in words.
-	 *
-	 * @var string|null
-	 */
-	public readonly ?string $reason;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param CaseItem      $item The row that moves.
 	 * @param string        $to   The target state.
-	 * @param CaseStepCause $why  The cause, cause reference, actor and reason.
+	 * @param CaseStepCause $why  The cause, cause reference, actor (null for the system) and reason.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
-	public function __construct(CaseItem $item, string $to, CaseStepCause $why) {
-		$this->item     = $item;
-		$this->to       = $to;
-		$this->cause    = $why->cause;
-		$this->causeRef = $why->causeRef;
-		$this->actor    = $why->actor;
-		$this->reason   = $why->reason;
+	public function __construct(
+		public readonly CaseItem $item,
+		public readonly string $to,
+		public readonly CaseStepCause $why,
+	) {
 	}//end __construct()
 
 	/**
