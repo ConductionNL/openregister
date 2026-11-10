@@ -61,15 +61,16 @@ final class FlowFieldPath {
 	/**
 	 * Write a value at a dotted path, creating the containers it needs.
 	 *
-	 * @param array  $json  The item's record, modified in place.
-	 * @param string $path  The field path, optionally dotted.
-	 * @param mixed  $value The value to write.
+	 * @param array           $json  The item's record, modified in place.
+	 * @param FieldAssignment $write The field path, optionally dotted, and the value to write.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-decision-table-step-evaluates-its-table-against-every-item
 	 */
-	public static function assign(array &$json, string $path, mixed $value): void {
+	public static function assign(array &$json, FieldAssignment $write): void {
+		$path  = $write->path;
+		$value = $write->value;
 		if (str_contains($path, '.') === false) {
 			$json[$path] = $value;
 

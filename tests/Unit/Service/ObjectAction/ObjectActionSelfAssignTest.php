@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionCatalogue;
@@ -59,6 +60,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -318,8 +320,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 	private function take(Schema $schema, ObjectEntity $object, array $given = []): array {
 		return $this->runner(schema: $schema)->run(
 			target: new ObjectActionTarget(object: $object, schema: $schema, register: '3', schemaRef: '7'),
-			key: self::ACTION,
-			given: $given
+			request: new ObjectActionRequest(key: self::ACTION, given: $given)
 		);
 	}//end take()
 
@@ -809,7 +810,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			->onlyMethods(['grantedObjectUuids'])
 			->getMock();
 		$this->grants->method('grantedObjectUuids')->willReturn([$uuid => 31]);
-		$this->assertTrue($this->grants->isGranted(userId: 'anna', objectUuid: $uuid, action: 'update'), 'the control: the share carries update');
+		$this->assertTrue($this->grants->isGranted(lookup: new GrantLookup(userId: 'anna', objectUuid: $uuid), action: 'update'), 'the control: the share carries update');
 
 		$object = self::object(assignee: null);
 		$object->setUuid($uuid);

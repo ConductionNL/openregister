@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 
 use OCA\OpenRegister\Service\Schema\SchemaPopulationRuns;
 use DateTime;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\SchemaChangelog;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
@@ -169,7 +170,7 @@ class SchemaVersioningServiceGoldenTest extends TestCase {
 	}
 
 	public function testTheGateReadsTheFirstCompletedRevalidationReport(): void {
-		$this->runMapper->expects($this->once())->method('findBySchema')->with(3, 25)->willReturn(
+		$this->runMapper->expects($this->once())->method('findBySchema')->with(3, new ListQuery(limit: 25))->willReturn(
 			[
 				$this->schemaRun(SchemaRun::TYPE_MIGRATION, SchemaRun::STATE_COMPLETED, ['invalid' => 9]),
 				$this->schemaRun(SchemaRun::TYPE_REVALIDATION, SchemaRun::STATE_RUNNING, ['invalid' => 8]),

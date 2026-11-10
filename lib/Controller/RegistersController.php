@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\Support\RegisterGitHubPublisher;
 use OCA\OpenRegister\Controller\Support\RegistersControllerServices;
 use OCA\OpenRegister\Controller\Support\RegisterStatistics;
 use OCA\OpenRegister\Controller\Support\RegisterUpdate;
+use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
@@ -2070,7 +2071,7 @@ class RegistersController extends Controller {
 			return ['total' => 0, 'size' => 0];
 		}
 
-		return $this->auditTrailMapper->getStatistics(registerId: $registerId, schemaId: null);
+		return $this->auditTrailMapper->statisticsTotals(scope: new AuditStatisticsScope(registerId: $registerId));
 	}//end auditLogStats()
 
 	/**

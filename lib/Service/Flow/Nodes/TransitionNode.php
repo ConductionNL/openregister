@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -196,7 +197,7 @@ class TransitionNode extends ObjectNodeBase implements IFlowNode, TransitionNode
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-			$out[] = FlowItems::item(json: $this->transitioned(json: $json, config: $config), fromItemIndex: $index);
+			$out[] = FlowItems::item(json: $this->transitioned(json: $json, config: $config), options: new FlowItemOptions(fromItemIndex: $index));
 		}
 
 		return $out;

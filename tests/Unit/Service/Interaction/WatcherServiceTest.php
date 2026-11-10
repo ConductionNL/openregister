@@ -191,7 +191,7 @@ class WatcherServiceTest extends TestCase {
 			->with(self::follow('jan', 'uuid-case-1', 'zaken', 'zaak'), true)
 			->willReturn(new Watcher());
 
-		$this->makeService()->followAssigned($this->makeObject(), 'jan', 'zaken', 'zaak');
+		$this->makeService()->followAssigned(new AddressedObject(object: $this->makeObject(), register: 'zaken', schema: 'zaak'), 'jan');
 	}//end testFollowAssignedSwitchesNotificationsOn()
 
 	/**

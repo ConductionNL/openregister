@@ -28,6 +28,8 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\File\FileTransfer;
 
 /**
  * Golden test for FilesController::copy() and move().
@@ -191,8 +193,8 @@ class FilesControllerTransferGoldenTest extends TestCase {
 
 			return $this->object(uuid: 'checked-' . $args[2]);
 		};
-		$access->method('readable')->willReturnCallback(fn (...$args) => $answer('readable', $args));
-		$access->method('changeable')->willReturnCallback(fn (...$args) => $answer('changeable', $args));
+		$access->method('readable')->willReturnCallback(fn (ObjectRef $ref, ...$rest) => $answer('readable', [$ref->register, $ref->schema, $ref->id, ...$rest]));
+		$access->method('changeable')->willReturnCallback(fn (ObjectRef $ref, ...$rest) => $answer('changeable', [$ref->register, $ref->schema, $ref->id, ...$rest]));
 		return $access;
 	}
 
@@ -260,7 +262,7 @@ class FilesControllerTransferGoldenTest extends TestCase {
 			return $file;
 		};
 		$service->method('copyFile')->willReturnCallback(fn (...$args) => $transfer('copyFile', $args));
-		$service->method('moveFile')->willReturnCallback(fn (...$args) => $transfer('moveFile', $args));
+		$service->method('moveAttachedFile')->willReturnCallback(fn (FileTransfer $move) => $transfer('moveFile', [$move->source, $move->fileId, $move->target]));
 		$service->method('formatFile')->willReturnCallback(function (File $file) {
 			$this->calls[] = ['fileService.formatFile' => $file->getId()];
 			return ['id' => $file->getId(), 'name' => 'copied.pdf'];

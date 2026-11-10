@@ -51,6 +51,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use stdClass;
+use Symfony\Component\Workflow\Transition;
 
 /**
  * A dispatcher that suspends on a named step and records the rest.
@@ -187,7 +188,9 @@ class FlowEngineStreamWalkTest extends TestCase {
 			$this->seen['exhausted'][] = $id;
 			$exhausted[$id] = true;
 		});
-		$walk->method('claim')->willReturnCallback(function (string $id, string $transition, array $places) use (&$refused): ?array {
+		$walk->method('claim')->willReturnCallback(function (string $id, Transition $firing) use (&$refused): ?array {
+			$transition = $firing->getName();
+			$places     = array_map('strval', array_merge($firing->getFroms(), $firing->getTos()));
 			$this->seen['claims'][] = $transition;
 			if (in_array($transition, $this->refuse, true) === true) {
 				$refused[$id] = true;

@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -455,10 +456,7 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 	public function testTheListNamesTheColumnOfAKnownKey(): void {
 		$sql = fn (array $match): string => implode(
 			' OR ',
-			$this->rbacHandler()->buildRbacConditionsSql(
-				$this->schemaWith(['read' => [['group' => 'editors', 'match' => $match]]]),
-				'read'
-			)['conditions']
+			$this->rbacHandler()->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => [['group' => 'editors', 'match' => $match]]])))->forAction('read'))['conditions']
 		);
 
 		$this->assertStringContainsString("`_owner` = 'bob'", $sql(['@self.owner' => 'bob']));
@@ -474,14 +472,8 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 	 */
 	public function testTheListDeniesEveryRow(): void {
 		$handler = $this->rbacHandler();
-		$denied = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['read' => ['editors'], 'deny' => ['read' => [['group' => 'editors', 'match' => ['_published' => true]]]]]),
-			'read'
-		);
-		$control = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['read' => ['editors'], 'deny' => ['read' => [['group' => 'editors', 'match' => ['_organisation' => 'org-z']]]]]),
-			'read'
-		);
+		$denied = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['editors'], 'deny' => ['read' => [['group' => 'editors', 'match' => ['_published' => true]]]]])))->forAction('read'));
+		$control = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['editors'], 'deny' => ['read' => [['group' => 'editors', 'match' => ['_organisation' => 'org-z']]]]])))->forAction('read'));
 
 		$this->assertFalse($denied['bypass']);
 		$this->assertSame([], $denied['conditions']);
@@ -494,10 +486,7 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheListAllowAdmitsNoRow(): void {
-		$result = $this->rbacHandler()->buildRbacConditionsSql(
-			$this->schemaWith(['read' => [['group' => 'editors', 'match' => ['_published' => ['$ne' => true]]]]]),
-			'read'
-		);
+		$result = $this->rbacHandler()->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => [['group' => 'editors', 'match' => ['_published' => ['$ne' => true]]]]])))->forAction('read'));
 
 		$sql = implode(' OR ', $result['conditions']);
 		$this->assertStringNotContainsString('_published', $sql);

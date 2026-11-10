@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Service\Webhook;
 
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventAttributes;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -60,30 +61,29 @@ class CloudEventFormatterCharacterisationTest extends TestCase
 
     public function testEventEnvelope(): void
     {
-        $event = (new CloudEventFormatter())->formatAsCloudEvent('object.created', ['a' => 1], null, 'subj');
+        $event = (new CloudEventFormatter())->formatAsCloudEvent(new CloudEventAttributes('object.created', null, 'subj'), ['a' => 1]);
 
         $this->assertSame(self::ENVELOPE_KEYS, array_keys($event));
         $this->assertSame(['1.0', 'object.created', '/apps/openregister'], [$event['specversion'], $event['type'], $event['source']]);
         $this->assertSame(['application/json', 'subj', null, ['a' => 1]], [$event['datacontenttype'], $event['subject'], $event['dataschema'], $event['data']]);
         $this->assertSame('openregister', $event['openregister']['app']);
-        $this->assertSame('/custom', (new CloudEventFormatter())->formatAsCloudEvent('t', [], '/custom')['source']);
+        $this->assertSame('/custom', (new CloudEventFormatter())->formatAsCloudEvent(new CloudEventAttributes('t', '/custom', null), [])['source']);
     }
 
-    public function testRequestEnvelopeMergesJsonBodyUnderParamsAndExtraDataLast(): void
+    public function testRequestEnvelopeMergesJsonBodyUnderParams(): void
     {
         $request = $this->request('{"title":"from body","only":"body"}', ['title' => 'from params']);
 
-        $event = (new CloudEventFormatter())->formatRequestAsCloudEvent($request, 'object.updating', ['path' => 'override', 'extra' => true]);
+        $event = (new CloudEventFormatter())->formatRequestAsCloudEvent($request, 'object.updating');
 
         $this->assertSame(self::ENVELOPE_KEYS, array_keys($event));
         $this->assertSame('object.updating', $event['type']);
         $this->assertSame('application/merge-patch+json', $event['datacontenttype']);
-        $this->assertSame(['method', 'path', 'queryParams', 'headers', 'body', 'extra'], array_keys($event['data']));
+        $this->assertSame(['method', 'path', 'queryParams', 'headers', 'body'], array_keys($event['data']));
         $this->assertSame('PUT', $event['data']['method']);
-        $this->assertSame('override', $event['data']['path']);
+        $this->assertSame('/api/objects/reg/sch/uuid-1', $event['data']['path']);
         $this->assertSame(['title' => 'from params'], $event['data']['queryParams']);
         $this->assertSame(['title' => 'from params', 'only' => 'body'], $event['data']['body']);
-        $this->assertTrue($event['data']['extra']);
     }
 
     public function testInvalidOrEmptyRawBodyKeepsOnlyTheParams(): void
