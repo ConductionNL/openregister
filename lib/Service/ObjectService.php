@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectReadOptions;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use Adbar\Dot;
@@ -1248,22 +1249,16 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Finds an object by ID or UUID and renders it.
      *
-     * @param int|string               $id            The object ID or UUID.
-     * @param array|null               $_extend       Properties to extend the object with (unused).
-     * @param bool                     $files         Whether to include file information.
-     * @param Register|string|int|null $register      The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
-     * @param bool                     $_render       Whether to render the entity before returning (default: true).
-     *                                                Pass false when the caller performs its own single render
-     *                                                (e.g. ObjectsController::show()) so the object is not
-     *                                                rendered twice; permission checks and read logging still run.
-     * @param bool                     $_audit        Whether this read is worth an audit-trail row (default: true).
-     *                                                Pass false for machine-to-machine reads inside one
-     *                                                operation; the instance setting is all-or-nothing.
+     * @param int|string             $id            The object ID or UUID.
+     * @param ObjectReadOptions|null $options       Register, schema, extend and files, plus `render`
+     *                                              (false when the caller performs its own single render,
+     *                                              e.g. ObjectsController::show(); permission checks and
+     *                                              read logging still run) and `audit` (false for
+     *                                              machine-to-machine reads inside one operation).
+     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
-     * @return ObjectEntity|null The rendered object (or the raw entity when $_render is false) or null.
+     * @return ObjectEntity|null The rendered object (or the raw entity when `render` is false) or null.
      *
      * @throws Exception If the object is not found.
      *
@@ -1276,18 +1271,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function find(
         int | string $id,
-        ?array $_extend=[],
-        bool $files=false,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
+        ?ObjectReadOptions $options=null,
         bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $_render=true,
-        bool $_audit=true
+        bool $_multitenancy=true
     ): ?ObjectEntity {
-        $request = new ObjectFindRequest(id: $id, extend: $_extend, files: $files, rbac: $_rbac, multitenancy: $_multitenancy, audit: $_audit);
-        $target  = new ObjectFindTarget(register: $register, schema: $schema);
-        if ($_render === false) {
+        $options ??= new ObjectReadOptions();
+        $request   = new ObjectFindRequest(id: $id, extend: $options->extend, files: $options->files, rbac: $_rbac, multitenancy: $_multitenancy, audit: $options->audit);
+        $target    = ObjectFindTarget::fromReadOptions(options: $options);
+        if ($options->render === false) {
             return $this->findUnrendered(request: $request, target: $target);
         }
 
@@ -1741,13 +1732,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * This method is used internally by other operations (like UPDATE) that need to
      * retrieve an object without logging the read action.
      *
-     * @param string                   $id            The ID of the object to get.
-     * @param array|null               $_extend       Properties to extend the object with (unused).
-     * @param bool                     $files         Include file information.
-     * @param Register|string|int|null $register      The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param string                 $id            The ID of the object to get.
+     * @param ObjectReadOptions|null $options       Register, schema, extend and files; render and audit are ignored.
+     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The retrieved object.
      *
@@ -1759,15 +1747,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function findSilent(
         string $id,
-        ?array $_extend=[],
-        bool $files=false,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
+        ?ObjectReadOptions $options=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
-        $request = new ObjectFindRequest(id: $id, extend: $_extend, files: $files, rbac: $_rbac, multitenancy: $_multitenancy, audit: false);
-        return $this->findWithoutAudit(request: $request, target: new ObjectFindTarget(register: $register, schema: $schema));
+        $options ??= new ObjectReadOptions();
+        $request   = new ObjectFindRequest(id: $id, extend: $options->extend, files: $options->files, rbac: $_rbac, multitenancy: $_multitenancy, audit: false);
+        return $this->findWithoutAudit(request: $request, target: ObjectFindTarget::fromReadOptions(options: $options));
     }//end findSilent()
 
     /**
