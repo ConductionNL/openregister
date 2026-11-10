@@ -36,6 +36,9 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 use stdClass;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * REST surface for the flow editor's "Test" button.
@@ -189,20 +192,22 @@ class FlowTestRunController extends Controller {
 		// an HTML error page, which reads as "the server is broken" and sends
 		// the author to the wrong place entirely.
 		try {
-			$run = $this->runner->queue(
+			$run = $this->runner->queueRun(
 				flowId: $flowId,
-				subject: [],
-				trigger: 'test',
-				context: ['pins' => $pins],
-				user: $this->userSession->getUser()?->getUID()
+				options: new FlowRunQueueOptions(
+					subject: [],
+					trigger: 'test',
+					context: ['pins' => $pins],
+					user: $this->userSession->getUser()?->getUID()
+				)
 			);
 
-			$run = $this->runner->execute(
-				run: $run,
-				flow: $flow,
-				subject: new stdClass(),
-				seedItems: $seed,
-				startAt: $startAt
+			$run = $this->runner->executePass(
+				pass: new FlowRunPass(run: $run, flow: $flow, subject: new stdClass()),
+				origin: new FlowRunOrigin(
+					items: $seed,
+					startAt: $startAt
+				)
 			);
 		} catch (FlowLifecycleRefusedInterface $e) {
 			return new JSONResponse(
