@@ -100,13 +100,9 @@ class TokenAttribution implements TokenAttributionInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function apply(AuditTrail $auditTrail): void {
-		try {
-			$context = $this->container->get(TokenContext::class);
-		} catch (Throwable $contextUnavailable) {
-			return;
-		}
-
-		if (($context instanceof TokenContext) === false) {
+		$rows    = new AuditRowAttribution();
+		$context = $rows->requestContext(container: $this->container, class: TokenContext::class);
+		if ($context === null) {
 			return;
 		}
 
@@ -124,9 +120,7 @@ class TokenAttribution implements TokenAttributionInterface {
 
 		// Merge rather than replace: the purpose attribution and an MCP tool
 		// invocation both already write here, and neither may be erased.
-		$summary = ($auditTrail->getResultSummary() ?? []);
-		$summary['token'] = $identity->toArray();
-		$auditTrail->setResultSummary($summary);
+		$rows->mergeIntoSummary(auditTrail: $auditTrail, entries: ['token' => $identity->toArray()]);
 	}//end apply()
 
 	/**
