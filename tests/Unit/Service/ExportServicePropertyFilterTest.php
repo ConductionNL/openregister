@@ -57,7 +57,6 @@ class ExportServicePropertyFilterTest extends TestCase {
 
 		$service = new ExportService(
 			$this->createMock(RegisterMapper::class),
-			$this->createMock(IUserManager::class),
 			$this->createMock(IGroupManager::class),
 			$objectService,
 			$this->createMock(CacheHandler::class),

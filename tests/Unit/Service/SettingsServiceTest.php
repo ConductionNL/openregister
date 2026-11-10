@@ -1359,7 +1359,6 @@ class SettingsServiceTest extends TestCase {
 			$this->logger,
 			$this->db,
 			$container,
-			'openregister',
 			$this->validationOperationsHandler,
 			$this->searchBackendHandler,
 			$this->llmSettingsHandler,
@@ -1386,7 +1385,6 @@ class SettingsServiceTest extends TestCase {
 			$this->logger,
 			$this->db,
 			$container,
-			'openregister',
 			$this->validationOperationsHandler,
 			$this->searchBackendHandler,
 			$this->llmSettingsHandler,
@@ -1662,9 +1660,9 @@ class SettingsServiceTest extends TestCase {
 	// ===== CONSTRUCTOR / INITIALIZATION TESTS =====.
 
 	/**
-	 * Test service can be constructed with custom app name
+	 * Test service can be constructed without a container
 	 */
-	public function testConstructorWithCustomAppName(): void {
+	public function testConstructorWithoutContainer(): void {
 		$config = $this->createMock(IConfig::class);
 		// Stub getAppValue to return a database-backend config so that
 		// getSearchBackendConfig() resolves to 'database'.
@@ -1676,7 +1674,6 @@ class SettingsServiceTest extends TestCase {
 			$this->logger,
 			$this->db,
 			null,
-			'custom_app',
 			$this->validationOperationsHandler,
 			$this->searchBackendHandler,
 			$this->llmSettingsHandler,
@@ -1743,7 +1740,6 @@ class SettingsServiceTest extends TestCase {
 			$this->logger,
 			$this->db,
 			$container,
-			'openregister',
 			$this->validationOperationsHandler,
 			$this->searchBackendHandler,
 			$this->llmSettingsHandler,

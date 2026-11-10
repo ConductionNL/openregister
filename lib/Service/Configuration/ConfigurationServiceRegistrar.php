@@ -501,7 +501,6 @@ final class ConfigurationServiceRegistrar {
 			logger: $container->get('Psr\Log\LoggerInterface'),
 			db: $container->get('OCP\IDBConnection'),
 			container: $container,
-			appName: 'openregister',
 			validOpsHandler: $container->get(ValidationOperationsHandler::class),
 			searchBackendHandler: $container->get(SearchBackendHandler::class),
 			llmSettingsHandler: $container->get(LlmSettingsHandler::class),
@@ -624,8 +623,7 @@ final class ConfigurationServiceRegistrar {
 	private static function buildConfigurationValueStore(ContainerInterface $container): ConfigurationValueStore {
 		return new ConfigurationValueStore(
 			values: $container->get(ConfigurationValueMapper::class),
-			appConfig: $container->get('OCP\IAppConfig'),
-			appName: 'openregister'
+			appConfig: $container->get('OCP\IAppConfig')
 		);
 	}//end buildConfigurationValueStore()
 
@@ -645,8 +643,7 @@ final class ConfigurationServiceRegistrar {
 			store: $container->get(ConfigurationValueStore::class),
 			registry: $container->get(ConfigurationKeyRegistry::class),
 			session: $container->get('OCP\IUserSession'),
-			appConfig: $container->get('OCP\IAppConfig'),
-			appName: 'openregister'
+			appConfig: $container->get('OCP\IAppConfig')
 		);
 	}//end buildConfigurationDraftService()
 

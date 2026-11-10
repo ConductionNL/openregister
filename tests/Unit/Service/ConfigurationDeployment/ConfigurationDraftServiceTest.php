@@ -132,8 +132,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 			$store,
 			new ConfigurationKeyRegistry(),
 			$session,
-			$appConfig,
-			'openregister'
+			$appConfig
 		);
 
 		return [$service, $store, $draftMapper];
@@ -188,8 +187,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 			$store,
 			new ConfigurationKeyRegistry(),
 			$session,
-			$this->createMock(IAppConfig::class),
-			'openregister'
+			$this->createMock(IAppConfig::class)
 		);
 
 		$draft = $service->draftValue(new ConfigurationDraftTarget('set-1', new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac')), ['enabled' => true]);

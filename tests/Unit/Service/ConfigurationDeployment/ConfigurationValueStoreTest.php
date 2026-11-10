@@ -64,7 +64,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 		// assertion below would fail.
 		$appConfig->method('getValueString')->willReturn('{"enabled":true}');
 
-		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
+		$store = new ConfigurationValueStore($mapper, $appConfig);
 		$snapshot = $store->read(ConfigurationLayer::INSTANCE, null, 'rbac');
 
 		$this->assertSame(['enabled' => true], $snapshot->value);
@@ -82,7 +82,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);
 
-		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
+		$store = new ConfigurationValueStore($mapper, $appConfig);
 		$snapshot = $store->read(ConfigurationLayer::INSTANCE, null, 'rbac');
 
 		$this->assertFalse($snapshot->present);
@@ -98,7 +98,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->expects($this->never())->method('getValueString');
 
-		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
+		$store = new ConfigurationValueStore($mapper, $appConfig);
 		$snapshot = $store->read(ConfigurationLayer::REGISTER, 'zaken', 'integration.mail');
 
 		$this->assertSame(['relay' => 'smtp'], $snapshot->value);
@@ -112,8 +112,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 
 		$store = new ConfigurationValueStore(
 			$mapper,
-			$this->createMock(IAppConfig::class),
-			'openregister'
+			$this->createMock(IAppConfig::class)
 		);
 		$snapshot = $store->read(ConfigurationLayer::SUBJECT, 'zaak', 'permission.matrix');
 
@@ -131,7 +130,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('hasKey')->willReturn(false);
 
-		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
+		$store = new ConfigurationValueStore($mapper, $appConfig);
 
 		$below = $store->read(ConfigurationLayer::REGISTER, 'zaken', 'integration.mail');
 		$this->assertSame(
@@ -157,7 +156,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->expects($this->never())->method('setValueString');
 
-		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
+		$store = new ConfigurationValueStore($mapper, $appConfig);
 		$undo = $store->write(new ConfigurationAddress(ConfigurationLayer::REGISTER, 'zaken', 'integration.mail'), new ConfigurationWrite(['relay' => 'new'], 'dep-2', 'bob'));
 
 		$this->assertSame(['value' => ['relay' => 'new']], $row->getConfigValue());
@@ -179,7 +178,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 			}
 		);
 
-		$store = new ConfigurationValueStore($mapper, $this->createMock(IAppConfig::class), 'openregister');
+		$store = new ConfigurationValueStore($mapper, $this->createMock(IAppConfig::class));
 		$store->write(new ConfigurationAddress(ConfigurationLayer::SUBJECT, 'zaak', 'permission.matrix'), new ConfigurationWrite(['read' => ['*']], null, 'bob'));
 
 		$this->assertSame(
@@ -211,7 +210,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 			->method('setValueString')
 			->with('openregister', 'rbac', '{"enabled":false}');
 
-		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
+		$store = new ConfigurationValueStore($mapper, $appConfig);
 		$undo = $store->write(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac'), new ConfigurationWrite(['enabled' => false], 'dep-8', 'admin'));
 
 		$this->assertSame(ConfigurationLayer::INSTANCE, $undo['layer']);
@@ -231,8 +230,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 
 		$store = new ConfigurationValueStore(
 			$this->createMock(ConfigurationValueMapper::class),
-			$appConfig,
-			'openregister'
+			$appConfig
 		);
 
 		$restored = $store->restore(
@@ -260,7 +258,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn('{"enabled":true}');
 		$appConfig->expects($this->once())->method('deleteKey')->with('openregister', 'archival');
 
-		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
+		$store = new ConfigurationValueStore($mapper, $appConfig);
 		$undo = $store->remove(ConfigurationLayer::INSTANCE, null, 'archival');
 
 		$this->assertTrue($undo['present']);
@@ -280,7 +278,7 @@ final class ConfigurationValueStoreTest extends TestCase {
 			->method('setValueString')
 			->with('openregister', 'flow_kill_switch', '1');
 
-		$store = new ConfigurationValueStore($mapper, $appConfig, 'openregister');
+		$store = new ConfigurationValueStore($mapper, $appConfig);
 		$store->write(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'flow_kill_switch'), new ConfigurationWrite(true, 'dep-9', 'admin'));
 	}//end testABooleanIsStoredTheWayTheSettingsReadersReadIt()
 }//end class

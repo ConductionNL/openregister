@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
@@ -198,7 +199,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 *
 	 * @var string $appName The name of the app.
 	 */
-	private string $appName;
+	private string $appName = AppIdentity::APP_ID;
 
 	/**
 	 * Unique identifier for the OpenRegister application.
@@ -274,7 +275,6 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @param LoggerInterface $logger Logger
 	 * @param IDBConnection $db Database connection
 	 * @param IAppContainer|null $container Container for lazy loading (optional)
-	 * @param string $appName Application name
 	 * @param ValidationOperationsHandler|null $validOpsHandler Validation operations handler
 	 * @param SearchBackendHandler|null $searchBackendHandler Search backend handler
 	 * @param LlmSettingsHandler|null $llmSettingsHandler LLM settings handler
@@ -292,7 +292,6 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		LoggerInterface $logger,
 		IDBConnection $db,
 		?IAppContainer $container = null,
-		string $appName = 'openregister',
 		?ValidationOperationsHandler $validOpsHandler = null,
 		?SearchBackendHandler $searchBackendHandler = null,
 		?LlmSettingsHandler $llmSettingsHandler = null,
@@ -306,7 +305,6 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		// REMOVED: objectEntityMapper assignment (unused, caused circular dependency).
 		$this->db = $db;
 		$this->container = $container;
-		$this->appName = $appName;
 
 		// Initialize handlers (lazy-load if not provided).
 		$this->validationOperationsHandler = $validOpsHandler;
