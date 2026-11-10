@@ -127,7 +127,7 @@ class ExportProfileWriter implements ExportProfileWriterInterface {
 	 * The file's bytes in the profile's format: a JSON envelope, or else CSV.
 	 *
 	 * @param array<string, mixed>           $metadata The metadata, carrying the format.
-	 * @param array<int, array<int, string>> $rows     The rows.
+	 * @param array<int, array<string, mixed>> $rows     The projected rows.
 	 *
 	 * @return string The bytes.
 	 */
