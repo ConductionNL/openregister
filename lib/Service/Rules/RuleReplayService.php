@@ -117,15 +117,33 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 */
 	public function preview(Schema $schema, string $ruleId, array $selection, string $actorUid,
 		?string $justification = null, ?int $registerId = null): array {
-		$rule = $this->targets->rules->find(schema: $schema, ruleId: $ruleId);
+		$request = new RuleReplayRequest(ruleId: $ruleId, actorUid: $actorUid, justification: $justification);
+		return $this->previewReplay(request: $request, selection: new RuleReplaySelection(schema: $schema, registerId: $registerId, criteria: $selection));
+	}//end preview()
+
+	/**
+	 * Preview a replay of one rule over a selection of existing objects.
+	 *
+	 * Nothing is written by this call; see preview().
+	 *
+	 * @param RuleReplayRequest   $request   The rule, who asks and why.
+	 * @param RuleReplaySelection $selection The objects, and the schema and register they are scoped to.
+	 *
+	 * @return array<string, mixed> The previewed job, or the refusal.
+	 *
+	 * @throws RuleCeilingException When the selection is larger than the rule's ceiling.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function previewReplay(RuleReplayRequest $request, RuleReplaySelection $selection): array {
+		$rule = $this->targets->rules->find(schema: $selection->schema, ruleId: $request->ruleId);
 		if ($rule === null) {
-			return $this->unknownRule(schema: $schema, ruleId: $ruleId);
+			return $this->unknownRule(schema: $selection->schema, ruleId: $request->ruleId);
 		}
 
-		$scoped = new RuleReplaySelection(schema: $schema, registerId: $registerId, criteria: $selection);
-
-		return $this->previewJob(run: new RuleReplayRun(rule: $rule, selection: $scoped, actorUid: $actorUid, justification: $justification));
-	}//end preview()
+		$run = new RuleReplayRun(rule: $rule, selection: $selection, actorUid: $request->actorUid, justification: $request->justification);
+		return $this->previewJob(run: $run);
+	}//end previewReplay()
 
 	/**
 	 * The refusal for a rule the schema does not declare.

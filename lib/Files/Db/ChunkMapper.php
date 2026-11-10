@@ -241,16 +241,24 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 		?string $search = null,
 		FileSourceOrder $order = new FileSourceOrder(),
 	): array {
-		$qb = $this->db->getQueryBuilder();
+		$qb = $this->fileSourceSummaryQuery(order: $order, search: $search);
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
-		$qb->select('ch.source_id')
-			->selectAlias($qb->func()->count('ch.id'), 'chunk_count')
-			->selectAlias($qb->createFunction('MIN(ch.created_at)'), 'first_extracted')
-			->selectAlias($qb->createFunction('MAX(ch.created_at)'), 'last_extracted')
-			->selectAlias('fc.name', 'file_name')
-			->selectAlias('mt.mimetype', 'mime_type')
-			->selectAlias('fc.size', 'file_size')
-			->from($this->getTableName(), 'ch')
+		return $this->fetchFileSourceSummaries(qb: $qb);
+	}//end getFileSourceSummaries()
+
+	/**
+	 * The unpaged file-source summary query: file chunks grouped per file, sorted and filtered by name.
+	 *
+	 * @param FileSourceOrder $order  The sort field and direction.
+	 * @param string|null     $search Optional search filter on file name.
+	 *
+	 * @return IQueryBuilder The query, not yet paged.
+	 */
+	private function fileSourceSummaryQuery(FileSourceOrder $order, ?string $search): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$this->selectFileSourceColumns(qb: $qb);
+		$qb->from($this->getTableName(), 'ch')
 			->innerJoin('ch', 'filecache', 'fc', $qb->expr()->eq('ch.source_id', 'fc.fileid'))
 			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
 			->where($qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR)))
@@ -259,8 +267,34 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 
 		$this->applyFileNameSearch(qb: $qb, search: $search);
 
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		return $qb;
+	}//end fileSourceSummaryQuery()
 
+	/**
+	 * Select the per-file chunk statistics and file metadata.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return void
+	 */
+	private function selectFileSourceColumns(IQueryBuilder $qb): void {
+		$qb->select('ch.source_id')
+			->selectAlias($qb->func()->count('ch.id'), 'chunk_count')
+			->selectAlias($qb->createFunction('MIN(ch.created_at)'), 'first_extracted')
+			->selectAlias($qb->createFunction('MAX(ch.created_at)'), 'last_extracted')
+			->selectAlias('fc.name', 'file_name')
+			->selectAlias('mt.mimetype', 'mime_type')
+			->selectAlias('fc.size', 'file_size');
+	}//end selectFileSourceColumns()
+
+	/**
+	 * Run the summary query and shape each row.
+	 *
+	 * @param IQueryBuilder $qb The paged query.
+	 *
+	 * @return array List of file source summaries.
+	 */
+	private function fetchFileSourceSummaries(IQueryBuilder $qb): array {
 		$result = $qb->executeQuery();
 		$rows = [];
 
@@ -273,7 +307,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 		$result->closeCursor();
 
 		return $rows;
-	}//end getFileSourceSummaries()
+	}//end fetchFileSourceSummaries()
 
 	/**
 	 * Narrow a file-source query to file names containing the search term.
@@ -418,16 +452,41 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 	 */
 	public function searchByKeyword(string $query, int $limit, array $filters = [], bool $allowUnrankedFallback = false): array {
 		$search = new KeywordChunkSearch(query: $query, limit: $limit, filters: $filters);
-		$platform = $this->db->getDatabasePlatform();
+		if ($allowUnrankedFallback === true) {
+			return $this->searchByKeywordWithFallback(search: $search);
+		}
 
-		if (str_contains(get_class($platform), 'PostgreSQL') === true) {
+		return $this->searchByKeywordRankedOnly(search: $search);
+	}//end searchByKeyword()
+
+	/**
+	 * Ranked keyword search on PostgreSQL, otherwise the unranked `LIKE` scan.
+	 *
+	 * @param KeywordChunkSearch $search The query, limit and filters.
+	 *
+	 * @return array The matching chunks.
+	 */
+	private function searchByKeywordWithFallback(KeywordChunkSearch $search): array {
+		if ($this->isPostgres() === true) {
 			return $this->searchByKeywordRanked(search: $search);
 		}
 
-		if ($allowUnrankedFallback === true) {
-			return $this->searchByKeywordUnranked(search: $search);
+		return $this->searchByKeywordUnranked(search: $search);
+	}//end searchByKeywordWithFallback()
+
+	/**
+	 * Ranked keyword search on PostgreSQL; elsewhere nothing, with a warning.
+	 *
+	 * @param KeywordChunkSearch $search The query, limit and filters.
+	 *
+	 * @return array The matching chunks, or `[]` off PostgreSQL.
+	 */
+	private function searchByKeywordRankedOnly(KeywordChunkSearch $search): array {
+		if ($this->isPostgres() === true) {
+			return $this->searchByKeywordRanked(search: $search);
 		}
 
+		$platform = $this->db->getDatabasePlatform();
 		$this->logger->warning(
 			message: '[ChunkMapper] Ranked keyword search unavailable: requires PostgreSQL '
 				. 'with the tsvector keyword-search index',
@@ -438,7 +497,16 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 			]
 		);
 		return [];
-	}//end searchByKeyword()
+	}//end searchByKeywordRankedOnly()
+
+	/**
+	 * Whether the connection is PostgreSQL, where the tsvector index lives.
+	 *
+	 * @return bool True on PostgreSQL.
+	 */
+	private function isPostgres(): bool {
+		return str_contains(get_class($this->db->getDatabasePlatform()), 'PostgreSQL') === true;
+	}//end isPostgres()
 
 	/**
 	 * Ranked `ts_rank` keyword search (PostgreSQL); [] with a logged warning when the query fails.

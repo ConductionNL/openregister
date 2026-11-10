@@ -23,6 +23,7 @@ use OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJobServices;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarBatch;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -105,7 +106,7 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnIncompleteArgumentDoesNothing(): void {
-		$this->recompute->expects($this->never())->method('recomputeBatch');
+		$this->recompute->expects($this->never())->method('recompute');
 		$this->recompute->expects($this->never())->method('markRan');
 		$this->logger->expects($this->exactly(3))->method('warning');
 
@@ -133,12 +134,12 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 			'calendar-changed',
 			'calendar-recompute'
 		);
-		$this->recompute->expects($this->once())->method('recomputeBatch')->willReturnCallback(
-			function (string $slug, string $version, iterable $timers, callable $supersede): array {
-				$this->assertSame('nl', $slug);
-				$this->assertSame('2.0.0', $version);
-				foreach ($timers as $timer) {
-					$supersede($timer);
+		$this->recompute->expects($this->once())->method('recompute')->willReturnCallback(
+			function (CalendarBatch $batch): array {
+				$this->assertSame('nl', $batch->slug);
+				$this->assertSame('2.0.0', $batch->version);
+				foreach ($batch->timers as $timer) {
+					($batch->supersede)($timer);
 				}
 
 				return ['examined' => 1, 'moved' => 1, 'unchanged' => 0, 'unresolvable' => 0, 'deferred' => 0, 'skipped' => false];
@@ -155,7 +156,7 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 	 * @return void
 	 */
 	public function testASkippedOrFailedPassIsNotMarked(): void {
-		$this->recompute->method('recomputeBatch')->willReturnOnConsecutiveCalls(
+		$this->recompute->method('recompute')->willReturnOnConsecutiveCalls(
 			['examined' => 0, 'moved' => 0, 'unchanged' => 0, 'unresolvable' => 0, 'deferred' => 0, 'skipped' => true],
 			$this->throwException(new RuntimeException('boom'))
 		);

@@ -19,6 +19,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowGraphDiff;
+use OCA\OpenRegister\Service\Flow\FlowGraphFinding;
+use OCA\OpenRegister\Service\Flow\FlowGraphRevision;
 use OCA\OpenRegister\Service\Flow\FlowSemanticVersion;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;
@@ -99,8 +101,8 @@ class FlowSemanticVersionTest extends TestCase {
 	 * @return void
 	 */
 	public function testWithoutARequestTheDiffStands(): void {
-		$this->assertSame(FlowGraphDiff::MINOR, $this->semver->reconcile(derived: FlowGraphDiff::MINOR, requested: null));
-		$this->assertSame(FlowGraphDiff::MAJOR, $this->semver->reconcile(derived: FlowGraphDiff::MAJOR, requested: ''));
+		$this->assertSame(FlowGraphDiff::MINOR, $this->semver->reconcile(found: new FlowGraphFinding(verdict: FlowGraphDiff::MINOR), requested: null));
+		$this->assertSame(FlowGraphDiff::MAJOR, $this->semver->reconcile(found: new FlowGraphFinding(verdict: FlowGraphDiff::MAJOR), requested: ''));
 	}//end testWithoutARequestTheDiffStands()
 
 	/**
@@ -112,7 +114,7 @@ class FlowSemanticVersionTest extends TestCase {
 	public function testAnAuthorMayRaiseAMinorToAMajor(): void {
 		$this->assertSame(
 			FlowGraphDiff::MAJOR,
-			$this->semver->reconcile(derived: FlowGraphDiff::MINOR, requested: 'major')
+			$this->semver->reconcile(found: new FlowGraphFinding(verdict: FlowGraphDiff::MINOR), requested: 'major')
 		);
 	}//end testAnAuthorMayRaiseAMinorToAMajor()
 
@@ -126,11 +128,7 @@ class FlowSemanticVersionTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessage('This removes steps b.');
 
-		$this->semver->reconcile(
-			derived: FlowGraphDiff::MAJOR,
-			requested: 'minor',
-			removed: 'This removes steps b.'
-		);
+		$this->semver->reconcile(found: new FlowGraphFinding(verdict: FlowGraphDiff::MAJOR, removed: 'This removes steps b.'), requested: 'minor');
 	}//end testAnAuthorCannotTalkARemovalDown()
 
 	/**
@@ -140,7 +138,7 @@ class FlowSemanticVersionTest extends TestCase {
 	 */
 	public function testTheRefusalIsNeverJustCannotBeMinor(): void {
 		try {
-			$this->semver->reconcile(derived: FlowGraphDiff::MAJOR, requested: 'minor');
+			$this->semver->reconcile(found: new FlowGraphFinding(verdict: FlowGraphDiff::MAJOR), requested: 'minor');
 			$this->fail('expected a refusal');
 		} catch (UnexpectedValueException $e) {
 			$this->assertStringContainsString('removed', $e->getMessage());
@@ -155,7 +153,7 @@ class FlowSemanticVersionTest extends TestCase {
 	public function testAnUnknownRequestIsRefused(): void {
 		$this->expectException(UnexpectedValueException::class);
 
-		$this->semver->reconcile(derived: FlowGraphDiff::MINOR, requested: 'patch');
+		$this->semver->reconcile(found: new FlowGraphFinding(verdict: FlowGraphDiff::MINOR), requested: 'patch');
 	}//end testAnUnknownRequestIsRefused()
 
 	/**
@@ -188,11 +186,10 @@ class FlowSemanticVersionTest extends TestCase {
 			'edges' => [['id' => 'e1', 'from' => 'start', 'to' => 'done']],
 		];
 
-		$preview = $this->semver->preview(
-			publishedGraph: $published,
-			candidateGraph: $candidate,
+		$preview = $this->semver->previewOf(revision: new FlowGraphRevision(published: $published,
+			candidate: $candidate,
 			previousSemver: '1.4.0'
-		);
+		));
 
 		$this->assertSame(FlowGraphDiff::MAJOR, $preview['verdict']);
 		$this->assertSame('2.0.0', $preview['next'], 'the preview says the number, not just the component');
@@ -226,11 +223,10 @@ class FlowSemanticVersionTest extends TestCase {
 			'edges' => [['id' => 'e1', 'from' => 'start', 'to' => 'extra']],
 		];
 
-		$preview = $this->semver->preview(
-			publishedGraph: $published,
-			candidateGraph: $candidate,
+		$preview = $this->semver->previewOf(revision: new FlowGraphRevision(published: $published,
+			candidate: $candidate,
 			previousSemver: '2.1.0'
-		);
+		));
 
 		$this->assertSame(FlowGraphDiff::MINOR, $preview['verdict']);
 		$this->assertSame('2.2.0', $preview['next']);
@@ -243,11 +239,10 @@ class FlowSemanticVersionTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPreviewWithNothingPublishedIsTheFirstVersion(): void {
-		$preview = $this->semver->preview(
-			publishedGraph: null,
-			candidateGraph: ['nodes' => [['id' => 'a', 'config' => []]], 'edges' => []],
+		$preview = $this->semver->previewOf(revision: new FlowGraphRevision(published: null,
+			candidate: ['nodes' => [['id' => 'a', 'config' => []]], 'edges' => []],
 			previousSemver: null
-		);
+		));
 
 		$this->assertTrue($preview['first']);
 		$this->assertSame(FlowSemanticVersion::FIRST, $preview['next']);
@@ -268,11 +263,10 @@ class FlowSemanticVersionTest extends TestCase {
 			'edges' => [],
 		];
 
-		$preview = $this->semver->preview(
-			publishedGraph: $published,
-			candidateGraph: ['nodes' => [], 'edges' => []],
+		$preview = $this->semver->previewOf(revision: new FlowGraphRevision(published: $published,
+			candidate: ['nodes' => [], 'edges' => []],
 			previousSemver: '1.0.0'
-		);
+		));
 
 		$this->assertSame(FlowGraphDiff::MAJOR, $preview['verdict']);
 	}//end testThePreviewNeverRefuses()

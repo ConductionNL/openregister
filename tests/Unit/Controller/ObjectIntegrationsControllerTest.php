@@ -505,9 +505,11 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$registry = new IntegrationRegistry(new NullLogger());
 		$registry->addProvider(
 			new \OCA\OpenRegister\Service\Integration\Providers\ContactsProvider(
-				$contacts,
-				$this->createMock(\OCP\App\IAppManager::class),
-				$this->createMock(\OCP\IL10N::class)
+				new \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription(
+					$this->createMock(\OCP\App\IAppManager::class),
+					$this->createMock(\OCP\IL10N::class)
+				),
+				$contacts
 			)
 		);
 		$controller = $this->buildController(registry: $registry, request: $this->buildRequest(['role' => 'x']));
