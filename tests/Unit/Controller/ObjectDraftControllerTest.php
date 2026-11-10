@@ -35,6 +35,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\OCSController;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -178,7 +179,8 @@ class ObjectDraftControllerTest extends TestCase {
 			activation: $this->activation,
 			session: $this->session,
 			l10n: $l10n,
-			logger: $this->logger
+			logger: $this->logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 	}//end setUp()
 
@@ -444,7 +446,8 @@ class ObjectDraftControllerTest extends TestCase {
 			activation: $this->activation,
 			session: $this->session,
 			l10n: $l10n,
-			logger: $this->logger
+			logger: $this->logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 
 		$response = $controller->activate(register: '27', schema: '43', id: 'd1');
@@ -480,7 +483,8 @@ class ObjectDraftControllerTest extends TestCase {
 			activation: $this->activation,
 			session: $this->session,
 			l10n: $l10n,
-			logger: $this->logger
+			logger: $this->logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 
 		$this->assertSame(404, $controller->activate(register: 'service', schema: 'ticket', id: 'd1')->getStatus());

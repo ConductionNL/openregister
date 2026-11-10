@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -53,7 +54,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -96,11 +96,11 @@ class ObjectDraftController extends Controller {
 	private readonly DraftActivationInterface $activation;
 
 	/**
-	 * The acting user, who is the asserted owner.
+	 * The acting user's session, who is the asserted owner.
 	 *
-	 * @var IUserSession
+	 * @var ControllerSession
 	 */
-	private readonly IUserSession $session;
+	private readonly ControllerSession $session;
 
 	/**
 	 * Translations.
@@ -133,7 +133,7 @@ class ObjectDraftController extends Controller {
 		$this->activation = $services->domain->activation;
 		$this->session = $services->platform->session;
 		$this->l10n = $services->platform->l10n;
-		$this->logger = $services->platform->logger;
+		$this->logger = $services->platform->session->logger;
 	}//end __construct()
 
 	/**
@@ -173,7 +173,7 @@ class ObjectDraftController extends Controller {
 	 * @return JSONResponse The activated object, or the refusal.
 	 */
 	private function activateForObject(ObjectRef $ref): JSONResponse {
-		$user = $this->session->getUser();
+		$user = $this->session->userSession->getUser();
 		if ($user === null) {
 			return $this->notSignedIn();
 		}
