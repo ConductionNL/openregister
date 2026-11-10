@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Decision;
 
 use OCA\OpenRegister\Db\EntityRelation;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use Psr\Log\LoggerInterface;
@@ -122,7 +123,25 @@ class ReviewPolicyResolver {
 	 *                              exists and belongs to no object is not a failure.
 	 */
 	private function subjectOf(EntityRelation $relation): array {
-		$subject = [
+		$subject = $this->relationSubject(relation: $relation);
+
+		$fileId = (int)($relation->getFileId() ?? 0);
+		if ((string)$subject['schema'] !== '' || $fileId <= 0) {
+			return $subject;
+		}
+
+		return $this->withFileOwner(subject: $subject, fileId: $fileId);
+	}//end subjectOf()
+
+	/**
+	 * The subject as the relation itself records it.
+	 *
+	 * @param EntityRelation $relation The relation.
+	 *
+	 * @return array<string, mixed> subjectType, subjectId, fileId, objectId, register, schema and objectUuid.
+	 */
+	private function relationSubject(EntityRelation $relation): array {
+		return [
 			'subjectType' => self::SUBJECT_TYPE,
 			'subjectId' => (string)$relation->getId(),
 			'fileId' => $relation->getFileId(),
@@ -131,20 +150,24 @@ class ReviewPolicyResolver {
 			'schema' => $relation->getSchemaId(),
 			'objectUuid' => $relation->getObjectUuid(),
 		];
+	}//end relationSubject()
 
-		$fileId = (int)($relation->getFileId() ?? 0);
-		if ((string)$subject['schema'] !== '' || $fileId <= 0) {
-			return $subject;
-		}
-
+	/**
+	 * Complete a subject on a file with the register, schema and uuid of the object owning that file.
+	 *
+	 * @param array<string, mixed> $subject The relation's own subject, naming no schema.
+	 * @param int                  $fileId  The file the relation is on.
+	 *
+	 * @return array<string, mixed> The subject; `lookupFailed` (true) when the file
+	 *                              could not be found or its owner lookup threw.
+	 */
+	private function withFileOwner(array $subject, int $fileId): array {
 		try {
 			$node = $this->fileOwners->rootFolder->getFirstNodeById($fileId);
 			if ($node === null) {
 				// The file cannot be found, so nothing says which object (and schema) it belongs to: that is an
 				// unknown owner, not a file without one, and an unknown policy fails closed.
-				$subject['lookupFailed'] = true;
-
-				return $subject;
+				return $this->withLookupFailed(subject: $subject);
 			}
 
 			$object = $this->fileOwners->owners->find(file: $node);
@@ -153,18 +176,43 @@ class ReviewPolicyResolver {
 				message: '[ReviewPolicyResolver] The file\'s object could not be found; the decision stays with its decider.',
 				context: ['fileId' => $fileId, 'error' => $error->getMessage()]
 			);
-			$subject['lookupFailed'] = true;
-			return $subject;
+			return $this->withLookupFailed(subject: $subject);
 		}
 
+		return $this->withOwner(subject: $subject, object: $object);
+	}//end withFileOwner()
+
+	/**
+	 * Mark a subject whose owning object is unknown, so its policy fails closed.
+	 *
+	 * @param array<string, mixed> $subject The subject.
+	 *
+	 * @return array<string, mixed> The subject with `lookupFailed` true.
+	 */
+	private function withLookupFailed(array $subject): array {
+		$subject['lookupFailed'] = true;
+
+		return $subject;
+	}//end withLookupFailed()
+
+	/**
+	 * Take the register, schema and uuid of the object owning the file; a file that belongs to no object
+	 * leaves the subject as it is (that is not a failure).
+	 *
+	 * @param array<string, mixed> $subject The subject.
+	 * @param ObjectEntity|null    $object  The object owning the file, if any.
+	 *
+	 * @return array<string, mixed> The subject.
+	 */
+	private function withOwner(array $subject, ?ObjectEntity $object): array {
 		if ($object !== null) {
-			$subject['register'] = $object->getRegister();
-			$subject['schema'] = $object->getSchema();
+			$subject['register']   = $object->getRegister();
+			$subject['schema']     = $object->getSchema();
 			$subject['objectUuid'] = $object->getUuid();
 		}
 
 		return $subject;
-	}//end subjectOf()
+	}//end withOwner()
 
 	/**
 	 * The policy for a declaration that cannot be read: decider-owned, no supervisors, others hidden.
