@@ -256,6 +256,36 @@ const TOTAL_ROWS = [
 	{ label: 'Sources', count: 'totalSources' },
 ]
 
+/**
+ * The mass-validation settings a run starts from: serial, all objects, in
+ * batches of a thousand, without collecting errors.
+ *
+ * @return {object} Fresh settings
+ */
+function defaultMassValidateConfig() {
+	return {
+		mode: 'serial',
+		maxObjects: 0,
+		batchSize: 1000,
+		collectErrors: false,
+	}
+}
+
+/**
+ * The memory prediction shown before one is read: safe, sizes unknown.
+ *
+ * @return {object} A fresh prediction
+ */
+function unknownMemoryPrediction() {
+	return {
+		prediction_safe: true,
+		formatted: {
+			total_predicted: 'Unknown',
+			available: 'Unknown',
+		},
+	}
+}
+
 export default {
 	name: 'StatisticsOverview',
 
@@ -284,20 +314,8 @@ export default {
 				totalObjects: 0,
 			},
 
-			massValidateConfig: {
-				mode: 'serial',
-				maxObjects: 0,
-				batchSize: 1000,
-				collectErrors: false,
-			},
-
-			memoryPrediction: {
-				prediction_safe: true,
-				formatted: {
-					total_predicted: 'Unknown',
-					available: 'Unknown',
-				},
-			},
+			massValidateConfig: defaultMassValidateConfig(),
+			memoryPrediction: unknownMemoryPrediction(),
 
 			memoryPredictionLoading: false,
 		}
