@@ -30,6 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -283,26 +285,26 @@ class DeckTalkSourcesGoldenTest extends TestCase {
 		$throwing = self::bag(['getNumberOfActors' => new RuntimeException('count down')]);
 
 		$scenarios = [
-			'deck no user' => fn () => $this->deck(false, $this->deckServices())->findAll($register, $schema),
-			'deck board service throws' => fn () => $this->deck(true, ['OCA\\Deck\\Service\\BoardService' => new RuntimeException('nope')] + $this->deckServices())->findAll($register, $schema),
-			'deck stack service not an object' => fn () => $this->deck(true, ['OCA\\Deck\\Service\\StackService' => 'string'] + $this->deckServices())->findAll($register, $schema),
-			'deck boards throw' => fn () => $this->deck(true, ['OCA\\Deck\\Service\\BoardService' => self::bag(['findAll' => new RuntimeException('boards down')])] + $this->deckServices())->find($register, $schema, '11'),
-			'deck findAll' => fn () => $this->deck(true, $this->deckServices())->findAll($register, $schema),
-			'deck findAll paged' => fn () => $this->deck(true, $this->deckServices())->findAll($register, $schema, ['limit' => '2', 'offset' => '1']),
-			'deck count' => fn () => $this->deck(true, $this->deckServices())->count($register, $schema, ['limit' => 3]),
-			'deck find hit' => fn () => $this->deck(true, $this->deckServices())->find($register, $schema, '12'),
-			'deck find empty id' => fn () => $this->deck(true, $this->deckServices())->find($register, $schema, ''),
-			'deck find miss' => fn () => $this->deck(true, $this->deckServices())->find($register, $schema, '99'),
-			'talk no user' => fn () => $this->talk(false, $this->talkServices($counting))->findAll($register, $schema),
-			'talk manager throws' => fn () => $this->talk(true, ['OCA\\Talk\\Manager' => new RuntimeException('nope')] + $this->talkServices($counting))->findAll($register, $schema),
-			'talk rooms throw' => fn () => $this->talk(true, ['OCA\\Talk\\Manager' => self::bag(['getRoomsForUser' => new RuntimeException('rooms down')])] + $this->talkServices($counting))->find($register, $schema, 'tok1'),
-			'talk findAll counting' => fn () => $this->talk(true, $this->talkServices($counting))->findAll($register, $schema),
-			'talk findAll no participant service' => fn () => $this->talk(true, $this->talkServices(new RuntimeException('no ps')))->findAll($register, $schema),
-			'talk findAll participant count throws' => fn () => $this->talk(true, $this->talkServices($throwing))->findAll($register, $schema, ['limit' => 1, 'offset' => 1]),
-			'talk count' => fn () => $this->talk(true, $this->talkServices(null))->count($register, $schema),
-			'talk find hit' => fn () => $this->talk(true, $this->talkServices($counting))->find($register, $schema, 'tok2'),
-			'talk find empty id' => fn () => $this->talk(true, $this->talkServices($counting))->find($register, $schema, ''),
-			'talk find miss' => fn () => $this->talk(true, $this->talkServices($counting))->find($register, $schema, 'zzz'),
+			'deck no user' => fn () => $this->deck(false, $this->deckServices())->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'deck board service throws' => fn () => $this->deck(true, ['OCA\\Deck\\Service\\BoardService' => new RuntimeException('nope')] + $this->deckServices())->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'deck stack service not an object' => fn () => $this->deck(true, ['OCA\\Deck\\Service\\StackService' => 'string'] + $this->deckServices())->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'deck boards throw' => fn () => $this->deck(true, ['OCA\\Deck\\Service\\BoardService' => self::bag(['findAll' => new RuntimeException('boards down')])] + $this->deckServices())->find(new SourcedTable(new RegisterSchema($register, $schema)), '11'),
+			'deck findAll' => fn () => $this->deck(true, $this->deckServices())->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'deck findAll paged' => fn () => $this->deck(true, $this->deckServices())->findAll(new SourcedTable(new RegisterSchema($register, $schema)), ['limit' => '2', 'offset' => '1']),
+			'deck count' => fn () => $this->deck(true, $this->deckServices())->count(new SourcedTable(new RegisterSchema($register, $schema)), ['limit' => 3]),
+			'deck find hit' => fn () => $this->deck(true, $this->deckServices())->find(new SourcedTable(new RegisterSchema($register, $schema)), '12'),
+			'deck find empty id' => fn () => $this->deck(true, $this->deckServices())->find(new SourcedTable(new RegisterSchema($register, $schema)), ''),
+			'deck find miss' => fn () => $this->deck(true, $this->deckServices())->find(new SourcedTable(new RegisterSchema($register, $schema)), '99'),
+			'talk no user' => fn () => $this->talk(false, $this->talkServices($counting))->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'talk manager throws' => fn () => $this->talk(true, ['OCA\\Talk\\Manager' => new RuntimeException('nope')] + $this->talkServices($counting))->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'talk rooms throw' => fn () => $this->talk(true, ['OCA\\Talk\\Manager' => self::bag(['getRoomsForUser' => new RuntimeException('rooms down')])] + $this->talkServices($counting))->find(new SourcedTable(new RegisterSchema($register, $schema)), 'tok1'),
+			'talk findAll counting' => fn () => $this->talk(true, $this->talkServices($counting))->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'talk findAll no participant service' => fn () => $this->talk(true, $this->talkServices(new RuntimeException('no ps')))->findAll(new SourcedTable(new RegisterSchema($register, $schema))),
+			'talk findAll participant count throws' => fn () => $this->talk(true, $this->talkServices($throwing))->findAll(new SourcedTable(new RegisterSchema($register, $schema)), ['limit' => 1, 'offset' => 1]),
+			'talk count' => fn () => $this->talk(true, $this->talkServices(null))->count(new SourcedTable(new RegisterSchema($register, $schema))),
+			'talk find hit' => fn () => $this->talk(true, $this->talkServices($counting))->find(new SourcedTable(new RegisterSchema($register, $schema)), 'tok2'),
+			'talk find empty id' => fn () => $this->talk(true, $this->talkServices($counting))->find(new SourcedTable(new RegisterSchema($register, $schema)), ''),
+			'talk find miss' => fn () => $this->talk(true, $this->talkServices($counting))->find(new SourcedTable(new RegisterSchema($register, $schema)), 'zzz'),
 		];
 
 		$recording = [];

@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Tests\Support\BuildsReaderHistory;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * The integration leaf answers through the reader path.
@@ -120,7 +121,7 @@ final class AuditTrailProviderReaderPathTest extends TestCase {
 	public function testTheObjectIsAskedForByThePathItWasListedUnder(): void {
 		$history = $this->createMock(ObjectHistoryForReaders::class);
 		$history->expects($this->once())->method('page')
-			->with('reg-slug', 'schema-slug', 'obj-1', $this->callback(static fn (array $params): bool => $params['limit'] === PHP_INT_MAX))
+			->with(new ObjectRef(register: 'reg-slug', schema: 'schema-slug', id: 'obj-1'), $this->callback(static fn (array $params): bool => $params['limit'] === PHP_INT_MAX))
 			->willReturn(['results' => [5 => ['uuid' => 'a']], 'total' => 1]);
 
 		self::assertSame([['uuid' => 'a']], $this->provider($history)->list('reg-slug', 'schema-slug', 'obj-1'));
