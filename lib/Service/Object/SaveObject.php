@@ -1854,60 +1854,146 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		foreach ($orphanedUuids as $uuid) {
-			try {
-				$orphanedObject = $this->objectEntityMapper->find(
-					identifier: $uuid,
-					register: $register,
-					schema: $schema,
-					includeDeleted: false,
-					_rbac: false,
-					_multitenancy: false
-				);
-
-				if ($this->orphanMayBeDeleted(orphan: $orphanedObject, scope: $scope + ['uuid' => $uuid]) === false) {
-					continue;
-				}
-
-				// Soft delete: set deletion metadata and update (consistent with DeleteObject).
-				// The guard admits only a signed-in caller.
-				$deletionData = [
-					'deletedBy' => $this->userSession->getUser()?->getUID(),
-					'deletedAt' => (new DateTime())->format(DateTime::ATOM),
-					'objectId' => $orphanedObject->getUuid(),
-					'reason' => 'orphaned-related-object',
-				];
-				$orphanedObject->setDeleted($deletionData);
-
-				$this->objectEntityMapper->update(
-					entity: $orphanedObject,
-					register: $register,
-					schema: $schema
-				);
-
-				$this->logger->info(
-					message: '[SaveObject] Soft-deleted orphaned related object',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-					]
-				);
-			} catch (DoesNotExistException $e) {
-				// Object already deleted or doesn't exist, nothing to clean up.
-			} catch (Exception $e) {
-				// Log but continue — don't let cleanup failures block the parent update.
-				$this->logger->warning(
-					message: '[SaveObject] Failed to delete orphaned related object',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
+			$this->deleteOrphanedRelatedObject(uuid: $uuid, scope: $scope);
+		}
 	}//end deleteOrphanedRelatedObjects()
+
+	/**
+	 * Soft-delete one orphaned related object; a missing row is skipped and a failure only logged.
+	 *
+	 * Log but continue: a cleanup failure must not block the parent update.
+	 *
+	 * @param string $uuid  The reference the parent no longer holds.
+	 * @param array  $scope The complete orphan scope.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function deleteOrphanedRelatedObject(string $uuid, array $scope): void {
+		try {
+			$this->softDeleteOrphanIfOwned(uuid: $uuid, scope: $scope);
+		} catch (DoesNotExistException $e) {
+			// Object already deleted or doesn't exist, nothing to clean up.
+		} catch (Exception $e) {
+			$this->warnOrphanDeleteFailed(uuid: $uuid, error: $e);
+		}
+	}//end deleteOrphanedRelatedObject()
+
+	/**
+	 * Log an orphan that could not be deleted; the parent update goes on.
+	 *
+	 * @param string    $uuid  The reference that was to be deleted.
+	 * @param Exception $error The failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function warnOrphanDeleteFailed(string $uuid, Exception $error): void {
+		$this->logger->warning(
+			message: '[SaveObject] Failed to delete orphaned related object',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end warnOrphanDeleteFailed()
+
+	/**
+	 * Find the orphan and soft-delete it when the guard lets it go.
+	 *
+	 * @param string $uuid  The reference the parent no longer holds.
+	 * @param array  $scope The complete orphan scope.
+	 *
+	 * @return void
+	 *
+	 * @throws DoesNotExistException When the row is gone.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function softDeleteOrphanIfOwned(string $uuid, array $scope): void {
+		$orphanedObject = $this->findOrphan(uuid: $uuid, scope: $scope);
+		if ($this->orphanMayBeDeleted(orphan: $orphanedObject, scope: $scope + ['uuid' => $uuid]) === false) {
+			return;
+		}
+
+		$this->softDeleteOrphan(orphan: $orphanedObject, scope: $scope);
+		$this->logOrphanDeleted(uuid: $uuid);
+	}//end softDeleteOrphanIfOwned()
+
+	/**
+	 * The orphaned row, looked up past the read filters and excluding deleted rows.
+	 *
+	 * @param string $uuid  The reference the parent no longer holds.
+	 * @param array  $scope The complete orphan scope.
+	 *
+	 * @return ObjectEntity The row.
+	 *
+	 * @throws DoesNotExistException When the row is gone.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function findOrphan(string $uuid, array $scope): ObjectEntity {
+		return $this->objectEntityMapper->find(
+			identifier: $uuid,
+			register: $scope['register'],
+			schema: $scope['schema'],
+			includeDeleted: false,
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end findOrphan()
+
+	/**
+	 * Log a soft-deleted orphan.
+	 *
+	 * @param string $uuid The reference that was deleted.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function logOrphanDeleted(string $uuid): void {
+		$this->logger->info(
+			message: '[SaveObject] Soft-deleted orphaned related object',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+			]
+		);
+	}//end logOrphanDeleted()
+
+	/**
+	 * Soft delete: set deletion metadata and update (consistent with DeleteObject).
+	 *
+	 * The guard admits only a signed-in caller.
+	 *
+	 * @param ObjectEntity $orphan The orphan the guard let go.
+	 * @param array        $scope  The complete orphan scope.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function softDeleteOrphan(ObjectEntity $orphan, array $scope): void {
+		$deletionData = [
+			'deletedBy' => $this->userSession->getUser()?->getUID(),
+			'deletedAt' => (new DateTime())->format(DateTime::ATOM),
+			'objectId' => $orphan->getUuid(),
+			'reason' => 'orphaned-related-object',
+		];
+		$orphan->setDeleted($deletionData);
+
+		$this->objectEntityMapper->update(
+			entity: $orphan,
+			register: $scope['register'],
+			schema: $scope['schema']
+		);
+	}//end softDeleteOrphan()
 
 	/**
 	 * Soft-delete what a parent's save left orphaned, once the parent is saved.
