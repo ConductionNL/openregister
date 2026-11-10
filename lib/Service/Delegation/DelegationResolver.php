@@ -45,6 +45,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Delegation;
 
+use DateTime;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use Psr\Log\LoggerInterface;
@@ -221,8 +222,27 @@ class DelegationResolver {
 	 * @return string One of DelegationVerdict's reason constants.
 	 */
 	private function missReason(DelegationGrant $grant, DelegationRequest $request): string {
-		$now = $request->now;
+		$statusReason = $this->statusMissReason(grant: $grant, now: $request->now);
+		if ($statusReason !== null) {
+			return $statusReason;
+		}
 
+		if ($grant->isLiveAt($request->now) === true && $this->covers(grant: $grant, scope: $request->scope) === false) {
+			return DelegationVerdict::REASON_OUT_OF_SCOPE;
+		}
+
+		return DelegationVerdict::REASON_NONE;
+	}//end missReason()
+
+	/**
+	 * The miss reason a grant's own status gives, or null when its status does not explain the miss.
+	 *
+	 * @param DelegationGrant $grant The grant.
+	 * @param DateTime        $now   The moment judged at.
+	 *
+	 * @return string|null One of DelegationVerdict's reason constants, or null.
+	 */
+	private function statusMissReason(DelegationGrant $grant, DateTime $now): ?string {
 		if ($grant->getStatus() === DelegationGrant::STATUS_DENIED) {
 			return DelegationVerdict::REASON_DENIED;
 		}
@@ -235,21 +255,27 @@ class DelegationResolver {
 			return DelegationVerdict::REASON_EXPIRED;
 		}
 
-		if (in_array(
-			$grant->getStatus(),
-			[DelegationGrant::STATUS_REQUESTED, DelegationGrant::STATUS_PENDING],
-			true
-		) === true
-		) {
+		if ($this->awaitsAnswer(grant: $grant) === true) {
 			return DelegationVerdict::REASON_PENDING;
 		}
 
-		if ($grant->isLiveAt($now) === true && $this->covers(grant: $grant, scope: $request->scope) === false) {
-			return DelegationVerdict::REASON_OUT_OF_SCOPE;
-		}
+		return null;
+	}//end statusMissReason()
 
-		return DelegationVerdict::REASON_NONE;
-	}//end missReason()
+	/**
+	 * Whether the grant is a request still waiting for its answer.
+	 *
+	 * @param DelegationGrant $grant The grant.
+	 *
+	 * @return boolean Whether it is requested or pending.
+	 */
+	private function awaitsAnswer(DelegationGrant $grant): bool {
+		return in_array(
+			$grant->getStatus(),
+			[DelegationGrant::STATUS_REQUESTED, DelegationGrant::STATUS_PENDING],
+			true
+		);
+	}//end awaitsAnswer()
 
 	/**
 	 * The more informative of two miss reasons.
@@ -306,24 +332,44 @@ class DelegationResolver {
 			return false;
 		}
 
+		return $this->coversEachKey(granted: $granted, scope: $scope);
+	}//end covers()
+
+	/**
+	 * Whether a non-empty granted scope covers every key the work needs.
+	 *
+	 * @param array $granted The grant's scope.
+	 * @param array $scope   The scope needed.
+	 *
+	 * @return boolean Whether every needed key is granted and covered.
+	 */
+	private function coversEachKey(array $granted, array $scope): bool {
 		foreach ($scope as $key => $needed) {
-			if (array_key_exists($key, $granted) === false) {
-				return false;
-			}
-
-			if (is_array($needed) === true && is_array($granted[$key]) === true) {
-				if (array_diff($needed, $granted[$key]) !== []) {
-					return false;
-				}
-
-				continue;
-			}
-
-			if ($granted[$key] !== $needed) {
+			if (array_key_exists($key, $granted) === false
+				|| $this->coversValue(granted: $granted[$key], needed: $needed) === false
+			) {
 				return false;
 			}
 		}
 
 		return true;
-	}//end covers()
+	}//end coversEachKey()
+
+	/**
+	 * Whether one granted scope value covers the value the work needs.
+	 *
+	 * Two lists cover when every needed member is granted; anything else must match exactly.
+	 *
+	 * @param mixed $granted The granted value for a scope key.
+	 * @param mixed $needed  The needed value for that key.
+	 *
+	 * @return boolean Whether it covers.
+	 */
+	private function coversValue(mixed $granted, mixed $needed): bool {
+		if (is_array($needed) === true && is_array($granted) === true) {
+			return array_diff($needed, $granted) === [];
+		}
+
+		return $granted === $needed;
+	}//end coversValue()
 }//end class
