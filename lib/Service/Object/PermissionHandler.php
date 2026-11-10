@@ -1076,9 +1076,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return bool|null The verdict, or null to continue
 	 */
 	private function customVerbVerdict(PermissionCheck $check): ?bool {
-		if (in_array(needle: $check->action, haystack: self::CANONICAL_ACTIONS, strict: true) === true
-			|| $this->rules->eventDispatcher === null
-		) {
+		if ($this->dispatchesCustomVerb(action: $check->action) === false) {
 			return null;
 		}
 
@@ -1087,13 +1085,41 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return $verdict;
 		}
 
-		$declaration = $this->permissionCatalogue()->declarationFor($check->action);
-		if ($declaration === null || $declaration['canonical'] !== false) {
+		$declaration = $this->declaredCustomVerb(action: $check->action);
+		if ($declaration === null) {
 			return null;
 		}
 
 		return $this->refuseUnevaluatedVerb(check: $check, declaration: $declaration);
 	}//end customVerbVerdict()
+
+	/**
+	 * Whether an action is a custom verb and there is a dispatcher to ask about it.
+	 *
+	 * @param string $action The action asked about
+	 *
+	 * @return bool True for a non-canonical verb with a dispatcher wired
+	 */
+	private function dispatchesCustomVerb(string $action): bool {
+		return in_array(needle: $action, haystack: self::CANONICAL_ACTIONS, strict: true) === false
+			&& $this->rules->eventDispatcher !== null;
+	}//end dispatchesCustomVerb()
+
+	/**
+	 * The catalogue declaration of a custom (non-canonical) verb, or null when none is declared.
+	 *
+	 * @param string $action The action asked about
+	 *
+	 * @return array<string, mixed>|null The declaration
+	 */
+	private function declaredCustomVerb(string $action): ?array {
+		$declaration = $this->permissionCatalogue()->declarationFor($action);
+		if ($declaration === null || $declaration['canonical'] !== false) {
+			return null;
+		}
+
+		return $declaration;
+	}//end declaredCustomVerb()
 
 	/**
 	 * Refuse a declared custom verb nobody voted on, naming the app that owes the listener.
@@ -1642,14 +1668,8 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return bool|null The verdict, or null when the object is not private.
 	 */
 	private function privateScopeVerdict(PermissionCheck $check): ?bool {
-		// A create is asked about the incoming data (openregister#4094), which
-		// is not an object yet and so cannot be private.
-		$object = $check->object;
-		if ($object === null || $check->action === 'create') {
-			return null;
-		}
-
-		if ($this->objectScope()->declaredScope(authorization: $check->authorization) !== ObjectScopeResolver::SCOPE_PRIVATE) {
+		$object = $this->privateObjectOf(check: $check);
+		if ($object === null) {
 			return null;
 		}
 
@@ -1669,6 +1689,28 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return false;
 	}//end privateScopeVerdict()
+
+	/**
+	 * The check's object when it is private, or null when the check is not gated.
+	 *
+	 * @param PermissionCheck $check The check, its authorization cascaded
+	 *
+	 * @return ObjectEntity|null The private object, or null for no object, a create, or a non-private object
+	 */
+	private function privateObjectOf(PermissionCheck $check): ?ObjectEntity {
+		// A create is asked about the incoming data (openregister#4094), which
+		// is not an object yet and so cannot be private.
+		$object = $check->object;
+		if ($object === null || $check->action === 'create') {
+			return null;
+		}
+
+		if ($this->objectScope()->declaredScope(authorization: $check->authorization) !== ObjectScopeResolver::SCOPE_PRIVATE) {
+			return null;
+		}
+
+		return $object;
+	}//end privateObjectOf()
 
 	/**
 	 * Whether the private object admits the caller outright: its owner, its owning group, an administrator.
