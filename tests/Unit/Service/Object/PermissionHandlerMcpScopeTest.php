@@ -41,6 +41,7 @@ namespace Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IAppConfig;
@@ -125,10 +126,9 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 
 		$this->assertFalse(
 			$this->handler->hasGroupPermission(
-				authorization: ['read' => ['mcp']],
-				groupId: 'mcp',
-				action: 'read',
-				userId: 'alice'
+				request: (new GroupRuleRequest(authorization: ['read' => ['mcp']], action: 'read'))
+					->forGroup(groupId: 'mcp', userGroup: null)
+					->forUser(userId: 'alice', objectOwner: null)
 			),
 			'A user in a real group named "mcp" was granted an action the schema only OFFERED to agents.'
 		);
@@ -145,10 +145,9 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 
 		$this->assertFalse(
 			$this->handler->hasGroupPermission(
-				authorization: ['read' => [['group' => 'mcp']]],
-				groupId: 'mcp',
-				action: 'read',
-				userId: 'alice'
+				request: (new GroupRuleRequest(authorization: ['read' => [['group' => 'mcp']]], action: 'read'))
+					->forGroup(groupId: 'mcp', userGroup: null)
+					->forUser(userId: 'alice', objectOwner: null)
 			),
 			'The object-entry branch granted on the mcp scope where the string branch did not.'
 		);
@@ -183,10 +182,9 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 
 		$this->assertFalse(
 			$this->handler->hasGroupPermission(
-				authorization: $stripped,
-				groupId: 'users',
-				action: 'read',
-				userId: 'alice'
+				request: (new GroupRuleRequest(authorization: $stripped, action: 'read'))
+					->forGroup(groupId: 'users', userGroup: null)
+					->forUser(userId: 'alice', objectOwner: null)
 			),
 			'An mcp offer admitted a caller who held no rule for the action.'
 		);
@@ -356,10 +354,9 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 
 		$this->assertFalse(
 			$this->handler->hasGroupPermission(
-				authorization: $offerOnly,
-				groupId: 'users',
-				action: 'read',
-				userId: 'alice'
+				request: (new GroupRuleRequest(authorization: $offerOnly, action: 'read'))
+					->forGroup(groupId: 'users', userGroup: null)
+					->forUser(userId: 'alice', objectOwner: null)
 			),
 			'The mcp offer granted `read` to a caller who held no rule for it.'
 		);
@@ -384,10 +381,9 @@ class PermissionHandlerMcpScopeTest extends TestCase {
 		$verdicts = [];
 		foreach (['agent-a', 'agent-b'] as $ignoredAgent) {
 			$verdicts[] = $this->handler->hasGroupPermission(
-				authorization: $authorization,
-				groupId: 'users',
-				action: 'read',
-				userId: 'alice'
+				request: (new GroupRuleRequest(authorization: $authorization, action: 'read'))
+					->forGroup(groupId: 'users', userGroup: null)
+					->forUser(userId: 'alice', objectOwner: null)
 			);
 		}
 

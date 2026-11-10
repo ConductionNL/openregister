@@ -28,6 +28,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\ContextChat\ContentItem;
 use OCP\ContextChat\IContentManager;
@@ -169,16 +170,15 @@ class ContextChatSubmissionListenerTest extends TestCase {
 		$this->permissionHandler->expects($this->once())
 			->method('hasGroupPermission')
 			->with(
-				$this->anything(),
-				'public',
-				'read',
-				null,
-				null,
-				null,
 				$this->callback(
-					static fn (?array $data): bool => ($data['@self']['owner'] ?? null) === 'alice'
-						&& ($data['@self']['schema'] ?? null) === '2'
-						&& array_key_exists('_owner', $data) === false
+					static fn (GroupRuleRequest $request): bool => $request->groupId === 'public'
+						&& $request->action === 'read'
+						&& $request->userId === null
+						&& $request->userGroup === null
+						&& $request->objectOwner === null
+						&& ($request->objectData['@self']['owner'] ?? null) === 'alice'
+						&& ($request->objectData['@self']['schema'] ?? null) === '2'
+						&& array_key_exists('_owner', $request->objectData) === false
 				)
 			)
 			->willReturn(false);
