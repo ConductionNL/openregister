@@ -24,7 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
@@ -79,7 +81,7 @@ class ScheduledReportServiceAccessGoldenTest extends TestCase {
 			}
 		);
 		$this->service = new ScheduledReportService(
-			new ScheduledReportStores($mapper, $this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class)),
+			new ScheduledReportStores($mapper, new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class))),
 			new ScheduledReportExporters($this->createMock(ExportService::class), null, null),
 			new ScheduledReportDelivery(
 				new ScheduledReportOwnerServices($this->createMock(IUserManager::class), $this->createMock(IUserSession::class), $this->createMock(IRootFolder::class), $this->createMock(IManager::class)),
