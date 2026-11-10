@@ -125,7 +125,7 @@ class ObjectSlugHandler implements ObjectSlugTargetInterface {
 			return null;
 		}
 
-		return $this->source->candidate(objectData: $objectData, schema: $schema, maxLength: ObjectSlugSource::MAX_LENGTH);
+		return $this->source->candidate(objectData: $objectData, schema: $schema);
 	}//end candidate()
 
 	/**
