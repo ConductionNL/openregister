@@ -107,6 +107,31 @@ function objectSearchState() {
 }
 
 /**
+ * The refs an object search hands its caller, updated as the answer comes in.
+ */
+type TObjectSearchOutcome = {
+	success: Ref<boolean>
+	loading: Ref<boolean>
+	result: Ref<Record<string, any>[]>
+	error: Ref<string>
+}
+
+/**
+ * The outcome refs under the names an object search returns them by.
+ *
+ * @param state - The object search outcome refs
+ * @return The refs a caller watches
+ */
+function searchOutcome(state: ReturnType<typeof objectSearchState>): TObjectSearchOutcome {
+	return {
+		success: state.searchObjectsSuccess,
+		loading: state.searchObjectsLoading,
+		result: state.searchObjectsResult,
+		error: state.searchObjectsError,
+	}
+}
+
+/**
  * The search page's object search, with what it searches in and its outcome.
  *
  * @return The object search state and actions
@@ -139,12 +164,9 @@ function useObjectSearch() {
 	 * @return Object containing refs that will be updated with search results
 	 * @spec exclude Search page object fetch that only fills the search refs: no standalone behavioural contract.
 	 */
-	function searchObjects(searchQuery: Record<string, string> = {}): {
-		success: Ref<boolean>
-		loading: Ref<boolean>
-		result: Ref<Record<string, any>[]>
-		error: Ref<string>
-	} {
+	function searchObjects(
+		searchQuery: Record<string, string> = {},
+	): TObjectSearchOutcome {
 		oldSearchQuery.value = searchQuery
 
 		console.group('search objects')
@@ -180,12 +202,7 @@ function useObjectSearch() {
 				console.groupEnd()
 			})
 
-		return {
-			success: state.searchObjectsSuccess,
-			loading: state.searchObjectsLoading,
-			result: state.searchObjectsResult,
-			error: state.searchObjectsError,
-		}
+		return searchOutcome(state)
 	}
 
 	/**
