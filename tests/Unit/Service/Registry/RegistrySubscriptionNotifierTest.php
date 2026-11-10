@@ -8,6 +8,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\RegistrySubscriptionEndedEvent;
 use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
+use OCA\OpenRegister\Service\Registry\InboundUpdate;
+use OCA\OpenRegister\Service\Registry\RegistryIdentity;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionNotifier;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -46,7 +48,7 @@ class RegistrySubscriptionNotifierTest extends TestCase {
 		$object = $this->personObject();
 		$object->setRegister('dossiq');
 		$object->setSchema('brpPerson');
-		$this->notifier->requested($object, 'brp', '999990019');
+		$this->notifier->requested($object, new RegistryIdentity('brp', '999990019'));
 
 		$this->assertInstanceOf(RegistrySubscriptionRequestedEvent::class, $dispatched);
 		$this->assertSame('999990019', $dispatched->getIdentityValue());
@@ -64,7 +66,7 @@ class RegistrySubscriptionNotifierTest extends TestCase {
 				$this->anything(),
 			);
 
-		$this->notifier->requested($this->personObject(), 'brp', '999990019');
+		$this->notifier->requested($this->personObject(), new RegistryIdentity('brp', '999990019'));
 	}
 
 	public function testEndedDispatchesEvent(): void {
@@ -76,7 +78,7 @@ class RegistrySubscriptionNotifierTest extends TestCase {
 				return $event instanceof RegistrySubscriptionEndedEvent;
 			}));
 
-		$this->notifier->ended($this->personObject(), 'brp', '999990019');
+		$this->notifier->ended($this->personObject(), new RegistryIdentity('brp', '999990019'));
 
 		$this->assertInstanceOf(RegistrySubscriptionEndedEvent::class, $dispatched);
 		$this->assertSame('brp', $dispatched->getRegistry());
@@ -95,6 +97,6 @@ class RegistrySubscriptionNotifierTest extends TestCase {
 				$this->anything(),
 			);
 
-		$this->notifier->auditInboundUpdate($object, 'brp', 'evt-1', ['address']);
+		$this->notifier->auditInboundUpdate($object, new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['address' => 'Dam 1'], 'evt-1'));
 	}
 }
