@@ -35,6 +35,7 @@ use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser;
+use OCA\OpenRegister\Files\Service\File\RenameInstruction;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\ObjectService;
@@ -200,7 +201,7 @@ class FileRestrictionPathsTest extends TestCase {
 		$this->fileService->expects($this->never())->method('renameFile');
 
 		$this->expectException(NotFoundException::class);
-		(new ObjectFolderBrowser($this->fileService, $this->guard(admitted: false)))->rename($this->object, self::RESTRICTED, 'x.pdf');
+		(new ObjectFolderBrowser($this->fileService, $this->guard(admitted: false)))->rename($this->object, new RenameInstruction(self::RESTRICTED, 'x.pdf'));
 	}//end testRenamingTheRestrictedFileThroughTheFolderBrowserIs404()
 
 	public function testTheFilesListLeavesTheRestrictedFileOut(): void {

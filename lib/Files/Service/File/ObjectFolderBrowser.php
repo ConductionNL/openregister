@@ -124,9 +124,8 @@ class ObjectFolderBrowser {
 	/**
 	 * Create a folder inside the object folder.
 	 *
-	 * @param ObjectEntity $object The object, already known to be changeable.
-	 * @param string       $path   Where, relative to the object folder.
-	 * @param string       $name   The new folder's name: one segment.
+	 * @param ObjectEntity   $object   The object, already known to be changeable.
+	 * @param FolderCreation $creation Where, relative to the object folder, and the new folder's name: one segment.
 	 *
 	 * @return array<string, mixed> The new folder, described like a listing entry.
 	 *
@@ -136,10 +135,10 @@ class ObjectFolderBrowser {
 	 *
 	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
-	public function createFolder(ObjectEntity $object, string $path, string $name): array {
+	public function createFolder(ObjectEntity $object, FolderCreation $creation): array {
 		$root = $this->objectFolder(object: $object);
-		$parent = $this->folderAt(root: $root, path: $path);
-		$name = $this->validName(name: $name);
+		$parent = $this->folderAt(root: $root, path: $creation->path);
+		$name = $this->validName(name: $creation->name);
 		$this->assertFree(folder: $parent, name: $name);
 
 		return $this->describe(root: $root, node: $parent->newFolder($name));
@@ -182,9 +181,8 @@ class ObjectFolderBrowser {
 	/**
 	 * Rename a file or folder inside the object folder, in place.
 	 *
-	 * @param ObjectEntity $object The object, already known to be changeable.
-	 * @param int          $nodeId The node.
-	 * @param string       $name   The new name: one segment.
+	 * @param ObjectEntity      $object      The object, already known to be changeable.
+	 * @param RenameInstruction $instruction The node and its new name: one segment.
 	 *
 	 * @return array<string, mixed> The renamed node, described like a listing entry.
 	 *
@@ -195,9 +193,10 @@ class ObjectFolderBrowser {
 	 *
 	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
-	public function rename(ObjectEntity $object, int $nodeId, string $name): array {
+	public function rename(ObjectEntity $object, RenameInstruction $instruction): array {
 		$root = $this->objectFolder(object: $object);
-		$rename = new NodeRename(object: $object, node: $this->nodeIn(root: $root, nodeId: $nodeId), name: $this->validName(name: $name));
+		$node = $this->nodeIn(root: $root, nodeId: $instruction->nodeId);
+		$rename = new NodeRename(object: $object, node: $node, name: $this->validName(name: $instruction->name));
 
 		return $this->describe(root: $root, node: $this->renamed(rename: $rename));
 	}//end rename()
