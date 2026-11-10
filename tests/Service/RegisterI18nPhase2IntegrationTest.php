@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\BulkTranslationService;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationCsvCodec;
+use OCA\OpenRegister\Service\Translation\LanguagePair;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -194,7 +195,7 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 
 	public function testIdentityProviderReturnsInputVerbatim(): void {
 		$provider = new IdentityTranslationProvider();
-		$this->assertSame('Hello world', $provider->translate('Hello world', 'en', 'nl'));
+		$this->assertSame('Hello world', $provider->translate('Hello world', new LanguagePair('en', 'nl')));
 		$this->assertSame('identity', $provider->getIdentifier());
 	}
 
