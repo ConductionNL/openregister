@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailCriteria;
 use OCA\OpenRegister\Db\SearchTrailMapper;
@@ -73,7 +74,7 @@ class SearchTrailQueriesGoldenTest extends TestCase {
 				$s = var_export($search, true);
 				$calls["findAll $tag search $s"] = fn (SearchTrailMapper $m) => array_map(
 					fn (SearchTrail $t) => $t->getId(),
-					$m->findAll(new SearchTrailCriteria(['user' => 'alice'], $search, $from, $to), 5, 10, [])
+					$m->findAll(new ListQuery(limit: 5, offset: 10), new SearchTrailCriteria(['user' => 'alice'], $search, $from, $to))
 				);
 				$calls["count $tag search $s"] = fn (SearchTrailMapper $m) => $m->count(new SearchTrailCriteria(['user' => 'alice'], $search, $from, $to));
 			}

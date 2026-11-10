@@ -46,7 +46,7 @@ namespace OCA\OpenRegister\Service\Export;
 use DateTime;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
@@ -202,7 +202,8 @@ class ExportRunRecorder {
 		$now = $this->now();
 
 		$rows = [];
-		foreach ($this->mapper->findForActor(actor: $scopedTo, filters: $query->filters, limit: $query->limit, offset: $query->offset ?? 0) as $run) {
+		$page = new ListQuery(limit: $query->limit, offset: ($query->offset ?? 0), filters: $query->filters);
+		foreach ($this->mapper->listForActor(actor: $scopedTo, query: $page) as $run) {
 			$row = $run->jsonSerialize();
 			// An expired run is NAMED as expired rather than offered as a link
 			// to nothing. A missing file and a file nobody produced look the

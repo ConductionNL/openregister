@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -251,7 +252,7 @@ class RelatedRowQueryApplier {
 	 * @throws InvalidArgumentException When it cannot be resolved.
 	 */
 	private function resolveSchema(string $name): Schema {
-		$bySlug = $this->lookups->schemaMapper->findBySlug(slug: $name, limit: 2);
+		$bySlug = $this->lookups->schemaMapper->findBySlug(slug: $name, query: new ListQuery(limit: 2));
 		if (count($bySlug) === 1) {
 			return $bySlug[0];
 		}

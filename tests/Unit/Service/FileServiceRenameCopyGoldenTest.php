@@ -41,7 +41,7 @@ use OCA\OpenRegister\Service\File\FileRename;
 use OCA\OpenRegister\Service\File\FileTransfer;
 
 /**
- * Pins the allowed and refused outcomes of FileService::renameAttachedFile(), copyFile() and moveAttachedFile().
+ * Pins the allowed and refused outcomes of FileService::renameAttachedFile(), copyAttachedFile() and moveAttachedFile().
  */
 class FileServiceRenameCopyGoldenTest extends TestCase {
 
@@ -220,7 +220,7 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$this->locks->expects($this->never())->method('assertCanModify');
 		$this->creator->expects($this->never())->method('addFile');
 
-		$message = $this->refusal(call: fn () => $service->copyFile(sourceObject: $this->object(uuid: 'a'), fileId: 7, targetObject: new ObjectEntity()));
+		$message = $this->refusal(call: fn () => $service->copyAttachedFile(transfer: new FileTransfer(source: $this->object(uuid: 'a'), fileId: 7, target: new ObjectEntity())));
 		$this->assertSame('Target object has no UUID; cannot resolve target folder for file copy', $message);
 	}//end testCopyToATargetWithoutUuidIsRefused()
 
@@ -243,7 +243,7 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 		$this->reader->method('getFile')->willReturn(null);
 		$this->creator->expects($this->never())->method('addFile');
 
-		$copy = fn () => $service->copyFile(sourceObject: $this->object(uuid: 'a'), fileId: 7, targetObject: $this->object(uuid: 'b'));
+		$copy = fn () => $service->copyAttachedFile(transfer: new FileTransfer(source: $this->object(uuid: 'a'), fileId: 7, target: $this->object(uuid: 'b')));
 		$this->assertSame('locked', $this->refusal(call: $copy));
 		$this->assertSame('Source file not found', $this->refusal(call: $copy));
 	}//end testCopyOfALockedOrMissingSourceIsRefused()
@@ -265,7 +265,7 @@ class FileServiceRenameCopyGoldenTest extends TestCase {
 			->with(new \OCA\OpenRegister\Service\File\FileTarget(object: $target), new FileUpload(fileName: 'report (2).pdf', content: 'bytes', share: false))
 			->willReturn($copy);
 
-		$this->assertSame($copy, $service->copyFile(sourceObject: $this->object(uuid: 'a'), fileId: 7, targetObject: $target));
+		$this->assertSame($copy, $service->copyAttachedFile(transfer: new FileTransfer(source: $this->object(uuid: 'a'), fileId: 7, target: $target)));
 	}//end testCopyAddsTheFileUnderAFreeName()
 
 	/**

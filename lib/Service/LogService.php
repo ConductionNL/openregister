@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -193,12 +194,14 @@ class LogService {
 		// 2. Adding those filters can cause issues if register/schema have been recreated with same slug
 		// 3. The object ID is sufficient to uniquely identify audit trails
 		// Step 4: Retrieve logs from audit trail mapper with pagination and filtering.
-		return $this->auditTrailMapper->findAll(
-			limit: $config['limit'] ?? 20,
-			offset: $config['offset'] ?? 0,
-			filters: $filters,
-			sort: $config['sort'] ?? ['created' => 'DESC'],
-			search: $config['search'] ?? null
+		return $this->auditTrailMapper->findTrail(
+			query: new ListQuery(
+				limit: ($config['limit'] ?? 20),
+				offset: ($config['offset'] ?? 0),
+				filters: $filters,
+				sort: ($config['sort'] ?? ['created' => 'DESC']),
+				search: ($config['search'] ?? null)
+			)
 		);
 	}//end logsOf()
 
@@ -258,9 +261,8 @@ class LogService {
 		$filters = $config['filters'] ?? [];
 		$filters['object_uuid'] = $object->getUuid();
 
-		$logs = $this->auditTrailMapper->findAll(
-			filters: $filters,
-			search: $config['search'] ?? null
+		$logs = $this->auditTrailMapper->findTrail(
+			query: new ListQuery(limit: ListQuery::UNBOUNDED, filters: $filters, sort: ['created' => 'DESC'], search: ($config['search'] ?? null))
 		);
 
 		// Step 4: Return count of log entries.
@@ -338,12 +340,14 @@ class LogService {
 	 * @spec exclude Thin delegation to AuditTrailMapper::findAll with default pagination/sort; no business logic.
 	 */
 	public function getAllLogs(array $config = []): array {
-		return $this->auditTrailMapper->findAll(
-			limit: $config['limit'] ?? 20,
-			offset: $config['offset'] ?? 0,
-			filters: $config['filters'] ?? [],
-			sort: $config['sort'] ?? ['created' => 'DESC'],
-			search: $config['search'] ?? null
+		return $this->auditTrailMapper->findTrail(
+			query: new ListQuery(
+				limit: ($config['limit'] ?? 20),
+				offset: ($config['offset'] ?? 0),
+				filters: ($config['filters'] ?? []),
+				sort: ($config['sort'] ?? ['created' => 'DESC']),
+				search: ($config['search'] ?? null)
+			)
 		);
 	}//end getAllLogs()
 
@@ -359,7 +363,7 @@ class LogService {
 	 * @spec exclude Thin delegation to AuditTrailMapper::findAll + count(); no business logic.
 	 */
 	public function countAllLogs(array $filters = []): int {
-		$logs = $this->auditTrailMapper->findAll(filters: $filters);
+		$logs = $this->auditTrailMapper->findTrail(query: ListQuery::unbounded(filters: $filters, sort: ['created' => 'DESC']));
 		return count($logs);
 	}//end countAllLogs()
 
@@ -412,10 +416,13 @@ class LogService {
 	 */
 	public function exportLogs(string $format, array $config = []): array {
 		// Get all logs with current filters.
-		$logs = $this->auditTrailMapper->findAll(
-			filters: $config['filters'] ?? [],
-			sort: ['created' => 'DESC'],
-			search: $config['search'] ?? null
+		$logs = $this->auditTrailMapper->findTrail(
+			query: new ListQuery(
+				limit: ListQuery::UNBOUNDED,
+				filters: ($config['filters'] ?? []),
+				sort: ['created' => 'DESC'],
+				search: ($config['search'] ?? null)
+			)
 		);
 
 		return $this->exportRows(format: $format, logs: $logs, config: $config);

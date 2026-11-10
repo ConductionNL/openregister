@@ -35,7 +35,7 @@ use OCA\OpenRegister\Controller\Support\TranslationControllerServices;
 use OCA\OpenRegister\Controller\Support\TranslationFilter;
 use OCA\OpenRegister\Controller\Support\TranslationSearchOptions;
 use OCA\OpenRegister\Controller\Support\TranslationSlot;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -52,6 +52,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\ObjectTranslationRequest;
 
 /**
  * Controller for translation operations.
@@ -378,10 +379,8 @@ class TranslationController extends Controller {
 			return new JSONResponse(['error' => 'object not found', 'uuid' => $uuid], Http::STATUS_NOT_FOUND);
 		}
 
-		$result = $this->bulkService->translateObject(
-			object: $object,
-			fromLong: $translation->from,
-			toLong: $translation->to,
+		$result = $this->bulkService->translate(
+			request: new ObjectTranslationRequest(object: $object, fromLong: $translation->from, toLong: $translation->to),
 			properties: $translation->properties
 		);
 

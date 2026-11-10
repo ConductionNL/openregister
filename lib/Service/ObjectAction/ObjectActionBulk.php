@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkJob\BulkJobActionCall;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use InvalidArgumentException;
@@ -63,8 +64,7 @@ class ObjectActionBulk implements ObjectActionBulkInterface {
 	 * Create the previewed job.
 	 *
 	 * @param ObjectActionSelection $selection The selection, its schema, and the register and schema as named.
-	 * @param string                $action    The action key.
-	 * @param array<string, mixed>  $inputs    The inputs.
+	 * @param ObjectActionRequest   $request   The action key and the inputs.
 	 *
 	 * @return BulkJob The previewed job.
 	 *
@@ -73,8 +73,8 @@ class ObjectActionBulk implements ObjectActionBulkInterface {
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
 	 */
-	public function start(ObjectActionSelection $selection, string $action, array $inputs): BulkJob {
-		$parameters = ['action' => $action, 'inputs' => $inputs, 'register' => $selection->register, 'schema' => $selection->schemaRef];
+	public function start(ObjectActionSelection $selection, ObjectActionRequest $request): BulkJob {
+		$parameters = ['action' => $request->key, 'inputs' => $request->given, 'register' => $selection->register, 'schema' => $selection->schemaRef];
 
 		return $this->create(selection: $selection, call: new BulkJobActionCall(actionId: RunActionActionInterface::ID, parameters: $parameters));
 	}//end start()
@@ -96,15 +96,17 @@ class ObjectActionBulk implements ObjectActionBulkInterface {
 			throw new InvalidArgumentException('A bulk job runs as the person who starts it, so it needs a signed-in user.');
 		}
 
-		return $this->jobs->create(
-			call: $call,
-			selection: new BulkJobSelection(
-				criteria: ['ids' => $selection->ids],
-				registerId: $this->registerId(register: $selection->register),
-				schemaId: $selection->schema->getId()
-			),
-			actorUid: $actorUid,
-			justification: null
+		return $this->jobs->createFromRequest(
+			request: new BulkJobRequest(
+				call: $call,
+				selection: new BulkJobSelection(
+					criteria: ['ids' => $selection->ids],
+					registerId: $this->registerId(register: $selection->register),
+					schemaId: $selection->schema->getId()
+				),
+				actorUid: $actorUid,
+				justification: null
+			)
 		);
 	}//end create()
 

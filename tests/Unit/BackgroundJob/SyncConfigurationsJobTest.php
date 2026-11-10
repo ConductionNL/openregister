@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
 
 class SyncConfigurationsJobTest extends TestCase {
 	private SyncConfigurationsJob $job;
@@ -120,7 +121,7 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$this->githubService->expects($this->once())
 			->method('getFileContent')
-			->with('owner', 'repo', 'config.json', 'main')
+			->with(new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'config.json', branch: 'main'))
 			->willReturn($configData);
 
 		$this->configurationService->expects($this->once())
@@ -400,7 +401,7 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$this->githubService->expects($this->once())
 			->method('getFileContent')
-			->with('owner', 'repo', 'config.json', 'main')
+			->with(new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'config.json', branch: 'main'))
 			->willReturn(['info' => ['version' => '1.0.0']]);
 
 		$this->configurationService->expects($this->once())->method('importFromApp');
@@ -652,7 +653,7 @@ class SyncConfigurationsJobTest extends TestCase {
 			$this->createConfigEntity(['githubRepo' => 'acme/conf', 'githubBranch' => 'release', 'githubPath' => 'c.json']),
 		]);
 		$this->githubService->expects($this->once())->method('getFileContent')
-			->with('acme', 'conf', 'c.json', 'release')
+			->with(new GitHubFileLocation(owner: 'acme', repo: 'conf', path: 'c.json', branch: 'release'))
 			->willReturn(['info' => ['version' => '1.0.0']]);
 
 		$this->runJob(null);

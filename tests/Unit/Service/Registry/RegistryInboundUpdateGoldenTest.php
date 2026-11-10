@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Registry\RegistryInboundServices;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionNotifier;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
 use OCA\OpenRegister\Service\Registry\RegistryUpdateTargetGuard;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -97,12 +98,12 @@ class RegistryInboundUpdateGoldenTest extends TestCase {
 
 		$audits = [];
 		$audit  = $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (...$args) use (&$audits) {
 				$audits[] = $args;
 				return new \OCA\OpenRegister\Db\AuditTrail();
 			}
-		);
+		));
 		$notifier = new RegistrySubscriptionNotifier($this->createMock(IEventDispatcher::class), $audit);
 
 		$service = new RegistrySubscriptionService(

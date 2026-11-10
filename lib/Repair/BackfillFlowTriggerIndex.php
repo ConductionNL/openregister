@@ -55,6 +55,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\FlowMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndexInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -122,7 +123,7 @@ class BackfillFlowTriggerIndex implements IRepairStep {
 			$page = 500;
 			$offset = 0;
 			while (true) {
-				$batch = $mapper->findAllFlows(limit: $page, offset: $offset);
+				$batch = $mapper->findAllFlows(query: new ListQuery(limit: $page, offset: $offset));
 				$flows = array_merge($flows, $batch);
 				if (count($batch) < $page) {
 					break;

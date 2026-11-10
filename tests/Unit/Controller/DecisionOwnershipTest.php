@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\EntityRelationsControllerFactory;
 use DateTime;
 use OCA\OpenRegister\Controller\EntityRelationsController;
@@ -149,7 +150,8 @@ class DecisionOwnershipTest extends TestCase {
 		$relations = $this->createMock(EntityRelationMapper::class);
 		$relations->method('find')->willReturnCallback(fn (): EntityRelation => $this->relation);
 		$relations->method('updateDecisionMetadata')->willReturnCallback(
-			static function (EntityRelation $relation, array $fields): EntityRelation {
+			static function (DecisionMetadataEdit $edit): EntityRelation {
+				[$relation, $fields] = [$edit->relation, $edit->fields];
 				if (array_key_exists('bases', $fields) === true) {
 					$relation->setBases($fields['bases']);
 				}

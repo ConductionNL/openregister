@@ -129,9 +129,7 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	 * read the object, a refused purpose or an ambiguous identifier gets no
 	 * rows: the history is a soft surface and never blocks the detail page.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Reserved.
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -140,8 +138,8 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->historyOf(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId));
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->historyOf(ref: $ref);
 	}//end list()
 
 	/**
@@ -154,9 +152,7 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	private function historyOf(ObjectRef $ref): array {
 		try {
 			$page = $this->history->page(
-				register: (string)$ref->register,
-				schema: (string)$ref->schema,
-				id: $ref->id,
+				ref: $ref,
 				params: ['limit' => PHP_INT_MAX]
 			);
 		} catch (Throwable $e) {

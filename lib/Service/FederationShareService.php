@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Federation\ShareGrantor;
 use OCP\Security\ISecureRandom;

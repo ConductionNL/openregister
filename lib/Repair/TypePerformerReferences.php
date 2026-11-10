@@ -46,6 +46,7 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -152,7 +153,7 @@ class TypePerformerReferences implements IRepairStep {
 		$all = [];
 
 		while (true) {
-			$batch = $flows->findAllFlows(limit: $page, offset: $offset);
+			$batch = $flows->findAllFlows(query: new ListQuery(limit: $page, offset: $offset));
 			$all = array_merge($all, $batch);
 
 			if (count($batch) < $page) {

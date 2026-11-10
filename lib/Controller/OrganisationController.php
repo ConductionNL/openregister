@@ -35,6 +35,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Controller\Support\OrganisationEdit;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsage\UsageRange;
@@ -884,7 +885,7 @@ class OrganisationController extends Controller {
 			// Otherwise search by name.
 			$organisations = $this->organisationMapper->findAll(limit: $limit, offset: $offset);
 			if (empty(trim($query)) === false) {
-				$organisations = $this->organisationMapper->findByName(name: trim($query), limit: $limit, offset: $offset);
+				$organisations = $this->organisationMapper->findListByName(name: trim($query), query: new ListQuery(limit: $limit, offset: $offset));
 			}
 
 			// Remove user information for privacy.
@@ -1447,76 +1448,11 @@ class OrganisationController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function usage(string $uuid): JSONResponse {
 		try {
-			$organisation = $this->organisationMapper->findByUuid($uuid);
-			$orgUuid = $organisation->getUuid();
-
-			// Get current hour usage from APCu.
-			$hourBucket = (new DateTime())->format('YmdH');
-			$currentRequests = 0;
-			$currentBandwidth = 0;
-
-			if (function_exists('apcu_enabled') === true && apcu_enabled() === true) {
-				$reqSuccess = false;
-				$bwSuccess = false;
-
-				$reqFetched = apcu_fetch("or_quota_{$orgUuid}_{$hourBucket}", $reqSuccess);
-				if ($reqSuccess === true) {
-					$currentRequests = (int)$reqFetched;
-				}
-
-				$bwFetched = apcu_fetch("or_bw_{$orgUuid}_{$hourBucket}", $bwSuccess);
-				if ($bwSuccess === true) {
-					$currentBandwidth = (int)$bwFetched;
-				}
-			}
-
-			// Get historical data (last 30 days).
-			$from = new DateTime('-30 days');
-			$to = new DateTime();
-			$history = $this->tenantUsageMapper->findByOrgAndDateRange($orgUuid, new UsageRange(from: $from, to: $to));
-
-			$requestQuota = $organisation->getRequestQuota();
-			$bandwidthQuota = $organisation->getBandwidthQuota();
-			$storageQuota = $organisation->getStorageQuota();
-
-			$requestUtil = null;
-			$bandwidthUtil = null;
-			if ($requestQuota !== null && $requestQuota > 0) {
-				$requestUtil = round((($currentRequests / $requestQuota) * 100), 1);
-			}
-
-			if ($bandwidthQuota !== null && $bandwidthQuota > 0) {
-				$bandwidthUtil = round((($currentBandwidth / $bandwidthQuota) * 100), 1);
-			}
-
 			return new JSONResponse(
-				data: [
-					'current' => [
-						'requests' => $currentRequests,
-						'bandwidth' => $currentBandwidth,
-						'period' => $hourBucket,
-					],
-					'quota' => [
-						'requests' => $requestQuota,
-						'bandwidth' => $bandwidthQuota,
-						'storage' => $storageQuota,
-					],
-					'utilization' => [
-						'requests' => $requestUtil,
-						'bandwidth' => $bandwidthUtil,
-					],
-					'history' => array_map(
-						static function ($record) {
-							return $record->jsonSerialize();
-						},
-						$history
-					),
-				],
+				data: $this->usageReport(uuid: $uuid),
 				statusCode: Http::STATUS_OK
 			);
 		} catch (Exception $e) {
@@ -1526,6 +1462,143 @@ class OrganisationController extends Controller {
 			);
 		}//end try
 	}//end usage()
+
+	/**
+	 * The usage report of an organisation: this hour's counters, the quotas,
+	 * the utilisation of each quota and the last 30 days of history.
+	 *
+	 * @param string $uuid Organisation UUID
+	 *
+	 * @return array<string, array> The report.
+	 */
+	private function usageReport(string $uuid): array {
+		$organisation = $this->organisationMapper->findByUuid($uuid);
+		$orgUuid = $organisation->getUuid();
+
+		$current = self::currentHourUsage(orgUuid: $orgUuid);
+		$history = $this->usageHistory(orgUuid: $orgUuid);
+		$quota = self::quotaOf(organisation: $organisation);
+
+		return [
+			'current' => $current,
+			'quota' => $quota,
+			'utilization' => self::utilisationOf(current: $current, quota: $quota),
+			'history' => self::serialisedHistory(history: $history),
+		];
+	}//end usageReport()
+
+	/**
+	 * This hour's request and bandwidth counters, from APCu when it is available.
+	 *
+	 * @param string|null $orgUuid The organisation UUID.
+	 *
+	 * @return array{requests: int, bandwidth: int, period: string} The counters and the hour bucket.
+	 */
+	private static function currentHourUsage(?string $orgUuid): array {
+		// Get current hour usage from APCu.
+		$hourBucket = (new DateTime())->format('YmdH');
+		$current = ['requests' => 0, 'bandwidth' => 0, 'period' => $hourBucket];
+
+		if (function_exists('apcu_enabled') === true && apcu_enabled() === true) {
+			$current['requests'] = self::apcuCounter(key: "or_quota_{$orgUuid}_{$hourBucket}");
+			$current['bandwidth'] = self::apcuCounter(key: "or_bw_{$orgUuid}_{$hourBucket}");
+		}
+
+		return $current;
+	}//end currentHourUsage()
+
+	/**
+	 * An APCu counter as an integer, or 0 when it is not stored.
+	 *
+	 * @param string $key The APCu key.
+	 *
+	 * @return int The counter.
+	 */
+	private static function apcuCounter(string $key): int {
+		$success = false;
+		$fetched = apcu_fetch($key, $success);
+		if ($success === true) {
+			return (int)$fetched;
+		}
+
+		return 0;
+	}//end apcuCounter()
+
+	/**
+	 * The usage records of the last 30 days.
+	 *
+	 * @param string|null $orgUuid The organisation UUID.
+	 *
+	 * @return array The usage records.
+	 */
+	private function usageHistory(?string $orgUuid): array {
+		// Get historical data (last 30 days).
+		$from = new DateTime('-30 days');
+		$to = new DateTime();
+		return $this->tenantUsageMapper->findByOrgAndDateRange($orgUuid, new UsageRange(from: $from, to: $to));
+	}//end usageHistory()
+
+	/**
+	 * The request, bandwidth and storage quotas of an organisation.
+	 *
+	 * @param Organisation $organisation The organisation.
+	 *
+	 * @return array{requests: int|null, bandwidth: int|null, storage: int|null} The quotas.
+	 */
+	private static function quotaOf(Organisation $organisation): array {
+		return [
+			'requests' => $organisation->getRequestQuota(),
+			'bandwidth' => $organisation->getBandwidthQuota(),
+			'storage' => $organisation->getStorageQuota(),
+		];
+	}//end quotaOf()
+
+	/**
+	 * The utilisation of the request and bandwidth quotas, in percent.
+	 *
+	 * @param array{requests: int, bandwidth: int} $current The current counters.
+	 * @param array{requests: int|null, bandwidth: int|null} $quota The quotas.
+	 *
+	 * @return array{requests: float|null, bandwidth: float|null} The utilisation, null without a positive quota.
+	 */
+	private static function utilisationOf(array $current, array $quota): array {
+		return [
+			'requests' => self::percentOfQuota(used: $current['requests'], quota: $quota['requests']),
+			'bandwidth' => self::percentOfQuota(used: $current['bandwidth'], quota: $quota['bandwidth']),
+		];
+	}//end utilisationOf()
+
+	/**
+	 * The share of a quota that is used, in percent rounded to one decimal.
+	 *
+	 * @param int      $used  The used amount.
+	 * @param int|null $quota The quota.
+	 *
+	 * @return float|null The percentage, or null without a positive quota.
+	 */
+	private static function percentOfQuota(int $used, ?int $quota): ?float {
+		if ($quota !== null && $quota > 0) {
+			return round((($used / $quota) * 100), 1);
+		}
+
+		return null;
+	}//end percentOfQuota()
+
+	/**
+	 * The usage records as JSON-serialised arrays.
+	 *
+	 * @param array $history The usage records.
+	 *
+	 * @return array The serialised records.
+	 */
+	private static function serialisedHistory(array $history): array {
+		return array_map(
+			static function ($record) {
+				return $record->jsonSerialize();
+			},
+			$history
+		);
+	}//end serialisedHistory()
 
 	/**
 	 * Run tenant isolation verification checks.

@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -75,6 +75,13 @@ final class MassValidationRun {
 	 * @var ObjectOperationsInterface|null
 	 */
 	private ?ObjectOperationsInterface $objectService = null;
+
+	/**
+	 * Every magic table as its search query and object count, read on first use.
+	 *
+	 * @var list<array{query: array, count: int}>|null
+	 */
+	private ?array $tables = null;
 
 	/**
 	 * Constructor.
@@ -180,12 +187,7 @@ final class MassValidationRun {
 	 * @return int The object count.
 	 */
 	private function countObjects(): int {
-		$totalObjects = $this->objectMapper->countSearchObjects(
-			query: [],
-			_activeOrgUuid: null,
-			_rbac: false,
-			_multitenancy: false
-		);
+		$totalObjects = array_sum(array_column($this->tables(), 'count'));
 
 		$maxObjects = $this->config['max_objects'];
 		if ($maxObjects > 0 && $maxObjects < $totalObjects) {
@@ -458,14 +460,77 @@ final class MassValidationRun {
 	 */
 	private function saveBatch(array $job): array {
 		$batchStartTime = microtime(true);
-		$listing = new ListQuery(limit: $job['limit'], offset: $job['offset']);
-		$objects = $this->objectMapper->findAllListed(request: new MagicListRequest(table: null, query: $listing));
+		$objects = $this->objectsAt(offset: $job['offset'], limit: $job['limit']);
 
 		$batch = $this->resaveAll(objects: $objects);
 		$batch['failed'] = count($batch['errors']);
 		$batch['duration'] = microtime(true) - $batchStartTime;
 		return $batch;
 	}//end saveBatch()
+
+	/**
+	 * Every magic table, as the query that names its register and schema and its object count.
+	 *
+	 * Objects live in one table per register and schema; a search or count that
+	 * names neither answers nothing, so the run walks the tables.
+	 *
+	 * @return list<array{query: array, count: int}>
+	 */
+	private function tables(): array {
+		if ($this->tables !== null) {
+			return $this->tables;
+		}
+
+		$this->tables = [];
+		foreach ($this->objectMapper->getAllRegisterSchemaPairs() as $pair) {
+			$query = [
+				'@self' => ['register' => (int)$pair['registerId'], 'schema' => (int)$pair['schemaId']],
+				'_rbac' => false,
+				'_multitenancy' => false,
+			];
+			$count = $this->objectMapper->countSearchObjects(query: $query, _activeOrgUuid: null, _rbac: false, _multitenancy: false);
+			$this->tables[] = ['query' => $query, 'count' => $count];
+		}
+
+		return $this->tables;
+	}//end tables()
+
+	/**
+	 * The objects at a run-wide offset, read table by table in the order of tables().
+	 *
+	 * @param int $offset The run-wide offset.
+	 * @param int $limit  The number of objects.
+	 *
+	 * @return list<ObjectEntity>
+	 */
+	private function objectsAt(int $offset, int $limit): array {
+		$objects = [];
+		foreach ($this->tables() as $table) {
+			if ($limit <= 0) {
+				break;
+			}
+
+			if ($offset >= $table['count']) {
+				$offset -= $table['count'];
+				continue;
+			}
+
+			$page = $this->objectMapper->searchObjects(
+				query: $table['query'] + ['_limit' => $limit, '_offset' => $offset],
+				_activeOrgUuid: null,
+				_rbac: false,
+				_multitenancy: false
+			);
+			if (is_array($page) === true) {
+				$objects = array_merge($objects, $page);
+			}
+
+			$limit -= min($limit, $table['count'] - $offset);
+			$offset = 0;
+		}//end foreach
+
+		return $objects;
+	}//end objectsAt()
 
 	/**
 	 * Re-save objects in order, stopping at the first failure unless collect_errors is set.

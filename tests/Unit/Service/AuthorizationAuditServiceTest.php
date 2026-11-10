@@ -59,11 +59,13 @@ class AuthorizationAuditServiceTest extends TestCase {
 				})
 			);
 
-		$this->service->logSchemaAuthorizationChange(
-			schemaId: 42,
-			schemaTitle: 'Test Schema',
-			oldAuthorization: ['read' => ['public']],
-			newAuthorization: ['read' => ['public', 'behandelaars']]
+		$this->service->recordSchemaChange(
+			change: new AuthorizationChange(
+				entityId: 42,
+				entityTitle: 'Test Schema',
+				before: ['read' => ['public']],
+				after: ['read' => ['public', 'behandelaars']]
+			)
 		);
 	}
 
@@ -139,11 +141,8 @@ class AuthorizationAuditServiceTest extends TestCase {
 				})
 			);
 
-		$this->service->logSchemaAuthorizationChange(
-			schemaId: 1,
-			schemaTitle: 'Test',
-			oldAuthorization: null,
-			newAuthorization: ['read' => ['public']]
+		$this->service->recordSchemaChange(
+			change: new AuthorizationChange(entityId: 1, entityTitle: 'Test', before: null, after: ['read' => ['public']])
 		);
 	}
 }

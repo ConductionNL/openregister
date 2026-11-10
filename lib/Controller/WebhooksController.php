@@ -33,7 +33,7 @@ use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Controller\Support\WebhooksControllerServices;
 use OCA\OpenRegister\Controller\Support\WebhookLogQuery;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
@@ -563,17 +563,11 @@ class WebhooksController extends Controller {
 
 			// Retrieve webhooks using mapper with pagination and filters.
 			$webhooks = $this->webhookMapper->findAll(
-				limit: $limit,
-				offset: $offset,
-				filters: $filters
+				new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: $filters)
 			);
 
 			// Get total count for pagination (without limit/offset but with filters).
-			$allWebhooks = $this->webhookMapper->findAll(
-				limit: null,
-				offset: null,
-				filters: $filters
-			);
+			$allWebhooks = $this->webhookMapper->findAll(ListQuery::unbounded(filters: $filters));
 			$total = count($allWebhooks);
 
 			// Serialize webhooks to arrays.

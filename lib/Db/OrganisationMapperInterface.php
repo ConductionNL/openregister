@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db;
 
 use Exception;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -178,19 +179,6 @@ interface OrganisationMapperInterface {
 	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
 	 */
 	public function findAll(int $limit = 50, int $offset = 0, ?array $filters = []): array;
-
-	/**
-	 * Find organisations by name with pagination
-	 *
-	 * @param string $name The name pattern to search for
-	 * @param int $limit Maximum number of results to return
-	 * @param int $offset Number of results to skip
-	 *
-	 * @return Organisation[]
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
-	 */
-	public function findByName(string $name, int $limit = 50, int $offset = 0): array;
 
 	/**
 	 * Find the organisations that are tenants of this installation (a NULL

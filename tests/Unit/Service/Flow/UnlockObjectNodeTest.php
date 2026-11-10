@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
@@ -109,11 +110,11 @@ final class UnlockObjectNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['uuid' => self::OBJ])],
-			[],
-			$this->context()
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['uuid' => self::OBJ])],
+			config: [],
+			context: $this->context()
+		));
 
 		$this->assertSame(self::OBJ, $seen->identifier);
 		$this->assertSame(self::RUN, $seen->runUuid, 'the release was not scoped to the run');
@@ -128,14 +129,14 @@ final class UnlockObjectNodeTest extends TestCase {
 	public function testDuplicateTargetsAreReleasedOnce(): void {
 		$this->objects->expects($this->once())->method('unlockObject')->willReturn(true);
 
-		$this->node->execute(
-			[
+		$this->node->execute(new FlowNodeCall(
+			items: [
 				FlowItems::item(json: ['uuid' => self::OBJ]),
 				FlowItems::item(json: ['uuid' => self::OBJ]),
 			],
-			[],
-			$this->context()
-		);
+			config: [],
+			context: $this->context()
+		));
 	}//end testDuplicateTargetsAreReleasedOnce()
 
 	/**
@@ -145,7 +146,7 @@ final class UnlockObjectNodeTest extends TestCase {
 	 */
 	public function testAnEmptyFiringReleasesNothing(): void {
 		$this->objects->expects($this->never())->method('unlockObject');
-		$this->assertSame([], $this->node->execute([], [], $this->context()));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall(items: [], config: [], context: $this->context())));
 	}//end testAnEmptyFiringReleasesNothing()
 
 	/**
@@ -155,7 +156,7 @@ final class UnlockObjectNodeTest extends TestCase {
 	 */
 	public function testAnUnresolvableTargetThrows(): void {
 		$this->expectException(RuntimeException::class);
-		$this->node->execute([FlowItems::item(json: ['name' => 'no uuid'])], [], $this->context());
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: ['name' => 'no uuid'])], config: [], context: $this->context()));
 	}//end testAnUnresolvableTargetThrows()
 
 	/**
@@ -166,11 +167,11 @@ final class UnlockObjectNodeTest extends TestCase {
 	 */
 	public function testARunWithNoIdentityIsRefused(): void {
 		$this->expectException(RuntimeException::class);
-		$this->node->execute(
-			[FlowItems::item(json: ['uuid' => self::OBJ])],
-			[],
-			['runAs' => 'alice']
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['uuid' => self::OBJ])],
+			config: [],
+			context: ['runAs' => 'alice']
+		));
 	}//end testARunWithNoIdentityIsRefused()
 
 	/**

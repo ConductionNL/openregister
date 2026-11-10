@@ -34,6 +34,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemAudit;
 use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
@@ -85,7 +86,8 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 use Stringable;
 use Throwable;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
 use OCA\OpenRegister\Service\Case\CaseCompletion;
 use OCA\OpenRegister\Service\Case\CaseItemTransition;
@@ -847,49 +849,49 @@ class CaseUnitsGoldenTest extends TestCase {
 			9 => [FlowItems::JSON => ['id' => CaseFixtures::OBJECT, '@self' => 'x']],
 			11 => [FlowItems::JSON => 'x', 'extra' => true],
 		];
-		$out['open no items'] = self::attempt(static fn (): array => $open->execute(items: [], config: [], context: []));
+		$out['open no items'] = self::attempt(static fn (): array => $open->execute(new FlowNodeCall(items: [], config: [], context: [])));
 		$out['open bad config'] = self::attempt(
-			static fn (): array => $open->execute(items: $items, config: ['definition' => ['items' => []]], context: $runAs)
+			static fn (): array => $open->execute(new FlowNodeCall(items: $items, config: ['definition' => ['items' => []]], context: $runAs))
 		);
-		$out['open nobody'] = self::attempt(static fn (): array => $open->execute(items: $items, config: ['definition' => $definition], context: []));
+		$out['open nobody'] = self::attempt(static fn (): array => $open->execute(new FlowNodeCall(items: $items, config: ['definition' => $definition], context: [])));
 		$out['open no object'] = self::attempt(
-			static fn (): array => $open->execute(items: $items, config: ['definition' => $definition], context: $runAs)
+			static fn (): array => $open->execute(new FlowNodeCall(items: $items, config: ['definition' => $definition], context: $runAs))
 		);
 		$two = [7 => $items[7], 9 => $items[9]];
-		$out['open'] = self::attempt(static fn (): array => $open->execute(items: $two, config: ['definition' => $definition], context: $runAs));
+		$out['open'] = self::attempt(static fn (): array => $open->execute(new FlowNodeCall(items: $two, config: ['definition' => $definition], context: $runAs)));
 		$out['open again'] = self::attempt(
-			static fn (): array => $open->execute(items: $two, config: ['definition' => $definition], context: $runAs)
+			static fn (): array => $open->execute(new FlowNodeCall(items: $two, config: ['definition' => $definition], context: $runAs))
 		);
 		$out['open other'] = self::attempt(
-			static fn (): array => $open->execute(items: [$items[7]], config: ['definition' => $definition, 'uuid' => '{{ other }}'], context: $runAs)
+			static fn (): array => $open->execute(new FlowNodeCall(items: [$items[7]], config: ['definition' => $definition, 'uuid' => '{{ other }}'], context: $runAs))
 		);
-		$out['advance no key'] = self::attempt(static fn (): array => $advance->execute(items: $two, config: ['to' => 'completed'], context: $runAs));
+		$out['advance no key'] = self::attempt(static fn (): array => $advance->execute(new FlowNodeCall(items: $two, config: ['to' => 'completed'], context: $runAs)));
 		$out['advance bad state'] = self::attempt(
-			static fn (): array => $advance->execute(items: $two, config: ['item' => 'intake', 'to' => 'done'], context: $runAs)
+			static fn (): array => $advance->execute(new FlowNodeCall(items: $two, config: ['item' => 'intake', 'to' => 'done'], context: $runAs))
 		);
 		$out['advance unknown'] = self::attempt(
-			static fn (): array => $advance->execute(items: $two, config: ['item' => 'nope', 'to' => 'completed'], context: $runAs)
+			static fn (): array => $advance->execute(new FlowNodeCall(items: $two, config: ['item' => 'nope', 'to' => 'completed'], context: $runAs))
 		);
 		$out['advance'] = self::attempt(
-			static fn (): array => $advance->execute(
+			static fn (): array => $advance->execute(new FlowNodeCall(
 				items: $two,
 				config: ['item' => 'intake', 'to' => 'completed', 'reason' => ' klaar '],
 				context: $runAs
-			)
+			))
 		);
 		$out['advance repeat'] = self::attempt(
-			static fn (): array => $advance->execute(
+			static fn (): array => $advance->execute(new FlowNodeCall(
 				items: $two,
 				config: ['item' => 'intake', 'to' => 'completed', 'reason' => '  '],
 				context: $runAs
-			)
+			))
 		);
 		$out['advance other'] = self::attempt(
-			static fn (): array => $advance->execute(
+			static fn (): array => $advance->execute(new FlowNodeCall(
 				items: [$items[7]],
 				config: ['item' => 'intake', 'to' => 'terminated', 'uuid' => '{{ other }}'],
 				context: $runAs
-			)
+			))
 		);
 		$out['rows'] = $this->rows();
 
@@ -904,9 +906,9 @@ class CaseUnitsGoldenTest extends TestCase {
 	private function realisationScenario(): array {
 		$queued = [];
 		$runs = $this->createMock(FlowRunServiceInterface::class);
-		$runs->method('queue')->willReturnCallback(
-			static function (...$args) use (&$queued): \OCA\OpenRegister\Db\FlowRun {
-				$queued[] = $args;
+		$runs->method('queueRun')->willReturnCallback(
+			static function (string $flowId, FlowRunQueueOptions $options) use (&$queued): \OCA\OpenRegister\Db\FlowRun {
+				$queued[] = [$flowId, $options->subject, $options->trigger, $options->context, $options->user];
 				$run = new \OCA\OpenRegister\Db\FlowRun();
 				$run->setUuid('run-' . count($queued));
 

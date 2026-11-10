@@ -41,7 +41,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTimeImmutable;
-use DateTimeInterface;
 
 /**
  * Refuses an external grant with no end, and names the ones about to lapse.
@@ -145,16 +144,16 @@ class ExternalGrantGuard implements ExternalGrantGuardInterface {
 	 * mid-sentence, which is only possible if somebody can ask which grants are
 	 * about to run out.
 	 *
-	 * @param array|null             $authorization The block as written.
-	 * @param int                    $days          How far ahead to look.
-	 * @param DateTimeInterface|null $now           The moment, or null for the real one.
+	 * @param array|null       $authorization The block as written.
+	 * @param LapseWindow|null $window        The moment and how far ahead to look; null for now and the default window.
 	 *
 	 * @return array<int, array<string, mixed>> The grants about to lapse, soonest first.
 	 *
 	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
-	public function lapsingWithin(?array $authorization, int $days = self::DEFAULT_WARNING_DAYS, ?DateTimeInterface $now = null): array {
-		return $this->lapsingIn(authorization: $authorization, window: new LapseWindow(now: ($now ?? new DateTimeImmutable()), days: $days));
+	public function lapsingWithin(?array $authorization, ?LapseWindow $window = null): array {
+		$window ??= new LapseWindow(now: new DateTimeImmutable(), days: self::DEFAULT_WARNING_DAYS);
+		return $this->lapsingIn(authorization: $authorization, window: $window);
 	}//end lapsingWithin()
 
 	/**

@@ -84,4 +84,23 @@ class LanguageDetectorTest extends TestCase {
 	public function testAStringWithNoWordsAtAllAnswersNothing(): void {
 		$this->assertNull($this->detector->detect('2026-09-14 12:00 +++'));
 	}
+
+	public function testEachScriptIsCheckedInItsDeclaredOrder(): void {
+		// Ukrainian letters are Cyrillic too: `uk` is asked before `ru`.
+		$this->assertSame('uk', $this->detector->detect('Привіт, як справи?'));
+		$this->assertSame('ru', $this->detector->detect('Здравствуйте, как дела?'));
+		$this->assertSame('zh', $this->detector->detect('你好，我想知道我的申请状态'));
+	}
+
+	public function testATieBetweenTwoLanguagesAnswersNothing(): void {
+		$this->assertNull($this->detector->detect('de het the and'));
+	}
+
+	public function testOneFunctionWordIsBelowTheMinimum(): void {
+		$this->assertNull($this->detector->detect('the applicant arrived'));
+	}
+
+	public function testSurroundingWhitespaceIsIgnoredBeforeScoring(): void {
+		$this->assertSame('en', $this->detector->detect("  \n The papers that you sent are here.  "));
+	}
 }

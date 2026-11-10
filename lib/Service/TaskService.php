@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
@@ -110,9 +110,9 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	}//end __construct()
 
 	/**
-	 * Get all tasks for the current user across all VTODO-supporting calendars.
+	 * One page of the session user's tasks across all VTODO-supporting calendars, soonest due first.
 	 *
-	 * Returns all VTODOs (optionally filtered by status) from the user's calendars.
+	 * Returns the VTODOs (optionally filtered by status) from the user's calendars.
 	 * Tasks with X-OPENREGISTER-* properties include linking metadata.
 	 *
 	 * This walks every calendar and filters in PHP, which is why it no longer
@@ -122,27 +122,6 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * calendar read-only. No assignee filter exists: an assignee was never
 	 * carried on a VTODO as anything but description prose, and the prose is
 	 * gone.
-	 *
-	 * @param string|null $status Optional status filter (e.g. 'needs-action', 'completed')
-	 * @param int $limit Maximum number of tasks to return
-	 * @param int $offset Number of tasks to skip
-	 *
-	 * @return array{results: array, total: int} Task results with total count
-	 *
-	 * @throws Exception If no user is logged in
-	 *
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-the-projection-carries-a-real-assignee-not-prose
-	 */
-	public function getAllUserTasks(
-		?string $status = null,
-		int $limit = 50,
-		int $offset = 0,
-	): array {
-		return $this->listUserTasks(status: $status, query: new ListQuery(limit: $limit, offset: $offset));
-	}//end getAllUserTasks()
-
-	/**
-	 * One page of the session user's tasks across all VTODO calendars, soonest due first (see getAllUserTasks()).
 	 *
 	 * @param string|null $status Optional status filter (e.g. 'needs-action', 'completed')
 	 * @param ListQuery   $query  The page: limit and offset (no offset is the first task).

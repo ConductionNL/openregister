@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Merge;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
 
 /**
  * One merge in progress: the instruction, the pair, both payloads as they are

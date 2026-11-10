@@ -93,7 +93,7 @@ class ObjectsControllerCountsTest extends TestCase {
 		$this->webhookService = $this->createMock(WebhookService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		// resolveRegisterSchemaIds() reuses the entities resolved by
+		// resolveRegisterSchemaRef() reuses the entities resolved by
 		// ObjectService::setRegister()/setSchema(); the ObjectService mock
 		// returns null from the entity getters by default, so the
 		// register/schema entities stay null — this forces the
@@ -339,6 +339,123 @@ class ObjectsControllerCountsTest extends TestCase {
 
 		$this->assertSame(400, $response->getStatus());
 		$this->assertArrayHasKey('error', $response->getData());
+	}
+
+	/**
+	 * An entry without a register is malformed too.
+	 */
+	public function testAnEntryWithoutARegisterIsMalformed(): void {
+		$this->request->method('getParams')->willReturn(['counts' => [['schema' => 'A']]]);
+		$this->objectService->expects($this->never())->method('buildSearchQuery');
+
+		$this->assertSame(400, $this->controller->counts($this->objectService)->getStatus());
+	}
+
+	/**
+	 * The same pair under two filters is two counts, not one shared count.
+	 */
+	public function testTwoFiltersOnOnePairAreCountedApart(): void {
+		$this->setupNonAdminUser();
+		$this->stubResolution();
+		$this->request->method('getParams')->willReturn([
+			'counts' => [
+				['register' => 'R', 'schema' => 'A', 'filter' => ['status' => 'open']],
+				['register' => 'R', 'schema' => 'A', 'filter' => ['status' => 'closed']],
+			],
+		]);
+		$this->objectService->method('buildSearchQuery')->willReturnArgument(0);
+		$this->objectService->method('searchObjectsPaginated')->willReturnCallback(
+			static fn (array $query): array => ['total' => ($query['status'] === 'open' ? 3 : 8)]
+		);
+
+		$results = $this->controller->counts($this->objectService)->getData()['results'];
+
+		$this->assertSame([3, 8], array_column($results, 'count'));
+	}
+
+	/**
+	 * An entry whose filter is no object is malformed, and the batch is refused before anything runs.
+	 */
+	public function testAFilterThatIsNoObjectIsMalformed(): void {
+		$this->request->method('getParams')->willReturn(['counts' => [['register' => 'R', 'schema' => 'A', 'filter' => 'x']]]);
+		$this->objectService->expects($this->never())->method('buildSearchQuery');
+
+		$this->assertSame(400, $this->controller->counts($this->objectService)->getStatus());
+	}
+
+	/**
+	 * A magic-mapped pair for the given schema configuration, with a mapper that records the query.
+	 *
+	 * @param array $configuration The schema configuration.
+	 * @param array $queries       Receives the queries the magic mapper was asked.
+	 */
+	private function stubMagicPair(array $configuration, array &$queries): void {
+		$this->stubResolution();
+		$register = $this->createPartialMock(\OCA\OpenRegister\Db\Register::class, ['isMagicMappingEnabledForSchema']);
+		$register->method('isMagicMappingEnabledForSchema')->willReturn(true);
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setId(2);
+		$schema->setSlug('a');
+		$schema->setConfiguration($configuration);
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($register);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schema);
+		$this->objectService->method('buildSearchQuery')->willReturn(['_limit' => 5, '_offset' => 1, '_page' => 2, 'status' => 'open']);
+
+		$mapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class);
+		$mapper->method('countObjectsInRegisterSchemaTable')->willReturnCallback(
+			static function (array $query) use (&$queries): int {
+				$queries[] = $query;
+				return 7;
+			}
+		);
+		$this->container->method('get')->willReturn($mapper);
+		$this->request->method('getParams')->willReturn(['counts' => [['register' => 'R', 'schema' => 'A']]]);
+	}
+
+	/**
+	 * A magic-mapped pair counts in its table, with the caller's scope threaded into the query.
+	 */
+	public function testMagicPairCountCarriesTheCallersScope(): void {
+		$this->setupNonAdminUser();
+		$queries = [];
+		$this->stubMagicPair([], $queries);
+
+		$response = $this->controller->counts($this->objectService);
+
+		$this->assertSame(7, $response->getData()['results'][0]['count']);
+		$this->assertSame(
+			[['status' => 'open', '_rbac' => true, '_multitenancy' => true, '_multitenancy_explicit' => false]],
+			$queries
+		);
+	}
+
+	/**
+	 * An administrator's magic count runs unscoped, like the collection read.
+	 */
+	public function testMagicPairCountForAnAdministrator(): void {
+		$this->setupAdminUser();
+		$queries = [];
+		$this->stubMagicPair([], $queries);
+
+		$this->controller->counts($this->objectService);
+
+		$this->assertFalse($queries[0]['_rbac']);
+		$this->assertFalse($queries[0]['_multitenancy']);
+	}
+
+	/**
+	 * A schema served by an object source is counted through the paginated read, not its table.
+	 */
+	public function testAnObjectSourceSchemaIsNotCountedInItsTable(): void {
+		$this->setupNonAdminUser();
+		$queries = [];
+		$this->stubMagicPair(['x-openregister-object-source' => ['provider' => 'p']], $queries);
+		$this->objectService->method('searchObjectsPaginated')->willReturn(['total' => 3]);
+
+		$response = $this->controller->counts($this->objectService);
+
+		$this->assertSame(3, $response->getData()['results'][0]['count']);
+		$this->assertSame([], $queries);
 	}
 
 	/**

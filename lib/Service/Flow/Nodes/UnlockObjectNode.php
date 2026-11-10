@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -220,9 +221,7 @@ class UnlockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 	/**
 	 * Release the lock.
 	 *
-	 * @param array $items The incoming items.
-	 * @param array $config The step configuration.
-	 * @param array $context The run context.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, unchanged.
 	 *
@@ -230,7 +229,10 @@ class UnlockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 	 *
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-step-takes-a-lock-or-parks-the-run-and-retries
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		if ($items !== []) {
 			$actor = $this->actorFor(config: $config, context: $context);
 			$this->unlockAll(actor: $actor, targets: $this->targetsOf(items: $items, config: $config));

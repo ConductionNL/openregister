@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -225,7 +226,7 @@ class MagicRbacHandlerApplyFiltersGoldenTest extends TestCase {
 
 		$outcome = [];
 		try {
-			$apply = fn () => $handler->applyRbacFilters($this->recordingBuilder(), $schema, $call[0], $call[1]);
+			$apply = fn () => $handler->applyRbacFilters((new RbacFilterCall(qb: $this->recordingBuilder(), schema: $schema))->forAction($call[0])->onTable($call[1]));
 			if ($uid === '@anonymous') {
 				\OCA\OpenRegister\Service\AnonymousEvaluationContext::run($apply);
 			} else {

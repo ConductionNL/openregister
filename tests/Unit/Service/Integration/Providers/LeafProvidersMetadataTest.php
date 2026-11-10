@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers (assertSame, assertNull, ...) take positional args by convention; mirroring BuiltinProvidersMetadataTest in this repo.
 
 use OCA\OpenRegister\Exception\NotImplementedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription;
 use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Service\CalendarEventService;
@@ -326,7 +327,7 @@ class LeafProvidersMetadataTest extends TestCase {
 			logger: $this->buildLogger(),
 		);
 
-		$this->assertSame([['id' => 'cal1/event.ics', 'source' => 'both']], $provider->list('reg', 'sch', 'obj-uuid'));
+		$this->assertSame([['id' => 'cal1/event.ics', 'source' => 'both']], $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid')));
 	}//end testCalendarProviderListDelegatesToService()
 
 	public function testCalendarProviderListSurfacesEmptyOnFailure(): void {
@@ -357,7 +358,7 @@ class LeafProvidersMetadataTest extends TestCase {
 			logger: $logger,
 		);
 
-		$this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid')));
 	}//end testCalendarProviderListSurfacesEmptyOnFailure()
 
 	public function testCalendarProviderDeleteHandlesLegacyAndBareUidShapes(): void {
@@ -377,9 +378,9 @@ class LeafProvidersMetadataTest extends TestCase {
 		);
 
 		// Legacy composite shape — strips X-OR-* via CalendarEventService.
-		$provider->delete('r', 's', 'o', '7/event.ics');
+		$provider->delete(new ObjectRef(register: 'r', schema: 's', id: 'o'), '7/event.ics');
 		// Bare uid shape — Tier-2 link-only removal.
-		$provider->delete('r', 's', 'o', 'ev-uid');
+		$provider->delete(new ObjectRef(register: 'r', schema: 's', id: 'o'), 'ev-uid');
 	}//end testCalendarProviderDeleteHandlesLegacyAndBareUidShapes()
 
 	public function testCalendarProviderHealthReportsUnavailableWhenAppMissing(): void {
@@ -416,14 +417,14 @@ class LeafProvidersMetadataTest extends TestCase {
 
 		$provider = new ContactsProvider(description: new AppProviderDescription(appManager: $this->buildAppManager(['contacts']), l10n: $this->buildL10n()), contactService: $service);
 
-		$this->assertSame([['id' => 1]], $provider->list('r', 's', 'obj'));
+		$this->assertSame([['id' => 1]], $provider->list(new ObjectRef(register: 'r', schema: 's', id: 'obj')));
 	}//end testContactsProviderListReturnsResultsArray()
 
 	public function testContactsProviderCreateThrowsNotImplemented(): void {
 		$provider = new ContactsProvider(description: new AppProviderDescription(appManager: $this->buildAppManager(['contacts']), l10n: $this->buildL10n()), contactService: $this->createMock(ContactService::class));
 
 		$this->expectException(NotImplementedException::class);
-		$provider->create('r', 's', 'obj', []);
+		$provider->create(new ObjectRef(register: 'r', schema: 's', id: 'obj'), []);
 	}//end testContactsProviderCreateThrowsNotImplemented()
 
 	public function testDeckProviderMetadataAndEnableGate(): void {
@@ -459,7 +460,7 @@ class LeafProvidersMetadataTest extends TestCase {
 		$this->assertTrue($provider->isEnabled());
 		$this->assertSame(
 			['items' => [['id' => 9]], 'total' => 1, 'nextCursor' => null],
-			$provider->list('r', 's', 'obj')
+			$provider->list(new ObjectRef(register: 'r', schema: 's', id: 'obj'))
 		);
 	}//end testEmailProviderMetadataAndDelegation()
 
@@ -527,7 +528,7 @@ class LeafProvidersMetadataTest extends TestCase {
 
 		$provider = new OpenProjectProvider(routing: new ConnectorRouting(router: $router, appManager: $this->buildAppManager(['openconnector']), l10n: $this->buildL10n()));
 
-		$rows = $provider->list('r', 's', 'obj');
+		$rows = $provider->list(new ObjectRef(register: 'r', schema: 's', id: 'obj'));
 		$this->assertCount(1, $rows);
 		$this->assertSame('42', $rows[0]['id']);
 		$this->assertSame('Wp', $rows[0]['title']);
@@ -599,7 +600,7 @@ class LeafProvidersMetadataTest extends TestCase {
 		$this->assertTrue($provider->isEnabled());
 		// Stubs return an empty list; mutation methods inherit
 		// NotImplementedException from AbstractIntegrationProvider.
-		$this->assertSame([], $provider->list('r', 's', 'obj'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'r', schema: 's', id: 'obj')));
 	}//end testGreenfieldProviderContract()
 
 	/**
@@ -669,6 +670,6 @@ class LeafProvidersMetadataTest extends TestCase {
 		);
 
 		$this->expectException(NotImplementedException::class);
-		$provider->create('r', 's', 'obj', []);
+		$provider->create(new ObjectRef(register: 'r', schema: 's', id: 'obj'), []);
 	}//end testSharesProviderCreateThrowsNotImplemented()
 }//end class

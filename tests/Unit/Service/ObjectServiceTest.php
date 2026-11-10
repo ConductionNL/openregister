@@ -21,9 +21,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
-use OCA\OpenRegister\Service\ObjectMigration;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -1534,13 +1535,7 @@ class ObjectServiceTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('checkPermission')
-			->with(
-				schema: $this->schema,
-				action: 'create',
-				userId: null,
-				objectOwner: null,
-				rbac: true
-			);
+			->with($this->schema, 'create');
 
 		$this->invokePrivate('checkSavePermissions', [null, true]);
 	}
@@ -1562,14 +1557,7 @@ class ObjectServiceTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('checkPermission')
-			->with(
-				schema: $this->schema,
-				action: 'update',
-				userId: null,
-				objectOwner: 'user1',
-				rbac: true,
-				object: $entity
-			);
+			->with($this->schema, 'update', new PermissionCheckOptions(objectOwner: 'user1', object: $entity), true);
 
 		$this->invokePrivate('checkSavePermissions', ['existing-uuid', true]);
 	}
@@ -1587,13 +1575,7 @@ class ObjectServiceTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('checkPermission')
-			->with(
-				schema: $this->schema,
-				action: 'create',
-				userId: null,
-				objectOwner: null,
-				rbac: true
-			);
+			->with($this->schema, 'create');
 
 		$this->invokePrivate('checkSavePermissions', ['new-uuid', true]);
 	}
@@ -2683,15 +2665,15 @@ class ObjectServiceTest extends TestCase {
 	}
 
 	/**
-	 * Test ensureObjectFolder returns null on general exception.
+	 * Test ensureObjectFolder refuses the save when the lookup fails.
 	 */
-	public function testEnsureObjectFolderReturnsNullOnGeneralException(): void {
+	public function testEnsureObjectFolderRefusesOnGeneralException(): void {
 		$this->objectEntityMapper->method('find')
 			->willThrowException(new Exception('Database error'));
 
-		$result = $this->invokePrivate('ensureObjectFolder', ['some-uuid']);
+		$this->expectException(\OCA\OpenRegister\Exception\FolderAccessDeniedException::class);
 
-		$this->assertNull($result);
+		$this->invokePrivate('ensureObjectFolder', ['some-uuid']);
 	}
 
 	/**

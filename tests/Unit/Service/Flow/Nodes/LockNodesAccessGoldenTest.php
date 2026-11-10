@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -179,7 +180,7 @@ final class LockNodesAccessGoldenTest extends TestCase {
 		$this->calls = [];
 		$this->lockRefuses = $refuses;
 		try {
-			$result = ['returned' => $node->execute($items, $config, $context)];
+			$result = ['returned' => $node->execute(new FlowNodeCall(items: $items, config: $config, context: $context))];
 		} catch (FlowSuspension $e) {
 			$result = ['suspended' => $e->getMessage()];
 		} catch (Throwable $e) {
