@@ -44,6 +44,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\GrantedRows;
@@ -1560,7 +1561,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return false;
 		}
 
-		return $this->objectGrants()?->isGranted(userId: $check->userId, objectUuid: $check->objectUuid, action: $check->action) !== true;
+		return $this->objectGrants()?->isGranted(lookup: new GrantLookup(userId: $check->userId, objectUuid: $check->objectUuid), action: $check->action) !== true;
 	}//end privateObjectRefuses()
 
 	/**
