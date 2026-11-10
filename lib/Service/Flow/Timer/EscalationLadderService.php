@@ -177,25 +177,7 @@ class EscalationLadderService {
 
 	/**
 	 * The AUTHORITATIVE preBreach check, on the timeline: every preBreach rung
-	 * must resolve at or after the anchor.
-	 *
-	 * @param array<int, array<string, mixed>> $rungs The normalised rungs.
-	 * @param DateTimeInterface $anchorAt The instant the term runs from.
-	 * @param DateTimeInterface $fireAt The instant the term ends.
-	 * @param WorkingCalendar $calendar The resolved calendar.
-	 *
-	 * @return void
-	 *
-	 * @throws FlowTimerValidationException When an offset exceeds the SLA, naming the anchor.
-	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
-	 */
-	public function validateAgainstTimeline(array $rungs, DateTimeInterface $anchorAt, DateTimeInterface $fireAt, WorkingCalendar $calendar): void {
-		$this->refuseBeforeAnchor(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: [], calendar: $calendar), anchorAt: $anchorAt);
-	}//end validateAgainstTimeline()
-
-	/**
-	 * Refuse the first `preBreach` rung whose instant falls before the anchor.
+	 * must resolve at or after the anchor. Refuses the first one that does not.
 	 *
 	 * @param RungTimeline      $timeline The rungs, the fire moment and the calendar.
 	 * @param DateTimeInterface $anchorAt The instant the term runs from.
@@ -206,61 +188,44 @@ class EscalationLadderService {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
 	 */
-	private function refuseBeforeAnchor(RungTimeline $timeline, DateTimeInterface $anchorAt): void {
+	public function validateAgainstTimeline(RungTimeline $timeline, DateTimeInterface $anchorAt): void {
 		$calendar = $timeline->calendar;
 		foreach ($timeline->rungs as $rung) {
 			if ($rung['trigger'] !== self::TRIGGER_PRE_BREACH) {
 				continue;
 			}
 
-			$instant = $this->rungInstant(rung: $rung, fireAt: $timeline->fireAt, calendar: $calendar);
+			$instant = $this->rungInstant(rung: $rung, timeline: $timeline);
 			if ($instant < $anchorAt) {
 				$where = sprintf("it resolves to %s, before the anchor %s (calendar '%s')", $instant->format('c'), $anchorAt->format('c'), $calendar->getSlug());
 				throw new FlowTimerValidationException(message: self::offsetLabel(rung: $rung) . ' exceeds the SLA — ' . $where . '.');
 			}
 		}
-	}//end refuseBeforeAnchor()
+	}//end validateAgainstTimeline()
 
 	/**
 	 * The instant a rung falls on: `preBreach` is offset BEFORE the fire
 	 * moment, `slaBreached` is offset AFTER it.
 	 *
-	 * @param array<string, mixed> $rung The normalised rung.
-	 * @param DateTimeInterface $fireAt The fire moment.
-	 * @param WorkingCalendar $calendar The resolved calendar.
+	 * @param array<string, mixed> $rung     The normalised rung.
+	 * @param RungTimeline         $timeline The fire moment and the calendar the offset is measured in.
 	 *
 	 * @return DateTimeImmutable The rung's instant.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
-	public function rungInstant(array $rung, DateTimeInterface $fireAt, WorkingCalendar $calendar): DateTimeImmutable {
+	public function rungInstant(array $rung, RungTimeline $timeline): DateTimeImmutable {
 		$offset = (float)$rung['offset'];
 		$unit = (string)$rung['offsetUnit'];
 		if ($rung['trigger'] === self::TRIGGER_PRE_BREACH) {
-			return $this->calculator->sub(from: $fireAt, value: $offset, unit: $unit, calendar: $calendar);
+			return $this->calculator->sub(from: $timeline->fireAt, value: $offset, unit: $unit, calendar: $timeline->calendar);
 		}
 
-		return $this->calculator->add(from: $fireAt, value: $offset, unit: $unit, calendar: $calendar);
+		return $this->calculator->add(from: $timeline->fireAt, value: $offset, unit: $unit, calendar: $timeline->calendar);
 	}//end rungInstant()
 
 	/**
-	 * The instant of the earliest UNFIRED rung — the `next_rung_at` derivation.
-	 *
-	 * @param array<int, array<string, mixed>> $rungs The normalised rungs.
-	 * @param DateTimeInterface $fireAt The fire moment.
-	 * @param array<int, string> $firedKeys Rung keys already in the ledger.
-	 * @param WorkingCalendar $calendar The resolved calendar.
-	 *
-	 * @return DateTimeImmutable|null The instant, or null when every rung has fired.
-	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
-	 */
-	public function nextRungAt(array $rungs, DateTimeInterface $fireAt, array $firedKeys, WorkingCalendar $calendar): ?DateTimeImmutable {
-		return $this->earliestUnfired(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $calendar));
-	}//end nextRungAt()
-
-	/**
-	 * The instant of the earliest unfired rung on a timeline.
+	 * The instant of the earliest UNFIRED rung on a timeline: the `next_rung_at` derivation.
 	 *
 	 * @param RungTimeline $timeline The rungs, the fire moment, the fired keys and the calendar.
 	 *
@@ -268,7 +233,7 @@ class EscalationLadderService {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
-	private function earliestUnfired(RungTimeline $timeline): ?DateTimeImmutable {
+	public function nextRungAt(RungTimeline $timeline): ?DateTimeImmutable {
 		$earliest = null;
 		foreach ($this->unfired(timeline: $timeline) as $entry) {
 			if ($earliest === null || $entry['at'] < $earliest) {
@@ -277,7 +242,7 @@ class EscalationLadderService {
 		}
 
 		return $earliest;
-	}//end earliestUnfired()
+	}//end nextRungAt()
 
 	/**
 	 * The rungs whose instant has passed and which have no fire row, in
@@ -315,7 +280,7 @@ class EscalationLadderService {
 	 */
 	private function unfired(RungTimeline $timeline): array {
 		$entries = [];
-		$instantOf = $this->instantOf(fireAt: $timeline->fireAt, calendar: $timeline->calendar);
+		$instantOf = $this->instantOf(timeline: $timeline);
 		foreach ($this->ordered(rungs: $timeline->rungs, instantOf: $instantOf) as $entry) {
 			if (in_array((string)$entry['rung']['key'], $timeline->firedKeys, true) === false) {
 				$entries[] = $entry;
@@ -335,29 +300,14 @@ class EscalationLadderService {
 	 * travels unresolved as `role:<name>` for the downstream subscriber. No
 	 * uid is looked up here.
 	 *
-	 * @param array<string, mixed> $rung The normalised rung.
-	 * @param Task|null $subject The subject task, when the subject is a task.
-	 * @param array<string, string> $roleBindings Role → `type:id` bindings from the ladder.
-	 *
-	 * @return array<int, array{type: string, id: string, role: string}> The recipients, deduplicated.
-	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
-	 */
-	public function resolveRecipients(array $rung, ?Task $subject, array $roleBindings): array {
-		return $this->recipientsOf(rung: $rung, audience: new EscalationAudience(subject: $subject, roleBindings: $roleBindings));
-	}//end resolveRecipients()
-
-	/**
-	 * The deduplicated recipients of every role a rung notifies or escalates to.
-	 *
 	 * @param array<string, mixed> $rung     The normalised rung.
-	 * @param EscalationAudience   $audience The subject task and the ladder's bindings.
+	 * @param EscalationAudience   $audience The subject task, when the subject is a task, and the ladder's role → `type:id` bindings.
 	 *
 	 * @return array<int, array{type: string, id: string, role: string}> The recipients, deduplicated.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
-	private function recipientsOf(array $rung, EscalationAudience $audience): array {
+	public function resolveRecipients(array $rung, EscalationAudience $audience): array {
 		$roles = array_values(array_unique(array_merge($rung['notifyRole'], $rung['escalateToRole'])));
 		$recipients = [];
 		foreach ($roles as $role) {
@@ -367,7 +317,7 @@ class EscalationLadderService {
 		}
 
 		return array_values($recipients);
-	}//end recipientsOf()
+	}//end resolveRecipients()
 
 	/**
 	 * A ladder definition by slug.
@@ -449,13 +399,12 @@ class EscalationLadderService {
 	/**
 	 * The function that places a rung on the timeline of one fire moment.
 	 *
-	 * @param DateTimeInterface $fireAt   The fire moment.
-	 * @param WorkingCalendar   $calendar The resolved calendar.
+	 * @param RungTimeline $timeline The fire moment and the calendar.
 	 *
 	 * @return Closure(array<string, mixed>): DateTimeImmutable The rung's instant.
 	 */
-	private function instantOf(DateTimeInterface $fireAt, WorkingCalendar $calendar): Closure {
-		return fn (array $rung): DateTimeImmutable => $this->rungInstant(rung: $rung, fireAt: $fireAt, calendar: $calendar);
+	private function instantOf(RungTimeline $timeline): Closure {
+		return fn (array $rung): DateTimeImmutable => $this->rungInstant(rung: $rung, timeline: $timeline);
 	}//end instantOf()
 
 	/**

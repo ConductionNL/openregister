@@ -37,7 +37,6 @@ use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -103,7 +102,6 @@ class ImportHandlerSchemaVersioningTest extends TestCase {
 
 		$handler->setSchemaVersioning(
 			new SchemaVersioningService(
-				diffService: new SchemaDiffService(),
 				changelogMapper: $this->changelogMapper,
 				runs: new SchemaPopulationRuns($this->createMock(SchemaRunMapper::class), $this->createMock(SchemaRunEntryMapper::class), $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)),
 				userSession: $this->createMock(IUserSession::class),

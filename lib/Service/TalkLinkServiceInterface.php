@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\TalkLink;
+use OCA\OpenRegister\Service\TalkLink\LinkedObject;
+use OCA\OpenRegister\Service\TalkLink\RoomCreation;
 
 /**
  * The methods of TalkLinkService that callers outside its component use.
@@ -49,10 +51,8 @@ interface TalkLinkServiceInterface {
 	 * Talk room so subsequent reads don't need to hit Talk. Idempotent:
 	 * a duplicate link raises a 409 Exception.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id (Tier-2 column).
-	 * @param string $roomToken Talk room token.
+	 * @param LinkedObject $object    The object to link the room to.
+	 * @param string       $roomToken Talk room token.
 	 *
 	 * @return TalkLink The persisted link row.
 	 *
@@ -61,7 +61,7 @@ interface TalkLinkServiceInterface {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function linkRoom(string $objectUuid, int $registerId, int $schemaId, string $roomToken): TalkLink;
+	public function linkRoom(LinkedObject $object, string $roomToken): TalkLink;
 
 	/**
 	 * Unlink a Talk room from an object. Does NOT destroy the room
@@ -109,12 +109,7 @@ interface TalkLinkServiceInterface {
 	 *   2 → group    (default)
 	 *   3 → public
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param string $roomName Room display name (required).
-	 * @param string|null $description Room description (optional).
-	 * @param int $roomType Talk room type (default 2 = group).
+	 * @param RoomCreation $creation The object, room name (required), description (optional) and room type (default 2 = group).
 	 *
 	 * @return TalkLink The persisted link row.
 	 *
@@ -123,14 +118,7 @@ interface TalkLinkServiceInterface {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function createAndLinkRoom(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $roomName,
-		?string $description,
-		int $roomType = 2,
-	): TalkLink;
+	public function createAndLinkRoom(RoomCreation $creation): TalkLink;
 
 	/**
 	 * Return Talk rooms available to the current user for the picker.

@@ -17,6 +17,7 @@ use OCA\OpenRegister\Listener\UniqueConstraintListener;
 use OCA\OpenRegister\Service\Import\MatchResolver;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
+use OCA\OpenRegister\Service\Object\UpsertOnKeyRequest;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCP\Lock\ILockingProvider;
@@ -125,7 +126,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		$this->storeFinds([]);
 		$calls = [];
 
-		$outcome = $this->handler()->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, $this->saver($calls));
+		$outcome = $this->handler()->upsert(new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema), $this->saver($calls));
 
 		$this->assertTrue($outcome['created']);
 		$this->assertSame([null], $calls);
@@ -139,7 +140,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		$this->storeFinds(['u-1']);
 		$calls = [];
 
-		$outcome = $this->handler()->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, $this->saver($calls));
+		$outcome = $this->handler()->upsert(new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema), $this->saver($calls));
 
 		$this->assertFalse($outcome['created']);
 		$this->assertSame(['u-1'], $calls);
@@ -150,7 +151,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		$this->storeFinds(['u-1', 'u-2']);
 		$calls = [];
 
-		$refusal = $this->refusal(fn () => $this->handler()->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, $this->saver($calls)));
+		$refusal = $this->refusal(fn () => $this->handler()->upsert(new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema), $this->saver($calls)));
 
 		$this->assertSame(409, $refusal->getStatusCode());
 		$this->assertSame(['u-1', 'u-2'], $refusal->getBody()['matches']);
@@ -161,7 +162,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		$this->storeFinds([]);
 		$calls = [];
 
-		$refusal = $this->refusal(fn () => $this->handler()->upsert('titel', $this->body(), $this->register, $this->schema, $this->saver($calls)));
+		$refusal = $this->refusal(fn () => $this->handler()->upsert(new UpsertOnKeyRequest('titel', $this->body(), $this->register, $this->schema), $this->saver($calls)));
 
 		$this->assertSame(400, $refusal->getStatusCode());
 		$this->assertSame(['zaaksleutel'], $refusal->getBody()['refuseConstraints']);
@@ -173,7 +174,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		$this->storeFinds([]);
 		$calls = [];
 
-		$refusal = $this->refusal(fn () => $this->handler()->upsert('status', $this->body(), $this->register, $this->schema, $this->saver($calls)));
+		$refusal = $this->refusal(fn () => $this->handler()->upsert(new UpsertOnKeyRequest('status', $this->body(), $this->register, $this->schema), $this->saver($calls)));
 
 		$this->assertSame(400, $refusal->getStatusCode());
 		$this->assertSame(['zaaksleutel'], $refusal->getBody()['refuseConstraints']);
@@ -184,7 +185,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		$this->storeFinds(['u-1']);
 		$calls = [];
 
-		$outcome = $this->handler()->upsert('gemeentecode+zaaknummer', $this->body(), $this->register, $this->schema, $this->saver($calls));
+		$outcome = $this->handler()->upsert(new UpsertOnKeyRequest('gemeentecode+zaaknummer', $this->body(), $this->register, $this->schema), $this->saver($calls));
 
 		$this->assertFalse($outcome['created']);
 		$this->assertSame(['u-1'], $calls);
@@ -196,7 +197,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		$body = $this->body();
 		$body['zaaknummer'] = '';
 
-		$refusal = $this->refusal(fn () => $this->handler()->upsert('zaaksleutel', $body, $this->register, $this->schema, $this->saver($calls)));
+		$refusal = $this->refusal(fn () => $this->handler()->upsert(new UpsertOnKeyRequest('zaaksleutel', $body, $this->register, $this->schema), $this->saver($calls)));
 
 		$this->assertSame(400, $refusal->getStatusCode());
 		$this->assertSame('zaaknummer', $refusal->getBody()['property']);
@@ -207,7 +208,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		$this->storeFinds([]);
 		$calls = [];
 
-		$this->handler()->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, $this->saver($calls));
+		$this->handler()->upsert(new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema), $this->saver($calls));
 
 		$this->assertCount(2, $this->lockCalls);
 		[$acquire, $release] = $this->lockCalls;
@@ -233,7 +234,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		$this->register->setId(2147483647);
 		$this->schema->setId(2147483647);
 
-		$this->handler()->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, $this->saver($calls));
+		$this->handler()->upsert(new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema), $this->saver($calls));
 
 		$this->assertLessThanOrEqual(64, strlen($this->lockCalls[0][1]));
 	}//end testTheLockPathFitsNextcloudsLockColumn()
@@ -246,12 +247,12 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		$calls = [];
 		$saver = $this->saver($calls);
 
-		$this->handler()->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, $saver);
-		$this->handler()->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, $saver);
+		$this->handler()->upsert(new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema), $saver);
+		$this->handler()->upsert(new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema), $saver);
 		$otherRegister = new Register();
 		$otherRegister->setId(4);
-		$this->handler()->upsert('zaaksleutel', $this->body(), $otherRegister, $this->schema, $saver);
-		$this->handler()->upsert('zaaksleutel', (['zaaknummer' => 'Z-2'] + $this->body()), $this->register, $this->schema, $saver);
+		$this->handler()->upsert(new UpsertOnKeyRequest('zaaksleutel', $this->body(), $otherRegister, $this->schema), $saver);
+		$this->handler()->upsert(new UpsertOnKeyRequest('zaaksleutel', (['zaaknummer' => 'Z-2'] + $this->body()), $this->register, $this->schema), $saver);
 
 		$paths = array_column(array_filter($this->lockCalls, static fn (array $call): bool => $call[0] === 'acquire'), 1);
 		$this->assertSame($paths[0], $paths[1]);
@@ -264,10 +265,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 
 		try {
 			$this->handler()->upsert(
-				'zaaksleutel',
-				$this->body(),
-				$this->register,
-				$this->schema,
+				new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema),
 				static function (): ObjectEntity {
 					throw new RuntimeException('save failed');
 				}
@@ -284,7 +282,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		$this->objectService->method('findAll')->willThrowException(new RuntimeException('database gone'));
 		$calls = [];
 
-		$refusal = $this->refusal(fn () => $this->handler()->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, $this->saver($calls)));
+		$refusal = $this->refusal(fn () => $this->handler()->upsert(new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema), $this->saver($calls)));
 
 		$this->assertSame(503, $refusal->getStatusCode());
 		$this->assertSame(['Retry-After' => '5'], $refusal->getHeaders());
@@ -297,10 +295,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 
 		$refusal = $this->refusal(
 			fn () => $this->handler()->upsert(
-				'zaaksleutel',
-				$this->body(),
-				$this->register,
-				$this->schema,
+				new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema),
 				static function (): ObjectEntity {
 					throw new HookStoppedException(
 						'breach',
@@ -325,10 +320,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		$this->expectException(HookStoppedException::class);
 
 		$this->handler()->upsert(
-			'zaaksleutel',
-			$this->body(),
-			$this->register,
-			$this->schema,
+			new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema),
 			static function (): ObjectEntity {
 				throw new HookStoppedException('a workflow said no', ['code' => 'workflow']);
 			}
@@ -344,7 +336,7 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		$handler = new class(new UniqueConstraintEvaluator(), new MatchResolver($this->objectService, new NullLogger()), $locks) extends UpsertOnKeyHandler {
 		};
 
-		$refusal = $this->refusal(fn () => $handler->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, static fn (): ObjectEntity => new ObjectEntity()));
+		$refusal = $this->refusal(fn () => $handler->upsert(new UpsertOnKeyRequest('zaaksleutel', $this->body(), $this->register, $this->schema), static fn (): ObjectEntity => new ObjectEntity()));
 
 		$this->assertSame(503, $refusal->getStatusCode());
 	}//end testAKeyLockHeldTooLongIsA503()

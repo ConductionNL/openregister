@@ -16,11 +16,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Import\ImportValueCaster;
 use OCA\OpenRegister\Service\Import\ImportTarget;
 use OCA\OpenRegister\Service\Import\MappedSheet;
+use OCA\OpenRegister\Service\Import\RowImportTarget;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
@@ -84,7 +86,7 @@ class ImportServiceTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
 		// The CSV codec is invoked as a translatable-property pre-pass
-		// inside transformCsvRowToObject; without a stub the default
+		// inside transformCsvRow; without a stub the default
 		// mock returns null and wipes the row data. Pass-through.
 		$translationCsvCodec = $this->createMock(\OCA\OpenRegister\Service\Translation\TranslationCsvCodec::class);
 		$translationCsvCodec->method('unflattenFromCsv')
@@ -1964,12 +1966,12 @@ class ImportServiceTest extends TestCase {
 	}
 
 	// =========================================================================
-	// Private method testing via Reflection: transformCsvRowToObject
+	// Private method testing via Reflection: transformCsvRow
 	// =========================================================================
 
 	public function testTransformCsvRowToObject(): void {
 		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformCsvRowToObject');
+		$method = $ref->getMethod('transformCsvRow');
 		$method->setAccessible(true);
 
 		$register = $this->createRegister(1);
@@ -1983,7 +1985,7 @@ class ImportServiceTest extends TestCase {
 			'age' => '30',
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, $schema, null);
+		$result = $method->invoke($this->service, $rowData, new RowImportTarget(new RegisterSchema($register, $schema)));
 
 		$this->assertSame('John', $result['name']);
 		$this->assertSame(30, $result['age']);
@@ -1993,7 +1995,7 @@ class ImportServiceTest extends TestCase {
 
 	public function testTransformCsvRowToObjectWithIdField(): void {
 		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformCsvRowToObject');
+		$method = $ref->getMethod('transformCsvRow');
 		$method->setAccessible(true);
 
 		$register = $this->createRegister(1);
@@ -2006,14 +2008,14 @@ class ImportServiceTest extends TestCase {
 			'name' => 'John',
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, $schema, null);
+		$result = $method->invoke($this->service, $rowData, new RowImportTarget(new RegisterSchema($register, $schema)));
 
 		$this->assertSame('existing-uuid', $result['@self']['id']);
 	}
 
 	public function testTransformCsvRowToObjectSkipsEmptyValues(): void {
 		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformCsvRowToObject');
+		$method = $ref->getMethod('transformCsvRow');
 		$method->setAccessible(true);
 
 		$register = $this->createRegister(1);
@@ -2028,7 +2030,7 @@ class ImportServiceTest extends TestCase {
 			'phone' => null,
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, $schema, null);
+		$result = $method->invoke($this->service, $rowData, new RowImportTarget(new RegisterSchema($register, $schema)));
 
 		$this->assertSame('John', $result['name']);
 		$this->assertArrayNotHasKey('email', $result);
@@ -2037,7 +2039,7 @@ class ImportServiceTest extends TestCase {
 
 	public function testTransformCsvRowToObjectCachesSchemaProperties(): void {
 		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformCsvRowToObject');
+		$method = $ref->getMethod('transformCsvRow');
 		$method->setAccessible(true);
 
 		$register = $this->createRegister(1);
@@ -2048,8 +2050,8 @@ class ImportServiceTest extends TestCase {
 		$rowData = ['name' => 'John'];
 
 		// Call twice to test caching.
-		$method->invoke($this->service, $rowData, $register, $schema, null);
-		$result = $method->invoke($this->service, $rowData, $register, $schema, null);
+		$method->invoke($this->service, $rowData, new RowImportTarget(new RegisterSchema($register, $schema)));
+		$result = $method->invoke($this->service, $rowData, new RowImportTarget(new RegisterSchema($register, $schema)));
 
 		$this->assertSame('John', $result['name']);
 	}

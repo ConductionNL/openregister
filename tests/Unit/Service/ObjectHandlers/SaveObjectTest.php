@@ -182,10 +182,8 @@ class SaveObjectTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->objectEntityMapper,
-						unifiedObjectMapper: $this->unifiedObjectMapper,
-						schemaMapper: $this->schemaMapper,
-						registerMapper: $this->registerMapper
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->auditTrailMapper,
