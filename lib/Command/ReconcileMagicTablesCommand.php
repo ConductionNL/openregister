@@ -56,6 +56,21 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
  */
 class ReconcileMagicTablesCommand extends Command {
+
+	/**
+	 * The options, in declaration order: name => [mode, description]. None has a shortcut.
+	 */
+	private const OPTIONS = [
+		'apply' => [
+			InputOption::VALUE_NONE,
+			'Create the missing columns. Without this flag the command runs in dry-run mode and '
+			. 'only reports the drift it would repair.',
+		],
+		'register' => [
+			InputOption::VALUE_REQUIRED,
+			'Limit to a single register id (default: every register).',
+		],
+	];
 	/**
 	 * Constructor.
 	 *
@@ -83,20 +98,10 @@ class ReconcileMagicTablesCommand extends Command {
 				'Detect and repair magic-table column drift: physical columns missing for schema '
 				. 'properties that were added to an existing schema without a subsequent write, and '
 				. 'metadata columns (_archived, _frozen, _status, ...) missing from any magic table.'
-			)
-			->addOption(
-				'apply',
-				null,
-				InputOption::VALUE_NONE,
-				'Create the missing columns. Without this flag the command runs in dry-run mode and '
-				. 'only reports the drift it would repair.'
-			)
-			->addOption(
-				'register',
-				null,
-				InputOption::VALUE_REQUIRED,
-				'Limit to a single register id (default: every register).'
 			);
+		foreach (self::OPTIONS as $name => [$mode, $description]) {
+			$this->addOption(name: $name, shortcut: null, mode: $mode, description: $description);
+		}
 
 	}//end configure()
 
