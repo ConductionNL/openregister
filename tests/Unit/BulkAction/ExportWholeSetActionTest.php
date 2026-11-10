@@ -28,6 +28,7 @@ namespace Unit\BulkAction;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed PHPUnit doubles, the type IS the documentation.
 
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\ExportProfile;
@@ -143,7 +144,7 @@ final class ExportWholeSetActionTest extends TestCase {
 		$this->rootFolder->expects(self::never())->method('getUserFolder');
 		$this->recorder->expects(self::never())->method('recordCompleted');
 
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], false, $this->actor());
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: false, actor: $this->actor()));
 
 		self::assertSame(BulkJobMember::OUTCOME_APPLIED, $result->getOutcome());
 		self::assertStringContainsString('Would be written', (string)$result->getReason());
@@ -154,7 +155,7 @@ final class ExportWholeSetActionTest extends TestCase {
 		$this->rights->method('refusalForUid')->willReturn(null);
 		$this->writer->method('csvLineFor')->willReturn('');
 
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], true, $this->actor());
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: true, actor: $this->actor()));
 
 		self::assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 	}//end testAnObjectTheProfileCannotProjectIsSkippedNotFailed()
@@ -167,14 +168,14 @@ final class ExportWholeSetActionTest extends TestCase {
 		$this->recorder->expects(self::once())->method('recordRefused');
 		$this->rootFolder->expects(self::never())->method('getUserFolder');
 
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], true, $this->actor());
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: true, actor: $this->actor()));
 
 		self::assertSame(BulkJobMember::OUTCOME_REFUSED, $result->getOutcome());
 		self::assertSame('export-right-missing', $result->getReason());
 	}//end testARowTheActorMayNotExportIsRefusedAndRecorded()
 
 	public function testAJobWithNoActorIsRefusedRatherThanRunningAsNobody(): void {
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], true, null);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: true, actor: null));
 
 		self::assertSame(BulkJobMember::OUTCOME_REFUSED, $result->getOutcome());
 		self::assertSame('not-authenticated', $result->getReason());
