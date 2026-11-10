@@ -88,6 +88,45 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 	private Environment $twig;
 
 	/**
+	 * The Twig tags a JWT payload template may use.
+	 *
+	 * @var list<string>
+	 */
+	private const JWT_SANDBOX_TAGS = [
+		'if',
+		'for',
+		'set',
+		'apply',
+	];
+
+	/**
+	 * The Twig filters a JWT payload template may use: the common ones, then
+	 * the ones that build a claim set.
+	 *
+	 * @var list<string>
+	 */
+	private const JWT_SANDBOX_FILTERS = [
+		...TwigSandboxFilters::COMMON,
+		'merge',
+		'keys',
+		'escape',
+		'raw',
+		'json_encode',
+	];
+
+	/**
+	 * The Twig functions a JWT payload template may use.
+	 *
+	 * @var list<string>
+	 */
+	private const JWT_SANDBOX_FUNCTIONS = [
+		'max',
+		'min',
+		'range',
+		'date',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ArrayLoader $loader The Twig array loader
@@ -102,44 +141,11 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 		// Only the tags/filters/functions needed to build a JWT claim set are
 		// allowlisted; method/property access on objects is denied entirely.
 		$policy = new SecurityPolicy(
-			allowedTags: [
-				'if',
-				'for',
-				'set',
-				'apply',
-			],
-			allowedFilters: [
-				'date',
-				'date_modify',
-				'upper',
-				'lower',
-				'trim',
-				'length',
-				'default',
-				'number_format',
-				'round',
-				'abs',
-				'split',
-				'join',
-				'slice',
-				'first',
-				'last',
-				'replace',
-				'format',
-				'merge',
-				'keys',
-				'escape',
-				'raw',
-				'json_encode',
-			],
+			allowedTags: self::JWT_SANDBOX_TAGS,
+			allowedFilters: self::JWT_SANDBOX_FILTERS,
 			allowedMethods: [],
 			allowedProperties: [],
-			allowedFunctions: [
-				'max',
-				'min',
-				'range',
-				'date',
-			]
+			allowedFunctions: self::JWT_SANDBOX_FUNCTIONS
 		);
 		$this->twig->addExtension(new SandboxExtension($policy, sandboxed: true));
 
