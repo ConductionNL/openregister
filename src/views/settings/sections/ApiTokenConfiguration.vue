@@ -287,6 +287,25 @@ import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import { saveMessageMethods } from './saveMessage.js'
 
 /**
+ * The API token settings endpoint.
+ *
+ * @return {string} The URL
+ */
+function tokenSettingsUrl() {
+	return generateUrl('/apps/openregister/api/settings/api-tokens')
+}
+
+/**
+ * Save part of the API token settings.
+ *
+ * @param {object} body The settings to change
+ * @return {Promise<object>} The axios response
+ */
+function postTokenSettings(body) {
+	return axios.post(tokenSettingsUrl(), body)
+}
+
+/**
  * Ask the backend whether a provider's token works.
  *
  * @param {string} provider 'github' or 'gitlab'
@@ -435,21 +454,30 @@ export default {
 		async loadTokens() {
 			this.loading = true
 			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/api-tokens'),
-				)
-				this.githubToken = response.data.github_token || ''
-				this.gitlabToken = response.data.gitlab_token || ''
-				this.gitlabUrl = response.data.gitlab_url || ''
-				this.originalGithubToken = this.githubToken
-				this.originalGitlabToken = this.gitlabToken
-				this.originalGitlabUrl = this.gitlabUrl
+				const response = await axios.get(tokenSettingsUrl())
+				this.applyLoadedTokens(response.data)
 			} catch (error) {
 				console.error('Failed to load API tokens:', error)
 				// Don't show error on initial load as tokens might not be set
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Show the loaded token settings and remember them as saved.
+		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local fields.
+		 * @param {object} data The token settings
+		 * @return {void}
+		 */
+		applyLoadedTokens(data) {
+			this.githubToken = data.github_token || ''
+			this.gitlabToken = data.gitlab_token || ''
+			this.gitlabUrl = data.gitlab_url || ''
+			this.originalGithubToken = this.githubToken
+			this.originalGitlabToken = this.gitlabToken
+			this.originalGitlabUrl = this.gitlabUrl
 		},
 
 		/**
@@ -494,12 +522,7 @@ export default {
 		async saveGitHubToken() {
 			this.saving = true
 			try {
-				await axios.post(
-					generateUrl('/apps/openregister/api/settings/api-tokens'),
-					{
-						github_token: this.githubToken,
-					},
-				)
+				await postTokenSettings({ github_token: this.githubToken })
 				this.originalGithubToken = this.githubToken
 				showSuccess(
 					this.t('openregister', 'GitHub token saved successfully'),
@@ -521,12 +544,7 @@ export default {
 		async saveGitLabToken() {
 			this.saving = true
 			try {
-				await axios.post(
-					generateUrl('/apps/openregister/api/settings/api-tokens'),
-					{
-						gitlab_token: this.gitlabToken,
-					},
-				)
+				await postTokenSettings({ gitlab_token: this.gitlabToken })
 				this.originalGitlabToken = this.gitlabToken
 				showSuccess(
 					this.t('openregister', 'GitLab token saved successfully'),
@@ -548,12 +566,7 @@ export default {
 		async saveGitLabUrl() {
 			this.saving = true
 			try {
-				await axios.post(
-					generateUrl('/apps/openregister/api/settings/api-tokens'),
-					{
-						gitlab_url: this.gitlabUrl,
-					},
-				)
+				await postTokenSettings({ gitlab_url: this.gitlabUrl })
 				this.originalGitlabUrl = this.gitlabUrl
 				showSuccess(this.t('openregister', 'GitLab URL saved successfully'))
 			} catch (error) {
