@@ -151,7 +151,7 @@ class RegisterTool extends AbstractTool {
 		$registers = $this->registerService->findAll(limit: $limit, offset: $offset, filters: $filters);
 
 		$registerList = array_map(
-			static fn (Register $register): array => self::registerSummary(register: $register),
+			fn (Register $register): array => $this->summary(register: $register),
 			$registers
 		);
 
@@ -176,7 +176,7 @@ class RegisterTool extends AbstractTool {
 
 		return $this->formatSuccess(
 			data: array_merge(
-				self::registerSummary(register: $register),
+				$this->summary(register: $register),
 				[
 					'folder' => $register->getFolder(),
 					'organisation' => $register->getOrganisation(),
@@ -187,23 +187,6 @@ class RegisterTool extends AbstractTool {
 			message: 'Register retrieved successfully'
 		);
 	}//end getRegister()
-
-	/**
-	 * The fields every register listing and lookup returns.
-	 *
-	 * @param Register $register The register.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private static function registerSummary(Register $register): array {
-		return [
-			'id' => $register->getId(),
-			'uuid' => $register->getUuid(),
-			'title' => $register->getTitle(),
-			'description' => $register->getDescription(),
-			'slug' => $register->getSlug(),
-		];
-	}//end registerSummary()
 
 	/**
 	 * Create a new register
