@@ -28,7 +28,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplatingInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 
 /**
  * Composes a send step's messages for a preview.
@@ -86,13 +85,13 @@ class FlowMessagePreview {
 	 * @return array{channel: string, to: array<int, string>, subject: string, body: string} The message.
 	 */
 	private function talkMessage(MessageSend $step, array $json): array {
-		$conversation = $this->templating->render(template: (string)($step->config['conversation'] ?? ''), values: new PlaceholderValues(data: $json, context: $step->context));
+		$conversation = $this->templating->interpolate(template: (string)($step->config['conversation'] ?? ''), data: $json, context: $step->context);
 
 		return [
 			'channel' => 'talk',
 			'to' => [trim($conversation)],
 			'subject' => '',
-			'body' => $this->templating->render(template: (string)($step->config['message'] ?? ''), values: new PlaceholderValues(data: $json, context: $step->context)),
+			'body' => $this->templating->interpolate(template: (string)($step->config['message'] ?? ''), data: $json, context: $step->context),
 		];
 	}//end talkMessage()
 
@@ -120,8 +119,8 @@ class FlowMessagePreview {
 		return [
 			'channel' => $channel,
 			'to' => array_values(array_merge($resolved['uids'], $addresses)),
-			'subject' => $this->templating->render(template: (string)($one->config[$keys[0]] ?? ''), values: new PlaceholderValues(data: $json, context: $one->context)),
-			'body' => $this->templating->render(template: (string)($one->config[$keys[1]] ?? ''), values: new PlaceholderValues(data: $json, context: $one->context)),
+			'subject' => $this->templating->interpolate(template: (string)($one->config[$keys[0]] ?? ''), data: $json, context: $one->context),
+			'body' => $this->templating->interpolate(template: (string)($one->config[$keys[1]] ?? ''), data: $json, context: $one->context),
 		];
 	}//end sentMessage()
 }//end class

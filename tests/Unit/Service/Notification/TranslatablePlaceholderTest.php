@@ -63,19 +63,24 @@ class TranslatablePlaceholderTest extends TestCase {
 	}//end templating()
 
 	public function testALanguageMapFillsThePlaceholderInTheRecipientsLanguage(): void {
-		$text = $this->templating()->render(template: 'Task changed: {{subject}}', values: new PlaceholderValues(data: ['subject' => ['nl' => 'Bel klant', 'en' => 'Call client']], context: [], languages: ['en', 'nl']));
+		$text = $this->templating()->interpolate(
+			'Task changed: {{subject}}',
+			['subject' => ['nl' => 'Bel klant', 'en' => 'Call client']],
+			[],
+			['en', 'nl']
+		);
 
 		$this->assertSame('Task changed: Call client', $text);
 	}//end testALanguageMapFillsThePlaceholderInTheRecipientsLanguage()
 
 	public function testARegionalLanguageFallsBackToItsBase(): void {
-		$text = $this->templating()->render(template: '{{title}}', values: new PlaceholderValues(data: ['title' => ['nl' => 'Offerte', 'en' => 'Quote']], context: [], languages: ['en-GB']));
+		$text = $this->templating()->interpolate('{{title}}', ['title' => ['nl' => 'Offerte', 'en' => 'Quote']], [], ['en-GB']);
 
 		$this->assertSame('Quote', $text);
 	}//end testARegionalLanguageFallsBackToItsBase()
 
 	public function testWithoutAChainLanguageTheFirstValueShows(): void {
-		$text = $this->templating()->render(template: 'Lead changed: {{title}}', values: new PlaceholderValues(data: ['title' => ['nl' => 'Offerte']], context: [], languages: ['de']));
+		$text = $this->templating()->interpolate('Lead changed: {{title}}', ['title' => ['nl' => 'Offerte']], [], ['de']);
 
 		$this->assertSame('Lead changed: Offerte', $text);
 		$this->assertSame([], $this->templating()->unanswered('Lead changed: {{title}}', new PlaceholderValues(['title' => ['nl' => 'Offerte']], [])));
@@ -84,12 +89,12 @@ class TranslatablePlaceholderTest extends TestCase {
 	public function testAnObjectThatIsNotALanguageMapStaysUnanswered(): void {
 		$data = ['address' => ['street' => 'Dam', 'number' => 1], 'tags' => ['a', 'b']];
 
-		$this->assertSame('{{address}} {{tags}}', $this->templating()->render(template: '{{address}} {{tags}}', values: new PlaceholderValues(data: $data, context: [], languages: ['nl'])));
+		$this->assertSame('{{address}} {{tags}}', $this->templating()->interpolate('{{address}} {{tags}}', $data, [], ['nl']));
 		$this->assertSame(['address', 'tags'], $this->templating()->unanswered('{{address}} {{tags}}', new PlaceholderValues($data, [])));
 	}//end testAnObjectThatIsNotALanguageMapStaysUnanswered()
 
 	public function testAMappedValueIsStillEscaped(): void {
-		$text = $this->templating()->render(template: '{{title}}', values: new PlaceholderValues(data: ['title' => ['nl' => '<b>Offerte</b>']], context: [], languages: ['nl']));
+		$text = $this->templating()->interpolate('{{title}}', ['title' => ['nl' => '<b>Offerte</b>']], [], ['nl']);
 
 		$this->assertSame('&lt;b&gt;Offerte&lt;/b&gt;', $text);
 	}//end testAMappedValueIsStillEscaped()
