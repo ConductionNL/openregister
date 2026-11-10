@@ -880,7 +880,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('getActionChartData')
+			->method('actionChartData')
 			->willReturn($expected);
 
 		$result = $this->service->auditReads()->getAuditTrailActionChartData((new DashboardScope())->during(null, null));
@@ -898,7 +898,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('getActionChartData')
+			->method('actionChartData')
 			->willReturn($expected);
 
 		$result = $this->service->auditReads()->getAuditTrailActionChartData((new DashboardScope(1, 2))->during($from, $till));
@@ -908,7 +908,7 @@ class DashboardServiceTest extends TestCase {
 
 	public function testGetAuditTrailActionChartDataReturnsEmptyOnError(): void {
 		$this->auditTrailMapper
-			->method('getActionChartData')
+			->method('actionChartData')
 			->willThrowException(new Exception('DB error'));
 
 		$result = $this->service->auditReads()->getAuditTrailActionChartData((new DashboardScope())->during(null, null));

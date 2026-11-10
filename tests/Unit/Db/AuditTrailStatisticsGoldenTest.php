@@ -64,8 +64,8 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 			$calls["getStatistics exclude $tag"] = fn (AuditTrailMapper $m) => $m->statisticsTotals(
 				AuditStatisticsCalls::scope($reg, $sch, [['register' => 1, 'schema' => 2], ['register' => 3], ['schema' => 4]])
 			);
-			$calls["getActionChartData $tag"] = fn (AuditTrailMapper $m) => $m->getActionChartData(null, null, $reg, $sch);
-			$calls["getActionChartData range $tag"] = fn (AuditTrailMapper $m) => $m->getActionChartData($from, $till, $reg, $sch);
+			$calls["getActionChartData $tag"] = fn (AuditTrailMapper $m) => $m->actionChartData(AuditStatisticsCalls::window(null, null, $reg, $sch));
+			$calls["getActionChartData range $tag"] = fn (AuditTrailMapper $m) => $m->actionChartData(AuditStatisticsCalls::window($from, $till, $reg, $sch));
 			$calls["getDetailedStatistics $tag"] = static function (AuditTrailMapper $m) use ($reg, $sch): array {
 				$s = new AuditStatisticsScope($reg, $sch);
 				$s->hours = 12;
@@ -149,7 +149,7 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 
 		$failing = [
 			'getStatistics' => fn (AuditTrailMapper $m) => $m->statisticsTotals(AuditStatisticsCalls::scope()),
-			'getActionChartData' => fn (AuditTrailMapper $m) => $m->getActionChartData(),
+			'getActionChartData' => fn (AuditTrailMapper $m) => $m->actionChartData(AuditStatisticsCalls::window()),
 			'getDetailedStatistics' => fn (AuditTrailMapper $m) => $m->detailedStatistics(new AuditStatisticsScope()),
 			'getActionCounts' => fn (AuditTrailMapper $m) => $m->getActionCounts(5, 9),
 			'getActionDistribution' => fn (AuditTrailMapper $m) => $m->actionDistribution(new AuditStatisticsScope()),
@@ -180,7 +180,7 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 			['date' => '2026-01-03', 'action' => 'read', 'count' => '1'],
 			['date' => '2026-01-01', 'action' => 'create', 'count' => '2'],
 		]];
-		$this->assertSame(['2026-01-01', '2026-01-03'], $this->mapper()->getActionChartData()['labels']);
+		$this->assertSame(['2026-01-01', '2026-01-03'], $this->mapper()->actionChartData(AuditStatisticsCalls::window())['labels']);
 
 		$this->queryLog = [];
 		$this->mapper()->getStatisticsGroupedBySchema([]);
