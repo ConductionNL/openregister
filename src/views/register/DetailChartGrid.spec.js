@@ -13,18 +13,22 @@ const OPTIONS = {
 	sizeOptions: { id: 'size' },
 }
 
-const mountGrid = (chartData) => shallowMount(DetailChartGrid, {
-	props: {
-		...OPTIONS,
-		chartData,
-		distributionKey: 'objectsBySchema',
-		distributionTitle: 'Objects by Schema',
-	},
-})
+function mountGrid(chartData) {
+	return shallowMount(DetailChartGrid, {
+		props: {
+			...OPTIONS,
+			chartData,
+			distributionKey: 'objectsBySchema',
+			distributionTitle: 'Objects by Schema',
+		},
+	})
+}
 
-const chartProps = (wrapper) => wrapper
-	.findAllComponents({ name: 'VueApexCharts' })
-	.map((chart) => chart.props())
+function chartProps(wrapper) {
+	return wrapper
+		.findAllComponents({ name: 'VueApexCharts' })
+		.map((chart) => chart.props())
+}
 
 describe('DetailChartGrid', () => {
 	it('feeds each chart its options and series', () => {
