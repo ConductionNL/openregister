@@ -24,6 +24,8 @@ use DateTime;
 
 /**
  * The first and the last hourly bucket a usage history covers, both inclusive.
+ *
+ * @spec openspec/specs/tenant-quotas/spec.md
  */
 final class UsageRange {
 

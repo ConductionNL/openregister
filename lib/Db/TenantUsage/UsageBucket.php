@@ -24,6 +24,8 @@ use DateTime;
 
 /**
  * The organisation and the hourly period that identify one usage row.
+ *
+ * @spec openspec/specs/tenant-quotas/spec.md
  */
 final class UsageBucket {
 
