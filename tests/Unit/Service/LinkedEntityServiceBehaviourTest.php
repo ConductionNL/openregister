@@ -226,7 +226,7 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 		$this->magicMapper->method('find')->willReturn($object);
 		$this->schemaMapper->method('find')->with('7')->willReturn($schema);
 		$this->permissionHandler->expects($this->once())->method('checkPermission')
-			->with($this->identicalTo($schema), 'update', $this->equalTo(new PermissionCheckOptions(objectOwner: 'alice', object: $object)));
+			->with($this->identicalTo($schema), 'update', new PermissionCheckOptions(objectOwner: 'alice', object: $object));
 		$this->magicMapper->expects($this->once())->method('update')->with($this->identicalTo($object));
 
 		$this->assertSame(['n-1', 'n-3'], $this->service()->removeLink('o-1', 'notes', 'n-2'));

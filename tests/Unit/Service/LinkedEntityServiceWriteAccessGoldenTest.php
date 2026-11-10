@@ -118,7 +118,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 	private function expectUpdateCheck(ObjectEntity $object, bool $allow): void {
 		$expectation = $this->permissionHandler->expects($this->once())
 			->method('checkPermission')
-			->with($this->identicalTo($this->schema), 'update', $this->equalTo(new PermissionCheckOptions(objectOwner: 'alice', object: $object)));
+			->with($this->identicalTo($this->schema), 'update', new PermissionCheckOptions(objectOwner: 'alice', object: $object));
 		if ($allow === false) {
 			$expectation->willThrowException(new NotAuthorizedException('denied'));
 		}
