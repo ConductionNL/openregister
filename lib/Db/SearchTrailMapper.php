@@ -274,12 +274,23 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 * @return SearchTrail The created search trail entity
 	 */
 	public function createSearchTrail(array $searchQuery, SearchTrail $outcome, float $responseTime, string $executionType = 'sync'): SearchTrail {
-		$outcome->setUuid(Uuid::v4()->toRfc4122());
-		$outcome->setCreated(new DateTime());
 		$outcome->setExecutionType($executionType);
 		$outcome->setResponseTime((int)round($responseTime));
-		return $this->recordSearch(searchTrail: $outcome, searchQuery: $searchQuery);
+		return $this->recordSearch(searchTrail: $this->stamped(searchTrail: $outcome), searchQuery: $searchQuery);
 	}//end createSearchTrail()
+
+	/**
+	 * The trail with a fresh uuid and the current moment as its creation time.
+	 *
+	 * @param SearchTrail $searchTrail The unsaved trail.
+	 *
+	 * @return SearchTrail The same trail.
+	 */
+	private function stamped(SearchTrail $searchTrail): SearchTrail {
+		$searchTrail->setUuid(Uuid::v4()->toRfc4122());
+		$searchTrail->setCreated(new DateTime());
+		return $searchTrail;
+	}//end stamped()
 
 	/**
 	 * Complete a stamped trail with the search, the request and the user, size it and insert it.
