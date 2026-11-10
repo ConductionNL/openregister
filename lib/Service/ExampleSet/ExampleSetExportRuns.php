@@ -29,11 +29,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRunContent;
 use OCA\OpenRegister\Service\Export\ExportRunFile;
 use OCA\OpenRegister\Service\Export\ExportRunOrigin;
+use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -195,52 +197,124 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 	public function write(ExampleSetRow $row): array {
 		$data = $row->data;
 		$user = (string) $data['user'];
-		$path = self::FOLDER.'/'.(string) $data['fileName'];
+		$path = self::exportPath(data: $data);
 		try {
-			$folder = $this->container->get(IRootFolder::class)->getUserFolder($user);
-			if ($folder->nodeExists(self::FOLDER) === false) {
-				$folder->newFolder(self::FOLDER);
-			}
-
-			if ($folder->nodeExists($path) === true) {
-				$folder->get($path)->delete();
-			}
-
-			$file = $folder->newFile($path, (string) $this->bytes(data: $data));
-			$run  = $this->container->get(ExportRunRecorder::class)->record(
-				origin: new ExportRunOrigin(
-					source: self::SOURCE,
-					actor: $user
-				),
-				content: new ExportRunContent(
-					format: (string) ($data['format'] ?? pathinfo($path, PATHINFO_EXTENSION)),
-					rowCount: (int) ($data['rowCount'] ?? 0),
-					registerName: $this->text(value: ($data['registerName'] ?? null)),
-					schemaName: $this->text(value: ($data['schemaName'] ?? null))
-				),
-				file: new ExportRunFile(
-					filename: (string) $data['fileName'],
-					fileId: (int) $file->getId(),
-					filePath: (string) $file->getPath(),
-					downloadCount: (int) ($data['downloadCount'] ?? 0)
-				)
-			);
-
-			$producedAt = ExampleSetDateValue::moment(value: ($data['producedAt'] ?? null));
-			if ($producedAt !== null) {
-				// The run reads as made then, and lives its usual time from that moment.
-				$run->setProducedAt($producedAt);
-				$run->setCreated($producedAt);
-				$keep = (int) ($run->getRetentionSeconds() ?? ExportRunRecorder::DEFAULT_RETENTION_SECONDS);
-				$run->setExpiresAt((clone $producedAt)->modify('+'.$keep.' seconds'));
-				$run = $this->container->get(ExportRunMapper::class)->update($run);
-			}
+			$file = $this->replaceFile(data: $data, path: $path);
+			$run  = $this->recordRun(data: $data, file: $file);
+			$run  = $this->backdate(run: $run, data: $data);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
 		return ['error' => '', 'entry' => ['uuid' => (string) $run->getUuid(), 'user' => $user, 'path' => $path]];
 	}//end write()
+
+	/**
+	 * Where the export lands in the account's files.
+	 *
+	 * @param array<string, mixed> $data The filled fields.
+	 *
+	 * @return string The path, relative to the account's folder.
+	 */
+	private static function exportPath(array $data): string {
+		return self::FOLDER.'/'.(string) $data['fileName'];
+	}//end exportPath()
+
+	/**
+	 * Write the file into the account's export folder, replacing one already there.
+	 *
+	 * @param array<string, mixed> $data The filled fields.
+	 * @param string               $path The path, relative to the account's folder.
+	 *
+	 * @return File The written file.
+	 */
+	private function replaceFile(array $data, string $path): File {
+		$folder = $this->container->get(IRootFolder::class)->getUserFolder((string) $data['user']);
+		if ($folder->nodeExists(self::FOLDER) === false) {
+			$folder->newFolder(self::FOLDER);
+		}
+
+		if ($folder->nodeExists($path) === true) {
+			$folder->get($path)->delete();
+		}
+
+		return $folder->newFile($path, (string) $this->bytes(data: $data));
+	}//end replaceFile()
+
+	/**
+	 * Record the run that names the file.
+	 *
+	 * @param array<string, mixed> $data The filled fields.
+	 * @param File                 $file The written file.
+	 *
+	 * @return ExportRun The recorded run.
+	 */
+	private function recordRun(array $data, File $file): ExportRun {
+		return $this->container->get(ExportRunRecorder::class)->record(
+			origin: new ExportRunOrigin(
+				source: self::SOURCE,
+				actor: (string) $data['user']
+			),
+			content: $this->runContent(data: $data),
+			file: self::runFile(data: $data, file: $file)
+		);
+	}//end recordRun()
+
+	/**
+	 * What the run says the export holds.
+	 *
+	 * @param array<string, mixed> $data The filled fields.
+	 *
+	 * @return ExportRunContent The content.
+	 */
+	private function runContent(array $data): ExportRunContent {
+		return new ExportRunContent(
+			format: (string) ($data['format'] ?? pathinfo(self::exportPath(data: $data), PATHINFO_EXTENSION)),
+			rowCount: (int) ($data['rowCount'] ?? 0),
+			registerName: $this->text(value: ($data['registerName'] ?? null)),
+			schemaName: $this->text(value: ($data['schemaName'] ?? null))
+		);
+	}//end runContent()
+
+	/**
+	 * The file the run names.
+	 *
+	 * @param array<string, mixed> $data The filled fields.
+	 * @param File                 $file The written file.
+	 *
+	 * @return ExportRunFile The run's file.
+	 */
+	private static function runFile(array $data, File $file): ExportRunFile {
+		return new ExportRunFile(
+			filename: (string) $data['fileName'],
+			fileId: (int) $file->getId(),
+			filePath: (string) $file->getPath(),
+			downloadCount: (int) ($data['downloadCount'] ?? 0)
+		);
+	}//end runFile()
+
+	/**
+	 * Date the run to its declared moment, when one is given.
+	 *
+	 * @param ExportRun            $run  The recorded run.
+	 * @param array<string, mixed> $data The filled fields.
+	 *
+	 * @return ExportRun The run, updated when it was backdated.
+	 */
+	private function backdate(ExportRun $run, array $data): ExportRun {
+		$producedAt = ExampleSetDateValue::moment(value: ($data['producedAt'] ?? null));
+		if ($producedAt === null) {
+			return $run;
+		}
+
+		// The run reads as made then, and lives its usual time from that moment.
+		$run->setProducedAt($producedAt);
+		$run->setCreated($producedAt);
+		$keep = (int) ($run->getRetentionSeconds() ?? ExportRunRecorder::DEFAULT_RETENTION_SECONDS);
+		$run->setExpiresAt((clone $producedAt)->modify('+'.$keep.' seconds'));
+
+		return $this->container->get(ExportRunMapper::class)->update($run);
+	}//end backdate()
 
 	/**
 	 * Whether the run or its file is gone.
