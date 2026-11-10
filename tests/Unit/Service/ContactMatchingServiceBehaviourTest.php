@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ContactDetails;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\ContactMatchingMappers;
 use OCA\OpenRegister\Service\ContactMatchingService;
@@ -248,7 +249,7 @@ class ContactMatchingServiceBehaviourTest extends TestCase
             }
         );
 
-        $matches = $this->service()->matchContact('a@b.nl', 'Jan', 'Acme');
+        $matches = $this->service()->matchContact(contact: new ContactDetails(email: 'a@b.nl', name: 'Jan', organization: 'Acme'));
 
         $this->assertSame(
             [['a', 0.95], ['b', 0.5], ['c', 0.5]],
@@ -262,7 +263,7 @@ class ContactMatchingServiceBehaviourTest extends TestCase
         $this->cache->method('get')->willReturn((string) json_encode([['uuid' => 'a', 'confidence' => 1.0]]));
         $this->cache->expects($this->once())->method('get');
 
-        $this->assertSame(['a'], array_column($this->service()->matchContact('a@b.nl', '', null), 'uuid'));
+        $this->assertSame(['a'], array_column($this->service()->matchContact(contact: new ContactDetails(email: 'a@b.nl', name: '', organization: null)), 'uuid'));
     }//end testMatchContactWithoutNameOrOrganizationOnlyMatchesEmail()
 
     public function testAMatchCarriesSchemaRegisterTitleAndOnlyScalarPublicProperties(): void

@@ -89,24 +89,6 @@ interface BulkJobServiceInterface {
 	public function selection(array $criteria, ?int $registerId, ?int $schemaId): BulkJobSelection;
 
 	/**
-	 * Create a job, rehearse it, and write nothing.
-	 *
-	 * @param BulkJobActionCall $call          The action to run and its parameters.
-	 * @param BulkJobSelection  $selection     The objects to run it on, and the register and schema they live in.
-	 * @param string            $actorUid      The actor's uid.
-	 * @param string|null       $justification The reason the operator typed.
-	 *
-	 * @return BulkJob The previewed job.
-	 *
-	 * @throws InvalidArgumentException When the action, its parameters or the
-	 *                                  register and schema do not resolve.
-	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
-	 *
-	 * @spec openspec/specs/bulk-action-jobs/spec.md
-	 */
-	public function create(BulkJobActionCall $call, BulkJobSelection $selection, string $actorUid, ?string $justification): BulkJob;
-
-	/**
 	 * Create a job from what the operator asked for, rehearse it, and write nothing.
 	 *
 	 * @param BulkJobRequest $request The action, the selection, the actor and the reason.

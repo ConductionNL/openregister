@@ -326,6 +326,7 @@ class JobRunRecorder implements JobRunRecorderInterface {
 			return null;
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		return substr(sha1($encoded), 0, 16);
 
 	}//end digest()

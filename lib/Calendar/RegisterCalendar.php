@@ -27,8 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Calendar;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCP\Calendar\ICalendar;
 use OCP\Constants;
@@ -228,11 +230,8 @@ class RegisterCalendar implements ICalendar {
 		$filters = $this->buildTimerangeFilters(options: $query->options);
 		try {
 			$objects = $this->sources->catalog->tables()->findAllInRegisterSchemaTable(
-				register: $register,
-				schema: $this->definition->schema,
-				limit: $query->limit,
-				offset: $query->offset,
-				filters: $filters
+				table: new RegisterSchema(register: $register, schema: $this->definition->schema),
+				listing: new ListQuery(limit: ($query->limit ?? ListQuery::UNBOUNDED), offset: $query->offset, filters: ($filters ?? []))
 			);
 
 			foreach ($objects as $object) {

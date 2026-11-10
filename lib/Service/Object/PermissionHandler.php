@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\TokenGrantUse;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -623,8 +624,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$subject = $this->callerId(userId: $ask->userId);
 
 		return (new DraftCallerRule())->keptFromCaller(
-			object: $ask->object,
-			schema: $ask->schema,
+			subject: new DraftSubject(object: $ask->object, schema: $ask->schema),
 			caller: new DraftCaller(
 				userId: $subject,
 				isAdmin: in_array('admin', $this->groupsOf(userId: $subject), true),
@@ -946,10 +946,8 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	private function deniedByRule(PermissionCheck $check): bool {
 		$denial = $this->enforcedDenialFor(
-			authorization: $check->authorization,
-			action: $check->action,
+			question: (new DenialQuestion(authorization: $check->authorization, action: $check->action))->about(principals: [], object: $check->object),
 			userId: $check->userId,
-			object: $check->object,
 			context: ['schemaId' => $check->schema->getId(), 'path' => 'object']
 		);
 		if ($denial === null) {
@@ -1034,14 +1032,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	private function publicGrantForStranger(PermissionCheck $check): bool {
 		return $this->hasGroupPermission(
-			authorization: $check->authorization,
-			groupId: 'public',
-			action: $check->action,
-			userId: null,
-			userGroup: null,
-			objectOwner: $check->objectOwner,
-			objectData: $check->objectData,
-			objectOrganisation: $check->objectOrganisation
+			request: (new GroupRuleRequest(authorization: $check->authorization, action: $check->action))
+				->forGroup(groupId: 'public', userGroup: null)
+				->forUser(userId: null, objectOwner: $check->objectOwner)
+				->onObject(data: $check->objectData, organisation: $check->objectOrganisation)
 		);
 	}//end publicGrantForStranger()
 
@@ -1167,13 +1161,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	private function groupGrants(PermissionCheck $check, string $groupId): bool {
 		return $this->hasGroupPermission(
-			authorization: $check->authorization,
-			groupId: $groupId,
-			action: $check->action,
-			userId: $check->userId,
-			objectOwner: $check->objectOwner,
-			objectData: $check->objectData,
-			objectOrganisation: $check->objectOrganisation
+			request: (new GroupRuleRequest(authorization: $check->authorization, action: $check->action))
+				->forGroup(groupId: $groupId, userGroup: null)
+				->forUser(userId: $check->userId, objectOwner: $check->objectOwner)
+				->onObject(data: $check->objectData, organisation: $check->objectOrganisation)
 		);
 	}//end groupGrants()
 
@@ -1246,11 +1237,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * in the resolution itself, because they are properties of the deny and not
 	 * of the rollout.
 	 *
-	 * @param array|null           $authorization The already-cascaded authorization block.
-	 * @param string               $action        The verb being decided.
-	 * @param string|null          $userId        The caller, or null to resolve from the session.
-	 * @param ObjectEntity|null    $object        The row under evaluation, when there is one.
-	 * @param array<string, mixed> $context       Where this happened, for the staging record.
+	 * @param DenialQuestion       $question The already-cascaded authorization block, the verb being decided
+	 *                                       and the row under evaluation, when there is one.
+	 * @param string|null          $userId   The caller, or null to resolve from the session.
+	 * @param array<string, mixed> $context  Where this happened, for the staging record.
 	 *
 	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null
 	 *         The denial that decides it, or null when none reaches this caller
@@ -1258,13 +1248,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function enforcedDenialFor(
-		?array $authorization,
-		string $action,
-		?string $userId = null,
-		?ObjectEntity $object = null,
-		array $context = [],
-	): ?array {
+	public function enforcedDenialFor(DenialQuestion $question, ?string $userId = null, array $context = []): ?array {
 		$mode = $this->denyEnforcementMode();
 
 		// `off`. The incident switch. Nothing is resolved and nothing is
@@ -1274,7 +1258,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return null;
 		}
 
-		$denial = $this->denialFor(authorization: $authorization, action: $action, userId: $userId, object: $object);
+		$denial = $this->denialFor(question: $question, userId: $userId);
 		if ($denial === null || $mode->enforces() === true) {
 			return $denial;
 		}
@@ -1282,7 +1266,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		// `staging`. The denial is real, and it is recorded, and it changes
 		// nothing. Returning null here rather than skipping the resolution above
 		// is the whole difference between a dry run and a disabled feature.
-		$mode->record(staged: new StagedDenial(denial: $denial, action: $action, userId: $this->callerId(userId: $userId), context: $context));
+		$mode->record(staged: new StagedDenial(denial: $denial, action: $question->action, userId: $this->callerId(userId: $userId), context: $context));
 
 		return null;
 	}//end enforcedDenialFor()
@@ -1397,7 +1381,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$blocks = $this->provenanceBlocks(schema: $request->schema, object: $request->object);
 		$denials = [];
 		foreach ($request->actions as $action) {
-			$denials[$action] = $this->denialFor(authorization: $cascaded, action: $action, userId: $userId, object: $request->object);
+			$denials[$action] = $this->denialFor(
+				question: (new DenialQuestion(authorization: $cascaded, action: $action))->about(principals: [], object: $request->object),
+				userId: $userId
+			);
 		}
 
 		$resolver = new ProvenanceResolver(denyResolver: $this->denyResolver(), principals: $principals);
@@ -1530,33 +1517,16 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * hand it denies nothing: the caller is asking about the schema, not about a
 	 * row, and refusing there would turn a row-scoped rule into a blanket one.
 	 *
-	 * @param array|null        $authorization The already-cascaded authorization block.
-	 * @param string            $action        The verb being decided.
-	 * @param string|null       $userId        The caller, or null to resolve from the session.
-	 * @param ObjectEntity|null $object        The row under evaluation, when there is one.
+	 * @param DenialQuestion $question The already-cascaded authorization block, the verb being decided and
+	 *                                 the row under evaluation, when there is one; its principals are filled in here.
+	 * @param string|null    $userId   The caller, or null to resolve from the session.
 	 *
 	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null
 	 *         The denial that decided it, or null when no deny reaches this caller.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function denialFor(?array $authorization, string $action, ?string $userId = null, ?ObjectEntity $object = null): ?array {
-		$question = (new DenialQuestion(authorization: $authorization, action: $action))->about(principals: [], object: $object);
-
-		return $this->denialAsked(question: $question, userId: $userId);
-	}//end denialFor()
-
-	/**
-	 * The deny that refuses a caller an action under an authorization block, or null (see denialFor()).
-	 *
-	 * @param DenialQuestion $question The block, the action and the object; its principals are filled in here.
-	 * @param string|null    $userId   The caller, or null for the session user.
-	 *
-	 * @return array<string, mixed>|null The denial, or null when nothing denies.
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	private function denialAsked(DenialQuestion $question, ?string $userId): ?array {
+	public function denialFor(DenialQuestion $question, ?string $userId = null): ?array {
 		$resolver = $this->denyResolver();
 
 		// The cheap exit, and the backwards-compatibility promise made
@@ -1575,7 +1545,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$principals = $resolver->principalsFor(userId: $userId, userGroups: $userGroups);
 
 		return $this->denialAnswer(question: $question->about(principals: $principals, object: $question->object));
-	}//end denialAsked()
+	}//end denialFor()
 
 	/**
 	 * The unconditional denial of the question, else the first conditional one that selects its object.
@@ -1589,8 +1559,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	private function denialAnswer(DenialQuestion $question): ?array {
 		$unconditional = $this->denyResolver()->unconditionalDenial(
 			authorization: $question->authorization,
-			action: $question->action,
-			principals: $question->principals
+			question: new DenyQuestion(action: $question->action, principals: $question->principals)
 		);
 		if ($unconditional !== null || $question->object === null) {
 			return $unconditional;
@@ -1619,8 +1588,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	private function firstMatchingConditionalDenial(DenialQuestion $question, ObjectEntity $object): ?array {
 		$conditional = $this->denyResolver()->conditionalDenials(
 			authorization: $question->authorization,
-			action: $question->action,
-			principals: $question->principals
+			question: new DenyQuestion(action: $question->action, principals: $question->principals)
 		);
 		if ($conditional === []) {
 			return null;
@@ -1889,13 +1857,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 	/**
 	 * Check permission and throw exception if not granted
 	 *
-	 * @param Schema $schema Schema to check permissions for.
-	 * @param string $action Action to check permission for.
-	 * @param string|null $userId User ID to check permissions for.
-	 * @param string|null $objectOwner Object owner ID.
-	 * @param bool $_rbac Whether to enforce RBAC checks.
-	 * @param ObjectEntity|null $object Optional object entity for conditional authorization matching.
-	 * @param string|null $register The register written to, for a check that names no object.
+	 * @param Schema                 $schema  Schema to check permissions for.
+	 * @param string                 $action  Action to check permission for.
+	 * @param PermissionCheckOptions $options The caller, object owner, object and register of the check.
+	 * @param bool                   $_rbac   Whether to enforce RBAC checks.
 	 *
 	 * @return void
 	 *
@@ -1908,15 +1873,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 	public function checkPermission(
 		Schema $schema,
 		string $action,
-		?string $userId = null,
-		?string $objectOwner = null,
+		PermissionCheckOptions $options = new PermissionCheckOptions(),
 		bool $_rbac = true,
-		?ObjectEntity $object = null,
-		?string $register = null,
 	): void {
 		$ask = (new PermissionAsk(schema: $schema, action: $action))
-			->askedBy(userId: $userId, objectOwner: $objectOwner)
-			->about(object: $object, register: $register);
+			->askedBy(userId: $options->userId, objectOwner: $options->objectOwner)
+			->about(object: $options->object, register: $options->register);
 		if ($this->permits(ask: $ask, _rbac: $_rbac) === false) {
 			throw $this->notAuthorized(ask: $ask);
 		}
@@ -2174,34 +2136,14 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *   interpreter of the same rule grammar — it produces SQL WHERE fragments
 	 *   instead of PHP verdicts. Do not introduce a fourth match evaluator here.
 	 *
-	 * @param array|null $authorization The schema's authorization array
-	 * @param string $groupId The group ID to check
-	 * @param string $action The CRUD action (create, read, update, delete)
-	 * @param string|null $userId Optional user ID for owner check
-	 * @param string|null $userGroup Optional user group for admin check
-	 * @param string|null $objectOwner Optional object owner for ownership check
-	 * @param array|null $objectData Optional object data for conditional matching
-	 * @param string|null $objectOrganisation Optional object organisation (folded into @self.organisation)
+	 * @param GroupRuleRequest $request The authorization block and action, the group and the caller's
+	 *                                  group, the user and object owner, and the object data and organisation.
 	 *
 	 * @return bool True if the group has permission
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function hasGroupPermission(
-		?array $authorization,
-		string $groupId,
-		string $action,
-		?string $userId = null,
-		?string $userGroup = null,
-		?string $objectOwner = null,
-		?array $objectData = null,
-		?string $objectOrganisation = null,
-	): bool {
-		$request = (new GroupRuleRequest(authorization: $authorization, action: $action))
-			->forGroup(groupId: $groupId, userGroup: $userGroup)
-			->forUser(userId: $userId, objectOwner: $objectOwner)
-			->onObject(data: $objectData, organisation: $objectOrganisation);
-
+	public function hasGroupPermission(GroupRuleRequest $request): bool {
 		return $this->groupRuleVerdict(request: $request);
 	}//end hasGroupPermission()
 
@@ -3042,8 +2984,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 				array_filter(
 					$resolver->groupsFor(
 						grants: $grants,
-						area: $this->areaOf(schema: $schema),
-						constraints: $this->grantConstraints()
+						area: $this->areaOf(schema: $schema)
 					),
 					static fn (string $group): bool => in_array($group, $reserved, true) === false
 				)

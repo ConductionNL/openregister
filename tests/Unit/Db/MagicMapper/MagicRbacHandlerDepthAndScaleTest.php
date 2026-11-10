@@ -44,12 +44,14 @@ namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -277,7 +279,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 		$resolver = new DenyResolver(new DenyEntryMatcher());
 		$principals = $resolver->principalsFor(userId: self::CALLER, userGroups: [self::GROUP]);
 
-		$term = $this->listHandler()->buildRbacConditionsSql($schema, 'read')['conditions'];
+		$term = $this->listHandler()->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'))['conditions'];
 		$this->assertNotEmpty($term, 'the list emitted no condition at all, so nothing was compared');
 		$sql = implode(' ', $term);
 
@@ -294,11 +296,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 
 			// What the list term excludes, read through the same resolver the
 			// emitter built it from.
-			$listExcludes = ($resolver->unconditionalDenial(
-				authorization: ($node->getAuthorization() ?? []),
-				action: 'read',
-				principals: $principals
-			) !== null);
+			$listExcludes = ($resolver->unconditionalDenial(authorization: ($node->getAuthorization() ?? []), question: new DenyQuestion(action: 'read', principals: $principals)) !== null);
 
 			$this->assertSame(
 				$objectVerdict,
@@ -337,7 +335,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 		$handler = $this->listHandler();
 		$schema = $this->schema();
 
-		$small = $handler->buildRbacConditionsSql($schema, 'read');
+		$small = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		// The same tree, grown to the size the task names. The rows exist and
 		// none of them is passed to the emitter, which is the point: a
@@ -346,7 +344,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 		$this->assertCount(self::ROWS, $tree);
 		$this->assertSame(self::DEPTH, max(array_column($tree, 'level')));
 
-		$large = $handler->buildRbacConditionsSql($schema, 'read');
+		$large = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertSame($small['conditions'], $large['conditions']);
 		$this->assertFalse($large['bypass']);
@@ -366,7 +364,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 	 */
 	public function testAStagedTreeOfAHundredThousandKeepsItsTotal(): void {
 		$conditions = $this->listHandler(DenyEnforcementMode::MODE_STAGING)
-			->buildRbacConditionsSql($this->schema(), 'read')['conditions'];
+			->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schema()))->forAction('read'))['conditions'];
 
 		$this->assertNotEmpty($conditions);
 		$this->assertStringNotContainsString('$.deny.read', implode(' ', $conditions));

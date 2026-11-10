@@ -115,6 +115,33 @@ import { generateUrl } from '@nextcloud/router'
 import { NcLoadingIcon } from '@nextcloud/vue'
 import CreateConnectedObjectDialog from '../../dialogs/mail/CreateConnectedObjectDialog.vue'
 
+/**
+ * Fetch the registers, to find the register of each schema.
+ *
+ * @return {Promise<object>} The axios response.
+ */
+function fetchRegisters() {
+	return axios.get(generateUrl('/apps/openregister/api/registers'), {
+		params: { _limit: 500 },
+	})
+}
+
+/**
+ * The per-schema search state the tab starts from: no terms, results,
+ * running searches, shown results or pending debounce timers.
+ *
+ * @return {object} The state.
+ */
+function searchState() {
+	return {
+		searchTerms: {},
+		searchResults: {},
+		searching: {},
+		visibleResults: {},
+		debounceTimers: {},
+	}
+}
+
 export default {
 	name: 'ActionsTab',
 	components: {
@@ -131,11 +158,7 @@ export default {
 		return {
 			schemas: [],
 			loading: true,
-			searchTerms: {},
-			searchResults: {},
-			searching: {},
-			visibleResults: {},
-			debounceTimers: {},
+			...searchState(),
 			registerCache: {},
 			creating: {},
 			linking: {},
@@ -189,34 +212,45 @@ export default {
 				// first page would miss mail-linked schemas) and registers.
 				const [allSchemas, regResponse] = await Promise.all([
 					this.fetchAllSchemas(),
-					axios.get(generateUrl('/apps/openregister/api/registers'), {
-						params: { _limit: 500 },
-					}),
+					fetchRegisters(),
 				])
-
-				const registers = regResponse.data?.results || regResponse.data || []
-
-				// Cache register lookups
-				for (const reg of registers) {
-					for (const schemaId of reg.schemas || []) {
-						this.registerCache[schemaId] = reg
-					}
-				}
-
-				// Filter to schemas with mail in linkedTypes
-				this.schemas = allSchemas.filter((s) => {
-					const lt = s.configuration?.linkedTypes || []
-					return lt.includes('mail')
-				})
-
-				// Load initial results for each schema
-				for (const schema of this.schemas) {
-					this.loadInitialResults(schema)
-				}
+				this.cacheRegisters(regResponse.data?.results || regResponse.data || [])
+				this.showMailSchemas(allSchemas)
 			} catch (err) {
 				console.error('[ActionsTab] Failed to load schemas:', err)
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * Remember which register holds each schema.
+		 *
+		 * @param {Array<object>} registers The registers.
+		 * @return {void}
+		 */
+		cacheRegisters(registers) {
+			for (const reg of registers) {
+				for (const schemaId of reg.schemas || []) {
+					this.registerCache[schemaId] = reg
+				}
+			}
+		},
+
+		/**
+		 * Offer the schemas that list mail among their linked types, and load
+		 * the first results of each.
+		 *
+		 * @param {Array<object>} allSchemas Every schema.
+		 * @return {void}
+		 */
+		showMailSchemas(allSchemas) {
+			this.schemas = allSchemas.filter((s) => {
+				const lt = s.configuration?.linkedTypes || []
+				return lt.includes('mail')
+			})
+			for (const schema of this.schemas) {
+				this.loadInitialResults(schema)
 			}
 		},
 

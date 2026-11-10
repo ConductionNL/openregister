@@ -31,7 +31,11 @@ namespace OCA\OpenRegister\Service\BulkJob;
 use DateTime;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionOutcomeInterface;
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapperInterface;
@@ -287,10 +291,12 @@ class BulkJobExecutor {
 		}
 
 		return $pass->action->apply(
-			object: $object,
-			parameters: ($pass->job->getParameters() ?? []),
-			commit: false,
-			actor: $pass->actor
+			step: new BulkStep(
+				object: $object,
+				parameters: ($pass->job->getParameters() ?? []),
+				commit: false,
+				actor: $pass->actor
+			)
 		);
 	}//end rehearse()
 
@@ -326,10 +332,12 @@ class BulkJobExecutor {
 		$plan = $this->reversalPlanOf(pass: $pass, object: $object);
 
 		$result = $pass->action->apply(
-			object: $object,
-			parameters: ($job->getParameters() ?? []),
-			commit: true,
-			actor: $pass->actor
+			step: new BulkStep(
+				object: $object,
+				parameters: ($job->getParameters() ?? []),
+				commit: true,
+				actor: $pass->actor
+			)
 		);
 
 		if ($result->isApplied() === true) {
@@ -457,15 +465,17 @@ class BulkJobExecutor {
 	 */
 	private function recordAudit(BulkJob $job, ObjectEntity $object): void {
 		try {
-			$this->stores->auditTrailMapper->createAuditTrailEntry(
-				object: $object,
-				action: 'bulk.applied',
-				context: [
-					'bulkJob' => $job->getUuid(),
-					'bulkAction' => $job->getAction(),
-					'reason' => $job->getJustification(),
-				],
-				actorId: $job->getStartedBy()
+			$this->stores->auditTrailMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: 'bulk.applied',
+					context: [
+						'bulkJob' => $job->getUuid(),
+						'bulkAction' => $job->getAction(),
+						'reason' => $job->getJustification(),
+					],
+					options: new ObjectAuditEventOptions(actor: new NamedActor(id: $job->getStartedBy()))
+				)
 			);
 		} catch (\Throwable $exception) {
 			// The write already happened. Losing the extra entry is bad;

@@ -39,6 +39,8 @@ namespace OCA\OpenRegister\Service\Rbac;
 use Closure;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -264,37 +266,15 @@ class MemberOfResolver {
 	 * @return string[] The set.
 	 */
 	private function read(MemberOfLookup $lookup): array {
-		$spec = $lookup->spec;
 		try {
-			$schema = $this->lookup->schemas->find($spec['schema'], _rbac: false, _multitenancy: false);
-
-			$registerId = $spec['register'];
-			if ($registerId === '') {
-				$registerId = (string)$this->lookup->registers->getFirstRegisterWithSchema((int)$schema->getId());
-			}
-
-			if ($registerId === '') {
-				return [];
-			}
-
-			$register = $this->lookup->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
-
-			$rows = $this->container->get(MagicMapperInterface::class)->searchObjects(
-				query: [
-					'@self'        => ['register' => (string)$register->getId(), 'schema' => (string)$schema->getId()],
-					$spec['match'] => $lookup->userId,
-					'_limit'       => self::ROW_LIMIT,
-				],
-				_rbac: false,
-				_multitenancy: false
-			);
+			$rows = $this->searchRows(lookup: $lookup);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[MemberOfResolver] Could not read the membership rows; the caller is a member of nothing',
-				context: ['schema' => $spec['schema'], 'error' => $e->getMessage()]
+				context: ['schema' => $lookup->spec['schema'], 'error' => $e->getMessage()]
 			);
 			return [];
-		}//end try
+		}
 
 		if (is_array($rows) === false) {
 			return [];
@@ -302,6 +282,72 @@ class MemberOfResolver {
 
 		return $this->setFrom(rows: $rows, lookup: $lookup);
 	}//end read()
+
+	/**
+	 * Search the membership schema for the caller's rows, unscoped and capped.
+	 *
+	 * @param MemberOfLookup $lookup The normalised operand and the current user.
+	 *
+	 * @return mixed The search answer, or null when no register holds the schema.
+	 *
+	 * @throws Throwable When the schema, the register or the mapper cannot be read.
+	 */
+	private function searchRows(MemberOfLookup $lookup): mixed {
+		$schema = $this->lookup->schemas->find($lookup->spec['schema'], _rbac: false, _multitenancy: false);
+
+		$register = $this->registerHolding(lookup: $lookup, schemaId: (int)$schema->getId());
+		if ($register === null) {
+			return null;
+		}
+
+		return $this->container->get(MagicMapperInterface::class)->searchObjects(
+			query: self::membershipQuery(
+				lookup: $lookup,
+				table: new RegisterSchemaRef(register: (string)$register->getId(), schema: (string)$schema->getId())
+			),
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end searchRows()
+
+	/**
+	 * The register the operand names, else the first one holding the schema; null when there is none.
+	 *
+	 * @param MemberOfLookup $lookup   The normalised operand.
+	 * @param int            $schemaId The membership schema's id.
+	 *
+	 * @return Register|null The register.
+	 *
+	 * @throws Throwable When the register cannot be read.
+	 */
+	private function registerHolding(MemberOfLookup $lookup, int $schemaId): ?Register {
+		$registerId = $lookup->spec['register'];
+		if ($registerId === '') {
+			$registerId = (string)$this->lookup->registers->getFirstRegisterWithSchema($schemaId);
+		}
+
+		if ($registerId === '') {
+			return null;
+		}
+
+		return $this->lookup->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
+	}//end registerHolding()
+
+	/**
+	 * The search for the caller's membership rows in one register and schema.
+	 *
+	 * @param MemberOfLookup    $lookup The operand's match field and the current user.
+	 * @param RegisterSchemaRef $table  The register and the membership schema.
+	 *
+	 * @return array<string, mixed> The query.
+	 */
+	private static function membershipQuery(MemberOfLookup $lookup, RegisterSchemaRef $table): array {
+		return [
+			'@self'               => ['register' => $table->register, 'schema' => $table->schema],
+			$lookup->spec['match'] => $lookup->userId,
+			'_limit'              => self::ROW_LIMIT,
+		];
+	}//end membershipQuery()
 
 	/**
 	 * The set over the rows that belong to the caller and pass the filters and window.

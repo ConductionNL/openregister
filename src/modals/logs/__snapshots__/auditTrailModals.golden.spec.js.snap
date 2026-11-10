@@ -217,3 +217,53 @@ exports[`audit trail details modal golden reads the changed data 1`] = `
   ],
 ]
 `;
+
+exports[`audit trail value formatting formats every kind of value in the changes modal 1`] = `
+[
+  "null",
+  "undefined",
+  "(empty)",
+  "text",
+  "0",
+  "42",
+  "false",
+  "true",
+  "{
+  "a": 1,
+  "b": [
+    2,
+    3
+  ]
+}",
+  "[
+  1,
+  "two"
+]",
+  "[object Object]",
+]
+`;
+
+exports[`audit trail value formatting formats every kind of value in the details modal 1`] = `
+[
+  "-",
+  "-",
+  "",
+  "text",
+  "0",
+  "42",
+  "false",
+  "true",
+  "{
+  "a": 1,
+  "b": [
+    2,
+    3
+  ]
+}",
+  "[
+  1,
+  "two"
+]",
+  "[object Object]",
+]
+`;

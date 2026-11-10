@@ -33,7 +33,9 @@ use Doctrine\DBAL\Platforms\SqlitePlatform;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -302,7 +304,7 @@ class OrganisationContextTenancyTest extends TestCase {
 		$rows = $this->inContext(
 			groups: $groups,
 			anonymous: $anonymous,
-			read: fn (): array => $this->uuids(qb: $this->searchHandler()->buildFilteredQuery(query: $query, schema: $this->schema(read: $read), tableName: 't')->select('t._uuid'))
+			read: fn (): array => $this->uuids(qb: $this->searchHandler()->buildFilteredQuery(query: $query, table: new MagicReadTable(schema: $this->schema(read: $read), tableName: 't'))->select('t._uuid'))
 		);
 
 		$this->assertInOrganisation(rows: $rows, read: $read, expected: $expected, query: $query, anonymous: $anonymous);
@@ -532,7 +534,7 @@ class OrganisationContextTenancyTest extends TestCase {
 		$db->method('getQueryBuilder')->willReturn($queryBuilder);
 		$db->method('getDatabasePlatform')->willReturn(new SqlitePlatform());
 
-		$conditions = $this->searchHandler(db: $db)->buildWhereConditionsSql(query: $query, schema: $schema);
+		$conditions = $this->searchHandler(db: $db)->buildWhereClause(request: new WhereClauseRequest(query: $query, table: new MagicReadTable(schema: $schema)));
 		$sql = 'SELECT _uuid FROM t';
 		if ($conditions !== []) {
 			$sql .= ' WHERE ' . implode(' AND ', $conditions);

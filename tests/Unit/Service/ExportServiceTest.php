@@ -20,6 +20,7 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 class ExportServiceTest extends TestCase {
 
@@ -123,7 +124,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertInstanceOf(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, $spreadsheet);
 		$this->assertSame(1, $spreadsheet->getSheetCount());
@@ -159,7 +160,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel($register);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(register: $register));
 
 		$this->assertSame(2, $spreadsheet->getSheetCount());
 	}
@@ -181,7 +182,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$object]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 		// Row 1 is headers, row 2 is data.
@@ -205,7 +206,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$headers = $this->readHeaders($spreadsheet);
 		$headerValues = array_values($headers);
@@ -233,7 +234,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$headers = $this->readHeaders($spreadsheet);
 		$headerValues = array_values($headers);
@@ -266,7 +267,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema, [], $adminUser);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, currentUser: $adminUser));
 
 		$headers = $this->readHeaders($spreadsheet);
 		$headerValues = array_values($headers);
@@ -300,7 +301,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema, [], $regularUser);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, currentUser: $regularUser));
 
 		$headers = $this->readHeaders($spreadsheet);
 		$headerValues = array_values($headers);
@@ -316,7 +317,7 @@ class ExportServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('Cannot export multiple schemas to CSV');
 
-		$this->service->exportToCsv($register, null);
+		$this->service->exportToCsv(request: new ObjectExportRequest(register: $register));
 	}
 
 	public function testExportToCsvReturnsCsvString(): void {
@@ -334,7 +335,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$csv = $this->service->exportToCsv(null, $schema);
+		$csv = $this->service->exportToCsv(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertIsString($csv);
 		$this->assertStringContainsString('id', $csv);
@@ -358,7 +359,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$headers = $this->readHeaders($spreadsheet);
 		$headerValues = array_values($headers);
@@ -382,7 +383,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$headers = $this->readHeaders($spreadsheet);
 		$headerValues = array_values($headers);
@@ -408,7 +409,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$headers = $this->readHeaders($spreadsheet);
 		$headerValues = array_values($headers);
@@ -439,7 +440,7 @@ class ExportServiceTest extends TestCase {
 			->method('getMultipleObjectNames')
 			->willReturn(['owner-uuid-1' => 'Owner Name']);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -475,7 +476,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$object]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		// Should not throw.
 		$this->assertInstanceOf(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, $spreadsheet);
@@ -499,7 +500,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$object]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 		$this->assertSame('["a","b","c"]', $sheet->getCell('B2')->getValue());
@@ -525,7 +526,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$headers = $this->readHeaders($spreadsheet);
 		$headerValues = array_values($headers);
@@ -552,7 +553,7 @@ class ExportServiceTest extends TestCase {
 			->willReturn([]);
 
 		// null user = anonymous.
-		$spreadsheet = $this->service->exportToExcel(null, $schema, [], null);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$headers = $this->readHeaders($spreadsheet);
 		$headerValues = array_values($headers);
@@ -579,7 +580,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$obj1, $obj2]);
 
-		$csv = $this->service->exportToCsv(null, $schema);
+		$csv = $this->service->exportToCsv(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertIsString($csv);
 		$this->assertStringContainsString('title', $csv);
@@ -603,7 +604,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$csv = $this->service->exportToCsv(null, $schema);
+		$csv = $this->service->exportToCsv(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertIsString($csv);
 		$this->assertStringContainsString('visible', $csv);
@@ -627,7 +628,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$object]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 		$activeCol = null;
@@ -661,7 +662,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$object]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 		$cellValue = $sheet->getCell('B2')->getValue();
@@ -683,7 +684,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertInstanceOf(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, $spreadsheet);
 		// Should still have at least the default id/name headers.
@@ -709,7 +710,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$csv = $this->service->exportToCsv(null, $schema);
+		$csv = $this->service->exportToCsv(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertStringContainsString('public_field', $csv);
 		$this->assertStringNotContainsString('secret_field', $csv);
@@ -733,7 +734,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$obj]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema, ['status' => 'active']);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, filters: ['status' => 'active']));
 
 		$this->assertInstanceOf(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, $spreadsheet);
 		$sheet = $spreadsheet->getActiveSheet();
@@ -760,7 +761,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn($objects);
 
-		$csv = $this->service->exportToCsv(null, $schema);
+		$csv = $this->service->exportToCsv(request: new ObjectExportRequest(schema: $schema));
 
 		// Header + 5 data rows = 6 lines (last line may be empty)
 		$lines = array_filter(explode("\n", trim($csv)));
@@ -796,7 +797,7 @@ class ExportServiceTest extends TestCase {
 				'member-uuid-2' => 'Bob',
 			]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 		$nameCol = null;
@@ -831,7 +832,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$object]);
 
-		$csv = $this->service->exportToCsv(null, $schema);
+		$csv = $this->service->exportToCsv(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertIsString($csv);
 		$this->assertStringContainsString('quotes', $csv);
@@ -856,7 +857,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel($register, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(register: $register, schema: $schema));
 
 		$this->assertSame(1, $spreadsheet->getSheetCount());
 		$this->assertSame('override-schema', $spreadsheet->getActiveSheet()->getTitle());
@@ -887,7 +888,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema, [], $user);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, currentUser: $user));
 
 		$headers = $this->readHeaders($spreadsheet);
 		$headerValues = array_values($headers);
@@ -923,7 +924,7 @@ class ExportServiceTest extends TestCase {
 			}))
 			->willReturn([]);
 
-		$this->service->exportToExcel(null, $schema, ['@self.owner' => 'admin']);
+		$this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, filters: ['@self.owner' => 'admin']));
 	}
 
 	public function testExportSkipsNonSelfFilters(): void {
@@ -951,7 +952,7 @@ class ExportServiceTest extends TestCase {
 			}))
 			->willReturn([]);
 
-		$this->service->exportToExcel(null, $schema, ['status' => 'active']);
+		$this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, filters: ['status' => 'active']));
 	}
 
 	public function testExportWithMultiFilterFalse(): void {
@@ -979,7 +980,7 @@ class ExportServiceTest extends TestCase {
 			)
 			->willReturn([]);
 
-		$this->service->exportToExcel(null, $schema, ['_multi' => 'false']);
+		$this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, filters: ['_multi' => 'false']));
 	}
 
 	public function testExportWithMultiFilterShortName(): void {
@@ -1007,7 +1008,7 @@ class ExportServiceTest extends TestCase {
 			)
 			->willReturn([]);
 
-		$this->service->exportToExcel(null, $schema, ['multi' => '0']);
+		$this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, filters: ['multi' => '0']));
 	}
 
 	// ── getObjectValue: @self. metadata fields ──────────────────────────
@@ -1046,7 +1047,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$entity]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema, [], $adminUser);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, currentUser: $adminUser));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -1096,7 +1097,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$entity]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema, [], $adminUser);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, currentUser: $adminUser));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -1145,7 +1146,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$entity]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema, [], $adminUser);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, currentUser: $adminUser));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -1192,7 +1193,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$entity]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema, [], $adminUser);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, currentUser: $adminUser));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -1233,7 +1234,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$object]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -1280,7 +1281,7 @@ class ExportServiceTest extends TestCase {
 				'uuid-b' => 'Bob',
 			]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -1324,7 +1325,7 @@ class ExportServiceTest extends TestCase {
 			->expects($this->never())
 			->method('getMultipleObjectNames');
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -1360,7 +1361,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$headers = $this->readHeaders($spreadsheet);
 		$headerValues = array_values($headers);
@@ -1389,7 +1390,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$headers = $this->readHeaders($spreadsheet);
 		$headerValues = array_values($headers);
@@ -1408,7 +1409,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, null);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest());
 
 		$this->assertSame(1, $spreadsheet->getSheetCount());
 		$this->assertSame('data', $spreadsheet->getActiveSheet()->getTitle());
@@ -1432,7 +1433,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$headers = $this->readHeaders($spreadsheet);
 		$headerValues = array_values($headers);
@@ -1460,7 +1461,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$object]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 		// convertValueToString returns '42' but PhpSpreadsheet may store as int.
@@ -1497,7 +1498,7 @@ class ExportServiceTest extends TestCase {
 			}))
 			->willReturn([]);
 
-		$this->service->exportToExcel($register, $schema);
+		$this->service->exportToExcel(request: new ObjectExportRequest(register: $register, schema: $schema));
 	}
 
 	// ── resolveUuidsToNames: single UUID with unknown name ──────────────
@@ -1524,7 +1525,7 @@ class ExportServiceTest extends TestCase {
 			->method('getMultipleObjectNames')
 			->willReturn([]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -1570,7 +1571,7 @@ class ExportServiceTest extends TestCase {
 				'uuid-b' => 'Name B',
 			]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		// Should not throw.
 		$this->assertInstanceOf(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, $spreadsheet);
@@ -1601,7 +1602,7 @@ class ExportServiceTest extends TestCase {
 			->method('getMultipleObjectNames')
 			->willReturn(['ref-uuid-1' => 'Parent Name']);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -1644,7 +1645,7 @@ class ExportServiceTest extends TestCase {
 			->expects($this->never())
 			->method('getMultipleObjectNames');
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertInstanceOf(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, $spreadsheet);
 	}
@@ -1680,7 +1681,7 @@ class ExportServiceTest extends TestCase {
 				'tag-uuid-2' => 'Tag Two',
 			]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -1722,7 +1723,7 @@ class ExportServiceTest extends TestCase {
 			->expects($this->never())
 			->method('getMultipleObjectNames');
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertInstanceOf(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, $spreadsheet);
 	}
@@ -1748,7 +1749,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([$object]);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -1787,7 +1788,7 @@ class ExportServiceTest extends TestCase {
 			->method('searchObjects')
 			->willReturn([]);
 
-		$csv = $this->service->exportToCsv($register, $schema);
+		$csv = $this->service->exportToCsv(request: new ObjectExportRequest(register: $register, schema: $schema));
 
 		$this->assertIsString($csv);
 		$this->assertStringContainsString('id', $csv);
@@ -1819,7 +1820,7 @@ class ExportServiceTest extends TestCase {
 			)
 			->willReturn([]);
 
-		$this->service->exportToExcel(null, $schema, ['_multi' => 'true']);
+		$this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, filters: ['_multi' => 'true']));
 	}
 
 	// ── resolveUuidsToNames: array containing non-string items ─────────
@@ -1851,7 +1852,7 @@ class ExportServiceTest extends TestCase {
 			->method('getMultipleObjectNames')
 			->willReturn(['uuid-a' => 'Name A']);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -1894,7 +1895,7 @@ class ExportServiceTest extends TestCase {
 			->method('getMultipleObjectNames')
 			->willReturn(['uuid-a' => 'Name A']);
 
-		$spreadsheet = $this->service->exportToExcel(null, $schema);
+		$spreadsheet = $this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 
 		$sheet = $spreadsheet->getActiveSheet();
 
@@ -1936,7 +1937,7 @@ class ExportServiceTest extends TestCase {
 			)
 			->willReturn([]);
 
-		$this->service->exportToExcel(null, $schema, []);
+		$this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema));
 	}
 
 }

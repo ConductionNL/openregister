@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Command;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Rbac\AuthorizationEdit;
 use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -158,7 +159,7 @@ class UnknownMetadataConditionsCommand extends Command {
 		$authorization = $register->getAuthorization();
 
 		return array_merge(
-			RbacChecks::metadataConditions()->findings(authorization: $authorization, context: $subject),
+			RbacChecks::metadataConditions()->findings(edit: new AuthorizationEdit(authorization: $authorization), context: $subject),
 			RbacChecks::unknownRuleKeys()->registerFindings(authorization: $authorization, context: $subject)
 		);
 	}//end registerFindings()

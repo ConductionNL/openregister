@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Notifications\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -58,6 +59,27 @@ class ScheduledReportJob extends TimedJob {
 	 * @var int
 	 */
 	private const RUN_INTERVAL_SECONDS = 3600;
+
+	/**
+	 * The outcome of a report that ran.
+	 *
+	 * @var string
+	 */
+	private const RAN = 'ran';
+
+	/**
+	 * The outcome of a report that was not due.
+	 *
+	 * @var string
+	 */
+	private const SKIPPED = 'skipped';
+
+	/**
+	 * The outcome of a report whose run threw.
+	 *
+	 * @var string
+	 */
+	private const FAILED = 'failed';
 
 	/**
 	 * Constructor.
@@ -89,56 +111,103 @@ class ScheduledReportJob extends TimedJob {
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	protected function run($argument): void {
-		$candidates = [];
+		$candidates = $this->enabledReports();
+		if ($candidates === null) {
+			return;
+		}
+
+		$now = new DateTime();
+		$outcomes = [];
+		foreach ($candidates as $report) {
+			$outcomes[] = $this->runIfDue(report: $report, now: $now);
+		}
+
+		$this->logPass(candidates: $candidates, outcomes: $outcomes);
+	}//end run()
+
+	/**
+	 * The enabled scheduled reports; null (logged) when they cannot be listed.
+	 *
+	 * @return array|null
+	 */
+	private function enabledReports(): ?array {
 		try {
-			$candidates = $this->mapper->findEnabled();
+			return $this->mapper->findEnabled();
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ScheduledReportJob] Failed to enumerate enabled scheduled reports',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-			return;
+			return null;
+		}
+	}//end enabledReports()
+
+	/**
+	 * Run one report when it is due.
+	 *
+	 * @param ScheduledReportInterface $report The report.
+	 * @param DateTime                 $now    The moment the whole pass checks against.
+	 *
+	 * @return string `skipped`, `ran` or `failed`.
+	 */
+	private function runIfDue(ScheduledReportInterface $report, DateTime $now): string {
+		if ($this->service->isDue(report: $report, now: $now) === false) {
+			return self::SKIPPED;
 		}
 
-		$now = new DateTime();
-		$ran = 0;
-		$skip = 0;
-		foreach ($candidates as $report) {
-			if ($this->service->isDue(report: $report, now: $now) === false) {
-				$skip++;
-				continue;
-			}
+		try {
+			// Per-report isolation: ScheduledReportService::runOne() already
+			// catches everything internally and never throws, but this
+			// try/catch is defence in depth so an unexpected error in a
+			// future refactor still can't abort the batch (mirrors
+			// ReportRenderJob::run()'s per-dashboard loop).
+			$this->service->runOne(report: $report);
+			return self::RAN;
+		} catch (\Throwable $e) {
+			$this->logRunFailure(report: $report, error: $e);
+			return self::FAILED;
+		}
+	}//end runIfDue()
 
-			try {
-				// Per-report isolation: ScheduledReportService::runOne() already
-				// catches everything internally and never throws, but this
-				// try/catch is defence in depth so an unexpected error in a
-				// future refactor still can't abort the batch (mirrors
-				// ReportRenderJob::run()'s per-dashboard loop).
-				$this->service->runOne(report: $report);
-				$ran++;
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[ScheduledReportJob] Run failed for scheduled report',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'reportId' => $report->getId(),
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}//end foreach
+	/**
+	 * Log a report whose run threw.
+	 *
+	 * @param ScheduledReportInterface $report The report.
+	 * @param \Throwable               $error  The failure.
+	 *
+	 * @return void
+	 */
+	private function logRunFailure(ScheduledReportInterface $report, \Throwable $error): void {
+		$this->logger->warning(
+			message: '[ScheduledReportJob] Run failed for scheduled report',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'reportId' => $report->getId(),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logRunFailure()
 
+	/**
+	 * Log the pass summary: candidates, reports run and reports skipped.
+	 *
+	 * @param array        $candidates The enabled reports.
+	 * @param list<string> $outcomes   The outcome of each report.
+	 *
+	 * @return void
+	 */
+	private function logPass(array $candidates, array $outcomes): void {
+		$counts = array_count_values($outcomes);
 		$this->logger->info(
 			message: '[ScheduledReportJob] Scheduled-report pass complete',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'candidates' => count($candidates),
-				'ran' => $ran,
-				'skipped' => $skip,
+				'ran' => ($counts[self::RAN] ?? 0),
+				'skipped' => ($counts[self::SKIPPED] ?? 0),
 			]
 		);
-	}//end run()
+	}//end logPass()
 }//end class
