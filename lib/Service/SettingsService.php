@@ -785,12 +785,25 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
 	 */
-	public function massValidateObjects(
-		int $maxObjects = 0,
-		int $batchSize = 1000,
-		string $mode = 'serial',
-		bool $collectErrors = false,
-	): array {
+	public function massValidateObjects(int $maxObjects = 0, int $batchSize = 1000, string $mode = 'serial', bool $collectErrors = false): array {
+		$request = new MassValidationRequest(maxObjects: $maxObjects, batchSize: $batchSize, mode: $mode, collectErrors: $collectErrors);
+		return $this->massValidate(request: $request);
+	}//end massValidateObjects()
+
+	/**
+	 * Mass validate the stored objects, as {@see massValidateObjects()} describes.
+	 *
+	 * @param MassValidationRequest $request How many objects, the batch size, the mode and whether errors are collected.
+	 *
+	 * @return array Mass validation results
+	 *
+	 * @throws Exception If mass validation operation fails.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
+	 */
+	public function massValidate(MassValidationRequest $request): array {
+		$mode      = $request->mode;
+		$batchSize = $request->batchSize;
 		if (in_array($mode, ['serial', 'parallel'], true) === false) {
 			throw new InvalidArgumentException('Invalid mode parameter. Must be "serial" or "parallel"');
 		}
@@ -808,12 +821,12 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		return $run->run(
 			config: [
 				'mode' => $mode,
-				'max_objects' => $maxObjects,
+				'max_objects' => $request->maxObjects,
 				'batch_size' => $batchSize,
-				'collect_errors' => $collectErrors,
+				'collect_errors' => $request->collectErrors,
 			]
 		);
-	}//end massValidateObjects()
+	}//end massValidate()
 
 	/**
 	 * Format bytes into human readable format
@@ -1312,12 +1325,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * @spec openspec/specs/integration-deck/spec.md
 	 */
 	public function setDeckDefault(string $schemaSlug, int $boardId, int $stackId): void {
-		$payload = json_encode(
-			[
-				'boardId' => $boardId,
-				'stackId' => $stackId,
-			]
-		);
+		$payload = json_encode(['boardId' => $boardId, 'stackId' => $stackId]);
 		if ($payload === false) {
 			return;
 		}
