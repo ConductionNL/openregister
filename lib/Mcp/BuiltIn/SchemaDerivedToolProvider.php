@@ -95,6 +95,35 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	private const TRUNCATE_LENGTH = 500;
 
 	/**
+	 * The `id` input property of the verbs that address one object.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ID_INPUT_PROPERTY = ['type' => 'string', 'description' => 'Object id or uuid.'];
+
+	/**
+	 * The input schema of a verb that takes only an object id (`get`, `delete`).
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const ID_INPUT_SCHEMA = [
+		'type' => 'object',
+		'properties' => ['id' => self::ID_INPUT_PROPERTY],
+		'required' => ['id'],
+	];
+
+	/**
+	 * The `fields` input property of the `search` verb.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const FIELDS_INPUT_PROPERTY = [
+		'type' => 'array',
+		'items' => ['type' => 'string'],
+		'description' => 'Optional field projection.',
+	];
+
+	/**
 	 * JSON Schema keywords a published property may carry (an allow-list, see jsonSchemaSafe())
 	 *
 	 * @var list<string>
@@ -426,20 +455,56 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 *   (Requirement: REQ-DERIVED-004 — Search verb: filters, pagination, projection, truncation)
 	 */
 	private function search(DerivedToolCall $call): array {
-		$schema = $call->schema;
-		$register = $call->register;
-		$arguments = $call->arguments;
+		$search = $this->searchRequest(call: $call);
+		$config = $this->searchConfig(search: $search, arguments: $call->arguments);
 
-		$filters = $this->declaredFilters(schema: $schema, arguments: $arguments);
+		$this->anchorObjectService(schema: $call->schema, register: $call->register);
 
-		$page = $this->pageNumber(arguments: $arguments);
-		$pageSize = $this->pageSize(arguments: $arguments);
-		$offset = (($page - 1) * $pageSize);
+		$objects = $this->objectService->findAll(config: $config);
+		$total = $this->objectService->count(config: ['filters' => $search->filters]);
+		$results = $this->truncatedResults(objects: $objects);
 
+		return [
+			'results' => $results,
+			'page' => $search->page,
+			'pageSize' => $search->pageSize,
+			'total' => $total,
+			'hasMore' => (($search->offset() + count($results)) < $total),
+		];
+	}//end search()
+
+	/**
+	 * The declared filters and the page window a `search` call asks for.
+	 *
+	 * @param DerivedToolCall $call The schema, its register and the arguments.
+	 *
+	 * @return DerivedSearch
+	 *
+	 * @throws InvalidArgumentException If `filters` names an undeclared property.
+	 */
+	private function searchRequest(DerivedToolCall $call): DerivedSearch {
+		$filters = $this->declaredFilters(schema: $call->schema, arguments: $call->arguments);
+
+		return new DerivedSearch(
+			filters: $filters,
+			page: $this->pageNumber(arguments: $call->arguments),
+			pageSize: $this->pageSize(arguments: $call->arguments)
+		);
+	}//end searchRequest()
+
+	/**
+	 * The ObjectService query config of a search: page window, filters and an optional field projection.
+	 *
+	 * @param DerivedSearch        $search    The filters and page window.
+	 * @param array<string, mixed> $arguments The tool arguments, for `fields`.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function searchConfig(DerivedSearch $search, array $arguments): array {
 		$config = [
-			'limit' => $pageSize,
-			'offset' => $offset,
-			'filters' => $filters,
+			'limit' => $search->pageSize,
+			'offset' => $search->offset(),
+			'filters' => $search->filters,
 		];
 
 		$fields = ($arguments['fields'] ?? null);
@@ -447,24 +512,22 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			$config['fields'] = $fields;
 		}
 
-		$this->anchorObjectService(schema: $schema, register: $register);
+		return $config;
+	}//end searchConfig()
 
-		$objects = $this->objectService->findAll(config: $config);
-		$total = $this->objectService->count(config: ['filters' => $filters]);
-
-		$results = array_map(
+	/**
+	 * The found objects serialised, with long strings truncated.
+	 *
+	 * @param array $objects The found objects.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function truncatedResults(array $objects): array {
+		return array_map(
 			callback: fn ($object) => $this->truncateStrings(data: $object->jsonSerialize()),
 			array: $objects
 		);
-
-		return [
-			'results' => $results,
-			'page' => $page,
-			'pageSize' => $pageSize,
-			'total' => $total,
-			'hasMore' => (($offset + count($results)) < $total),
-		];
-	}//end search()
+	}//end truncatedResults()
 
 	/**
 	 * The requested search filters, refused when one is not declared by the schema.
@@ -764,63 +827,88 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @return array<string, mixed> JSON-Schema-shaped input schema.
 	 */
 	private function buildInputSchema(DerivedToolDefinition $tool): array {
-		$verb = $tool->verb;
-		$verbConfig = $tool->verbConfig;
-		$properties = ($tool->schema->getProperties() ?? []);
-		$required = ($tool->schema->getRequired() ?? []);
-		$idProperty = ['type' => 'string', 'description' => 'Object id or uuid.'];
-
-		return match ($verb) {
-			'search' => [
-				'type' => 'object',
-				'properties' => [
-					'filters' => [
-						'type' => 'object',
-						'properties' => $this->filterProperties(properties: $properties, verbConfig: $verbConfig),
-						'additionalProperties' => false,
-					],
-					'page' => ['type' => 'integer', 'description' => 'Page number (default 1).'],
-					'pageSize' => [
-						'type' => 'integer',
-						'description' => sprintf(
-							'Results per page (default %d, max %d).',
-							self::DEFAULT_PAGE_SIZE,
-							self::MAX_PAGE_SIZE
-						),
-					],
-					'fields' => [
-						'type' => 'array',
-						'items' => ['type' => 'string'],
-						'description' => 'Optional field projection.',
-					],
-				],
-			],
-			'get' => [
-				'type' => 'object',
-				'properties' => ['id' => $idProperty],
-				'required' => ['id'],
-			],
-			'create' => [
-				'type' => 'object',
-				'properties' => $this->jsonSchemaSafeMap(properties: $properties),
-				'required' => $required,
-			],
-			'update' => [
-				'type' => 'object',
-				'properties' => array_merge(
-					['id' => $idProperty],
-					$this->jsonSchemaSafeMap(properties: $properties)
-				),
-				'required' => ['id'],
-			],
-			'delete' => [
-				'type' => 'object',
-				'properties' => ['id' => $idProperty],
-				'required' => ['id'],
-			],
+		return match ($tool->verb) {
+			'search' => $this->searchInputSchema(tool: $tool),
+			'get' => self::ID_INPUT_SCHEMA,
+			'create' => $this->createInputSchema(tool: $tool),
+			'update' => $this->updateInputSchema(tool: $tool),
+			'delete' => self::ID_INPUT_SCHEMA,
 			default => ['type' => 'object', 'properties' => []],
-		};//end match
+		};
 	}//end buildInputSchema()
+
+	/**
+	 * The `search` input schema: the declared filters, the page window and a field projection.
+	 *
+	 * @param DerivedToolDefinition $tool The schema being derived and the `search` verb's dialect config.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function searchInputSchema(DerivedToolDefinition $tool): array {
+		$filters = [
+			'type' => 'object',
+			'properties' => $this->filterProperties(properties: ($tool->schema->getProperties() ?? []), verbConfig: $tool->verbConfig),
+			'additionalProperties' => false,
+		];
+
+		return [
+			'type' => 'object',
+			'properties' => array_merge(['filters' => $filters], $this->pagingInputProperties()),
+		];
+	}//end searchInputSchema()
+
+	/**
+	 * The `page`, `pageSize` and `fields` input properties of the `search` verb.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function pagingInputProperties(): array {
+		return [
+			'page' => ['type' => 'integer', 'description' => 'Page number (default 1).'],
+			'pageSize' => [
+				'type' => 'integer',
+				'description' => sprintf(
+					'Results per page (default %d, max %d).',
+					self::DEFAULT_PAGE_SIZE,
+					self::MAX_PAGE_SIZE
+				),
+			],
+			'fields' => self::FIELDS_INPUT_PROPERTY,
+		];
+	}//end pagingInputProperties()
+
+	/**
+	 * The `create` input schema: every published property, with the schema's required list.
+	 *
+	 * @param DerivedToolDefinition $tool The schema being derived.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function createInputSchema(DerivedToolDefinition $tool): array {
+		return [
+			'type' => 'object',
+			'properties' => $this->jsonSchemaSafeMap(properties: ($tool->schema->getProperties() ?? [])),
+			'required' => ($tool->schema->getRequired() ?? []),
+		];
+	}//end createInputSchema()
+
+	/**
+	 * The `update` input schema: the object id followed by every published property.
+	 *
+	 * @param DerivedToolDefinition $tool The schema being derived.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function updateInputSchema(DerivedToolDefinition $tool): array {
+		return [
+			'type' => 'object',
+			'properties' => array_merge(
+				['id' => self::ID_INPUT_PROPERTY],
+				$this->jsonSchemaSafeMap(properties: ($tool->schema->getProperties() ?? []))
+			),
+			'required' => ['id'],
+		];
+	}//end updateInputSchema()
 
 	/**
 	 * Build the `outputSchema` for read verbs (MCP 2025-06-18
