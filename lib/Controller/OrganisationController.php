@@ -34,6 +34,7 @@ use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Support\MembershipChangeRun;
+use OCA\OpenRegister\Controller\Support\ParentAssignmentRun;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Controller\Support\OrganisationEdit;
 use OCA\OpenRegister\Db\Organisation;
@@ -1284,45 +1285,75 @@ class OrganisationController extends Controller {
 	 */
 	private function handleParentUpdate(object $organisation, OrganisationEdit $edit): ?JSONResponse {
 		$data = $edit->data;
-		$uuid = $edit->uuid;
 
 		// Only process if parent key exists in request data.
 		if (array_key_exists('parent', $data) === false) {
 			return null;
 		}
 
-		// Normalize parent value (empty string or null becomes null).
-		$newParent = null;
-		if ($data['parent'] !== '' && $data['parent'] !== null) {
-			$newParent = $data['parent'];
+		return $this->assignParent(
+			organisation: $organisation,
+			run: new ParentAssignmentRun(uuid: $edit->uuid, newParent: self::normalisedParent(parent: $data['parent']))
+		);
+	}//end handleParentUpdate()
+
+	/**
+	 * A parent value as it is assigned: an empty string or null becomes null.
+	 *
+	 * @param mixed $parent The requested parent.
+	 *
+	 * @return mixed The parent UUID, or null.
+	 */
+	private static function normalisedParent(mixed $parent): mixed {
+		if ($parent !== '' && $parent !== null) {
+			return $parent;
 		}
 
-		// Validate parent assignment to prevent circular references.
+		return null;
+	}//end normalisedParent()
+
+	/**
+	 * Validate the parent against circular references and set it, or answer the refusal.
+	 *
+	 * @param object              $organisation The organisation being updated.
+	 * @param ParentAssignmentRun $run          The organisation UUID and its new parent.
+	 *
+	 * @return JSONResponse|null Null when the parent is set, 400 when it is refused.
+	 */
+	private function assignParent(object $organisation, ParentAssignmentRun $run): ?JSONResponse {
 		try {
 			$this->organisationMapper->validateParentAssignment(
-				organisationUuid: $uuid,
-				newParentUuid: $newParent
+				organisationUuid: $run->uuid,
+				newParentUuid: $run->newParent
 			);
-			$organisation->setParent($newParent);
+			$organisation->setParent($run->newParent);
 			return null;
 		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[OrganisationController] Parent assignment validation failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'organisationUuid' => $uuid,
-					'newParent' => $newParent,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			$this->logParentRefusal(run: $run, error: $e);
+			return self::errorResponse(error: $e);
 		}//end try
-	}//end handleParentUpdate()
+	}//end assignParent()
+
+	/**
+	 * Log a parent assignment the mapper refused.
+	 *
+	 * @param ParentAssignmentRun $run   The organisation UUID and its new parent.
+	 * @param Exception           $error The refusal.
+	 *
+	 * @return void
+	 */
+	private function logParentRefusal(ParentAssignmentRun $run, Exception $error): void {
+		$this->logger->warning(
+			message: '[OrganisationController] Parent assignment validation failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'organisationUuid' => $run->uuid,
+				'newParent' => $run->newParent,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logParentRefusal()
 
 	/**
 	 * Save organisation and return JSON response
