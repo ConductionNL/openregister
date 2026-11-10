@@ -47,7 +47,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
@@ -356,35 +355,6 @@ class MagicSearchHandler {
 	}//end getIgnoredFilters()
 
 	/**
-	 * Search objects in a specific register-schema table using clean query structure
-	 *
-	 * This method provides comprehensive search capabilities optimized for
-	 * schema-specific dynamic tables.
-	 *
-	 * @param array $query Search query array with filters and options
-	 * @param Register $register Register context for the search
-	 * @param Schema $schema Schema context for the search
-	 * @param string $tableName Target dynamic table name
-	 * @param array|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown
-	 *
-	 * @return \OCA\OpenRegister\Db\ObjectEntity[]|int Array of ObjectEntity objects or count if _count=true
-	 *
-	 * @throws \OCP\DB\Exception If a database error occurs
-	 *
-	 * @phpstan-param array<string, mixed> $query
-	 * @phpstan-param array<int, string>|null $dateTimeColumns
-	 *
-	 * @psalm-param array<string, mixed> $query
-	 * @psalm-param array<int, string>|null $dateTimeColumns
-	 *
-	 * @psalm-return int|list<ObjectEntity>
-	 */
-	public function searchObjects(array $query, Register $register, Schema $schema, string $tableName, ?array $dateTimeColumns = null): array|int {
-		$table = new RegisterSchema(register: $register, schema: $schema);
-		return $this->searchTable(query: $query, tableSearch: new TableSearch(table: $table, tableName: $tableName, dateTimeColumns: $dateTimeColumns));
-	}//end searchObjects()
-
-	/**
 	 * Search one register+schema table (see searchObjects()).
 	 *
 	 * @param array       $query       Search query array with filters and options.
@@ -433,7 +403,7 @@ class MagicSearchHandler {
 		}
 
 		// Build filtered query (applies all WHERE conditions).
-		$queryBuilder = $this->buildTableQuery(
+		$queryBuilder = $this->buildFilteredQuery(
 			query: $query,
 			table: new MagicReadTable(schema: $schema, registerId: $register->getId(), tableName: $tableName)
 		);
@@ -545,34 +515,9 @@ class MagicSearchHandler {
 	}//end applyAccessControlToQuery()
 
 	/**
-	 * Build a filtered query with all WHERE conditions applied.
-	 *
-	 * This is the SINGLE SOURCE OF TRUTH for query filtering. Used by:
-	 * - searchObjects() for search results
-	 * - searchObjects() with _count=true for counting
-	 * - getFacetQuery() for facet aggregations
-	 *
-	 * Returns a QueryBuilder with FROM and WHERE clauses, but NO SELECT.
-	 * Caller must add SELECT clause based on their needs.
-	 *
-	 * @param array $query Search parameters including filters.
-	 * @param Schema $schema The schema for property filtering.
-	 * @param string $tableName The table to query.
-	 * @param int|null $registerId The register this table belongs to. When omitted it is
-	 *                             read from the query's reserved `register` key, which is
-	 *                             how the facet paths carry it. A register that cannot be
-	 *                             resolved simply yields no shared master data widening.
-	 *
-	 * @return IQueryBuilder QueryBuilder with all filters applied.
-	 */
-	public function buildFilteredQuery(array $query, Schema $schema, string $tableName, ?int $registerId = null): IQueryBuilder {
-		return $this->buildTableQuery(query: $query, table: new MagicReadTable(schema: $schema, registerId: $registerId, tableName: $tableName));
-	}//end buildFilteredQuery()
-
-	/**
 	 * Build a filtered query for one magic table with all WHERE conditions applied.
 	 *
-	 * The SINGLE SOURCE OF TRUTH for query filtering (see buildFilteredQuery()).
+	 * The SINGLE SOURCE OF TRUTH for query filtering.
 	 * Returns a QueryBuilder with FROM and WHERE clauses, but NO SELECT.
 	 *
 	 * @param array          $query Search parameters including filters.
@@ -582,7 +527,7 @@ class MagicSearchHandler {
 	 *
 	 * @return IQueryBuilder QueryBuilder with all filters applied.
 	 */
-	public function buildTableQuery(array $query, MagicReadTable $table): IQueryBuilder {
+	public function buildFilteredQuery(array $query, MagicReadTable $table): IQueryBuilder {
 		$schema = $table->schema;
 		// A filter or sort on a value that is only shown masked would read it without the reveal.
 		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
@@ -644,7 +589,7 @@ class MagicSearchHandler {
 		$this->applyArrayElementFilters(run: $run);
 
 		return $queryBuilder;
-	}//end buildTableQuery()
+	}//end buildFilteredQuery()
 
 	/**
 	 * Narrow the query by `_element` blocks: an object matches when one element
@@ -960,45 +905,6 @@ class MagicSearchHandler {
 			$this->applyRelationFieldFilter(qb: $qb, match: new RelationFieldMatch(field: $relField, value: $relValue));
 		}
 	}//end applyRelationFieldFilters()
-
-	/**
-	 * Build WHERE conditions as raw SQL for use in UNION queries.
-	 *
-	 * This is the SINGLE SOURCE OF TRUTH for filter conditions used by:
-	 * - UNION search queries (MagicMapper::buildUnionSelectPart)
-	 * - UNION facet queries (MagicFacetHandler::getTermsFacetUnion)
-	 *
-	 * Includes RBAC filtering when enabled (default). Values are quoted inline
-	 * (not parameterized) for UNION query compatibility.
-	 *
-	 * @param array $query Search parameters including filters.
-	 * @param Schema $schema The schema for property filtering.
-	 * @param array|null $existingColumns Optional list of existing column names.
-	 * @param int|null $registerId The register whose table this condition set is built for. It is
-	 *                             what lets a shared master data declaration (REQ-SLE-001) widen
-	 *                             the organisation boundary here exactly as it widens it on the
-	 *                             QueryBuilder path. A caller that names no register gets no
-	 *                             widening, which is narrower and therefore safe.
-	 * @param string|null $tableName The bare magic table the conditions are for, so a metadata column
-	 *                               the table could not be given is left out of the lifecycle
-	 *                               predicates. Null keeps every predicate.
-	 *
-	 * @return string[] Array of SQL WHERE conditions (without leading AND/WHERE).
-	 *
-	 * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
-	 * @throws RelatedRowFilterNotSupportedException When the query carries `_related` or `_referenced`, which this raw-SQL builder cannot honour.
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
-	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
-	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
-	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
-	 */
-	public function buildWhereConditionsSql(
-		array $query, Schema $schema, ?array $existingColumns = null, ?int $registerId = null, ?string $tableName = null
-	): array {
-		$table = new MagicReadTable(schema: $schema, registerId: $registerId, tableName: $tableName);
-		return $this->buildWhereClause(request: new WhereClauseRequest(query: $query, table: $table, existingColumns: $existingColumns));
-	}//end buildWhereConditionsSql()
 
 	/**
 	 * Build WHERE conditions as raw SQL for one magic table (see buildWhereConditionsSql()).
@@ -2669,12 +2575,7 @@ class MagicSearchHandler {
 	 */
 	private function applyOrganisationBoundary(IQueryBuilder $qb, OrganisationBoundary $boundary): void {
 		if ($boundary->crossBranch === null) {
-			$this->organizationHandler->applyOrganizationFilter(
-				qb: $qb,
-				table: $boundary->scopeTable(),
-				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-				withOrgless: $boundary->withOrgless
-			);
+			$this->organizationHandler->applyOrganizationFilter(qb: $qb, boundary: $boundary);
 			return;
 		}
 

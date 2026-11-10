@@ -44,6 +44,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\File\FileMetadataChange;
 use OCA\OpenRegister\Service\File\FileOverwrite;
 use OCA\OpenRegister\Service\File\FileRename;
@@ -564,13 +565,13 @@ class FilesControllerActionsGoldenTest extends TestCase {
 
 	private function access(): ObjectFileAccess {
 		$access = $this->createMock(ObjectFileAccess::class);
-		$access->method('readable')->willReturnCallback(function (string $register, string $schema, string $id): ObjectEntity {
-			$this->note(call: 'readable', detail: [$register, $schema, $id]);
+		$access->method('readable')->willReturnCallback(function (ObjectRef $ref): ObjectEntity {
+			$this->note(call: 'readable', detail: [$ref->register, $ref->schema, $ref->id]);
 			$this->refusal();
 			return $this->object;
 		});
-		$access->method('changeable')->willReturnCallback(function (string $register, string $schema, string $id, string $verb): ObjectEntity {
-			$this->note(call: 'changeable', detail: [$register, $schema, $id, $verb]);
+		$access->method('changeable')->willReturnCallback(function (ObjectRef $ref, string $verb): ObjectEntity {
+			$this->note(call: 'changeable', detail: [$ref->register, $ref->schema, $ref->id, $verb]);
 			$this->refusal();
 			return $this->object;
 		});

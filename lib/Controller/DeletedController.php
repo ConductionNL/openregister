@@ -32,6 +32,9 @@ use OCA\OpenRegister\Controller\Support\BatchOutcome;
 use OCA\OpenRegister\Controller\Support\DeletedControllerServices;
 use OCA\OpenRegister\Controller\Support\PurgeRequest;
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -486,12 +489,13 @@ class DeletedController extends Controller {
 		}
 
 		try {
-			$this->services->store->auditTrailMapper->createAuditTrailEntry(
-				object: $object,
-				action: 'object.restored',
-				context: $context,
-				actorId: $actor,
-				actorName: $actorName
+			$this->services->store->auditTrailMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: 'object.restored',
+					context: $context,
+					options: new ObjectAuditEventOptions(actor: new NamedActor(id: $actor, name: $actorName))
+				)
 			);
 		} catch (\Throwable $e) {
 			// Swallowed on purpose, see the docblock.

@@ -1180,7 +1180,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('2025-01-15');
 
 		// objectPublishedField is deprecated — should not throw, just log warning.
@@ -1201,7 +1201,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('not-a-date');
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -1220,7 +1220,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('2025-12-31');
 
 		// objectDepublishedField is deprecated — should not throw, just log warning.
@@ -1241,7 +1241,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('invalid');
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -1260,7 +1260,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('');
 
 		// objectPublishedField is deprecated — should not throw.
@@ -3719,7 +3719,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn(null);
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -3739,7 +3739,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn(null);
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -4048,7 +4048,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('');
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -4068,7 +4068,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn(null);
 
 		$this->metaHydrationHandler->expects($this->once())

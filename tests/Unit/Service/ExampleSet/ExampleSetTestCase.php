@@ -612,15 +612,15 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function viewService(): ViewService {
 		$service = $this->createMock(ViewService::class);
 		$service->method('create')->willReturnCallback(
-			function (ViewDefinition $definition, ViewAudience $audience, ?array $alert = null): View {
+			function (ViewEdit $edit): View {
 				$view = new View();
 				$view->setUuid('view-'.(++$this->viewsCreated));
-				$view->setName($definition->name);
-				$view->setOwner($audience->owner);
-				$view->setIsPublic($audience->isPublic);
-				$view->setQuery($definition->query);
-				$view->setAlert($alert);
-				$view->setSharedWith($audience->sharedWith ?? []);
+				$view->setName($edit->definition->name);
+				$view->setOwner($edit->audience->owner);
+				$view->setIsPublic($edit->audience->isPublic);
+				$view->setQuery($edit->definition->query);
+				$view->setAlert($edit->alert);
+				$view->setSharedWith($edit->audience->sharedWith ?? []);
 				$this->savedViews[(string) $view->getUuid()] = $view;
 				return $view;
 			}

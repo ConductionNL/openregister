@@ -32,6 +32,8 @@ use DateTime;
 use DateTimeZone;
 use OCA\OpenRegister\Db\AuditTrail\RevertOptions;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
+use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -75,13 +77,13 @@ final class AuditTrailMapperReadPathGoldenTest extends TestCase {
 		foreach (self::actorCases() as $name => $args) {
 			$actual['actor: ' . $name] = $this->recorded(
 				rows: [[['id' => 1, 'uuid' => 'a-1', 'user' => 'alice']], [['total_count' => '7']]],
-				call: fn (AuditTrailMapper $m): mixed => $this->summary(result: $m->findByActor(...$args))
+				call: fn (AuditTrailMapper $m): mixed => $this->summary(result: $m->findActorTrail(new ActorTrailQuery($args[0], $args[1] ?? 25, $args[2] ?? 0, new ActionWindow($args[3] ?? null, $args[4] ?? null, $args[5] ?? null))))
 			);
 		}
 
 		$actual['actor: no count row'] = $this->recorded(
 			rows: [[], []],
-			call: fn (AuditTrailMapper $m): mixed => $this->summary(result: $m->findByActor('alice'))
+			call: fn (AuditTrailMapper $m): mixed => $this->summary(result: $m->findActorTrail(new ActorTrailQuery('alice')))
 		);
 
 		foreach (self::activityRowCases() as $name => $rows) {
