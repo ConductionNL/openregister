@@ -69,6 +69,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
@@ -307,7 +308,10 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 			// not an error: "nothing to reap" is the ordinary case.
 			return array_values(
 				array_map(
-					static fn (array $record): array => FlowItems::item(json: array_merge($json, $record), binary: $binary, fromItemIndex: (int)$index),
+					static fn (array $record): array => FlowItems::item(
+						json: array_merge($json, $record),
+						options: new FlowItemOptions(binary: $binary, fromItemIndex: (int)$index)
+					),
 					$records
 				)
 			);
@@ -315,7 +319,7 @@ class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNode
 
 		$json[$this->outputKey(config: $run->step->config)] = $records;
 
-		return [FlowItems::item(json: $json, binary: $binary, fromItemIndex: (int)$index)];
+		return [FlowItems::item(json: $json, options: new FlowItemOptions(binary: $binary, fromItemIndex: (int)$index))];
 	}//end itemsFor()
 
 	/**

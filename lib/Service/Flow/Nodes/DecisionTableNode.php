@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Flow\FlowFieldPath;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -279,8 +280,7 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 		foreach ($step->items as $index => $item) {
 			$out[] = FlowItems::item(
 				json: $this->decidedRecord(plan: $plan, json: (array)($item[FlowItems::JSON] ?? [])),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 
