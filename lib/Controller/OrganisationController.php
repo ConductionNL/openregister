@@ -36,6 +36,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Db\TenantUsage\UsageRange;
 use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -43,6 +44,7 @@ use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
+use OCA\OpenRegister\Service\Rbac\SpecialRightChange;
 use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -775,8 +777,7 @@ class OrganisationController extends Controller {
 			if ($grantManageAfter !== $grantManageBefore) {
 				$this->grantAuditor?->recordSpecialRight(
 					organisationUuid: $uuid,
-					before: $grantManageBefore,
-					after: $grantManageAfter
+					change: new SpecialRightChange(before: $grantManageBefore, after: $grantManageAfter)
 				);
 			}
 
@@ -1475,7 +1476,7 @@ class OrganisationController extends Controller {
 			// Get historical data (last 30 days).
 			$from = new DateTime('-30 days');
 			$to = new DateTime();
-			$history = $this->tenantUsageMapper->findByOrgAndDateRange($orgUuid, $from, $to);
+			$history = $this->tenantUsageMapper->findByOrgAndDateRange($orgUuid, new UsageRange(from: $from, to: $to));
 
 			$requestQuota = $organisation->getRequestQuota();
 			$bandwidthQuota = $organisation->getBandwidthQuota();

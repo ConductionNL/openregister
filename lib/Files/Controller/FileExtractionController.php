@@ -315,7 +315,7 @@ class FileExtractionController extends Controller {
 	 */
 	public function show(int $id): JSONResponse {
 		if ($this->hasFileAccess(fileId: $id) === false) {
-			return $this->failed(error: 'File not found in extraction system', message: 'File not found or access denied', status: 404);
+			return $this->notFound(error: 'File not found in extraction system', message: 'File not found or access denied');
 		}
 
 		try {
@@ -323,12 +323,12 @@ class FileExtractionController extends Controller {
 			$chunks = $this->chunkMapper->findBySource(sourceType: 'file', sourceId: $id);
 
 			if (empty($chunks) === true) {
-				return $this->failed(error: 'File not found in extraction system', message: 'No chunks found for file ID: ' . $id, status: 404);
+				return $this->notFound(error: 'File not found in extraction system', message: 'No chunks found for file ID: ' . $id);
 			}
 
 			return $this->succeeded(body: ['data' => array_map(fn ($chunk) => $chunk->jsonSerialize(), $chunks)]);
 		} catch (\Exception $e) {
-			return $this->failed(error: 'File not found in extraction system', message: $e->getMessage(), status: 404);
+			return $this->notFound(error: 'File not found in extraction system', message: $e->getMessage());
 		}//end try
 	}//end show()
 
@@ -365,7 +365,7 @@ class FileExtractionController extends Controller {
 		// IDOR guard: only extract files the caller can actually access. 404
 		// (not 403) so a non-owner cannot probe which file IDs exist.
 		if ($this->hasFileAccess(fileId: $id) === false) {
-			return $this->failed(error: 'File not found in Nextcloud', message: 'File not found or access denied', status: 404);
+			return $this->notFound(error: 'File not found in Nextcloud', message: 'File not found or access denied');
 		}
 
 		try {
@@ -374,7 +374,7 @@ class FileExtractionController extends Controller {
 
 			return $this->succeeded(body: ['message' => 'File extraction completed']);
 		} catch (NotFoundException $e) {
-			return $this->failed(error: 'File not found in Nextcloud', message: $e->getMessage(), status: 404);
+			return $this->notFound(error: 'File not found in Nextcloud', message: $e->getMessage());
 		} catch (\Exception $e) {
 			return $this->failed(error: 'Extraction failed', message: $e->getMessage());
 		}//end try
@@ -691,15 +691,26 @@ class FileExtractionController extends Controller {
 	}//end succeeded()
 
 	/**
-	 * A failed response with an error and a message.
+	 * A failed response (500) with an error and a message.
 	 *
 	 * @param string $error   The error.
 	 * @param string $message The message.
-	 * @param int    $status  The HTTP status.
 	 *
 	 * @return JSONResponse
 	 */
-	private function failed(string $error, string $message, int $status=500): JSONResponse {
-		return new JSONResponse(data: ['success' => false, 'error' => $error, 'message' => $message], statusCode: $status);
+	private function failed(string $error, string $message): JSONResponse {
+		return new JSONResponse(data: ['success' => false, 'error' => $error, 'message' => $message], statusCode: 500);
 	}//end failed()
+
+	/**
+	 * A not-found response (404) with an error and a message.
+	 *
+	 * @param string $error   The error.
+	 * @param string $message The message.
+	 *
+	 * @return JSONResponse
+	 */
+	private function notFound(string $error, string $message): JSONResponse {
+		return new JSONResponse(data: ['success' => false, 'error' => $error, 'message' => $message], statusCode: 404);
+	}//end notFound()
 }//end class

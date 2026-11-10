@@ -200,11 +200,6 @@ class RelationCascadeScanGoldenTest extends TestCase {
 			throw new DoesNotExistException('no');
 		});
 
-		return new RelationCascadeHandler(
-			$objects,
-			$this->createMock(SchemaMapperInterface::class),
-			$this->createMock(RegisterMapperInterface::class),
-			new NullLogger()
-		);
+		return new RelationCascadeHandler(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->createMock(SchemaMapperInterface::class), tables: $objects), logger: new NullLogger());
 	}//end handler()
 }//end class

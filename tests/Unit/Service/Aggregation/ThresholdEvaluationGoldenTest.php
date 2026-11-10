@@ -205,7 +205,7 @@ final class ThresholdEvaluationGoldenTest extends TestCase {
 	 */
 	public function testFailingStateWriteIsSwallowed(): void {
 		$calls = $this->evaluateOnce(['aggregation' => 'a', 'op' => 'gt', 'value' => 1], 2, 'above', 'failset');
-		$this->assertSame(['run', 'get', 'set'], array_column($calls, 0));
+		$this->assertSame(['run', 'get', 'set', 'warning'], array_column($calls, 0));
 	}//end testFailingStateWriteIsSwallowed()
 
 	/**

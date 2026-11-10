@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
@@ -133,7 +134,7 @@ class MagicRbacDraftVisibilityTest extends TestCase {
 		$unnamed = (string)$handler->buildRbacRowPredicateSql(schema: $schema);
 		$this->assertStringContainsString('_status', $unnamed);
 
-		$aliased = $handler->buildRbacPredicateForAlias(schema: $schema, alias: 'rel0', tableName: 'openregister_table_1_2');
+		$aliased = $handler->buildRbacPredicateForAlias(schema: $schema, rows: new AliasedRows(alias: 'rel0', tableName: 'openregister_table_1_2'));
 		$this->assertStringNotContainsString('_status', $aliased);
 	}//end testADegradedTableGetsNoDraftPredicate()
 

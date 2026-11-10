@@ -42,7 +42,22 @@ final class BundledManifestFile {
 	 *                                   is unreadable or not a JSON object.
 	 */
 	public static function decode(string $appPath, string $appId, LoggerInterface $logger, string $tag): ?array {
-		$raw = self::read(path: $appPath . '/src/manifest.json');
+		return self::decodeFor(lookup: new ManifestLookup(appId: $appId, appPath: $appPath, tag: $tag), logger: $logger);
+	}//end decode()
+
+	/**
+	 * Decode the bundled manifest an app lookup names.
+	 *
+	 * @param ManifestLookup  $lookup The app id, its install path and the caller's log tag.
+	 * @param LoggerInterface $logger Receives a warning on invalid JSON.
+	 *
+	 * @return array<string, mixed>|null The decoded manifest, or null when it
+	 *                                   is unreadable or not a JSON object.
+	 *
+	 * @spec openspec/specs/apphost-observability/spec.md
+	 */
+	public static function decodeFor(ManifestLookup $lookup, LoggerInterface $logger): ?array {
+		$raw = self::read(path: $lookup->appPath . '/src/manifest.json');
 		if ($raw === null) {
 			return null;
 		}
@@ -50,14 +65,14 @@ final class BundledManifestFile {
 		$decoded = json_decode($raw, associative: true);
 		if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
 			$logger->warning(
-				message: sprintf('[%s] manifest.json for "%s" is invalid JSON', $tag, $appId),
+				message: sprintf('[%s] manifest.json for "%s" is invalid JSON', $lookup->tag, $lookup->appId),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return null;
 		}
 
 		return $decoded;
-	}//end decode()
+	}//end decodeFor()
 
 	/**
 	 * The contents of a readable file.

@@ -570,22 +570,37 @@ class AuthorizationService {
 	 */
 	public function authorizeApiKey(string $header, array $keys, ?ConsumerSource $consumers=null): void {
 		$this->resolvedConsumer = null;
-		if ($header === '') {
-			throw new AuthenticationException(message: 'Invalid API key', details: []);
-		}
-
-		if ($this->actAsEndpointKeyUser(header: $header, keys: $keys) === true) {
+		if ($header !== '' && $this->actAsEndpointKeyUser(header: $header, keys: $keys) === true) {
 			return;
 		}
 
-		$consumer = $this->sourceFor(consumers: $consumers)->findByApiKey(apiKey: $header);
+		$this->actAsKeyConsumer(consumer: $this->keyConsumer(header: $header, consumers: $consumers));
+	}//end authorizeApiKey()
+
+	/**
+	 * The consumer that holds an API key, refusing an empty or unknown key.
+	 *
+	 * An empty key is refused before any lookup, as it was before the endpoint keys are tried.
+	 *
+	 * @param string              $header    The API key from the request header
+	 * @param ConsumerSource|null $consumers Where consumer keys are looked up (default: OpenRegister's consumers).
+	 *
+	 * @return ResolvedConsumer The consumer holding the key.
+	 *
+	 * @throws AuthenticationException If the API key is empty or no consumer holds it.
+	 */
+	private function keyConsumer(string $header, ?ConsumerSource $consumers): ResolvedConsumer {
+		$consumer = null;
+		if ($header !== '') {
+			$consumer = $this->sourceFor(consumers: $consumers)->findByApiKey(apiKey: $header);
+		}
+
 		if ($consumer === null) {
 			throw new AuthenticationException(message: 'Invalid API key', details: []);
 		}
 
-		$this->actAsKeyConsumer(consumer: $consumer);
-
-	}//end authorizeApiKey()
+		return $consumer;
+	}//end keyConsumer()
 
 	/**
 	 * Act as the user of the endpoint key that matches the header, when one does.

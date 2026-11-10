@@ -109,8 +109,7 @@ class ReferenceFilterDeclarationTest extends TestCase {
 				ReferenceFilterDeclaration::ANNOTATION => [
 					['field' => 'organisation', 'from' => 'organisatie'],
 				],
-			],
-			path: '/properties/contactPersoon'
+			]
 		);
 	}//end testAFilterOnANonReferenceIsRefused()
 
@@ -149,14 +148,13 @@ class ReferenceFilterDeclarationTest extends TestCase {
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
 	 */
 	public function testAnOperandNeitherSchemaDeclaresIsRefused(): void {
-		$declaration = ReferenceFilterDeclaration::fromProperty(property: $this->contactPerson());
+		$declaration = ReferenceFilterDeclaration::fromProperty(property: $this->contactPerson(), path: '/properties/contactPersoon');
 
 		// The operand this record is read from is missing.
 		try {
 			$declaration->assertOperandsExist(
 				ownProperties: ['titel' => []],
-				farProperties: ['organisation' => []],
-				path: '/properties/contactPersoon'
+				farProperties: ['organisation' => []]
 			);
 			$this->fail('a filter reading a property this schema does not declare must be refused');
 		} catch (ReferenceFilterException $refusal) {
@@ -170,8 +168,7 @@ class ReferenceFilterDeclarationTest extends TestCase {
 		try {
 			$declaration->assertOperandsExist(
 				ownProperties: ['organisatie' => []],
-				farProperties: ['naam' => []],
-				path: '/properties/contactPersoon'
+				farProperties: ['naam' => []]
 			);
 			$this->fail('a filter matching on a property the far schema does not declare must be refused');
 		} catch (ReferenceFilterException $refusal) {
@@ -182,8 +179,7 @@ class ReferenceFilterDeclarationTest extends TestCase {
 		// And the worked example, where both are declared, passes.
 		$declaration->assertOperandsExist(
 			ownProperties: ['organisatie' => []],
-			farProperties: ['organisation' => []],
-			path: '/properties/contactPersoon'
+			farProperties: ['organisation' => []]
 		);
 		$this->addToAssertionCount(1);
 	}//end testAnOperandNeitherSchemaDeclaresIsRefused()
@@ -268,8 +264,7 @@ class ReferenceFilterDeclarationTest extends TestCase {
 		$this->expectException(PropertyVocabularyException::class);
 
 		ReferenceFilterDeclaration::fromProperty(
-			property: ['type' => 'string', '$ref' => 'contact', ReferenceFilterDeclaration::ANNOTATION => 'nope'],
-			path: '/properties/contactPersoon'
+			property: ['type' => 'string', '$ref' => 'contact', ReferenceFilterDeclaration::ANNOTATION => 'nope']
 		);
 	}//end testTheRefusalIsAVocabularyRefusal()
 }//end class

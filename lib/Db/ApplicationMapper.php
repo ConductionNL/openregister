@@ -272,27 +272,43 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 		int|null $offset = null,
 		array $filters = [],
 	): array {
+		return $this->findAllBy(query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: $filters));
+		}//end findAll()
+
+	/**
+	 * Find the applications of a listing
+	 *
+	 * Results are ordered by creation date (newest first). The listing's
+	 * limit (unbounded for all rows), offset and equality filters apply; its
+	 * sort and search do not. Automatically applies organisation filtering
+	 * for multi-tenancy.
+	 *
+	 * @param ListQuery $query The listing.
+	 *
+	 * @return Application[]
+	 *
+	 * @throws \Exception If user doesn't have read permission
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Application>
+	 */
+	public function findAllBy(ListQuery $query): array {
 		// Verify RBAC permission to read applications.
 		$this->verifyRbacPermission(action: 'read', entityType: 'application');
 
-		// Build base query.
 		$qb = $this->db->getQueryBuilder();
-
 		$qb->select('*')
 			->from($this->tableName)
-			->setMaxResults($limit)
-			->setFirstResult($offset ?? 0)
+			->setMaxResults($query->limitOrNull())
+			->setFirstResult($query->offset ?? 0)
 			->orderBy('created', 'DESC');
 
-		// Apply simple equality filters.
-		$this->applyEqualityFilters(qb: $qb, filters: $filters);
+		$this->applyEqualityFilters(qb: $qb, filters: $query->filters);
 
 		// Apply organisation filter (all users including admins must have active org).
 		$this->applyOrganisationFilter(qb: $qb);
 
-		// Execute query and return entities.
 		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end findAllBy()
 
 	/**
 	 * One equality condition per filter.

@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\AnalyticsReportDraft;
 use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
@@ -218,9 +219,8 @@ class AnalyticsLinksController extends Controller {
 				}
 
 				$link = $this->analyticsLinkService->createAndLinkReport(
-					$this->linkTargetOf(object: $object),
-					$name,
-					$typeInt
+					target: $this->linkTargetOf(object: $object),
+					draft: new AnalyticsReportDraft(name: $name, type: $typeInt)
 				);
 
 				return new JSONResponse($link->jsonSerialize(), 201);

@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionOptions;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects;
@@ -793,12 +795,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		$uuid = $object->getUuid();
 
 		$result = $this->deleteObject->deleteObject(
-			$this->testRegister,
-			$this->testSchema,
-			$uuid,
-			null,
-			false,
-			false
+			new DeletionRequest(register: $this->testRegister, schema: $this->testSchema, uuid: $uuid), _rbac: false, _multitenancy: false
 		);
 		$this->assertTrue($result);
 
@@ -820,12 +817,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		// Pass originalObjectId to indicate cascade sub-deletion.
 		$result = $this->deleteObject->deleteObject(
-			$this->testRegister,
-			$this->testSchema,
-			$uuid,
-			'some-parent-uuid',
-			false,
-			false
+			new DeletionRequest(register: $this->testRegister, schema: $this->testSchema, uuid: $uuid, options: new DeletionOptions(originalObjectId: 'some-parent-uuid')), _rbac: false, _multitenancy: false
 		);
 		$this->assertTrue($result);
 

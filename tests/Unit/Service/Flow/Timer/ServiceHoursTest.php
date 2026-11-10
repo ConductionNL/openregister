@@ -115,12 +115,7 @@ class ServiceHoursTest extends TestCase {
 	public function testFourHoursFromFridayAfternoonLandOnMondayMorning(): void {
 		$windows = ServiceHours::fromArray(value: $this->nineToFive(), workingWeekdays: $this->weekdays(), slug: 'gemeente');
 
-		$due = $this->clock->due(
-			from: new DateTimeImmutable('2026-09-18 16:00:00', new \DateTimeZone('Europe/Amsterdam')),
-			hours: 4.0,
-			calendar: $this->calendar(),
-			windows: $windows
-		);
+		$due = $this->clock->frame(calendar: $this->calendar(), windows: $windows)->due(from: new DateTimeImmutable('2026-09-18 16:00:00', new \DateTimeZone('Europe/Amsterdam')), hours: 4.0);
 
 		$this->assertSame('2026-09-21 12:00', $due->format('Y-m-d H:i'));
 	}//end testFourHoursFromFridayAfternoonLandOnMondayMorning()
@@ -133,12 +128,7 @@ class ServiceHoursTest extends TestCase {
 	public function testATermThatFitsInTheDayStaysOnIt(): void {
 		$windows = ServiceHours::fromArray(value: $this->nineToFive(), workingWeekdays: $this->weekdays(), slug: 'gemeente');
 
-		$due = $this->clock->due(
-			from: new DateTimeImmutable('2026-09-16 10:00:00', new \DateTimeZone('Europe/Amsterdam')),
-			hours: 3.0,
-			calendar: $this->calendar(),
-			windows: $windows
-		);
+		$due = $this->clock->frame(calendar: $this->calendar(), windows: $windows)->due(from: new DateTimeImmutable('2026-09-16 10:00:00', new \DateTimeZone('Europe/Amsterdam')), hours: 3.0);
 
 		$this->assertSame('2026-09-16 13:00', $due->format('Y-m-d H:i'));
 	}//end testATermThatFitsInTheDayStaysOnIt()
@@ -152,12 +142,7 @@ class ServiceHoursTest extends TestCase {
 	public function testATermArmedBeforeOpeningWaitsForTheCounterToOpen(): void {
 		$windows = ServiceHours::fromArray(value: $this->nineToFive(), workingWeekdays: $this->weekdays(), slug: 'gemeente');
 
-		$due = $this->clock->due(
-			from: new DateTimeImmutable('2026-09-16 06:00:00', new \DateTimeZone('Europe/Amsterdam')),
-			hours: 1.0,
-			calendar: $this->calendar(),
-			windows: $windows
-		);
+		$due = $this->clock->frame(calendar: $this->calendar(), windows: $windows)->due(from: new DateTimeImmutable('2026-09-16 06:00:00', new \DateTimeZone('Europe/Amsterdam')), hours: 1.0);
 
 		$this->assertSame('2026-09-16 10:00', $due->format('Y-m-d H:i'));
 	}//end testATermArmedBeforeOpeningWaitsForTheCounterToOpen()
@@ -179,12 +164,7 @@ class ServiceHoursTest extends TestCase {
 
 		$windows = ServiceHours::fromArray(value: $declared, workingWeekdays: $this->weekdays(), slug: 'gemeente');
 
-		$due = $this->clock->due(
-			from: new DateTimeImmutable('2026-09-16 09:00:00', new \DateTimeZone('Europe/Amsterdam')),
-			hours: 6.0,
-			calendar: $this->calendar(),
-			windows: $windows
-		);
+		$due = $this->clock->frame(calendar: $this->calendar(), windows: $windows)->due(from: new DateTimeImmutable('2026-09-16 09:00:00', new \DateTimeZone('Europe/Amsterdam')), hours: 6.0);
 
 		$this->assertSame('2026-09-16 16:00', $due->format('Y-m-d H:i'));
 	}//end testTheLunchBreakIsNotCounted()
@@ -205,8 +185,8 @@ class ServiceHoursTest extends TestCase {
 		$backOffice = ServiceHours::fromArray(value: $this->nineToFive(), workingWeekdays: $this->weekdays(), slug: 'gemeente');
 		$armed = new DateTimeImmutable('2026-09-16 09:00:00', new \DateTimeZone('Europe/Amsterdam'));
 
-		$atCounter = $this->clock->due(from: $armed, hours: 6.0, calendar: $this->calendar(), windows: $counter);
-		$atBackOffice = $this->clock->due(from: $armed, hours: 6.0, calendar: $this->calendar(), windows: $backOffice);
+		$atCounter = $this->clock->frame(calendar: $this->calendar(), windows: $counter)->due(from: $armed, hours: 6.0);
+		$atBackOffice = $this->clock->frame(calendar: $this->calendar(), windows: $backOffice)->due(from: $armed, hours: 6.0);
 
 		$this->assertNotSame($atCounter->format('Y-m-d H:i'), $atBackOffice->format('Y-m-d H:i'));
 	}//end testTheCounterAndTheBackOfficeCountDifferently()
