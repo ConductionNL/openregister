@@ -40,6 +40,7 @@ use OCA\OpenRegister\Controller\Support\HandoffControllerServices;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -120,15 +121,26 @@ class HandoffController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function availability(string $register, string $schema, string $id): JSONResponse {
+		return $this->availabilityOf(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end availability()
+
+	/**
+	 * The availability response for one object.
+	 *
+	 * @param ObjectRef $ref The object as the route names it.
+	 *
+	 * @return JSONResponse `{handoffs: [...]}` or a typed error payload.
+	 */
+	private function availabilityOf(ObjectRef $ref): JSONResponse {
 		try {
-			$handoffs = $this->handoffService->listAvailability(register: $register, schema: $schema, id: $id);
+			$handoffs = $this->handoffService->listAvailability(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
 			return new JSONResponse(data: ['handoffs' => $handoffs]);
 		} catch (HandoffException $e) {
 			return $this->objectNotFound();
 		} catch (\Throwable $e) {
 			return $this->failure(e: $e, operation: 'availability');
 		}
-	}//end availability()
+	}//end availabilityOf()
 
 	/**
 	 * POST /api/objects/{register}/{schema}/{id}/handoffs/{handoffId}
@@ -155,8 +167,20 @@ class HandoffController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function execute(string $register, string $schema, string $id, string $handoffId): JSONResponse {
+		return $this->executeOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id), handoffId: $handoffId);
+	}//end execute()
+
+	/**
+	 * Execute (or park) one declared handoff of one object.
+	 *
+	 * @param ObjectRef $ref       The source object as the route names it.
+	 * @param string    $handoffId The declared handoff entry id.
+	 *
+	 * @return JSONResponse The execution result or typed error payload.
+	 */
+	private function executeOn(ObjectRef $ref, string $handoffId): JSONResponse {
 		try {
-			$result = $this->handoffService->execute(register: $register, schema: $schema, id: $id, handoffId: $handoffId);
+			$result = $this->handoffService->execute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id, handoffId: $handoffId);
 			return new JSONResponse(data: $result, statusCode: $this->executedStatus(result: $result));
 		} catch (HandoffException $e) {
 			return $this->handoffRefusal(e: $e);
@@ -165,7 +189,7 @@ class HandoffController extends Controller {
 		} catch (\Throwable $e) {
 			return $this->failure(e: $e, operation: 'execute');
 		}
-	}//end execute()
+	}//end executeOn()
 
 	/**
 	 * 202 for a parked (queue-mode) handoff, 200 otherwise.
