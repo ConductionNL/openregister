@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTasks;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepTimers;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
+use OCA\OpenRegister\Service\Task\TimerOutcome;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -166,7 +168,10 @@ class FlowTimerSweepTest extends TestCase {
 		$taskService = $this->createMock(TaskService::class);
 		$applied = [];
 		$taskService->method('applyTimerOutcome')->willReturnCallback(
-			static function (string $uuid, string $outcome, string $source, string $reason) use (&$applied): Task {
+			static function (string $uuid, TimerOutcome $timer) use (&$applied): Task {
+				$outcome = $timer->outcome;
+				$source  = $timer->trigger->source;
+				$reason  = $timer->trigger->reason;
 				if ($uuid === 't-2') {
 					throw new RuntimeException('row is poisoned');
 				}

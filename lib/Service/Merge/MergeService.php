@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Merge;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
@@ -53,6 +54,7 @@ use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Survivorship\MasterRecord;
 use OCA\OpenRegister\Service\Survivorship\GoldenRecordRequest;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
@@ -1001,16 +1003,16 @@ class MergeService implements ObjectMergerInterface {
 
 		return array_merge(
 			$this->sourceRecordResolver->resolveSources(
-				masterData: $intoData,
-				masterUuid: (string)$pair->intoObject->getUuid(),
-				config: $survivorshipConfig,
-				masterRegister: (string)$pair->intoObject->getRegister()
+				master: new MasterRecord(data: $intoData, uuid: (string)$pair->intoObject->getUuid(), register: (string)$pair->intoObject->getRegister()),
+				config: $survivorshipConfig
 			),
 			$this->sourceRecordResolver->resolveSources(
-				masterData: ($pair->fromObject->getObject() ?? []),
-				masterUuid: (string)$pair->fromObject->getUuid(),
-				config: $survivorshipConfig,
-				masterRegister: (string)$pair->fromObject->getRegister()
+				master: new MasterRecord(
+					data: ($pair->fromObject->getObject() ?? []),
+					uuid: (string)$pair->fromObject->getUuid(),
+					register: (string)$pair->fromObject->getRegister()
+				),
+				config: $survivorshipConfig
 			)
 		);
 	}//end survivorSources()
@@ -1311,10 +1313,12 @@ class MergeService implements ObjectMergerInterface {
 
 		foreach ([$pair->fromObject, $pair->intoObject] as $subject) {
 			try {
-				$this->auditTrailMapper->createAuditTrailEntry(
-					object: $subject,
-					action: self::MERGE_REFUSED_ACTION,
-					context: $context
+				$this->auditTrailMapper->recordObjectEvent(
+					event: new ObjectAuditEvent(
+						object: $subject,
+						action: self::MERGE_REFUSED_ACTION,
+						context: $context
+					)
 				);
 			} catch (Throwable $e) {
 				$this->logger->warning('[MergeService] attempted-merge audit failed: ' . $e->getMessage());

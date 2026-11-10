@@ -114,7 +114,7 @@ class PartyRoleServiceAccessGoldenTest extends TestCase {
 	private function service(): PartyRoleService {
 		$audit = $this->getMockBuilder(AuditTrailMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['createAuditTrailEntry'])
+			->onlyMethods(['recordObjectEvent'])
 			->getMock();
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willReturnCallback(
