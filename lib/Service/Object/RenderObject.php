@@ -3650,12 +3650,7 @@ class RenderObject implements RenderObjectInterface {
 		$served = $this->enrichers->translations->languageService->getPreferredLanguage();
 		$languageMeta = [];
 		foreach ($translatableProps as $property) {
-			$sourceLanguage = $this->resolveSourceLanguageForProperty(
-				schema: $subject->schema,
-				preResolveData: $subject->preResolveData,
-				property: $property,
-				registerDefault: $subject->registerDefault
-			);
+			$sourceLanguage = $this->resolveSourceLanguageForProperty(subject: $subject, property: $property);
 			$languageMeta[$property] = $this->languageEntry(served: $served, sourceLanguage: $sourceLanguage);
 		}
 
@@ -3730,41 +3725,30 @@ class RenderObject implements RenderObjectInterface {
 	 * Resolve the source language for a single property from object override
 	 * → schema modifier → register default.
 	 *
-	 * @param Schema $schema The schema for the entity.
-	 * @param array<string, mixed> $preResolveData Raw object data with `_translationMeta` block intact.
-	 * @param string $property The translatable property name.
-	 * @param string $registerDefault Register-level default.
+	 * @param LanguageMetaSubject $subject  The schema, the register default and the raw object data with its `_translationMeta` block intact.
+	 * @param string              $property The translatable property name.
 	 *
 	 * @return string Resolved BCP-47 source language.
 	 *
 	 * @spec openspec/specs/i18n-source-of-truth/spec.md
 	 */
-	private function resolveSourceLanguageForProperty(
-		Schema $schema,
-		array $preResolveData,
-		string $property,
-		string $registerDefault,
-	): string {
-		$rule = new PropertySourceLanguage(schema: $schema, registerDefault: $registerDefault);
-		return $rule->forProperty(body: $preResolveData, property: $property);
+	private function resolveSourceLanguageForProperty(LanguageMetaSubject $subject, string $property): string {
+		$rule = new PropertySourceLanguage(schema: $subject->schema, registerDefault: $subject->registerDefault);
+		return $rule->forProperty(body: $subject->preResolveData, property: $property);
 	}//end resolveSourceLanguageForProperty()
 
 	/**
 	 * Handle extends containing a wildcard ($)
 	 *
-	 * @param array $objectData The data to extend
-	 * @param array $_extend The fields that should be extended
-	 * @param int $depth The current depth.
+	 * @param ExtendDotRun $run     The pass: the data to extend, as a Dot, and the current depth
+	 * @param array        $_extend The fields that should be extended; its wildcard entries leave it
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function handleWildcardExtends(array $objectData, array &$_extend, int $depth): array {
-		$run = new ExtendDotRun();
-		$run->data = new Dot($objectData);
-		$run->depth = $depth;
-		if ($depth >= 10) {
+	private function handleWildcardExtends(ExtendDotRun $run, array &$_extend): array {
+		if ($run->depth >= 10) {
 			return $run->data->all();
 		}
 
@@ -3826,7 +3810,7 @@ class RenderObject implements RenderObjectInterface {
 			$tmpExtends = $run->keyExtends;
 			$nested = new ExtendDotRun();
 			$nested->depth = $run->depth;
-			$data[$key] = $this->handleExtendDot(data: $date, _extend: $tmpExtends, run: $nested);
+			$data[$key] = $this->handleExtendDot(request: new ExtendDotRequest(data: $date, extend: $tmpExtends), run: $nested);
 		}
 
 		$run->data->set($run->key, $data);
@@ -3835,13 +3819,9 @@ class RenderObject implements RenderObjectInterface {
 	/**
 	 * Handle extends on a dot array
 	 *
-	 * @param array        $data      The data to extend.
-	 * @param array        $_extend   The fields to extend.
-	 * @param ExtendDotRun $run       The extend pass: its depth, whether all relations
-	 *                                extend, and the ids already handled on this path.
-	 * @param array        $exposures The relation descriptors that declare a field set, keyed by
-	 *                         the property the link hangs on. Empty for every schema that
-	 *                         declares none, which is every schema written so far.
+	 * @param ExtendDotRequest $request The data, the fields to extend and the links' exposure.
+	 * @param ExtendDotRun     $run     The extend pass: its depth, whether all relations
+	 *                                  extend, and the ids already handled on this path.
 	 *
 	 * @return array
 	 *
@@ -3849,8 +3829,9 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function handleExtendDot(array $data, array &$_extend, ExtendDotRun $run, array $exposures = []): array {
-		$data      = $this->handleWildcardExtends(objectData: $data, _extend: $_extend, depth: $run->depth + 1);
+	private function handleExtendDot(ExtendDotRequest $request, ExtendDotRun $run): array {
+		$_extend   = $request->extend;
+		$data      = $this->handleWildcardExtends(run: self::wildcardRun(data: $request->data, depth: $run->depth + 1), _extend: $_extend);
 		$run->data = new Dot($data);
 
 		foreach ($_extend as $override => $key) {
@@ -3861,7 +3842,7 @@ class RenderObject implements RenderObjectInterface {
 
 			$run->override = $override;
 			$run->key = $key;
-			$run->descriptor = ($exposures[$key] ?? null);
+			$run->descriptor = ($request->exposures[$key] ?? null);
 			$run->keyExtends = array_map(
 				fn (string $extendedKey) => substr(string: $extendedKey, offset: strlen($key) + 1),
 				array_filter(
@@ -3874,6 +3855,24 @@ class RenderObject implements RenderObjectInterface {
 
 		return $run->data->jsonSerialize();
 	}//end handleExtendDot()
+
+	/**
+	 * A wildcard pass over the data at the given depth.
+	 *
+	 * @param array $data  The data to extend
+	 * @param int   $depth The depth of the pass
+	 *
+	 * @return ExtendDotRun
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function wildcardRun(array $data, int $depth): ExtendDotRun {
+		$run        = new ExtendDotRun();
+		$run->data  = new Dot($data);
+		$run->depth = $depth;
+
+		return $run;
+	}//end wildcardRun()
 
 	/**
 	 * Extend the value at the run's key: a list of references or a single one.
@@ -4195,8 +4194,7 @@ class RenderObject implements RenderObjectInterface {
 
 		$projected = $this->exposureRules()->project(
 			farObject: $body,
-			relationType: $descriptor,
-			readable: array_map('strval', array_keys($body))
+			visible: $this->exposureRules()->visibleProperties(relationType: $descriptor, readable: array_map('strval', array_keys($body)))
 		);
 
 		if (is_array($envelope['@self'] ?? null) === true) {
@@ -4270,12 +4268,13 @@ class RenderObject implements RenderObjectInterface {
 		$dotRun->allFlag    = in_array('all', $run->extend, true);
 		$dotRun->visitedIds = $context->path->visitedIds;
 
-		return $this->handleExtendDot(
+		$request = new ExtendDotRequest(
 			data: $run->objectData,
-			_extend: $run->extend,
-			run: $dotRun,
+			extend: $run->extend,
 			exposures: $this->exposuresFor(schema: $this->getSchema(id: $entity->getSchema()))
 		);
+
+		return $this->handleExtendDot(request: $request, run: $dotRun);
 	}//end extendObject()
 
 	/**
