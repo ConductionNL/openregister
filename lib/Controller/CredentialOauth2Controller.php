@@ -525,28 +525,53 @@ class CredentialOauth2Controller extends Controller {
 		$data = $entity->jsonSerialize();
 		unset($data['@self']);
 
-		$lastError = '';
-		try {
-			$lastError = $this->connect->revokeUpstream(
-				revocation: new OAuth2Revocation(
-					provider: $this->connect->oauth2Provider(providerId: (string)($data['provider'] ?? '')),
-					credential: $data,
-					address: new TokenSetAddress(credentialId: $uuid, scope: (string)($data['scope'] ?? 'personal'))
-				)
-			);
-		} catch (Throwable $failure) {
-			// An unreachable or unknown provider must not keep a tenant connected.
-			$lastError = 'revoke_failed';
-		}
+		return $this->disconnected(connection: new OAuth2ConnectionRecord(credentialId: $uuid, data: $data));
+	}//end disconnect()
+
+	/**
+	 * Revoke the connection at the provider, then disable it here whatever the provider said.
+	 *
+	 * @param OAuth2ConnectionRecord $connection The guarded row, by its uuid
+	 *
+	 * @return JSONResponse Disabled, with whether the provider revoked it; or a 500 when disabling failed
+	 */
+	private function disconnected(OAuth2ConnectionRecord $connection): JSONResponse {
+		$lastError = $this->upstreamRevocationError(connection: $connection);
 
 		try {
-			$this->connections->disable(connection: new OAuth2ConnectionRecord(credentialId: $uuid, data: $data), lastError: $lastError);
+			$this->connections->disable(connection: $connection, lastError: $lastError);
 		} catch (Throwable $failure) {
 			return new JSONResponse(['message' => 'Unable to disconnect'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
 		return new JSONResponse(['status' => 'disabled', 'revoked' => ($lastError === '')]);
-	}//end disconnect()
+	}//end disconnected()
+
+	/**
+	 * Revoke the connection's tokens at the provider.
+	 *
+	 * An unreachable or unknown provider must not keep a tenant connected: its
+	 * failure is reported as `revoke_failed` and the local disable still happens.
+	 *
+	 * @param OAuth2ConnectionRecord $connection The guarded row, by its uuid
+	 *
+	 * @return string The provider's last error, empty when it revoked
+	 */
+	private function upstreamRevocationError(OAuth2ConnectionRecord $connection): string {
+		$data = $connection->data;
+
+		try {
+			return $this->connect->revokeUpstream(
+				revocation: new OAuth2Revocation(
+					provider: $this->connect->oauth2Provider(providerId: (string)($data['provider'] ?? '')),
+					credential: $data,
+					address: new TokenSetAddress(credentialId: $connection->credentialId, scope: (string)($data['scope'] ?? 'personal'))
+				)
+			);
+		} catch (Throwable $failure) {
+			return 'revoke_failed';
+		}
+	}//end upstreamRevocationError()
 
 	/**
 	 * GET /oauth2/client-metadata.json — this instance's own AT Protocol client metadata.
