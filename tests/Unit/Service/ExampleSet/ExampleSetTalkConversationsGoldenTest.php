@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkRoom;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TalkLink;
@@ -107,7 +108,8 @@ class ExampleSetTalkConversationsGoldenTest extends TestCase {
 	private function talkStore(): ExampleSetTalkStore {
 		$store = $this->createMock(ExampleSetTalkStore::class);
 		$store->method('available')->willReturnCallback(fn (): bool => ($this->world['talk'] ?? true));
-		$store->method('room')->willReturnCallback(function (string $owner, string $name, array $participants): array {
+		$store->method('openRoom')->willReturnCallback(function (ExampleSetTalkRoom $room): array {
+			[$owner, $name, $participants] = [$room->owner, $room->name, $room->participants];
 			$this->calls[] = ['room', $owner, $name, $participants];
 			if (($this->world['roomFails'] ?? false) === true) {
 				throw new RuntimeException('Talk refused the room');

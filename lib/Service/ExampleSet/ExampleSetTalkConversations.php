@@ -184,7 +184,9 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	private function writeOn(ObjectEntity $object, array $conversation): array {
 		$data                   = $conversation['data'];
 		$conversation['people'] = array_values(array_unique($this->people(data: $data)));
-		$conversation['room']   = $this->store()->room(owner: (string) $data['owner'], name: (string) $data['name'], participants: $conversation['people']);
+		$conversation['room']   = $this->store()->openRoom(
+			room: new ExampleSetTalkRoom(owner: (string) $data['owner'], name: (string) $data['name'], participants: $conversation['people'])
+		);
 		$this->holdCall(conversation: $conversation);
 		$link = $this->link(object: $object, conversation: $conversation);
 

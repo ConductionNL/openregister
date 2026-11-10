@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkRoom;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
 use OCP\App\IAppManager;
 use OCP\IUser;
@@ -140,12 +141,12 @@ class ExampleSetTalkStoreRoomTest extends TestCase {
 	public function testAnExistingGroupRoomOfTheSameNameIsFound(): void {
 		$rooms = [self::room('one-to-one', 1, 'Case 1', 1), self::room('group', 2, 'Case 1', 2)];
 
-		$this->assertSame(['token' => 'group', 'id' => 2, 'created' => false], $this->store($rooms)->room(owner: 'alice', name: 'Case 1', participants: ['bob']));
+		$this->assertSame(['token' => 'group', 'id' => 2, 'created' => false], $this->store($rooms)->openRoom(room: new ExampleSetTalkRoom(owner: 'alice', name: 'Case 1', participants: ['bob'])));
 		$this->assertSame([], $this->calls);
 	}
 
 	public function testAMissingRoomIsCreatedWithTheOtherExistingParticipants(): void {
-		$made = $this->store([self::room('other', 3, 'Case 2', 2)])->room(owner: 'alice', name: 'Case 1', participants: ['alice', 'bob', 'ghost']);
+		$made = $this->store([self::room('other', 3, 'Case 2', 2)])->openRoom(room: new ExampleSetTalkRoom(owner: 'alice', name: 'Case 1', participants: ['alice', 'bob', 'ghost']));
 
 		$this->assertSame(['token' => 'new-token', 'id' => 9, 'created' => true], $made);
 		$this->assertSame(

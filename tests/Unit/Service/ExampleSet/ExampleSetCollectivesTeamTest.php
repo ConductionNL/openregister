@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\CollectiveTeam;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesStore;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
@@ -121,7 +122,7 @@ class ExampleSetCollectivesTeamTest extends TestCase {
 	}//end found()
 
 	public function testAFoundCollectiveGainsEachGroupInTheOwnersSessionAndARefusedGroupIsLeftOut(): void {
-		$result = $this->store(existing: self::found())->collective('admin', 'Demo', ['g1', 'refused', 'g2']);
+		$result = $this->store(existing: self::found())->collectiveOf(new CollectiveTeam('admin', ['g1', 'refused', 'g2']), 'Demo');
 
 		$this->assertSame(['id' => 12, 'created' => false], $result);
 		$this->assertSame(
@@ -131,14 +132,14 @@ class ExampleSetCollectivesTeamTest extends TestCase {
 	}
 
 	public function testAMadeCollectiveGainsItsGroupsOnItsOwnCircle(): void {
-		$result = $this->store(existing: null)->collective('admin', 'Demo', ['g1']);
+		$result = $this->store(existing: null)->collectiveOf(new CollectiveTeam('admin', ['g1']), 'Demo');
 
 		$this->assertSame(['id' => 77, 'created' => true], $result);
 		$this->assertSame([['start', '1:admin'], ['add', 'made-circle', '2:g1'], ['stop']], $this->circles->calls);
 	}
 
 	public function testNoGroupsOpensNoCirclesSession(): void {
-		$this->store(existing: self::found())->collective('admin', 'Demo', []);
+		$this->store(existing: self::found())->collectiveOf(new CollectiveTeam('admin', []), 'Demo');
 
 		$this->assertSame([], $this->circles->calls);
 	}
