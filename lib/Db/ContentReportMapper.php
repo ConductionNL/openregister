@@ -25,9 +25,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Reads and writes content reports.
@@ -37,6 +35,8 @@ use Symfony\Component\Uid\Uuid;
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class ContentReportMapper extends QBMapper implements ContentReportMapperInterface {
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -62,12 +62,7 @@ class ContentReportMapper extends QBMapper implements ContentReportMapperInterfa
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function find(int $id): ContentReport {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
 	}//end find()
 
 	/**
@@ -80,20 +75,12 @@ class ContentReportMapper extends QBMapper implements ContentReportMapperInterfa
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function findByUuid(string $uuid): ?ContentReport {
-		if ($uuid === '') {
-			return null;
+		$found = $this->findOneByFilledColumn(name: 'uuid', value: $uuid);
+		if ($found instanceof ContentReport) {
+			return $found;
 		}
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
+		return null;
 	}//end findByUuid()
 
 	/**
@@ -160,21 +147,10 @@ class ContentReportMapper extends QBMapper implements ContentReportMapperInterfa
 	 *
 	 * @return ContentReport The persisted report.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
-	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function insert($entity): ContentReport {
-		if ($entity->getUuid() === null || $entity->getUuid() === '') {
-			$entity->setUuid((string)Uuid::v4());
-		}
-
-		$now = new DateTime();
-		if ($entity->getCreated() === null) {
-			$entity->setCreated($now);
-		}
-
-		$entity->setUpdated($now);
+		(new NewRowStamps())->onInsert(entity: $entity);
 
 		return parent::insert(entity: $entity);
 	}//end insert()
