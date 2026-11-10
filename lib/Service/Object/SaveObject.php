@@ -29,6 +29,8 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use OCA\OpenRegister\Service\RecordUpdate;
 use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
@@ -47,7 +49,6 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\LockedException;
@@ -4425,13 +4426,20 @@ class SaveObject implements SaveObjectInterface {
 		$config = ($objectSource['config'] ?? []);
 
 		if ($uuid === null || $uuid === '') {
-			$entity = $provider->insert(register: $register, schema: $schema, data: $data, config: $config);
+			$entity = $provider->insert(
+				source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $schema), config: $config),
+				data: $data
+			);
 			$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'create', old: null, new: $entity), silent: $silent);
 			return $entity;
 		}
 
-		$old = $provider->find(register: $register, schema: $schema, id: $uuid, config: $config);
-		$entity = $provider->update(register: $register, schema: $schema, id: $uuid, data: $data, config: $config);
+		$old = $provider->find(source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $schema), config: $config), id: $uuid);
+		$entity = $provider->update(
+			source: new SourcedTable(table: new RegisterSchema(register: $register, schema: $schema), config: $config),
+			id: $uuid,
+			data: $data
+		);
 		$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'update', old: $old, new: $entity), silent: $silent);
 
 		return $entity;
