@@ -648,7 +648,7 @@ class WebhookServiceTest extends TestCase {
 		// No delivery should happen
 		$this->webhookLogMapper->expects($this->never())->method('insert');
 
-		$this->service->dispatchEvent($event, 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', ['test' => 'data']);
+		$this->service->dispatchEvent('OCA\\OpenRegister\\Event\\ObjectCreatedEvent', ['test' => 'data']);
 	}
 
 	public function testDispatchEventWithExceptionOnFindForEvent(): void {
@@ -660,7 +660,7 @@ class WebhookServiceTest extends TestCase {
 		// Should silently skip
 		$this->webhookLogMapper->expects($this->never())->method('insert');
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['test' => 'data']);
+		$this->service->dispatchEvent('SomeEvent', ['test' => 'data']);
 	}
 
 	public function testDispatchEventEnqueuesDeliveryJobPerWebhookAndDoesNotDeliverSynchronously(): void {
@@ -685,7 +685,6 @@ class WebhookServiceTest extends TestCase {
 			});
 
 		$this->service->dispatchEvent(
-			$event,
 			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			['test' => 'data']
 		);
@@ -712,7 +711,7 @@ class WebhookServiceTest extends TestCase {
 		$this->logger->expects($this->atLeastOnce())->method('error')
 			->with($this->stringContains('could not be enqueued'), $this->callback(static fn (array $context): bool => $context['webhook_id'] === 1));
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['test' => str_repeat('x', 5000)]);
+		$this->service->dispatchEvent('SomeEvent', ['test' => str_repeat('x', 5000)]);
 
 		$this->assertSame([2], $enqueued, 'the refusal is contained to the one delivery');
 	}
@@ -1626,7 +1625,7 @@ class WebhookServiceTest extends TestCase {
 				$this->anything()
 			);
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['data' => 'test']);
+		$this->service->dispatchEvent('SomeEvent', ['data' => 'test']);
 	}//end testDispatchEventLogsDebugForNoWebhooks()
 
 	/**
@@ -1649,7 +1648,7 @@ class WebhookServiceTest extends TestCase {
 				})
 			);
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['data' => 'test']);
+		$this->service->dispatchEvent('SomeEvent', ['data' => 'test']);
 	}//end testDispatchEventLogsInfoWhenWebhooksFound()
 
 	// ─── interceptRequest with CloudEventFormatter ──────────────────
