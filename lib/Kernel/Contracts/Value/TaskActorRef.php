@@ -1,13 +1,13 @@
 <?php
 
 /**
- * A delegation of a task: who takes it over, under which mandate.
+ * TaskActorRef: the task a lifecycle verb acts on, and who acts.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister\Service\Task
+ * @category Contract
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,23 +20,24 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Task;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
- * The delegate and the mandate of one delegation.
+ * One task, by uuid, and the identity acting on it; null when the system acts.
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
-final class TaskDelegation {
+final class TaskActorRef {
+
 	/**
-	 * The delegation.
+	 * Constructor
 	 *
-	 * @param string $delegate Who takes the task over.
-	 * @param string $mandate The authority relied on.
+	 * @param string $uuid The task uuid.
+	 * @param string|null $actor The acting user id, or null for the system.
 	 */
 	public function __construct(
-		public readonly string $delegate,
-		public readonly string $mandate,
+		public readonly string $uuid,
+		public readonly ?string $actor,
 	) {
 	}//end __construct()
 }//end class
