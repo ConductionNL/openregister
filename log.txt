@@ -1897,3 +1897,4 @@
 2026-11-10T11:37:20Z precheck-20261110T113316-4d357610 NORESULT tree ff34e9eb00 prs 1: php-1.log: no Tests line
 2026-11-10T11:37:27Z precheck-20261110T113051-6c6f1023 NORESULT tree fe3f630867 prs 1: php-1.log: no Tests line
 2026-11-10T11:37:36Z precheck-20261110T112859-4f7c9c7a CONFLICT-DEV #8857 58a7045b
+2026-11-10T11:37:39Z integrator-20261110T111852-c9674639 RED tree 2f35c5ac60 prs 50 front=skip: Tests: 54830, Assertions: 181064, Errors: 31, Failures: 15, Warnings: 3, Deprecations: 4, ; first failures: OCA\OpenRegister\Tests\Unit\Service\Object\RelationHandlerBatchFailureTest::testAFailingBatchIsLoggedAndSkippe;OCA\OpenRegister\Tests\Unit\Service\Object\RelationHandlerBulkLoadGoldenTest::testBulkLoadMatchesGolden;OCA\OpenRegister\Tests\Unit\Service\Object\RelationHandlerChunkLoadTest::testBulkLoadIndexesTheLoadedObjects
