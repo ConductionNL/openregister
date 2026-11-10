@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * Applies, proves and reverts changes to existing objects.
  *
@@ -547,6 +549,9 @@ class ExampleSetChanges {
 			return [];
 		}
 
-		return $this->store->matching(register: (string) $change['register'], schema: (string) $change['schema'], where: $where);
+		return $this->store->rowsMatching(
+			table: new RegisterSchemaRef(register: (string) $change['register'], schema: (string) $change['schema']),
+			where: $where
+		);
 	}//end target()
 }//end class

@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+
 /**
  * Reads the fields a change touches.
  *
@@ -110,7 +112,9 @@ class ExampleSetChangeFields {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
 	 */
 	public function write(array $object, array $data): string {
-		return $this->store->update(register: (string) $object['register'], schema: (string) $object['schema'], id: (string) $object['id'], data: $data);
+		$ref = new ObjectRef(register: (string) $object['register'], schema: (string) $object['schema'], id: (string) $object['id']);
+
+		return $this->store->update(ref: $ref, data: $data);
 	}//end write()
 
 	/**
