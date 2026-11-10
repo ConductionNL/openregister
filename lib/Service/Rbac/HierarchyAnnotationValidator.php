@@ -168,6 +168,23 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 	}//end maxDepthFindings()
 
 	/**
+	 * Whether a verb list holds a non-string or blank entry.
+	 *
+	 * @param array<int|string, mixed> $verbs The declared verbs.
+	 *
+	 * @return bool True at the first entry that is not a non-empty name.
+	 */
+	private static function holdsBlankVerb(array $verbs): bool {
+		foreach ($verbs as $verb) {
+			if (is_string($verb) === false || trim($verb) === '') {
+				return true;
+			}
+		}
+
+		return false;
+	}//end holdsBlankVerb()
+
+	/**
 	 * Findings for the optional `inheritedVerbs` key.
 	 *
 	 * A non-list and a list holding a blank name are BOTH reported when both
@@ -188,21 +205,12 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 		$findings = [];
 		$verbs = $annotation['inheritedVerbs'];
 		if (is_array($verbs) === false) {
-			$findings[] = $this->error(
-				code: 'hierarchy.bad-verbs',
-				message: 'inheritedVerbs must be a list of verbs.'
-			);
+			$findings[] = $this->error(code: 'hierarchy.bad-verbs', message: 'inheritedVerbs must be a list of verbs.');
 			$verbs = [];
 		}
 
-		foreach ($verbs as $verb) {
-			if (is_string($verb) === false || trim($verb) === '') {
-				$findings[] = $this->error(
-					code: 'hierarchy.bad-verbs',
-					message: 'inheritedVerbs must hold non-empty verb names.'
-				);
-				break;
-			}
+		if (self::holdsBlankVerb(verbs: $verbs) === true) {
+			$findings[] = $this->error(code: 'hierarchy.bad-verbs', message: 'inheritedVerbs must hold non-empty verb names.');
 		}
 
 		return $findings;
