@@ -64,26 +64,25 @@ class RegistrySubscriptionNotifier {
 	 * The event names the register and schema the object itself carries.
 	 *
 	 * @param ObjectEntity $object The object requesting a subscription.
-	 * @param string $registry The registry id (`brp`, `kvk`, ...).
-	 * @param string $identityValue The object's identity value at that registry.
+	 * @param RegistryIdentity $identity The registry and the object's identity value there.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
 	 */
-	public function requested(ObjectEntity $object, string $registry, string $identityValue): void {
+	public function requested(ObjectEntity $object, RegistryIdentity $identity): void {
 		$this->eventDispatcher->dispatchTyped(new RegistrySubscriptionRequestedEvent(
 			objectUuid: (string)$object->getUuid(),
 			register: (string)$object->getRegister(),
 			schema: (string)$object->getSchema(),
-			registry: $registry,
-			identityValue: $identityValue,
+			registry: $identity->registry,
+			identityValue: $identity->identityValue,
 		));
 
 		$this->auditTrailMapper->createAuditTrailEntry(
 			object: $object,
 			action: 'registry.subscription.requested',
-			context: ['registry' => $registry],
+			context: ['registry' => $identity->registry],
 		);
 	}//end requested()
 
@@ -92,24 +91,23 @@ class RegistrySubscriptionNotifier {
 	 * it against the session user.
 	 *
 	 * @param ObjectEntity $object The object ending its subscription.
-	 * @param string $registry The registry id (`brp`, `kvk`, ...).
-	 * @param string $identityValue The object's identity value at that registry.
+	 * @param RegistryIdentity $identity The registry and the object's identity value there.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
 	 */
-	public function ended(ObjectEntity $object, string $registry, string $identityValue): void {
+	public function ended(ObjectEntity $object, RegistryIdentity $identity): void {
 		$this->eventDispatcher->dispatchTyped(new RegistrySubscriptionEndedEvent(
 			objectUuid: (string)$object->getUuid(),
-			registry: $registry,
-			identityValue: $identityValue,
+			registry: $identity->registry,
+			identityValue: $identity->identityValue,
 		));
 
 		$this->auditTrailMapper->createAuditTrailEntry(
 			object: $object,
 			action: 'registry.subscription.ended',
-			context: ['registry' => $registry],
+			context: ['registry' => $identity->registry],
 		);
 	}//end ended()
 
@@ -120,19 +118,18 @@ class RegistrySubscriptionNotifier {
 	 * own session-derived audit entry.
 	 *
 	 * @param ObjectEntity $object The updated object.
-	 * @param string $registry The registry id (`brp`, `kvk`, ...).
-	 * @param string $eventReference The registry's own event reference for this change.
-	 * @param array<int, string> $properties The property names that were changed.
+	 * @param InboundUpdate $update The applied update (registry, event reference, changed properties).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-inbound-registry-update-writes-owned-properties-only
 	 */
-	public function auditInboundUpdate(ObjectEntity $object, string $registry, string $eventReference, array $properties): void {
+	public function auditInboundUpdate(ObjectEntity $object, InboundUpdate $update): void {
+		$registry = $update->identity->registry;
 		$this->auditTrailMapper->createAuditTrailEntry(
 			object: $object,
 			action: 'registry.update',
-			context: ['registry' => $registry, 'eventReference' => $eventReference, 'properties' => $properties],
+			context: ['registry' => $registry, 'eventReference' => $update->eventReference, 'properties' => $update->propertyNames()],
 			actorId: 'registry:' . $registry,
 			actorName: 'Registry (' . $registry . ')',
 		);

@@ -217,7 +217,7 @@ class PersonLinkWriteGoldenTest extends TestCase {
 		$session->method('getUser')->willReturnOnConsecutiveCalls($admin, $admin, null, null);
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('linkToRoute')->willReturnCallback(fn (string $route, array $args): string => $route.'?'.http_build_query($args));
-		$writer = new UserLinkWriter($links, $users, $session, $urls);
+		$writer = new UserLinkWriter($links, new \OCA\OpenRegister\Service\UserDirectory(session: $session, users: $users, groups: $this->createMock(\OCP\IGroupManager::class)), $urls);
 
 		$writer->write('case-1', 5, null, 'jan', null);
 		$writer->write('case-1', 5, 7, 'jan', 'handler');

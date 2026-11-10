@@ -30,6 +30,8 @@ use OCA\OpenRegister\Service\Archival\AnonymisationPlanner;
 use OCA\OpenRegister\Service\Archival\AnonymisationProfile;
 use OCA\OpenRegister\Service\Archival\AnonymisationService;
 use OCA\OpenRegister\Service\Archival\Appraisal;
+use OCA\OpenRegister\Service\Archival\SaltedProfile;
+use OCA\OpenRegister\Service\Archival\PayloadChange;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -102,11 +104,7 @@ class AnonymisationTest extends TestCase {
 	 * @return void
 	 */
 	public function testRemoveLeavesNothingToRead(): void {
-		$after = $this->service->apply(
-			payload: $this->payload(),
-			profile: ['naam' => ['treatment' => AnonymisationProfile::REMOVE]],
-			salt: 'salt'
-		);
+		$after = $this->service->apply(payload: $this->payload(), profile: new SaltedProfile(rules: ['naam' => ['treatment' => AnonymisationProfile::REMOVE]], salt: 'salt'));
 
 		$this->assertArrayNotHasKey('naam', $after);
 		$this->assertStringNotContainsString('Fatima', json_encode($after));
@@ -120,8 +118,8 @@ class AnonymisationTest extends TestCase {
 	public function testFixedWritesOneValueOverEveryone(): void {
 		$profile = ['uitkomst' => ['treatment' => AnonymisationProfile::FIXED, 'value' => 'afgehandeld']];
 
-		$one = $this->service->apply(payload: ['uitkomst' => 'toegekend'], profile: $profile, salt: 's');
-		$two = $this->service->apply(payload: ['uitkomst' => 'afgewezen'], profile: $profile, salt: 's');
+		$one = $this->service->apply(payload: ['uitkomst' => 'toegekend'], profile: new SaltedProfile(rules: $profile, salt: 's'));
+		$two = $this->service->apply(payload: ['uitkomst' => 'afgewezen'], profile: new SaltedProfile(rules: $profile, salt: 's'));
 
 		$this->assertSame('afgehandeld', $one['uitkomst']);
 		$this->assertSame($one['uitkomst'], $two['uitkomst']);
@@ -139,9 +137,9 @@ class AnonymisationTest extends TestCase {
 	public function testThePseudonymJoinsTwoRowsWithoutNamingAnyone(): void {
 		$profile = ['bsn' => ['treatment' => AnonymisationProfile::PSEUDONYM]];
 
-		$first = $this->service->apply(payload: ['bsn' => '123456782'], profile: $profile, salt: 'instance-salt');
-		$again = $this->service->apply(payload: ['bsn' => '123456782'], profile: $profile, salt: 'instance-salt');
-		$other = $this->service->apply(payload: ['bsn' => '987654321'], profile: $profile, salt: 'instance-salt');
+		$first = $this->service->apply(payload: ['bsn' => '123456782'], profile: new SaltedProfile(rules: $profile, salt: 'instance-salt'));
+		$again = $this->service->apply(payload: ['bsn' => '123456782'], profile: new SaltedProfile(rules: $profile, salt: 'instance-salt'));
+		$other = $this->service->apply(payload: ['bsn' => '987654321'], profile: new SaltedProfile(rules: $profile, salt: 'instance-salt'));
 
 		$this->assertSame($first['bsn'], $again['bsn'], 'the same person must still join across rows');
 		$this->assertNotSame($first['bsn'], $other['bsn'], 'two people must not collapse into one');
@@ -168,7 +166,7 @@ class AnonymisationTest extends TestCase {
 	 * @return void
 	 */
 	public function testGeneraliseCoarsensADateAndAPostcode(): void {
-		$after = $this->service->apply(payload: $this->payload(), profile: $this->annotation()[AnonymisationProfile::ANNOTATION_KEY], salt: 's');
+		$after = $this->service->apply(payload: $this->payload(), profile: new SaltedProfile(rules: $this->annotation()[AnonymisationProfile::ANNOTATION_KEY], salt: 's'));
 
 		$this->assertSame('1984', $after['geboortedatum']);
 		$this->assertSame('2511', $after['postcode']);
@@ -183,11 +181,7 @@ class AnonymisationTest extends TestCase {
 	 * @return void
 	 */
 	public function testAValueThatWillNotCoarsenIsNotLeftInPlace(): void {
-		$after = $this->service->apply(
-			payload: ['geboortedatum' => 'onbekend, zie dossier'],
-			profile: ['geboortedatum' => ['treatment' => AnonymisationProfile::GENERALISE, 'grain' => AnonymisationProfile::GRAIN_YEAR]],
-			salt: 's'
-		);
+		$after = $this->service->apply(payload: ['geboortedatum' => 'onbekend, zie dossier'], profile: new SaltedProfile(rules: ['geboortedatum' => ['treatment' => AnonymisationProfile::GENERALISE, 'grain' => AnonymisationProfile::GRAIN_YEAR]], salt: 's'));
 
 		$this->assertNull($after['geboortedatum']);
 	}//end testAValueThatWillNotCoarsenIsNotLeftInPlace()
@@ -202,9 +196,9 @@ class AnonymisationTest extends TestCase {
 	 */
 	public function testTheReportNamesWhatWasDeliberatelyKept(): void {
 		$before = $this->payload();
-		$after = $this->service->apply(payload: $before, profile: $this->annotation()[AnonymisationProfile::ANNOTATION_KEY], salt: 's');
+		$after = $this->service->apply(payload: $before, profile: new SaltedProfile(rules: $this->annotation()[AnonymisationProfile::ANNOTATION_KEY], salt: 's'));
 
-		$report = $this->service->report(before: $before, after: $after, profileName: 'zaak-statistiek');
+		$report = $this->service->report(change: new PayloadChange(before: $before, after: $after), profileName: 'zaak-statistiek');
 
 		$this->assertSame(['zaaknummer'], $report['kept']);
 		$this->assertSame(AnonymisationService::REMOVED, $report['changed']['naam']);
