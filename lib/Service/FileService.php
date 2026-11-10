@@ -69,6 +69,8 @@ use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileOverwrite;
 use OCA\OpenRegister\Service\File\FileContentHandlers;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
+use OCA\OpenRegister\Service\File\FolderAccessCheck;
+use OCA\OpenRegister\Service\File\ObjectFolderOptions;
 use OCA\OpenRegister\Service\File\FileListOptions;
 use OCA\OpenRegister\Service\File\FileMetadataChange;
 use OCA\OpenRegister\Service\File\FileLifecycleHandlers;
@@ -655,7 +657,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	private function createObjectFolderById(ObjectEntity|string $objectEntity, ?IUser $currentUser=null): Node {
 		return $this->folderManagementHandler->createObjectFolderById(
 			objectEntity: $objectEntity,
-			currentUser: $currentUser
+			options: new ObjectFolderOptions(currentUser: $currentUser)
 		);
 	}//end createObjectFolderById()
 
@@ -846,9 +848,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 		// pointing outside `Open Registers/` is still refused; see that method
 		// for the full rationale and the accepted residual case.
 		$this->folderManagementHandler->assertManagedFolderIsAccessible(
-			folderId: (string)$folder,
-			currentUser: $currentUser,
-			objectEntity: $object
+			check: new FolderAccessCheck(folderId: (string)$folder, currentUser: $currentUser, objectEntity: $object)
 		);
 
 		// Only cache successes — failures re-throw and re-check on retry.
