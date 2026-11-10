@@ -920,7 +920,7 @@
   },
   "src/views/avg/AvgIndex.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 18
+      "count": 17
     }
   },
   "src/views/configuration/ConfigurationsIndex.vue": {
