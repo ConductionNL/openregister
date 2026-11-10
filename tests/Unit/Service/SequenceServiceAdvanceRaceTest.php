@@ -41,7 +41,7 @@ final class SequenceServiceAdvanceRaceTest extends TestCase {
 		$raised = [];
 		$mapper = $this->createMock(SequenceMapper::class);
 		$mapper->method('raiseTo')->willReturnCallback(
-			function (int $registerId, int $schemaId, string $scopeKey, int $minNextValue) use (&$raised): int {
+			function (SequenceScope $scope, int $minNextValue) use (&$raised): int {
 				$raised[] = $minNextValue;
 				return 0;
 			}

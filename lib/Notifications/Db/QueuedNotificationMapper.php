@@ -125,7 +125,7 @@ class QueuedNotificationMapper extends QBMapper implements QueuedNotificationMap
 			$qb->delete($this->getTableName())
 				->where($this->idIs(qb: $qb, id: $id));
 			$qb->executeStatement();
-		} catch (\Throwable $e) {
+		} catch (\Exception $e) {
 			// Best-effort: worst case a stale row survives until the next
 			// sweep re-attempts the delete after a redundant re-flush.
 		}

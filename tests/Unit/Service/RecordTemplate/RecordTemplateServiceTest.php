@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\RecordTemplate;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Db\RecordTemplateMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -300,10 +301,10 @@ class RecordTemplateServiceTest extends TestCase {
 			return $this->rows[$uuid];
 		});
 		$mapper->method('findCandidates')->willReturnCallback(
-			fn (string $userId, ?string $register=null, ?string $schema=null): array => array_values(
+			fn (string $userId, ?ListQuery $query=null): array => array_values(
 				array_filter(
 					$this->rows,
-					static fn (RecordTemplate $row): bool => ($schema === null || $row->getSchema() === $schema)
+					static fn (RecordTemplate $row): bool => (($query?->filters['schema'] ?? null) === null || $row->getSchema() === $query->filters['schema'])
 				)
 			)
 		);

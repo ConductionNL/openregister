@@ -76,12 +76,7 @@ class BulkLegalHoldJob extends QueuedJob {
 			$retentionService = $this->container->get(RetentionServiceInterface::class);
 			$objectMapper = $this->container->get(MagicMapperInterface::class);
 
-			$objects = $objectMapper->findAll(
-				filters: [],
-				schema: $schemaId,
-				_rbac: false,
-				_multitenancy: false
-			);
+			$objects = $objectMapper->findBySchema(schemaId: (int)$schemaId);
 
 			$count = 0;
 

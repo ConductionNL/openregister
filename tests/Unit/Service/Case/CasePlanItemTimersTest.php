@@ -34,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 
 /**
  * The case layer decides what a deadline means for an item; the timer core
@@ -94,7 +95,7 @@ class CasePlanItemTimersTest extends TestCase {
 			}
 		);
 
-		$this->assertSame(2, $this->service()->onEntered(item: $item, actor: 'alice', now: $now));
+		$this->assertSame(2, $this->service()->onEntered(item: $item, act: new FlowTimerAct(actor: 'alice', now: DateTimeImmutable::createFromInterface($now))));
 
 		[$due, $actor] = $armed[0];
 		$this->assertSame('alice', $actor);
@@ -123,7 +124,7 @@ class CasePlanItemTimersTest extends TestCase {
 			}
 		);
 		$item->setDueAt(null);
-		$this->service()->onEntered(item: $item, actor: 'alice', now: $now);
+		$this->service()->onEntered(item: $item, act: new FlowTimerAct(actor: 'alice', now: DateTimeImmutable::createFromInterface($now)));
 		$this->assertSame(FlowTimer::LEGAL_SERVICENORM, $armed[0]['legalEffect']);
 		$this->assertArrayNotHasKey('onExpiry', $armed[0], 'A non-statutory expiry advises; it never terminates.');
 	}//end testArmsDueAndExpiryTimersWhenAnItemBecomesActive()
@@ -147,20 +148,20 @@ class CasePlanItemTimersTest extends TestCase {
 				return new FlowTimer();
 			}
 		);
-		$this->service()->onEntered(item: $far, actor: null, now: $now);
+		$this->service()->onEntered(item: $far, act: new FlowTimerAct(actor: null, now: DateTimeImmutable::createFromInterface($now)));
 		$this->assertSame('calendarDays', $configs[0]['sla']['unit']);
 		$this->assertSame(731, $configs[0]['sla']['value']);
 
 		$past = CaseFixtures::row(id: 7, key: 'past', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
 		$past->setDueAt(new DateTime('2026-10-09T10:00:00+00:00'));
-		$this->assertSame(0, $this->service()->onEntered(item: $past, actor: null, now: $now));
+		$this->assertSame(0, $this->service()->onEntered(item: $past, act: new FlowTimerAct(actor: null, now: DateTimeImmutable::createFromInterface($now))));
 		$plain = CaseFixtures::row(id: 8, key: 'plain', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
-		$this->assertSame(0, $this->service()->onEntered(item: $plain, actor: null, now: $now));
+		$this->assertSame(0, $this->service()->onEntered(item: $plain, act: new FlowTimerAct(actor: null, now: DateTimeImmutable::createFromInterface($now))));
 		$this->assertCount(1, $configs);
 
 		$this->setUp();
 		$this->timers->method('arm')->willThrowException(new RuntimeException('calendar unknown'));
-		$this->assertSame(0, $this->service()->onEntered(item: $far, actor: null, now: $now));
+		$this->assertSame(0, $this->service()->onEntered(item: $far, act: new FlowTimerAct(actor: null, now: DateTimeImmutable::createFromInterface($now))));
 	}//end testEdgesNeverBlockTheTransition()
 
 	/**
@@ -186,7 +187,7 @@ class CasePlanItemTimersTest extends TestCase {
 		$markers = new UnarmedTimerMarkers(appConfig: $appConfig);
 		$service = new CasePlanItemTimers(timers: $this->timers, logger: $logger, markers: $markers);
 
-		$this->assertSame(0, $service->onEntered(item: $statutory, actor: null, now: $now));
+		$this->assertSame(0, $service->onEntered(item: $statutory, act: new FlowTimerAct(actor: null, now: DateTimeImmutable::createFromInterface($now))));
 
 		$this->assertCount(1, $errors);
 		$this->assertStringContainsString('WITHOUT its statutory', $errors[0][0]);
@@ -197,7 +198,7 @@ class CasePlanItemTimersTest extends TestCase {
 		// A service-norm expiry that is refused stays a warning: no marker.
 		$norm = CaseFixtures::row(id: 10, key: 'norm', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
 		$norm->setExpiresAt(new DateTime('2026-10-20T10:00:00+00:00'));
-		$service->onEntered(item: $norm, actor: null, now: $now);
+		$service->onEntered(item: $norm, act: new FlowTimerAct(actor: null, now: DateTimeImmutable::createFromInterface($now)));
 		$this->assertSame(['item-9'], array_keys($markers->all()));
 	}//end testARefusedStatutoryTimerIsLoggedLoudly()
 
@@ -219,8 +220,8 @@ class CasePlanItemTimersTest extends TestCase {
 		$markers = new UnarmedTimerMarkers(appConfig: CaseFixtures::memoryAppConfig(case: $this, store: $stored));
 		$service = new CasePlanItemTimers(timers: $this->timers, logger: new \Psr\Log\NullLogger(), markers: $markers);
 
-		$this->assertSame(0, $service->onEntered(item: $statutory, actor: null, now: $now));
-		$this->assertSame(0, $service->onEntered(item: $norm, actor: null, now: $now));
+		$this->assertSame(0, $service->onEntered(item: $statutory, act: new FlowTimerAct(actor: null, now: DateTimeImmutable::createFromInterface($now))));
+		$this->assertSame(0, $service->onEntered(item: $norm, act: new FlowTimerAct(actor: null, now: DateTimeImmutable::createFromInterface($now))));
 
 		$this->assertSame(['item-9'], array_keys($markers->all()));
 	}//end testAStatutoryExpiryAlreadyPastIsMarkedNotDropped()

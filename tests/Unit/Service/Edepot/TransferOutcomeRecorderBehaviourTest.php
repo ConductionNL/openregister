@@ -64,7 +64,7 @@ class TransferOutcomeRecorderBehaviourTest extends TestCase {
 
 	private function recorder(): TransferOutcomeRecorder {
 		$auditLog = new TransferAuditLog(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->auditTrail, $this->logger), new TransferSettings($this->createMock(IAppConfig::class), $this->logger), $this->createMock(INotificationManager::class));
-		return new TransferOutcomeRecorder($this->mapper, $this->records, $auditLog, $this->logger);
+		return new TransferOutcomeRecorder(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $this->mapper, records: $this->records, settings: $this->createMock(\OCP\IAppConfig::class), logger: $this->logger), $auditLog);
 	}//end recorder()
 
 	private static function object(array $retention=[]): ObjectEntity {

@@ -38,29 +38,15 @@ interface ActivityFilterServiceInterface {
 	 * Fetch a filtered, cursor-paginated page of activity entries for an
 	 * OR object.
 	 *
-	 * @param string $objectUuid OR object UUID (marker target).
-	 * @param string|null $type Optional exact activity `type` filter.
-	 * @param string|null $actor Optional exact `affecteduser` filter.
-	 * @param int|null $after Optional lower-bound Unix timestamp (date range).
-	 * @param int $limit Page size (1..MAX_LIMIT, default 100).
-	 * @param int|null $cursor Optional cursor — only rows with `timestamp` strictly
-	 *                         less than this value are returned (DESC paging).
-	 * @param string|null $visibility Optional `internal` / `public` filter. Every row of this
-	 *                                source is internal, so a public-only read returns nothing.
+	 * @param ActivityFilter         $filter  The object, the optional type / actor / lower-bound filters and the
+	 *                                        optional cursor (only rows with `timestamp` strictly below it, DESC paging).
+	 * @param ActivityEntriesOptions $options The page size and the optional `internal` / `public` visibility filter.
 	 *
 	 * @return array{results: array<int,array<string,mixed>>, total: int, nextCursor: ?int}
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
 	 */
-	public function getActivityEntries(
-		string $objectUuid,
-		?string $type = null,
-		?string $actor = null,
-		?int $after = null,
-		int $limit = 100,
-		?int $cursor = null,
-		?string $visibility = null,
-	): array;
+	public function getActivityEntries(ActivityFilter $filter, ActivityEntriesOptions $options): array;
 
 	/**
 	 * Distinct activity `type` values for the dropdown source.

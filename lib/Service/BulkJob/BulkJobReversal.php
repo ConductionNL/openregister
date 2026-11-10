@@ -68,9 +68,7 @@ class BulkJobReversal implements BulkJobReversalInterface {
 	 * and commits it, which is what makes the members it will skip readable
 	 * before anything is written.
 	 *
-	 * @param BulkJob     $original      The job to undo.
-	 * @param string      $actorUid      The uid of the person undoing it.
-	 * @param string|null $justification The reason they typed.
+	 * @param ReversalRequest $request The job to undo, who undoes it and the reason they typed.
 	 *
 	 * @return BulkJob The previewed reversal.
 	 *
@@ -79,21 +77,35 @@ class BulkJobReversal implements BulkJobReversalInterface {
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function reverse(BulkJob $original, string $actorUid, ?string $justification = null): BulkJob {
+	public function reverse(ReversalRequest $request): BulkJob {
+		$original = $request->original;
 		$this->assertReversible(job: $original);
 		$uuids = $this->writtenUuids(job: $original);
-
-		$reversal = $this->service->create(
-			call: $this->restoreCall(job: $original),
-			selection: new BulkJobSelection(criteria: ['ids' => $uuids], registerId: $original->getRegisterId(), schemaId: $original->getSchemaId()),
-			actorUid: $actorUid,
-			justification: $justification
+		$call     = $this->restoreCall(job: $original);
+		$reversal = $this->service->createFromRequest(
+			request: new BulkJobRequest(
+				call: $call,
+				selection: self::selectionOf(job: $original, uuids: $uuids),
+				actorUid: $request->actorUid,
+				justification: $request->justification
+			)
 		);
-
 		$reverses = $this->reversesEntry(job: $original, written: count($uuids));
 
 		return $this->link(original: $original, reversal: $this->nameOriginal(reversal: $reversal, reverses: $reverses));
 	}//end reverse()
+
+	/**
+	 * The selection of a reversal: the written objects, in the original's register and schema.
+	 *
+	 * @param BulkJob            $job   The job to undo.
+	 * @param array<int, string> $uuids The uuids it wrote.
+	 *
+	 * @return BulkJobSelection The selection.
+	 */
+	private static function selectionOf(BulkJob $job, array $uuids): BulkJobSelection {
+		return new BulkJobSelection(criteria: ['ids' => $uuids], registerId: $job->getRegisterId(), schemaId: $job->getSchemaId());
+	}//end selectionOf()
 
 	/**
 	 * The uuids the original job wrote, refusing a job that wrote nothing.

@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Service\Oas\OasIssue;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
@@ -1715,9 +1716,11 @@ class OasService implements OasServiceInterface {
 	private function reportMetaSchemaErrors(array $errors): void {
 		foreach ($errors as $err) {
 			$this->report->addError(
-				path: $err['path'],
-				message: 'OpenAPI 3.1 meta-schema violation: ' . $err['message'],
-				code: 'meta-schema-violation'
+				issue: new OasIssue(
+					path: $err['path'],
+					message: 'OpenAPI 3.1 meta-schema violation: ' . $err['message'],
+					code: 'meta-schema-violation'
+				)
 			);
 		}
 	}//end reportMetaSchemaErrors()
@@ -1753,9 +1756,11 @@ class OasService implements OasServiceInterface {
 	private function validateServerUrl(int|string $idx, string $url): void {
 		if ($url === '' || preg_match('#^https?://#i', $url) !== 1) {
 			$this->report->addError(
-				path: 'servers.' . $idx . '.url',
-				message: 'Server URL must be absolute (http:// or https://). Got: ' . $url,
-				code: OasValidationReport::CODE_RELATIVE_SERVER_URL,
+				issue: new OasIssue(
+					path: 'servers.' . $idx . '.url',
+					message: 'Server URL must be absolute (http:// or https://). Got: ' . $url,
+					code: OasValidationReport::CODE_RELATIVE_SERVER_URL
+				)
 			);
 		}
 	}//end validateServerUrl()
@@ -1799,31 +1804,14 @@ class OasService implements OasServiceInterface {
 			$candidate = $this->claimOperationId(seen: $seen, operationId: $original);
 			if ($candidate !== $original) {
 				$operation['operationId'] = $candidate;
-				$this->reportRenamedOperationId(path: 'paths.' . $pathName . '.' . $method, original: $original, renamed: $candidate);
+				$message = 'Duplicate operationId "' . $original . '" auto-renamed to "' . $candidate . '".';
+				$path    = 'paths.' . $pathName . '.' . $method . '.operationId';
+				$this->report->addAutoCorrection(issue: new OasIssue(path: $path, message: $message, code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID));
 			}
 		}
 
 		unset($operation);
 	}//end dedupeOperationIds()
-
-	/**
-	 * Record the auto-rename of a duplicate operationId.
-	 *
-	 * @param string $path     The operation's path in the document.
-	 * @param string $original The duplicate operationId.
-	 * @param string $renamed  The operationId it was renamed to.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/oas-generation/spec.md
-	 */
-	private function reportRenamedOperationId(string $path, string $original, string $renamed): void {
-		$this->report->addAutoCorrection(
-			path: $path . '.operationId',
-			message: 'Duplicate operationId "' . $original . '" auto-renamed to "' . $renamed . '".',
-			code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID,
-		);
-	}//end reportRenamedOperationId()
 
 	/**
 	 * Take an operationId: the id itself when free, otherwise the first free `_2`, `_3`, ... form.
@@ -1953,9 +1941,11 @@ class OasService implements OasServiceInterface {
 
 			$this->oas['tags'][] = ['name' => $tagName, 'description' => 'Operations for ' . $tagName];
 			$this->report->addAutoCorrection(
-				path: $usages[0],
-				message: 'Tag "' . $tagName . '" used by operations but not declared in top-level tags; auto-added.',
-				code: OasValidationReport::CODE_ORPHAN_TAG,
+				issue: new OasIssue(
+					path: $usages[0],
+					message: 'Tag "' . $tagName . '" used by operations but not declared in top-level tags; auto-added.',
+					code: OasValidationReport::CODE_ORPHAN_TAG
+				)
 			);
 		}
 	}//end addOrphanTags()
@@ -1971,9 +1961,11 @@ class OasService implements OasServiceInterface {
 	private function reportUnusedTags(array $declaredTags, array $usedTags): void {
 		foreach (array_diff_key($declaredTags, $usedTags) as $tagName => $idx) {
 			$this->report->addWarning(
-				path: 'tags[' . $idx . '].name',
-				message: 'Top-level tag "' . $tagName . '" is declared but not referenced by any operation.',
-				code: OasValidationReport::CODE_UNUSED_TAG,
+				issue: new OasIssue(
+					path: 'tags[' . $idx . '].name',
+					message: 'Top-level tag "' . $tagName . '" is declared but not referenced by any operation.',
+					code: OasValidationReport::CODE_UNUSED_TAG
+				)
 			);
 		}
 	}//end reportUnusedTags()
@@ -2036,7 +2028,7 @@ class OasService implements OasServiceInterface {
 		if (isset(array_flip(self::ALLOWED_HTTP_METHODS)[$methodKey]) === false) {
 			$reason = 'violates NLGov /core/http-methods (only GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS allowed).';
 			$message = sprintf('Non-standard HTTP method "%s" %s', (string)$method, $reason);
-			$this->report->addError(path: $path, message: $message, code: OasValidationReport::CODE_INVALID_HTTP_METHOD);
+			$this->report->addError(issue: new OasIssue(path: $path, message: $message, code: OasValidationReport::CODE_INVALID_HTTP_METHOD));
 			return;
 		}
 
@@ -2060,9 +2052,11 @@ class OasService implements OasServiceInterface {
 		foreach (array_keys(($operation['responses'] ?? [])) as $statusCode) {
 			if (isset($allowedCodes[(string)$statusCode]) === false) {
 				$this->report->addWarning(
-					path: $path . '.responses.' . $statusCode,
-					message: 'Non-standard HTTP status code "' . $statusCode . '" violates NLGov /core/http-response-code conventions.',
-					code: OasValidationReport::CODE_INVALID_STATUS_CODE,
+					issue: new OasIssue(
+						path: $path . '.responses.' . $statusCode,
+						message: 'Non-standard HTTP status code "' . $statusCode . '" violates NLGov /core/http-response-code conventions.',
+						code: OasValidationReport::CODE_INVALID_STATUS_CODE
+					)
 				);
 			}
 		}

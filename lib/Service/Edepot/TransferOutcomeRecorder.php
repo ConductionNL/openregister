@@ -27,10 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\RecordState;
-use Psr\Log\LoggerInterface;
 
 /**
  * Records one object's transfer outcome.
@@ -47,16 +45,12 @@ final class TransferOutcomeRecorder {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface  $objectMapper          The object mapper.
-	 * @param TransferRecordService $transferRecordService Durable transfer + proof persistence.
-	 * @param TransferAuditLog      $auditLog              The transfer audit log.
-	 * @param LoggerInterface       $logger                Logger.
+	 * @param TransferStores   $stores   The objects, the durable proofs and the log.
+	 * @param TransferAuditLog $auditLog The transfer audit log.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly TransferRecordService $transferRecordService,
+		private readonly TransferStores $stores,
 		private readonly TransferAuditLog $auditLog,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -74,12 +68,30 @@ final class TransferOutcomeRecorder {
 	 *   (Scenario: Proof created on confirmed transfer)
 	 */
 	public function recordAccepted(array $item, array $objResult, TransferContext $context): void {
-		$object    = $item['object'];
-		$reference = ($objResult['reference'] ?? '');
-		$this->markTransferred(object: $object, reference: $reference, timestamp: $context->confirmedAt);
-		$this->auditLog->objectTransferred(object: $object, transferUuid: $context->transferUuid, reference: $reference);
-		$this->createProofRecord(item: $item, objResult: $objResult, context: $context);
+		$this->recordConfirmation(
+			confirmation: new ObjectConfirmation(object: $item['object'], files: ($item['files'] ?? []), result: $objResult, context: $context)
+		);
 	}//end recordAccepted()
+
+	/**
+	 * Record one accepted object: mark it transferred, audit it, prove it.
+	 *
+	 * @param ObjectConfirmation $confirmation The accepted object and its delivery.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
+	 *   (Scenario: Proof created on confirmed transfer)
+	 */
+	private function recordConfirmation(ObjectConfirmation $confirmation): void {
+		$this->markTransferred(confirmation: $confirmation);
+		$this->auditLog->objectTransferred(
+			object: $confirmation->object,
+			transferUuid: $confirmation->context->transferUuid,
+			reference: $confirmation->reference()
+		);
+		$this->createProofRecord(confirmation: $confirmation);
+	}//end recordConfirmation()
 
 	/**
 	 * Record an object the e-Depot refused: append a transfer error.
@@ -93,30 +105,41 @@ final class TransferOutcomeRecorder {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
 	 */
 	public function recordRefused(ObjectEntity $object, string $error, string $timestamp): void {
+		$this->appendTransferError(object: $object, transferError: ['error' => $error, 'timestamp' => $timestamp]);
+	}//end recordRefused()
+
+	/**
+	 * Append one transfer error to an object's retention and store it.
+	 *
+	 * @param ObjectEntity                            $object        The object to update.
+	 * @param array{error: string, timestamp: string} $transferError The error and when it happened.
+	 *
+	 * @return void
+	 */
+	private function appendTransferError(ObjectEntity $object, array $transferError): void {
 		$retention = ($object->getRetention() ?? []);
 		if (isset($retention['transferErrors']) === false || is_array($retention['transferErrors']) === false) {
 			$retention['transferErrors'] = [];
 		}
 
-		$retention['transferErrors'][] = ['error' => $error, 'timestamp' => $timestamp];
+		$retention['transferErrors'][] = $transferError;
 		$object->setRetention($retention);
 		$this->save(object: $object, failure: 'Failed to update object transfer error');
-	}//end recordRefused()
+	}//end appendTransferError()
 
 	/**
 	 * Mark an object as successfully transferred.
 	 *
-	 * @param ObjectEntity $object    The object to update.
-	 * @param string       $reference The e-Depot reference identifier.
-	 * @param string       $timestamp The transfer timestamp.
+	 * @param ObjectConfirmation $confirmation The accepted object and its delivery.
 	 *
 	 * @return void
 	 */
-	private function markTransferred(ObjectEntity $object, string $reference, string $timestamp): void {
+	private function markTransferred(ObjectConfirmation $confirmation): void {
+		$object    = $confirmation->object;
 		$retention = ($object->getRetention() ?? []);
 		$retention['archiefstatus']    = RecordState::TRANSFERRED;
-		$retention['eDepotReferentie'] = $reference;
-		$retention['transferDate']     = $timestamp;
+		$retention['eDepotReferentie'] = $confirmation->reference();
+		$retention['transferDate']     = $confirmation->context->confirmedAt;
 		$object->setRetention($retention);
 		$this->save(object: $object, failure: 'Failed to update object status to overgebracht');
 	}//end markTransferred()
@@ -131,9 +154,9 @@ final class TransferOutcomeRecorder {
 	 */
 	private function save(ObjectEntity $object, string $failure): void {
 		try {
-			$this->objectMapper->update($object);
+			$this->stores->objects->update($object);
 		} catch (\Exception $e) {
-			$this->logger->error(
+			$this->stores->logger->error(
 				message: '[EdepotTransferService] '.$failure,
 				context: ['uuid' => $object->getUuid(), 'error' => $e->getMessage()]
 			);
@@ -146,21 +169,17 @@ final class TransferOutcomeRecorder {
 	 * `eDepotReferentie` (additive). Write-once and best-effort: a
 	 * proof-creation failure never unwinds the confirmed transfer.
 	 *
-	 * @param array<string,mixed>  $item      The object with its files.
-	 * @param array<string, mixed> $objResult The per-object transport result.
-	 * @param TransferContext      $context   The delivery the object was confirmed in.
+	 * @param ObjectConfirmation $confirmation The accepted object and its delivery.
 	 *
 	 * @return void
 	 */
-	private function createProofRecord(array $item, array $objResult, TransferContext $context): void {
-		$object = $item['object'];
+	private function createProofRecord(ObjectConfirmation $confirmation): void {
+		$object = $confirmation->object;
 		try {
-			$proof = $this->transferRecordService->createProof(
-				proof: self::proofOf(object: $object, files: ($item['files'] ?? []), objResult: $objResult, context: $context)
-			);
+			$proof = $this->stores->records->createProof(proof: self::proofOf(confirmation: $confirmation));
 			$this->linkProof(object: $object, proofUuid: (string)($proof['uuid'] ?? ''));
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->stores->logger->warning(
 				message: '[EdepotTransferService] proof-of-transfer creation failed for '.((string)$object->getUuid()).': '.$e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -170,42 +189,40 @@ final class TransferOutcomeRecorder {
 	/**
 	 * The proof record of one confirmed object.
 	 *
-	 * @param ObjectEntity         $object    The confirmed object.
-	 * @param array<int, mixed>    $files     The object's file metadata (name + checksum).
-	 * @param array<string, mixed> $objResult The per-object transport result.
-	 * @param TransferContext      $context   The delivery the object was confirmed in.
+	 * @param ObjectConfirmation $confirmation The accepted object and its delivery.
 	 *
 	 * @return array<string, mixed> The proof.
 	 */
-	private static function proofOf(ObjectEntity $object, array $files, array $objResult, TransferContext $context): array {
-		$transferUuid = (string)($context->transferUuid ?? '');
+	private static function proofOf(ObjectConfirmation $confirmation): array {
+		$result = $confirmation->result;
 
 		return array_merge(
 			[
-				'objectUuid' => (string)$object->getUuid(),
-				'transferUuid' => $transferUuid,
-				'eDepotReference' => (string)($objResult['reference'] ?? ''),
-				'transportReceipt' => (string)($objResult['receipt'] ?? ($objResult['reference'] ?? '')),
+				'objectUuid' => (string)$confirmation->object->getUuid(),
+				'transferUuid' => (string)($confirmation->context->transferUuid ?? ''),
+				'eDepotReference' => (string)($result['reference'] ?? ''),
+				'transportReceipt' => (string)($result['receipt'] ?? ($result['reference'] ?? '')),
 			],
-			self::packageOf(files: $files, context: $context, packageId: $transferUuid)
+			self::packageOf(confirmation: $confirmation)
 		);
 	}//end proofOf()
 
 	/**
 	 * The package part of a proof: transport, package and file checksums.
 	 *
-	 * @param array<int, mixed> $files     The object's file metadata.
-	 * @param TransferContext   $context   The delivery the object was confirmed in.
-	 * @param string            $packageId The package id (the transfer list UUID).
+	 * The package id is the transfer list UUID.
+	 *
+	 * @param ObjectConfirmation $confirmation The accepted object and its delivery.
 	 *
 	 * @return array<string, mixed> The package part.
 	 */
-	private static function packageOf(array $files, TransferContext $context, string $packageId): array {
-		$fileChecksums = self::fileChecksums(files: $files);
+	private static function packageOf(ObjectConfirmation $confirmation): array {
+		$context       = $confirmation->context;
+		$fileChecksums = self::fileChecksums(files: $confirmation->files);
 
 		return [
 			'transportName' => $context->transportName,
-			'packageId' => $packageId,
+			'packageId' => (string)($context->transferUuid ?? ''),
 			'packageFormat' => $context->packageFormat,
 			'packageManifestSha256' => hash('sha256', (string)json_encode($fileChecksums)),
 			'fileChecksums' => $fileChecksums,
@@ -248,6 +265,6 @@ final class TransferOutcomeRecorder {
 		$retention = ($object->getRetention() ?? []);
 		$retention['transferProof'] = $proofUuid;
 		$object->setRetention($retention);
-		$this->objectMapper->update($object);
+		$this->stores->objects->update($object);
 	}//end linkProof()
 }//end class

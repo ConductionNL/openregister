@@ -101,21 +101,41 @@ class KvkProvider extends AbstractIntegrationProvider implements KvkLookupInterf
 	private const REQUIRED_APP = 'integriq';
 
 	/**
+	 * External-call router.
+	 *
+	 * @var ExternalIntegrationRouterInterface
+	 */
+	private ExternalIntegrationRouterInterface $router;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ExternalIntegrationRouterInterface $router External-call router.
-	 * @param IAppManager $appManager NC app manager (isEnabled check).
-	 * @param IL10N $l10n Localisation.
-	 * @param LoggerInterface $logger Logger for degraded paths.
+	 * @param ConnectorRouting $routing The router, app manager and localisation.
+	 * @param LoggerInterface  $logger  Logger for degraded paths.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private ExternalIntegrationRouterInterface $router,
-		private IAppManager $appManager,
-		private IL10N $l10n,
+		ConnectorRouting $routing,
 		private LoggerInterface $logger,
 	) {
+		$this->router = $routing->router;
+		$this->appManager = $routing->appManager;
+		$this->l10n = $routing->l10n;
 	}//end __construct()
 
 	/**

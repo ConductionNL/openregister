@@ -29,12 +29,14 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
+use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
+use OCA\OpenRegister\Service\File\FileOverwrite;
 
 /**
  * Pins FileBatchHandler::executeBatch().
@@ -119,10 +121,10 @@ class FileBatchHandlerGoldenTest extends TestCase {
 				return $id !== 7;
 			}
 		);
-		$service->method('updateFile')->willReturnCallback(
-			function ($id, $content, $tags, $object) use ($check): File {
-				$this->trail[] = 'label content='.var_export($content, true).' tags='.json_encode($tags);
-				return $check('update', $id, $object);
+		$service->method('overwriteFile')->willReturnCallback(
+			function (FileOverwrite $overwrite) use ($check): File {
+				$this->trail[] = 'label content='.var_export($overwrite->content, true).' tags='.json_encode($overwrite->tags);
+				return $check('update', $overwrite->filePath, $overwrite->object);
 			}
 		);
 		return $service;
@@ -138,7 +140,7 @@ class FileBatchHandlerGoldenTest extends TestCase {
 	 */
 	private function refusal(string $action, array $fileIds): string {
 		try {
-			$this->handler(true)->executeBatch($this->object, $action, $fileIds);
+			$this->handler(true)->runBatch(request: new FileBatchRequest(object: $this->object, action: $action, params: []), fileIds: $fileIds);
 		} catch (Exception $e) {
 			return $e->getMessage();
 		}
@@ -175,7 +177,7 @@ class FileBatchHandlerGoldenTest extends TestCase {
 				],
 				'summary' => ['total' => 3, 'succeeded' => 2, 'failed' => 1],
 			],
-			$this->handler(true)->executeBatch($this->object, 'publish', [1, '13', '2x'])
+			$this->handler(true)->runBatch(request: new FileBatchRequest(object: $this->object, action: 'publish', params: []), fileIds: [1, '13', '2x'])
 		);
 		self::assertSame(
 			['publish 1 true', 'publish 13 true', 'log warning: [FileBatchHandler] Batch publish failed for file 13: kapot 13', 'publish 2 true'],
@@ -188,7 +190,7 @@ class FileBatchHandlerGoldenTest extends TestCase {
 				'results' => [['fileId' => 5, 'success' => true]],
 				'summary' => ['total' => 1, 'succeeded' => 1, 'failed' => 0],
 			],
-			$this->handler(true)->executeBatch($this->object, 'depublish', [5], ['labels' => ['x']])
+			$this->handler(true)->runBatch(request: new FileBatchRequest(object: $this->object, action: 'depublish', params: ['labels' => ['x']]), fileIds: [5])
 		);
 		self::assertSame(['depublish 5 true'], $this->trail);
 
@@ -202,7 +204,7 @@ class FileBatchHandlerGoldenTest extends TestCase {
 				],
 				'summary' => ['total' => 3, 'succeeded' => 1, 'failed' => 2],
 			],
-			$this->handler(true)->executeBatch($this->object, 'delete', [7, 8, 13])
+			$this->handler(true)->runBatch(request: new FileBatchRequest(object: $this->object, action: 'delete', params: []), fileIds: [7, 8, 13])
 		);
 		self::assertSame(
 			[
@@ -222,10 +224,10 @@ class FileBatchHandlerGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testLabel(): void {
-		$result = $this->handler(true)->executeBatch($this->object, 'label', [3], ['labels' => ['a', 'b']]);
+		$result = $this->handler(true)->runBatch(request: new FileBatchRequest(object: $this->object, action: 'label', params: ['labels' => ['a', 'b']]), fileIds: [3]);
 		self::assertSame(['total' => 1, 'succeeded' => 1, 'failed' => 0], $result['summary']);
-		$this->handler(true)->executeBatch($this->object, 'label', [4]);
-		$this->handler(true)->executeBatch($this->object, 'label', [5], ['labels' => null]);
+		$this->handler(true)->runBatch(request: new FileBatchRequest(object: $this->object, action: 'label', params: []), fileIds: [4]);
+		$this->handler(true)->runBatch(request: new FileBatchRequest(object: $this->object, action: 'label', params: ['labels' => null]), fileIds: [5]);
 		self::assertSame(
 			[
 				'label content=NULL tags=["a","b"]',
@@ -253,7 +255,7 @@ class FileBatchHandlerGoldenTest extends TestCase {
 				],
 				'summary' => ['total' => 2, 'succeeded' => 0, 'failed' => 2],
 			],
-			$this->handler(false)->executeBatch($this->object, 'label', [1, 2])
+			$this->handler(false)->runBatch(request: new FileBatchRequest(object: $this->object, action: 'label', params: []), fileIds: [1, 2])
 		);
 		self::assertSame(
 			[

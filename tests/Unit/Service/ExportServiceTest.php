@@ -3,6 +3,8 @@
 namespace Unit\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -223,8 +225,8 @@ class ExportServiceTest extends TestCase {
 
 		$this->propertyRbacHandler
 			->method('canReadProperty')
-			->willReturnCallback(function ($schema, $property, $object) {
-				return $property !== 'restricted_field';
+			->willReturnCallback(function (SchemaProperty $read, PropertyAccessRequest $request) {
+				return $read->name !== 'restricted_field';
 			});
 
 		$this->objectService
@@ -477,6 +479,7 @@ class ExportServiceTest extends TestCase {
 
 		// Should not throw.
 		$this->assertInstanceOf(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, $spreadsheet);
+		$this->assertSame([['id', 'title'], ['uuid-1', null]], $spreadsheet->getActiveSheet()->toArray());
 	}
 
 	public function testExportHandlesArrayValuesAsJson(): void {
@@ -627,9 +630,16 @@ class ExportServiceTest extends TestCase {
 		$spreadsheet = $this->service->exportToExcel(null, $schema);
 
 		$sheet = $spreadsheet->getActiveSheet();
-		// Boolean true should be converted to "true" string.
-		$cellValue = $sheet->getCell('B2')->getValue();
-		$this->assertNotNull($cellValue);
+		$activeCol = null;
+		for ($col = 'A'; $col !== 'ZZ'; $col++) {
+			if ($sheet->getCell($col . '1')->getValue() === 'active') {
+				$activeCol = $col;
+				break;
+			}
+		}
+
+		$this->assertNotNull($activeCol);
+		$this->assertSame('true', $sheet->getCell($activeCol . '2')->getValue());
 	}
 
 	public function testExportToExcelHandlesNestedObjectValues(): void {
@@ -691,8 +701,8 @@ class ExportServiceTest extends TestCase {
 
 		$this->propertyRbacHandler
 			->method('canReadProperty')
-			->willReturnCallback(function ($schema, $property, $object) {
-				return $property !== 'secret_field';
+			->willReturnCallback(function (SchemaProperty $read, PropertyAccessRequest $request) {
+				return $read->name !== 'secret_field';
 			});
 
 		$this->objectService

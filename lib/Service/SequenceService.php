@@ -93,7 +93,7 @@ class SequenceService implements SequenceServiceInterface {
 	 * @throws DbException When the reservation cannot be completed.
 	 */
 	private function reserveInScope(array $scope): int {
-		if ($this->mapper->incrementScope(...$scope) === 0) {
+		if ($this->mapper->incrementScope(new SequenceScope(...$scope)) === 0) {
 			// Scope row does not exist yet — seed it reserving value 1 by
 			// storing next_value = 2. A concurrent seeder may win the
 			// unique index; on that violation, fall back to the increment
@@ -115,7 +115,7 @@ class SequenceService implements SequenceServiceInterface {
 	 * @throws DbException When the row cannot be read.
 	 */
 	private function lastReserved(array $scope): int {
-		$row = $this->mapper->findForScope(...$scope);
+		$row = $this->mapper->findForScope(new SequenceScope(...$scope));
 		$next = (int)($row?->getNextValue() ?? 1);
 		return ($next - 1);
 	}//end lastReserved()
@@ -142,7 +142,7 @@ class SequenceService implements SequenceServiceInterface {
 			return ($nextValue - 1);
 		} catch (DbException $e) {
 			// Lost the insert race — the row now exists; increment it instead.
-			$this->mapper->incrementScope(...$scope);
+			$this->mapper->incrementScope(new SequenceScope(...$scope));
 			return $this->lastReserved(scope: $scope);
 		}
 	}//end seedScope()
@@ -185,14 +185,14 @@ class SequenceService implements SequenceServiceInterface {
 
 		$scope = $sequence->toArray();
 		$target = ($reserved + 1);
-		if ($this->mapper->raiseTo(...$scope, minNextValue: $target) > 0) {
+		if ($this->mapper->raiseTo(new SequenceScope(...$scope), minNextValue: $target) > 0) {
 			return;
 		}
 
 		// Either the counter is already past this number, or it does not exist
 		// yet. Only the second needs anything doing, and the two are told apart
 		// by reading the row rather than by assuming which one it was.
-		if ($this->mapper->findForScope(...$scope) !== null) {
+		if ($this->mapper->findForScope(new SequenceScope(...$scope)) !== null) {
 			return;
 		}
 
@@ -217,7 +217,7 @@ class SequenceService implements SequenceServiceInterface {
 			$this->mapper->insert($this->newScopeRow(scope: $scope, nextValue: $target));
 		} catch (Throwable $e) {
 			// Lost the seed race. The row exists now, so raise it instead.
-			$this->mapper->raiseTo(...$scope, minNextValue: $target);
+			$this->mapper->raiseTo(new SequenceScope(...$scope), minNextValue: $target);
 		}
 	}//end seedOrRaise()
 }//end class
