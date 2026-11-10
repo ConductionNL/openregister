@@ -76,6 +76,20 @@ interface NotificationRecipientResolverInterface {
 	): array;
 
 	/**
+	 * Resolve a recipients spec against one source, and say which entries resolved to nobody.
+	 *
+	 * The outcome of {@see resolveWithDiagnostics()}, for a caller that holds the source.
+	 *
+	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
+	 * @param RecipientSource   $source         The object, its data, the trigger context and the role assignment.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 */
+	public function resolveFromSource(array $recipientsSpec, RecipientSource $source): array;
+
+	/**
 	 * Verify that a uid corresponds to an actual Nextcloud user.
 	 *
 	 * Backed by a per-request cache; only definitive verdicts are cached. A
