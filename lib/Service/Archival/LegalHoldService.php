@@ -32,6 +32,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\BackgroundJob\IJobList;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\HoldOrder;
 
 /**
  * Service for managing legal holds on register objects.
@@ -65,16 +67,16 @@ class LegalHoldService implements LegalHoldServiceInterface {
 	 * Place a legal hold on an object.
 	 *
 	 * @param ObjectEntity $object The object to place a hold on.
-	 * @param string $reason The reason for the legal hold (e.g. WOO-verzoek reference).
-	 * @param string|null $ownerKey The matter placing it, e.g. `filinq:legalHoldCase:<uuid>`; null for a manual hold.
+	 * @param HoldOrder    $order  The reason (e.g. WOO-verzoek reference) and the matter placing it,
+	 *                             e.g. `filinq:legalHoldCase:<uuid>`; no matter for a manual hold.
 	 *
 	 * @return ObjectEntity The updated object with legal hold applied.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function placeHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
-		return $this->place(object: $object, action: $this->action(ownerKey: $ownerKey, reason: $reason));
+	public function placeHold(ObjectEntity $object, HoldOrder $order): ObjectEntity {
+		return $this->place(object: $object, action: $this->action(order: $order));
 	}//end placeHold()
 
 	/**
@@ -101,30 +103,28 @@ class LegalHoldService implements LegalHoldServiceInterface {
 	/**
 	 * A hold action by the current user, now.
 	 *
-	 * @param string|null $ownerKey The matter acting; null for a manual hold, or to release every hold.
-	 * @param string      $reason   Why.
+	 * @param HoldOrder $order Why, and the matter acting; no matter for a manual hold, or to release every hold.
 	 *
 	 * @return HoldAction The action.
 	 */
-	private function action(?string $ownerKey, string $reason): HoldAction {
+	private function action(HoldOrder $order): HoldAction {
 		$stamp = new HoldStamp(userId: $this->getCurrentUserId(), now: (new DateTime())->format('c'));
-		return new HoldAction(ownerKey: $ownerKey, reason: $reason, stamp: $stamp);
+		return new HoldAction(ownerKey: $order->ownerKey, reason: $order->reason, stamp: $stamp);
 	}//end action()
 
 	/**
 	 * Release a legal hold on an object.
 	 *
 	 * @param ObjectEntity $object The object to release the hold from.
-	 * @param string $reason The reason for releasing the hold.
-	 * @param string|null $ownerKey The matter releasing its own hold; null lifts every hold.
+	 * @param HoldOrder    $order  The reason for releasing and the matter releasing its own hold; no matter lifts every hold.
 	 *
 	 * @return ObjectEntity The updated object with legal hold released.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function releaseHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
-		return $this->release(object: $object, action: $this->action(ownerKey: $ownerKey, reason: $reason));
+	public function releaseHold(ObjectEntity $object, HoldOrder $order): ObjectEntity {
+		return $this->release(object: $object, action: $this->action(order: $order));
 	}//end releaseHold()
 
 	/**
@@ -191,17 +191,18 @@ class LegalHoldService implements LegalHoldServiceInterface {
 	/**
 	 * Schedule a bulk legal hold operation on all objects in a schema.
 	 *
-	 * @param int $schemaId The schema ID to apply holds to.
-	 * @param int $registerId The register ID.
-	 * @param string $reason The reason for the bulk legal hold.
+	 * @param RegisterSchemaRef $table  The register and the schema whose objects get the hold.
+	 * @param string            $reason The reason for the bulk legal hold.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function bulkPlaceHold(int $schemaId, int $registerId, string $reason): void {
-		$this->queueBulkHold(job: ['schemaId' => $schemaId, 'registerId' => $registerId, 'reason' => $reason, 'placedBy' => $this->getCurrentUserId()]);
+	public function bulkPlaceHold(RegisterSchemaRef $table, string $reason): void {
+		$this->queueBulkHold(
+			job: ['schemaId' => (int)$table->schema, 'registerId' => (int)$table->register, 'reason' => $reason, 'placedBy' => $this->getCurrentUserId()]
+		);
 	}//end bulkPlaceHold()
 
 	/**

@@ -34,6 +34,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\HoldOrder;
 
 /**
  * @covers \OCA\OpenRegister\Service\Archival\LegalHoldService
@@ -77,8 +78,8 @@ class LegalHoldPerMatterTest extends TestCase {
 	 * A second matter adds its own hold; the first keeps its reason.
 	 */
 	public function testASecondMatterAddsItsOwnHold(): void {
-		$object = $this->service->placeHold($this->object(), 'Lawsuit 2026-12', self::LAWSUIT);
-		$object = $this->service->placeHold($object, 'Audit 2026', self::AUDIT);
+		$object = $this->service->placeHold($this->object(), new HoldOrder('Lawsuit 2026-12', self::LAWSUIT));
+		$object = $this->service->placeHold($object, new HoldOrder('Audit 2026', self::AUDIT));
 
 		$holds = $object->getRetention()['legalHold']['holds'];
 		$this->assertSame([self::LAWSUIT, self::AUDIT], array_column($holds, 'ownerKey'));
@@ -90,10 +91,10 @@ class LegalHoldPerMatterTest extends TestCase {
 	 * Releasing one matter keeps the object held by the other, and records only the released hold.
 	 */
 	public function testReleasingOneMatterKeepsTheOtherHold(): void {
-		$object = $this->service->placeHold($this->object(), 'Lawsuit 2026-12', self::LAWSUIT);
-		$object = $this->service->placeHold($object, 'Audit 2026', self::AUDIT);
+		$object = $this->service->placeHold($this->object(), new HoldOrder('Lawsuit 2026-12', self::LAWSUIT));
+		$object = $this->service->placeHold($object, new HoldOrder('Audit 2026', self::AUDIT));
 
-		$object = $this->service->releaseHold($object, 'Audit closed', self::AUDIT);
+		$object = $this->service->releaseHold($object, new HoldOrder('Audit closed', self::AUDIT));
 
 		$legalHold = $object->getRetention()['legalHold'];
 		$this->assertTrue($object->hasActiveLegalHold(), 'The lawsuit still needs the record frozen.');
@@ -103,7 +104,7 @@ class LegalHoldPerMatterTest extends TestCase {
 		$this->assertSame(self::AUDIT, $legalHold['history'][0]['ownerKey']);
 		$this->assertSame('Audit closed', $legalHold['history'][0]['releaseReason']);
 
-		$object = $this->service->releaseHold($object, 'Settled', self::LAWSUIT);
+		$object = $this->service->releaseHold($object, new HoldOrder('Settled', self::LAWSUIT));
 		$this->assertFalse($object->hasActiveLegalHold());
 		$this->assertCount(2, $object->getRetention()['legalHold']['history']);
 	}//end testReleasingOneMatterKeepsTheOtherHold()
@@ -122,15 +123,15 @@ class LegalHoldPerMatterTest extends TestCase {
 			],
 		]);
 
-		$object = $this->service->placeHold($legacy, 'Lawsuit 2026-12', self::LAWSUIT);
-		$object = $this->service->releaseHold($object, 'Settled', self::LAWSUIT);
+		$object = $this->service->placeHold($legacy, new HoldOrder('Lawsuit 2026-12', self::LAWSUIT));
+		$object = $this->service->releaseHold($object, new HoldOrder('Settled', self::LAWSUIT));
 
 		$legalHold = $object->getRetention()['legalHold'];
 		$this->assertTrue($legalHold['active'], 'The stored hold was neither overwritten nor lifted.');
 		$this->assertSame('WOO-verzoek 2025-0142', $legalHold['reason']);
 
 		// A release that names no matter lifts every hold, as it always did.
-		$object = $this->service->releaseHold($object, 'Handled');
+		$object = $this->service->releaseHold($object, new HoldOrder('Handled'));
 		$this->assertFalse($object->hasActiveLegalHold());
 	}//end testAStoredSingleSlotHoldStaysValid()
 }//end class
