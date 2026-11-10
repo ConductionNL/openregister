@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -102,7 +103,9 @@ final class LockHandlerAccessGoldenTest extends TestCase {
 	public function testUnlockRoute(?string $caller, string $kind, array|string $auth, ?array $groups, string $expected): void {
 		$handler = $this->handler(caller: $caller, auth: $auth, groups: $groups, object: $this->lockedObject(kind: $kind));
 
-		$this->assertSame($expected, $this->outcome(fn () => $handler->unlock(self::OBJ)));
+		$this->assertSame($expected, $this->outcome(fn () => $handler->unlock(
+			request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false)
+		)));
 	}//end testUnlockRoute()
 
 	/**
@@ -112,10 +115,14 @@ final class LockHandlerAccessGoldenTest extends TestCase {
 	 */
 	public function testRunRoutes(): void {
 		$own = $this->handler(caller: 'bob', auth: [], groups: [], object: $this->lockedObject(kind: 'run'));
-		$this->assertSame('allowed', $this->outcome(fn () => $own->unlock(self::OBJ, false, self::RUN)));
+		$this->assertSame('allowed', $this->outcome(fn () => $own->unlock(
+			request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: self::RUN, break: false)
+		)));
 
 		$other = $this->handler(caller: 'bob', auth: [], groups: [], object: $this->lockedObject(kind: 'run'));
-		$this->assertSame('refused', $this->outcome(fn () => $other->unlock(self::OBJ, false, 'run-other')));
+		$this->assertSame('refused', $this->outcome(fn () => $other->unlock(
+			request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: 'run-other', break: false)
+		)));
 	}//end testRunRoutes()
 
 	/**
@@ -144,7 +151,7 @@ final class LockHandlerAccessGoldenTest extends TestCase {
 		$object->setOwner(self::OWNER);
 
 		$handler = $this->handler(caller: null, auth: [], groups: [], object: $object);
-		$this->assertFalse($handler->unlock(self::OBJ));
+		$this->assertFalse($handler->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false)));
 	}//end testNothingToReleaseNeedsNoRight()
 
 	/**

@@ -102,6 +102,7 @@ use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCA\OpenRegister\Service\Object\LockRunStep;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
@@ -5764,14 +5765,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function lock(LockRequest $request, bool $advisory=false): array
     {
-        return $this->lockHandler->lock(
-            identifier: $request->identifier,
-            process: $request->process,
-            duration: $request->duration,
-            advisory: $advisory,
-            runUuid: $request->runUuid,
-            nodeId: $request->nodeId
-        );
+        return $this->lockHandler->lock(request: $request, advisory: $advisory);
     }//end lock()
 
     /**
@@ -5793,9 +5787,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function unlockObject(string|int $identifier, bool $advisory=false, ?string $runUuid=null): bool
     {
         return $this->lockHandler->unlock(
-            identifier: (string) $identifier,
-            advisory: $advisory,
-            runUuid: $runUuid
+            request: new UnlockRequest(identifier: (string) $identifier, advisory: $advisory, runUuid: $runUuid, break: false)
         );
     }//end unlockObject()
 
