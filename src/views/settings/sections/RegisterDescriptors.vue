@@ -318,10 +318,7 @@ export default {
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/register-descriptors'),
 				)
-				this.rows = response.data.results ?? []
-				this.total = response.data.total ?? 0
-				this.absent = response.data.absent ?? 0
-				this.behind = response.data.behind ?? 0
+				this.showInventory(response.data)
 			} catch (e) {
 				this.error = this.t(
 					'openregister',
@@ -331,6 +328,21 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Take the rows and counts of an inventory answer.
+		 *
+		 * @param {object} data The inventory answer.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/register-descriptor-admin/spec.md
+		 */
+		showInventory(data) {
+			this.rows = data.results ?? []
+			this.total = data.total ?? 0
+			this.absent = data.absent ?? 0
+			this.behind = data.behind ?? 0
 		},
 
 		/**
@@ -387,11 +399,7 @@ export default {
 			this.busy = this.rowKey(row)
 			this.outcome = null
 			try {
-				const response = await axios.post(
-					generateUrl(
-						`/apps/openregister/api/register-descriptors/${row.appId}/${row.slug}/import`,
-					),
-				)
+				const response = await axios.post(this.importUrl(row))
 				this.outcome = this.importedOutcome(row, response?.data)
 				// Re-read rather than patch the row locally: the inventory is
 				// the authority on what is now present, and a locally-optimistic
@@ -418,18 +426,40 @@ export default {
 		importedOutcome(row, data) {
 			const replaced = Array.isArray(data?.replaced) ? data.replaced : []
 			const count = data?.counts?.authorizationReplaced ?? replaced.length
-			let message = this.t(
-				'openregister',
-				'{register} was imported from {app}.',
-				{
-					register: row.title,
-					app: row.appId,
-				},
-			)
+			let message = this.importedNote(row)
 			if (count > 0 || replaced.length > 0) {
 				message += ' ' + this.takenOverNote(Math.max(count, replaced.length))
 			}
 			return { ok: true, message, replaced }
+		},
+
+		/**
+		 * The URL that re-imports a row's descriptor.
+		 *
+		 * @param {object} row The row to re-import.
+		 * @return {string} The URL.
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		importUrl(row) {
+			return generateUrl(
+				`/apps/openregister/api/register-descriptors/${row.appId}/${row.slug}/import`,
+			)
+		},
+
+		/**
+		 * The note naming the register imported and the app it came from.
+		 *
+		 * @param {object} row The re-imported row.
+		 * @return {string} The note.
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		importedNote(row) {
+			return this.t('openregister', '{register} was imported from {app}.', {
+				register: row.title,
+				app: row.appId,
+			})
 		},
 
 		/**
