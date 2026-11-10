@@ -70,6 +70,32 @@ class McpResourcesService {
 	];
 
 	/**
+	 * The URI templates clients can use to address one register, schema or object.
+	 *
+	 * @var list<array<string, string>>
+	 */
+	private const RESOURCE_TEMPLATES = [
+		[
+			'uriTemplate' => 'openregister://registers/{id}',
+			'name' => 'Register by ID',
+			'description' => 'Get a single register by its numeric ID',
+			'mimeType' => 'application/json',
+		],
+		[
+			'uriTemplate' => 'openregister://schemas/{id}',
+			'name' => 'Schema by ID',
+			'description' => 'Get a single schema by its numeric ID',
+			'mimeType' => 'application/json',
+		],
+		[
+			'uriTemplate' => 'openregister://objects/{register}/{schema}/{id}',
+			'name' => 'Object by ID',
+			'description' => 'Get a single object by register ID, schema ID, and object UUID',
+			'mimeType' => 'application/json',
+		],
+	];
+
+	/**
 	 * McpResourcesService constructor
 	 *
 	 * @param SchemaCatalogInterface $catalog The register and schema mappers
@@ -186,28 +212,7 @@ class McpResourcesService {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-5
 	 */
 	public function listTemplates(): array {
-		return [
-			'resourceTemplates' => [
-				[
-					'uriTemplate' => 'openregister://registers/{id}',
-					'name' => 'Register by ID',
-					'description' => 'Get a single register by its numeric ID',
-					'mimeType' => 'application/json',
-				],
-				[
-					'uriTemplate' => 'openregister://schemas/{id}',
-					'name' => 'Schema by ID',
-					'description' => 'Get a single schema by its numeric ID',
-					'mimeType' => 'application/json',
-				],
-				[
-					'uriTemplate' => 'openregister://objects/{register}/{schema}/{id}',
-					'name' => 'Object by ID',
-					'description' => 'Get a single object by register ID, schema ID, and object UUID',
-					'mimeType' => 'application/json',
-				],
-			],
-		];
+		return ['resourceTemplates' => self::RESOURCE_TEMPLATES];
 	}//end listTemplates()
 
 	/**
@@ -225,19 +230,7 @@ class McpResourcesService {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-5
 	 */
 	public function readResource(string $uri): array {
-		$parsed = $this->parseUri(uri: $uri);
-
-		$data = match ($parsed['type']) {
-			'registers' => $this->readRegisters(id: $parsed['id'] ?? null),
-			'schemas' => $this->readSchemas(id: $parsed['id'] ?? null),
-			'objects' => $this->readObjects(
-				table: new RegisterSchemaRef(register: $parsed['registerId'], schema: $parsed['schemaId']),
-				objectId: $parsed['objectId'] ?? null
-			),
-			default => throw new InvalidArgumentException(
-				message: 'Unsupported resource type: ' . $parsed['type']
-			),
-		};
+		$data = $this->readParsed(parsed: $this->parseUri(uri: $uri));
 
 		return [
 			'contents' => [
@@ -249,6 +242,29 @@ class McpResourcesService {
 			],
 		];
 	}//end readResource()
+
+	/**
+	 * The data a parsed resource URI names.
+	 *
+	 * @param array<string, mixed> $parsed The parsed URI components.
+	 *
+	 * @return array Register, schema or object data (single or list)
+	 *
+	 * @throws InvalidArgumentException If the resource type is unsupported
+	 */
+	private function readParsed(array $parsed): array {
+		return match ($parsed['type']) {
+			'registers' => $this->readRegisters(id: $parsed['id'] ?? null),
+			'schemas' => $this->readSchemas(id: $parsed['id'] ?? null),
+			'objects' => $this->readObjects(
+				table: new RegisterSchemaRef(register: $parsed['registerId'], schema: $parsed['schemaId']),
+				objectId: $parsed['objectId'] ?? null
+			),
+			default => throw new InvalidArgumentException(
+				message: 'Unsupported resource type: ' . $parsed['type']
+			),
+		};
+	}//end readParsed()
 
 	/**
 	 * Parse an openregister:// URI into components
@@ -272,10 +288,7 @@ class McpResourcesService {
 		$type = $segments[0] ?? '';
 
 		if ($type === 'registers' || $type === 'schemas') {
-			return [
-				'type' => $type,
-				'id' => $this->itemId(segments: $segments),
-			];
+			return $this->catalogUri(type: $type, segments: $segments);
 		}
 
 		if ($type === 'objects') {
@@ -308,20 +321,24 @@ class McpResourcesService {
 	}//end uriSegments()
 
 	/**
-	 * The optional numeric id after a registers or schemas segment.
+	 * The type and optional numeric id of a registers or schemas URI.
 	 *
+	 * @param string       $type     The resource type (`registers` or `schemas`).
 	 * @param list<string> $segments The URI path segments.
 	 *
-	 * @return int|null
+	 * @return array{type: string, id: int|null}
 	 */
-	private function itemId(array $segments): ?int {
+	private function catalogUri(string $type, array $segments): array {
 		$id = null;
 		if (isset($segments[1]) === true) {
 			$id = (int)$segments[1];
 		}
 
-		return $id;
-	}//end itemId()
+		return [
+			'type' => $type,
+			'id' => $id,
+		];
+	}//end catalogUri()
 
 	/**
 	 * The register, schema and optional object id of an objects URI.
