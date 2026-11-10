@@ -31,7 +31,9 @@ namespace Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\StateCrossing;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Lifecycle\StateSave;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IGroupManager;
@@ -92,10 +94,8 @@ class StateConditionEvaluatorTest extends TestCase {
 	public function testOneRuleGuardsEveryPathIntoAState(): void {
 		foreach (['open', 'bezwaar', 'herstel'] as $from) {
 			$refusal = $this->evaluator->refusal(
-				annotation: $this->annotation(),
-				newData: ['status' => 'besloten'],
-				from: $from,
-				to: 'besloten'
+				save: new StateSave(annotation: $this->annotation(), newData: ['status' => 'besloten']),
+				crossing: new StateCrossing(from: $from, to: 'besloten')
 			);
 
 			$this->assertNotNull($refusal, sprintf('the move from "%s" was not refused', $from));
@@ -110,10 +110,8 @@ class StateConditionEvaluatorTest extends TestCase {
 	 */
 	public function testTheMoveIsAllowedOnceTheConditionHolds(): void {
 		$refusal = $this->evaluator->refusal(
-			annotation: $this->annotation(),
-			newData: ['status' => 'besloten', 'besluit' => 'toegekend'],
-			from: 'open',
-			to: 'besloten'
+			save: new StateSave(annotation: $this->annotation(), newData: ['status' => 'besloten', 'besluit' => 'toegekend']),
+			crossing: new StateCrossing(from: 'open', to: 'besloten')
 		);
 
 		$this->assertNull($refusal);
@@ -124,10 +122,8 @@ class StateConditionEvaluatorTest extends TestCase {
 	 */
 	public function testAnExitConditionRefusesOnTheWayOut(): void {
 		$refusal = $this->evaluator->refusal(
-			annotation: $this->annotation(),
-			newData: ['status' => 'open'],
-			from: 'gesloten',
-			to: 'open'
+			save: new StateSave(annotation: $this->annotation(), newData: ['status' => 'open']),
+			crossing: new StateCrossing(from: 'gesloten', to: 'open')
 		);
 
 		$this->assertNotNull($refusal);
@@ -156,10 +152,8 @@ class StateConditionEvaluatorTest extends TestCase {
 		];
 
 		$refusal = $this->evaluator->refusal(
-			annotation: $annotation,
-			newData: ['status' => 'besloten', 'besluit' => 'toegekend'],
-			from: 'open',
-			to: 'besloten'
+			save: new StateSave(annotation: $annotation, newData: ['status' => 'besloten', 'besluit' => 'toegekend']),
+			crossing: new StateCrossing(from: 'open', to: 'besloten')
 		);
 
 		$this->assertNotNull($refusal);
@@ -185,10 +179,8 @@ class StateConditionEvaluatorTest extends TestCase {
 		];
 
 		$refusal = $this->evaluator->refusal(
-			annotation: $annotation,
-			newData: ['status' => 'besloten'],
-			from: 'open',
-			to: 'besloten'
+			save: new StateSave(annotation: $annotation, newData: ['status' => 'besloten']),
+			crossing: new StateCrossing(from: 'open', to: 'besloten')
 		);
 
 		$this->assertNotNull($refusal);
@@ -212,10 +204,8 @@ class StateConditionEvaluatorTest extends TestCase {
 		];
 
 		$refusal = $this->evaluator->refusal(
-			annotation: $annotation,
-			newData: ['status' => 'besloten'],
-			from: 'open',
-			to: 'besloten'
+			save: new StateSave(annotation: $annotation, newData: ['status' => 'besloten']),
+			crossing: new StateCrossing(from: 'open', to: 'besloten')
 		);
 
 		$this->assertNotNull($refusal);
@@ -227,10 +217,8 @@ class StateConditionEvaluatorTest extends TestCase {
 	 */
 	public function testASaveThatDoesNotChangeStateIsNeitherAnEntryNorAnExit(): void {
 		$refusal = $this->evaluator->refusal(
-			annotation: $this->annotation(),
-			newData: ['status' => 'besloten'],
-			from: 'besloten',
-			to: 'besloten'
+			save: new StateSave(annotation: $this->annotation(), newData: ['status' => 'besloten']),
+			crossing: new StateCrossing(from: 'besloten', to: 'besloten')
 		);
 
 		$this->assertNull($refusal);
@@ -244,10 +232,8 @@ class StateConditionEvaluatorTest extends TestCase {
 		$annotation['states']['besloten']['enabled'] = false;
 
 		$refusal = $this->evaluator->refusal(
-			annotation: $annotation,
-			newData: ['status' => 'besloten'],
-			from: 'open',
-			to: 'besloten'
+			save: new StateSave(annotation: $annotation, newData: ['status' => 'besloten']),
+			crossing: new StateCrossing(from: 'open', to: 'besloten')
 		);
 
 		$this->assertNull($refusal);

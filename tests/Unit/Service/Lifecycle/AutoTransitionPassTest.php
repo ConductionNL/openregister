@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Lifecycle\AutoTransitionCandidate;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecision;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSubject;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Lifecycle\CarriedLineage;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -318,7 +319,7 @@ class AutoTransitionPassTest extends TestCase {
 		$this->state['obj-1'] = 's9';
 		$this->moves = ['s9' => 's10', 's10' => 's11'];
 
-		$this->pass->resume(uuid: 'obj-1', moves: 9, visited: ['s0', 's9']);
+		$this->pass->resumeLineage(uuid: 'obj-1', lineage: new CarriedLineage(moves: 9, visited: ['s0', 's9']));
 
 		$this->pass->enter();
 		$this->recordInside('obj-1');
@@ -335,7 +336,7 @@ class AutoTransitionPassTest extends TestCase {
 		$this->state['obj-1'] = 'terug';
 		$this->moves = ['terug' => 'heen'];
 
-		$this->pass->resume(uuid: 'obj-1', moves: 1, visited: ['heen', 'terug']);
+		$this->pass->resumeLineage(uuid: 'obj-1', lineage: new CarriedLineage(moves: 1, visited: ['heen', 'terug']));
 
 		$this->pass->enter();
 		$this->recordInside('obj-1');
