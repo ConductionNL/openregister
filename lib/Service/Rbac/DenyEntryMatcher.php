@@ -159,16 +159,14 @@ class DenyEntryMatcher {
 
 		foreach ($entries as $entry) {
 			$named = $this->entryNames(entry: $entry, principals: $question->principals);
-			if ($named === null) {
-				continue;
+			if ($named !== null) {
+				$matches[] = [
+					'rule' => $entry,
+					'principal' => $named,
+					'action' => $question->action,
+					'conditional' => self::isConditional(entry: $entry),
+				];
 			}
-
-			$matches[] = [
-				'rule' => $entry,
-				'principal' => $named,
-				'action' => $question->action,
-				'conditional' => self::isConditional(entry: $entry),
-			];
 		}
 
 		return $matches;
