@@ -1121,30 +1121,12 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	}//end getCurrentUser()
 
 	/**
-	 * Creates and returns a share link for a file (or folder).
+	 * Creates and returns a share link for a file or folder.
 	 *
 	 * See https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-share-api.html#create-a-new-share.
 	 *
-	 * @param string $path Path (from root) to the file/folder which should be shared
-	 * @param int|null $shareType The share type (0=user, 1=group, 3=public link, 4=email, etc.)
-	 * @param int|null $permissions Permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all)
-	 *
-	 * @throws Exception If creating the share link fails
-	 *
-	 * @return string The share link
-	 *
-	 * @psalm-suppress PossiblyUnusedReturnValue
-	 *
-	 * @spec exclude Public share-link creation; deferred to the file-actions FileSharingHandler follow-up pass (see file-actions tasks.md DROP list).
-	 */
-	public function createShareLink(string $path, ?int $shareType = 3, ?int $permissions = null): string {
-		return $this->createShareLinkFor(request: new ShareLinkRequest(path: $path, shareType: $shareType, permissions: $permissions));
-	}//end createShareLink()
-
-	/**
-	 * Creates and returns a share link for a file or folder, as one share link request.
-	 *
-	 * @param ShareLinkRequest $request The path, share type and permissions.
+	 * @param ShareLinkRequest $request The path (from root), the share type (0=user, 1=group, 3=public link, 4=email,
+	 *                                  etc.) and the permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all).
 	 *
 	 * @throws Exception If creating the share link fails
 	 *
@@ -1152,7 +1134,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @spec exclude Public share-link creation; deferred to the file-actions FileSharingHandler follow-up pass (see file-actions tasks.md DROP list).
 	 */
-	public function createShareLinkFor(ShareLinkRequest $request): string {
+	public function createShareLink(ShareLinkRequest $request): string {
 		$path = trim(string: $request->path, characters: '/');
 
 		try {
@@ -1199,7 +1181,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 			);
 			throw new Exception('Can\'t create share link.');
 		}
-	}//end createShareLinkFor()
+	}//end createShareLink()
 
 	/**
 	 * Creates a new folder in NextCloud, unless it already exists.
