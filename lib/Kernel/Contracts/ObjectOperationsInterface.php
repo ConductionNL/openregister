@@ -564,17 +564,15 @@ interface ObjectOperationsInterface {
      *                                   _ids: Array of
      *                                   IDs/UUIDs to filter by - _count: Return count instead
      *                                   of objects (boolean)
-     * @param bool        $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param array|null  $ids           Optional array of IDs to filter by
-     * @param string|null $uses          Optional filter by object usage
-     * @param array|null  $views         Optional view IDs to apply
-     * @param bool $_viewScopeRequired   Whether the view filter is this caller's ONLY bound.
-     *                                   A caller that switches `$_rbac` and `$_multitenancy`
-     *                                   off because it carries its own authorization (a
-     *                                   published access link naming one view) MUST set this:
-     *                                   it makes an unresolvable or non-narrowing view throw
-     *                                   instead of silently yielding an unbounded search.
+     * @param bool          $_rbac         Whether to apply RBAC checks (default: true)
+     * @param bool          $_multitenancy Whether to apply multitenancy filtering (default: true)
+     * @param SearchOptions $options       The id and uses selection, the view ids, and whether the
+     *                                     view filter is this caller's ONLY bound. A caller that
+     *                                     switches `$_rbac` and `$_multitenancy` off because it
+     *                                     carries its own authorization (a published access link
+     *                                     naming one view) MUST set `viewScopeRequired`: it makes an
+     *                                     unresolvable or non-narrowing view throw instead of
+     *                                     silently yielding an unbounded search.
      *
      * @psalm-param array<string, mixed> $query
      *
@@ -583,7 +581,7 @@ interface ObjectOperationsInterface {
      * @return \OCA\OpenRegister\Db\ObjectEntity[]|int
      *
      * @throws \OCP\DB\Exception If a database error occurs
-     * @throws \Exception If `$_viewScopeRequired` is set and the view cannot be applied
+     * @throws \Exception If `viewScopeRequired` is set and the view cannot be applied
      *
      * @psalm-return int<0, max>|list<\OCA\OpenRegister\Db\ObjectEntity>
      *
@@ -592,8 +590,7 @@ interface ObjectOperationsInterface {
      * @spec exclude One-line delegation to QueryHandler::searchObjects(); search behavior owned by zoeken-filteren.
      */
     public function searchObjects(
-    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null, ?array $views=null,
-    	bool $_viewScopeRequired=false
+    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, SearchOptions $options=new SearchOptions()
     ): array|int;
 
     /**
@@ -618,13 +615,12 @@ interface ObjectOperationsInterface {
      * the caller's MUST throw `DoesNotExistException` (the mappers do
      * this via the standard organisation filter).
      *
-     * @param string $registerSlug  The register slug (must exist in caller's org).
-     * @param string $schemaSlug    The schema slug (must exist in caller's org).
-     * @param array  $filters       Additional filters merged into the @self block.
-     *                              Direct keys like 'status' are merged at the top
-     *                              level.
-     * @param bool   $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool   $_multitenancy Whether to apply multi-tenancy filter (default: true).
+     * @param RegisterSchemaRef $target        The register and schema slugs (both must exist in caller's org).
+     * @param array             $filters       Additional filters merged into the @self block.
+     *                                         Direct keys like 'status' are merged at the top
+     *                                         level.
+     * @param bool              $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool              $_multitenancy Whether to apply multi-tenancy filter (default: true).
      *
      * @psalm-param array<string, mixed> $filters
      *
@@ -644,7 +640,7 @@ interface ObjectOperationsInterface {
      * @spec exclude Slug-resolution bridge delegating to searchObjects(); search behavior owned by zoeken-filteren.
      */
     public function searchObjectsBySlug(
-    	string $registerSlug, string $schemaSlug, array $filters=[], bool $_rbac=true, bool $_multitenancy=true
+    	RegisterSchemaRef $target, array $filters=[], bool $_rbac=true, bool $_multitenancy=true
     ): array|int;
 
     /**
@@ -661,8 +657,7 @@ interface ObjectOperationsInterface {
      *                                            - _search: Full-text search term
      * @param bool                 $_rbac         Whether to apply RBAC checks (default: true)
      * @param bool                 $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param array|null           $ids           Optional array of object IDs to filter by
-     * @param string|null          $uses          Optional uses parameter for filtering
+     * @param ObjectSelection      $selection     The object ids and the uses filter the count is restricted to
      *
      * @psalm-param   array<string, mixed> $query
      * @phpstan-param array<string, mixed> $query
@@ -676,7 +671,9 @@ interface ObjectOperationsInterface {
      *
      * @spec exclude Resolves org context then delegates to ObjectMapper::countSearchObjects(); count behavior owned by zoeken-filteren.
      */
-    public function countSearchObjects(array $query=[], bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null, ?string $uses=null): int;
+    public function countSearchObjects(
+    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, ObjectSelection $selection=new ObjectSelection()
+    ): int;
 
     /**
      * Get facets for objects matching the given criteria
@@ -818,12 +815,12 @@ interface ObjectOperationsInterface {
      *                                   `ChunkMapper::searchByKeyword()`; absent/false is
      *                                   byte-identical to pre-change behaviour (see
      *                                   openspec/specs/zoeken-filteren/spec.md)
-     * @param bool        $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param bool        $deleted       Whether to include deleted objects (default: false)
-     * @param array|null  $ids           Optional array of object IDs to filter by
-     * @param string|null $uses          Optional uses parameter for filtering
-     * @param array|null  $views         Optional array of view IDs to apply filters from
+     * @param bool          $_rbac         Whether to apply RBAC checks (default: true)
+     * @param bool          $_multitenancy Whether to apply multitenancy filtering (default: true)
+     * @param SearchOptions $options       The id and uses selection, the view ids whose filters
+     *                                     apply (refused when `viewScopeRequired` is set and no view
+     *                                     narrows the query) and the deleted flag echoed as
+     *                                     `@self.deleted`
      *
      * @psalm-param   array<string, mixed> $query
      * @phpstan-param array<string, mixed> $query
@@ -850,8 +847,7 @@ interface ObjectOperationsInterface {
      *   behavior owned by zoeken-filteren / faceting-configuration.
      */
     public function searchObjectsPaginated(
-    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, bool $deleted=false, ?array $ids=null, ?string $uses=null,
-    	?array $views=null
+    	array $query=[], bool $_rbac=true, bool $_multitenancy=true, SearchOptions $options=new SearchOptions()
     ): array;
 
     /**

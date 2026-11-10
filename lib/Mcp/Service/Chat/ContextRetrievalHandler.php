@@ -26,6 +26,8 @@
 namespace OCA\OpenRegister\Mcp\Service\Chat;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ObjectSelection;
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -549,9 +551,11 @@ class ContextRetrievalHandler {
 		try {
 			$found = $this->objectService->searchObjects(
 				query: ['_limit' => count($uuids)],
-				ids: $uuids,
-				views: array_values($views),
-				_viewScopeRequired: true
+				options: new SearchOptions(
+					selection: new ObjectSelection(ids: $uuids),
+					views: array_values($views),
+					viewScopeRequired: true
+				)
 			);
 			if (is_array($found) === false) {
 				$found = [];

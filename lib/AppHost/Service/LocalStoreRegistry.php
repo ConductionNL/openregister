@@ -91,8 +91,7 @@ class LocalStoreRegistry {
 			}
 
 			$found = $objects->searchObjectsBySlug(
-				registerSlug: (string)$store->register,
-				schemaSlug: (string)$store->schema,
+				target: new RegisterSchemaRef(register: (string)$store->register, schema: (string)$store->schema),
 				filters: $params,
 				_rbac: true,
 				_multitenancy: false

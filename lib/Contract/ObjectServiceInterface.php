@@ -11,6 +11,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contract;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectSelection;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCP\IUser;
 
 /**
@@ -238,12 +241,10 @@ interface ObjectServiceInterface {
 	/**
 	 * Search objects with a query.
 	 *
-	 * @param array   $query         The search query.
-	 * @param bool    $_rbac         Apply register RBAC.
-	 * @param bool    $_multitenancy Apply organisation scoping.
-	 * @param ?array  $ids           Restrict the search to these ids.
-	 * @param ?string $uses          Restrict to objects used by this one.
-	 * @param ?array  $views         Restrict the search to these views.
+	 * @param array         $query         The search query.
+	 * @param bool          $_rbac         Apply register RBAC.
+	 * @param bool          $_multitenancy Apply organisation scoping.
+	 * @param SearchOptions $options       The ids and uses to restrict to, and the views to apply.
 	 *
 	 * @return array|int Results, or a count when the query asks for one.
 	 */
@@ -251,9 +252,7 @@ interface ObjectServiceInterface {
 		array $query=[],
 		bool $_rbac=true,
 		bool $_multitenancy=true,
-		?array $ids=null,
-		?string $uses=null,
-		?array $views=null
+		SearchOptions $options=new SearchOptions()
 	): array|int;
 
 	/**
@@ -284,13 +283,11 @@ interface ObjectServiceInterface {
 	/**
 	 * Search objects and return a paginated result set.
 	 *
-	 * @param array   $query         The search query.
-	 * @param bool    $_rbac         Apply register RBAC.
-	 * @param bool    $_multitenancy Apply organisation scoping.
-	 * @param bool    $deleted       Include soft-deleted objects.
-	 * @param ?array  $ids           Restrict the search to these ids.
-	 * @param ?string $uses          Restrict to objects used by this one.
-	 * @param ?array  $views         Restrict the search to these views.
+	 * @param array         $query         The search query.
+	 * @param bool          $_rbac         Apply register RBAC.
+	 * @param bool          $_multitenancy Apply organisation scoping.
+	 * @param SearchOptions $options       The ids and uses to restrict to, the views to apply and
+	 *                                     the deleted flag echoed in the result metadata.
 	 *
 	 * @return array Results plus pagination metadata.
 	 */
@@ -298,10 +295,7 @@ interface ObjectServiceInterface {
 		array $query=[],
 		bool $_rbac=true,
 		bool $_multitenancy=true,
-		bool $deleted=false,
-		?array $ids=null,
-		?string $uses=null,
-		?array $views=null
+		SearchOptions $options=new SearchOptions()
 	): array;
 
 	/**
@@ -311,17 +305,15 @@ interface ObjectServiceInterface {
 	 * NUMERIC ids and return nothing for a slug, silently -- which is why this
 	 * method exists and why it is on the contract.
 	 *
-	 * @param string $registerSlug  The register slug.
-	 * @param string $schemaSlug    The schema slug.
-	 * @param array  $filters       Equality filters.
-	 * @param bool   $_rbac         Apply register RBAC.
-	 * @param bool   $_multitenancy Apply organisation scoping.
+	 * @param RegisterSchemaRef $target        The register slug and the schema slug.
+	 * @param array             $filters       Equality filters.
+	 * @param bool              $_rbac         Apply register RBAC.
+	 * @param bool              $_multitenancy Apply organisation scoping.
 	 *
 	 * @return array|int The matching objects, or a count.
 	 */
 	public function searchObjectsBySlug(
-		string $registerSlug,
-		string $schemaSlug,
+		RegisterSchemaRef $target,
 		array $filters=[],
 		bool $_rbac=true,
 		bool $_multitenancy=true
@@ -678,11 +670,10 @@ interface ObjectServiceInterface {
 	/**
 	 * Count the objects a search query would return.
 	 *
-	 * @param array   $query         The search query.
-	 * @param bool    $_rbac         Apply register RBAC.
-	 * @param bool    $_multitenancy Apply organisation scoping.
-	 * @param ?array  $ids           Restrict the search to these ids.
-	 * @param ?string $uses          Restrict to objects used by this one.
+	 * @param array           $query         The search query.
+	 * @param bool            $_rbac         Apply register RBAC.
+	 * @param bool            $_multitenancy Apply organisation scoping.
+	 * @param ObjectSelection $selection     The ids and uses to restrict the count to.
 	 *
 	 * @return int The number of matching objects.
 	 */
@@ -690,8 +681,7 @@ interface ObjectServiceInterface {
 		array $query=[],
 		bool $_rbac=true,
 		bool $_multitenancy=true,
-		?array $ids=null,
-		?string $uses=null
+		ObjectSelection $selection=new ObjectSelection()
 	): int;
 
 	/**

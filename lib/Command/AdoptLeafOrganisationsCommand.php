@@ -52,6 +52,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -231,11 +232,10 @@ class AdoptLeafOrganisationsCommand extends Command {
 
 		try {
 			$rows = $this->objectService->searchObjectsBySlug(
-				$registerSlug,
-				$schemaSlug,
-				['_limit' => false],
-				false,
-				false
+				target: new RegisterSchemaRef(register: $registerSlug, schema: $schemaSlug),
+				filters: ['_limit' => false],
+				_rbac: false,
+				_multitenancy: false
 			);
 		} catch (Throwable $e) {
 			$output->writeln(sprintf('<error>Could not read %s/%s: %s</error>', $registerSlug, $schemaSlug, $e->getMessage()));

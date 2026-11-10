@@ -12,9 +12,9 @@ declare(strict_types=1);
 
 namespace Unit\Service\Object;
 
-use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Kernel\Contracts\ObjectSelection;
 use OCA\OpenRegister\Service\Object\QueryHandler;
-use OCA\OpenRegister\Service\Object\SearchOptions;
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;

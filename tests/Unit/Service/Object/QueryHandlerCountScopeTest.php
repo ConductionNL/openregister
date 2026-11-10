@@ -9,7 +9,7 @@ namespace Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Kernel\Contracts\ObjectSelection;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use PHPUnit\Framework\TestCase;

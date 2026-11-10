@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Service\Vectorization\Strategies;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Log\LoggerInterface;
 
@@ -88,16 +89,13 @@ class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterfac
 			],
 			_rbac: false,
 			_multitenancy: false,
-			ids: null,
-			uses: null,
-			views: $views,
 			// The job has no session, so ViewMapper::find() denied, the view was
 			// logged and skipped, and the vectoriser indexed whatever the
 			// unbounded query returned instead of the view it was told to index.
 			// With the flag the view resolves exempt - a background job carries its
 			// own authorization exactly as a publication link does - and a view
 			// that cannot be applied fails the run rather than silently widening it.
-			_viewScopeRequired: true
+			options: new SearchOptions(views: $views, viewScopeRequired: true)
 		);
 
 		// SearchObjects can return array|int, but we need array for vectorization (@var array $objects).
