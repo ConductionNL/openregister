@@ -23,6 +23,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -111,10 +115,8 @@ class MagicStatisticsChartDataGoldenTest extends TestCase {
 
 		$handler = $this->getMockBuilder(MagicStatisticsHandler::class)
 			->setConstructorArgs([
-				$this->createMock(IDBConnection::class),
-				new NullLogger(),
-				$registers,
-				$schemas,
+				new MagicTableSql($this->createMock(IDBConnection::class), $this->createMock(IConfig::class), new NullLogger()),
+				new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)),
 				$this->createMock(DateTimeNormalizer::class),
 				$this->createMock(SchemaTypeConverter::class),
 			])

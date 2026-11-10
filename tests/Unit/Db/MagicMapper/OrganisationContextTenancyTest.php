@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
@@ -205,7 +206,7 @@ class OrganisationContextTenancyTest extends TestCase {
 			$container,
 			$logger
 		);
-		$this->organisations = new MagicOrganizationHandler($userSession, $groupManager, $appConfig, $container, $logger);
+		$this->organisations = new MagicOrganizationHandler(new MagicMapperIdentity($userSession, $groupManager, $this->createMock(IUserManager::class)), $appConfig, $container, $logger);
 		$this->db = $this->sqlite();
 	}//end setUp()
 

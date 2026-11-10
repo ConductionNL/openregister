@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
@@ -55,9 +57,8 @@ class MagicTableHandlerTest extends TestCase {
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 
 		$this->handler = new MagicTableHandler(
-			db: $this->db,
+			sql: new MagicTableSql(db: $this->db, config: $this->createMock(IConfig::class), logger: $this->logger),
 			appConfig: $this->appConfig,
-			logger: $this->logger,
 			magicMapper: $this->magicMapper
 		);
 
@@ -131,9 +132,8 @@ class MagicTableHandlerTest extends TestCase {
 		// Partial mock: intercept syncTableForRegisterSchema on the handler itself.
 		$handler = $this->getMockBuilder(MagicTableHandler::class)
 			->setConstructorArgs([
-				'db' => $this->db,
+				'sql' => new MagicTableSql(db: $this->db, config: $this->createMock(IConfig::class), logger: $this->logger),
 				'appConfig' => $this->appConfig,
-				'logger' => $this->logger,
 				'magicMapper' => $this->magicMapper,
 			])
 			->onlyMethods(['syncTableForRegisterSchema'])

@@ -44,8 +44,6 @@ use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
 use OCA\OpenRegister\Service\TenancyCollaborators;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -63,15 +61,13 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 	/**
 	 * Constructor for MagicOrganizationHandler.
 	 *
-	 * @param IUserSession $userSession User session manager
-	 * @param IGroupManager $groupManager Group manager
-	 * @param IAppConfig $appConfig Application configuration
-	 * @param ContainerInterface $container Container for lazy loading services
-	 * @param LoggerInterface $logger Logger for logging operations
+	 * @param MagicMapperIdentity $identity  User session and group manager of the caller
+	 * @param IAppConfig          $appConfig Application configuration
+	 * @param ContainerInterface  $container Container for lazy loading services
+	 * @param LoggerInterface     $logger    Logger for logging operations
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly MagicMapperIdentity $identity,
 		private readonly IAppConfig $appConfig,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
@@ -216,7 +212,7 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 	 * @return array{mode: string, uuids: array<int, string>} The scope.
 	 */
 	private function callerOrganizationScope(bool $adminBypassEnabled, OrganisationScopeTable $table): array {
-		$user = $this->userSession->getUser();
+		$user = $this->identity->userSession->getUser();
 
 		// CLI / no-session system context (occ commands, repair steps, cron
 		// jobs, background calculations, system listeners) is a trusted system
@@ -246,7 +242,7 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 			return false;
 		}
 
-		return in_array('admin', $this->groupManager->getUserGroupIds($user), true);
+		return in_array('admin', $this->identity->groupManager->getUserGroupIds($user), true);
 	}//end isAdmin()
 
 	/**
