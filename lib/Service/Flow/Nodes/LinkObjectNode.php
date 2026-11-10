@@ -41,7 +41,9 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HandoffException;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -180,19 +182,17 @@ class LinkObjectNode extends ObjectNodeBase implements IFlowNode, LinkObjectNode
 	/**
 	 * Create and link, or hand over, once per item.
 	 *
-	 * @param array $items   The input items.
-	 * @param array $config  The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, each carrying what was linked under `linked`.
 	 *
 	 * @throws RuntimeException `not-available` when a handoff's implementer is absent, or the write's refusal.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The interface fixes the signature.
-	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
 		$this->validateConfig(config: $config);
 
 		return $this->linkEach(items: $items, config: $config);
@@ -217,7 +217,7 @@ class LinkObjectNode extends ObjectNodeBase implements IFlowNode, LinkObjectNode
 				default => $this->handOver(json: $json, handoff: $handoff),
 			};
 
-			$out[] = FlowItems::item(json: $json, binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index);
+			$out[] = FlowItems::item(json: $json, options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index));
 		}
 
 		return $out;

@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\FormsControllerServices;
+use OCA\OpenRegister\Service\Form\FormDestination;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
@@ -196,7 +197,10 @@ class FormsController extends Controller {
 			$mapping = [];
 		}
 
-		$findings = $this->validator->validate(mapping: $mapping, schema: $schema, options: $options);
+		$findings = $this->validator->validate(
+			mapping: $mapping,
+			destination: new FormDestination(schema: $schema, audience: ($options['audience'] ?? null))
+		);
 
 		return new JSONResponse(data: ['accepted' => ($findings === []), 'findings' => $findings]);
 	}//end validate()

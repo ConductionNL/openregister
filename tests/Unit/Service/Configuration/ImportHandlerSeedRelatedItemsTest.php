@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Unit\Service\Configuration;
 
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -66,7 +68,8 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		$captured = [];
 		$fileService->expects($this->exactly(2))
 			->method('addFile')
-			->willReturnCallback(function ($obj, string $name, string $content, bool $share, array $tags) use (&$captured) {
+			->willReturnCallback(function (FileTarget $target, FileUpload $upload) use (&$captured) {
+				[$name, $content, $share, $tags] = [$upload->fileName, $upload->content, $upload->share, $upload->tags];
 				$captured[] = compact('name', 'content', 'share', 'tags');
 				return $this->createMock(\OCP\Files\File::class);
 			});

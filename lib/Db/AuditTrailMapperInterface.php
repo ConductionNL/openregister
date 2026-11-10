@@ -156,25 +156,17 @@ interface AuditTrailMapperInterface {
 	public function find(int $id): AuditTrail;
 
 	/**
-	 * Find all audit trails with filters and sorting
+	 * Audit trails matching a listing's filters, search and sort, from its offset.
 	 *
-	 * @param int|null $limit The limit of the results
-	 * @param int|null $offset The offset of the results
-	 * @param array|null $filters The filters to apply
-	 * @param array|null $sort The sort to apply
-	 * @param string|null $search Optional search term to filter by ext fields
+	 * An unbounded listing ({@see ListQuery::unbounded()}) returns every match.
+	 *
+	 * @param ListQuery $query The limit, offset, filters, sort and search.
 	 *
 	 * @return AuditTrail[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
-	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Complex query building requires many conditional paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
-	public function findAll(
-		?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $sort = ['created' => 'DESC'], ?string $search = null
-	): array;
+	public function findTrail(ListQuery $query): array;
 
 	/**
 	 * Creates an audit trail for object changes
@@ -320,12 +312,9 @@ interface AuditTrailMapperInterface {
 	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity;
 
 	/**
-	 * Get statistics for audit trails with optional filtering
+	 * The number and total size of the audit trails in a scope.
 	 *
-	 * @param int|null $registerId The register ID (null for all registers)
-	 * @param int|null $schemaId The schema ID (null for all schemas)
-	 * @param array $exclude Array of register/schema combinations to exclude,
-	 *                       format: [['register' => id, 'schema' => id], ...]
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema (null for all) and the combinations to leave out.
 	 *
 	 * @return int[] Array containing total count and size of audit trails:
 	 *               - total: Total number of audit trails
@@ -333,7 +322,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @psalm-return array{total: int, size: int}
 	 */
-	public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array;
+	public function statisticsTotals(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Updates an entity in the database
@@ -350,19 +339,16 @@ interface AuditTrailMapperInterface {
 	public function update(Entity $entity): AuditTrail;
 
 	/**
-	 * Get chart data for audit trail actions over time
+	 * Chart data for audit trail actions over time
 	 *
-	 * @param DateTime|null $from Start date for the chart data
-	 * @param DateTime|null $till End date for the chart data
-	 * @param int|null $registerId Optional register ID to filter by
-	 * @param int|null $schemaId Optional schema ID to filter by
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema (null for all) and the `from`/`till` dates.
 	 *
 	 * @return ((int[]|string)[]|(int|string))[][]
 	 *
 	 * @psalm-return array{labels: list<array-key>,
 	 *     series: list<array{data: list<int>, name: string}>}
 	 */
-	public function getActionChartData(?\DateTime $from = null, ?\DateTime $till = null, ?int $registerId = null, ?int $schemaId = null): array;
+	public function actionChartData(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Get detailed statistics for audit trails including action counts within timeframe
@@ -540,7 +526,7 @@ interface AuditTrailMapperInterface {
 	 * Get audit trail statistics grouped by schema for multiple schemas in a single query
 	 *
 	 * Returns per-schema statistics using GROUP BY instead of one query per schema.
-	 * This replaces N individual getStatistics() calls with 1 query.
+	 * This replaces N individual statisticsTotals() calls with 1 query.
 	 *
 	 * @param int[] $schemaIds Array of schema IDs to get statistics for
 	 *
@@ -582,6 +568,15 @@ interface AuditTrailMapperInterface {
 		ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null,
 		?string $ipAddress = null
 	): AuditTrail;
+
+	/**
+	 * Record a non-CRUD action on one object, with an explicit actor when one is named.
+	 *
+	 * @param AuditTrail\ObjectAuditEvent $event The object, action, context, and the explicit actor and address.
+	 *
+	 * @return AuditTrail The created audit trail entry
+	 */
+	public function recordObjectEvent(AuditTrail\ObjectAuditEvent $event): AuditTrail;
 
 	/**
 	 * Create one immutable, hash-chained audit record for an MCP tool
@@ -635,26 +630,13 @@ interface AuditTrailMapperInterface {
 	public function findByIdentifier(string $identifier): array;
 
 	/**
-	 * Find audit trail entries by the actor (user UID) that produced them.
+	 * One page of the entries one actor produced, with the unbounded total.
 	 *
-	 * Returns an associative array with `results` (array of AuditTrail entities)
-	 * and `total` (unbounded count matching the filters).
-	 *
-	 * @param string $userId The actor UID to filter on.
-	 * @param int $limit Maximum number of rows to return.
-	 * @param int $offset Row offset for pagination.
-	 * @param string|null $action Optional action filter (create|update|delete).
-	 * @param string|null $from Optional ISO-8601 start date (inclusive).
-	 * @param string|null $to Optional ISO-8601 end date (inclusive).
+	 * @param AuditTrail\ActorTrailQuery $query The actor, the page and the optional action and date range.
 	 *
 	 * @return array{results: array<int, AuditTrail>, total: int}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
-	public function findByActor(
-		string $userId, int $limit = 25, int $offset = 0, ?string $action = null, ?string $from = null, ?string $to = null
-	): array;
+	public function findActorTrail(AuditTrail\ActorTrailQuery $query): array;
 
 	/**
 	 * Create one immutable, hash-chained audit record for a write that was

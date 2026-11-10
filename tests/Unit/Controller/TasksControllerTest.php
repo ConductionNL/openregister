@@ -329,7 +329,7 @@ class TasksControllerTest extends TestCase {
 					return $payload;
 				}
 			);
-		$this->taskService->expects($this->never())->method('getAllUserTasks');
+		$this->taskService->expects($this->never())->method('listUserTasks');
 
 		$result = $controller->allUserTasks();
 

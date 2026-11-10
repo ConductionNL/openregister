@@ -78,7 +78,7 @@ final class TaskVtodoDocument {
 			return null;
 		}
 
-		return $this->reader->taskArray(vtodo: $vtodo, calendarId: (string)$at->calendarId, uri: $at->uri);
+		return $this->reader->taskArray(vtodo: $vtodo, at: $at);
 	}//end taskOf()
 
 	/**

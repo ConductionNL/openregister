@@ -360,21 +360,18 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	/**
 	 * Hold what following a held change or preference made of its entry, and report a write or a failure.
 	 *
-	 * @param string                  $set      The set id.
 	 * @param ExampleSetFollowedEntry $followed The entry's part and record key, and what follow() made.
-	 * @param array<string, mixed>    $report   The report so far.
-	 * @param array<string, mixed>    $record   The record; written when the entry changed.
+	 * @param RecordLedger            $ledger   The report, which gains the outcome, and the record, which takes the entry.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return bool Whether the record changed and is to be written.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
 	 */
-	public function hold(string $set, ExampleSetFollowedEntry $followed, array $report, array &$record): array {
-		if (self::took(followed: $followed, record: $record) === true) {
-			$this->write(set: $set, record: $record);
-		}
+	public function hold(ExampleSetFollowedEntry $followed, RecordLedger $ledger): bool {
+		$took           = self::took(followed: $followed, record: $ledger->record);
+		$ledger->report = self::reported(followed: $followed, report: $ledger->report);
 
-		return self::reported(followed: $followed, report: $report);
+		return $took;
 	}//end hold()
 
 	/**

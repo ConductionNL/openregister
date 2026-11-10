@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Rbac\GrantRowsQuery;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -185,7 +187,7 @@ class ObjectGrantsReportTest extends TestCase {
 			directory: new PrincipalDirectory(userManager: $users, groupManager: $groups)
 		);
 
-		return $report->rowsFor(object: $object, registerRef: 1, schemaRef: 7, principalTypes: $types);
+		return $report->rowsFor(object: $object, query: new GrantRowsQuery(table: new RegisterSchemaRef(register: 1, schema: 7), principalTypes: $types));
 	}//end rowsFor()
 
 	/**

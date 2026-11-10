@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -77,21 +78,21 @@ class ProviderItemsBelongToObjectTest extends TestCase {
 
 	public function testDeletingANoteOfAnotherObjectIsRefused(): void {
 		$this->expectExceptionCode(404);
-		$this->notesProvider()->delete('r', 's', 'uuid-mine', '5');
+		$this->notesProvider()->delete(new ObjectRef(register: 'r', schema: 's', id: 'uuid-mine'), '5');
 	}
 
 	public function testUpdatingANoteOfAnotherObjectIsRefused(): void {
 		$this->expectExceptionCode(404);
-		$this->notesProvider()->update('r', 's', 'uuid-mine', '5', ['message' => 'x']);
+		$this->notesProvider()->update(new ObjectRef(register: 'r', schema: 's', id: 'uuid-mine'), '5', ['message' => 'x']);
 	}
 
 	public function testDeletingATaskOfAnotherObjectIsRefused(): void {
 		$this->expectExceptionCode(404);
-		$this->tasksProvider()->delete('r', 's', 'uuid-mine', '7/task.ics');
+		$this->tasksProvider()->delete(new ObjectRef(register: 'r', schema: 's', id: 'uuid-mine'), '7/task.ics');
 	}
 
 	public function testUpdatingATaskOfAnotherObjectIsRefused(): void {
 		$this->expectExceptionCode(404);
-		$this->tasksProvider()->update('r', 's', 'uuid-mine', '7/task.ics', ['summary' => 'x']);
+		$this->tasksProvider()->update(new ObjectRef(register: 'r', schema: 's', id: 'uuid-mine'), '7/task.ics', ['summary' => 'x']);
 	}
 }

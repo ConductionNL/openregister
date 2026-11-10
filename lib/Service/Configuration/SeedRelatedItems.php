@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Service\Configuration;
 use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\FileWriterInterface;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use Psr\Log\LoggerInterface;
@@ -216,7 +218,10 @@ final class SeedRelatedItems
 		}
 
 		try {
-			$this->fileService->addFile($target->object, $name, $content, (bool) ($spec['share'] ?? false), (array) ($spec['tags'] ?? []));
+			$this->fileService->addFile(
+				new FileTarget(object: $target->object),
+				new FileUpload(fileName: $name, content: $content, share: (bool) ($spec['share'] ?? false), tags: (array) ($spec['tags'] ?? []))
+			);
 			return 1;
 		} catch (Throwable $e) {
 			$this->failed(target: $target, detail: ['kind' => 'file', 'name' => $name, 'error' => $e->getMessage()]);
