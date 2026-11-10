@@ -16,6 +16,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -217,7 +218,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 	public function testFindAllReturnsArray(): void {
 		$this->createTestAuditTrail();
 
-		$results = $this->mapper->findAll();
+		$results = $this->mapper->findTrail(ListQuery::unbounded([], ['created' => 'DESC']));
 		$this->assertIsArray($results);
 		$this->assertGreaterThanOrEqual(1, count($results));
 	}
@@ -226,7 +227,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$this->createTestAuditTrail();
 		$this->createTestAuditTrail();
 
-		$results = $this->mapper->findAll(1);
+		$results = $this->mapper->findTrail(new ListQuery(1, null, [], ['created' => 'DESC']));
 		$this->assertCount(1, $results);
 	}
 
@@ -235,8 +236,8 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$this->createTestAuditTrail();
 
 		// Use a specific user filter to isolate our test data
-		$allResults = $this->mapper->findAll(null, null, ['user' => 'phpunit-test-user']);
-		$offsetResults = $this->mapper->findAll(null, 1, ['user' => 'phpunit-test-user']);
+		$allResults = $this->mapper->findTrail(ListQuery::unbounded(['user' => 'phpunit-test-user'], ['created' => 'DESC']));
+		$offsetResults = $this->mapper->findTrail(new ListQuery(ListQuery::UNBOUNDED, 1, ['user' => 'phpunit-test-user'], ['created' => 'DESC']));
 
 		if (count($allResults) >= 2) {
 			$this->assertCount(count($allResults) - 1, $offsetResults);
@@ -247,7 +248,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$this->createTestAuditTrail(null, null, 'create');
 		$this->createTestAuditTrail(null, null, 'update');
 
-		$results = $this->mapper->findAll(null, null, ['action' => 'create']);
+		$results = $this->mapper->findTrail(ListQuery::unbounded(['action' => 'create'], ['created' => 'DESC']));
 		$this->assertIsArray($results);
 		foreach ($results as $trail) {
 			$this->assertSame('create', $trail->getAction());
@@ -258,7 +259,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$this->createTestAuditTrail(null, null, 'create');
 		$this->createTestAuditTrail(null, null, 'update');
 
-		$results = $this->mapper->findAll(null, null, ['action' => 'create,update']);
+		$results = $this->mapper->findTrail(ListQuery::unbounded(['action' => 'create,update'], ['created' => 'DESC']));
 		$this->assertIsArray($results);
 		foreach ($results as $trail) {
 			$this->assertContains($trail->getAction(), ['create', 'update']);
@@ -266,12 +267,12 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 	}
 
 	public function testFindAllWithIsNullFilter(): void {
-		$results = $this->mapper->findAll(null, null, ['version' => 'IS NULL']);
+		$results = $this->mapper->findTrail(ListQuery::unbounded(['version' => 'IS NULL'], ['created' => 'DESC']));
 		$this->assertIsArray($results);
 	}
 
 	public function testFindAllWithIsNotNullFilter(): void {
-		$results = $this->mapper->findAll(null, null, ['action' => 'IS NOT NULL']);
+		$results = $this->mapper->findTrail(ListQuery::unbounded(['action' => 'IS NOT NULL'], ['created' => 'DESC']));
 		$this->assertIsArray($results);
 	}
 
@@ -281,7 +282,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		// Search is applied to the 'changed' JSON field via LIKE.
 		// On PostgreSQL, LIKE on json columns fails; skip if that's the case.
 		try {
-			$results = $this->mapper->findAll(null, null, [], ['created' => 'DESC'], 'before');
+			$results = $this->mapper->findTrail(new ListQuery(ListQuery::UNBOUNDED, null, [], ['created' => 'DESC'], 'before'));
 			$this->assertIsArray($results);
 		} catch (\Exception $e) {
 			// PostgreSQL does not support LIKE on json columns - known limitation
@@ -293,10 +294,10 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$this->createTestAuditTrail();
 
 		// _system prefix filters and invalid column filters should be ignored
-		$results = $this->mapper->findAll(null, null, [
+		$results = $this->mapper->findTrail(ListQuery::unbounded([
 			'_systemField' => 'ignored',
 			'nonexistent_column' => 'also_ignored',
-		]);
+		], ['created' => 'DESC']));
 		$this->assertIsArray($results);
 	}
 

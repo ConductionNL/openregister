@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 
 /**
@@ -36,13 +35,10 @@ interface PermissionEnforcementInterface {
 	/**
 	 * Check permission and throw exception if not granted
 	 *
-	 * @param Schema $schema Schema to check permissions for.
-	 * @param string $action Action to check permission for.
-	 * @param string|null $userId User ID to check permissions for.
-	 * @param string|null $objectOwner Object owner ID.
-	 * @param bool $_rbac Whether to enforce RBAC checks.
-	 * @param ObjectEntity|null $object Optional object entity for conditional authorization matching.
-	 * @param string|null $register The register written to, for a check that names no object.
+	 * @param Schema                 $schema  Schema to check permissions for.
+	 * @param string                 $action  Action to check permission for.
+	 * @param PermissionCheckOptions $options The caller, object owner, object and register of the check.
+	 * @param bool                   $_rbac   Whether to enforce RBAC checks.
 	 *
 	 * @return void
 	 *
@@ -53,10 +49,7 @@ interface PermissionEnforcementInterface {
 	public function checkPermission(
 		Schema $schema,
 		string $action,
-		?string $userId = null,
-		?string $objectOwner = null,
+		PermissionCheckOptions $options = new PermissionCheckOptions(),
 		bool $_rbac = true,
-		?ObjectEntity $object = null,
-		?string $register = null,
 	): void;
 }//end interface

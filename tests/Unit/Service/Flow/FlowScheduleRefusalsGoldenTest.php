@@ -76,7 +76,7 @@ class FlowScheduleRefusalsGoldenTest extends TestCase {
 		/** @var FlowRunService&MockObject $runs */
 		$runs = $this->createMock(FlowRunService::class);
 		$runs->method('hasActiveRun')->willReturn(false);
-		$runs->method('queue')->willReturnCallback($queue);
+		$runs->method('queueRun')->willReturnCallback($queue);
 
 		$config = $this->createMock(IAppConfig::class);
 		$config->method('getValueString')->willReturnCallback(
