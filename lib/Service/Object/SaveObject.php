@@ -29,6 +29,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use OCA\OpenRegister\Service\RecordUpdate;
 use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use Adbar\Dot;
@@ -4107,8 +4108,7 @@ class SaveObject implements SaveObjectInterface {
 		if ($this->computedFieldHandler->hasComputedProperties($schema) === true) {
 			$data = $this->computedFieldHandler->evaluateComputedFields(
 				data: $data,
-				schema: $schema,
-				evaluateOn: 'save'
+				pass: new ComputedPass(schema: $schema, evaluateOn: 'save')
 			);
 		}
 
