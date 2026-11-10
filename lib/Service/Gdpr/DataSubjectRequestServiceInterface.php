@@ -79,23 +79,15 @@ interface DataSubjectRequestServiceInterface {
 	 * what the handler does next. Withholding one record never blocks the rest
 	 * of the request.
 	 *
-	 * @param string $subjectId Subject identifier value.
-	 * @param string|null $type Optional GdprEntity type filter.
-	 * @param string $eraseMode One of the ERASE_MODE_* constants.
-	 * @param bool $dryRun When true, report matches/holds without mutating.
+	 * The subject is trimmed and an unknown erase mode pseudonymises.
+	 *
+	 * @param ErasureRequest $request The subject, type filter, erase mode and dry-run switch.
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
-	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-erasure-honours-legal-hold-and-is-mode-parameterised
 	 */
-	public function erase(
-		string $subjectId,
-		?string $type = null,
-		string $eraseMode = self::ERASE_MODE_PSEUDONYMISE,
-		bool $dryRun = false,
-	): array;
+	public function erase(ErasureRequest $request): array;
 
 	/**
 	 * Discover a subject's objects across all registers (art-15 / art-20).
@@ -108,11 +100,9 @@ interface DataSubjectRequestServiceInterface {
 	 * Returns a list of envelopes:
 	 *   [['object' => <ObjectEntity json>, 'gdprEntities' => [{type,value,category,detectedAt}, ...]], ...]
 	 *
-	 * @param string $subjectId Subject identifier value (email, …).
-	 * @param string|null $type Optional GdprEntity type filter.
-	 * @param string $mode `exact` (default) or `ilike`.
-	 * @param bool $rbac Apply RBAC scoping (default true).
-	 * @param bool $multitenancy Apply tenant scoping (default true).
+	 * @param SubjectQuery $query        The subject value, optional GdprEntity type and match mode.
+	 * @param bool         $rbac         Apply RBAC scoping (default true).
+	 * @param bool         $multitenancy Apply tenant scoping (default true).
 	 *
 	 * @return array<int, array{object: array, gdprEntities: array}>
 	 *
@@ -120,9 +110,7 @@ interface DataSubjectRequestServiceInterface {
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
-	public function findSubjectData(
-		string $subjectId, ?string $type = null, string $mode = 'exact', bool $rbac = true, bool $multitenancy = true
-	): array;
+	public function findSubjectData(SubjectQuery $query, bool $rbac = true, bool $multitenancy = true): array;
 
 	/**
 	 * Rectify a single object's fields for the subject (art-16).

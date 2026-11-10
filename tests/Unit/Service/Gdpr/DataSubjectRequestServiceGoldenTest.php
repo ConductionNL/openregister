@@ -47,6 +47,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
+use OCA\OpenRegister\Service\Gdpr\ErasureRequest;
 
 /**
  * Golden test for DataSubjectRequestService.
@@ -357,7 +358,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$this->object('gone-schema', 'gone');
 		$this->failingSaves = ['broken'];
 
-		$summary = $this->buildService()->erase(subjectId: '  jane@example.org  ', eraseMode: 'nonsense');
+		$summary = $this->buildService()->erase(new ErasureRequest(subjectId: '  jane@example.org  ', eraseMode: 'nonsense'));
 
 		$this->assertSame('jane@example.org', $summary['subject']);
 		$this->assertSame(DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE, $summary['eraseMode']);
@@ -417,7 +418,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$a = $this->object('a');
 		$b = $this->object('22');
 
-		$summary = $this->buildService()->erase(subjectId: 'jane@example.org', type: 'email', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
+		$summary = $this->buildService()->erase(new ErasureRequest(subjectId: 'jane@example.org', type: 'email', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT));
 
 		$this->assertTrue($summary['complete']);
 		$this->assertSame('email', $summary['type']);
@@ -451,7 +452,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$this->object('hold-x');
 		$this->object('arch', 'archival');
 
-		$summary = $this->buildService()->erase(subjectId: 'jane@example.org', dryRun: true);
+		$summary = $this->buildService()->erase(new ErasureRequest(subjectId: 'jane@example.org', dryRun: true));
 
 		$this->assertSame([['uuid' => 'a', 'register' => 'reg', 'schema' => 'plain']], $summary['erased']);
 		$this->assertSame(1, $summary['heldCount']);
@@ -469,7 +470,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 	 */
 	public function testDiscoveryShapes(): void {
 		$this->db->expects($this->never())->method('getQueryBuilder');
-		$this->assertSame([], $this->buildService()->findSubjectData(subjectId: '   '));
+		$this->assertSame([], $this->buildService()->findSubjectData(new SubjectQuery(subjectId: '   ')));
 		$this->assertSame([], $this->buildService()->findSubjectObjects(query: new SubjectQuery(subjectId: '')));
 
 	}//end testDiscoveryShapes()
@@ -499,7 +500,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		);
 		$this->assertSame([['a', false, false], [7, false, false], ['denied', false, false]], $this->finds);
 
-		$data = $this->buildService()->findSubjectData(subjectId: 'jane');
+		$data = $this->buildService()->findSubjectData(new SubjectQuery(subjectId: 'jane'));
 		$this->assertCount(2, $data);
 		$this->assertSame($a->jsonSerialize(), $data[0]['object']);
 		$this->assertTrue($this->finds[3][1]);
@@ -515,7 +516,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 	public function testIndexFailureYieldsNothing(): void {
 		$this->wireIndex(null);
 
-		$summary = $this->buildService()->erase(subjectId: 'jane@example.org');
+		$summary = $this->buildService()->erase(new ErasureRequest(subjectId: 'jane@example.org'));
 
 		$this->assertSame(0, $summary['matchedCount']);
 		$this->assertTrue($summary['complete']);
