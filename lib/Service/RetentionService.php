@@ -177,14 +177,7 @@ class RetentionService implements RetentionServiceInterface {
 	private function archivalRetention(ObjectEntity $object, Schema $schema): array {
 		$archiveConfig = $schema->getArchive();
 
-		// The schema's category, unless this record names its own through the
-		// property the schema declares for that (DECISIONS row 48).
-		$classification = (new ClassificationOverride())->effective(
-			declaration: new CategoryDeclaration(archive: $archiveConfig),
-			data: ($object->getObject() ?? [])
-		);
-
-		$applied = $this->resolveArchivalDefaults(archiveConfig: $archiveConfig, classification: $classification);
+		$applied = $this->resolveArchivalDefaults(archiveConfig: $archiveConfig, classification: self::effectiveCategory(object: $object, archiveConfig: $archiveConfig));
 		$retentionPeriod = $applied['bewaartermijn'];
 
 		$retention = $this->withArchivalDefaults(retention: ($object->getRetention() ?? []), applied: $applied);
@@ -198,6 +191,22 @@ class RetentionService implements RetentionServiceInterface {
 
 		return $retention;
 	}//end archivalRetention()
+
+	/**
+	 * The schema's category, unless this record names its own through the
+	 * property the schema declares for that (DECISIONS row 48).
+	 *
+	 * @param ObjectEntity $object        The record.
+	 * @param array        $archiveConfig The schema's archive block.
+	 *
+	 * @return string|null
+	 */
+	private static function effectiveCategory(ObjectEntity $object, array $archiveConfig): ?string {
+		return (new ClassificationOverride())->effective(
+			declaration: new CategoryDeclaration(archive: $archiveConfig),
+			data: ($object->getObject() ?? [])
+		);
+	}//end effectiveCategory()
 
 	/**
 	 * Write the decided nominatie, period, source and provenance into a retention block.
@@ -332,10 +341,8 @@ class RetentionService implements RetentionServiceInterface {
 	 */
 	public function applyClassification(RecordUpdate $update): ObjectEntity {
 		$object   = $update->object;
-		$archive  = ($update->schema->getArchive() ?? []);
-		$override = new ClassificationOverride();
-		$property = $override->propertyOf(archive: $archive, configuration: ($update->schema->getConfiguration() ?? []));
-		if (($archive['enabled'] ?? false) !== true || $property === null) {
+		$property = self::categoryProperty(update: $update);
+		if ($property === null) {
 			return $object;
 		}
 
@@ -346,9 +353,26 @@ class RetentionService implements RetentionServiceInterface {
 		$data = ($object->getObject() ?? []);
 		$this->guardClassificationOverride(schema: $update->schema, data: $data);
 
-		$declaration = new CategoryDeclaration(archive: $archive, configuration: ($update->schema->getConfiguration() ?? []));
-		return $this->rederiveCategory(update: $update, effective: $override->effective(declaration: $declaration, data: $data));
+		$declaration = new CategoryDeclaration(archive: ($update->schema->getArchive() ?? []), configuration: ($update->schema->getConfiguration() ?? []));
+		return $this->rederiveCategory(update: $update, effective: (new ClassificationOverride())->effective(declaration: $declaration, data: $data));
 	}//end applyClassification()
+
+	/**
+	 * The property a record names its own category through, when its schema archives and declares one.
+	 *
+	 * @param RecordUpdate $update The record before and after.
+	 *
+	 * @return string|null Null when the schema does not archive or declares no such property.
+	 */
+	private static function categoryProperty(RecordUpdate $update): ?string {
+		$archive  = ($update->schema->getArchive() ?? []);
+		$property = (new ClassificationOverride())->propertyOf(archive: $archive, configuration: ($update->schema->getConfiguration() ?? []));
+		if (($archive['enabled'] ?? false) !== true) {
+			return null;
+		}
+
+		return $property;
+	}//end categoryProperty()
 
 	/**
 	 * Whether an update leaves the category the record requests through its override property as it was.
@@ -680,13 +704,24 @@ class RetentionService implements RetentionServiceInterface {
 			$retention = $this->withExtendedActionDate(retention: $retention, extensionPeriod: $extensionPeriod);
 			$object->setRetention($retention);
 		} catch (Exception $e) {
-			$this->logger->warning(
-				'[RetentionService] Failed to extend archiefactiedatum: ' . $e->getMessage()
-			);
+			$this->logExtensionFailure(error: $e);
 		}
 
 		return $object;
 	}//end extendArchiveActionDate()
+
+	/**
+	 * Warn that an action date could not be extended; the record keeps its date.
+	 *
+	 * @param Exception $error Why it could not be extended.
+	 *
+	 * @return void
+	 */
+	private function logExtensionFailure(Exception $error): void {
+		$this->logger->warning(
+			'[RetentionService] Failed to extend archiefactiedatum: ' . $error->getMessage()
+		);
+	}//end logExtensionFailure()
 
 	/**
 	 * The extension the archival settings give an action date when the caller names none.
