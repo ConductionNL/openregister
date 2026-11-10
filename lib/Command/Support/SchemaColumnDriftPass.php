@@ -123,13 +123,7 @@ final class SchemaColumnDriftPass {
 		}
 
 		if ($this->apply === false) {
-			$this->output->writeln(
-				sprintf(
-					'<comment>%d table(s), %d column(s) would be repaired. Re-run with --apply.</comment>',
-					$counts['tables'],
-					$counts['columns']
-				)
-			);
+			$this->output->writeln(self::wouldRepairLine(counts: $counts));
 			return 0;
 		}
 
@@ -139,6 +133,21 @@ final class SchemaColumnDriftPass {
 
 		return (int)($counts['failed'] !== 0);
 	}//end summarise()
+
+	/**
+	 * The dry-run line: how many tables and columns a run with --apply repairs.
+	 *
+	 * @param array<string, int> $counts The pass's counts.
+	 *
+	 * @return string The line.
+	 */
+	private static function wouldRepairLine(array $counts): string {
+		return sprintf(
+			'<comment>%d table(s), %d column(s) would be repaired. Re-run with --apply.</comment>',
+			$counts['tables'],
+			$counts['columns']
+		);
+	}//end wouldRepairLine()
 
 	/**
 	 * The drift of one schema's table, or null after printing why it was skipped.
