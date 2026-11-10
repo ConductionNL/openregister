@@ -240,19 +240,31 @@ class EntityRecognitionHandler {
 		try {
 			$run->record(result: $this->extractFromChunk(chunk: $run->chunk, options: $run->request->options));
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[EntityRecognitionHandler] Failed to process chunk',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'chunk_id' => $run->chunk->getId(),
-					'source_type' => $run->request->sourceType,
-					'source_id' => $run->request->sourceId,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logChunkFailure(run: $run, error: $e);
 		}
 	}//end extractCounted()
+
+	/**
+	 * Log a chunk whose extraction failed.
+	 *
+	 * @param EntityExtractionRun $run   The extraction run, holding the failed chunk.
+	 * @param Exception           $error The failure.
+	 *
+	 * @return void
+	 */
+	private function logChunkFailure(EntityExtractionRun $run, Exception $error): void {
+		$this->logger->error(
+			message: '[EntityRecognitionHandler] Failed to process chunk',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'chunk_id' => $run->chunk->getId(),
+				'source_type' => $run->request->sourceType,
+				'source_id' => $run->request->sourceId,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logChunkFailure()
 
 	/**
 	 * Log the end of a source's entity extraction with its totals.
@@ -300,16 +312,25 @@ class EntityRecognitionHandler {
 			return self::NO_ENTITIES;
 		}
 
-		return $this->detectAndStore(
-			scan: new ChunkEntityScan(
-				chunk: $chunk,
-				text: $text,
-				method: $options['method'] ?? self::METHOD_HYBRID,
-				contextWindow: (int)($options['context_window'] ?? 50)
-			),
-			options: $options
-		);
+		return $this->detectAndStore(scan: $this->chunkScan(chunk: $chunk, options: $options), options: $options);
 	}//end extractFromChunk()
+
+	/**
+	 * The scan of a chunk with text: the chunk, its text, the detection method and the context window.
+	 *
+	 * @param Chunk $chunk   The chunk, known to hold text.
+	 * @param array $options Processing options: method, context_window.
+	 *
+	 * @return ChunkEntityScan
+	 */
+	private function chunkScan(Chunk $chunk, array $options): ChunkEntityScan {
+		return new ChunkEntityScan(
+			chunk: $chunk,
+			text: $chunk->getTextContent(),
+			method: $options['method'] ?? self::METHOD_HYBRID,
+			contextWindow: (int)($options['context_window'] ?? 50)
+		);
+	}//end chunkScan()
 
 	/**
 	 * Log the start of one chunk's extraction.
@@ -728,6 +749,18 @@ class EntityRecognitionHandler {
 			return $this->detectWithRegex(query: $query);
 		}
 
+		return $this->presidioEntities(apiResults: $apiResults, request: $request);
+	}//end runPresidio()
+
+	/**
+	 * Convert Presidio's results to our format.
+	 *
+	 * @param array          $apiResults Presidio's results.
+	 * @param AnalyzeRequest $request    The analyze request.
+	 *
+	 * @return array Detected entities.
+	 */
+	private function presidioEntities(array $apiResults, AnalyzeRequest $request): array {
 		$this->logger->debug(
 			message: '[EntityRecognitionHandler] Presidio found ' . count($apiResults) . ' entities',
 			context: ['file' => __FILE__, 'line' => __LINE__]
@@ -735,7 +768,7 @@ class EntityRecognitionHandler {
 
 		// Convert results to our format.
 		return $this->convertApiResultsToEntities(apiResults: $apiResults, request: $request);
-	}//end runPresidio()
+	}//end presidioEntities()
 
 	/**
 	 * The configured Presidio endpoint, or null (with a warning) when none is configured.
@@ -1107,10 +1140,7 @@ class EntityRecognitionHandler {
 		// No curl_close(): deprecated since PHP 8.0 and a no-op — the
 		// CurlHandle object is freed when it goes out of scope.
 		if ($curlError !== '') {
-			$this->logger->error(
-				message: "[EntityRecognitionHandler] {$serviceName} connection error: " . $curlError,
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->logConnectionError(serviceName: $serviceName, curlError: $curlError);
 			return null;
 		}
 
@@ -1119,6 +1149,21 @@ class EntityRecognitionHandler {
 			response: new AnalyzeResponse(status: $httpCode, body: $response)
 		);
 	}//end postAnalyzeRequest()
+
+	/**
+	 * Log that the service could not be reached.
+	 *
+	 * @param string $serviceName Human-readable service name.
+	 * @param string $curlError   The curl error.
+	 *
+	 * @return void
+	 */
+	private function logConnectionError(string $serviceName, string $curlError): void {
+		$this->logger->error(
+			message: "[EntityRecognitionHandler] {$serviceName} connection error: " . $curlError,
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logConnectionError()
 
 	/**
 	 * A curl handle that POSTs the call's JSON body with the call's extra headers.
@@ -1135,19 +1180,30 @@ class EntityRecognitionHandler {
 				CURLOPT_RETURNTRANSFER => true,
 				CURLOPT_POST => true,
 				CURLOPT_POSTFIELDS => json_encode($call->requestBody),
-				CURLOPT_HTTPHEADER => array_merge(
-					[
-						'Content-Type: application/json',
-						'Accept: application/json',
-					],
-					$call->extraHeaders
-				),
+				CURLOPT_HTTPHEADER => $this->analyzeHeaders(call: $call),
 				CURLOPT_TIMEOUT => 30,
 			]
 		);
 
 		return $ch;
 	}//end analyzeHandle()
+
+	/**
+	 * The JSON content headers followed by the call's extra headers.
+	 *
+	 * @param AnalyzeCall $call The call, with its extra headers.
+	 *
+	 * @return array<int, string>
+	 */
+	private function analyzeHeaders(AnalyzeCall $call): array {
+		return array_merge(
+			[
+				'Content-Type: application/json',
+				'Accept: application/json',
+			],
+			$call->extraHeaders
+		);
+	}//end analyzeHeaders()
 
 	/**
 	 * The decoded body of an answered analyze request; a request error throws, any other non-200 is null.
