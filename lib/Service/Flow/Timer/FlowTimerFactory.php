@@ -47,17 +47,35 @@ final class FlowTimerFactory {
 	private readonly FlowTimerValues $values;
 
 	/**
+	 * Calendar resolution.
+	 *
+	 * @var WorkingCalendarService
+	 */
+	private readonly WorkingCalendarService $calendars;
+
+	/**
+	 * Business-time arithmetic.
+	 *
+	 * @var SlaCalculatorInterface
+	 */
+	private readonly SlaCalculatorInterface $calculator;
+
+	/**
+	 * Normalises the escalation rules.
+	 *
+	 * @var EscalationLadderService
+	 */
+	private readonly EscalationLadderService $ladder;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param WorkingCalendarService  $calendars  Calendar resolution.
-	 * @param SlaCalculatorInterface           $calculator Business-time arithmetic.
-	 * @param EscalationLadderService $ladder     Normalises the escalation rules.
+	 * @param FlowTimerArithmetic $arithmetic The calendar resolution, the business-time arithmetic and the ladder.
 	 */
-	public function __construct(
-		private readonly WorkingCalendarService $calendars,
-		private readonly SlaCalculatorInterface $calculator,
-		private readonly EscalationLadderService $ladder,
-	) {
+	public function __construct(FlowTimerArithmetic $arithmetic) {
+		$this->calendars = $arithmetic->calendars;
+		$this->calculator = $arithmetic->calculator;
+		$this->ladder = $arithmetic->ladder;
 		$this->values = new FlowTimerValues();
 	}//end __construct()
 
