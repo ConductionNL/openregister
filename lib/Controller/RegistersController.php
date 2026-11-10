@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use OCA\OpenRegister\Service\RegisterServiceInterface;
+use OCA\OpenRegister\Service\Serializer\RegisterListExtension;
 use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -383,7 +384,10 @@ class RegistersController extends Controller {
 			$statsByRegisterId = $this->statistics->schemaCounts(registers: $registers);
 		}
 
-		$serialized = $this->services->registers->registerSerializer->serializeMany($registers, $extend, $statsByRegisterId);
+		$serialized = $this->services->registers->registerSerializer->serializePage(
+			$registers,
+			new RegisterListExtension(extend: $extend, schemaStatsByRegisterId: $statsByRegisterId)
+		);
 		if ($wantsStats === true) {
 			return $this->withRegisterStats(registers: $serialized, statsByRegisterId: $statsByRegisterId);
 		}
