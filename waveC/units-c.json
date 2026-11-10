@@ -1,0 +1,3795 @@
+{
+"lib/AppHost/Scheduling/IntervalCron.php": [
+{
+"name": "IntervalCron::cronFor",
+"start": 50,
+"end": 68,
+"nloc": 15,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/AppHost/Scheduling/ScheduleManifest.php": [
+{
+"name": "ScheduleManifest::checkCron",
+"start": 129,
+"end": 139,
+"nloc": 9,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/AppHost/Store/StoreActionAuthorizer.php": [
+{
+"name": "StoreActionAuthorizer::canPublish",
+"start": 168,
+"end": 202,
+"nloc": 29,
+"ccn": 7,
+"params": 2,
+"held": []
+}
+],
+"lib/BackgroundJob/StateHistoryRebuildJob.php": [
+{
+"name": "StateHistoryRebuildJob::contextFor",
+"start": 225,
+"end": 253,
+"nloc": 25,
+"ccn": 6,
+"params": 1,
+"held": [
+"9007"
+]
+}
+],
+"lib/Calendar/CalendarDefinition.php": [
+{
+"name": "CalendarDefinition::dtstartFormat",
+"start": 92,
+"end": 106,
+"nloc": 13,
+"ccn": 7,
+"params": 0,
+"held": []
+}
+],
+"lib/Command/RematerialiseCalculationsCommand.php": [
+{
+"name": "RematerialiseCalculationsCommand::evaluationPayload",
+"start": 210,
+"end": 241,
+"nloc": 28,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "RematerialiseCalculationsCommand::changedValues",
+"start": 258,
+"end": 283,
+"nloc": 23,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/ContextChat/ContentProvider.php": [
+{
+"name": "ContentProvider::reindex",
+"start": 189,
+"end": 220,
+"nloc": 23,
+"ccn": 7,
+"params": 2,
+"held": [
+"8990"
+]
+},
+{
+"name": "ContentProvider::resolveOptedInPairs",
+"start": 233,
+"end": 276,
+"nloc": 37,
+"ccn": 12,
+"params": 2,
+"held": []
+}
+],
+"lib/Controller/ActivityLinksController.php": [
+{
+"name": "ActivityLinksController::dropdown",
+"start": 212,
+"end": 239,
+"nloc": 25,
+"ccn": 7,
+"params": 1,
+"held": [
+"9002"
+]
+}
+],
+"lib/Controller/CalendarEventsController.php": [
+{
+"name": "CalendarEventsController::listCalendarEvents",
+"start": 475,
+"end": 507,
+"nloc": 28,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Controller/ConfigurationsController.php": [
+{
+"name": "ConfigurationsController::create",
+"start": 183,
+"end": 228,
+"nloc": 32,
+"ccn": 13,
+"params": 0,
+"held": []
+},
+{
+"name": "ConfigurationsController::update",
+"start": 247,
+"end": 283,
+"nloc": 29,
+"ccn": 9,
+"params": 1,
+"held": []
+},
+{
+"name": "ConfigurationsController::import",
+"start": 359,
+"end": 446,
+"nloc": 54,
+"ccn": 6,
+"params": 0,
+"held": []
+},
+{
+"name": "ConfigurationsController::idsOf",
+"start": 457,
+"end": 475,
+"nloc": 16,
+"ccn": 7,
+"params": 1,
+"held": []
+}
+],
+"lib/Controller/ContentReportController.php": [
+{
+"name": "ContentReportController::create",
+"start": 110,
+"end": 151,
+"nloc": 37,
+"ccn": 6,
+"params": 0,
+"held": [
+"8819"
+]
+},
+{
+"name": "ContentReportController::update",
+"start": 290,
+"end": 326,
+"nloc": 31,
+"ccn": 7,
+"params": 1,
+"held": []
+}
+],
+"lib/Controller/DeletedController.php": [
+{
+"name": "DeletedController::extractRequestParameters",
+"start": 95,
+"end": 172,
+"nloc": 62,
+"ccn": 10,
+"params": 0,
+"held": []
+},
+{
+"name": "DeletedController::restoreMultiple",
+"start": 516,
+"end": 588,
+"nloc": 56,
+"ccn": 7,
+"params": 0,
+"held": []
+},
+{
+"name": "DeletedController::destroyMultiple",
+"start": 938,
+"end": 1012,
+"nloc": 59,
+"ccn": 8,
+"params": 0,
+"held": []
+}
+],
+"lib/Controller/FederatedConfigController.php": [
+{
+"name": "FederatedConfigController::install",
+"start": 180,
+"end": 215,
+"nloc": 30,
+"ccn": 9,
+"params": 0,
+"held": []
+},
+{
+"name": "FederatedConfigController::publish",
+"start": 233,
+"end": 277,
+"nloc": 37,
+"ccn": 9,
+"params": 0,
+"held": []
+},
+{
+"name": "FederatedConfigController::fetch",
+"start": 419,
+"end": 446,
+"nloc": 24,
+"ccn": 7,
+"params": 0,
+"held": []
+}
+],
+"lib/Controller/OrganisationController.php": [
+{
+"name": "OrganisationController::canManageOrganisationMembers",
+"start": 195,
+"end": 217,
+"nloc": 19,
+"ccn": 6,
+"params": 1,
+"held": [
+"4641"
+]
+},
+{
+"name": "OrganisationController::join",
+"start": 480,
+"end": 545,
+"nloc": 53,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "OrganisationController::leave",
+"start": 560,
+"end": 630,
+"nloc": 57,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": "OrganisationController::update",
+"start": 726,
+"end": 788,
+"nloc": 51,
+"ccn": 6,
+"params": 1,
+"held": [
+"8837"
+]
+},
+{
+"name": "OrganisationController::handleParentUpdate",
+"start": 1195,
+"end": 1235,
+"nloc": 34,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "OrganisationController::usage",
+"start": 1453,
+"end": 1528,
+"nloc": 65,
+"ccn": 10,
+"params": 1,
+"held": []
+}
+],
+"lib/Controller/SchemasController.php": [
+{
+"name": ",::index",
+"start": 358,
+"end": 445,
+"nloc": 56,
+"ccn": 10,
+"params": 0,
+"held": []
+},
+{
+"name": ",::resolveSchema",
+"start": 517,
+"end": 534,
+"nloc": 11,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": ",::show",
+"start": 644,
+"end": 727,
+"nloc": 57,
+"ccn": 12,
+"params": 1,
+"held": []
+},
+{
+"name": ",::validateJsonLdMapping",
+"start": 856,
+"end": 883,
+"nloc": 24,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": ",::create",
+"start": 904,
+"end": 955,
+"nloc": 38,
+"ccn": 8,
+"params": 0,
+"held": []
+},
+{
+"name": ",::schemaWriteErrorResponse",
+"start": 1092,
+"end": 1115,
+"nloc": 20,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": ",::assessDependentForms",
+"start": 1243,
+"end": 1263,
+"nloc": 17,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": ",::applyUpdate",
+"start": 1319,
+"end": 1375,
+"nloc": 45,
+"ccn": 8,
+"params": 2,
+"held": []
+},
+{
+"name": ",::classifySchemaUpdate",
+"start": 1389,
+"end": 1427,
+"nloc": 34,
+"ccn": 8,
+"params": 2,
+"held": [
+"9055"
+]
+},
+{
+"name": ",::publishDraft",
+"start": 1625,
+"end": 1653,
+"nloc": 24,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": ",::destroy",
+"start": 1746,
+"end": 1817,
+"nloc": 43,
+"ccn": 10,
+"params": 1,
+"held": [
+"7908"
+]
+},
+{
+"name": ",::upload",
+"start": 2024,
+"end": 2065,
+"nloc": 35,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": ",::uploadPermissionError",
+"start": 2169,
+"end": 2185,
+"nloc": 15,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": ",::related",
+"start": 2284,
+"end": 2327,
+"nloc": 31,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": ",::resolveByImplements",
+"start": 2563,
+"end": 2603,
+"nloc": 33,
+"ccn": 7,
+"params": 0,
+"held": []
+},
+{
+"name": ",::applyDialect",
+"start": 2697,
+"end": 2747,
+"nloc": 41,
+"ccn": 11,
+"params": 1,
+"held": []
+},
+{
+"name": ",::resolveDialectReference",
+"start": 2757,
+"end": 2768,
+"nloc": 10,
+"ccn": 7,
+"params": 2,
+"held": []
+}
+],
+"lib/Db/ConfigurationMapper.php": [
+{
+"name": "ConfigurationMapper::insert",
+"start": 308,
+"end": 347,
+"nloc": 23,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "ConfigurationMapper::findAll",
+"start": 469,
+"end": 507,
+"nloc": 26,
+"ccn": 9,
+"params": 6,
+"held": [
+"8456"
+]
+}
+],
+"lib/Db/ContactLink.php": [
+{
+"name": "ContactLink::isActiveOn",
+"start": 316,
+"end": 327,
+"nloc": 10,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Db/EmailLink.php": [
+{
+"name": "EmailLink::storableMessageId",
+"start": 199,
+"end": 205,
+"nloc": 6,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Db/Flow.php": [
+{
+"name": "Flow::belongsTo",
+"start": 549,
+"end": 559,
+"nloc": 9,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Db/MagicMapper/MagicSearchHandler.php": [
+{
+"name": "MagicSearchHandler::searchTable",
+"start": 408,
+"end": 490,
+"nloc": 53,
+"ccn": 13,
+"params": 2,
+"held": [
+"8973"
+]
+},
+{
+"name": "MagicSearchHandler::applyArrayElementFilters",
+"start": 665,
+"end": 698,
+"nloc": 31,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "MagicSearchHandler::lifecycleConditionsSql",
+"start": 1127,
+"end": 1160,
+"nloc": 27,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "MagicSearchHandler::archivedConditionSql",
+"start": 1196,
+"end": 1214,
+"nloc": 15,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::boundaryConditionsSql",
+"start": 1267,
+"end": 1327,
+"nloc": 54,
+"ccn": 9,
+"params": 1,
+"held": []
+},
+{
+"name": "MagicSearchHandler::buildOrganizationConditionSql",
+"start": 1548,
+"end": 1601,
+"nloc": 34,
+"ccn": 8,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::buildObjectFilterConditionsSql",
+"start": 1863,
+"end": 1938,
+"nloc": 63,
+"ccn": 9,
+"params": 1,
+"held": []
+},
+{
+"name": "MagicSearchHandler::objectFieldConditionsSql",
+"start": 1951,
+"end": 2005,
+"nloc": 39,
+"ccn": 9,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::objectOperatorConditionsSql",
+"start": 2018,
+"end": 2069,
+"nloc": 39,
+"ccn": 11,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::buildMetadataFilterConditionsSql",
+"start": 2143,
+"end": 2184,
+"nloc": 35,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "MagicSearchHandler::buildTmloFilterConditionsSql",
+"start": 2372,
+"end": 2410,
+"nloc": 28,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::applyBasicFilters",
+"start": 2481,
+"end": 2529,
+"nloc": 33,
+"ccn": 9,
+"params": 1,
+"held": []
+},
+{
+"name": "MagicSearchHandler::metadataOperatorPredicates",
+"start": 2899,
+"end": 2964,
+"nloc": 52,
+"ccn": 14,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::applyObjectFilters",
+"start": 3011,
+"end": 3065,
+"nloc": 36,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::objectFieldPredicates",
+"start": 3080,
+"end": 3099,
+"nloc": 17,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::applyNestedPathFilters",
+"start": 3344,
+"end": 3381,
+"nloc": 33,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::extractRelationFieldFilters",
+"start": 3710,
+"end": 3731,
+"nloc": 18,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "MagicSearchHandler::applyFullTextSearch",
+"start": 3851,
+"end": 3934,
+"nloc": 58,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::buildSearchLeafQbSql",
+"start": 3955,
+"end": 3985,
+"nloc": 26,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::applySorting",
+"start": 3998,
+"end": 4059,
+"nloc": 45,
+"ccn": 10,
+"params": 2,
+"held": [
+"6108"
+]
+},
+{
+"name": "MagicSearchHandler::sortLanguageChain",
+"start": 4098,
+"end": 4122,
+"nloc": 21,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "MagicSearchHandler::buildTranslatableSortSql",
+"start": 4145,
+"end": 4200,
+"nloc": 42,
+"ccn": 12,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::buildPropertySortExpression",
+"start": 4276,
+"end": 4308,
+"nloc": 26,
+"ccn": 12,
+"params": 4,
+"held": [
+"6108"
+]
+},
+{
+"name": "MagicSearchHandler::getSchemaColumnMaps",
+"start": 4347,
+"end": 4379,
+"nloc": 29,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "MagicSearchHandler::convertRowValue",
+"start": 4474,
+"end": 4495,
+"nloc": 18,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::rowMetadataValues",
+"start": 4528,
+"end": 4543,
+"nloc": 16,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "MagicSearchHandler::buildFilterColumnRef",
+"start": 4657,
+"end": 4687,
+"nloc": 26,
+"ccn": 7,
+"params": 2,
+"held": []
+}
+],
+"lib/Db/Schema/VocabularyEntries.php": [
+{
+"name": "VocabularyEntries::normalisePartyKind",
+"start": 245,
+"end": 259,
+"nloc": 13,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Db/TaskMapper.php": [
+{
+"name": "TaskMapper::applyBlockedExclusion",
+"start": 616,
+"end": 633,
+"nloc": 16,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "TaskMapper::applyFilters",
+"start": 849,
+"end": 879,
+"nloc": 24,
+"ccn": 8,
+"params": 2,
+"held": []
+}
+],
+"lib/Dto/BulkSaveOutcome.php": [
+{
+"name": "BulkSaveOutcome::describeUnattributedErrors",
+"start": 324,
+"end": 348,
+"nloc": 20,
+"ccn": 7,
+"params": 1,
+"held": []
+}
+],
+"lib/Exception/SharedMasterDataWriteException.php": [
+{
+"name": "SharedMasterDataWriteException::refusal",
+"start": 87,
+"end": 100,
+"nloc": 12,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Files/Controller/FileExtractionController.php": [
+{
+"name": "FileExtractionController::index",
+"start": 197,
+"end": 230,
+"nloc": 27,
+"ccn": 6,
+"params": 0,
+"held": []
+}
+],
+"lib/Files/Db/FileMapper.php": [
+{
+"name": "FileMapper::getFiles",
+"start": 335,
+"end": 347,
+"nloc": 11,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "FileMapper::getFilesForObject",
+"start": 499,
+"end": 558,
+"nloc": 39,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "FileMapper::getFileIdsForObjects",
+"start": 578,
+"end": 651,
+"nloc": 57,
+"ccn": 10,
+"params": 1,
+"held": []
+}
+],
+"lib/Files/Service/TextExtraction/OoxmlElements.php": [
+{
+"name": "OoxmlElements::children",
+"start": 52,
+"end": 65,
+"nloc": 12,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Files/Service/TextExtraction/OoxmlPackage.php": [
+{
+"name": "OoxmlPackage::applySegment",
+"start": 276,
+"end": 292,
+"nloc": 14,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Listener/Support/PushSlugResolver.php": [
+{
+"name": "PushSlugResolver::slugOf",
+"start": 98,
+"end": 108,
+"nloc": 10,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Mcp/Attribute/McpTool.php": [
+{
+"name": "McpTool::__construct",
+"start": 130,
+"end": 142,
+"nloc": 13,
+"ccn": 10,
+"params": 10,
+"held": []
+}
+],
+"lib/Mcp/BuiltIn/SchemasToolProvider.php": [
+{
+"name": "SchemasToolProvider::checkedBody",
+"start": 270,
+"end": 292,
+"nloc": 18,
+"ccn": 7,
+"params": 2,
+"held": []
+}
+],
+"lib/Mcp/Tool/SchemaTool.php": [
+{
+"name": "SchemaTool::classifyAndBump",
+"start": 377,
+"end": 396,
+"nloc": 18,
+"ccn": 6,
+"params": 2,
+"held": [
+"9055"
+]
+}
+],
+"lib/Notifications/Controller/GraphQLSubscriptionController.php": [
+{
+"name": "GraphQLSubscriptionController::subscribe",
+"start": 79,
+"end": 158,
+"nloc": 57,
+"ccn": 10,
+"params": 0,
+"held": [
+"8985"
+]
+}
+],
+"lib/Notifications/Service/GraphQL/SubscriptionService.php": [
+{
+"name": "SubscriptionService::eventsMatching",
+"start": 146,
+"end": 164,
+"nloc": 16,
+"ccn": 7,
+"params": 1,
+"held": []
+}
+],
+"lib/Notifications/Service/Notification/AnnotationNotificationDispatcher.php": [
+{
+"name": "AnnotationNotificationDispatcher::ruleApplies",
+"start": 384,
+"end": 412,
+"nloc": 24,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "AnnotationNotificationDispatcher::dispatchScopes",
+"start": 734,
+"end": 753,
+"nloc": 17,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "AnnotationNotificationDispatcher::runOutboundTransports",
+"start": 771,
+"end": 799,
+"nloc": 24,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": "AnnotationNotificationDispatcher::runOneOutboundTransport",
+"start": 811,
+"end": 840,
+"nloc": 27,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "AnnotationNotificationDispatcher::deliveryWindowOrDigestSuppresses",
+"start": 880,
+"end": 939,
+"nloc": 53,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "AnnotationNotificationDispatcher::dispatchQueued",
+"start": 976,
+"end": 1051,
+"nloc": 63,
+"ccn": 10,
+"params": 1,
+"held": []
+},
+{
+"name": "AnnotationNotificationDispatcher::buildQueuedSummary",
+"start": 1064,
+"end": 1106,
+"nloc": 35,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "AnnotationNotificationDispatcher::organisationGateAllows",
+"start": 1359,
+"end": 1385,
+"nloc": 19,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "AnnotationNotificationDispatcher::emitWebhook",
+"start": 1428,
+"end": 1489,
+"nloc": 49,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": "AnnotationNotificationDispatcher::roleGroupsFor",
+"start": 1505,
+"end": 1526,
+"nloc": 18,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "AnnotationNotificationDispatcher::resolveUserLocale",
+"start": 1599,
+"end": 1617,
+"nloc": 14,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "AnnotationNotificationDispatcher::resolveOriginApp",
+"start": 1688,
+"end": 1709,
+"nloc": 18,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "AnnotationNotificationDispatcher::resolveActions",
+"start": 1728,
+"end": 1768,
+"nloc": 32,
+"ccn": 8,
+"params": 4,
+"held": [
+"6215",
+"6217"
+]
+},
+{
+"name": "AnnotationNotificationDispatcher::resolveTaskVerbTarget",
+"start": 1835,
+"end": 1862,
+"nloc": 23,
+"ccn": 10,
+"params": 3,
+"held": [
+"6215",
+"6217"
+]
+},
+{
+"name": "AnnotationNotificationDispatcher::resolveActionTarget",
+"start": 1891,
+"end": 1948,
+"nloc": 46,
+"ccn": 11,
+"params": 4,
+"held": [
+"6215",
+"6217"
+]
+},
+{
+"name": "AnnotationNotificationDispatcher::resolveRelationDeeplink",
+"start": 1965,
+"end": 2004,
+"nloc": 34,
+"ccn": 12,
+"params": 2,
+"held": [
+"6215",
+"6217"
+]
+},
+{
+"name": "AnnotationNotificationDispatcher::buildObjectDetailLink",
+"start": 2018,
+"end": 2063,
+"nloc": 28,
+"ccn": 13,
+"params": 3,
+"held": [
+"6215",
+"6217"
+]
+},
+{
+"name": "AnnotationNotificationDispatcher::dispatchToParties",
+"start": 2156,
+"end": 2207,
+"nloc": 40,
+"ccn": 8,
+"params": 1,
+"held": [
+"8941"
+]
+},
+{
+"name": "AnnotationNotificationDispatcher::dispatchToAddresses",
+"start": 2223,
+"end": 2268,
+"nloc": 40,
+"ccn": 8,
+"params": 1,
+"held": [
+"8937"
+]
+},
+{
+"name": "AnnotationNotificationDispatcher::keepsSubscribedRecipient",
+"start": 2410,
+"end": 2426,
+"nloc": 14,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Notifications/Service/Notification/CoalesceRule.php": [
+{
+"name": "CoalesceRule::positiveInt",
+"start": 87,
+"end": 97,
+"nloc": 9,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Notifications/Service/Notification/DeliveryHold.php": [
+{
+"name": "DeliveryHold::reason",
+"start": 126,
+"end": 140,
+"nloc": 12,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Notifications/Service/Notification/NotificationCoalescer.php": [
+{
+"name": "NotificationCoalescer::shouldDispatch",
+"start": 133,
+"end": 146,
+"nloc": 10,
+"ccn": 6,
+"params": 3,
+"held": [
+"8967"
+]
+},
+{
+"name": "NotificationCoalescer::inspect",
+"start": 202,
+"end": 214,
+"nloc": 11,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Notifications/Service/Notification/NotificationDeliveryWindowService.php": [
+{
+"name": "NotificationDeliveryWindowService::declaredZone",
+"start": 333,
+"end": 343,
+"nloc": 10,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Notifications/Service/Notification/NotificationTemplating.php": [
+{
+"name": "NotificationTemplating::resolveRelationDisplayName",
+"start": 356,
+"end": 386,
+"nloc": 26,
+"ccn": 9,
+"params": 1,
+"held": []
+}
+],
+"lib/Notifications/Service/Notification/NotificationTriggerValidator.php": [
+{
+"name": "NotificationTriggerValidator::appEventFault",
+"start": 258,
+"end": 272,
+"nloc": 12,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Notifications/Service/Party/PartyNotificationService.php": [
+{
+"name": "PartyNotificationService::recipientsForObject",
+"start": 97,
+"end": 111,
+"nloc": 13,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "PartyNotificationService::outboundAddress",
+"start": 280,
+"end": 297,
+"nloc": 15,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Notifications/Service/Timeline/EntryMentionService.php": [
+{
+"name": "EntryMentionService::parse",
+"start": 103,
+"end": 124,
+"nloc": 18,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": "EntryMentionService::resolveToken",
+"start": 138,
+"end": 155,
+"nloc": 16,
+"ccn": 8,
+"params": 2,
+"held": []
+}
+],
+"lib/Notifications/Service/Timeline/LanguageDetector.php": [
+{
+"name": "LanguageDetector::detect",
+"start": 91,
+"end": 108,
+"nloc": 15,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "LanguageDetector::byFunctionWords",
+"start": 117,
+"end": 137,
+"nloc": 15,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Notifications/Service/TimelineVisibilityService.php": [
+{
+"name": "TimelineVisibilityService::effectiveFilter",
+"start": 223,
+"end": 233,
+"nloc": 9,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "TimelineVisibilityService::filterRows",
+"start": 248,
+"end": 270,
+"nloc": 20,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Repair/BackfillFlowSemanticVersions.php": [
+{
+"name": "BackfillFlowSemanticVersions::mirrorOntoFlow",
+"start": 239,
+"end": 259,
+"nloc": 17,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Repair/BackfillFlowTriggerIndex.php": [
+{
+"name": "BackfillFlowTriggerIndex::run",
+"start": 113,
+"end": 191,
+"nloc": 66,
+"ccn": 8,
+"params": 1,
+"held": [
+"8943"
+]
+}
+],
+"lib/Repair/BackfillFlowVersions.php": [
+{
+"name": "BackfillFlowVersions::run",
+"start": 103,
+"end": 170,
+"nloc": 51,
+"ccn": 9,
+"params": 1,
+"held": []
+}
+],
+"lib/Repair/MigrateRenamedFlowNodeTypes.php": [
+{
+"name": "MigrateRenamedFlowNodeTypes::run",
+"start": 106,
+"end": 151,
+"nloc": 37,
+"ccn": 8,
+"params": 1,
+"held": [
+"8943"
+]
+}
+],
+"lib/Repair/PurgePhantomMigratedFlows.php": [
+{
+"name": "PurgePhantomMigratedFlows::run",
+"start": 164,
+"end": 215,
+"nloc": 40,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": "PurgePhantomMigratedFlows::isUnrunnableShell",
+"start": 258,
+"end": 281,
+"nloc": 20,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "PurgePhantomMigratedFlows::sourceSchemaSlug",
+"start": 317,
+"end": 352,
+"nloc": 30,
+"ccn": 10,
+"params": 1,
+"held": []
+}
+],
+"lib/Search/BackgroundJob/ReportRenderJob.php": [
+{
+"name": "ReportRenderJob::run",
+"start": 163,
+"end": 227,
+"nloc": 60,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "ReportRenderJob::shouldRender",
+"start": 237,
+"end": 267,
+"nloc": 25,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "ReportRenderJob::writeToFiles",
+"start": 308,
+"end": 370,
+"nloc": 44,
+"ccn": 9,
+"params": 2,
+"held": []
+}
+],
+"lib/Search/Controller/DuplicateController.php": [
+{
+"name": "DuplicateController::dismiss",
+"start": 284,
+"end": 322,
+"nloc": 34,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "DuplicateController::mayDismiss",
+"start": 382,
+"end": 405,
+"nloc": 20,
+"ccn": 8,
+"params": 2,
+"held": []
+}
+],
+"lib/Search/Controller/ViewsController.php": [
+{
+"name": "ViewsController::index",
+"start": 273,
+"end": 343,
+"nloc": 55,
+"ccn": 9,
+"params": 0,
+"held": []
+},
+{
+"name": "ViewsController::calendar",
+"start": 841,
+"end": 901,
+"nloc": 51,
+"ccn": 7,
+"params": 1,
+"held": []
+}
+],
+"lib/Search/Db/ViewFormatting.php": [
+{
+"name": "ViewFormatting::managing",
+"start": 91,
+"end": 104,
+"nloc": 12,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Search/Service/ExampleSet/ExampleSetViews.php": [
+{
+"name": "ExampleSetViews::refusal",
+"start": 115,
+"end": 137,
+"nloc": 19,
+"ccn": 8,
+"params": 2,
+"held": []
+},
+{
+"name": "ExampleSetViews::shareRefusal",
+"start": 152,
+"end": 175,
+"nloc": 20,
+"ccn": 8,
+"params": 2,
+"held": []
+}
+],
+"lib/Search/Service/Geo/GeoFilterApplier.php": [
+{
+"name": "GeoFilterApplier::extractGeometry",
+"start": 108,
+"end": 121,
+"nloc": 12,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Search/Service/GraphQL/QueryComplexityAnalyzer.php": [
+{
+"name": "QueryComplexityAnalyzer::argumentMultiplier",
+"start": 287,
+"end": 302,
+"nloc": 13,
+"ccn": 7,
+"params": 2,
+"held": []
+}
+],
+"lib/Search/Service/Quality/DedupCreatePolicy.php": [
+{
+"name": "DedupCreatePolicy::mayOverride",
+"start": 203,
+"end": 225,
+"nloc": 19,
+"ccn": 8,
+"params": 1,
+"held": []
+}
+],
+"lib/Search/Service/Search/SearchIndexMaintenance.php": [
+{
+"name": "SearchIndexMaintenance::schemaSlugsByTable",
+"start": 235,
+"end": 244,
+"nloc": 9,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Search/Service/Vectorization/VectorEmbeddings.php": [
+{
+"name": "VectorEmbeddings::generateEmbeddingWithCustomConfig",
+"start": 152,
+"end": 217,
+"nloc": 55,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Aggregation/AggregationRunner.php": [
+{
+"name": "AggregationRunner::tryDbalAggregation",
+"start": 1011,
+"end": 1046,
+"nloc": 30,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "AggregationRunner::dbalSourceConfig",
+"start": 1057,
+"end": 1076,
+"nloc": 17,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "AggregationRunner::joinedProjectionKeyMap",
+"start": 1705,
+"end": 1742,
+"nloc": 30,
+"ccn": 8,
+"params": 2,
+"held": []
+},
+{
+"name": "AggregationRunner::criterionMatches",
+"start": 2173,
+"end": 2203,
+"nloc": 18,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "AggregationRunner::nativePathCannotExpress",
+"start": 2560,
+"end": 2572,
+"nloc": 11,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "AggregationRunner::nativeFilterSupported",
+"start": 2633,
+"end": 2651,
+"nloc": 17,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "AggregationRunner::addDraftPredicate",
+"start": 2723,
+"end": 2750,
+"nloc": 24,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "AggregationRunner::addOrganisationPredicate",
+"start": 2812,
+"end": 2835,
+"nloc": 23,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "AggregationRunner::addOperatorPredicates",
+"start": 2951,
+"end": 2983,
+"nloc": 29,
+"ccn": 8,
+"params": 2,
+"held": []
+},
+{
+"name": "AggregationRunner::coerceBucketKey",
+"start": 3474,
+"end": 3511,
+"nloc": 23,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "AggregationRunner::mergeNarrowingFilter",
+"start": 3952,
+"end": 3985,
+"nloc": 24,
+"ccn": 8,
+"params": 2,
+"held": []
+},
+{
+"name": "AggregationRunner::mergeJoinedValues",
+"start": 4042,
+"end": 4071,
+"nloc": 23,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "AggregationRunner::resolveAtSelfReferences",
+"start": 4839,
+"end": 4892,
+"nloc": 30,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "AggregationRunner::findRegisterForSchema",
+"start": 4911,
+"end": 4941,
+"nloc": 18,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/ApiVersion/ApiContractService.php": [
+{
+"name": "ApiContractService::markOperationsDeprecated",
+"start": 158,
+"end": 175,
+"nloc": 14,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Archival/ActionDateFollower.php": [
+{
+"name": "ActionDateFollower::follow",
+"start": 72,
+"end": 101,
+"nloc": 25,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Archival/ObjectArchivalAnnotation.php": [
+{
+"name": "ObjectArchivalAnnotation::evaluateFor",
+"start": 125,
+"end": 159,
+"nloc": 31,
+"ccn": 6,
+"params": 1,
+"held": [
+"8819"
+]
+}
+],
+"lib/Service/Archival/RetentionEvaluator.php": [
+{
+"name": "RetentionEvaluator::firstMatchingRule",
+"start": 177,
+"end": 190,
+"nloc": 12,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Audit/ContentReportService.php": [
+{
+"name": "ContentReportService::mayReadCopy",
+"start": 205,
+"end": 225,
+"nloc": 15,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "ContentReportService::noteRemoval",
+"start": 261,
+"end": 310,
+"nloc": 37,
+"ccn": 7,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Audit/ObjectHistoryForReaders.php": [
+{
+"name": "ObjectHistoryForReaders::readerEntries",
+"start": 171,
+"end": 192,
+"nloc": 19,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "ObjectHistoryForReaders::readerObject",
+"start": 208,
+"end": 223,
+"nloc": 13,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Audit/PurposeContext.php": [
+{
+"name": "PurposeContext::declared",
+"start": 106,
+"end": 122,
+"nloc": 14,
+"ccn": 7,
+"params": 0,
+"held": []
+}
+],
+"lib/Service/Audit/ReadableAuditTrailLister.php": [
+{
+"name": "ReadableAuditTrailLister::takeReadable",
+"start": 285,
+"end": 304,
+"nloc": 18,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/BulkJob/BulkJobService.php": [
+{
+"name": "BulkJobService::selectionTypeOf",
+"start": 636,
+"end": 657,
+"nloc": 18,
+"ccn": 7,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Calculation/ReferencedCalculationRefresher.php": [
+{
+"name": "ReferencedCalculationRefresher::refresh",
+"start": 108,
+"end": 136,
+"nloc": 24,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "ReferencedCalculationRefresher::dependencies",
+"start": 217,
+"end": 238,
+"nloc": 19,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "ReferencedCalculationRefresher::materialisedExpressions",
+"start": 247,
+"end": 266,
+"nloc": 17,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "ReferencedCalculationRefresher::pointingField",
+"start": 276,
+"end": 287,
+"nloc": 10,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Capability/ToolGrantResolver.php": [
+{
+"name": "ToolGrantResolver::argumentConstraints",
+"start": 422,
+"end": 454,
+"nloc": 24,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "ToolGrantResolver::violationFor",
+"start": 478,
+"end": 497,
+"nloc": 16,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "ToolGrantResolver::violationForSet",
+"start": 511,
+"end": 532,
+"nloc": 16,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "ToolGrantResolver::classifyFromHints",
+"start": 884,
+"end": 898,
+"nloc": 12,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": "ToolGrantResolver::descriptorsById",
+"start": 989,
+"end": 1025,
+"nloc": 14,
+"ccn": 7,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Capability/ToolGrantSet.php": [
+{
+"name": "ToolGrantSet::toolIds",
+"start": 327,
+"end": 345,
+"nloc": 17,
+"ccn": 6,
+"params": 0,
+"held": []
+},
+{
+"name": "ToolGrantSet::sanitise",
+"start": 361,
+"end": 381,
+"nloc": 18,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "ToolGrantSet::sanitiseActions",
+"start": 407,
+"end": 437,
+"nloc": 23,
+"ccn": 9,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Case/CasePlanService.php": [
+{
+"name": "CasePlanService::visibleRows",
+"start": 726,
+"end": 742,
+"nloc": 15,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Config/FederatedConfigAccess.php": [
+{
+"name": "FederatedConfigAccess::isAllowed",
+"start": 103,
+"end": 127,
+"nloc": 19,
+"ccn": 7,
+"params": 2,
+"held": [
+"7908"
+]
+}
+],
+"lib/Service/Config/Types/ConfigSetShareableConfigType.php": [
+{
+"name": "ConfigSetShareableConfigType::resolve",
+"start": 163,
+"end": 184,
+"nloc": 19,
+"ccn": 6,
+"params": 1,
+"held": [
+"8456"
+]
+}
+],
+"lib/Service/Configuration/GitHubRequestValidator.php": [
+{
+"name": "GitHubRequestValidator::validateSpecRef",
+"start": 154,
+"end": 164,
+"nloc": 9,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "GitHubRequestValidator::validateLabels",
+"start": 192,
+"end": 203,
+"nloc": 10,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Configuration/ImportHandler.php": [
+{
+"name": "ImportHandler::provisionDeclaredGroups",
+"start": 617,
+"end": 643,
+"nloc": 24,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "ImportHandler::resolveActingUser",
+"start": 664,
+"end": 709,
+"nloc": 40,
+"ccn": 10,
+"params": 0,
+"held": []
+},
+{
+"name": "ImportHandler::importMapping",
+"start": 1084,
+"end": 1144,
+"nloc": 48,
+"ccn": 9,
+"params": 2,
+"held": [
+"5968",
+"7749"
+]
+},
+{
+"name": "ImportHandler::resolveSchemaWithinRegisterScope",
+"start": 1209,
+"end": 1250,
+"nloc": 35,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "ImportHandler::findOwnUnlinkedSchema",
+"start": 1264,
+"end": 1291,
+"nloc": 23,
+"ccn": 13,
+"params": 2,
+"held": [
+"8960"
+]
+},
+{
+"name": "ImportHandler::resolveSchemaByApplication",
+"start": 1304,
+"end": 1340,
+"nloc": 31,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "ImportHandler::withoutOrphanCleanupForNonAdmin",
+"start": 1493,
+"end": 1510,
+"nloc": 15,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "ImportHandler::resolveImportedObjectConfigurations",
+"start": 1612,
+"end": 1641,
+"nloc": 24,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": "ImportHandler::computeRegisterScopedSchemaIds",
+"start": 1998,
+"end": 2069,
+"nloc": 52,
+"ccn": 15,
+"params": 1,
+"held": []
+},
+{
+"name": "ImportHandler::importFromJson",
+"start": 2110,
+"end": 2135,
+"nloc": 21,
+"ccn": 6,
+"params": 6,
+"held": []
+},
+{
+"name": "ImportHandler::isUnchangedConfiguration",
+"start": 2195,
+"end": 2211,
+"nloc": 15,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "ImportHandler::importRegisterComponents",
+"start": 2584,
+"end": 2610,
+"nloc": 20,
+"ccn": 10,
+"params": 1,
+"held": []
+},
+{
+"name": "ImportHandler::importMappingComponents",
+"start": 2714,
+"end": 2742,
+"nloc": 25,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "ImportHandler::listedSeedObjects",
+"start": 2880,
+"end": 2903,
+"nloc": 20,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": "ImportHandler::importListedObject",
+"start": 3053,
+"end": 3104,
+"nloc": 28,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "ImportHandler::listedRegister",
+"start": 3157,
+"end": 3171,
+"nloc": 13,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "ImportHandler::listedSchema",
+"start": 3182,
+"end": 3196,
+"nloc": 13,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "ImportHandler::resolveSeedReferenceTokens",
+"start": 3540,
+"end": 3564,
+"nloc": 20,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "ImportHandler::resolveImportRegisterSchema",
+"start": 3657,
+"end": 3703,
+"nloc": 41,
+"ccn": 15,
+"params": 2,
+"held": []
+},
+{
+"name": "ImportHandler::findExistingSeedUuid",
+"start": 3714,
+"end": 3749,
+"nloc": 30,
+"ccn": 9,
+"params": 2,
+"held": []
+},
+{
+"name": "ImportHandler::findAppConfigurationByApp",
+"start": 3889,
+"end": 3925,
+"nloc": 33,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "ImportHandler::ensureMagicTablesForImportedSchemas",
+"start": 4048,
+"end": 4103,
+"nloc": 50,
+"ccn": 9,
+"params": 1,
+"held": []
+},
+{
+"name": "ImportHandler::autoCreateRegisterIfApplication",
+"start": 4136,
+"end": 4187,
+"nloc": 34,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "ImportHandler::unshadowedSchemaIds",
+"start": 4343,
+"end": 4379,
+"nloc": 33,
+"ccn": 10,
+"params": 2,
+"held": []
+},
+{
+"name": "ImportHandler::orSuffixedSeed",
+"start": 4573,
+"end": 4579,
+"nloc": 6,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "ImportHandler::findSuffixedSeed",
+"start": 4615,
+"end": 4655,
+"nloc": 36,
+"ccn": 10,
+"params": 2,
+"held": [
+"9003",
+"9012"
+]
+},
+{
+"name": "ImportHandler::findStoredSeedObject",
+"start": 5222,
+"end": 5246,
+"nloc": 24,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Consumer/ConsumerMapperSource.php": [
+{
+"name": "ConsumerMapperSource::findByApiKey",
+"start": 81,
+"end": 98,
+"nloc": 15,
+"ccn": 8,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Decision/RelationDecisionService.php": [
+{
+"name": "RelationDecisionService::record",
+"start": 134,
+"end": 167,
+"nloc": 27,
+"ccn": 6,
+"params": 2,
+"held": [
+"8964"
+]
+},
+{
+"name": "RelationDecisionService::assertMayChange",
+"start": 209,
+"end": 227,
+"nloc": 17,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "RelationDecisionService::noteFrom",
+"start": 275,
+"end": 289,
+"nloc": 13,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Deletion/DeletedObjectAuthorizer.php": [
+{
+"name": "DeletedObjectAuthorizer::userMayActOnDeletedObject",
+"start": 101,
+"end": 136,
+"nloc": 30,
+"ccn": 7,
+"params": 2,
+"held": [
+"9053"
+]
+}
+],
+"lib/Service/Deletion/DestroyRightService.php": [
+{
+"name": "DestroyRightService::refusalFor",
+"start": 84,
+"end": 133,
+"nloc": 45,
+"ccn": 8,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Export/ExportGate.php": [
+{
+"name": "ExportGate::refusalFor",
+"start": 77,
+"end": 95,
+"nloc": 14,
+"ccn": 6,
+"params": 3,
+"held": []
+}
+],
+"lib/Service/Export/ExportRunRecorder.php": [
+{
+"name": "ExportRunRecorder::listVisible",
+"start": 191,
+"end": 216,
+"nloc": 19,
+"ccn": 7,
+"params": 2,
+"held": [
+"9017"
+]
+},
+{
+"name": "ExportRunRecorder::deleteFileOf",
+"start": 292,
+"end": 317,
+"nloc": 21,
+"ccn": 7,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Federation/ShareGrantor.php": [
+{
+"name": "ShareGrantor::refusal",
+"start": 91,
+"end": 110,
+"nloc": 16,
+"ccn": 8,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/File/FolderManagementHandler.php": [
+{
+"name": "FolderManagementHandler::getRegisterFolderById",
+"start": 394,
+"end": 433,
+"nloc": 29,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "FolderManagementHandler::getObjectFolder",
+"start": 505,
+"end": 544,
+"nloc": 29,
+"ccn": 9,
+"params": 2,
+"held": []
+},
+{
+"name": "FolderManagementHandler::getNodeById",
+"start": 819,
+"end": 849,
+"nloc": 26,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "FolderManagementHandler::getExistingFolderFromProperty",
+"start": 959,
+"end": 987,
+"nloc": 22,
+"ccn": 9,
+"params": 1,
+"held": []
+},
+{
+"name": "FolderManagementHandler::logFolderAccessDenied",
+"start": 1338,
+"end": 1405,
+"nloc": 44,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Flow/FlowDefinitionPin.php": [
+{
+"name": "FlowDefinitionPin::graphFor",
+"start": 199,
+"end": 210,
+"nloc": 10,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Flow/FlowItemShape.php": [
+{
+"name": "FlowItemShape::pairedIndex",
+"start": 195,
+"end": 206,
+"nloc": 10,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Flow/FlowPlaceClaims.php": [
+{
+"name": "FlowPlaceClaims::claim",
+"start": 147,
+"end": 166,
+"nloc": 15,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Flow/FlowPublishedGraph.php": [
+{
+"name": "FlowPublishedGraph::overlayOnto",
+"start": 122,
+"end": 143,
+"nloc": 15,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Flow/FlowRunAdvancer.php": [
+{
+"name": "FlowRunAdvancer::advance",
+"start": 110,
+"end": 188,
+"nloc": 50,
+"ccn": 8,
+"params": 2,
+"held": [
+"4771",
+"8734"
+]
+}
+],
+"lib/Service/Flow/FlowRunAssignee.php": [
+{
+"name": "FlowRunAssignee::recordedValueFor",
+"start": 141,
+"end": 174,
+"nloc": 27,
+"ccn": 10,
+"params": 2,
+"held": []
+},
+{
+"name": "FlowRunAssignee::recordedMayAnswer",
+"start": 201,
+"end": 231,
+"nloc": 13,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Flow/FlowRunMarkingStore.php": [
+{
+"name": "FlowRunMarkingStore::applied",
+"start": 117,
+"end": 134,
+"nloc": 15,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Flow/FlowScheduleService.php": [
+{
+"name": "FlowScheduleService::fireIfDue",
+"start": 124,
+"end": 186,
+"nloc": 27,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Flow/FlowService.php": [
+{
+"name": "FlowService::applyEditableFields",
+"start": 499,
+"end": 554,
+"nloc": 41,
+"ccn": 9,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Flow/FlowTriggerService.php": [
+{
+"name": "FlowTriggerService::trigger",
+"start": 118,
+"end": 193,
+"nloc": 52,
+"ccn": 6,
+"params": 1,
+"held": [
+"8734"
+]
+},
+{
+"name": "FlowTriggerService::runInline",
+"start": 214,
+"end": 254,
+"nloc": 32,
+"ccn": 7,
+"params": 3,
+"held": [
+"4771",
+"8734"
+]
+}
+],
+"lib/Service/Flow/FlowVersionService.php": [
+{
+"name": "FlowVersionService::publishShippedUpdate",
+"start": 362,
+"end": 393,
+"nloc": 26,
+"ccn": 7,
+"params": 1,
+"held": [
+"9000"
+]
+},
+{
+"name": "FlowVersionService::publishedGraphOf",
+"start": 644,
+"end": 667,
+"nloc": 19,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Flow/Nodes/PortalTaskConfig.php": [
+{
+"name": "PortalTaskConfig::refuseNonNumericLimits",
+"start": 156,
+"end": 171,
+"nloc": 15,
+"ccn": 8,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Flow/Nodes/TaskConfigCommon.php": [
+{
+"name": "TaskConfigCommon::listOf",
+"start": 156,
+"end": 178,
+"nloc": 19,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Flow/Nodes/UserTaskConfig.php": [
+{
+"name": "UserTaskConfig::validate",
+"start": 118,
+"end": 155,
+"nloc": 29,
+"ccn": 8,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Flow/Timer/ServiceHoursDeclaration.php": [
+{
+"name": "ServiceHoursDeclaration::isoWeekday",
+"start": 255,
+"end": 265,
+"nloc": 9,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Form/FormUploadStore.php": [
+{
+"name": "FormUploadStore::claim",
+"start": 318,
+"end": 332,
+"nloc": 14,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Gdpr/Erasure/ErasurePreviewService.php": [
+{
+"name": "ErasurePreviewService::classify",
+"start": 227,
+"end": 246,
+"nloc": 12,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Hinge/LensResolver.php": [
+{
+"name": "LensResolver::referenceIdentifier",
+"start": 276,
+"end": 294,
+"nloc": 16,
+"ccn": 8,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Hinge/ReferencedByService.php": [
+{
+"name": "ReferencedByService::readGroup",
+"start": 164,
+"end": 188,
+"nloc": 22,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/History/StateHistoryProjector.php": [
+{
+"name": "StateHistoryProjector::declaredProperty",
+"start": 149,
+"end": 165,
+"nloc": 14,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Integration/LeafDescriptor.php": [
+{
+"name": "LeafDescriptor::__construct",
+"start": 205,
+"end": 222,
+"nloc": 14,
+"ccn": 6,
+"params": 11,
+"held": []
+}
+],
+"lib/Service/Integration/Providers/ActivityRowFilter.php": [
+{
+"name": "ActivityRowFilter::admits",
+"start": 84,
+"end": 88,
+"nloc": 5,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Integration/Providers/BrpPersonProvider.php": [
+{
+"name": "BrpPersonProvider::extractPersonen",
+"start": 459,
+"end": 479,
+"nloc": 19,
+"ccn": 8,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Interaction/ReadHistoryService.php": [
+{
+"name": "ReadHistoryService::listedObject",
+"start": 278,
+"end": 306,
+"nloc": 24,
+"ccn": 9,
+"params": 1,
+"held": []
+},
+{
+"name": "ReadHistoryService::resolveRecentLens",
+"start": 322,
+"end": 346,
+"nloc": 18,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Interaction/ReadStateService.php": [
+{
+"name": "ReadStateService::readStateFor",
+"start": 200,
+"end": 210,
+"nloc": 9,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Lifecycle/LifecycleTransitionResolver.php": [
+{
+"name": "LifecycleTransitionResolver::resolve",
+"start": 73,
+"end": 82,
+"nloc": 9,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Lifecycle/StateConditionEvaluator.php": [
+{
+"name": "StateConditionEvaluator::declaredCondition",
+"start": 146,
+"end": 162,
+"nloc": 14,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Lifecycle/TransitionEngine.php": [
+{
+"name": "TransitionEngine::transitionEventScope",
+"start": 278,
+"end": 328,
+"nloc": 44,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": "TransitionEngine::applyToSubject",
+"start": 613,
+"end": 708,
+"nloc": 68,
+"ccn": 6,
+"params": 4,
+"held": [
+"8344"
+]
+},
+{
+"name": "TransitionEngine::availableActions",
+"start": 966,
+"end": 1055,
+"nloc": 68,
+"ccn": 12,
+"params": 1,
+"held": [
+"8344",
+"9053"
+]
+},
+{
+"name": "TransitionEngine::publishProviderActions",
+"start": 1131,
+"end": 1173,
+"nloc": 35,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": "TransitionEngine::deriveGraphActions",
+"start": 1201,
+"end": 1274,
+"nloc": 60,
+"ccn": 19,
+"params": 3,
+"held": [
+"8344"
+]
+},
+{
+"name": "TransitionEngine::fetchOrderedSiblings",
+"start": 1291,
+"end": 1333,
+"nloc": 35,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "TransitionEngine::inputPresentation",
+"start": 1455,
+"end": 1477,
+"nloc": 19,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "TransitionEngine::publishedOptions",
+"start": 1492,
+"end": 1520,
+"nloc": 24,
+"ccn": 9,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Oas/DynamicAnchorScan.php": [
+{
+"name": "DynamicAnchorScan::collect",
+"start": 58,
+"end": 75,
+"nloc": 15,
+"ccn": 7,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Object/CacheHandler.php": [
+{
+"name": "CacheHandler::objectSingleName",
+"start": 1790,
+"end": 1815,
+"nloc": 23,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "CacheHandler::batchLoadNamesFromRegister",
+"start": 2529,
+"end": 2557,
+"nloc": 24,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Object/DeleteObject.php": [
+{
+"name": "DeleteObject::delete",
+"start": 199,
+"end": 228,
+"nloc": 20,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "DeleteObject::deleteObjectFolder",
+"start": 474,
+"end": 513,
+"nloc": 34,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "DeleteObject::cascadeDeleteObjects",
+"start": 979,
+"end": 1032,
+"nloc": 44,
+"ccn": 10,
+"params": 2,
+"held": []
+},
+{
+"name": "DeleteObject::collectCascadeTargetIds",
+"start": 1046,
+"end": 1074,
+"nloc": 24,
+"ccn": 9,
+"params": 2,
+"held": []
+},
+{
+"name": "DeleteObject::writeCascadeAuditTrails",
+"start": 1141,
+"end": 1180,
+"nloc": 37,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "DeleteObject::delegateObjectSourceDelete",
+"start": 1294,
+"end": 1339,
+"nloc": 37,
+"ccn": 8,
+"params": 2,
+"held": [
+"8704"
+]
+},
+{
+"name": "DeleteObject::objectSourceRegister",
+"start": 1350,
+"end": 1364,
+"nloc": 13,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Object/DraftOwner.php": [
+{
+"name": "DraftOwner::resolve",
+"start": 143,
+"end": 149,
+"nloc": 6,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Object/GetObject.php": [
+{
+"name": "GetObject::findAll",
+"start": 372,
+"end": 415,
+"nloc": 35,
+"ccn": 12,
+"params": 13,
+"held": [
+"8659",
+"8900"
+]
+}
+],
+"lib/Service/Object/PermissionHandler.php": [
+{
+"name": "PermissionHandler::customVerbVerdict",
+"start": 1084,
+"end": 1102,
+"nloc": 16,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "PermissionHandler::enforcedDenialFor",
+"start": 1261,
+"end": 1288,
+"nloc": 18,
+"ccn": 8,
+"params": 5,
+"held": [
+"8735"
+]
+},
+{
+"name": "PermissionHandler::firstMatchingConditionalDenial",
+"start": 1619,
+"end": 1638,
+"nloc": 18,
+"ccn": 7,
+"params": 2,
+"held": [
+"8795"
+]
+},
+{
+"name": "PermissionHandler::privateScopeVerdict",
+"start": 1676,
+"end": 1703,
+"nloc": 17,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "PermissionHandler::checkPermission",
+"start": 1908,
+"end": 1923,
+"nloc": 16,
+"ccn": 6,
+"params": 7,
+"held": [
+"8700",
+"8901"
+]
+},
+{
+"name": "PermissionHandler::hasGroupPermission",
+"start": 2190,
+"end": 2206,
+"nloc": 16,
+"ccn": 7,
+"params": 8,
+"held": [
+"8706",
+"8902"
+]
+},
+{
+"name": "PermissionHandler::narrowByToken",
+"start": 2822,
+"end": 2849,
+"nloc": 22,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "PermissionHandler::compileDepartmentMatrix",
+"start": 2877,
+"end": 2915,
+"nloc": 32,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "PermissionHandler::derivedGroupsFor",
+"start": 3020,
+"end": 3066,
+"nloc": 34,
+"ccn": 6,
+"params": 2,
+"held": [
+"9068"
+]
+}
+],
+"lib/Service/Object/RelatedObjectSet.php": [
+{
+"name": "RelatedObjectSet::withFallback",
+"start": 88,
+"end": 100,
+"nloc": 12,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Object/RenderObject.php": [
+{
+"name": "RenderObject::renderEntity",
+"start": 2133,
+"end": 2151,
+"nloc": 19,
+"ccn": 8,
+"params": 12,
+"held": [
+"7908"
+]
+}
+],
+"lib/Service/Object/SaveObject.php": [
+{
+"name": "SaveObject::cascadeObjectProperty",
+"start": 1280,
+"end": 1316,
+"nloc": 32,
+"ccn": 9,
+"params": 1,
+"held": []
+},
+{
+"name": "SaveObject::cascadeArrayProperty",
+"start": 1329,
+"end": 1367,
+"nloc": 32,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "SaveObject::cascadeMultipleObjects",
+"start": 1439,
+"end": 1489,
+"nloc": 39,
+"ccn": 9,
+"params": 2,
+"held": []
+},
+{
+"name": "SaveObject::cascadeSingleObject",
+"start": 1541,
+"end": 1615,
+"nloc": 52,
+"ccn": 13,
+"params": 2,
+"held": []
+},
+{
+"name": "SaveObject::deleteOrphanedRelatedObjects",
+"start": 1632,
+"end": 1693,
+"nloc": 53,
+"ccn": 8,
+"params": 2,
+"held": []
+},
+{
+"name": "SaveObject::saveResolvedObject",
+"start": 1965,
+"end": 2002,
+"nloc": 23,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": "SaveObject::splitSelfData",
+"start": 2437,
+"end": 2459,
+"nloc": 15,
+"ccn": 8,
+"params": 2,
+"held": []
+},
+{
+"name": "SaveObject::findAndValidateExistingObject",
+"start": 2519,
+"end": 2601,
+"nloc": 34,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": "SaveObject::prepareObjectForCreation",
+"start": 2992,
+"end": 3080,
+"nloc": 50,
+"ccn": 6,
+"params": 4,
+"held": [
+"7908",
+"8857",
+"9045"
+]
+},
+{
+"name": "SaveObject::attributedOwner",
+"start": 3144,
+"end": 3158,
+"nloc": 9,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "SaveObject::bindSelfFolder",
+"start": 3489,
+"end": 3538,
+"nloc": 15,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "SaveObject::refuseOwnerClaim",
+"start": 3597,
+"end": 3624,
+"nloc": 23,
+"ccn": 9,
+"params": 2,
+"held": []
+},
+{
+"name": "SaveObject::populateTmloDefaults",
+"start": 3664,
+"end": 3697,
+"nloc": 22,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "SaveObject::validateTmloOnUpdate",
+"start": 3711,
+"end": 3741,
+"nloc": 21,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "SaveObject::preCacheParentName",
+"start": 4145,
+"end": 4198,
+"nloc": 42,
+"ccn": 9,
+"params": 2,
+"held": []
+},
+{
+"name": "SaveObject::updateObject",
+"start": 4218,
+"end": 4263,
+"nloc": 33,
+"ccn": 9,
+"params": 6,
+"held": [
+"7908",
+"8717",
+"8903"
+]
+},
+{
+"name": "SaveObject::delegateObjectSourceWrite",
+"start": 4401,
+"end": 4438,
+"nloc": 32,
+"ccn": 7,
+"params": 2,
+"held": [
+"8704"
+]
+}
+],
+"lib/Service/Object/SearchQueryHandler.php": [
+{
+"name": "SearchQueryHandler::applyWatchingLens",
+"start": 216,
+"end": 242,
+"nloc": 20,
+"ccn": 7,
+"params": 1,
+"held": [
+"6223",
+"6224"
+]
+},
+{
+"name": "SearchQueryHandler::applyRecentLens",
+"start": 328,
+"end": 370,
+"nloc": 33,
+"ccn": 7,
+"params": 1,
+"held": [
+"6223",
+"6224"
+]
+}
+],
+"lib/Service/ObjectAction/ObjectActionElevationScope.php": [
+{
+"name": "ObjectActionElevationScope::permits",
+"start": 82,
+"end": 96,
+"nloc": 13,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/ObjectAction/ObjectActionShape.php": [
+{
+"name": "ObjectActionShape::stepRefusal",
+"start": 171,
+"end": 181,
+"nloc": 9,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/ObjectSource/GroupObjectSourceProvider.php": [
+{
+"name": "GroupObjectSourceProvider::readGroups",
+"start": 199,
+"end": 231,
+"nloc": 28,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/ObjectSource/OrganisationObjectSourceProvider.php": [
+{
+"name": "OrganisationObjectSourceProvider::applyProjectedFields",
+"start": 446,
+"end": 472,
+"nloc": 21,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "OrganisationObjectSourceProvider::matching",
+"start": 614,
+"end": 640,
+"nloc": 23,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/ObjectSource/TablesObjectSourceProvider.php": [
+{
+"name": "TablesObjectSourceProvider::countTargeted",
+"start": 231,
+"end": 242,
+"nloc": 10,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/ObjectSource/UserDirectoryObjectSourceProvider.php": [
+{
+"name": "UserDirectoryObjectSourceProvider::readUsers",
+"start": 186,
+"end": 211,
+"nloc": 21,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/OrganisationService.php": [
+{
+"name": "OrganisationService::fetchDefaultOrganisationFromDatabase",
+"start": 346,
+"end": 420,
+"nloc": 57,
+"ccn": 12,
+"params": 0,
+"held": []
+},
+{
+"name": "OrganisationService::getActiveOrganisation",
+"start": 527,
+"end": 567,
+"nloc": 26,
+"ccn": 9,
+"params": 1,
+"held": []
+},
+{
+"name": "OrganisationService::joinOrganisation",
+"start": 669,
+"end": 701,
+"nloc": 21,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "OrganisationService::leaveOrganisation",
+"start": 715,
+"end": 757,
+"nloc": 27,
+"ccn": 8,
+"params": 2,
+"held": []
+},
+{
+"name": "OrganisationService::createOrganisation",
+"start": 801,
+"end": 870,
+"nloc": 51,
+"ccn": 9,
+"params": 4,
+"held": []
+},
+{
+"name": "OrganisationService::isOrganisationAdmin",
+"start": 920,
+"end": 940,
+"nloc": 17,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "OrganisationService::addAdminGroupToAuthorization",
+"start": 1100,
+"end": 1143,
+"nloc": 37,
+"ccn": 12,
+"params": 1,
+"held": [
+"4641"
+]
+},
+{
+"name": "OrganisationService::hasAdminGroupInAuthorization",
+"start": 1154,
+"end": 1183,
+"nloc": 25,
+"ccn": 12,
+"params": 1,
+"held": [
+"4641"
+]
+},
+{
+"name": "OrganisationService::reconstructOrganisationFromCache",
+"start": 1486,
+"end": 1533,
+"nloc": 36,
+"ccn": 13,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Rbac/DefinitionWriteRights.php": [
+{
+"name": "DefinitionWriteRights::mayManage",
+"start": 75,
+"end": 96,
+"nloc": 18,
+"ccn": 7,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Rbac/DenyResolver.php": [
+{
+"name": "DenyResolver::mergeDeny",
+"start": 191,
+"end": 209,
+"nloc": 15,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "DenyResolver::principalsFor",
+"start": 260,
+"end": 277,
+"nloc": 14,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "DenyResolver::notDenied",
+"start": 396,
+"end": 436,
+"nloc": 19,
+"ccn": 6,
+"params": 2,
+"held": [
+"8795"
+]
+}
+],
+"lib/Service/Rbac/ExplicitReveal.php": [
+{
+"name": "ExplicitReveal::maskAll",
+"start": 246,
+"end": 254,
+"nloc": 8,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "ExplicitReveal::refuseOracleQuery",
+"start": 295,
+"end": 310,
+"nloc": 14,
+"ccn": 7,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Rbac/ExplicitRevealChangeMask.php": [
+{
+"name": "ExplicitRevealChangeMask::maskChange",
+"start": 44,
+"end": 58,
+"nloc": 13,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Rbac/LinkProtection.php": [
+{
+"name": "LinkProtection::applyTo",
+"start": 61,
+"end": 75,
+"nloc": 13,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Rbac/ObjectScopeResolver.php": [
+{
+"name": "ObjectScopeResolver::declaredScope",
+"start": 86,
+"end": 102,
+"nloc": 13,
+"ccn": 8,
+"params": 1,
+"held": []
+},
+{
+"name": "ObjectScopeResolver::ownerGroup",
+"start": 237,
+"end": 248,
+"nloc": 10,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Rbac/ObjectShareReader.php": [
+{
+"name": "ObjectShareReader::existingFolder",
+"start": 234,
+"end": 265,
+"nloc": 24,
+"ccn": 8,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Rbac/PrincipalReachService.php": [
+{
+"name": "PrincipalReachService::fromAuthorization",
+"start": 136,
+"end": 185,
+"nloc": 42,
+"ccn": 6,
+"params": 1,
+"held": [
+"9035"
+]
+}
+],
+"lib/Service/Rbac/ReachRevocationService.php": [
+{
+"name": "ReachRevocationService::namesPrincipal",
+"start": 227,
+"end": 246,
+"nloc": 17,
+"ccn": 8,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Rbac/SchemaManageGate.php": [
+{
+"name": "SchemaManageGate::allowedByManageRule",
+"start": 100,
+"end": 122,
+"nloc": 19,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "SchemaManageGate::firstUnmanageableRowSchema",
+"start": 157,
+"end": 182,
+"nloc": 22,
+"ccn": 9,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Rbac/ShareGrantAttributes.php": [
+{
+"name": "ShareGrantAttributes::inheritableOf",
+"start": 93,
+"end": 113,
+"nloc": 18,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "ShareGrantAttributes::verbsOf",
+"start": 124,
+"end": 147,
+"nloc": 20,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "ShareGrantAttributes::objectUuidOf",
+"start": 163,
+"end": 190,
+"nloc": 17,
+"ccn": 6,
+"params": 1,
+"held": [
+"8948"
+]
+}
+],
+"lib/Service/RegisterService.php": [
+{
+"name": "RegisterService::findAll",
+"start": 216,
+"end": 237,
+"nloc": 18,
+"ccn": 7,
+"params": 7,
+"held": [
+"8397"
+]
+},
+{
+"name": "RegisterService::findAllSerialized",
+"start": 334,
+"end": 354,
+"nloc": 20,
+"ccn": 6,
+"params": 7,
+"held": [
+"8397",
+"9042"
+]
+}
+],
+"lib/Service/Relation/ObjectTreeService.php": [
+{
+"name": "ObjectTreeService::ancestorChain",
+"start": 562,
+"end": 583,
+"nloc": 19,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Rules/AdministeredValidationEnforcer.php": [
+{
+"name": "AdministeredValidationEnforcer::refusalFor",
+"start": 75,
+"end": 92,
+"nloc": 14,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Security/OutboundAddressGuard.php": [
+{
+"name": "OutboundAddressGuard::normalise",
+"start": 123,
+"end": 142,
+"nloc": 17,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Serializer/RegisterSerializer.php": [
+{
+"name": "RegisterSerializer::warmSchemaCache",
+"start": 275,
+"end": 302,
+"nloc": 23,
+"ccn": 8,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/Sharing/AccessLinkService.php": [
+{
+"name": "AccessLinkService::normaliseCapabilities",
+"start": 557,
+"end": 586,
+"nloc": 25,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/TalkLink/TalkGateway.php": [
+{
+"name": "TalkGateway::setDescription",
+"start": 135,
+"end": 148,
+"nloc": 13,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/UserService.php": [
+{
+"name": "UserService::getNotificationPreferences",
+"start": 1329,
+"end": 1349,
+"nloc": 16,
+"ccn": 6,
+"params": 1,
+"held": []
+},
+{
+"name": "UserService::setNotificationPreferences",
+"start": 1365,
+"end": 1397,
+"nloc": 24,
+"ccn": 7,
+"params": 2,
+"held": []
+},
+{
+"name": "UserService::requestedExpiry",
+"start": 1517,
+"end": 1530,
+"nloc": 12,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+],
+"lib/Service/Vocabulary/CodedValueRefusals.php": [
+{
+"name": "CodedValueRefusals::exclusiveGroupViolation",
+"start": 121,
+"end": 134,
+"nloc": 12,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/WebhookService.php": [
+{
+"name": "WebhookService::assertSafeWebhookUri",
+"start": 218,
+"end": 258,
+"nloc": 31,
+"ccn": 8,
+"params": 2,
+"held": [
+"7908"
+]
+},
+{
+"name": "WebhookService::blockedIpv6Reason",
+"start": 282,
+"end": 350,
+"nloc": 45,
+"ccn": 19,
+"params": 1,
+"held": [
+"7908"
+]
+},
+{
+"name": "WebhookService::passesFilters",
+"start": 680,
+"end": 702,
+"nloc": 17,
+"ccn": 6,
+"params": 2,
+"held": []
+},
+{
+"name": "WebhookService::interceptRequest",
+"start": 995,
+"end": 1082,
+"nloc": 61,
+"ccn": 8,
+"params": 2,
+"held": []
+}
+],
+"lib/Service/WholeTableRows.php": [
+{
+"name": "WholeTableRows::countKept",
+"start": 141,
+"end": 154,
+"nloc": 12,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Support/FilterParams.php": [
+{
+"name": "FilterParams::liftBracketFilter",
+"start": 152,
+"end": 175,
+"nloc": 20,
+"ccn": 7,
+"params": 1,
+"held": []
+},
+{
+"name": "FilterParams::unknownObjectFilterKeys",
+"start": 305,
+"end": 321,
+"nloc": 15,
+"ccn": 6,
+"params": 2,
+"held": []
+}
+],
+"lib/Support/NullFilter.php": [
+{
+"name": "NullFilter::nullCheck",
+"start": 91,
+"end": 107,
+"nloc": 14,
+"ccn": 6,
+"params": 1,
+"held": []
+}
+]
+}
