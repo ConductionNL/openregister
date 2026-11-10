@@ -82,7 +82,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 				'recordedAt' => '2026-09-01T00:00:00+00:00',
 			])
 		);
-		$store->method('record')->willReturnCallback(
+		$store->method('recordDefinition')->willReturnCallback(
 			function (string $subject, ShippedDefinition $shipped): bool {
 				$definition = $shipped->definition;
 				$this->recorded[] = ['subject' => $subject, 'definition' => $definition];

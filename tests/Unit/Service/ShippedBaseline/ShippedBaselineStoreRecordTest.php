@@ -67,7 +67,7 @@ final class ShippedBaselineStoreRecordTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 
-		$this->assertTrue($store->record('schema:zaak', new ShippedDefinition(['title' => 'Zaak'], 'zaakafhandelapp', '1.2.3')));
+		$this->assertTrue($store->recordDefinition('schema:zaak', new ShippedDefinition(['title' => 'Zaak'], 'zaakafhandelapp', '1.2.3')));
 
 		$this->assertSame(ConfigurationLayer::SUBJECT, $created['layer']);
 		$this->assertSame('schema:zaak', $created['layerRef']);
@@ -123,6 +123,35 @@ final class ShippedBaselineStoreRecordTest extends TestCase {
 			$logger
 		);
 
-		$this->assertFalse($store->record('schema:zaak', new ShippedDefinition([], 'app', '1')));
+		$this->assertFalse($store->recordDefinition('schema:zaak', new ShippedDefinition([], 'app', '1')));
 	}//end testAFailingWriteIsNotRecordedAndDoesNotThrow()
+
+	/**
+	 * The loose-value signature dossiq calls by name, and positionally with a config key, still records.
+	 *
+	 * @return void
+	 */
+	public function testTheLooseValueSignatureRecordsByNameAndPositionally(): void {
+		$created = [];
+		$mapper  = $this->createMock(ConfigurationValueMapper::class);
+		$mapper->method('findAtAddress')->willReturn(null);
+		$mapper->expects($this->exactly(2))->method('createFromArray')->willReturnCallback(
+			function (array $row) use (&$created) {
+				$created[] = $row;
+				return new \OCA\OpenRegister\Db\ConfigurationValue();
+			}
+		);
+
+		$store = new ShippedBaselineStore(
+			new ConfigurationValueStore($mapper, $this->createMock(IAppConfig::class), 'openregister'),
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$this->assertTrue($store->record(subject: 'schema:case', definition: ['title' => 'Zaak'], app: 'dossiq', appVersion: '2.0.0'));
+		$this->assertTrue($store->record('schema:case', ['title' => 'Zaak'], 'dossiq', '2.0.0', 'shipped.other'));
+
+		$this->assertSame('schema:case', $created[0]['layerRef']);
+		$this->assertSame(ShippedBaselineStore::KEY_SCHEMA, $created[0]['configKey']);
+		$this->assertSame('shipped.other', $created[1]['configKey']);
+	}//end testTheLooseValueSignatureRecordsByNameAndPositionally()
 }//end class

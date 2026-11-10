@@ -145,10 +145,29 @@ class ShippedBaselineStore {
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
-	public function record(string $subject, ShippedDefinition $shipped): bool {
+	public function recordDefinition(string $subject, ShippedDefinition $shipped): bool {
 		$address = new ConfigurationAddress(layer: ConfigurationLayer::SUBJECT, layerRef: $subject, configKey: self::KEY_SCHEMA);
 
 		return $this->recordAt(address: $address, shipped: $shipped);
+	}//end recordDefinition()
+
+	/**
+	 * Record what an app shipped for one subject, by the loose values other apps pass. Never throws.
+	 *
+	 * @param string               $subject    The subject reference.
+	 * @param array<string, mixed> $definition What the app ships.
+	 * @param string               $app        The app that ships it.
+	 * @param string               $appVersion The release it ships in.
+	 * @param string               $configKey  The configuration key the baseline is kept under.
+	 *
+	 * @return bool True when it was recorded.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function record(string $subject, array $definition, string $app, string $appVersion, string $configKey=self::KEY_SCHEMA): bool {
+		$address = new ConfigurationAddress(layer: ConfigurationLayer::SUBJECT, layerRef: $subject, configKey: $configKey);
+
+		return $this->recordAt(address: $address, shipped: new ShippedDefinition(definition: $definition, app: $app, appVersion: $appVersion));
 	}//end record()
 
 	/**

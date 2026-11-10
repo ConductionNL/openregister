@@ -265,7 +265,7 @@ class ShippedConfigurationGuard {
 
 		$incoming = $run->upgrade->incoming;
 		$shipped = new ShippedDefinition(definition: $definition, app: $incoming->app, appVersion: $incoming->appVersion);
-		$this->baselines->record(subject: $this->baselines->schemaSubject(slug: $run->upgrade->slug), shipped: $shipped);
+		$this->baselines->recordDefinition(subject: $this->baselines->schemaSubject(slug: $run->upgrade->slug), shipped: $shipped);
 	}//end recordBaseline()
 
 	/**
@@ -409,7 +409,7 @@ class ShippedConfigurationGuard {
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
 	public function recordShippedSchema(string $slug, ShippedDefinition $shipped): bool {
-		return $this->baselines->record(subject: $this->baselines->schemaSubject(slug: $slug), shipped: $shipped);
+		return $this->baselines->recordDefinition(subject: $this->baselines->schemaSubject(slug: $slug), shipped: $shipped);
 	}//end recordShippedSchema()
 
 	/**

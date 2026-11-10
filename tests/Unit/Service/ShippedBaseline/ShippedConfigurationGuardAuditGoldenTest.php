@@ -75,7 +75,7 @@ class ShippedConfigurationGuardAuditGoldenTest extends TestCase {
 		$store->method('read')->willReturn(
 			($baseline === null ? null : ['definition' => $baseline, 'app' => 'dossiq', 'appVersion' => '1.2.0', 'recordedAt' => 'x'])
 		);
-		$store->method('record')->willReturnCallback(
+		$store->method('recordDefinition')->willReturnCallback(
 			function (mixed ...$args): bool {
 				$this->baselines[] = $this->normalisedBaseline(args: $args);
 				return true;
