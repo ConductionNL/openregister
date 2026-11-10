@@ -46,6 +46,7 @@ declare(strict_types=1);
 namespace Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\HierarchyLevel;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCP\Constants;
@@ -90,7 +91,7 @@ class HierarchyGrantExpanderTest extends TestCase {
 
 		$double->method('hierarchicalTables')->willReturn($tables);
 		$double->method('childrenOf')->willReturnCallback(
-			static function (string $table, string $parentColumn, array $parentUuids) use ($childToParent): array {
+			static function (HierarchyLevel $level, array $parentUuids) use ($childToParent): array {
 				$children = [];
 				foreach ($childToParent as $child => $parent) {
 					if (in_array($parent, $parentUuids, true) === true) {

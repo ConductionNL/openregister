@@ -354,8 +354,7 @@ class HierarchyGrantExpander {
 	private function childrenOrNull(HierarchyInheritanceRun $run): ?array {
 		try {
 			return $this->descender->childrenOf(
-				table: $run->hierarchy['table'],
-				parentColumn: $run->hierarchy['parentColumn'],
+				level: new HierarchyLevel(table: $run->hierarchy['table'], parentColumn: $run->hierarchy['parentColumn']),
 				parentUuids: array_keys($run->frontier)
 			);
 		} catch (Throwable $e) {

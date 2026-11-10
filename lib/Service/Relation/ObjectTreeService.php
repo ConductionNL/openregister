@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
+use OCA\OpenRegister\Service\Rbac\HierarchyLevel;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -508,7 +509,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 		}
 
 		try {
-			return $this->sources->descender->childrenOf(table: $table, parentColumn: $column, parentUuids: $parents, limit: $limit);
+			return $this->sources->descender->childrenOf(level: new HierarchyLevel(table: $table, parentColumn: $column, limit: $limit), parentUuids: $parents);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[ObjectTreeService] A level of the tree could not be read',
