@@ -120,11 +120,7 @@ class ReconcileMagicTablesCommand extends Command {
 		$registerFilter = $input->getOption('register');
 
 		$counts = $this->reconcileMetadataColumns(run: new MetadataReconcileRun(output: $output, apply: $apply), registerFilter: $registerFilter);
-		$pass = new SchemaColumnDriftPass(
-			output: $output,
-			magicMapper: $this->magicMapper,
-			options: ['apply' => $apply, 'metadata' => array_keys($this->magicMapper->getMetadataColumnDefinitions())]
-		);
+		$pass = $this->schemaPass(output: $output, apply: $apply);
 		foreach ($this->registersToReconcile(registerFilter: $registerFilter) as $register) {
 			foreach ($this->schemasOf(register: $register) as $schema) {
 				$counts = $this->addCounts(counts: $counts, delta: $pass->reconcile(register: $register, schema: $schema));
@@ -133,6 +129,22 @@ class ReconcileMagicTablesCommand extends Command {
 
 		return $pass->summarise(counts: $counts);
 	}//end execute()
+
+	/**
+	 * The schema-column pass, told the metadata columns it must leave to the metadata pass.
+	 *
+	 * @param OutputInterface $output Console output.
+	 * @param bool            $apply  Whether to repair.
+	 *
+	 * @return SchemaColumnDriftPass The pass.
+	 */
+	private function schemaPass(OutputInterface $output, bool $apply): SchemaColumnDriftPass {
+		return new SchemaColumnDriftPass(
+			output: $output,
+			magicMapper: $this->magicMapper,
+			options: ['apply' => $apply, 'metadata' => array_keys($this->magicMapper->getMetadataColumnDefinitions())]
+		);
+	}//end schemaPass()
 
 	/**
 	 * The registers the schema pass walks: every register, or the filtered one.
