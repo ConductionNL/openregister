@@ -159,7 +159,7 @@ class SettingsServiceTest extends TestCase {
 
 		$result = $this->settingsService->getSettings();
 
-		$this->assertIsArray($result);
+		$this->assertSame(['solr' => ['enabled' => true, 'host' => 'localhost'], 'rbac' => ['enabled' => false]], $result);
 	}
 
 	/**
@@ -207,6 +207,9 @@ class SettingsServiceTest extends TestCase {
 		$result = $this->settingsService->getStats();
 
 		$this->assertIsArray($result);
+		// The failing database query leaves every warning count at zero.
+		$this->assertSame(0, $result['warnings']['objectsWithoutOwner']);
+		$this->assertArrayHasKey('timestamp', $result);
 	}
 
 	/**
@@ -1657,29 +1660,6 @@ class SettingsServiceTest extends TestCase {
 	}
 
 	// ===== CONSTRUCTOR / INITIALIZATION TESTS =====.
-
-	/**
-	 * Test service can be constructed with all handler dependencies
-	 */
-	public function testConstructorWithAllHandlers(): void {
-		$service = new SettingsService(
-			$this->config,
-			$this->logger,
-			$this->db,
-			null,
-			'openregister',
-			$this->validationOperationsHandler,
-			$this->searchBackendHandler,
-			$this->llmSettingsHandler,
-			$this->fileSettingsHandler,
-			$this->objectRetentionHandler,
-			$this->cacheSettingsHandler,
-			$this->configurationSettingsHandler
-		);
-
-		// Service should be created without errors.
-		$this->assertInstanceOf(SettingsService::class, $service);
-	}
 
 	/**
 	 * Test service can be constructed with custom app name

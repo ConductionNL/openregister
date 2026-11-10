@@ -337,7 +337,7 @@ class UnaryTestEvaluatorTest extends TestCase {
 	 */
 	public function testCoerceDateFromIsoString(): void {
 		$timestamp = $this->evaluator->coerce(value: '2026-01-01T00:00:00+00:00', type: 'date');
-		self::assertIsInt($timestamp);
+		self::assertSame(1767225600, $timestamp);
 	}//end testCoerceDateFromIsoString()
 
 	/**

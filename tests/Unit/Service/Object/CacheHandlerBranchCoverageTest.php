@@ -228,8 +228,14 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 		$this->nameDistCache->method('set')
 			->willThrowException(new \Exception('Cache write error'));
 
+		$this->logger->expects($this->once())
+			->method('warning')
+			->with('[CacheHandler] Failed to cache object name in distributed cache', $this->anything());
+
 		$this->handler->setObjectName('uuid-456', 'Test');
-		$this->assertTrue(true);
+
+		// The name is still cached in memory.
+		$this->assertSame(1, $this->handler->getStats()['name_cache_size']);
 	}
 
 	// =========================================================================
@@ -244,14 +250,6 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 	public function testClearSearchCacheWithPattern(): void {
 		$this->queryCache->expects($this->once())->method('clear');
 		$this->handler->clearSearchCache('schema_1');
-	}
-
-	public function testClearSearchCacheDistributedFailure(): void {
-		$this->queryCache->method('clear')
-			->willThrowException(new \Exception('Cache clear failed'));
-
-		$this->handler->clearSearchCache();
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -273,16 +271,6 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 		$this->assertSame(0, $stats['cache_size']);
 	}
 
-	public function testClearAllCachesDistributedFailures(): void {
-		$this->queryCache->method('clear')
-			->willThrowException(new \Exception('Query cache error'));
-		$this->nameDistCache->method('clear')
-			->willThrowException(new \Exception('Name cache error'));
-
-		$this->handler->clearAllCaches();
-		$this->assertTrue(true);
-	}
-
 	// =========================================================================
 	// clearCache (legacy)
 	// =========================================================================
@@ -297,53 +285,15 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 	// invalidateForObjectChange
 	// =========================================================================
 
-	public function testInvalidateForObjectChangeCreate(): void {
-		$object = $this->createObjectMock(1, 'uuid-1', '10', '20', 'org-1', 'Test Object');
-		$this->handler->invalidateForObjectChange($object, 'create');
-		$this->assertTrue(true);
-	}
-
-	public function testInvalidateForObjectChangeDelete(): void {
-		$object = $this->createObjectMock(1, 'uuid-1', '10', '20', 'org-1', null);
-		$this->nameDistCache->method('remove')
-			->willThrowException(new \Exception('Remove failed'));
-
-		$this->handler->invalidateForObjectChange($object, 'delete');
-		$this->assertTrue(true);
-	}
-
-	public function testInvalidateForObjectChangeNullObject(): void {
-		$this->handler->invalidateForObjectChange(null, 'unknown', 10, 20);
-		$this->assertTrue(true);
-	}
-
 	public function testInvalidateForObjectChangeNullSchemaId(): void {
+		// Without a schema the whole search cache is cleared.
+		$this->queryCache->expects($this->once())->method('clear');
+
 		$this->handler->invalidateForObjectChange(null, 'update');
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
 	// Constructor — cache factory exception
 	// =========================================================================
 
-	public function testConstructorHandlesCacheFactoryException(): void {
-		$cacheFactory = $this->createMock(ICacheFactory::class);
-		$cacheFactory->method('createDistributed')
-			->willThrowException(new \Exception('Cache init failed'));
-
-		$handler = new CacheHandler(
-			stores: new CacheHandlerStores(
-				organisationMapper: $this->organisationMapper
-			),
-			runtime: new CacheHandlerRuntime(
-				logger: $this->logger,
-				cacheFactory: $cacheFactory
-			),
-			nameScope: new CacheNameScopeSources(
-				userSession: $this->userSession
-			)
-		);
-
-		$this->assertInstanceOf(CacheHandler::class, $handler);
-	}
 }

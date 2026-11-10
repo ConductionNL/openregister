@@ -1543,6 +1543,9 @@ class BulkControllerTest extends TestCase {
 		$result = $this->controller->delete('1', '2');
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
+		// No uuids in the request.
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['error' => 'Invalid input. "uuids" array is required.'], $result->getData());
 	}
 
 	public function testSaveReturnsJsonResponse(): void {
@@ -1552,5 +1555,6 @@ class BulkControllerTest extends TestCase {
 		$result = $this->controller->save('1', '2');
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(403, $result->getStatus());
 	}
 }

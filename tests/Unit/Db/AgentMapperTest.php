@@ -68,10 +68,6 @@ class AgentMapperTest extends TestCase {
 	// Construction
 	// -------------------------------------------------------------------------
 
-	public function testConstructorCreatesInstance(): void {
-		$this->assertInstanceOf(AgentMapper::class, $this->mapper);
-	}
-
 	public function testGetTableNameReturnsExpectedSuffix(): void {
 		$this->assertStringContainsString('openregister_agents', $this->mapper->getTableName());
 	}

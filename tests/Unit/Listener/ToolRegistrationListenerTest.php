@@ -55,10 +55,11 @@ class ToolRegistrationListenerTest extends TestCase {
 	}
 
 	public function testEarlyReturnForNonToolRegistrationEvent(): void {
+		$this->expectNotToPerformAssertions();
+
 		$event = $this->createMock(Event::class);
 		// Should not throw, just return
 		$this->listener->handle($event);
-		$this->assertTrue(true);
 	}
 
 	public function testRegistersAllFiveTools(): void {

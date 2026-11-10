@@ -118,7 +118,7 @@ final class GrantExportWhereReadIsGrantedTest extends TestCase {
 
 	public function testAMapperThatCannotListSchemasDoesNotAbortTheUpgrade(): void {
 		$mapper = $this->createMock(SchemaMapper::class);
-		$mapper->method('findAll')->willThrowException(new \RuntimeException('database busy'));
+		$mapper->expects($this->once())->method('findAll')->willThrowException(new \RuntimeException('database busy'));
 
 		(new GrantExportWhereReadIsGranted($mapper, new NullLogger()))
 			->run($this->createMock(IOutput::class));

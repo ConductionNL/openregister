@@ -763,7 +763,7 @@ class RegisterServiceTest extends TestCase {
 		$result = $this->service->getSchemaObjectCounts(registerId: 1, schemas: $schemas);
 
 		// Should return empty array on exception (error is logged, not thrown).
-		$this->assertIsArray($result);
+		$this->assertSame([10 => ['total' => 0, 'deleted' => 0, 'invalid' => 0, 'locked' => 0, 'size' => 0]], $result);
 	}
 
 	/**
