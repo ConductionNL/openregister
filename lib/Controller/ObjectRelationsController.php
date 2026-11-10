@@ -32,7 +32,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\DerivedLineage;
 use OCA\OpenRegister\Controller\Support\ObjectDerivation;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\ObjectRelationsControllerServices;
@@ -145,16 +147,14 @@ class ObjectRelationsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param ObjectRelationsControllerServices $services The object relations controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectRelationsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->relations = $services->graph->relations;
 		$this->graphs = $services->graph->graphs;
 		$this->objectService = $services->graph->objectService;
@@ -572,7 +572,10 @@ class ObjectRelationsController extends Controller {
 			return $created;
 		}
 
-		$row = $this->recordProvenance(source: $source, created: $created, link: $link, inherited: $applied['inherited']);
+		$row = $this->recordProvenance(
+			lineage: new DerivedLineage(source: $source, created: $created, inherited: $applied['inherited']),
+			link: $link
+		);
 
 		return $this->derivedAnswer(created: $created, row: $row);
 	}//end deriveFrom()
@@ -673,22 +676,25 @@ class ObjectRelationsController extends Controller {
 	 * reaches is a capability nobody can exercise, which is the shape
 	 * gate-orphaned-write-capability exists to catch.
 	 *
-	 * @param ObjectEntity         $source    The object it came out of.
-	 * @param ObjectEntity         $created   The new object.
-	 * @param array<string, mixed> $link      The link: the entry it came out of and the vocabulary key naming it.
-	 * @param array<string, mixed> $inherited What the child took at creation.
+	 * @param DerivedLineage       $lineage The object it came out of, the new object and what that inherited.
+	 * @param array<string, mixed> $link    The link: the entry it came out of and the vocabulary key naming it.
 	 *
 	 * @return ObjectRelation The provenance row.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function recordProvenance(ObjectEntity $source, ObjectEntity $created, array $link, array $inherited): ObjectRelation {
+	private function recordProvenance(DerivedLineage $lineage, array $link): ObjectRelation {
 		$provenance = new ProvenanceLink(entry: $link['entry'], relationType: $link['type']);
-		if ($inherited !== []) {
-			return $this->relations->recordDerivation(parent: $source, child: $created, link: $provenance, inherited: $inherited);
+		if ($lineage->inherited !== []) {
+			return $this->relations->recordDerivation(
+				parent: $lineage->source,
+				child: $lineage->created,
+				link: $provenance,
+				inherited: $lineage->inherited
+			);
 		}
 
-		return $this->relations->recordSplit(source: $source, created: $created, link: $provenance);
+		return $this->relations->recordSplit(source: $lineage->source, created: $lineage->created, link: $provenance);
 	}//end recordProvenance()
 
 	/**

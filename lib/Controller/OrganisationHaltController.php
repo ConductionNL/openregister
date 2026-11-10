@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use Closure;
 use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltServiceInterface;
@@ -82,14 +83,27 @@ class OrganisationHaltController extends Controller {
 	 * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
 	 */
 	public function create(string $uuid, string $app='', string $reason='', ?string $nodeTypePrefix=null): JSONResponse {
+		$engage = fn (): array => $this->halts->engage(organisation: $uuid, app: $app, reason: $reason, nodeTypePrefix: $nodeTypePrefix);
+
+		return $this->engaged(engage: $engage);
+	}//end create()
+
+	/**
+	 * Engage a halt: 201 with it, or 400 with the reason it was refused.
+	 *
+	 * @param Closure(): array<string, mixed> $engage Engages the halt and returns it.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function engaged(Closure $engage): JSONResponse {
 		try {
-			$halt = $this->halts->engage(organisation: $uuid, app: $app, reason: $reason, nodeTypePrefix: $nodeTypePrefix);
+			$halt = $engage();
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
 		}
 
 		return new JSONResponse(data: $halt, statusCode: Http::STATUS_CREATED);
-	}//end create()
+	}//end engaged()
 
 	/**
 	 * Release a halt, as the signed-in administrator.
