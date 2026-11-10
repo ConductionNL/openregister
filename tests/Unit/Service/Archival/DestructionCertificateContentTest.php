@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use OCA\OpenRegister\Service\Archival\DestructionInfrastructure;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -57,7 +58,7 @@ use Psr\Log\LoggerInterface;
  * End-to-end content test for the destruction certificate.
  *
  * @covers \OCA\OpenRegister\Service\Archival\DestructionService::approveList
- * @covers \OCA\OpenRegister\Service\RetentionService::generateDestructionCertificate
+ * @covers \OCA\OpenRegister\Service\RetentionService::certify
  * @uses \OCA\OpenRegister\Service\Archival\DestructionService
  * @uses \OCA\OpenRegister\Service\RetentionService
  */
@@ -156,11 +157,7 @@ class DestructionCertificateContentTest extends TestCase {
 
 		// 2. The execution job destroys the objects and generates the certificate.
 		//    This is the exact call DestructionExecutionJob makes (:212).
-		$certificate = $this->retentionService->generateDestructionCertificate(
-			$approved,
-			3,
-			'2026-07-14T12:00:00+00:00'
-		);
+		$certificate = $this->retentionService->certify(new ExecutedDestruction($approved, 3, '2026-07-14T12:00:00+00:00'));
 
 		// 3. The artefact must be REAL and POPULATED — not merely non-empty.
 		$this->assertSame('verklaring_van_vernietiging', $certificate['type']);
@@ -208,11 +205,7 @@ class DestructionCertificateContentTest extends TestCase {
 			'list-uuid-7'
 		);
 
-		$certificate = $this->retentionService->generateDestructionCertificate(
-			$approved,
-			1,
-			'2026-07-14T12:00:00+00:00'
-		);
+		$certificate = $this->retentionService->certify(new ExecutedDestruction($approved, 1, '2026-07-14T12:00:00+00:00'));
 
 		$this->assertCount(1, $certificate['approvedBy']);
 		$this->assertNotContains(null, $certificate['approvedBy']);
