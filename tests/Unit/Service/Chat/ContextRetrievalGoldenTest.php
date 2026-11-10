@@ -17,6 +17,7 @@ use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
 
 /**
  * Golden test for ContextRetrievalHandler::retrieveContext().
@@ -180,8 +181,8 @@ class ContextRetrievalGoldenTest extends TestCase {
 			}
 		);
 		$vectors->method('hybridSearch')->willReturnCallback(
-			function (string $query, array $keywordResults, int $limit) use ($case): array {
-				$this->calls[] = ['hybrid', $query, $keywordResults, $limit];
+			function (HybridSearchRequest $request) use ($case): array {
+				$this->calls[] = ['hybrid', $request->query, $request->keywordResults, $request->limit];
 				return ($case['hybrid'] ?? []);
 			}
 		);

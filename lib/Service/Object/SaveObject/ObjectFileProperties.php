@@ -131,8 +131,8 @@ final class ObjectFileProperties {
 	private function storeProperties(ObjectFileWrite $write): array {
 		$stored = [];
 		$snapshot = $write->data;
-		foreach ($snapshot as $name => $value) {
-			if ($this->files->isFileProperty(value: $value, schema: $write->schema, propertyName: $name) === true) {
+		foreach (array_keys($snapshot) as $name) {
+			if ($this->isFile(write: $write, name: $name) === true) {
 				$this->files->handleFileProperty(objectEntity: $write->entity, object: $write->data, propertyName: $name, schema: $write->schema);
 				$stored[] = $name;
 			}
@@ -140,6 +140,22 @@ final class ObjectFileProperties {
 
 		return $stored;
 	}//end storeProperties()
+
+	/**
+	 * Whether a property of the write holds a file: its schema decides, or without a schema its value.
+	 *
+	 * @param ObjectFileWrite $write The file write.
+	 * @param string          $name  The property name.
+	 *
+	 * @return bool True when the property is stored as a file.
+	 */
+	private function isFile(ObjectFileWrite $write, string $name): bool {
+		if ($write->schema === null) {
+			return $this->files->isFileValue(value: $write->data[$name]);
+		}
+
+		return $this->files->isFileInSchema(schema: $write->schema, propertyName: $name);
+	}//end isFile()
 
 	/**
 	 * Write the data with file ids back onto the saved object and update it.

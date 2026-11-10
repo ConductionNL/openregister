@@ -44,6 +44,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Notifications\Service\NoteVisibilityMove;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Controller\NotesController
@@ -243,7 +244,9 @@ class A26NotesControllerGoldenTest extends TestCase {
 			return $this->log(call: 'effectiveFilter', args: [$requested], result: $filter);
 		});
 		$visibility->method('filterRows')->willReturnCallback(fn (array $rows, ?string $filter): array => $this->log(call: 'filterRows', args: [$rows, $filter], result: ($this->knobs['filter'] ?? null) === 'drop' ? [] : $rows));
-		$visibility->method('auditVisibilityChange')->willReturnCallback(fn (mixed $object, int $noteId, string $from, string $to): bool => $this->log(call: 'auditVisibilityChange', args: [$noteId, $from, $to], result: true));
+		$visibility->method('auditNoteMove')->willReturnCallback(
+			fn (mixed $object, NoteVisibilityMove $move): bool => $this->log(call: 'auditVisibilityChange', args: [$move->noteId, $move->from, $move->to], result: true)
+		);
 		return $visibility;
 	}//end visibility()
 

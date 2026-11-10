@@ -59,7 +59,7 @@ class TransferObjectGathererBehaviourTest extends TestCase {
 	}//end tearDown()
 
 	private function gatherer(): TransferObjectGatherer {
-		return new TransferObjectGatherer($this->mapper, new PackagedFileChecksum(), $this->logger);
+		return new TransferObjectGatherer(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $this->mapper, records: $this->createMock(\OCA\OpenRegister\Service\Edepot\TransferRecordService::class), settings: $this->createMock(\OCP\IAppConfig::class), logger: $this->logger), new PackagedFileChecksum());
 	}//end gatherer()
 
 	/**

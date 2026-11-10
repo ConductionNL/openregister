@@ -207,19 +207,33 @@ class CaseTypeAuthorizationService {
 		?string $maxLevel = null,
 		string $property = 'vertrouwelijkheidaanduiding',
 	): array {
+		$grant = new ZgwAutorisatieGrant(scopes: $scopes, group: $group, maxLevel: $maxLevel, property: $property);
+		return $this->mapGrant(grant: $grant);
+	}//end mapZgwAutorisatie()
+
+	/**
+	 * Map one ZGW Applicatie grant to an OpenRegister `authorization` block.
+	 *
+	 * @param ZgwAutorisatieGrant $grant The scopes, group, clearance limit and confidentiality property.
+	 *
+	 * @return array<string, array<int, mixed>> An `authorization`-shaped block.
+	 *
+	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 */
+	public function mapGrant(ZgwAutorisatieGrant $grant): array {
 		// A clearance limit turns the grant into a conditional rule; an
 		// unrestricted grant (heeftAlleAutorisaties-style per-zaaktype) is a
 		// bare group string.
-		$entry = $group;
-		if ($maxLevel !== null) {
+		$entry = $grant->group;
+		if ($grant->maxLevel !== null) {
 			$entry = [
-				'group' => $group,
-				'match' => $this->buildConfidentialityMatch(maxLevel: $maxLevel, property: $property),
+				'group' => $grant->group,
+				'match' => $this->buildConfidentialityMatch(maxLevel: $grant->maxLevel, property: $grant->property),
 			];
 		}
 
-		return $this->grantPerAction(actions: $this->scopeActions(scopes: $scopes), entry: $entry);
-	}//end mapZgwAutorisatie()
+		return $this->grantPerAction(actions: $this->scopeActions(scopes: $grant->scopes), entry: $entry);
+	}//end mapGrant()
 
 	/**
 	 * The actions a list of ZGW scopes grants, in scope order.

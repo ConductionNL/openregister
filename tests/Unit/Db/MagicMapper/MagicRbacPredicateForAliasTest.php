@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
@@ -132,7 +133,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 	public function testEveryColumnIsQualifiedWithTheAlias(): void {
 		$predicate = $this->handlerFor('alice')->buildRbacPredicateForAlias(
 			schema: $this->schemaWith([]),
-			alias: 'r0'
+			rows: new AliasedRows(alias: 'r0')
 		);
 
 		$this->assertStringContainsString('r0._owner', $predicate);
@@ -153,7 +154,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 	public function testTheAliasIsTheOneAskedFor(): void {
 		$predicate = $this->handlerFor('alice')->buildRbacPredicateForAlias(
 			schema: $this->schemaWith([]),
-			alias: 'related7'
+			rows: new AliasedRows(alias: 'related7')
 		);
 
 		$this->assertStringContainsString('related7._owner', $predicate);
@@ -172,7 +173,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 	public function testDenyAllIsSaidOutLoudRatherThanLeftEmpty(): void {
 		$predicate = $this->handlerFor(null)->buildRbacPredicateForAlias(
 			schema: $this->schemaWith(['read' => ['editors']]),
-			alias: 'r0'
+			rows: new AliasedRows(alias: 'r0')
 		);
 
 		$this->assertSame('FALSE', $predicate);
@@ -187,7 +188,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 	public function testAnAdminBypassIsATruePredicate(): void {
 		$predicate = $this->handlerFor('root', ['admin'])->buildRbacPredicateForAlias(
 			schema: $this->schemaWith(['read' => ['editors']]),
-			alias: 'r0'
+			rows: new AliasedRows(alias: 'r0')
 		);
 
 		$this->assertSame('TRUE', $predicate);
@@ -213,7 +214,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 		foreach ($callers as [$userId, $groups]) {
 			$predicate = $this->handlerFor($userId, $groups)->buildRbacPredicateForAlias(
 				schema: $this->schemaWith(['read' => ['editors']]),
-				alias: 'r0'
+				rows: new AliasedRows(alias: 'r0')
 			);
 
 			$this->assertNotSame('', trim($predicate), 'Empty for ' . var_export($userId, true));
@@ -233,7 +234,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 
 		$this->handlerFor('alice')->buildRbacPredicateForAlias(
 			schema: $this->schemaWith([]),
-			alias: 'r0; DROP TABLE x --'
+			rows: new AliasedRows(alias: 'r0; DROP TABLE x --')
 		);
 	}//end testANonIdentifierAliasIsRefused()
 

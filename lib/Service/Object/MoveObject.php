@@ -49,7 +49,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
-use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\ValidationResult;
 use Throwable;
 
@@ -82,19 +81,25 @@ class MoveObject implements MoveObjectInterface {
 	public const GENERATED = 'x-openregister-generated';
 
 	/**
+	 * The object store, from the recording aggregate.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objects;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface     $objects   The object store.
+	 * @param ObjectChangeRecording    $recording The object store, the audit trail and the log a move
+	 *                                            reports to, and the dispatcher that asks the guards of
+	 *                                            values other records hold.
 	 * @param ObjectValidatorInterface $validator Validation against a schema.
-	 * @param MoveReporting            $reporting The audit trail and the log a move reports to.
-	 * @param IEventDispatcher         $events    Asks the guards of values other records hold.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objects,
+		private readonly ObjectChangeRecording $recording,
 		private readonly ObjectValidatorInterface $validator,
-		private readonly MoveReporting $reporting,
-		private readonly IEventDispatcher $events,
 	) {
+		$this->objects = $recording->objects;
 	}//end __construct()
 
 	/**
@@ -306,7 +311,7 @@ class MoveObject implements MoveObjectInterface {
 	 */
 	private function heldReason(ObjectEntity $object): ?string {
 		$event = new ObjectLeavingEvent(object: $object);
-		$this->events->dispatchTyped($event);
+		$this->recording->events->dispatchTyped($event);
 		if ($event->isPropagationStopped() === false) {
 			return null;
 		}
@@ -395,7 +400,7 @@ class MoveObject implements MoveObjectInterface {
 			// NOT fatal, and NOT silent. The object is readable at its new
 			// address; the old row is a duplicate that reads the same object,
 			// and somebody has to know it is there.
-			$this->reporting->logger->error(
+			$this->recording->logger->error(
 				message: '[MoveObject] object ' . (string)$move->object->getUuid() . ' was written at its new address but its old row '
 					. 'could not be removed, so it is readable at both: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'from' => $move->source->ids(), 'to' => $move->target->ids()]
@@ -544,7 +549,7 @@ class MoveObject implements MoveObjectInterface {
 		}
 
 		try {
-			$this->reporting->audit->createAuditTrailEntry(
+			$this->recording->auditTrail->createAuditTrailEntry(
 				object: $object,
 				action: self::ACTION,
 				context: [
@@ -558,7 +563,7 @@ class MoveObject implements MoveObjectInterface {
 			// The move happened. Failing it now would leave the object moved
 			// and the caller told it was not, which is the one state nobody
 			// can act on.
-			$this->reporting->logger->warning(
+			$this->recording->logger->warning(
 				message: '[MoveObject] the move of ' . (string)$object->getUuid()
 					. ' could not be recorded: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]

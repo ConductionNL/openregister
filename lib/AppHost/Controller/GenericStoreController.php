@@ -44,23 +44,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Controller;
 
 use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices;
-use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
+use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
-use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
-use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
-use OCA\OpenRegister\AppHost\Store\Source\GitHubStoreSource;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -85,69 +79,6 @@ class GenericStoreController extends Controller {
 	private const SLUG_PATTERN = '/^[a-z0-9][a-z0-9-]*[a-z0-9]$/';
 
 	/**
-	 * Loads the leaf app's manifest.
-	 *
-	 * @var ManifestLoader
-	 */
-	private readonly ManifestLoader $manifestLoader;
-
-	/**
-	 * Guarded remote discovery.
-	 *
-	 * @var GenericStoreService
-	 */
-	private readonly GenericStoreService $storeService;
-
-	/**
-	 * Declarative component install.
-	 *
-	 * @var GenericStoreInstaller
-	 */
-	private readonly GenericStoreInstaller $installer;
-
-	/**
-	 * Configuration browse and install.
-	 *
-	 * @var FederatedStoreCatalog
-	 */
-	private readonly FederatedStoreCatalog $catalog;
-
-	/**
-	 * GitHub discovery source.
-	 *
-	 * @var GitHubStoreSource
-	 */
-	private readonly GitHubStoreSource $gitHubSource;
-
-	/**
-	 * ADR-023 action resolver.
-	 *
-	 * @var StoreActionAuthorizer
-	 */
-	private readonly StoreActionAuthorizer $actionAuthorizer;
-
-	/**
-	 * Current session.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Admin check for install.
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
-
-	/**
-	 * PSR logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * `$appName` is the CALLING leaf app id, set by that app's alias
@@ -162,18 +93,9 @@ class GenericStoreController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		GenericStoreControllerServices $services,
+		private readonly GenericStoreControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->manifestLoader = $services->sources->manifestLoader;
-		$this->storeService = $services->sources->storeService;
-		$this->gitHubSource = $services->sources->gitHubSource;
-		$this->catalog = $services->sources->catalog;
-		$this->installer = $services->install->installer;
-		$this->actionAuthorizer = $services->install->actionAuthorizer;
-		$this->userSession = $services->platform->userSession;
-		$this->groupManager = $services->platform->groupManager;
-		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**
@@ -197,7 +119,7 @@ class GenericStoreController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function search(): JSONResponse {
-		if ($this->userSession->getUser() === null) {
+		if ($this->services->platform->userSession->getUser() === null) {
 			return new JSONResponse(
 				data: ['outcome' => 'unauthenticated', 'cards' => []],
 				statusCode: Http::STATUS_UNAUTHORIZED
@@ -225,7 +147,7 @@ class GenericStoreController extends Controller {
 		} catch (Throwable $e) {
 			// Detail to the log, generic outcome to the browser: a registry's
 			// internals are not the caller's business.
-			$this->logger->error(
+			$this->services->platform->logger->error(
 				message: sprintf('[AppHost\\Store] search failed for %s: %s', $this->appName, $e->getMessage()),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -329,7 +251,7 @@ class GenericStoreController extends Controller {
 		// controller serves every app. Resolved at request time instead of at
 		// annotation time — which is also what lets the APP declare the
 		// posture rather than the engine assuming one.
-		$user = $this->userSession->getUser();
+		$user = $this->services->platform->userSession->getUser();
 
 		if (preg_match(self::SLUG_PATTERN, $slug) !== 1) {
 			return new JSONResponse(
@@ -381,7 +303,7 @@ class GenericStoreController extends Controller {
 		// the leaf apps; until that lands, treating it as `authenticated`
 		// would quietly install on a weaker gate than the app asked for.
 		if ($store->isInstallAuthEnforceable() === false) {
-			$this->logger->error(
+			$this->services->platform->logger->error(
 				message: sprintf(
 					'[AppHost\\Store] %s declares an installAuth this engine cannot enforce: %s',
 					$this->appName,
@@ -428,11 +350,11 @@ class GenericStoreController extends Controller {
 		// set arrives as registers, schemas, flows and objects rather than as
 		// rows of whichever schema the plane happened to allow.
 		if ($descriptor->isFederated() === true) {
-			return new JSONResponse(data: $this->catalog->install(ref: $item), statusCode: Http::STATUS_OK);
+			return new JSONResponse(data: $this->services->sources->catalog->install(ref: $item), statusCode: Http::STATUS_OK);
 		}
 
 		return new JSONResponse(
-			data: $this->installer->install(store: $store, item: $item),
+			data: $this->services->install->installer->install(store: $store, item: $item),
 			statusCode: Http::STATUS_OK
 		);
 	}//end installItem()
@@ -449,7 +371,7 @@ class GenericStoreController extends Controller {
 		try {
 			return $this->resolveFor(descriptor: $descriptor, slug: $slug);
 		} catch (Throwable $e) {
-			$this->logger->error(
+			$this->services->platform->logger->error(
 				message: sprintf('[AppHost\\Store] resolve failed for %s: %s', $this->appName, $e->getMessage()),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -484,12 +406,12 @@ class GenericStoreController extends Controller {
 			// StoreManifest answers false for an action posture by design, so
 			// this is the only arm that can grant one.
 			return ($user !== null
-				&& $this->actionAuthorizer->can(appId: $this->appName, action: $action, user: $user));
+				&& $this->services->install->actionAuthorizer->can(appId: $this->appName, action: $action, user: $user));
 		}
 
 		return $store->permitsInstall(
 			isSignedIn: ($user !== null),
-			isAdmin: ($user !== null && $this->groupManager->isAdmin($user->getUID()))
+			isAdmin: ($user !== null && $this->services->platform->groupManager->isAdmin($user->getUID()))
 		);
 	}//end mayInstall()
 
@@ -517,14 +439,14 @@ class GenericStoreController extends Controller {
 		// it as `not_configured` — true of a registry it never declared, and
 		// useless to whoever has to act on it.
 		if ($store->source === 'github') {
-			return $this->gitHubSource->search(manifest: $store, query: ($query ?? ''), kind: $kind);
+			return $this->services->sources->gitHubSource->search(manifest: $store, query: ($query ?? ''), kind: $kind);
 		}
 
 		if ($descriptor->isFederated() === true) {
-			return $this->catalog->search(descriptor: $descriptor, query: $query, kind: $kind);
+			return $this->services->sources->catalog->search(descriptor: $descriptor, search: new StoreSearch(query: $query, kind: $kind));
 		}
 
-		return $this->storeService->search(descriptor: $descriptor, query: $query, kind: $kind);
+		return $this->services->sources->storeService->search(descriptor: $descriptor, query: $query, kind: $kind);
 	}//end searchFor()
 
 	/**
@@ -539,10 +461,10 @@ class GenericStoreController extends Controller {
 	 */
 	private function resolveFor(StoreDescriptor $descriptor, string $slug): ?array {
 		if ($descriptor->isFederated() === true) {
-			return $this->catalog->resolve(descriptor: $descriptor, slug: $slug);
+			return $this->services->sources->catalog->resolve(descriptor: $descriptor, slug: $slug);
 		}
 
-		return $this->storeService->resolve(descriptor: $descriptor, slug: $slug);
+		return $this->services->sources->storeService->resolve(descriptor: $descriptor, slug: $slug);
 	}//end resolveFor()
 
 	/**
@@ -559,7 +481,7 @@ class GenericStoreController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function publish(): JSONResponse {
-		$user = $this->userSession->getUser();
+		$user = $this->services->platform->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(
 				data: ['outcome' => 'unauthenticated', 'slug' => ''],
@@ -576,7 +498,7 @@ class GenericStoreController extends Controller {
 		}
 
 		$descriptor = $this->descriptor(store: $store);
-		if ($this->actionAuthorizer->canPublish(descriptor: $descriptor, user: $user) === false) {
+		if ($this->services->install->actionAuthorizer->canPublish(descriptor: $descriptor, user: $user) === false) {
 			return new JSONResponse(
 				data: ['outcome' => 'forbidden', 'slug' => ''],
 				statusCode: Http::STATUS_FORBIDDEN
@@ -592,7 +514,7 @@ class GenericStoreController extends Controller {
 		}
 
 		return new JSONResponse(
-			data: $this->storeService->publish(descriptor: $descriptor, payload: $item),
+			data: $this->services->sources->storeService->publish(descriptor: $descriptor, payload: $item),
 			statusCode: Http::STATUS_OK
 		);
 	}//end publish()
@@ -603,7 +525,7 @@ class GenericStoreController extends Controller {
 	 * @return StoreManifest
 	 */
 	private function store(): StoreManifest {
-		return $this->manifestLoader->loadStore(appId: $this->appName);
+		return $this->services->sources->manifestLoader->loadStore(appId: $this->appName);
 	}//end store()
 
 	/**

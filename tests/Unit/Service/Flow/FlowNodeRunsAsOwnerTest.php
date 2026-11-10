@@ -204,8 +204,7 @@ class FlowNodeRunsAsOwnerTest extends TestCase {
 		$node = new ObjectReadNode(
 			new ObjectNodeSources($this->objects, $registers, $schemas),
 			$this->userManager(),
-			$this->l10n(),
-			$this->createMock(IURLGenerator::class)
+			new FlowNodePresentation($this->l10n(), $this->createMock(IURLGenerator::class))
 		);
 
 		$node->execute(
@@ -280,8 +279,7 @@ class FlowNodeRunsAsOwnerTest extends TestCase {
 		$node = new ObjectReadNode(
 			new ObjectNodeSources($this->objects, $registers, $schemas),
 			$this->userManager(),
-			$this->l10n(),
-			$this->createMock(IURLGenerator::class)
+			new FlowNodePresentation($this->l10n(), $this->createMock(IURLGenerator::class))
 		);
 
 		$node->execute(

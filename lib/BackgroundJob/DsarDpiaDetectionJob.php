@@ -48,6 +48,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
+use OCA\OpenRegister\Service\Gdpr\DpiaDetectionRequest;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectorInterface;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolverInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -255,7 +256,8 @@ class DsarDpiaDetectionJob extends TimedJob {
 				continue;
 			}
 
-			$groups = $this->detectionService->detect(cases: $partitionCases, config: $config, now: $now);
+			$request = new DpiaDetectionRequest(cases: $partitionCases, config: $config, now: $now);
+			$groups = $this->detectionService->detect(request: $request);
 			foreach ($groups as $group) {
 				$summary['groupsTriggered']++;
 				$outcome = $this->flagGroup(group: $group, config: $config);

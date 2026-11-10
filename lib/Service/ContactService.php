@@ -549,36 +549,12 @@ class ContactService implements ContactServiceInterface {
 	}//end contactPhotoRoute()
 
 	/**
-	 * Link an existing contact to an object.
+	 * Tag an existing vCard with its object and role, and save the link row of it.
 	 *
 	 * Tier-2: the call is idempotent — if a link row already exists for
 	 * `(objectUuid, contactUid)` (enforced by the
 	 * `idx_contact_object_uid_uniq` index) the row is updated in-place
-	 * with the freshened cached fields and the new role. Callers that
-	 * relied on the previous "always-insert" semantics still get a
-	 * persisted entity back.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $registerId The register ID.
-	 * @param int $addressbookId The addressbook ID.
-	 * @param string $contactUri The contact URI in the addressbook.
-	 * @param string|null $role The role of this contact on the object.
-	 * @param int|null $schemaId Optional schema id (Tier-2).
-	 *
-	 * @return ContactLink The created or updated link.
-	 *
-	 * @throws Exception If the contact does not exist.
-	 *
-	 * @spec openspec/specs/contacts-actions/spec.md
-	 */
-	public function linkContact(string $objectUuid, int $registerId, int $addressbookId, string $contactUri, ?string $role = null,
-		?int $schemaId = null): ContactLink {
-		$placement = new ContactPlacement(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, role: $role);
-		return $this->linkCard(card: new ContactCardRef(addressbookId: $addressbookId, contactUri: $contactUri), placement: $placement);
-	}//end linkContact()
-
-	/**
-	 * Tag an existing vCard with its object and role, and save the link row of it.
+	 * with the freshened cached fields and the new role.
 	 *
 	 * @param ContactCardRef   $card      The vCard to link.
 	 * @param ContactPlacement $placement Where it is linked, and in what role.
@@ -776,31 +752,10 @@ class ContactService implements ContactServiceInterface {
 	/**
 	 * Create a new contact and link it to an object.
 	 *
-	 * Tier-2: extended to persist `phone` / `org` straight from the
-	 * caller-supplied payload, and to accept an optional `schemaId`
-	 * + free-form `org` field. The avatar URL falls back to the
-	 * per-uid Contacts route (no PHOTO is set on freshly-created
-	 * vCards yet).
-	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $registerId The register ID.
-	 * @param array $data Contact data: `fullName` or `displayName`, `email`,
-	 *                    `phone`, `org`, `role`.
-	 * @param int|null $schemaId Optional schema id (Tier-2).
-	 *
-	 * @return ContactLink The created link.
-	 *
-	 * @throws Exception If no user or addressbook.
-	 *
-	 * @spec openspec/specs/contacts-actions/spec.md
-	 */
-	public function createAndLinkContact(string $objectUuid, int $registerId, array $data, ?int $schemaId = null): ContactLink {
-		$placement = new ContactPlacement(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, role: $data['role'] ?? null);
-		return $this->createCard(placement: $placement, data: $data);
-	}//end createAndLinkContact()
-
-	/**
-	 * Create a vCard in the user's first addressbook and insert the link row of it.
+	 * Creates a vCard in the user's first addressbook and inserts the link row of it.
+	 * Tier-2: persists `phone` / `org` straight from the caller-supplied payload. The
+	 * avatar URL falls back to the per-uid Contacts route (no PHOTO is set on
+	 * freshly-created vCards yet).
 	 *
 	 * @param ContactPlacement $placement Where it is linked, and in what role.
 	 * @param array            $data      Contact data: `fullName` or `displayName`, `email`, `phone`, `org`.
@@ -811,7 +766,7 @@ class ContactService implements ContactServiceInterface {
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function createCard(ContactPlacement $placement, array $data): ContactLink {
+	public function createAndLinkContact(ContactPlacement $placement, array $data): ContactLink {
 		$user = $this->requireUser();
 
 		$addressbook = $this->findUserAddressbook();
@@ -846,7 +801,7 @@ class ContactService implements ContactServiceInterface {
 		$this->stampLinkedBy(link: $link, uid: $user->getUID());
 
 		return $this->contactLinkMapper->insert($link);
-	}//end createCard()
+	}//end createAndLinkContact()
 
 	/**
 	 * The display name, email, phone and organisation of a new contact.

@@ -432,6 +432,6 @@ final class AuditTrailMapperReadPathGoldenTest extends TestCase {
 			}
 		};
 
-		return new AuditTrailMapper($db, $this->createMock(IUserSession::class), $this->createMock(IRequest::class), new AuditTrailMapperServices($container, $logger));
+		return new AuditTrailMapper($db, new AuditTrailMapperServices($container, $logger, $this->createMock(IUserSession::class), $this->createMock(IRequest::class)));
 	}//end mapper()
 }//end class

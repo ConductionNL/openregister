@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacMatchSql;
 use OCA\OpenRegister\Db\MagicMapper\RbacQueryMatch;
@@ -189,7 +190,7 @@ class MagicRbacBooleanBindingTest extends TestCase {
 		$schema->setProperties(['isPrivate' => ['type' => 'boolean']]);
 		$schema->setAuthorization(['read' => [['group' => 'authenticated', 'match' => ['isPrivate' => false]]]]);
 
-		$predicate = $this->handler()->buildRbacPredicateForAlias(schema: $schema, alias: 't', action: 'read');
+		$predicate = $this->handler()->buildRbacPredicateForAlias(schema: $schema, rows: new AliasedRows(alias: 't', action: 'read'));
 
 		$this->assertStringContainsString('`is_private` = FALSE', $predicate);
 	}//end testTheRawSqlPathAlreadyEmitsABooleanLiteral()

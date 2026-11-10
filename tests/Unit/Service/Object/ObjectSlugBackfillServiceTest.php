@@ -17,6 +17,7 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandle
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -49,7 +50,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 	/** @var list<array{string, ?string}> Slug writes as [uuid, slug]. */
 	private array $writes = [];
 
-	/** @var list<array> Audit entries as the arguments of createSlugBackfillEntry. */
+	/** @var list<array> Audit entries as the fields passed to recordSlugBackfill. */
 	private array $audits = [];
 
 	/** @var list<string> Logged warnings. */
@@ -102,7 +103,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			writer: new ObjectSlugBackfillWriter(
 				magicMapper: $this->magicMapper,
 				db: $this->createMock(IDBConnection::class),
-				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), auditTrail: $this->auditTrailMapper, logger: $logger),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->auditTrailMapper, logger: $logger)),
 				logger: $logger
 			),
 			logger: $logger
@@ -116,9 +117,10 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 	 */
 	private function auditMapper(): AuditTrailMapper {
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('createSlugBackfillEntry')->willReturnCallback(
-			function (array $changes, array $summary, ?int $register=null, ?int $schema=null): AuditTrail {
-				$this->audits[] = ['changes' => $changes, 'summary' => $summary, 'register' => $register, 'schema' => $schema];
+		$mapper->method('recordSlugBackfill')->willReturnCallback(
+			function (SlugBackfill $backfill): AuditTrail {
+				$target = $backfill->target;
+				$this->audits[] = ['changes' => $backfill->changes, 'summary' => $backfill->summary, 'register' => $target->register, 'schema' => $target->schema];
 				return new AuditTrail();
 			}
 		);
@@ -346,7 +348,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			writer: new ObjectSlugBackfillWriter(
 				magicMapper: $magicMapper,
 				db: $this->createMock(IDBConnection::class),
-				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), auditTrail: $this->auditMapper(), logger: $logger),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->auditMapper(), logger: $logger)),
 				logger: $logger
 			),
 			logger: $logger
@@ -435,7 +437,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			writer: new ObjectSlugBackfillWriter(
 				magicMapper: $magicMapper,
 				db: $this->createMock(IDBConnection::class),
-				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), auditTrail: $this->auditMapper(), logger: $logger),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->auditMapper(), logger: $logger)),
 				logger: $logger
 			),
 			logger: $logger

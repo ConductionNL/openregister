@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugDecision;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant;
 use Psr\Log\LoggerInterface;
 
@@ -262,9 +263,11 @@ class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 
 			$uuid = $row['uuid'];
 			$slug = $this->slugHandler->decide(
-				want: new ObjectSlugWant(slug: $candidate, scope: $scope, objectUuid: $uuid, path: 'backfill'),
-				holderOf: $this->holderOf(taken: $taken, uuid: $uuid),
-				log: ($request->dryRun === false)
+				decision: new ObjectSlugDecision(
+					want: new ObjectSlugWant(slug: $candidate, scope: $scope, objectUuid: $uuid, path: 'backfill'),
+					holderOf: $this->holderOf(taken: $taken, uuid: $uuid),
+					log: ($request->dryRun === false)
+				)
 			);
 			if ($slug === null) {
 				$fill['collisions']++;

@@ -286,13 +286,9 @@ class TimeProvider extends AbstractIntegrationProvider {
 	 * @return array<int,array<string,mixed>>
 	 */
 	private function scanNotes(string $table, string $marker): array {
-		return $this->findByMarker(
+		return $this->scanMarker(
 			db: $this->db,
-			table: $table,
-			markerColumn: 'note',
-			marker: $marker,
-			extraColumns: ['uuid', 'name'],
-			idColumn: 'id',
+			scan: new MarkerScan(table: $table, markerColumn: 'note', marker: $marker, columns: ['id', 'uuid', 'name']),
 		);
 	}//end scanNotes()
 

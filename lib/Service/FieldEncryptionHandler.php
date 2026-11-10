@@ -235,33 +235,26 @@ class FieldEncryptionHandler implements FieldEncryptionHandlerInterface {
 	 * that must fail loud instead (the migration command, single-object
 	 * integrity checks).
 	 *
-	 * @param array $data The rendered object data.
-	 * @param Schema $schema The object's schema.
-	 * @param bool $throwOnFailure When true, rethrow decryption failures instead
-	 *                             of substituting an error marker.
+	 * @param array                $data  The object data, possibly holding ciphertext.
+	 * @param FieldDecryptionScope $scope The object's schema and whether a failure is rethrown.
 	 *
 	 * @return array The data with flagged properties decrypted where possible.
 	 *
-	 * @throws FieldDecryptionException When `$throwOnFailure` is true and decryption fails.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag selects fail-loud vs
-	 *                                              fail-marked disposition, matching the
-	 *                                              established _rbac/_multitenancy flag idiom.
+	 * @throws FieldDecryptionException When the scope rethrows and decryption fails.
 	 *
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
 	 */
-	public function decryptProperties(array $data, Schema $schema, bool $throwOnFailure = false): array {
-		if ($schema->hasEncryptedProperties() === false) {
+	public function decryptInScope(array $data, FieldDecryptionScope $scope): array {
+		if ($scope->schema->hasEncryptedProperties() === false) {
 			return $data;
 		}
 
-		$scope = new FieldDecryptionScope(schema: $schema, throwOnFailure: $throwOnFailure);
-		foreach ($schema->getEncryptedProperties() as $property) {
+		foreach ($scope->schema->getEncryptedProperties() as $property) {
 			$data = $this->decryptPresent(data: $data, scope: $scope->forProperty(property: $property));
 		}
 
 		return $data;
-	}//end decryptProperties()
+	}//end decryptInScope()
 
 	/**
 	 * Decrypt the scope's property, when it is present and an envelope.

@@ -58,12 +58,25 @@ interface ConsumerMapperInterface {
 	 * @param array|null $filters Associative array of filters
 	 *
 	 * @return array An array of Consumer entities
+	 *
+	 * @spec exclude Persistence primitive: builds the ListQuery and delegates to findPage().
 	 */
 	public function findAll(
 		?int $limit = null,
 		?int $offset = null,
 		?array $filters = [],
 	): array;
+
+	/**
+	 * One page of Consumers, narrowed by column filters.
+	 *
+	 * @param ListQuery $query The page (unbounded for every row) and the column filters.
+	 *
+	 * @return Consumer[] The matching Consumer entities.
+	 *
+	 * @spec exclude Persistence primitive: a paged column-filter read with no behaviour of its own.
+	 */
+	public function findPage(ListQuery $query): array;
 
 	/**
 	 * Get the total count of all consumers.

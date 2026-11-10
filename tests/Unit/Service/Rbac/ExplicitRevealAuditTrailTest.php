@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
@@ -128,9 +129,7 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 
 		return new LogService(
 			$trails,
-			$this->createMock(originalClassName: MagicMapper::class),
-			$this->createMock(originalClassName: RegisterMapper::class),
-			$schemas
+			new SchemaCatalog($this->createMock(originalClassName: RegisterMapper::class), $schemas, $this->createMock(originalClassName: MagicMapper::class))
 		);
 	}//end logService()
 

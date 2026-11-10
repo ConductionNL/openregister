@@ -52,7 +52,6 @@ use OCA\OpenRegister\Db\SchemaRunMapperInterface;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
-use Psr\Log\LoggerInterface;
 
 /**
  * Declarative migration engine with rollback.
@@ -88,24 +87,47 @@ class SchemaMigrationService implements SchemaMigrationServiceInterface, SchemaB
 	private const RUNNING_MIGRATION = ['type' => SchemaRun::TYPE_MIGRATION, 'state' => SchemaRun::STATE_RUNNING];
 
 	/**
+	 * Run persistence.
+	 *
+	 * @var SchemaRunMapperInterface
+	 */
+	private readonly SchemaRunMapperInterface $runMapper;
+
+	/**
+	 * Per-object run entries.
+	 *
+	 * @var SchemaRunEntryMapperInterface
+	 */
+	private readonly SchemaRunEntryMapperInterface $runEntryMapper;
+
+	/**
+	 * Schema lookup.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Object read/save pipeline.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMigrationPlanner $planner Pure transform engine.
-	 * @param SchemaRunMapperInterface $runMapper Run persistence.
-	 * @param SchemaRunEntryMapperInterface $runEntryMapper Per-object run entries.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
-	 * @param ObjectOperationsInterface $objectService Object read/save pipeline.
-	 * @param LoggerInterface $logger Logger.
+	 * @param SchemaPopulationRuns   $runs    The run ledger, the schema lookup and the object population.
 	 */
 	public function __construct(
 		private readonly SchemaMigrationPlanner $planner,
-		private readonly SchemaRunMapperInterface $runMapper,
-		private readonly SchemaRunEntryMapperInterface $runEntryMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly LoggerInterface $logger,
+		SchemaPopulationRuns $runs,
 	) {
-
+		$this->runMapper      = $runs->runMapper;
+		$this->runEntryMapper = $runs->runEntryMapper;
+		$this->schemaMapper   = $runs->schemaMapper;
+		$this->objectService  = $runs->objectService;
 	}//end __construct()
 
 	/**
@@ -124,43 +146,18 @@ class SchemaMigrationService implements SchemaMigrationServiceInterface, SchemaB
 	/**
 	 * Preview a plan against a bounded sample without persisting.
 	 *
-	 * @param int $schemaId The schema id.
-	 * @param int $registerId The register id.
-	 * @param array<int, array<string, mixed>> $plan The transform chain.
-	 * @param int $sampleSize The sample size.
+	 * @param MigrationRequest $request    The schema, its register and the transform chain.
+	 * @param int              $sampleSize The sample size.
 	 *
 	 * @return array<int, array<string, mixed>> Before/after pairs.
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
-	public function preview(int $schemaId, int $registerId, array $plan, int $sampleSize = self::DEFAULT_PREVIEW_SAMPLE): array {
-		$request = new MigrationRequest(schemaId: $schemaId, registerId: $registerId, plan: $plan);
+	public function previewSample(MigrationRequest $request, int $sampleSize = self::DEFAULT_PREVIEW_SAMPLE): array {
 		$objects = $this->loadSample(request: $request, sampleSize: $sampleSize);
 
-		return array_map(fn (ObjectEntity $object): array => $this->previewPair(object: $object, plan: $plan), $objects);
-	}//end preview()
-
-	/**
-	 * Start a migration run.
-	 *
-	 * @param int $schemaId The schema id.
-	 * @param int $registerId The register id.
-	 * @param array<int, array<string, mixed>> $plan The transform chain.
-	 * @param array<string, mixed> $options Options (stopOnError).
-	 * @param string|null $startedBy The starting user.
-	 *
-	 * @return SchemaRun The created run.
-	 *
-	 * @throws SchemaRunConcurrencyException When an active run exists.
-	 * @throws \InvalidArgumentException When the plan is invalid.
-	 *
-	 * @spec openspec/specs/schema-migration/spec.md
-	 */
-	public function start(int $schemaId, int $registerId, array $plan, array $options = [], ?string $startedBy = null): SchemaRun {
-		$request = new MigrationRequest(schemaId: $schemaId, registerId: $registerId, plan: $plan, options: $options);
-
-		return $this->startMigration(request: $request, startedBy: $startedBy);
-	}//end start()
+		return array_map(fn (ObjectEntity $object): array => $this->previewPair(object: $object, plan: $request->plan), $objects);
+	}//end previewSample()
 
 	/**
 	 * Start a migration run for a migration request.

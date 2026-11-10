@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -246,7 +247,7 @@ class AggregationRegisterScopeTest extends TestCase {
 
 		$this->magicMapper->method('findAllInRegisterSchemaTable')->willReturn([$this->row(['hours' => 3])]);
 
-		$result = $this->runner->run(registerRef: 'hrmq', schemaRef: 'TimeEntry', name: 'totalCount');
+		$result = $this->runner->run(ref: new NamedAggregationRef(register: 'hrmq', schema: 'TimeEntry', name: 'totalCount'));
 
 		$this->assertSame(1, $result['value']);
 	}//end testNamedAggregationResolvesSchemaWithinTheNamedRegisterOnly()

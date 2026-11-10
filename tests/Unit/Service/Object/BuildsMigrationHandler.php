@@ -50,7 +50,7 @@ trait BuildsMigrationHandler {
 		$audit = $this->createMock(AuditTrailMapper::class);
 
 		return new MigrationHandler(
-			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(objects: $mapper, validator: $validator, reporting: new \OCA\OpenRegister\Service\Object\MoveReporting(audit: $audit, logger: $logger), events: $this->createStub(IEventDispatcher::class)), auditTrail: $audit),
+			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($mapper, $audit, $logger, $this->createStub(IEventDispatcher::class)), validator: $validator), auditTrail: $audit),
 			mapping: new MigrationMapping(utilityHandler: $utility, dataManipHandler: $dataManip, relationScanner: $this->createMock(SaveObject::class)),
 			logger: $logger
 		);

@@ -44,12 +44,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RunObjectLock;
 use OCA\OpenRegister\Db\RunObjectLockMapperInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -60,18 +57,14 @@ class RunLockRegistry implements RunLockReleaseInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RunObjectLockMapperInterface $registry The run-lock rows.
-	 * @param MagicMapperInterface $magicMapper Resolves and mutates the objects themselves.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Records the releases.
-	 * @param LoggerInterface $logger Failure reporting.
+	 * @param RunObjectLockMapperInterface $registry  The run-lock rows.
+	 * @param ObjectChangeRecording        $recording Resolves and mutates the objects themselves, records
+	 *                                                the releases and reports failures.
 	 */
 	public function __construct(
 		private readonly RunObjectLockMapperInterface $registry,
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly LoggerInterface $logger,
+		private readonly ObjectChangeRecording $recording,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -98,7 +91,7 @@ class RunLockRegistry implements RunLockReleaseInterface {
 		try {
 			$this->registry->record(lock: $this->lockRowFor(object: $object, step: new LockRunStep($runUuid, $step->nodeId)));
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->recording->logger->warning(
 				message: '[RunLockRegistry] Could not record a run lock; the lock itself stands',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'runUuid' => $step->runUuid, 'error' => $e->getMessage()]
 			);
@@ -149,7 +142,7 @@ class RunLockRegistry implements RunLockReleaseInterface {
 			$this->registry->forget(runUuid: $runUuid, objectUuid: $objectUuid);
 		} catch (Throwable $e) {
 			// A row left behind is collected by the sweep on its own terms.
-			$this->logger->debug(
+			$this->recording->logger->debug(
 				message: '[RunLockRegistry] Could not forget a run lock row',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
@@ -257,7 +250,7 @@ class RunLockRegistry implements RunLockReleaseInterface {
 			// `includeDeleted`: a soft-deleted object can still carry a live
 			// lock, and it is precisely the object nobody is watching. Leaving
 			// it out would strand that lock and its registry row forever.
-			$context = $this->magicMapper->findAcrossAllSources(
+			$context = $this->recording->objects->findAcrossAllSources(
 				identifier: $objectUuid,
 				includeDeleted: true,
 				_rbac: false,
@@ -270,16 +263,16 @@ class RunLockRegistry implements RunLockReleaseInterface {
 				return false;
 			}
 
-			$objectAfter = $this->magicMapper->unlockObjectEntity(
+			$objectAfter = $this->recording->objects->unlockObjectEntity(
 				entity: $objectBefore,
 				register: $context['register'],
 				schema: $context['schema'],
 				break: true
 			);
 
-			$this->auditTrailMapper->createAuditTrail(old: $objectBefore, new: $objectAfter, action: 'unlock');
+			$this->recording->auditTrail->createAuditTrail(old: $objectBefore, new: $objectAfter, action: 'unlock');
 
-			$this->logger->info(
+			$this->recording->logger->info(
 				message: '[RunLockRegistry] Released a run lock',
 				context: [
 					'file' => __FILE__,
@@ -294,7 +287,7 @@ class RunLockRegistry implements RunLockReleaseInterface {
 			// Never propagate: layer 1 runs inside the run's own terminal
 			// write transaction, and a throw would unwind the status change.
 			// The TTL is the remaining backstop and the sweep sees the row again.
-			$this->logger->warning(
+			$this->recording->logger->warning(
 				message: '[RunLockRegistry] Could not release a run lock',
 				context: [
 					'file' => __FILE__,

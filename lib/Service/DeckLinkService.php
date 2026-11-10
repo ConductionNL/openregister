@@ -575,6 +575,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			}
 		} catch (Throwable $e) {
 			// Leave default null.
+			$this->runtime->logger()->debug('[DeckLinkService] Card due date not readable: ' . $e->getMessage());
 		}
 
 		return [null, null];
@@ -598,6 +599,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			}
 		} catch (Throwable $e) {
 			// Leave default empty.
+			$this->runtime->logger()->debug('[DeckLinkService] Card labels not readable: ' . $e->getMessage());
 		}
 
 		return $labels;
@@ -621,6 +623,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			}
 		} catch (Throwable $e) {
 			// Leave default empty.
+			$this->runtime->logger()->debug('[DeckLinkService] Card assignees not readable: ' . $e->getMessage());
 		}
 
 		return $assignees;
@@ -644,6 +647,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			}
 		} catch (Throwable $e) {
 			// Leave the title empty.
+			$this->runtime->logger()->debug('[DeckLinkService] Card relation title not readable via ' . $getter . ': ' . $e->getMessage());
 		}
 
 		return '';

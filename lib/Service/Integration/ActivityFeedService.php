@@ -76,21 +76,20 @@ class ActivityFeedService {
 	/**
 	 * One page of the merged feed.
 	 *
-	 * @param ActivityFeedObject                           $object   The object: register slug, schema slug and uuid.
-	 * @param array<string,mixed>                          $options  `pageSize`, `includeReads`, `kinds`, `from`, `until`, `before`.
-	 * @param array<string,array<int,array<string,mixed>>> $handedIn Rows for sources this service does not own: `file`, `note`, `mail`.
+	 * @param ActivityFeedObject  $object  The object: register slug, schema slug and uuid.
+	 * @param ActivityFeedOptions $options How the page is cut, and the rows handed in for `file`, `note`, `mail`.
 	 *
 	 * @return array{rows:array<int,array<string,mixed>>,nextCursor:?int,counts:array<string,int>,degraded:array<int,string>}
 	 *         The page, plus the sources that could not be read.
 	 *
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
 	 */
-	public function page(ActivityFeedObject $object, array $options = [], array $handedIn = []): array {
-		$sources = $this->handedInSources(handedIn: $handedIn);
-		$sources['audit'] = $this->auditSource(object: $object, bound: $this->merge->boundPerSource(options: $options));
+	public function page(ActivityFeedObject $object, ActivityFeedOptions $options = new ActivityFeedOptions()): array {
+		$sources = $this->handedInSources(handedIn: $options->handedIn);
+		$sources['audit'] = $this->auditSource(object: $object, bound: $this->merge->boundPerSource(options: $options->criteria));
 		$sources['activity'] = $this->activitySource(object: $object);
 
-		return $this->mergedPage(sources: $sources, options: $options);
+		return $this->mergedPage(sources: $sources, options: $options->criteria);
 	}//end page()
 
 	/**

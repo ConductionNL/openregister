@@ -82,23 +82,22 @@ class ExampleSetPaths {
 	/**
 	 * The object with a value at a dot path, making the maps on the way.
 	 *
-	 * @param array<string, mixed> $row   The object.
-	 * @param string               $path  The dot path.
-	 * @param mixed                $value The value.
+	 * @param array<string, mixed> $row The object.
+	 * @param ExampleSetPathValue  $set The dot path and the value.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
 	 */
-	public function withPath(array $row, string $path, mixed $value): array {
-		[$head, $rest] = array_pad(explode('.', $path, 2), 2, null);
+	public function withPath(array $row, ExampleSetPathValue $set): array {
+		[$head, $rest] = array_pad(explode('.', $set->path, 2), 2, null);
 		if ($rest === null) {
-			$row[$head] = $value;
+			$row[$head] = $set->value;
 			return $row;
 		}
 
 		$child      = $row[$head] ?? [];
-		$row[$head] = $this->withPath(row: (array) $child, path: $rest, value: $value);
+		$row[$head] = $this->withPath(row: (array) $child, set: $set->below(rest: $rest));
 
 		return $row;
 	}//end withPath()
