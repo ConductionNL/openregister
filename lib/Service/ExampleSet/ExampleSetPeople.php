@@ -632,6 +632,23 @@ class ExampleSetPeople {
 	 * @return array<int, array{0: string, 1: string}>
 	 */
 	private function declaredMemberships(array $plan): array {
+		$pairs = array_merge(
+			$this->castMemberships(plan: $plan),
+			$this->fragmentMemberships(plan: $plan),
+			$this->serviceAccountMemberships(plan: $plan)
+		);
+
+		return array_values(array_unique($pairs, SORT_REGULAR));
+	}//end declaredMemberships()
+
+	/**
+	 * The memberships the cast's people declare, as [gid, uid] pairs.
+	 *
+	 * @param array<string, mixed> $plan The resolved plan.
+	 *
+	 * @return array<int, array{0: string, 1: string}> The pairs.
+	 */
+	private function castMemberships(array $plan): array {
 		$pairs = [];
 		foreach ($plan['cast']['people'] as $person) {
 			$uid = (string) ($person['uid'] ?? '');
@@ -641,6 +658,18 @@ class ExampleSetPeople {
 			}
 		}
 
+		return $pairs;
+	}//end castMemberships()
+
+	/**
+	 * The memberships the fragments' groups declare, as [gid, uid] pairs.
+	 *
+	 * @param array<string, mixed> $plan The resolved plan.
+	 *
+	 * @return array<int, array{0: string, 1: string}> The pairs.
+	 */
+	private function fragmentMemberships(array $plan): array {
+		$pairs = [];
 		foreach ($plan['fragments'] as $fragment) {
 			foreach ($fragment['groups'] as $group) {
 				foreach ((array) ($group['members'] ?? []) as $member) {
@@ -649,14 +678,26 @@ class ExampleSetPeople {
 			}
 		}
 
+		return $pairs;
+	}//end fragmentMemberships()
+
+	/**
+	 * The memberships the service accounts declare, as [gid, uid] pairs.
+	 *
+	 * @param array<string, mixed> $plan The resolved plan.
+	 *
+	 * @return array<int, array{0: string, 1: string}> The pairs.
+	 */
+	private function serviceAccountMemberships(array $plan): array {
+		$pairs = [];
 		foreach ($this->serviceAccounts(plan: $plan) as $account) {
 			foreach ($account['groups'] as $gid) {
 				$pairs[] = [$gid, $account['uid']];
 			}
 		}
 
-		return array_values(array_unique($pairs, SORT_REGULAR));
-	}//end declaredMemberships()
+		return $pairs;
+	}//end serviceAccountMemberships()
 
 	/**
 	 * The recorded accounts, groups and memberships that are not on the instance.
@@ -668,6 +709,20 @@ class ExampleSetPeople {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function missing(array $record): array {
+		return array_merge(
+			$this->missingAccountsAndGroups(record: $record),
+			$this->missingMembershipsAndSubAdmins(record: $record)
+		);
+	}//end missing()
+
+	/**
+	 * The recorded accounts and groups that are not on the instance.
+	 *
+	 * @param array<string, mixed> $record The record as written.
+	 *
+	 * @return array<int, string> What is missing, accounts first.
+	 */
+	private function missingAccountsAndGroups(array $record): array {
 		$missing = [];
 		foreach (array_keys($record['users']) as $uid) {
 			if ($this->accounts->userExists(uid: $uid) === false) {
@@ -681,6 +736,18 @@ class ExampleSetPeople {
 			}
 		}
 
+		return $missing;
+	}//end missingAccountsAndGroups()
+
+	/**
+	 * The recorded memberships and sub-admin rights that are not on the instance.
+	 *
+	 * @param array<string, mixed> $record The record as written.
+	 *
+	 * @return array<int, string> What is missing, memberships first.
+	 */
+	private function missingMembershipsAndSubAdmins(array $record): array {
+		$missing = [];
 		foreach ($record['memberships'] as [$gid, $uid]) {
 			if ($this->accounts->inGroup(gid: $gid, uid: $uid) === false) {
 				$missing[] = 'membership '.$gid.' / '.$uid;
@@ -694,7 +761,7 @@ class ExampleSetPeople {
 		}
 
 		return $missing;
-	}//end missing()
+	}//end missingMembershipsAndSubAdmins()
 
 	/**
 	 * Every service account the fragments declare.
