@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Aggregation;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -220,7 +221,8 @@ class AggregationCache implements AggregationCacheInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
 	 */
 	public function getAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query): ?array {
-		return $this->read(slot: AggregationSlot::fromAdhocQuery(registerSlug: $registerSlug, schemaSlug: $schemaSlug, query: $query));
+		$table = new RegisterSchemaRef(register: $registerSlug, schema: $schemaSlug);
+		return $this->read(slot: AggregationSlot::fromAdhocQuery(table: $table, query: $query));
 	}//end getAdhoc()
 
 	/**
@@ -240,8 +242,8 @@ class AggregationCache implements AggregationCacheInterface {
 	 * @spec openspec/specs/aggregations-backend-native/spec.md
 	 */
 	public function setAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query, array $result): void {
-		$slot = AggregationSlot::fromAdhocQuery(registerSlug: $registerSlug, schemaSlug: $schemaSlug, query: $query);
-		$this->write(slot: $slot, result: $result);
+		$table = new RegisterSchemaRef(register: $registerSlug, schema: $schemaSlug);
+		$this->write(slot: AggregationSlot::fromAdhocQuery(table: $table, query: $query), result: $result);
 	}//end setAdhoc()
 
 	/**
