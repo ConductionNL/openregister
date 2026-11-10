@@ -58,20 +58,6 @@ class DedupCreatePolicy implements DedupCreatePolicyInterface {
 	private const BLOCK = 'block';
 
 	/**
-	 * Audit writer for the override record.
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private readonly AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * PSR logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Wire collaborators.
 	 *
 	 * @param DuplicateDetectionServiceInterface $duplicates The one scorer, reused rather than reimplemented.
@@ -85,10 +71,8 @@ class DedupCreatePolicy implements DedupCreatePolicyInterface {
 		private readonly DuplicateDetectionServiceInterface $duplicates,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		DedupOverrideAudit $audit,
+		private readonly DedupOverrideAudit $audit,
 	) {
-		$this->auditTrailMapper = $audit->auditTrailMapper;
-		$this->logger           = $audit->logger;
 	}//end __construct()
 
 	/**
@@ -117,18 +101,32 @@ class DedupCreatePolicy implements DedupCreatePolicyInterface {
 	 */
 	public function guardCreate($register, $schema, array $data, bool $overrideRequested): array {
 		$annotation = $this->duplicates->dedupAnnotation(register: $register, schema: $schema);
-
-		$onCreate = (string)($annotation['onCreate'] ?? self::DEFAULT_ON_CREATE);
-		if ($onCreate !== self::BLOCK) {
+		if ((string)($annotation['onCreate'] ?? self::DEFAULT_ON_CREATE) !== self::BLOCK) {
 			return [];
 		}
 
 		$matches = $this->duplicates->checkCandidate(register: $register, schema: $schema, candidate: $data);
+		$overridden = count($matches) > 0 && $overrideRequested === true && $this->mayOverride(annotation: $annotation);
+		return $this->admitted(matches: $matches, overridden: $overridden);
+	}//end guardCreate()
+
+	/**
+	 * What a blocking schema lets through: nothing to report without matches, the matches when
+	 * an allowed override was requested, and a refusal otherwise.
+	 *
+	 * @param array<int, array<string, mixed>> $matches    The stored objects the body matches.
+	 * @param bool                             $overridden Whether an allowed override was requested.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @throws DuplicateBlockedException When there are matches and no allowed override.
+	 */
+	private function admitted(array $matches, bool $overridden): array {
 		if (count($matches) === 0) {
 			return [];
 		}
 
-		if ($overrideRequested === true && $this->mayOverride(annotation: $annotation) === true) {
+		if ($overridden === true) {
 			return $matches;
 		}
 
@@ -170,7 +168,7 @@ class DedupCreatePolicy implements DedupCreatePolicyInterface {
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrailEntry(
+			$this->audit->auditTrailMapper->createAuditTrailEntry(
 				object: $object,
 				action: self::OVERRIDE_ACTION,
 				context: [
@@ -179,7 +177,7 @@ class DedupCreatePolicy implements DedupCreatePolicyInterface {
 				]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->audit->logger->warning(
 				'[DedupCreatePolicy] duplicate override could not be audited: ' . $e->getMessage(),
 				['objectUuid' => (string)$object->getUuid(), 'matchedObjects' => $uuids]
 			);

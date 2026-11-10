@@ -609,12 +609,12 @@ class CredentialOauth2ControllerTest extends TestCase {
 		}
 
 		$connections->method('disable')->willReturnCallback(
-			function (string $credentialId, array $data, string $lastError) use ($disableFails): void {
+			function (\OCA\OpenRegister\Service\Credential\OAuth2ConnectionRecord $connection, string $lastError) use ($disableFails): void {
 				if ($disableFails === true) {
 					throw new RuntimeException('the object store is down');
 				}
 
-				$this->disables[] = ['credentialId' => $credentialId, 'lastError' => $lastError];
+				$this->disables[] = ['credentialId' => $connection->credentialId, 'lastError' => $lastError];
 			}
 		);
 
@@ -649,7 +649,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		);
 
 		$connect->method('authorizationRequest')->willReturnCallback(
-			static fn (string $redirectUri, string $state, string $challenge): OAuth2AuthorizationRequest => new OAuth2AuthorizationRequest($redirectUri, $state, $challenge)
+			static fn (string $redirectUri, array $issued): OAuth2AuthorizationRequest => new OAuth2AuthorizationRequest($redirectUri, $issued['state'], $issued['challenge'])
 		);
 		if (isset($startThrows['authorizationUrl']) === true) {
 			$connect->method('authorizationUrl')->willThrowException($startThrows['authorizationUrl']);

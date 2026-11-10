@@ -133,7 +133,6 @@ class ChatStreamControllerTest extends TestCase {
 
 	private function makeController(): TestableChatStreamController {
 		return new TestableChatStreamController(...ChatStreamControllerFactory::args(
-			appName: 'openregister',
 			request: $this->request,
 			chatService: $this->chatService,
 			conversationMapper: $this->conversationMapper,

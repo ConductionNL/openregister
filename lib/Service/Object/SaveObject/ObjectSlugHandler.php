@@ -159,12 +159,24 @@ class ObjectSlugHandler implements ObjectSlugTargetInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-freed-by-deleting-its-holder-must-go-to-the-next-object-that-saves-without-a-slug
 	 */
 	public function applyOnSave(ObjectEntity $entity, Schema $schema, string|null $originalSlug, string|null $clientSlug): void {
-		if ($this->isManaged(schema: $schema) === false) {
-			$this->applyLegacy(entity: $entity, clientSlug: $clientSlug);
+		$this->applySaved(request: new SlugRequest(entity: $entity, schema: $schema, clientSlug: $clientSlug), originalSlug: $originalSlug);
+	}//end applyOnSave()
+
+	/**
+	 * Decide and set the slug of one entity during a single save: legacy, frozen or fresh.
+	 *
+	 * @param SlugRequest $request      The entity being saved, its schema and the client slug.
+	 * @param string|null $originalSlug The slug stored before this save (null on create).
+	 *
+	 * @return void
+	 */
+	private function applySaved(SlugRequest $request, string|null $originalSlug): void {
+		if ($this->isManaged(schema: $request->schema) === false) {
+			$this->applyLegacy(request: $request);
 			return;
 		}
 
-		$write = $this->write(entity: $entity, schema: $schema, clientSlug: $clientSlug, path: 'single');
+		$write = $this->write(request: $request, path: 'single');
 
 		// Freeze (D2): a stored slug stays, whatever the source field or the
 		// client says now.
@@ -174,7 +186,7 @@ class ObjectSlugHandler implements ObjectSlugTargetInterface {
 		}
 
 		$this->applyFresh(write: $write);
-	}//end applyOnSave()
+	}//end applySaved()
 
 	/**
 	 * Decide and set the slug of an object a seed-data import creates.
@@ -190,41 +202,51 @@ class ObjectSlugHandler implements ObjectSlugTargetInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function applyOnSeed(ObjectEntity $entity, Schema $schema, string|null $clientSlug): void {
-		if ($this->isManaged(schema: $schema) === false) {
-			$this->applyLegacy(entity: $entity, clientSlug: $clientSlug);
+		$this->applySeeded(request: new SlugRequest(entity: $entity, schema: $schema, clientSlug: $clientSlug));
+	}//end applyOnSeed()
+
+	/**
+	 * Decide and set the slug of a seeded entity: legacy or fresh.
+	 *
+	 * @param SlugRequest $request The entity being seeded, its schema and the explicit seed slug.
+	 *
+	 * @return void
+	 */
+	private function applySeeded(SlugRequest $request): void {
+		if ($this->isManaged(schema: $request->schema) === false) {
+			$this->applyLegacy(request: $request);
 			return;
 		}
 
-		$this->applyFresh(write: $this->write(entity: $entity, schema: $schema, clientSlug: $clientSlug, path: 'seed'));
-	}//end applyOnSeed()
+		$this->applyFresh(write: $this->write(request: $request, path: 'seed'));
+	}//end applySeeded()
 
 	/**
 	 * The write a single save or seed import makes, in the entity's own register and the schema.
 	 *
-	 * @param ObjectEntity $entity     The entity.
-	 * @param Schema       $schema     Its schema.
-	 * @param string|null  $clientSlug What the client sent.
-	 * @param string       $path       single | seed (log context).
+	 * @param SlugRequest $request The entity, its schema and what the client sent.
+	 * @param string      $path    single | seed (log context).
 	 *
 	 * @return ObjectSlugWrite The write.
 	 */
-	private function write(ObjectEntity $entity, Schema $schema, string|null $clientSlug, string $path): ObjectSlugWrite {
-		$scope = new ObjectSlugScope(register: $this->store->register(registerId: $entity->getRegister()), schema: $schema);
-		return new ObjectSlugWrite(entity: $entity, scope: $scope, clientSlug: $clientSlug, path: $path);
+	private function write(SlugRequest $request, string $path): ObjectSlugWrite {
+		$entity = $request->entity;
+		$scope  = new ObjectSlugScope(register: $this->store->register(registerId: $entity->getRegister()), schema: $request->schema);
+		return new ObjectSlugWrite(entity: $entity, scope: $scope, clientSlug: $request->clientSlug, path: $path);
 	}//end write()
 
 	/**
 	 * Legacy branch (D8): a schema that did not opt in keeps today's behaviour
 	 * exactly: a client slug overwrites, nothing else happens.
 	 *
-	 * @param ObjectEntity $entity     The entity.
-	 * @param string|null  $clientSlug What the client sent.
+	 * @param SlugRequest $request The entity and what the client sent.
 	 *
 	 * @return void
 	 */
-	private function applyLegacy(ObjectEntity $entity, string|null $clientSlug): void {
+	private function applyLegacy(SlugRequest $request): void {
+		$clientSlug = $request->clientSlug;
 		if ($clientSlug !== null && $clientSlug !== '') {
-			$entity->setSlug($clientSlug);
+			$request->entity->setSlug($clientSlug);
 		}
 	}//end applyLegacy()
 

@@ -22,10 +22,13 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Listener\ArchivalNominationListener;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -62,9 +65,10 @@ class ArchivalNominationListenerTest extends TestCase {
 
 		$this->listener = new ArchivalNominationListener(
 			$this->nominations,
-			$schemaMapper,
-			$this->objectMapper,
-			$this->logger
+			new EventSchemaLookup(
+				new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $schemaMapper, $this->objectMapper),
+				$this->logger
+			)
 		);
 	}
 

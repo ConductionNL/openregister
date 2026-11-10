@@ -33,6 +33,7 @@ use OCA\OpenRegister\Controller\Support\ChatControllerServices;
 use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Db\Feedback;
 use OCA\OpenRegister\Db\FeedbackMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
@@ -397,7 +398,10 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 		try {
 			$params = $this->extractMessageRequestParams();
 			if (empty($params['message']) === true) {
-				return $this->errorResponse(error: $this->l10n->t('Missing message'), message: $this->l10n->t('message content is required'), statusCode: 400);
+				return new JSONResponse(
+					data: $this->errorBody(error: $this->l10n->t('Missing message'), message: $this->l10n->t('message content is required')),
+					statusCode: 400
+				);
 			}
 
 			$this->logReceived(params: $params);
@@ -466,7 +470,10 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 
 		$this->logFailure(message: 'Failed to send message', context: $this->traced(line: __LINE__, error: $error));
 
-		return $this->errorResponse(error: $this->sendMessageErrorType(statusCode: $statusCode), message: $error->getMessage(), statusCode: $statusCode);
+		return new JSONResponse(
+			data: $this->errorBody(error: $this->sendMessageErrorType(statusCode: $statusCode), message: $error->getMessage()),
+			statusCode: $statusCode
+		);
 	}//end sendMessageFailure()
 
 	/**
@@ -515,7 +522,10 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 			return new JSONResponse(data: $this->historyPage(conversationId: $conversationId), statusCode: 200);
 		} catch (Exception $e) {
 			$this->logFailure(message: 'Failed to get history', context: $this->traced(line: __LINE__, error: $e));
-			return $this->errorResponse(error: $this->l10n->t('Failed to fetch conversation history'), message: $e->getMessage(), statusCode: 500);
+			return new JSONResponse(
+				data: $this->errorBody(error: $this->l10n->t('Failed to fetch conversation history'), message: $e->getMessage()),
+				statusCode: 500
+			);
 		}
 	}//end getHistory()
 
@@ -529,8 +539,7 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 	private function historyPage(int $conversationId): array {
 		$messages = $this->messageMapper->findByConversation(
 			conversationId: $conversationId,
-			limit: (int)($this->request->getParam('limit') ?? 100),
-			offset: (int)($this->request->getParam('offset') ?? 0)
+			page: new ListQuery(limit: (int)($this->request->getParam('limit') ?? 100), offset: (int)($this->request->getParam('offset') ?? 0))
 		);
 
 		return [
@@ -552,9 +561,8 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 	 */
 	private function refuseConversation(int $conversationId): ?JSONResponse {
 		if (empty($conversationId) === true) {
-			return $this->errorResponse(
-				error: $this->l10n->t('Missing conversationId'),
-				message: $this->l10n->t('conversationId is required'),
+			return new JSONResponse(
+				data: $this->errorBody(error: $this->l10n->t('Missing conversationId'), message: $this->l10n->t('conversationId is required')),
 				statusCode: 400
 			);
 		}
@@ -572,9 +580,8 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 	 * @return JSONResponse The refusal
 	 */
 	private function accessDenied(): JSONResponse {
-		return $this->errorResponse(
-			error: $this->l10n->t('Access denied'),
-			message: $this->l10n->t('You do not have access to this conversation'),
+		return new JSONResponse(
+			data: $this->errorBody(error: $this->l10n->t('Access denied'), message: $this->l10n->t('You do not have access to this conversation')),
 			statusCode: 403
 		);
 	}//end accessDenied()
@@ -605,7 +612,10 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 			return $this->softDelete(conversationId: $conversationId);
 		} catch (Exception $e) {
 			$this->logFailure(message: 'Failed to clear history', context: $this->traced(line: __LINE__, error: $e));
-			return $this->errorResponse(error: $this->l10n->t('Failed to clear conversation'), message: $e->getMessage(), statusCode: 500);
+			return new JSONResponse(
+				data: $this->errorBody(error: $this->l10n->t('Failed to clear conversation'), message: $e->getMessage()),
+				statusCode: 500
+			);
 		}
 	}//end clearHistory()
 
@@ -717,21 +727,20 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 	 * @return JSONResponse
 	 */
 	private function feedbackError(array $texts, int $statusCode): JSONResponse {
-		return $this->errorResponse(error: $texts[0], message: $texts[1], statusCode: $statusCode);
+		return new JSONResponse(data: $this->errorBody(error: $texts[0], message: $texts[1]), statusCode: $statusCode);
 	}//end feedbackError()
 
 	/**
-	 * An error response with an error label and a message.
+	 * An error body with an error label and a message.
 	 *
-	 * @param string $error      The error label
-	 * @param string $message    The message
-	 * @param int    $statusCode The HTTP status
+	 * @param string $error   The error label
+	 * @param string $message The message
 	 *
-	 * @return JSONResponse The response
+	 * @return array{error: string, message: string} The response body
 	 */
-	private function errorResponse(string $error, string $message, int $statusCode): JSONResponse {
-		return new JSONResponse(data: ['error' => $error, 'message' => $message], statusCode: $statusCode);
-	}//end errorResponse()
+	private function errorBody(string $error, string $message): array {
+		return ['error' => $error, 'message' => $message];
+	}//end errorBody()
 
 	/**
 	 * Log context for a failure: line, error message and trace.
@@ -825,7 +834,10 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 	 */
 	private function feedbackFailure(Exception $error, array $ids): JSONResponse {
 		$this->logFailure(message: 'Failed to save feedback', context: ['line' => __LINE__] + $ids + $this->traced(line: __LINE__, error: $error));
-		return $this->errorResponse(error: $this->l10n->t('Failed to save feedback'), message: $error->getMessage(), statusCode: 500);
+		return new JSONResponse(
+			data: $this->errorBody(error: $this->l10n->t('Failed to save feedback'), message: $error->getMessage()),
+			statusCode: 500
+		);
 	}//end feedbackFailure()
 
 	/**
@@ -872,7 +884,10 @@ class ChatController extends Controller implements ChatFamilyControllerInterface
 			return new JSONResponse(data: $this->organisationStats(organisationUuid: $organisationUuid), statusCode: 200);
 		} catch (Exception $e) {
 			$this->logFailure(message: 'Failed to get chat stats', context: ['line' => __LINE__, 'error' => $e->getMessage()]);
-			return $this->errorResponse(error: $this->l10n->t('Failed to get chat statistics'), message: $e->getMessage(), statusCode: 500);
+			return new JSONResponse(
+				data: $this->errorBody(error: $this->l10n->t('Failed to get chat statistics'), message: $e->getMessage()),
+				statusCode: 500
+			);
 		}
 	}//end getChatStats()
 

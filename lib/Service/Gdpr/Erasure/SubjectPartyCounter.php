@@ -96,30 +96,31 @@ class SubjectPartyCounter {
 
 		$count = 0;
 		foreach ($payload as $key => $value) {
-			if (is_array($value) === true) {
-				$count += $this->countUnder(key: (string)$key, value: $value, needles: $needles);
+			if (is_array($value) === false) {
+				continue;
 			}
+
+			if ($this->isPartyList(key: (string)$key) === true) {
+				$count += $this->countInList(parties: $value, needles: $needles);
+				continue;
+			}
+
+			$count += $this->count(payload: $value, needles: $needles);
 		}
 
 		return $count;
 	}//end count()
 
 	/**
-	 * Count under one payload key: a party list is counted, anything else descended.
+	 * Whether the array under a payload key is a party list (counted) rather than a sub-payload (descended).
 	 *
-	 * @param string             $key     The payload key.
-	 * @param array<mixed>       $value   The array under it.
-	 * @param array<int, string> $needles Lower-cased subject values.
+	 * @param string $key The payload key.
 	 *
-	 * @return int The matching party records.
+	 * @return bool True for a party list.
 	 */
-	private function countUnder(string $key, array $value, array $needles): int {
-		if (in_array($key, self::PARTY_LIST_KEYS, true) === true) {
-			return $this->countInList(parties: $value, needles: $needles);
-		}
-
-		return $this->count(payload: $value, needles: $needles);
-	}//end countUnder()
+	private function isPartyList(string $key): bool {
+		return in_array($key, self::PARTY_LIST_KEYS, true) === true;
+	}//end isPartyList()
 
 	/**
 	 * Count the entries of one party list that name the subject.

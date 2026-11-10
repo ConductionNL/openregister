@@ -466,10 +466,29 @@ class CredentialBrokerService {
 		?string $organisation = null,
 		array $metadata = [],
 	): ObjectEntity {
-		$name = trim($name);
-		if ($name === '' || trim($provider) === '') {
-			throw new InvalidArgumentException(message: 'A credential requires a name and a provider');
-		}
+		return $this->mintCredential(
+			mint: new CredentialMint(name: $name, provider: $provider, owner: $owner, metadata: $metadata),
+			options: new CredentialMintOptions(allowedApps: $allowedApps, secret: $secret, scope: $scope, organisation: $organisation)
+		);
+	}//end mint()
+
+	/**
+	 * Mint a credential from its required half and its options; see {@see mint()} for the contract.
+	 *
+	 * @param CredentialMint        $mint    The name, provider, owner and connection metadata.
+	 * @param CredentialMintOptions $options The allowed apps, the secret, the resolved scope and the organisation.
+	 *
+	 * @return ObjectEntity The persisted credential entity (its `getUuid()` is the credential id / credentialRef).
+	 *
+	 * @throws \InvalidArgumentException When the name is empty, an organisation-scoped mint carries no organisation,
+	 *                                   or the supplied instance host is not a safe public https origin.
+	 * @throws Throwable When the object save or the vault write fails (the orphaned object is removed first).
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 */
+	public function mintCredential(CredentialMint $mint, #[\SensitiveParameter] CredentialMintOptions $options): ObjectEntity {
+		$data = $this->mintData(mint: $mint, options: $options);
 
 		// Garbage-in prevention: a copy-pasted secret can carry a trailing
 		// newline or stray whitespace that later fails header injection at
@@ -478,34 +497,7 @@ class CredentialBrokerService {
 		// stores the same normalised value. An all-whitespace secret trims
 		// to '', which the empty-secret branch below already treats as
 		// "metadata only, no vault write".
-		$secret = $this->trimmedSecret(secret: $secret);
-
-		$data = array_merge(
-			[
-				'name' => $name,
-				'provider' => $provider,
-				'owner' => $owner,
-				'allowedApps' => array_values($allowedApps),
-				'createdAt' => (new DateTimeImmutable())->format(DATE_ATOM),
-			],
-			self::connectionMetadata(metadata: $metadata)
-		);
-
-		// Only an organisation-scoped credential carries scope/organisation — a personal
-		// credential's property bag stays byte-for-byte what it has always been (design D1).
-		if ($scope !== self::SCOPE_ORGANISATION) {
-			$scope = self::SCOPE_PERSONAL;
-		}
-
-		if ($scope === self::SCOPE_ORGANISATION) {
-			$organisation = trim((string)$organisation);
-			if ($organisation === '') {
-				throw new InvalidArgumentException(message: 'An organisation-scoped credential requires an organisation');
-			}
-
-			$data['scope'] = self::SCOPE_ORGANISATION;
-			$data['organisation'] = $organisation;
-		}
+		$secret = $this->trimmedSecret(secret: $options->secret);
 
 		// Persist the credential-metadata object in system context. Mint is a trusted,
 		// caller-authorized operation ("authorization is the caller's" — the controller
@@ -529,14 +521,77 @@ class CredentialBrokerService {
 		}
 
 		try {
-			$this->credentialStore->put($uuid, $secret, $scope);
+			$this->credentialStore->put($uuid, $secret, self::mintScope(options: $options));
 		} catch (Throwable $e) {
 			$this->discardOrphanedCredential(uuid: $uuid);
 			throw $e;
 		}
 
 		return $saved;
-	}//end mint()
+	}//end mintCredential()
+
+	/**
+	 * The credential object a mint persists, validated.
+	 *
+	 * Only an organisation-scoped credential carries scope/organisation: a personal
+	 * credential's property bag stays byte-for-byte what it has always been (design D1).
+	 *
+	 * @param CredentialMint        $mint    The name, provider, owner and connection metadata.
+	 * @param CredentialMintOptions $options The allowed apps, the resolved scope and the organisation.
+	 *
+	 * @return array<string, mixed> The object data.
+	 *
+	 * @throws InvalidArgumentException When the name or provider is empty, an organisation-scoped mint carries
+	 *                                  no organisation, or the supplied instance host is not a safe public https origin.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function mintData(CredentialMint $mint, #[\SensitiveParameter] CredentialMintOptions $options): array {
+		$name = trim($mint->name);
+		if ($name === '' || trim($mint->provider) === '') {
+			throw new InvalidArgumentException(message: 'A credential requires a name and a provider');
+		}
+
+		$data = array_merge(
+			[
+				'name' => $name,
+				'provider' => $mint->provider,
+				'owner' => $mint->owner,
+				'allowedApps' => array_values($options->allowedApps),
+				'createdAt' => (new DateTimeImmutable())->format(DATE_ATOM),
+			],
+			self::connectionMetadata(metadata: $mint->metadata)
+		);
+
+		if (self::mintScope(options: $options) === self::SCOPE_ORGANISATION) {
+			$organisation = trim((string)$options->organisation);
+			if ($organisation === '') {
+				throw new InvalidArgumentException(message: 'An organisation-scoped credential requires an organisation');
+			}
+
+			$data['scope'] = self::SCOPE_ORGANISATION;
+			$data['organisation'] = $organisation;
+		}
+
+		return $data;
+	}//end mintData()
+
+	/**
+	 * The scope a mint stores under: organisation when asked for, personal for anything else.
+	 *
+	 * @param CredentialMintOptions $options The mint options.
+	 *
+	 * @return string `organisation` or `personal`.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private static function mintScope(#[\SensitiveParameter] CredentialMintOptions $options): string {
+		if ($options->scope === self::SCOPE_ORGANISATION) {
+			return self::SCOPE_ORGANISATION;
+		}
+
+		return self::SCOPE_PERSONAL;
+	}//end mintScope()
 
 	/**
 	 * Reduce caller-supplied connection metadata to the properties a mint may set.

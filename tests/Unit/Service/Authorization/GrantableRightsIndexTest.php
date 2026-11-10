@@ -25,9 +25,11 @@ declare(strict_types=1);
 
 namespace Unit\Service\Authorization;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Authorization\GrantableRightsIndex;
 use OCP\ICache;
@@ -101,8 +103,7 @@ class GrantableRightsIndexTest extends TestCase {
 	 */
 	private function index(): GrantableRightsIndex {
 		return new GrantableRightsIndex(
-			$this->schemaMapper,
-			$this->registerMapper,
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)),
 			$this->cacheFactory,
 			$this->createMock(LoggerInterface::class)
 		);

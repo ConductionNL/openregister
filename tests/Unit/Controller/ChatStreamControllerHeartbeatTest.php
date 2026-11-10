@@ -90,7 +90,6 @@ class ChatStreamControllerHeartbeatTest extends TestCase {
 
 	private function makeController(): HeartbeatTestableChatStreamController {
 		return new HeartbeatTestableChatStreamController(...ChatStreamControllerFactory::args(
-			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			chatService: $this->createMock(ChatService::class),
 			conversationMapper: $this->createMock(ConversationMapper::class),

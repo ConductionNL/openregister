@@ -50,7 +50,7 @@ class FlowNodeEdgesBehaviourTest extends TestCase {
 	}//end l10n()
 
 	private function subFlow(FlowRunServiceInterface $runs): SubFlowNode {
-		return new SubFlowNode($this->createMock(FlowLocator::class), $runs, $this->l10n(), $this->createMock(IURLGenerator::class));
+		return new SubFlowNode(new \OCA\OpenRegister\Service\Flow\FlowExecution($this->createMock(FlowLocator::class), $runs, new \Psr\Log\NullLogger()), new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($this->l10n(), $this->createMock(IURLGenerator::class)));
 	}//end subFlow()
 
 	public function testASwitchStepPassesItsItemsOnUntouched(): void {

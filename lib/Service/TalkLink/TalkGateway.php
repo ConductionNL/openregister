@@ -23,9 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\TalkLink;
 
-use OCP\App\IAppManager;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -48,39 +47,15 @@ final class TalkGateway {
 	private const REQUIRED_APP = 'spreed';
 
 	/**
-	 * Container for late-bound Talk classes.
-	 *
-	 * @var ContainerInterface
-	 */
-	private readonly ContainerInterface $container;
-
-	/**
-	 * NC app manager.
-	 *
-	 * @var IAppManager
-	 */
-	private readonly IAppManager $appManager;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface $container  Container for late-bound Talk classes.
-	 * @param IAppManager        $appManager NC app manager.
-	 * @param LoggerInterface    $logger     Logger.
-	 *
-	 * @return void
+	 * @param ContainerInterface $container Container for late-bound Talk classes.
+	 * @param LinkServiceRuntime $runtime   The app manager (is Talk enabled) and the logger.
 	 */
-	public function __construct(ContainerInterface $container, IAppManager $appManager, LoggerInterface $logger) {
-		$this->container = $container;
-		$this->appManager = $appManager;
-		$this->logger = $logger;
+	public function __construct(
+		private readonly ContainerInterface $container,
+		private readonly LinkServiceRuntime $runtime,
+	) {
 	}//end __construct()
 
 	/**
@@ -91,7 +66,7 @@ final class TalkGateway {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function isAvailable(): bool {
-		return $this->appManager->isEnabledForUser(self::REQUIRED_APP);
+		return $this->runtime->appManager()->isEnabledForUser(self::REQUIRED_APP);
 	}//end isAvailable()
 
 	/**
@@ -127,18 +102,18 @@ final class TalkGateway {
 	 * user-scoped variant), then `getRoomByToken(token)` (raw).
 	 * Returns null when both throw or are missing.
 	 *
-	 * @param object $manager   Talk Manager.
-	 * @param string $roomToken Talk room token.
-	 * @param string $userUid   User UID.
+	 * @param TalkSession $session   Talk's Manager and the user the room is read as.
+	 * @param string      $roomToken Talk room token.
 	 *
 	 * @return object|null Talk Room or null.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function findRoom(object $manager, string $roomToken, string $userUid): ?object {
+	public function findRoom(TalkSession $session, string $roomToken): ?object {
+		$manager = $session->manager;
 		if (method_exists($manager, 'getRoomForUserByToken') === true) {
 			try {
-				return $manager->getRoomForUserByToken($roomToken, $userUid);
+				return $manager->getRoomForUserByToken($roomToken, $session->userUid);
 			} catch (Throwable $e) {
 				// Fall through.
 			}
@@ -168,7 +143,7 @@ final class TalkGateway {
 				$roomService->setDescription($room, $description);
 			}
 		} catch (Throwable $e) {
-			$this->logger->debug('Failed to set Talk room description: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Failed to set Talk room description: ' . $e->getMessage());
 		}
 	}//end setDescription()
 
@@ -192,7 +167,7 @@ final class TalkGateway {
 				$participantService->addUsers($room, [['actorType' => 'users', 'actorId' => $userUid]]);
 			}
 		} catch (Throwable $e) {
-			$this->logger->debug('Failed to add owner as Talk participant: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Failed to add owner as Talk participant: ' . $e->getMessage());
 		}
 	}//end addOwner()
 
@@ -232,7 +207,7 @@ final class TalkGateway {
 		try {
 			return $this->container->get($className);
 		} catch (Throwable $e) {
-			$this->logger->debug('Talk ' . $label . ' not resolvable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Talk ' . $label . ' not resolvable: ' . $e->getMessage());
 			return null;
 		}
 	}//end resolve()

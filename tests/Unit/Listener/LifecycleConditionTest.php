@@ -126,7 +126,7 @@ class LifecycleConditionTest extends TestCase {
 		);
 
 		$this->listener = new LifecycleValidationListener(
-			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $this->logger), $this->userSession, $this->permissionHandler),
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())), $this->userSession, $this->permissionHandler),
 			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guardContainer, $serverContainer, $this->logger), new LifecycleConditionEvaluator(
 				$this->userSession,
 				$this->groupManager,
@@ -240,7 +240,7 @@ class LifecycleConditionTest extends TestCase {
 		$this->l10n->method('getLanguageCode')->willReturn('nl');
 		$this->l10n->method('t')->willReturnArgument(0);
 		$this->listener = new LifecycleValidationListener(
-			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $this->logger), $this->userSession, $this->permissionHandler),
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())), $this->userSession, $this->permissionHandler),
 			new LifecycleTransitionChecks(new LifecycleGuardRegistry(
 				$this->guardContainer,
 				$this->createMock(IServerContainer::class),
@@ -507,7 +507,7 @@ class LifecycleConditionTest extends TestCase {
 		// ITS condition, and that only works through the declared action.
 		$context = new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext();
 		$listener = new LifecycleValidationListener(
-			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($context), $this->logger), $this->userSession, $this->permissionHandler),
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($context)), $this->userSession, $this->permissionHandler),
 			new LifecycleTransitionChecks(new LifecycleGuardRegistry(
 				$this->guardContainer,
 				$this->createMock(originalClassName: IServerContainer::class),

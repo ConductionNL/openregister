@@ -21,6 +21,7 @@ use DOMDocument;
 use DOMXPath;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
+use OCA\OpenRegister\Service\Export\RowsTable;
 use OCA\OpenRegister\Search\Service\Reporting\HtmlReportWriter;
 use PHPUnit\Framework\TestCase;
 use ZipArchive;
@@ -104,11 +105,11 @@ class OdtWriterTest extends TestCase {
 	 */
 	public function testExportSectionsBecomeTables(): void {
 		$section = new RowsPdfSection();
-		$html = $section->build(title: 'Personen', columns: ['naam' => 'Naam', 'plaats' => 'Plaats'], rows: [
+		$html = $section->build(table: new RowsTable(title: 'Personen', columns: ['naam' => 'Naam', 'plaats' => 'Plaats'], rows: [
 			['naam' => 'Łukasz Żółć', 'plaats' => 'Gdańsk'],
 			['naam' => 'Αλέξανδρος', 'plaats' => 'Αθήνα'],
 			['naam' => '<b>Jan</b> & co', 'plaats' => '東京'],
-		]) . $section->build(title: 'Leeg', columns: ['a' => 'A'], rows: []);
+		])) . $section->build(table: new RowsTable(title: 'Leeg', columns: ['a' => 'A'], rows: []));
 
 		$this->open(bytes: (new OdtWriter())->fromHtml(html: $html, landscape: true));
 

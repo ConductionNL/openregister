@@ -39,6 +39,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCA\OpenRegister\Tests\Unit\Service\Object\FilePropertyCalls;
 use OCA\OpenRegister\Tests\Unit\Service\Object\RelationCalls;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -235,6 +238,34 @@ class SaveObjectCoverageTest extends TestCase {
 		);
 
 		$this->reflection = new ReflectionClass($this->saveObject);
+	}
+
+	/**
+	 * The save call an existing-object lookup reads: the uuid, no register or schema.
+	 *
+	 * @param string $uuid The object uuid.
+	 *
+	 * @return ObjectSaveCall The call.
+	 */
+	private static function lookupCall(string $uuid): ObjectSaveCall {
+		$call = new ObjectSaveCall();
+		$call->uuid = $uuid;
+		return $call;
+	}
+
+	/**
+	 * A cascade pass over the given parent and data, as SaveObject builds it.
+	 *
+	 * @param ObjectEntity $parent The parent object.
+	 * @param array        $data   The parent's data.
+	 *
+	 * @return CascadeRun The pass.
+	 */
+	private static function cascadeRun(ObjectEntity $parent, array $data): CascadeRun {
+		$run = new CascadeRun();
+		$run->parent = $parent;
+		$run->data = $data;
+		return $run;
 	}
 
 	/**
@@ -571,13 +602,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$this->objectEntityMapper->method('find')
 			->willThrowException(new DoesNotExistException('not found'));
 
-		$result = $this->invokePrivate('findAndValidateExistingObject', [
-			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-			null,
-			null,
-			true,
-			true,
-		]);
+		$result = $this->invokePrivate('findAndValidateExistingObject', [self::lookupCall('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')]);
 
 		$this->assertNull($result);
 	}
@@ -594,13 +619,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$this->objectEntityMapper->method('find')
 			->willReturn($entity);
 
-		$result = $this->invokePrivate('findAndValidateExistingObject', [
-			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-			null,
-			null,
-			true,
-			true,
-		]);
+		$result = $this->invokePrivate('findAndValidateExistingObject', [self::lookupCall('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')]);
 
 		$this->assertSame($entity, $result);
 	}
@@ -638,13 +657,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Cannot update object: Object is locked by other-user');
 
-		$this->invokePrivate('findAndValidateExistingObject', [
-			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-			null,
-			null,
-			true,
-			true,
-		]);
+		$this->invokePrivate('findAndValidateExistingObject', [self::lookupCall('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')]);
 	}
 
 	/**
@@ -663,13 +676,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$user->method('getUID')->willReturn('current-user');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$result = $this->invokePrivate('findAndValidateExistingObject', [
-			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-			null,
-			null,
-			true,
-			true,
-		]);
+		$result = $this->invokePrivate('findAndValidateExistingObject', [self::lookupCall('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')]);
 
 		$this->assertSame($entity, $result);
 	}
@@ -691,13 +698,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Cannot update object: Object is locked');
 
-		$this->invokePrivate('findAndValidateExistingObject', [
-			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-			null,
-			null,
-			true,
-			true,
-		]);
+		$this->invokePrivate('findAndValidateExistingObject', [self::lookupCall('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')]);
 	}
 
 	// =========================================================================
@@ -714,7 +715,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$property = ['$ref' => '#/components/schemas/Sub', 'items' => ['$ref' => '#/components/schemas/Sub']];
 
 		// Associative array is not a list.
-		$result = $this->invokePrivate('cascadeMultipleObjects', [$entity, $property, ['key' => 'value']]);
+		$result = $this->invokePrivate('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), ['key' => 'value']]);
 
 		$this->assertSame([], $result);
 	}
@@ -730,8 +731,7 @@ class SaveObjectCoverageTest extends TestCase {
 
 		// All items are UUID strings - nothing to cascade.
 		$result = $this->invokePrivate('cascadeMultipleObjects', [
-			$entity,
-			$property,
+			new NestedObjectTarget(parent: $entity, definition: $property),
 			['aaaaaaaa-bbbb-cccc-dddd-111111111111', 'bbbbbbbb-cccc-dddd-eeee-222222222222'],
 		]);
 
@@ -748,7 +748,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$property = ['$ref' => '#/components/schemas/Sub'];
 
 		// Empty arrays and null are filtered out.
-		$result = $this->invokePrivate('cascadeMultipleObjects', [$entity, $property, [[], null, false]]);
+		$result = $this->invokePrivate('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), [[], null, false]]);
 
 		$this->assertSame([], $result);
 	}
@@ -764,8 +764,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$property = ['type' => 'array'];
 
 		$result = $this->invokePrivate('cascadeMultipleObjects', [
-			$entity,
-			$property,
+			new NestedObjectTarget(parent: $entity, definition: $property),
 			[['name' => 'test']],
 		]);
 
@@ -783,8 +782,7 @@ class SaveObjectCoverageTest extends TestCase {
 
 		// Object with only empty id should be filtered out.
 		$result = $this->invokePrivate('cascadeMultipleObjects', [
-			$entity,
-			$property,
+			new NestedObjectTarget(parent: $entity, definition: $property),
 			[['id' => '']],
 		]);
 
@@ -808,7 +806,7 @@ class SaveObjectCoverageTest extends TestCase {
 		];
 
 		// All are strings/identifiers, so nothing to cascade.
-		$result = $this->invokePrivate('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivate('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -905,7 +903,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$this->metaHydrationHandler->expects($this->never())
 			->method('hydrateObjectMetadata');
 
-		$this->invokePrivate('preCacheParentName', [$entity, $schema, ['name' => 'Test']]);
+		$this->invokePrivate('preCacheParentName', [self::cascadeRun(parent: $entity, data: ['name' => 'Test']), $schema]);
 	}
 
 	/**
@@ -928,7 +926,7 @@ class SaveObjectCoverageTest extends TestCase {
 			->method('setObjectName')
 			->with($uuid, 'My Object Name');
 
-		$this->invokePrivate('preCacheParentName', [$entity, $schema, ['name' => 'Test']]);
+		$this->invokePrivate('preCacheParentName', [self::cascadeRun(parent: $entity, data: ['name' => 'Test']), $schema]);
 	}
 
 	/**
@@ -949,7 +947,7 @@ class SaveObjectCoverageTest extends TestCase {
 			->method('setObjectName')
 			->with($uuid, 'Mijn Naam');
 
-		$this->invokePrivate('preCacheParentName', [$entity, $schema, ['naam' => 'Mijn Naam']]);
+		$this->invokePrivate('preCacheParentName', [self::cascadeRun(parent: $entity, data: ['naam' => 'Mijn Naam']), $schema]);
 	}
 
 	/**
@@ -967,7 +965,7 @@ class SaveObjectCoverageTest extends TestCase {
 			->willThrowException(new Exception('hydration failed'));
 
 		// Should not throw.
-		$this->invokePrivate('preCacheParentName', [$entity, $schema, ['name' => 'Test']]);
+		$this->invokePrivate('preCacheParentName', [self::cascadeRun(parent: $entity, data: ['name' => 'Test']), $schema]);
 
 		$this->assertTrue(true);
 	}
@@ -1127,7 +1125,7 @@ class SaveObjectCoverageTest extends TestCase {
 	public function testCascadeSingleObjectReturnsNullWithoutRef(): void {
 		$entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 
-		$result = $this->invokePrivate('cascadeSingleObject', [$entity, [], ['name' => 'Test']]);
+		$result = $this->invokePrivate('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: []), ['name' => 'Test']]);
 
 		$this->assertNull($result);
 	}
@@ -1141,7 +1139,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 		$definition = ['$ref' => '#/components/schemas/Sub'];
 
-		$result = $this->invokePrivate('cascadeSingleObject', [$entity, $definition, []]);
+		$result = $this->invokePrivate('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: $definition), []]);
 
 		$this->assertNull($result);
 	}
@@ -1155,7 +1153,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$entity = $this->createObjectEntity(1, null);
 		$definition = ['$ref' => '#/components/schemas/Sub'];
 
-		$result = $this->invokePrivate('cascadeSingleObject', [$entity, $definition, ['name' => 'Test']]);
+		$result = $this->invokePrivate('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: $definition), ['name' => 'Test']]);
 
 		$this->assertNull($result);
 	}
@@ -1169,7 +1167,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 		$definition = ['$ref' => '#/components/schemas/Sub'];
 
-		$result = $this->invokePrivate('cascadeSingleObject', [$entity, $definition, ['id' => '']]);
+		$result = $this->invokePrivate('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: $definition), ['id' => '']]);
 
 		$this->assertNull($result);
 	}

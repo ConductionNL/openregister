@@ -172,7 +172,7 @@ class CacheHandlerNameWarmupGoldenTest extends TestCase {
 			$handler = $this->handler(['columns' => $columns]);
 			$method = (new ReflectionClass($handler))->getMethod('queryTableForNames');
 			$method->setAccessible(true);
-			return $method->invoke($handler, 'tbl', $uuids, $source);
+			return $method->invoke($handler, new \OCA\OpenRegister\Service\Object\NameTableQuery(tableName: 'tbl', uuids: $uuids, source: $source));
 		};
 
 		return [

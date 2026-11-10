@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
+use OCA\OpenRegister\Service\Rbac\GrantedRows;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
 use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -473,8 +474,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	private function reachableRowSqlFor(RbacAccessCall $call): string {
 		$reachable = $this->objectScope()->notPrivateOrGrantedSql(
 			notPrivateSql: $this->notPrivateSqlFor(call: $call),
-			uuidColumn: $call->columnPrefix . '_uuid',
-			quotedUuids: $this->quotedGrantedUuids(userId: $call->userId, action: $call->action)
+			granted: new GrantedRows(
+				uuidColumn: $call->columnPrefix . '_uuid',
+				quotedUuids: $this->quotedGrantedUuids(userId: $call->userId, action: $call->action)
+			)
 		);
 
 		if ($this->hidesDrafts(call: $call) === true) {
@@ -1964,6 +1967,19 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		$call = new RbacAccessCall(schema: $schema, columnPrefix: $columnPrefix);
 		$call->action = $action;
 		$call->tableName = $tableName;
+		return $this->accessConditions(call: $call);
+	}//end buildRbacConditionsSql()
+
+	/**
+	 * The bypass flag and the SQL conditions of one access call; fails closed.
+	 *
+	 * @param RbacAccessCall $call The schema, action, column prefix and table of the read.
+	 *
+	 * @return array{bypass: bool, conditions: array<int, string>} The bypass flag and conditions.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function accessConditions(RbacAccessCall $call): array {
 		if ($this->sqlFilterBypassed(call: $call) === true) {
 			return ['bypass' => true, 'conditions' => []];
 		}
@@ -1977,7 +1993,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		}
 
 		return ['bypass' => false, 'conditions' => $this->conditionsSql(call: $call)];
-	}//end buildRbacConditionsSql()
+	}//end accessConditions()
 
 	/**
 	 * Identify the caller, and say whether the raw-SQL filter lets it through unfiltered.

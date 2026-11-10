@@ -38,10 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\BackgroundJob\Support\AggregationThresholdServices;
-use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
-use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
@@ -52,27 +49,6 @@ use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
  * @spec openspec/specs/event-driven-architecture/spec.md
  */
 class AggregationThresholdJob extends ActorForwardedJob {
-	/**
-	 * Stale-safe entry re-fetch.
-	 *
-	 * @var DeferredEntryObjectResolverInterface
-	 */
-	private readonly DeferredEntryObjectResolverInterface $resolver;
-
-	/**
-	 * Schema lookup mapper.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Shared threshold evaluation logic.
-	 *
-	 * @var ThresholdEvaluationService
-	 */
-	private readonly ThresholdEvaluationService $evaluator;
-
 	/**
 	 * Wire the evaluation collaborators on top of the actor plumbing.
 	 *
@@ -87,7 +63,7 @@ class AggregationThresholdJob extends ActorForwardedJob {
 	public function __construct(
 		ITimeFactory $time,
 		ActorForwardingServices $actor,
-		AggregationThresholdServices $evaluation,
+		private readonly AggregationThresholdServices $evaluation,
 	) {
 		parent::__construct(
 			time: $time,
@@ -96,9 +72,6 @@ class AggregationThresholdJob extends ActorForwardedJob {
 			organisation: $actor->organisation,
 			logger: $actor->logger
 		);
-		$this->resolver = $evaluation->resolver;
-		$this->schemaMapper = $evaluation->schemaMapper;
-		$this->evaluator = $evaluation->evaluator;
 	}//end __construct()
 
 	/**
@@ -114,14 +87,14 @@ class AggregationThresholdJob extends ActorForwardedJob {
 	 */
 	protected function runDeferred(DeferredListenerContext $context): void {
 		foreach ($context->getEntries() as $entry) {
-			$object = $this->resolver->resolve(entry: $entry);
+			$object = $this->evaluation->resolver->resolve(entry: $entry);
 			if ($object === null) {
 				continue;
 			}
 
 			try {
-				$schema = $this->schemaMapper->find((string)($entry['schema'] ?? ''));
-				$this->evaluator->evaluateSchema(schema: $schema, object: $object);
+				$schema = $this->evaluation->schemaMapper->find((string)($entry['schema'] ?? ''));
+				$this->evaluation->evaluator->evaluateSchema(schema: $schema, object: $object);
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					message: '[AggregationThresholdJob] Threshold evaluation failed for entry',

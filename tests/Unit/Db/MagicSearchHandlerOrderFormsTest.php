@@ -115,9 +115,9 @@ class MagicSearchHandlerOrderFormsTest extends TestCase {
 					$this->createMock(RelatedRowQueryApplier::class),
 				]
 			)
-			->onlyMethods(['buildFilteredQuery'])
+			->onlyMethods(['buildTableQuery'])
 			->getMock();
-		$handler->method('buildFilteredQuery')->willReturn($this->queryBuilder());
+		$handler->method('buildTableQuery')->willReturn($this->queryBuilder());
 
 		return $handler;
 	}//end handler()
