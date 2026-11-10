@@ -1489,3 +1489,4 @@
 8899 9e7690d6e8e4b269ae2a7bdb6d800e4b5bca3514 APPROVE integrator: main merge on top of b3bb8d78903ce8ad2a808fbac6f66e12c0ecb9db, conflicts only in use lines or map entries of lib/Service/ObjectService.php,
 8783 c5b4721bace1dd3379ded20385d3d4d2e273af19 APPROVE integrator: main merge on top of 63e73d4f758beb3af399efdf3836bb88ffa884ef, conflicts only in use lines or map entries of lib/Service/Object/SaveObject.php,tests/Unit/Service/Object/SaveObjectUnwritablePreserveTest.php,
 8794 84b6540b6c0bf6286294b3829d528e420f9fe84e APPROVE integrator: main merge on top of 76da48e277b4e4edf69cf71a6f258ac5ce29bcef, conflicts only in use lines or map entries of lib/Service/Portal/PortalTaskService.php,
+8795 7b26ea48f349754ac6aee749bb69259b58703a9d APPROVE integrator: main merge on top of 1a8e3795910734e3f4311cc6b3e0ff2d508dd86b, conflicts only in use lines or map entries of lib/Db/MagicMapper/MagicRbacHandler.php,lib/Service/Object/PermissionHandler.php,
