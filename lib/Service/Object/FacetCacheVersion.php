@@ -69,7 +69,7 @@ use Psr\Log\LoggerInterface;
  * write anywhere, which is the only answer that cannot be wrong for a facet
  * computed across the whole instance.
  */
-class FacetCacheVersion {
+class FacetCacheVersion implements FacetCacheVersionInterface {
 	/**
 	 * Cache namespace holding the counters.
 	 *

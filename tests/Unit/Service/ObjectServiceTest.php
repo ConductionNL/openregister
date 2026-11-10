@@ -1705,6 +1705,38 @@ class ObjectServiceTest extends TestCase {
 	}
 
 	/**
+	 * Test findSilent forwards the id, extend, files and both guard flags unchanged.
+	 */
+	public function testFindSilentForwardsItsArgumentsToTheHandler(): void {
+		$entity = new ObjectEntity();
+		$entity->setId(1);
+
+		$this->getHandler
+			->expects($this->once())
+			->method('findSilent')
+			->with(
+				'test-uuid',
+				$this->anything(),
+				$this->anything(),
+				['owner'],
+				true,
+				false,
+				false
+			)
+			->willReturn($entity);
+
+		$result = $this->service->findSilent(
+			id: 'test-uuid',
+			_extend: ['owner'],
+			files: true,
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$this->assertSame($entity, $result);
+	}
+
+	/**
 	 * Test findSilent sets register and schema context when provided.
 	 *
 	 * Observed at the handler, for the same reason as
@@ -2041,7 +2073,7 @@ class ObjectServiceTest extends TestCase {
 		$this->stubMigrationSides(readable: ['uuid-1', 'uuid-2'], updatable: ['uuid-1']);
 		$this->getProperty('migrationHandler')->expects($this->once())
 			->method('migrateObjects')
-			->with('1', '2', '3', '4', ['uuid-1'], ['a' => 'b'])
+			->with(['1', '2'], ['3', '4'], ['uuid-1'], ['a' => 'b'])
 			->willReturn(
 				[
 					'success' => true,

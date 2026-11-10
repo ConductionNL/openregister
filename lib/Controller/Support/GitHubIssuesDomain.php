@@ -23,9 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
-use OCA\OpenRegister\Service\Configuration\GitHubGuards;
-use OCA\OpenRegister\Service\Configuration\GitHubRequestValidator;
-use OCA\OpenRegister\Service\Configuration\RateLimiterService;
+use OCA\OpenRegister\Service\Configuration\GitHubGuardsInterface;
+use OCA\OpenRegister\Service\Configuration\GitHubRequestValidatorInterface;
+use OCA\OpenRegister\Service\Configuration\RateLimiterServiceInterface;
 
 /**
  * The domain services of the git hub issues API.
@@ -36,18 +36,18 @@ final class GitHubIssuesDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param GitHubClientInterface  $githubHandler Reused HTTP client / token / attribution logic
-	 * @param GitHubGuards           $guards        Policy guards (feature flag, repo allowlist, GET rate limit)
-	 * @param GitHubRequestValidator $validator     Pure-function input validators
-	 * @param RateLimiterService     $rateLimiter   Cache-backed rate limiter with fail-closed contract
+	 * @param GitHubClientInterface           $githubHandler Reused HTTP client / token / attribution logic
+	 * @param GitHubGuardsInterface           $guards        Policy guards (feature flag, repo allowlist, GET rate limit)
+	 * @param GitHubRequestValidatorInterface $validator     Pure-function input validators
+	 * @param RateLimiterServiceInterface     $rateLimiter   Cache-backed rate limiter with fail-closed contract
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-3
 	 */
 	public function __construct(
 		public readonly GitHubClientInterface $githubHandler,
-		public readonly GitHubGuards $guards,
-		public readonly GitHubRequestValidator $validator,
-		public readonly RateLimiterService $rateLimiter,
+		public readonly GitHubGuardsInterface $guards,
+		public readonly GitHubRequestValidatorInterface $validator,
+		public readonly RateLimiterServiceInterface $rateLimiter,
 	) {
 	}//end __construct()
 }//end class

@@ -51,7 +51,7 @@ namespace OCA\OpenRegister\Service\Case;
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
  */
-class ZaaktypeCaseSkeletonMapper {
+class ZaaktypeCaseSkeletonMapper implements ZaaktypeCaseSkeletonMapperInterface {
 
 	/**
 	 * Report statuses.

@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\TaskSequence\TaskSequenceFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -92,6 +93,7 @@ use OCP\AppFramework\Db\Entity;
  * an invisible one.
  */
 class TaskSequence extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * A sequence with a running position.
@@ -267,23 +269,9 @@ class TaskSequence extends Entity implements JsonSerializable {
 	 * Constructor: registers the column types.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'templateId', type: 'string');
-		$this->addType(fieldName: 'templateVersion', type: 'integer');
-		$this->addType(fieldName: 'templateSnapshot', type: 'json');
-		$this->addType(fieldName: 'anchorObjectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
-		$this->addType(fieldName: 'chainKey', type: 'string');
-		$this->addType(fieldName: 'requesterId', type: 'string');
-		$this->addType(fieldName: 'resolvedTier', type: 'json');
-		$this->addType(fieldName: 'positionCursor', type: 'integer');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'outcome', type: 'string');
-		$this->addType(fieldName: 'runUuid', type: 'string');
-		$this->addType(fieldName: 'nodeId', type: 'string');
-		$this->addType(fieldName: 'openedAt', type: 'datetime');
-		$this->addType(fieldName: 'closedAt', type: 'datetime');
+		foreach (TaskSequenceFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -324,34 +312,4 @@ class TaskSequence extends Entity implements JsonSerializable {
 		$this->setOutcome($outcome);
 		$this->setClosedAt(new DateTime());
 	}//end closeAs()
-
-	/**
-	 * Serialize for API and log consumption.
-	 *
-	 * @return array<string, mixed> The sequence as an array.
-	 *
-	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'templateId' => $this->templateId,
-			'templateVersion' => $this->templateVersion,
-			'templateSnapshot' => $this->templateSnapshot,
-			'anchorObjectUuid' => $this->anchorObjectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'chainKey' => $this->chainKey,
-			'requesterId' => $this->requesterId,
-			'resolvedTier' => $this->resolvedTier,
-			'positionCursor' => $this->positionCursor,
-			'status' => $this->status,
-			'outcome' => $this->outcome,
-			'runUuid' => $this->runUuid,
-			'nodeId' => $this->nodeId,
-			'openedAt' => $this->openedAt?->format('c'),
-			'closedAt' => $this->closedAt?->format('c'),
-		];
-	}//end jsonSerialize()
 }//end class

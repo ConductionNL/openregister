@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorStores;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
@@ -62,11 +63,9 @@ class FlowLocatorTest extends TestCase {
 		// whose columns still decide. The cutover's own behaviour — nodes
 		// first, fallback second — is asserted in FlowLocatorTriggerCutoverTest.
 		return new FlowLocator(
-			$mapper,
-			$this->createMock(FlowTriggerMapper::class),
+			new FlowLocatorStores($mapper, $this->createMock(FlowTriggerMapper::class), $this->publishedVersions()),
 			$this->createMock(ObjectService::class),
-			new \Psr\Log\NullLogger(),
-			$this->publishedVersions()
+			new \Psr\Log\NullLogger()
 		);
 	}//end locator()
 
@@ -235,11 +234,9 @@ class FlowLocatorTest extends TestCase {
 		);
 
 		$locator = new FlowLocator(
-			$mapper,
-			$this->createMock(FlowTriggerMapper::class),
+			new FlowLocatorStores($mapper, $this->createMock(FlowTriggerMapper::class), $versions),
 			$this->createMock(ObjectService::class),
-			new \Psr\Log\NullLogger(),
-			$versions
+			new \Psr\Log\NullLogger()
 		);
 
 		$this->assertSame(['published-1'], $locator->flowsForTrigger('object.created', 'r', 's'));
@@ -257,11 +254,9 @@ class FlowLocatorTest extends TestCase {
 		$versions->method('findPublished')->willThrowException(new \RuntimeException('table gone'));
 
 		$locator = new FlowLocator(
-			$mapper,
-			$this->createMock(FlowTriggerMapper::class),
+			new FlowLocatorStores($mapper, $this->createMock(FlowTriggerMapper::class), $versions),
 			$this->createMock(ObjectService::class),
-			new \Psr\Log\NullLogger(),
-			$versions
+			new \Psr\Log\NullLogger()
 		);
 
 		$this->assertSame(['legacy-1'], $locator->flowsForTrigger('object.created', 'r', 's'));

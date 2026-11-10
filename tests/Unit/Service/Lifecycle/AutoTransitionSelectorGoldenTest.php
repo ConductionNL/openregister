@@ -26,6 +26,7 @@ use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCP\IGroupManager;
 use OCP\IL10N;
@@ -176,6 +177,6 @@ class AutoTransitionSelectorGoldenTest extends TestCase {
 		$l10n->method('getLanguageCode')->willReturn('en');
 		$dialect = new ConditionDialect(new CalculationEvaluator(new PlaceholderResolver($userSession)));
 
-		return new LifecycleConditionEvaluator($userSession, $groupManager, $l10n, $log, $dialect);
+		return new LifecycleConditionEvaluator($userSession, $groupManager, new LifecycleConditionReporting($l10n, $log), $dialect);
 	}//end evaluator()
 }//end class

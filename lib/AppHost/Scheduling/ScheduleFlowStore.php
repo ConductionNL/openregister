@@ -30,18 +30,18 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
-use OCA\OpenRegister\Service\Flow\FlowService;
-use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
-use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 
 /**
  * Reads, writes and removes the flows compiled from one application's schedules.
  *
  * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
  */
-class ScheduleFlowStore {
+class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	/**
 	 * More schedules than one manifest declares.
 	 */
@@ -50,16 +50,16 @@ class ScheduleFlowStore {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper $mapper The flow table.
-	 * @param FlowVersionService $versions Publishes a flow's head.
-	 * @param FlowService $flows Deletes a flow with its runs and versions.
-	 * @param FlowTriggerValidator $validator Validates the trigger under the publisher's session.
+	 * @param FlowMapperInterface $mapper The flow table.
+	 * @param FlowVersionServiceInterface $versions Publishes a flow's head.
+	 * @param FlowServiceInterface $flows Deletes a flow with its runs and versions.
+	 * @param FlowTriggerValidatorInterface $validator Validates the trigger under the publisher's session.
 	 */
 	public function __construct(
-		private readonly FlowMapper $mapper,
-		private readonly FlowVersionService $versions,
-		private readonly FlowService $flows,
-		private readonly FlowTriggerValidator $validator,
+		private readonly FlowMapperInterface $mapper,
+		private readonly FlowVersionServiceInterface $versions,
+		private readonly FlowServiceInterface $flows,
+		private readonly FlowTriggerValidatorInterface $validator,
 	) {
 	}//end __construct()
 

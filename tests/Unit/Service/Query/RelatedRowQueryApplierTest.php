@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
+use OCA\OpenRegister\Service\Query\RelatedRowLookups;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -55,6 +56,10 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowInnerRow
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowSource
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowSqlTarget
  */
 class RelatedRowQueryApplierTest extends TestCase {
 
@@ -79,8 +84,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$rbac->method('buildRbacPredicateForAlias')->willReturn('rel0._owner = \'alice\'');
 
 		return new RelatedRowQueryApplier(
-			schemaMapper: $schemaMapper,
-			tableHandler: $tableHandler,
+			lookups: new RelatedRowLookups(schemaMapper: $schemaMapper, tableHandler: $tableHandler),
 			db: $this->createMock(IDBConnection::class),
 			logger: new NullLogger(),
 			access: new RelatedRowAccess(rbac: $rbac, logger: new NullLogger(), guard: $guard)

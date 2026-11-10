@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Controller\WebhooksController
  * @uses \OCA\OpenRegister\Controller\Support\WebhooksMappers
- * @uses \OCA\OpenRegister\Controller\Support\WebhooksPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\TasksPlatform
  * @uses \OCA\OpenRegister\Controller\Support\WebhooksControllerServices
  * @uses \OCA\OpenRegister\Db\Webhook
  * @uses \OCA\OpenRegister\Db\WebhookLog

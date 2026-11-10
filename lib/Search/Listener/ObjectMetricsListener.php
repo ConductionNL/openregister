@@ -47,7 +47,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Search\Service\MetricOutcome;
+use OCA\OpenRegister\Search\Service\MetricRecord;
 use OCA\OpenRegister\Search\Service\MetricsService;
+use OCA\OpenRegister\Search\Service\MetricSubject;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -102,17 +105,19 @@ class ObjectMetricsListener implements IEventListener {
 			}
 
 			$this->metricsService->recordMetric(
-				metricType: $metricType,
-				entityType: 'object',
-				entityId: $object->getUuid(),
-				status: 'success',
-				durationMs: null,
-				metadata: [
-					'register' => (string)($object->getRegister() ?? ''),
-					'schema' => (string)($object->getSchema() ?? ''),
-				],
-				errorMessage: null,
-				userId: $this->currentUserId()
+				record: new MetricRecord(
+					metricType: $metricType,
+					subject: new MetricSubject(
+						entityType: 'object',
+						entityId: $object->getUuid(),
+						userId: $this->currentUserId()
+					),
+					outcome: new MetricOutcome(status: 'success', durationMs: null, errorMessage: null),
+					metadata: [
+						'register' => (string)($object->getRegister() ?? ''),
+						'schema' => (string)($object->getSchema() ?? ''),
+					]
+				)
 			);
 		} catch (Throwable $e) {
 			// Observability must never break the write it observes.

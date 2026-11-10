@@ -46,6 +46,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
@@ -300,35 +301,55 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$translations->method('normalizeTranslationsForSave')->willReturnArgument(0);
 
 		$handler = new SaveObject(
-			$mapper,
-			$mapper,
-			$this->createMock(MetadataHydrationHandler::class),
-			$this->createMock(FilePropertyHandler::class),
-			$this->createMock(LinkedEntityPropertyHandler::class),
-			$session,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(IURLGenerator::class),
-			$organisations,
-			$this->createMock(CacheHandler::class),
-			$this->createMock(SettingsService::class),
-			$this->createMock(PropertyRbacHandler::class),
-			$this->createMock(ComputedFieldHandler::class),
-			$translations,
-			$this->createMock(TranslationProjectionService::class),
-			$this->createMock(TranslationStatusService::class),
-			new NullLogger(),
-			$this->createMock(TmloService::class),
-			$this->createMock(FolderManagementHandler::class),
-			$permissions,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			$container
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						objectEntityMapper: $mapper,
+						unifiedObjectMapper: $mapper,
+						schemaMapper: $this->createMock(SchemaMapper::class),
+						registerMapper: $this->createMock(RegisterMapper::class)
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+						settingsService: $this->createMock(SettingsService::class),
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->createMock(CacheHandler::class),
+						objectSourceRegistry: null,
+						runContext: null,
+						container: $container
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->createMock(MetadataHydrationHandler::class),
+						filePropertyHandler: $this->createMock(FilePropertyHandler::class),
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $translations,
+						translationProjectionService: $this->createMock(TranslationProjectionService::class),
+						translationStatusService: $this->createMock(TranslationStatusService::class),
+						fieldEncryptionHandler: null
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $session,
+					urlGenerator: $this->createMock(IURLGenerator::class),
+					logger: new NullLogger(),
+					eventDispatcher: null
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $organisations,
+					groupManager: null,
+					appConfig: null
+				)
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
+			permissionHandler: $permissions,
+			folderManagementHandler: $this->createMock(FolderManagementHandler::class)
 		);
 
 		return $handler;
@@ -593,9 +614,9 @@ class SaveObjectOrphanCleanupTest extends TestCase {
 		$row = [['objectUuid' => 'x']];
 
 		return [
-			'cascade' => [new DeletionAnalysis(deletable: true, cascadeTargets: $row)],
-			'nullify' => [new DeletionAnalysis(deletable: true, nullifyTargets: $row)],
-			'default' => [new DeletionAnalysis(deletable: true, defaultTargets: $row)],
+			'cascade' => [new DeletionAnalysis(deletable: true, effects: new DeletionEffects(cascadeTargets: $row))],
+			'nullify' => [new DeletionAnalysis(deletable: true, effects: new DeletionEffects(nullifyTargets: $row))],
+			'default' => [new DeletionAnalysis(deletable: true, effects: new DeletionEffects(defaultTargets: $row))],
 		];
 	}//end dependants()
 

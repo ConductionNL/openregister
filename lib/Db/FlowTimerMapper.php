@@ -49,7 +49,7 @@ use OCP\IDBConnection;
  * delete guard asks of the table, with its own predicate set, exactly as
  * {@see FlowRunMapper} argues.
  */
-class FlowTimerMapper extends QBMapper {
+class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 
 	/**
 	 * Constructor.

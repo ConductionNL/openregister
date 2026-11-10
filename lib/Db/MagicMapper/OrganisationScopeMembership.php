@@ -55,13 +55,35 @@ final class OrganisationScopeMembership
 		}
 
 		if ($organisation === null) {
-			return ($mode === MagicOrganizationHandler::SCOPE_NULL_ONLY || $mode === MagicOrganizationHandler::SCOPE_IN_OR_NULL);
+			return self::holdsOrganisationless(mode: $mode);
 		}
 
-		if ($mode !== MagicOrganizationHandler::SCOPE_IN && $mode !== MagicOrganizationHandler::SCOPE_IN_OR_NULL) {
+		if (self::holdsMembers(mode: $mode) === false) {
 			return false;
 		}
 
 		return in_array($organisation, ($scope['uuids'] ?? []), true);
 	}//end holds()
+
+	/**
+	 * Whether a scope mode holds the rows with no organisation.
+	 *
+	 * @param mixed $mode The scope mode, any value.
+	 *
+	 * @return bool True for SCOPE_NULL_ONLY and SCOPE_IN_OR_NULL.
+	 */
+	private static function holdsOrganisationless(mixed $mode): bool {
+		return in_array($mode, [MagicOrganizationHandler::SCOPE_NULL_ONLY, MagicOrganizationHandler::SCOPE_IN_OR_NULL], true);
+	}//end holdsOrganisationless()
+
+	/**
+	 * Whether a scope mode holds the rows of its listed organisations.
+	 *
+	 * @param mixed $mode The scope mode, any value.
+	 *
+	 * @return bool True for SCOPE_IN and SCOPE_IN_OR_NULL.
+	 */
+	private static function holdsMembers(mixed $mode): bool {
+		return in_array($mode, [MagicOrganizationHandler::SCOPE_IN, MagicOrganizationHandler::SCOPE_IN_OR_NULL], true);
+	}//end holdsMembers()
 }//end class

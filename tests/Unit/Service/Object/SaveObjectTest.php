@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
@@ -131,37 +133,72 @@ class SaveObjectTest extends TestCase {
 
 		$this->runContext = new \OCA\OpenRegister\Service\Flow\FlowRunContext();
 		$this->handler = new SaveObject(
-			$this->objectEntityMapper,
-			$this->unifiedObjectMapper,
-			$this->metaHydrationHandler,
-			$this->filePropertyHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
-			$this->userSession,
-			$this->auditTrailMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->urlGenerator,
-			$this->organisationService,
-			$this->cacheHandler,
-			$this->settingsService,
-			$this->propertyRbacHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->logger,
-			$this->createMock(\OCA\OpenRegister\Service\TmloService::class),
-			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$permissionHandler,
-			null,
-			null,
-			null,
-			null,
-			null,
-			// The REAL ambient stack, so the lock guard is asked the same
-			// question production asks it: which run is writing.
-			$this->runContext
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						objectEntityMapper: $this->objectEntityMapper,
+						unifiedObjectMapper: $this->unifiedObjectMapper,
+						schemaMapper: $this->schemaMapper,
+						registerMapper: $this->registerMapper
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->auditTrailMapper,
+						settingsService: $this->settingsService,
+						tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->cacheHandler,
+						objectSourceRegistry: null,
+						// The REAL ambient stack, so the lock guard is asked the same
+						// question production asks it: which run is writing.
+						runContext: $this->runContext
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->metaHydrationHandler,
+						filePropertyHandler: $this->filePropertyHandler,
+						linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+						fieldEncryptionHandler: null
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->userSession,
+					urlGenerator: $this->urlGenerator,
+					logger: $this->logger,
+					eventDispatcher: null
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->organisationService,
+					groupManager: null,
+					appConfig: null
+				)
+			),
+			propertyRbacHandler: $this->propertyRbacHandler,
+			permissionHandler: $permissionHandler,
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
+	}
+
+	/**
+	 * A cascade pass over the given parent and data, as SaveObject builds it.
+	 *
+	 * @param ObjectEntity $parent The parent object.
+	 * @param array        $data   The parent's data.
+	 *
+	 * @return CascadeRun The pass.
+	 */
+	private static function cascadeRun(ObjectEntity $parent, array $data): CascadeRun {
+		$run = new CascadeRun();
+		$run->parent = $parent;
+		$run->data = $data;
+		return $run;
 	}
 
 	/**
@@ -1590,30 +1627,50 @@ class SaveObjectTest extends TestCase {
 		$organisationService = $this->createMock(\OCA\OpenRegister\Service\OrganisationService::class);
 		$organisationService->method('hasAccessToOrganisation')->willReturn(false);
 
-		$handler = new \OCA\OpenRegister\Service\Object\SaveObject(
-			objectEntityMapper: $this->objectEntityMapper,
-			unifiedObjectMapper: $this->unifiedObjectMapper,
-			metaHydrationHandler: $this->metaHydrationHandler,
-			filePropertyHandler: $this->filePropertyHandler,
-			linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
-			userSession: $userSession,
-			auditTrailMapper: $this->auditTrailMapper,
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
-			urlGenerator: $this->urlGenerator,
-			organisationService: $organisationService,
-			cacheHandler: $this->cacheHandler,
-			settingsService: $this->settingsService,
+		$handler = new SaveObject(
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						objectEntityMapper: $this->objectEntityMapper,
+						unifiedObjectMapper: $this->unifiedObjectMapper,
+						schemaMapper: $this->schemaMapper,
+						registerMapper: $this->registerMapper
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->auditTrailMapper,
+						settingsService: $this->settingsService,
+						tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->cacheHandler
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->metaHydrationHandler,
+						filePropertyHandler: $this->filePropertyHandler,
+						linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $userSession,
+					urlGenerator: $this->urlGenerator,
+					logger: $this->logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $organisationService,
+					groupManager: $groupManager
+				)
+			),
 			propertyRbacHandler: $this->propertyRbacHandler,
-			computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			logger: $this->logger,
-			tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
-			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
 			permissionHandler: $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class),
-			groupManager: $groupManager
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 
 		$entity = new ObjectEntity();
@@ -1685,7 +1742,7 @@ class SaveObjectTest extends TestCase {
 			->willThrowException(new DoesNotExistException('Not found'));
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 
 		$this->assertNull($result);
@@ -1699,7 +1756,7 @@ class SaveObjectTest extends TestCase {
 			->willReturn($entity);
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 
 		$this->assertSame($entity, $result);
@@ -1749,7 +1806,7 @@ class SaveObjectTest extends TestCase {
 		$this->expectExceptionMessage('Cannot update object: Object is locked by other-user');
 
 		$this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 	}
 
@@ -1764,7 +1821,7 @@ class SaveObjectTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 
 		$this->assertSame($entity, $result);
@@ -1794,7 +1851,7 @@ class SaveObjectTest extends TestCase {
 		$this->expectExceptionMessage($runUuid);
 
 		$this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 	}
 
@@ -1822,7 +1879,7 @@ class SaveObjectTest extends TestCase {
 		$this->runContext->push($runUuid, 'lock-object', 1);
 		try {
 			$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-				'test-uuid', null, null, false, false,
+				'test-uuid', null, null,
 			]);
 		} finally {
 			$this->runContext->pop();
@@ -1857,7 +1914,7 @@ class SaveObjectTest extends TestCase {
 		$refusal = null;
 		try {
 			$this->invokePrivateMethod('findAndValidateExistingObject', [
-				'test-uuid', null, null, false, false,
+				'test-uuid', null, null,
 			]);
 		} catch (Exception $refused) {
 			$refusal = $refused;
@@ -1892,7 +1949,7 @@ class SaveObjectTest extends TestCase {
 		$refusal = null;
 		try {
 			$this->invokePrivateMethod('findAndValidateExistingObject', [
-				'test-uuid', null, null, false, false,
+				'test-uuid', null, null,
 			]);
 		} catch (Exception $refused) {
 			$refusal = $refused;
@@ -1927,7 +1984,7 @@ class SaveObjectTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 
 		$this->assertSame($entity, $result);
@@ -2155,7 +2212,7 @@ class SaveObjectTest extends TestCase {
 			->method('setObjectName')
 			->with('test-uuid', 'Hydrated Name');
 
-		$this->invokePrivateMethod('preCacheParentName', [$entity, $schema, ['name' => 'Test']]);
+		$this->invokePrivateMethod('preCacheParentName', [self::cascadeRun(parent: $entity, data: ['name' => 'Test']), $schema]);
 	}
 
 	public function testPreCacheParentNameReturnsEarlyOnNullUuid(): void {
@@ -2166,7 +2223,7 @@ class SaveObjectTest extends TestCase {
 
 		$this->metaHydrationHandler->expects($this->never())->method('hydrateObjectMetadata');
 
-		$this->invokePrivateMethod('preCacheParentName', [$entity, $schema, []]);
+		$this->invokePrivateMethod('preCacheParentName', [self::cascadeRun(parent: $entity, data: []), $schema]);
 	}
 
 	public function testPreCacheParentNameFallsBackToNaam(): void {
@@ -2185,7 +2242,7 @@ class SaveObjectTest extends TestCase {
 			->method('setObjectName')
 			->with('test-uuid', 'Dutch Name');
 
-		$this->invokePrivateMethod('preCacheParentName', [$entity, $schema, ['naam' => 'Dutch Name']]);
+		$this->invokePrivateMethod('preCacheParentName', [self::cascadeRun(parent: $entity, data: ['naam' => 'Dutch Name']), $schema]);
 	}
 
 	public function testPreCacheParentNameHandlesHydrationException(): void {
@@ -2200,7 +2257,7 @@ class SaveObjectTest extends TestCase {
 		$this->cacheHandler->expects($this->never())->method('setObjectName');
 
 		// Should not throw.
-		$this->invokePrivateMethod('preCacheParentName', [$entity, $schema, ['name' => 'Test']]);
+		$this->invokePrivateMethod('preCacheParentName', [self::cascadeRun(parent: $entity, data: ['name' => 'Test']), $schema]);
 	}
 
 	// =========================================================================
@@ -2561,12 +2618,12 @@ class SaveObjectTest extends TestCase {
 	}
 
 	public function testDeleteOrphanedRelatedObjectsHandlesDoesNotExist(): void {
-		$this->objectEntityMapper->method('find')
+		$this->objectEntityMapper->expects($this->once())->method('find')
 			->willThrowException(new DoesNotExistException('Not found'));
+		$this->objectEntityMapper->expects($this->never())->method('update');
+		$this->logger->expects($this->never())->method('warning');
 
-		// Should not throw.
 		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['nonexistent-uuid'], $this->orphanScope()]);
-		$this->assertTrue(true);
 	}
 
 	public function testDeleteOrphanedRelatedObjectsHandlesGenericException(): void {
@@ -2759,7 +2816,7 @@ class SaveObjectTest extends TestCase {
 
 		// Associative array (not a list).
 		$propData = ['key' => 'value'];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -2770,7 +2827,7 @@ class SaveObjectTest extends TestCase {
 
 		// All items are empty.
 		$propData = [[], []];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -2781,7 +2838,7 @@ class SaveObjectTest extends TestCase {
 
 		// Only UUIDs (strings), no objects to create.
 		$propData = ['dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4'];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -2791,7 +2848,7 @@ class SaveObjectTest extends TestCase {
 		$property = ['items' => []]; // No $ref.
 
 		$propData = [['name' => 'Test']];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -2809,7 +2866,7 @@ class SaveObjectTest extends TestCase {
 
 		// Only UUIDs, no objects to create (tests the $ref copy logic).
 		$propData = ['dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4'];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -2823,7 +2880,7 @@ class SaveObjectTest extends TestCase {
 		$definition = []; // No $ref.
 		$object = ['name' => 'Test'];
 
-		$result = $this->invokePrivateMethod('cascadeSingleObject', [$entity, $definition, $object]);
+		$result = $this->invokePrivateMethod('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: $definition), $object]);
 
 		$this->assertNull($result);
 	}
@@ -2833,7 +2890,7 @@ class SaveObjectTest extends TestCase {
 		$definition = ['$ref' => '#/components/schemas/test'];
 		$object = [];
 
-		$result = $this->invokePrivateMethod('cascadeSingleObject', [$entity, $definition, $object]);
+		$result = $this->invokePrivateMethod('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: $definition), $object]);
 
 		$this->assertNull($result);
 	}
@@ -2843,7 +2900,7 @@ class SaveObjectTest extends TestCase {
 		$definition = ['$ref' => '#/components/schemas/test'];
 		$object = ['id' => ''];
 
-		$result = $this->invokePrivateMethod('cascadeSingleObject', [$entity, $definition, $object]);
+		$result = $this->invokePrivateMethod('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: $definition), $object]);
 
 		$this->assertNull($result);
 	}
@@ -2854,7 +2911,7 @@ class SaveObjectTest extends TestCase {
 		$definition = ['$ref' => '#/components/schemas/test'];
 		$object = ['name' => 'Test'];
 
-		$result = $this->invokePrivateMethod('cascadeSingleObject', [$entity, $definition, $object]);
+		$result = $this->invokePrivateMethod('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: $definition), $object]);
 
 		$this->assertNull($result);
 	}
@@ -2874,7 +2931,7 @@ class SaveObjectTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Invalid schema reference');
 
-		$this->invokePrivateMethod('cascadeSingleObject', [$entity, $definition, $object]);
+		$this->invokePrivateMethod('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: $definition), $object]);
 	}
 
 	// =========================================================================
@@ -3008,7 +3065,7 @@ class SaveObjectTest extends TestCase {
 		$schema->method('getSchemaObject')->willThrowException(new Exception('Schema error'));
 
 		$data = ['name' => 'Test'];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [self::cascadeRun(parent: $entity, data: $data), $schema]);
 
 		$this->assertSame($data, $result);
 	}
@@ -3028,7 +3085,7 @@ class SaveObjectTest extends TestCase {
 
 		// 'related' is NOT in data.
 		$data = ['name' => 'Test'];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [self::cascadeRun(parent: $entity, data: $data), $schema]);
 
 		$this->assertSame($data, $result);
 	}
@@ -3047,7 +3104,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 
 		$data = ['related' => []];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [self::cascadeRun(parent: $entity, data: $data), $schema]);
 
 		$this->assertSame($data, $result);
 	}
@@ -3068,7 +3125,7 @@ class SaveObjectTest extends TestCase {
 
 		// Property has writeBack=true, so it should be skipped by cascadeObjects.
 		$data = ['related' => ['name' => 'Sub']];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [self::cascadeRun(parent: $entity, data: $data), $schema]);
 
 		// Data should be unchanged because writeBack properties are skipped.
 		$this->assertSame(['name' => 'Sub'], $result['related']);
@@ -3377,7 +3434,7 @@ class SaveObjectTest extends TestCase {
 			->willReturn($entity);
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 
 		$this->assertSame($entity, $result);
@@ -3392,7 +3449,7 @@ class SaveObjectTest extends TestCase {
 			->willReturn($entity);
 
 		$result = $this->invokePrivateMethod('findAndValidateExistingObject', [
-			'test-uuid', null, null, false, false,
+			'test-uuid', null, null,
 		]);
 
 		// Lock owner is null, so no lock conflict.
@@ -4551,7 +4608,7 @@ class SaveObjectTest extends TestCase {
 
 		// Only string UUIDs — no new objects created but tests the inversedBy copy logic.
 		$propData = ['dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4'];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -4568,7 +4625,7 @@ class SaveObjectTest extends TestCase {
 
 		// Only string UUIDs.
 		$propData = ['dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4'];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -4687,7 +4744,7 @@ class SaveObjectTest extends TestCase {
 		$this->cacheHandler->expects($this->never())
 			->method('setObjectName');
 
-		$this->invokePrivateMethod('preCacheParentName', [$entity, $schema, []]);
+		$this->invokePrivateMethod('preCacheParentName', [self::cascadeRun(parent: $entity, data: []), $schema]);
 	}
 
 	// =========================================================================
@@ -4783,7 +4840,7 @@ class SaveObjectTest extends TestCase {
 		[$entity, $schema] = $this->slugEntity('hello-world');
 		$data = ['title' => 'A Completely New Title'];
 
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, $data, [], null]);
+		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, [])]);
 		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [[], $data]]);
 
 		$this->assertSame('hello-world', $entity->getSlug(), 'the stored slug is the freeze reference');

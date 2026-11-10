@@ -1,0 +1,1320 @@
+{
+    "deep link absolute url": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "X",
+                "description": "",
+                "schema": {
+                    "id": 3,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 7,
+                    "title": "Gemeente"
+                },
+                "url": "https://elsewhere/x#abs",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": []
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/index.php/apps/openregister/api/objects/7/3/550e8400-e29b-41d4-a716-446655440000",
+                "name": "X",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://elsewhere/x#abs"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    7,
+                    3,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                7,
+                3,
+                {
+                    "name": "X",
+                    "register": 7,
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "schema": 3
+                }
+            ],
+            "logged": []
+        }
+    },
+    "deep link throws": {
+        "reference": null,
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "name": "X",
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": [
+                [
+                    "[ObjectPreviewFormatter] Failed to resolve reference: {error}",
+                    {
+                        "error": "deep link failed",
+                        "reference": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000"
+                    }
+                ]
+            ]
+        }
+    },
+    "deep link url and icon": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "X",
+                "description": "",
+                "schema": {
+                    "id": 3,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 7,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/custom/x",
+                "icon_url": "https://icons/x.svg",
+                "updated": "",
+                "properties": []
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/index.php/apps/openregister/api/objects/7/3/550e8400-e29b-41d4-a716-446655440000",
+                "name": "X",
+                "description": "",
+                "thumb": "https://icons/x.svg",
+                "link": "https://cloud.example.com/custom/x"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    7,
+                    3,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                7,
+                3,
+                {
+                    "name": "X",
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 7,
+                    "schema": 3
+                }
+            ],
+            "logged": []
+        }
+    },
+    "description exactly max": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "l10n:Unknown Object",
+                "description": "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": [
+                    {
+                        "label": "Description",
+                        "value": "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
+                    }
+                ]
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "l10n:Unknown Object",
+                "description": "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "description long": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "l10n:Unknown Object",
+                "description": "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij...",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": [
+                    {
+                        "label": "Summary",
+                        "value": "3"
+                    },
+                    {
+                        "label": "Description",
+                        "value": "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
+                    }
+                ]
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "l10n:Unknown Object",
+                "description": "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij...",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "description multibyte": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "l10n:Unknown Object",
+                "description": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé...",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": [
+                    {
+                        "label": "Description",
+                        "value": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+                    }
+                ]
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "l10n:Unknown Object",
+                "description": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé...",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "description not text": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "l10n:Unknown Object",
+                "description": "",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": []
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "l10n:Unknown Object",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "description short": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "l10n:Unknown Object",
+                "description": "Short",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": [
+                    {
+                        "label": "Description",
+                        "value": "Short"
+                    }
+                ]
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "l10n:Unknown Object",
+                "description": "Short",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "empty id": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "l10n:Unknown Object",
+                "description": "",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": []
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "l10n:Unknown Object",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "id": "",
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "id not text": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "l10n:Unknown Object",
+                "description": "",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": []
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "l10n:Unknown Object",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "id": 9,
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "lookup refused": {
+        "reference": null,
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": null,
+            "logged": [
+                [
+                    "[ObjectPreviewFormatter] Failed to resolve reference: {error}",
+                    {
+                        "error": "Access denied",
+                        "reference": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000"
+                    }
+                ]
+            ]
+        }
+    },
+    "name when title not text": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "N",
+                "description": "",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": [
+                    {
+                        "label": "Name",
+                        "value": "N"
+                    }
+                ]
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "N",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "name": 5,
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "not a reference": {
+        "reference": null,
+        "record": {
+            "find": [],
+            "deepLinkData": null,
+            "logged": []
+        }
+    },
+    "object absent": {
+        "reference": null,
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": null,
+            "logged": []
+        }
+    },
+    "properties": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "i",
+                "description": "",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": [
+                    {
+                        "label": "Status",
+                        "value": "Active"
+                    },
+                    {
+                        "label": "Count",
+                        "value": "3"
+                    },
+                    {
+                        "label": "Ratio",
+                        "value": "1.5"
+                    },
+                    {
+                        "label": "Long",
+                        "value": "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
+                    }
+                ]
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "i",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "properties fewer than max": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "l10n:Unknown Object",
+                "description": "",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": [
+                    {
+                        "label": "A",
+                        "value": "A"
+                    },
+                    {
+                        "label": "B",
+                        "value": "0"
+                    }
+                ]
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "l10n:Unknown Object",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "self id fallback": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "self-id",
+                "description": "",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": []
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "self-id",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "id": "self-id",
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "self name": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "Self",
+                "description": "",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "2026-01-01",
+                "properties": [
+                    {
+                        "label": "Title",
+                        "value": "T"
+                    },
+                    {
+                        "label": "Name",
+                        "value": "N"
+                    }
+                ]
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "Self",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "name": "Self",
+                    "updated": "2026-01-01",
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "self not array": {
+        "reference": {
+            "thrown": "TypeError"
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": null,
+            "logged": []
+        }
+    },
+    "summary": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "l10n:Unknown Object",
+                "description": "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": [
+                    {
+                        "label": "Summary",
+                        "value": "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
+                    },
+                    {
+                        "label": "Description",
+                        "value": "D"
+                    }
+                ]
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "l10n:Unknown Object",
+                "description": "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "title over name": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "T",
+                "description": "",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": [
+                    {
+                        "label": "Title",
+                        "value": "T"
+                    },
+                    {
+                        "label": "Name",
+                        "value": "N"
+                    }
+                ]
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "T",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "name": "",
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "top id fallback": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "top-id",
+                "description": "",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": []
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "top-id",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "unknown schema register": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "X",
+                "description": "",
+                "schema": {
+                    "id": 12,
+                    "title": "l10n:Unknown Schema"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "l10n:Unknown Register"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": []
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "X",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "name": "X",
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "untitled schema register": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "X",
+                "description": "",
+                "schema": {
+                    "id": 12,
+                    "title": "l10n:Unknown Schema"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": []
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "X",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "name": "X",
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    },
+    "zero string skipped": {
+        "reference": {
+            "richObjectType": "openregister-object",
+            "richObject": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "N",
+                "description": "",
+                "schema": {
+                    "id": 12,
+                    "title": "Producten"
+                },
+                "register": {
+                    "id": 5,
+                    "title": "Gemeente"
+                },
+                "url": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000",
+                "icon_url": "/img/openregister/app-dark.svg",
+                "updated": "",
+                "properties": [
+                    {
+                        "label": "Title",
+                        "value": "0"
+                    },
+                    {
+                        "label": "Name",
+                        "value": "N"
+                    }
+                ]
+            },
+            "openGraphObject": {
+                "id": "https://cloud.example.com/apps/openregister/#/registers/5/schemas/12/objects/550e8400-e29b-41d4-a716-446655440000",
+                "name": "N",
+                "description": "",
+                "thumb": "/img/openregister/app-dark.svg",
+                "link": "https://cloud.example.com/route/openregister.objects.show/5/12/550e8400-e29b-41d4-a716-446655440000"
+            },
+            "accessible": true
+        },
+        "record": {
+            "find": [
+                [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    [],
+                    false,
+                    5,
+                    12,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ],
+            "deepLinkData": [
+                5,
+                12,
+                {
+                    "name": "0",
+                    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+                    "register": 5,
+                    "schema": 12
+                }
+            ],
+            "logged": []
+        }
+    }
+}

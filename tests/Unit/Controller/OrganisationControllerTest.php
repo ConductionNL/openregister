@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Service\TenantDirectory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\OrganisationController;
@@ -2216,8 +2217,7 @@ class OrganisationControllerTest extends TestCase {
 	private function controllerWithRealLifecycle(): OrganisationController {
 		$lifecycle = new TenantLifecycleService(
 			$this->organisationMapper,
-			$this->groupManager,
-			$this->createMock(IUserManager::class),
+			new TenantDirectory($this->groupManager, $this->createMock(IUserManager::class)),
 			$this->logger
 		);
 

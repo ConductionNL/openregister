@@ -20,6 +20,7 @@ use OCA\OpenRegister\Event\PersonUnlinkedEvent;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
 use OCA\OpenRegister\Service\PersonLinkService;
+use OCA\OpenRegister\Service\PersonLinkTargets;
 use OCA\OpenRegister\Service\UserLinkWriter;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -103,8 +104,7 @@ class PersonLinkServiceTest extends TestCase {
 
 		$this->service = new PersonLinkService(
 			$this->links,
-			$this->contacts,
-			$this->userLinks,
+			new PersonLinkTargets($this->contacts, $this->userLinks),
 			$this->schemas,
 			new PersonLinkEvents($dispatcher)
 		);
@@ -331,6 +331,35 @@ class PersonLinkServiceTest extends TestCase {
 		$this->assertCount(1, $this->dispatched);
 		$this->assertInstanceOf(PersonLinkUpdatedEvent::class, $this->dispatched[0]);
 	}//end testAnUpdateSetsTheEndDateAndKeepsTheRole()
+
+	/**
+	 * An update to a role outside the schema's vocabulary is refused before anything is stored or announced.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 */
+	public function testAnUpdateToARoleOutsideTheVocabularyIsRefused(): void {
+		$this->schemaDeclaresRoles();
+		$this->links->method('findByObjectContactAndRole')->willReturn($this->storedLink());
+		$this->links->expects($this->never())->method('update');
+		$this->contacts->expects($this->never())->method('updateRole');
+
+		try {
+			$this->service->update(
+				objectUuid: 'case-1',
+				contactUid: 'user:jan',
+				schemaId: 7,
+				changes: ['role' => 'observer'],
+				currentRole: 'handler'
+			);
+			$this->fail('a role outside the vocabulary must be refused');
+		} catch (Exception $e) {
+			$this->assertSame(400, $e->getCode());
+		}
+
+		$this->assertSame([], $this->dispatched);
+	}//end testAnUpdateToARoleOutsideTheVocabularyIsRefused()
 
 	/**
 	 * A role change on a contact link goes through the CardDAV side, so the vCard follows.

@@ -32,14 +32,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\BackgroundJob\TransferExecutionJob;
+use OCA\OpenRegister\BackgroundJob\QueuedJobClassesInterface;
 use OCA\OpenRegister\Controller\Support\TransferControllerServices;
-use OCA\OpenRegister\Service\Edepot\TransferListService;
-use OCA\OpenRegister\Service\Edepot\TransferRecordService;
+use OCA\OpenRegister\Service\Edepot\TransferListServiceInterface;
+use OCA\OpenRegister\Service\Edepot\TransferRecordServiceInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\BackgroundJob\IJobList;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -59,9 +59,9 @@ class TransferController extends Controller {
 	/**
 	 * Durable transfer-record persistence.
 	 *
-	 * @var TransferRecordService
+	 * @var TransferRecordServiceInterface
 	 */
-	private readonly TransferRecordService $transferRecordService;
+	private readonly TransferRecordServiceInterface $transferRecordService;
 
 	/**
 	 * Background-job scheduler (dispatch execution).
@@ -80,9 +80,9 @@ class TransferController extends Controller {
 	/**
 	 * Approves and rejects transfer lists.
 	 *
-	 * @var TransferListService
+	 * @var TransferListServiceInterface
 	 */
-	private readonly TransferListService $transferListService;
+	private readonly TransferListServiceInterface $transferListService;
 
 	/**
 	 * Constructor.
@@ -135,10 +135,7 @@ class TransferController extends Controller {
 	public function show(string $id): JSONResponse {
 		$list = $this->transferRecordService->loadTransferList($id);
 		if ($list === null) {
-			return new JSONResponse(
-				data: ['error' => "Transfer list '{$id}' not found"],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+			return $this->notFound(id: $id);
 		}
 
 		return new JSONResponse(data: $list);
@@ -149,7 +146,7 @@ class TransferController extends Controller {
 	 *
 	 * 🔴 WITHOUT THIS THE WHOLE FLOW WAS UNREACHABLE. `create()` refuses to
 	 * dispatch anything that is not `approved`, and nothing could set that
-	 * status: `TransferListService::approveTransferList()` was implemented,
+	 * status: `TransferListServiceInterface::approveTransferList()` was implemented,
 	 * specified, and had no caller anywhere in the fleet. A list could be built
 	 * and then never moved. The service was even already imported here — the
 	 * wiring was started and left unfinished.
@@ -162,7 +159,7 @@ class TransferController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	public function approve(string $id): JSONResponse {
-		return $this->decide(id: $id, approve: true, reason: '');
+		return $this->decide(id: $id, decision: ['approve' => true, 'reason' => '']);
 	}//end approve()
 
 	/**
@@ -187,7 +184,7 @@ class TransferController extends Controller {
 			);
 		}
 
-		return $this->decide(id: $id, approve: false, reason: $reason);
+		return $this->decide(id: $id, decision: ['approve' => false, 'reason' => $reason]);
 	}//end reject()
 
 	/**
@@ -201,49 +198,70 @@ class TransferController extends Controller {
 	 * fault: it means the list is not in review, which is a state the caller
 	 * can see and act on. It answers 409, never 500.
 	 *
-	 * @param string  $id      The transfer list uuid.
-	 * @param boolean $approve Whether this is an approval.
-	 * @param string  $reason  The rejection reason; ignored for an approval.
+	 * @param string                                $id       The transfer list uuid.
+	 * @param array{approve: bool, reason: string} $decision Whether this is an approval, and the rejection reason
+	 *                                                       (ignored for an approval).
 	 *
 	 * @return JSONResponse The updated list, or the refusal.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
 	 */
-	private function decide(string $id, bool $approve, string $reason): JSONResponse {
+	private function decide(string $id, array $decision): JSONResponse {
 		$list = $this->transferRecordService->loadTransferList($id);
 		if ($list === null) {
-			return new JSONResponse(
-				data: ['error' => "Transfer list '{$id}' not found"],
-				statusCode: Http::STATUS_NOT_FOUND
+			return $this->notFound(id: $id);
+		}
+
+		$decision['archivist'] = (string)($this->userSession->getUser()?->getUID() ?? '');
+
+		try {
+			return new JSONResponse(data: $this->applyDecision(list: $list, decision: $decision));
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage(), 'reason' => 'wrong-status'], statusCode: Http::STATUS_CONFLICT);
+		}
+	}//end decide()
+
+	/**
+	 * Hand the decision to the transfer-list service.
+	 *
+	 * @param array<string, mixed>                                     $list     The transfer list.
+	 * @param array{approve: bool, reason: string, archivist: string} $decision Whether this is an approval, the rejection
+	 *                                                                          reason (ignored for an approval) and the uid deciding.
+	 *
+	 * @return array<string, mixed> The updated list.
+	 *
+	 * @throws InvalidArgumentException When the list is not in review.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
+	 */
+	private function applyDecision(array $list, array $decision): array {
+		if ($decision['approve'] === true) {
+			return $this->transferListService->approveTransferList(
+				transferList: $list,
+				archivistId: $decision['archivist']
 			);
 		}
 
-		$archivist = (string)($this->userSession->getUser()?->getUID() ?? '');
+		return $this->transferListService->rejectTransferList(
+			transferList: $list,
+			archivistId: $decision['archivist'],
+			reason: $decision['reason']
+		);
+	}//end applyDecision()
 
-		try {
-			if ($approve === true) {
-				return new JSONResponse(
-					data: $this->transferListService->approveTransferList(
-						transferList: $list,
-						archivistId: $archivist
-					)
-				);
-			}
-
-			return new JSONResponse(
-				data: $this->transferListService->rejectTransferList(
-					transferList: $list,
-					archivistId: $archivist,
-					reason: $reason
-				)
-			);
-		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'reason' => 'wrong-status'],
-				statusCode: Http::STATUS_CONFLICT
-			);
-		}//end try
-	}//end decide()
+	/**
+	 * The 404 for a transfer list that does not exist.
+	 *
+	 * @param string $id The transfer list uuid.
+	 *
+	 * @return JSONResponse The 404 response.
+	 */
+	private function notFound(string $id): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => "Transfer list '{$id}' not found"],
+			statusCode: Http::STATUS_NOT_FOUND
+		);
+	}//end notFound()
 
 
 	/**
@@ -262,56 +280,7 @@ class TransferController extends Controller {
 	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		try {
-			$params = $this->request->getParams();
-			$transferListUuid = (string)($params['transferListUuid'] ?? '');
-
-			if ($transferListUuid === '') {
-				return new JSONResponse(
-					data: ['error' => 'transferListUuid is required'],
-					statusCode: Http::STATUS_BAD_REQUEST
-				);
-			}
-
-			$list = $this->transferRecordService->loadTransferList($transferListUuid);
-			if ($list === null) {
-				return new JSONResponse(
-					data: ['error' => "Transfer list '{$transferListUuid}' not found"],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
-			}
-
-			$status = (string)($list['status'] ?? '');
-			if ($status !== TransferListService::STATUS_APPROVED) {
-				return new JSONResponse(
-					data: [
-						'error' => "Transfer list must be 'approved' to initiate; current status '{$status}'",
-						'status' => $status,
-					],
-					statusCode: Http::STATUS_CONFLICT
-				);
-			}
-
-			$this->jobList->add(
-				TransferExecutionJob::class,
-				[
-					'transferListId' => $transferListUuid,
-					'attempt' => 1,
-				]
-			);
-
-			$this->logger->info(
-				message: '[TransferController] Dispatched transfer execution',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'transferListUuid' => $transferListUuid]
-			);
-
-			return new JSONResponse(
-				data: [
-					'message' => 'Transfer queued for execution',
-					'transferListUuid' => $transferListUuid,
-					'status' => 'queued',
-				],
-				statusCode: Http::STATUS_ACCEPTED
-			);
+			return $this->dispatchTransfer();
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[TransferController] Failed to initiate transfer: ' . $e->getMessage(),
@@ -324,4 +293,73 @@ class TransferController extends Controller {
 		}//end try
 
 	}//end create()
+
+	/**
+	 * Validate the requested list and queue its execution.
+	 *
+	 * @return JSONResponse 202 when queued, or the 400/404/409 refusal.
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+	 */
+	private function dispatchTransfer(): JSONResponse {
+		$params = $this->request->getParams();
+		$transferListUuid = (string)($params['transferListUuid'] ?? '');
+
+		if ($transferListUuid === '') {
+			return new JSONResponse(
+				data: ['error' => 'transferListUuid is required'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$list = $this->transferRecordService->loadTransferList($transferListUuid);
+		if ($list === null) {
+			return $this->notFound(id: $transferListUuid);
+		}
+
+		return ($this->refuseUnapproved(list: $list) ?? $this->queueExecution(transferListUuid: $transferListUuid));
+	}//end dispatchTransfer()
+
+	/**
+	 * Refuse a list that is not `approved`; nothing is queued for it.
+	 *
+	 * @param array<string, mixed> $list The transfer list.
+	 *
+	 * @return JSONResponse|null The 409, or null when the list is approved.
+	 */
+	private function refuseUnapproved(array $list): ?JSONResponse {
+		$status = (string)($list['status'] ?? '');
+		if ($status === TransferListServiceInterface::STATUS_APPROVED) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => "Transfer list must be 'approved' to initiate; current status '{$status}'",
+				'status' => $status,
+			],
+			statusCode: Http::STATUS_CONFLICT
+		);
+	}//end refuseUnapproved()
+
+	/**
+	 * Queue the execution job for an approved list.
+	 *
+	 * @param string $transferListUuid The approved list.
+	 *
+	 * @return JSONResponse The 202 response.
+	 */
+	private function queueExecution(string $transferListUuid): JSONResponse {
+		$this->jobList->add(QueuedJobClassesInterface::TRANSFER_EXECUTION, ['transferListId' => $transferListUuid, 'attempt' => 1]);
+
+		$this->logger->info(
+			message: '[TransferController] Dispatched transfer execution',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'transferListUuid' => $transferListUuid]
+		);
+
+		return new JSONResponse(
+			data: ['message' => 'Transfer queued for execution', 'transferListUuid' => $transferListUuid, 'status' => 'queued'],
+			statusCode: Http::STATUS_ACCEPTED
+		);
+	}//end queueExecution()
 }//end class

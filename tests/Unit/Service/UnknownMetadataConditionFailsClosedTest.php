@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -132,7 +133,7 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->matcher = new ConditionMatcher(
-			userSession: $this->userSession,
+			users: new ConditionUserResolvers(userSession: $this->userSession),
 			container: $container,
 			operatorEvaluator: new OperatorEvaluator(logger: new NullLogger()),
 			logger: $this->logger
@@ -156,6 +157,20 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 
 		return $record;
 	}//end record()
+
+	/**
+	 * The record, carrying its own `_authorization`.
+	 *
+	 * @param array $authorization The row's own block.
+	 *
+	 * @return ObjectEntity The record.
+	 */
+	private function recordAuthorizedBy(array $authorization): ObjectEntity {
+		$record = $this->record();
+		$record->setAuthorization($authorization);
+
+		return $record;
+	}//end recordAuthorizedBy()
 
 	/**
 	 * Schema 7 with one block.
@@ -185,7 +200,7 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new RuntimeException('not available'));
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $this->userSession,
 			userManager: $userManager,
 			groupManager: $this->groupManager,
@@ -340,23 +355,17 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 		$schema = $this->schemaWith(['read' => ['editors']]);
 
 		$this->assertFalse(
-			$handler->hasPermission(
+			$handler->hasRowPermission(
 				schema: $schema,
 				action: 'read',
-				objectOwner: 'bob',
-				objectData: $this->record()->getMatchEnvelope(),
-				objectAuthorization: ['deny' => ['read' => [['group' => 'editors', 'match' => ['_published' => true]]]]],
-				objectUuid: 'rec-1'
+				row: $this->recordAuthorizedBy(['deny' => ['read' => [['group' => 'editors', 'match' => ['_published' => true]]]]])
 			)
 		);
 		$this->assertTrue(
-			$handler->hasPermission(
+			$handler->hasRowPermission(
 				schema: $schema,
 				action: 'read',
-				objectOwner: 'bob',
-				objectData: $this->record()->getMatchEnvelope(),
-				objectAuthorization: ['deny' => ['read' => [['group' => 'editors', 'match' => ['_organisation' => 'org-z']]]]],
-				objectUuid: 'rec-1'
+				row: $this->recordAuthorizedBy(['deny' => ['read' => [['group' => 'editors', 'match' => ['_organisation' => 'org-z']]]]])
 			)
 		);
 	}//end testTheRelationPathDeniesTheRow()
@@ -368,13 +377,10 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 	 */
 	public function testTheRelationPathDeniesOnAKnownKeyThatMatches(): void {
 		$this->assertFalse(
-			$this->rbacHandler()->hasPermission(
+			$this->rbacHandler()->hasRowPermission(
 				schema: $this->schemaWith(['read' => ['editors']]),
 				action: 'read',
-				objectOwner: 'bob',
-				objectData: $this->record()->getMatchEnvelope(),
-				objectAuthorization: ['deny' => ['read' => [['group' => 'editors', 'match' => ['_organisation' => 'org-a']]]]],
-				objectUuid: 'rec-1'
+				row: $this->recordAuthorizedBy(['deny' => ['read' => [['group' => 'editors', 'match' => ['_organisation' => 'org-a']]]]])
 			)
 		);
 	}//end testTheRelationPathDeniesOnAKnownKeyThatMatches()

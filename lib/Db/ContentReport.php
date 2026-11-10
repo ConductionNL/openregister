@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\ContentReport\ContentReportFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -247,23 +248,9 @@ class ContentReport extends Entity implements JsonSerializable {
 	 * Register the entity's typed columns.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'register', type: 'string');
-		$this->addType(fieldName: 'schema', type: 'string');
-		$this->addType(fieldName: 'reason', type: 'string');
-		$this->addType(fieldName: 'reportedBy', type: 'string');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'copy', type: 'json');
-		$this->addType(fieldName: 'copyHash', type: 'string');
-		$this->addType(fieldName: 'reviewerGroup', type: 'string');
-		$this->addType(fieldName: 'retentionPeriod', type: 'string');
-		$this->addType(fieldName: 'expires', type: 'datetime');
-		$this->addType(fieldName: 'removedAt', type: 'datetime');
-		$this->addType(fieldName: 'removalAudit', type: 'string');
-		$this->addType(fieldName: 'organisationId', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
+		foreach (ContentReportFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -320,26 +307,10 @@ class ContentReport extends Entity implements JsonSerializable {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'objectUuid' => $this->objectUuid,
-			'register' => $this->register,
-			'schema' => $this->schema,
-			'reason' => $this->reason,
-			'reportedBy' => $this->reportedBy,
-			'status' => $this->status,
-			'copyHash' => $this->copyHash,
-			'copyIntact' => $this->copyIsIntact(),
-			'reviewerGroup' => $this->reviewerGroup,
-			'retentionPeriod' => $this->retentionPeriod,
-			'expires' => $this->expires?->format('c'),
-			'removed' => $this->isRemoved(),
-			'removedAt' => $this->removedAt?->format('c'),
-			'removalAudit' => $this->removalAudit,
-			'organisationId' => $this->organisationId,
-			'created' => $this->created?->format('c'),
-			'updated' => $this->updated?->format('c'),
-		];
+		$typed = new TypedFieldsJson();
+		$json = $typed->pick(values: get_object_vars($this), names: array_diff(array_keys($this->getFieldTypes()), ['copy']));
+		$derived = ['copyHash' => ['copyIntact' => $this->copyIsIntact()], 'expires' => ['removed' => $this->isRemoved()]];
+
+		return $typed->inserted(json: $json, entriesAfter: $derived);
 	}//end jsonSerialize()
 }//end class

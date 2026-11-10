@@ -36,7 +36,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -52,10 +52,10 @@ class PartyTreeGuardListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param PartyService $parties The party records and the tree guard.
+	 * @param PartyServiceInterface $parties The party records and the tree guard.
 	 */
 	public function __construct(
-		private readonly PartyService $parties,
+		private readonly PartyServiceInterface $parties,
 	) {
 	}//end __construct()
 
@@ -69,28 +69,36 @@ class PartyTreeGuardListener implements IEventListener {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function handle(Event $event): void {
-		// The two save events are handled separately rather than through one
+		// The two save events are told apart here rather than through one
 		// helper returning the object: the veto is a method on the concrete
 		// event, and a helper that hands back only the object loses the handle
 		// that can refuse the write.
 		if ($event instanceof ObjectCreatingEvent === true) {
-			$refusal = $this->refusalFor(object: $event->getObject());
-			if ($refusal !== null) {
-				$event->setErrors($refusal);
-				$event->stopPropagation();
-			}
-
+			$this->veto(event: $event, refusal: $this->refusalFor(object: $event->getObject()));
 			return;
 		}
 
 		if ($event instanceof ObjectUpdatingEvent === true) {
-			$refusal = $this->refusalFor(object: $event->getNewObject());
-			if ($refusal !== null) {
-				$event->setErrors($refusal);
-				$event->stopPropagation();
-			}
+			$this->veto(event: $event, refusal: $this->refusalFor(object: $event->getNewObject()));
 		}
 	}//end handle()
+
+	/**
+	 * Veto the save with the refusal, when there is one.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event   The save event.
+	 * @param array<string, mixed>|null               $refusal The error the event carries, or null.
+	 *
+	 * @return void
+	 */
+	private function veto(ObjectCreatingEvent|ObjectUpdatingEvent $event, ?array $refusal): void {
+		if ($refusal === null) {
+			return;
+		}
+
+		$event->setErrors($refusal);
+		$event->stopPropagation();
+	}//end veto()
 
 	/**
 	 * Why this save must be refused, or null when there is no reason.
@@ -106,13 +114,8 @@ class PartyTreeGuardListener implements IEventListener {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	private function refusalFor(ObjectEntity $object): ?array {
-		$definition = $this->parties->definitionFor(party: $object);
-		if ($definition === null || $definition->parentProperty() === null) {
-			return null;
-		}
-
-		$parent = trim((string)($object->getObject()[$definition->parentProperty()] ?? ''));
-		if ($parent === '') {
+		$parent = $this->proposedParentOf(object: $object);
+		if ($parent === null) {
 			return null;
 		}
 
@@ -127,4 +130,25 @@ class PartyTreeGuardListener implements IEventListener {
 
 		return null;
 	}//end refusalFor()
+
+	/**
+	 * The parent a party save proposes, or null when the object is no party in a tree or names none.
+	 *
+	 * @param ObjectEntity $object The object about to be written.
+	 *
+	 * @return string|null The trimmed parent uuid.
+	 */
+	private function proposedParentOf(ObjectEntity $object): ?string {
+		$definition = $this->parties->definitionFor(party: $object);
+		if ($definition === null || $definition->parentProperty() === null) {
+			return null;
+		}
+
+		$parent = trim((string)($object->getObject()[$definition->parentProperty()] ?? ''));
+		if ($parent === '') {
+			return null;
+		}
+
+		return $parent;
+	}//end proposedParentOf()
 }//end class

@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service\Settings;
 use Exception;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\ValidateObject;
-use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Service\Object\ObjectValidatorInterface;
 use OCP\AppFramework\IAppContainer;
 use Psr\Log\LoggerInterface;
 
@@ -48,43 +48,27 @@ use Psr\Log\LoggerInterface;
 class ValidationOperationsHandler {
 
 	/**
-	 * Container for lazy loading ObjectService to break circular dependency.
-	 *
-	 * @var IAppContainer
-	 */
-	private IAppContainer $container;
-
-	/**
-	 * Lazily loaded ValidateObject to break circular dependency.
-	 *
-	 * @var ValidateObjectInterface|null
-	 */
-	private ?ValidateObjectInterface $validateHandler = null;
-
-	/**
 	 * Constructor for ValidationOperationsHandler.
 	 *
-	 * @param ValidateObjectInterface|null $validateHandler Handler for validation operations (nullable for lazy loading)
+	 * @param ObjectValidatorInterface|null $validateHandler Validation handler; null loads ValidateObject lazily (circular dependency)
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema entities
 	 * @param LoggerInterface $logger Logger for logging operations
-	 * @param IAppContainer $container Application container
+	 * @param IAppContainer $container Application container, for lazy loading to break a circular dependency
 	 */
 	public function __construct(
-		?ValidateObjectInterface $validateHandler,
+		private ?ObjectValidatorInterface $validateHandler,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
-		IAppContainer $container,
+		private readonly IAppContainer $container,
 	) {
-		$this->validateHandler = $validateHandler;
-		$this->container = $container;
 	}//end __construct()
 
 	/**
 	 * Get ValidateObject lazily to break circular dependency.
 	 *
-	 * @return ValidateObjectInterface The validate handler.
+	 * @return ObjectValidatorInterface The validate handler.
 	 */
-	private function getValidateHandler(): ValidateObjectInterface {
+	private function getValidateHandler(): ObjectValidatorInterface {
 		if ($this->validateHandler === null) {
 			$this->validateHandler = $this->container->get(ValidateObject::class);
 		}

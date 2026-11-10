@@ -61,10 +61,11 @@ class CollectiveLinksControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->controller = new CollectiveLinksController(
-			'openregister',
 			$this->request,
-			$this->service,
-			$this->objectService,
+			new \OCA\OpenRegister\Controller\Support\CollectiveLinksControllerServices(
+				$this->service,
+				$this->objectService,
+			),
 		);
 	}//end setUp()
 

@@ -38,12 +38,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
+			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeModal" />
 			<NcButton
 				:disabled="loading || success"
 				variant="primary"
@@ -78,8 +73,8 @@ import {
 	NcNoteCard,
 	NcTextField,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'LockObject',
@@ -90,7 +85,7 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		LockOutline,
-		Cancel,
+		CloseCancelButton,
 	},
 
 	data() {

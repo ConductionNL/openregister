@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
-use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenService;
+use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeServiceInterface;
+use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenServiceInterface;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use OCP\IUserSession;
 
@@ -36,17 +36,17 @@ final class CalendarFeedDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param CalendarFeedTokenService   $tokens      The feed-token lifecycle.
+	 * @param CalendarFeedTokenServiceInterface   $tokens      The feed-token lifecycle.
 	 * @param ObjectCalendarFeedService  $feed        The feed generator.
-	 * @param AppointmentAttendeeService $attendees   The attendee-response store.
+	 * @param AppointmentAttendeeServiceInterface $attendees   The attendee-response store.
 	 * @param IUserSession               $userSession The current session, which names the principal.
 	 *
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function __construct(
-		public readonly CalendarFeedTokenService $tokens,
+		public readonly CalendarFeedTokenServiceInterface $tokens,
 		public readonly ObjectCalendarFeedService $feed,
-		public readonly AppointmentAttendeeService $attendees,
+		public readonly AppointmentAttendeeServiceInterface $attendees,
 		public readonly IUserSession $userSession,
 	) {
 	}//end __construct()

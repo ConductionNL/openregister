@@ -7,8 +7,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use DateTime;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationDelivery;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationJob;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledObjectSources;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeState;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
@@ -26,6 +29,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Golden test for ScheduledNotificationJob::run().
@@ -116,14 +121,9 @@ class ScheduledNotificationJobGoldenTest extends TestCase
 
         $job = new ScheduledNotificationJob(
             $this->createMock(ITimeFactory::class),
-            $this->schemas($case),
-            $this->objects($case),
-            $this->dispatcher(),
-            $this->logger(),
-            $factory,
-            new ScheduledFilterEvaluator(),
-            $this->dedupe(),
-            $this->appConfig($case)
+            new ScheduledObjectSources(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemas($case), tables: $this->objects($case)), new ScheduledFilterEvaluator()),
+            new ScheduledNotificationDelivery($this->dispatcher(), $this->dedupe(), $this->appConfig($case), $this->logger()),
+            $factory
         );
         $run = new ReflectionMethod($job, 'run');
         $run->invoke($job, null);
@@ -266,9 +266,9 @@ class ScheduledNotificationJobGoldenTest extends TestCase
             }
         );
         $mapper->method('upsert')->willReturnCallback(
-            function (int $schemaId, string $ruleKey, string $objectUuid, string $fingerprint, DateTime $now, bool $dispatched): NotificationDedupeState {
-                $this->record('upsert', [$schemaId, $ruleKey, $objectUuid, $fingerprint, $dispatched]);
-                if ($objectUuid === 'touch-fails') {
+            function (NotificationDedupeKey $key, string $fingerprint, DateTime $now, bool $dispatched): NotificationDedupeState {
+                $this->record('upsert', [$key->schemaId, $key->ruleKey, $key->objectUuid, $fingerprint, $dispatched]);
+                if ($key->objectUuid === 'touch-fails') {
                     throw new RuntimeException('touch failed');
                 }
 

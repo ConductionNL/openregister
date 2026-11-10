@@ -63,7 +63,6 @@ SPDX-License-Identifier: EUPL-1.2
 <script>
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
 import { NcEmptyContent, NcListItem, NcLoadingIcon } from '@nextcloud/vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
@@ -115,14 +114,7 @@ export default {
 			this.loading = true
 			this.clearFailure()
 
-			const url = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/referenced-by',
-				{
-					register: this.register,
-					schema: this.schema,
-					id: this.objectId,
-				},
-			)
+			const url = this.objectApiUrl('/referenced-by')
 
 			try {
 				const response = await axios.get(url)

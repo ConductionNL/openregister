@@ -40,7 +40,7 @@ use Psr\Log\LoggerInterface;
  *
  * @template-extends QBMapper<GdprEntity>
  */
-class GdprEntityMapper extends QBMapper {
+class GdprEntityMapper extends QBMapper implements GdprEntityMapperInterface {
 	/**
 	 * Constructor.
 	 *

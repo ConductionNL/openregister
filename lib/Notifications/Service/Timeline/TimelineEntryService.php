@@ -62,9 +62,7 @@ class TimelineEntryService {
 	/**
 	 * Constructor.
 	 *
-	 * @param TimelineEntryMapper       $entryMapper Reads and writes the record.
-	 * @param TimelineKindService       $kinds       Declares kinds and validates their fields.
-	 * @param LanguageDetector          $languages   Records the language a message arrived in.
+	 * @param TimelineEntryRecords      $records     The record store, kind registry and language detector.
 	 * @param TimelineVisibilityService $visibility  Normalises the flag and decides who may set it.
 	 * @param IUserSession              $userSession The caller.
 	 * @param LoggerInterface           $logger      Logger for the fail-open paths.
@@ -72,9 +70,7 @@ class TimelineEntryService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly TimelineEntryMapper $entryMapper,
-		private readonly TimelineKindService $kinds,
-		private readonly LanguageDetector $languages,
+		private readonly TimelineEntryRecords $records,
 		private readonly TimelineVisibilityService $visibility,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
@@ -101,7 +97,7 @@ class TimelineEntryService {
 	 */
 	public function record(ObjectEntity $object, array $data): TimelineEntry {
 		$kind = $this->stringOrNull(data: $data, key: 'kind');
-		$accepted = $this->kinds->validateFields(kindSlug: $kind, fields: $this->arrayOrEmpty(data: $data, key: 'fields'));
+		$accepted = $this->records->kinds->validateFields(kindSlug: $kind, fields: $this->arrayOrEmpty(data: $data, key: 'fields'));
 
 		$entry = $this->newEntry(object: $object, data: $data);
 		$entry->setKind($kind);
@@ -109,11 +105,11 @@ class TimelineEntryService {
 		$this->writeText(entry: $entry, data: $data);
 		$this->writeInbound(entry: $entry, data: $data);
 
-		if ($this->kinds->carriesFollowUp(kindSlug: $kind) === true) {
+		if ($this->records->kinds->carriesFollowUp(kindSlug: $kind) === true) {
 			$entry->setFollowUp(TimelineEntry::FOLLOW_UP_OPEN);
 		}
 
-		return $this->entryMapper->insert($entry);
+		return $this->records->entryMapper->insert($entry);
 	}//end record()
 
 	/**
@@ -154,7 +150,7 @@ class TimelineEntryService {
 
 		$entry->setVisibility($this->visibility->normalise(value: $this->stringOrNull(data: $data, key: 'visibility')));
 		$entry->setMessage($message);
-		$entry->setLanguage($this->languages->detect(text: $message));
+		$entry->setLanguage($this->records->languages->detect(text: $message));
 	}//end writeText()
 
 	/**
@@ -195,14 +191,14 @@ class TimelineEntryService {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function syncFromNote(NoteRewrite $rewrite): ?TimelineEntry {
-		$entry = $this->entryMapper->findByComment(commentId: $rewrite->commentId);
+		$entry = $this->records->entryMapper->findByComment(commentId: $rewrite->commentId);
 		if ($entry === null) {
 			return null;
 		}
 
 		if ($rewrite->message !== null) {
 			$entry->setMessage($rewrite->message);
-			$entry->setLanguage($this->languages->detect(text: $rewrite->message));
+			$entry->setLanguage($this->records->languages->detect(text: $rewrite->message));
 		}
 
 		if ($rewrite->visibility !== null) {
@@ -211,7 +207,7 @@ class TimelineEntryService {
 
 		$entry->setUpdated(new DateTime());
 
-		return $this->entryMapper->update($entry);
+		return $this->records->entryMapper->update($entry);
 	}//end syncFromNote()
 
 	/**
@@ -232,7 +228,7 @@ class TimelineEntryService {
 		int $limit = 50,
 		int $offset = 0,
 	): array {
-		return $this->entryMapper->findForObject(
+		return $this->records->entryMapper->findForObject(
 			objectUuid: (string)$object->getUuid(),
 			visibility: $visibility,
 			limit: $limit,
@@ -255,7 +251,7 @@ class TimelineEntryService {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function get(ObjectEntity $object, string $entryUuid): ?TimelineEntry {
-		$entry = $this->entryMapper->findByUuid(uuid: $entryUuid);
+		$entry = $this->records->entryMapper->findByUuid(uuid: $entryUuid);
 		if ($entry === null || $entry->getObjectUuid() !== (string)$object->getUuid()) {
 			return null;
 		}
@@ -277,7 +273,7 @@ class TimelineEntryService {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function entryForNote(int $commentId): ?TimelineEntry {
-		return $this->entryMapper->findByComment(commentId: $commentId);
+		return $this->records->entryMapper->findByComment(commentId: $commentId);
 	}//end entryForNote()
 
 	/**
@@ -313,7 +309,7 @@ class TimelineEntryService {
 
 		$entry->setUpdated(new DateTime());
 
-		return $this->entryMapper->update($entry);
+		return $this->records->entryMapper->update($entry);
 	}//end pin()
 
 	/**
@@ -348,7 +344,7 @@ class TimelineEntryService {
 		$entry->setClosedAt(new DateTime());
 		$entry->setUpdated(new DateTime());
 
-		return $this->entryMapper->update($entry);
+		return $this->records->entryMapper->update($entry);
 	}//end closeFollowUp()
 
 	/**
@@ -394,7 +390,7 @@ class TimelineEntryService {
 		foreach ($entries as $entry) {
 			$entry->setSiblings($this->siblingsOf(entry: $entry, entries: $entries));
 			$entry->setUpdated(new DateTime());
-			$written[] = $this->entryMapper->update($entry);
+			$written[] = $this->records->entryMapper->update($entry);
 		}
 
 		return $written;
@@ -439,7 +435,7 @@ class TimelineEntryService {
 	 */
 	public function forgetNote(int $commentId): int {
 		try {
-			return $this->entryMapper->deleteForComment(commentId: $commentId);
+			return $this->records->entryMapper->deleteForComment(commentId: $commentId);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'[TimelineEntryService] The record for note '.$commentId.' could not be removed',
@@ -461,7 +457,7 @@ class TimelineEntryService {
 	 */
 	public function forgetObject(string $objectUuid): int {
 		try {
-			return $this->entryMapper->deleteForObject(objectUuid: $objectUuid);
+			return $this->records->entryMapper->deleteForObject(objectUuid: $objectUuid);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'[TimelineEntryService] The records on object '.$objectUuid.' could not be removed',

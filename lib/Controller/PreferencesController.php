@@ -24,9 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\PreferencesUserValues;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
 use OCP\IRequest;
@@ -37,6 +37,13 @@ use OCP\IUserSession;
  */
 class PreferencesController extends Controller {
 	/**
+	 * The preference values of this app.
+	 *
+	 * @var PreferencesUserValues
+	 */
+	private readonly PreferencesUserValues $values;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The request.
@@ -45,11 +52,11 @@ class PreferencesController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly IConfig $config,
+		IConfig $config,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
-
+		$this->values = new PreferencesUserValues(config: $config, appName: AppIdentity::APP_ID);
 	}//end __construct()
 
 	/**
@@ -65,29 +72,13 @@ class PreferencesController extends Controller {
 	 * @spec openspec/specs/apphost-boilerplate/spec.md#requirement-generic-preferences-controller
 	 */
 	public function getPreference(string $key): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(data: ['message' => 'Not logged in'], statusCode: Http::STATUS_UNAUTHORIZED);
-		}
-
-		$safeKey = $this->sanitizeKey(key: $key);
-		if ($safeKey === '') {
-			return new JSONResponse(data: ['message' => 'Invalid key'], statusCode: Http::STATUS_BAD_REQUEST);
-		}
-
-		$value = $this->config->getUserValue(
-			userId: $user->getUID(),
-			appName: AppIdentity::APP_ID,
-			key: 'pref_' . $safeKey,
-			default: ''
+		return $this->values->forUser(
+			user: $this->userSession->getUser(),
+			key: $key,
+			action: fn (string $userId, string $storedKey): JSONResponse => new JSONResponse(
+				data: ['value' => $this->values->read(userId: $userId, storedKey: $storedKey)]
+			)
 		);
-
-		$stored = null;
-		if ($value !== '') {
-			$stored = $value;
-		}
-
-		return new JSONResponse(data: ['value' => $stored]);
 	}//end getPreference()
 
 	/**
@@ -104,45 +95,12 @@ class PreferencesController extends Controller {
 	 * @spec openspec/specs/apphost-boilerplate/spec.md#requirement-generic-preferences-controller
 	 */
 	public function setPreference(string $key, string $value = ''): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(data: ['message' => 'Not logged in'], statusCode: Http::STATUS_UNAUTHORIZED);
-		}
-
-		$safeKey = $this->sanitizeKey(key: $key);
-		if ($safeKey === '') {
-			return new JSONResponse(data: ['message' => 'Invalid key'], statusCode: Http::STATUS_BAD_REQUEST);
-		}
-
-		if ($value === '') {
-			$this->config->deleteUserValue(
-				userId: $user->getUID(),
-				appName: AppIdentity::APP_ID,
-				key: 'pref_' . $safeKey
-			);
-			return new JSONResponse(data: ['value' => null]);
-		}
-
-		$this->config->setUserValue(
-			userId: $user->getUID(),
-			appName: AppIdentity::APP_ID,
-			key: 'pref_' . $safeKey,
-			value: $value
+		return $this->values->forUser(
+			user: $this->userSession->getUser(),
+			key: $key,
+			action: fn (string $userId, string $storedKey): JSONResponse => new JSONResponse(
+				data: ['value' => $this->values->write(userId: $userId, storedKey: $storedKey, value: $value)]
+			)
 		);
-
-		return new JSONResponse(data: ['value' => $value]);
 	}//end setPreference()
-
-	/**
-	 * Restrict keys to a safe charset so callers cannot reach arbitrary
-	 * IConfig user values outside the `pref_` namespace.
-	 *
-	 * @param string $key The raw key.
-	 *
-	 * @return string The sanitised key, or '' when nothing safe remains.
-	 */
-	private function sanitizeKey(string $key): string {
-		$safe = preg_replace(pattern: '/[^a-z0-9-]/', replacement: '', subject: strtolower($key));
-		return substr((string)$safe, offset: 0, length: 64);
-	}//end sanitizeKey()
 }//end class

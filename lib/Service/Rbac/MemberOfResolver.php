@@ -36,10 +36,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use Closure;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -87,15 +86,13 @@ class MemberOfResolver {
 	 * parameter here closes that loop and `occ app:enable` dies in infinite recursion. It is
 	 * fetched from the container on first read instead (the CacheHandler / issue #1564 pattern).
 	 *
-	 * @param SchemaMapperInterface      $schemas   Loads the membership schema.
-	 * @param RegisterMapperInterface    $registers Finds the register that holds it.
+	 * @param SchemaRegisterLookup $lookup Loads the membership schema and finds the register that holds it.
 	 * @param ContainerInterface $container Resolves MagicMapper on first read, not at construction.
 	 * @param OperatorEvaluator $operators Evaluates the operand's `where` filters.
 	 * @param LoggerInterface   $logger    Logs a set that could not be read.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemas,
-		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaRegisterLookup $lookup,
 		private readonly ContainerInterface $container,
 		private readonly OperatorEvaluator $operators,
 		private readonly LoggerInterface $logger,
@@ -128,7 +125,7 @@ class MemberOfResolver {
 
 		$key = $userId . '|' . json_encode($spec);
 		if (array_key_exists($key, $this->cache) === false) {
-			$this->cache[$key] = $this->read(spec: $spec, userId: $userId);
+			$this->cache[$key] = $this->read(lookup: new MemberOfLookup(spec: $spec, userId: $userId));
 		}
 
 		return $this->cache[$key];
@@ -151,14 +148,27 @@ class MemberOfResolver {
 	 * @spec openspec/changes/access-follows-membership/specs/rbac-scopes/spec.md#requirement-a-match-can-admit-by-the-callers-membership-records
 	 */
 	public function resolveOperators(array $operators, ?string $userId, callable $resolveSibling): ?array {
-		$set = $this->valuesFor(operand: ($operators[self::OPERATOR] ?? null), userId: $userId);
+		$siblings = static fn (): array => array_map($resolveSibling, array_diff_key($operators, [self::OPERATOR => true]));
+		return $this->narrowed(set: $this->valuesFor(operand: ($operators[self::OPERATOR] ?? null), userId: $userId), siblings: $siblings);
+	}//end resolveOperators()
+
+	/**
+	 * The resolved sibling operators with `$in` narrowed to the membership set.
+	 *
+	 * The siblings are resolved only once the set is known, so an unresolvable
+	 * operand denies without resolving anything else.
+	 *
+	 * @param string[]|null $set      The caller's membership set, or null when the operand is unresolvable.
+	 * @param Closure       $siblings Resolves the sibling operators.
+	 *
+	 * @return array<string, mixed>|null The operators with `$in`, or null (deny) when unresolvable.
+	 */
+	private function narrowed(?array $set, Closure $siblings): ?array {
 		if ($set === null) {
 			return null;
 		}
 
-		unset($operators[self::OPERATOR]);
-		$resolved = array_map($resolveSibling, $operators);
-
+		$resolved = $siblings();
 		$sibling = ($resolved['$in'] ?? $set);
 		if (is_array($sibling) === false || array_is_list($sibling) === false) {
 			return null;
@@ -167,7 +177,7 @@ class MemberOfResolver {
 		$resolved['$in'] = array_values(array_intersect($set, $sibling));
 
 		return $resolved;
-	}//end resolveOperators()
+	}//end narrowed()
 
 	/**
 	 * Check the operand and fill in its defaults.
@@ -249,30 +259,30 @@ class MemberOfResolver {
 	/**
 	 * Read the caller's membership rows and collect the set.
 	 *
-	 * @param array  $spec   The normalised operand.
-	 * @param string $userId The current user.
+	 * @param MemberOfLookup $lookup The normalised operand and the current user.
 	 *
 	 * @return string[] The set.
 	 */
-	private function read(array $spec, string $userId): array {
+	private function read(MemberOfLookup $lookup): array {
+		$spec = $lookup->spec;
 		try {
-			$schema = $this->schemas->find($spec['schema'], _rbac: false, _multitenancy: false);
+			$schema = $this->lookup->schemas->find($spec['schema'], _rbac: false, _multitenancy: false);
 
 			$registerId = $spec['register'];
 			if ($registerId === '') {
-				$registerId = (string)$this->registers->getFirstRegisterWithSchema((int)$schema->getId());
+				$registerId = (string)$this->lookup->registers->getFirstRegisterWithSchema((int)$schema->getId());
 			}
 
 			if ($registerId === '') {
 				return [];
 			}
 
-			$register = $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
+			$register = $this->lookup->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
 
 			$rows = $this->container->get(MagicMapperInterface::class)->searchObjects(
 				query: [
 					'@self'        => ['register' => (string)$register->getId(), 'schema' => (string)$schema->getId()],
-					$spec['match'] => $userId,
+					$spec['match'] => $lookup->userId,
 					'_limit'       => self::ROW_LIMIT,
 				],
 				_rbac: false,
@@ -290,22 +300,22 @@ class MemberOfResolver {
 			return [];
 		}
 
-		return $this->setFrom(rows: $rows, spec: $spec, userId: $userId);
+		return $this->setFrom(rows: $rows, lookup: $lookup);
 	}//end read()
 
 	/**
 	 * The set over the rows that belong to the caller and pass the filters and window.
 	 *
 	 * @param array<int, mixed> $rows   The rows the search returned.
-	 * @param array             $spec   The normalised operand.
-	 * @param string            $userId The current user.
+	 * @param MemberOfLookup    $lookup The normalised operand and the current user.
 	 *
 	 * @return string[] The set.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) DepartmentMatrixPersonValues::collect() is the one pure reader of a
 	 *      user's values off rows that re-checks the user match; calling it keeps the two readers identical.
 	 */
-	private function setFrom(array $rows, array $spec, string $userId): array {
+	private function setFrom(array $rows, MemberOfLookup $lookup): array {
+		$spec = $lookup->spec;
 		if (count($rows) >= self::ROW_LIMIT) {
 			$this->logger->warning(
 				message: '[MemberOfResolver] The caller has more membership rows than are read; the set is truncated',
@@ -313,6 +323,23 @@ class MemberOfResolver {
 			);
 		}
 
+		return DepartmentMatrixPersonValues::collect(
+			persons: $this->countedRows(rows: $rows, spec: $spec),
+			property: $spec['property'],
+			match: $spec['match'],
+			userId: $lookup->userId
+		);
+	}//end setFrom()
+
+	/**
+	 * The rows' data that count for the operand: its `where` and its window.
+	 *
+	 * @param array<int, mixed>    $rows The rows the search returned.
+	 * @param array<string, mixed> $spec The normalised operand.
+	 *
+	 * @return array<int, array<string, mixed>> The counted rows' data.
+	 */
+	private function countedRows(array $rows, array $spec): array {
 		$kept = [];
 		foreach ($rows as $row) {
 			$data = $row;
@@ -325,13 +352,8 @@ class MemberOfResolver {
 			}
 		}
 
-		return DepartmentMatrixPersonValues::collect(
-			persons: $kept,
-			property: $spec['property'],
-			match: $spec['match'],
-			userId: $userId
-		);
-	}//end setFrom()
+		return $kept;
+	}//end countedRows()
 
 	/**
 	 * Whether a membership row passes the operand's filters and window.

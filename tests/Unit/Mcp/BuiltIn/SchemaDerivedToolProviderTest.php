@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp\BuiltIn;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -34,6 +35,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
 
 /**
  * Unit tests for SchemaDerivedToolProvider.
@@ -123,9 +125,11 @@ class SchemaDerivedToolProviderTest extends TestCase {
 			appId: 'pipelinq',
 			schemaEntries: $schemaEntries,
 			suppressedIds: $suppressedIds,
-			objectService: $this->objectService,
-			auditTrailMapper: $this->auditTrailMapper,
-			logger: $this->logger
+			services: new SchemaDerivedToolServices(
+				objectService: $this->objectService,
+				auditTrailMapper: $this->auditTrailMapper,
+				logger: $this->logger,
+			),
 		);
 
 	}//end provider()
@@ -398,10 +402,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 				string $toolId,
 				string $paramsDigest,
 				array $resultSummary,
-				?int $register,
-				?int $schema,
-				?int $object,
-				?string $objectUuid,
+				AuditedObject $about,
 			) use (&$capturedDigest) {
 				$capturedDigest = $paramsDigest;
 				$this->assertSame('pipelinq.lead.search', $toolId);
@@ -512,10 +513,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 				$this->callback(function ($summary) {
 					return $summary['isError'] === true && $summary['errorClass'] === RuntimeException::class;
 				}),
-				null,
-				1,
-				null,
-				null
+				new AuditedObject(null, 1, null, null)
 			)
 			->willReturn($this->createMock(AuditTrail::class));
 

@@ -35,53 +35,81 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
-use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
+use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCP\IUserSession;
 use UnexpectedValueException;
 
 /**
  * MCP tools for listing and running flows.
  */
-class FlowMcpToolProvider implements IMcpToolProvider {
+class FlowMcpToolProvider extends AbstractBuiltInToolProvider {
+	/**
+	 * Queues a flow run.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runner;
+
+	/**
+	 * Reads recent runs (for listing / status).
+	 *
+	 * @var FlowRunMapperInterface
+	 */
+	private readonly FlowRunMapperInterface $mapper;
+
+	/**
+	 * Authors flows, with the organisation scoping.
+	 *
+	 * @var FlowServiceInterface
+	 */
+	private readonly FlowServiceInterface $flows;
+
+	/**
+	 * Reports what a saved document is missing.
+	 *
+	 * @var FlowNodePreflightInterface
+	 */
+	private readonly FlowNodePreflightInterface $preflight;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunServiceInterface $runner Queues a flow run.
-	 * @param FlowRunMapperInterface $mapper Reads recent runs (for listing / status).
-	 * @param FlowService $flows Authors flows, with the organisation scoping.
-	 * @param FlowNodePreflight $preflight Reports what a saved document is missing.
-	 * @param IUserSession $userSession The invoking session — an MCP tool call
-	 *                                  always arrives inside one, and its user is
-	 *                                  the actor a queued run is attributed to.
+	 * @param FlowToolServices $services    The flow run, run-reading, authoring and preflight services.
+	 * @param IUserSession     $userSession The invoking session — an MCP tool call
+	 *                                      always arrives inside one, and its user is
+	 *                                      the actor a queued run is attributed to.
 	 */
 	public function __construct(
-		private readonly FlowRunServiceInterface $runner,
-		private readonly FlowRunMapperInterface $mapper,
-		private readonly FlowService $flows,
-		private readonly FlowNodePreflight $preflight,
+		FlowToolServices $services,
 		private readonly IUserSession $userSession,
 	) {
-
+		$this->runner = $services->runner;
+		$this->mapper = $services->mapper;
+		$this->flows = $services->flows;
+		$this->preflight = $services->preflight;
 	}//end __construct()
-
-	/**
-	 * The owning app id.
-	 *
-	 * @return string The app id.
-	 */
-	public function getAppId(): string {
-		return 'openregister';
-	}//end getAppId()
 
 	/**
 	 * The tool definitions.
 	 *
+	 * Every descriptor declares its MCP 2025-11-25 annotation hints and an
+	 * advisory `scope` (ADR-063, ConductionNL/openregister#2159) rather than
+	 * leaving a consumer to guess. Without them a consumer's fail-closed
+	 * fallback classifies every tool as write/destructive, which puts a
+	 * read-only status poll behind the same approval prompt as starting a run.
+	 * `runFlow` is genuinely not read-only and not idempotent — each call
+	 * queues another run — and is marked destructive because the flow it
+	 * starts may do anything a flow can do, including delete. The hints are
+	 * advisory UX metadata only; OpenRegister RBAC remains the authoritative
+	 * invoke-time gate.
+	 *
 	 * @var array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
 	 */
-	private const TOOLS = [
+	protected const TOOLS = [
 		[
 			'id' => 'openregister.runFlow',
 			'name' => 'Run a flow',
@@ -167,30 +195,6 @@ class FlowMcpToolProvider implements IMcpToolProvider {
 			'reach' => 'user',
 		],
 	];
-
-	/**
-	 * The tools this provider offers.
-	 *
-	 * Both descriptors declare their MCP 2025-11-25 annotation hints and an
-	 * advisory `scope` (ADR-063, ConductionNL/openregister#2159) rather than
-	 * leaving a consumer to guess. Without them a consumer's fail-closed
-	 * fallback classifies BOTH tools as write/destructive, which puts a
-	 * read-only status poll behind the same approval prompt as starting a run.
-	 * `runFlow` is genuinely not read-only and not idempotent — each call
-	 * queues another run — and is marked destructive because the flow it
-	 * starts may do anything a flow can do, including delete. The hints are
-	 * advisory UX metadata only; OpenRegister RBAC remains the authoritative
-	 * invoke-time gate.
-	 *
-	 * @return list<array{id: string, name: string, description: string, inputSchema: array,
-	 *         readOnlyHint: bool, destructiveHint: bool, idempotentHint: bool, scope: string,
-	 *         reach: string}> The tools.
-	 *
-	 * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
-	 */
-	public function getTools(): array {
-		return self::TOOLS;
-	}//end getTools()
 
 	/**
 	 * Invoke a flow tool.

@@ -36,7 +36,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/flow-definition-versioning/spec.md
  */
-class FlowLifecycleRefused extends RuntimeException {
+class FlowLifecycleRefused extends RuntimeException implements FlowLifecycleRefusedInterface {
 	/**
 	 * The definition of a published or deprecated version may not be changed.
 	 *

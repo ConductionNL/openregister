@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\CospendLink;
 use OCA\OpenRegister\Db\CospendLinkMapper;
 use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -94,10 +95,8 @@ class CospendLinkServiceTest extends TestCase {
 		$this->service = new CospendLinkService(
 			$this->mapper,
 			$this->container,
-			$this->appManager,
-			$this->userSession,
-			$this->db,
-			$this->logger
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger),
+			$this->db
 		);
 	}//end setUp()
 

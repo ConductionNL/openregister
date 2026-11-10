@@ -40,8 +40,10 @@ namespace OCA\OpenRegister\Service\Calculation;
  * check serve both. It materialises by default: the property exists on the
  * schema, so the value belongs in the stored object rather than being
  * recomputed on every read.
+ *
+ * @spec openspec/specs/computed-fields/spec.md
  */
-final class PropertyCalculations {
+final class PropertyCalculations implements PropertyCalculationsInterface {
 
 	/**
 	 * The property key an administration surface forwards a calculation under.
@@ -60,23 +62,49 @@ final class PropertyCalculations {
 	public function fromProperties(array $properties): array {
 		$collected = [];
 		foreach ($properties as $name => $definition) {
-			if (is_string($name) === false || $name === '' || is_array($definition) === false) {
-				continue;
+			$declaration = $this->declarationOf(name: $name, definition: $definition);
+			if ($declaration !== null) {
+				$collected[$name] = $declaration;
 			}
-
-			$declaration = ($definition[self::PROPERTY_KEY] ?? null);
-			if (is_array($declaration) === false) {
-				continue;
-			}
-
-			// `materialise` is true unless the author says otherwise: the
-			// property is declared on the schema, so its value is stored.
-			$declaration['materialise'] = ($declaration['materialise'] ?? true);
-			$collected[$name] = $declaration;
 		}
 
 		return $collected;
 	}//end fromProperties()
+
+	/**
+	 * The calculation one property forwards, or null when it forwards none.
+	 *
+	 * @param int|string $name The property name.
+	 * @param mixed $definition The property definition.
+	 *
+	 * @return array<string, mixed>|null The declaration.
+	 */
+	private function declarationOf(int|string $name, mixed $definition): ?array {
+		if (is_string($name) === false || $name === '' || is_array($definition) === false) {
+			return null;
+		}
+
+		return $this->withMaterialiseDefault(declaration: ($definition[self::PROPERTY_KEY] ?? null));
+	}//end declarationOf()
+
+	/**
+	 * A forwarded declaration with `materialise` defaulted, or null when it is not one.
+	 *
+	 * `materialise` is true unless the author says otherwise: the property is
+	 * declared on the schema, so its value is stored.
+	 *
+	 * @param mixed $declaration The `calculation` key of a property.
+	 *
+	 * @return array<string, mixed>|null The declaration.
+	 */
+	private function withMaterialiseDefault(mixed $declaration): ?array {
+		if (is_array($declaration) === false) {
+			return null;
+		}
+
+		$declaration['materialise'] = ($declaration['materialise'] ?? true);
+		return $declaration;
+	}//end withMaterialiseDefault()
 
 	/**
 	 * Merge the forwarded declarations over the schema-level annotation.
@@ -132,28 +160,54 @@ final class PropertyCalculations {
 	public function blockingErrors(array $errors, array $forwarded): array {
 		$blocking = [];
 		foreach ($errors as $error) {
-			if ($error['code'] === 'calculation-dependson-ignored') {
-				continue;
-			}
-
-			if ($error['code'] === 'calculation-duplicate-declaration') {
+			if ($this->blocks(error: $error, forwarded: $forwarded) === true) {
 				$blocking[] = $error;
-				continue;
-			}
-
-			foreach ($forwarded as $name) {
-				// The validator quotes the calculation name in every message,
-				// and a cycle message lists every name on the path.
-				if (str_contains($error['message'], '"' . $name . '"') === true
-					|| str_contains($error['message'], ' ' . $name . ' ->') === true
-					|| str_contains($error['message'], '-> ' . $name) === true
-				) {
-					$blocking[] = $error;
-					break;
-				}
 			}
 		}
 
 		return $blocking;
 	}//end blockingErrors()
+
+	/**
+	 * Whether one validation error blocks the save.
+	 *
+	 * @param array{code: string, message: string} $error The validation error.
+	 * @param array<int, string> $forwarded The names declared on a property.
+	 *
+	 * @return bool True when the error blocks.
+	 */
+	private function blocks(array $error, array $forwarded): bool {
+		if ($error['code'] === 'calculation-dependson-ignored') {
+			return false;
+		}
+
+		if ($error['code'] === 'calculation-duplicate-declaration') {
+			return true;
+		}
+
+		foreach ($forwarded as $name) {
+			if ($this->mentions(message: $error['message'], name: (string)$name) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end blocks()
+
+	/**
+	 * Whether an error message names a calculation.
+	 *
+	 * The validator quotes the calculation name in every message, and a cycle
+	 * message lists every name on the path.
+	 *
+	 * @param string $message The error message.
+	 * @param string $name The calculation name.
+	 *
+	 * @return bool True when the message names it.
+	 */
+	private function mentions(string $message, string $name): bool {
+		return str_contains($message, '"' . $name . '"') === true
+			|| str_contains($message, ' ' . $name . ' ->') === true
+			|| str_contains($message, '-> ' . $name) === true;
+	}//end mentions()
 }//end class

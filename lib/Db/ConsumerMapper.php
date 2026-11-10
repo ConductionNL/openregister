@@ -31,7 +31,7 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends                     QBMapper<Consumer>
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class ConsumerMapper extends QBMapper {
+class ConsumerMapper extends QBMapper implements ConsumerMapperInterface {
 
 	use ColumnFiltersTrait;
 
@@ -70,17 +70,13 @@ class ConsumerMapper extends QBMapper {
 	 * @param int|null $limit Maximum number of results to return
 	 * @param int|null $offset Number of results to skip
 	 * @param array|null $filters Associative array of filters
-	 * @param array|null $searchConditions Array of search conditions
-	 * @param array|null $searchParams Array of search parameters
 	 *
 	 * @return array An array of Consumer entities
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $searchConditions = [],
-		?array $searchParams = [],
+		int|null $limit = null,
+		int|null $offset = null,
+		array|null $filters = [],
 	): array {
 		$qb = $this->db->getQueryBuilder();
 
@@ -90,13 +86,6 @@ class ConsumerMapper extends QBMapper {
 			->setFirstResult($offset);
 
 		$this->applyColumnFilters(qb: $qb, filters: $filters);
-
-		if (empty($searchConditions) === false) {
-			$qb->andWhere('(' . implode(separator: ' OR ', array: $searchConditions) . ')');
-			foreach ($searchParams as $param => $value) {
-				$qb->setParameter($param, $value);
-			}
-		}
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()

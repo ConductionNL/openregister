@@ -17,6 +17,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -59,12 +61,9 @@ class ValidateObjectFlowGoldenTest extends TestCase {
 		$config->method('getValueBool')->willReturn(false);
 
 		return new ValidateObject(
-			$config,
-			$this->createStub(MagicMapperInterface::class),
-			$schemas,
-			$urls,
-			$this->createStub(LoggerInterface::class),
-			$users
+			schemas: new ValidationSchemaSource(config: $config, schemaMapper: $schemas, urlGenerator: $urls),
+			lookups: new ValidationLookups(objectMapper: $this->createStub(MagicMapperInterface::class), userManager: $users),
+			logger: $this->createStub(LoggerInterface::class)
 		);
 	}//end handler()
 

@@ -112,9 +112,10 @@ final class ReferenceLoopCheckTest extends TestCase {
 	 */
 	#[DataProvider('fine')]
 	public function testEverythingElseSaves(array $properties): void {
-		(new ReferenceLoopCheck())->check($this->schema(properties: $properties));
+		$refusal = $this->refusalOf($this->schema(properties: $properties));
 
-		$this->addToAssertionCount(1);
+		// Pair: testALoopIsRefused, the same shapes pointed back at themselves.
+		$this->assertNull($refusal, 'a reference that does not loop was refused');
 	}//end testEverythingElseSaves()
 
 	/**
@@ -158,10 +159,30 @@ final class ReferenceLoopCheckTest extends TestCase {
 		$inputs = ['properties' => ['a' => ['$ref' => '#/properties/b']]];
 		$schema->setConfiguration([ObjectActionDefinition::ACTION_BLOCK => ['close' => ['inputs' => $inputs]]]);
 
-		(new ReferenceLoopCheck())->check($schema);
+		$refusal = $this->refusalOf($schema);
 
-		$this->addToAssertionCount(1);
+		// Resolved against the schema's properties these two would form a loop
+		// (b -> a in properties, a -> b in inputs). Pair:
+		// testALoopInActionInputsIsRefusedNamingTheAction, a loop within the inputs.
+		$this->assertNull($refusal, 'action inputs were resolved against the schema properties');
 	}//end testActionInputsResolveInsideThemselves()
+
+	/**
+	 * Run the check and return its refusal, or null when the save may go on.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return InvalidArgumentException|null The refusal.
+	 */
+	private function refusalOf(Schema $schema): ?InvalidArgumentException {
+		try {
+			(new ReferenceLoopCheck())->check($schema);
+		} catch (InvalidArgumentException $refusal) {
+			return $refusal;
+		}
+
+		return null;
+	}//end refusalOf()
 
 	/**
 	 * A schema over these properties.

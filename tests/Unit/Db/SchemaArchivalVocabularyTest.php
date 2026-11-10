@@ -35,7 +35,7 @@ final class SchemaArchivalVocabularyTest extends TestCase {
 	}//end setUp()
 
 	/**
-	 * Helper: invoke the private validateConfigurationArray() so we can
+	 * Helper: invoke the private validatedConfiguration() so we can
 	 * assert directly on the strip behaviour without spinning up the
 	 * full setConfiguration → Server::get path the codebase uses at
 	 * runtime.
@@ -46,10 +46,8 @@ final class SchemaArchivalVocabularyTest extends TestCase {
 	 * @return array<string, mixed>
 	 */
 	private function invokeValidateConfigurationArray(Schema $schema, array $rawInput): array {
-		$reflection = new ReflectionClass($schema);
-		$method = $reflection->getMethod('validateConfigurationArray');
-		$method->setAccessible(true);
-		return $method->invoke($schema, $rawInput);
+		$method = (new ReflectionClass($schema))->getMethod('validatedConfiguration');
+		return ($method->invoke($schema, $rawInput) ?? []);
 	}//end invokeValidateConfigurationArray()
 
 	public function testArchivalAnnotationSurvivesConfigurationRoundTrip(): void {

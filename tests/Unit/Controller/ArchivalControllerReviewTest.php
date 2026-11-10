@@ -322,7 +322,7 @@ class ArchivalControllerReviewTest extends TestCase {
 		$this->signIn('archivaris');
 		$this->withParams([]);
 
-		$this->nominations->expects($this->never())->method('nominate');
+		$this->nominations->expects($this->never())->method('recompute');
 
 		$this->assertSame(
 			Http::STATUS_BAD_REQUEST,
@@ -335,7 +335,7 @@ class ArchivalControllerReviewTest extends TestCase {
 		$this->withParams(['reason' => 'Selectielijst 2026 replaced the 2020 list']);
 		$this->recordUnderNomination();
 
-		$this->nominations->method('nominate')->willReturn(
+		$this->nominations->method('recompute')->willReturn(
 			[
 				'status' => ArchivalNominationService::STATUS_NOMINATED,
 				'trigger' => 'recompute',
@@ -355,7 +355,7 @@ class ArchivalControllerReviewTest extends TestCase {
 		$this->withParams(['reason' => 'Trying anyway']);
 		$this->recordUnderNomination();
 
-		$this->nominations->method('nominate')->willReturn(
+		$this->nominations->method('recompute')->willReturn(
 			['status' => ArchivalNominationService::STATUS_NOT_APPLICABLE]
 		);
 		$this->objectMapper->expects($this->never())->method('update');

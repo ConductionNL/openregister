@@ -55,6 +55,69 @@ use Throwable;
 class TaskBuilder {
 
 	/**
+	 * Carried text fields: payload key => setter, trimmed, blank as null.
+	 *
+	 * Includes the template FREEZE (id lands with version and snapshot, and
+	 * later evaluation reads only the snapshot) and sequence membership (the
+	 * ordinal is written at provisioning and never re-derived from
+	 * timestamps, flow-approval-consolidation).
+	 */
+	private const STRING_FIELDS = [
+		'key' => 'setTaskKey',
+		'title' => 'setTitle',
+		'description' => 'setDescription',
+		'kind' => 'setKind',
+		'runUuid' => 'setRunUuid',
+		'nodeId' => 'setNodeId',
+		'appId' => 'setAppId',
+		'workflowStepId' => 'setWorkflowStepId',
+		'organisation' => 'setOrganisation',
+		'assignee' => 'setAssignee',
+		'candidateRole' => 'setCandidateRole',
+		'routingStrategy' => 'setRoutingStrategy',
+		'routingFallback' => 'setRoutingFallback',
+		'onBehalfOf' => 'setOnBehalfOf',
+		'mandate' => 'setMandate',
+		'requester' => 'setRequester',
+		'slaUnit' => 'setSlaUnit',
+		'recurrence' => 'setRecurrence',
+		'objectUuid' => 'setObjectUuid',
+		'blockedBy' => 'setBlockedBy',
+		'templateId' => 'setTemplateId',
+		'sequenceUuid' => 'setSequenceUuid',
+	];
+
+	/**
+	 * Carried integer fields: payload key => setter, empty as null.
+	 */
+	private const INT_FIELDS = [
+		'definitionVersion' => 'setDefinitionVersion',
+		'slaValue' => 'setSlaValue',
+		'compliancePeriodDays' => 'setCompliancePeriodDays',
+		'registerId' => 'setRegisterId',
+		'schemaId' => 'setSchemaId',
+		'parentTaskId' => 'setParentTaskId',
+		'epicTaskId' => 'setEpicTaskId',
+		'percentComplete' => 'setPercentComplete',
+		'templateVersion' => 'setTemplateVersion',
+		'sequencePosition' => 'setSequencePosition',
+		'legacyStepId' => 'setLegacyStepId',
+	];
+
+	/**
+	 * Carried array fields: payload key => setter, a non-array as null.
+	 */
+	private const ARRAY_FIELDS = [
+		'metadata' => 'setMetadata',
+		'candidateUsers' => 'setCandidateUsers',
+		'candidateGroups' => 'setCandidateGroups',
+		'watchers' => 'setWatchers',
+		'responses' => 'setResponses',
+		'evidence' => 'setEvidence',
+		'templateSnapshot' => 'setTemplateSnapshot',
+	];
+
+	/**
 	 * Build and validate a new task from boundary data. Unsaved.
 	 *
 	 * @param array<string, mixed> $data The incoming fields.
@@ -69,13 +132,44 @@ class TaskBuilder {
 	 */
 	public function fromData(array $data, ?string $actor): Task {
 		$task = new Task();
+		$this->applyLifecycle(task: $task, data: $data);
 
-		// Lifecycle: any vocabulary in, one vocabulary stored. state and
-		// is_terminal land together; the collapsed distinction lands on
-		// outcome unless the caller supplied an explicit one.
+		// Priority: one scale, off-scale refused.
+		$task->setPriority(TaskPriority::normalise(value: ($data['priority'] ?? 'normal')));
+		$task->setPerformerType($this->validPerformerType(data: $data));
+		$this->applyDeadlines(task: $task, data: $data);
+		$this->applyBehaviours(task: $task, data: $data);
+		$task->setStartAt($this->parseDate(value: ($data['startAt'] ?? null), field: 'startAt'));
+		$task->setSuspendedUntil($this->parseDate(value: ($data['suspendedUntil'] ?? null), field: 'suspendedUntil'));
+
+		// Checklist: typed array, never a string containing JSON.
+		$task->setChecklist($this->validChecklist(value: ($data['checklist'] ?? null)));
+
+		// Plain carried fields.
+		$task->setUuid((string)($data['uuid'] ?? Uuid::v4()->toRfc4122()));
+		$this->carryFields(task: $task, data: $data);
+		$task->setCreatedBy($actor);
+
+		return $task;
+	}//end fromData()
+
+	/**
+	 * Lifecycle: any vocabulary in, one vocabulary stored.
+	 *
+	 * State and is_terminal land together — the same invariant
+	 * TaskService::applyState() keeps for every later move — and the
+	 * collapsed distinction lands on outcome unless the caller supplied an
+	 * explicit one.
+	 *
+	 * @param Task $task The task being built.
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskValidationException On an unmapped state.
+	 */
+	private function applyLifecycle(Task $task, array $data): void {
 		$normalised = TaskState::normalise(value: (string)($data['state'] ?? Task::STATE_AVAILABLE));
-		// Creation initialises state and is_terminal TOGETHER, the same
-		// invariant TaskService::applyState() keeps for every later move.
 		$task->setState($normalised['state']);
 		$task->setIsTerminal(TaskState::isTerminal(state: $normalised['state']));
 		$task->setLastAction('create');
@@ -85,11 +179,18 @@ class TaskBuilder {
 		}
 
 		$task->setOutcome($outcome);
+	}//end applyLifecycle()
 
-		// Priority: one scale, off-scale refused.
-		$task->setPriority(TaskPriority::normalise(value: ($data['priority'] ?? 'normal')));
-
-		// Performer type: validated against the extensible vocabulary.
+	/**
+	 * Performer type: validated against the extensible vocabulary.
+	 *
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return string The performer type.
+	 *
+	 * @throws TaskValidationException Outside the vocabulary.
+	 */
+	private function validPerformerType(array $data): string {
 		$performerType = (string)($data['performerType'] ?? Task::PERFORMER_USER);
 		if (in_array($performerType, Task::PERFORMER_TYPES, true) === false) {
 			throw new TaskValidationException(
@@ -97,10 +198,21 @@ class TaskBuilder {
 			);
 		}
 
-		$task->setPerformerType($performerType);
+		return $performerType;
+	}//end validPerformerType()
 
-		// Deadlines: due_at advises, expires_at enforces, and an expiry
-		// before the due date is a configuration error, not a schedule.
+	/**
+	 * Deadlines: due_at advises, expires_at enforces, and an expiry before
+	 * the due date is a configuration error, not a schedule.
+	 *
+	 * @param Task $task The task being built.
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskValidationException On an unparsable date or an expiry before the due date.
+	 */
+	private function applyDeadlines(Task $task, array $data): void {
 		$dueAt = $this->parseDate(value: ($data['dueAt'] ?? null), field: 'dueAt');
 		$expiresAt = $this->parseDate(value: ($data['expiresAt'] ?? null), field: 'expiresAt');
 		if ($dueAt !== null && $expiresAt !== null && $expiresAt < $dueAt) {
@@ -115,12 +227,23 @@ class TaskBuilder {
 
 		$task->setDueAt($dueAt);
 		$task->setExpiresAt($expiresAt);
+	}//end applyDeadlines()
 
-		// Declared behaviours: one reserved vocabulary, refused by name
-		// outside it, and a timeout behaviour with no deadline is a
-		// configuration error, not a schedule (task-expiry-and-outcomes D-6).
+	/**
+	 * Declared behaviours: one reserved vocabulary, refused by name outside
+	 * it, and a timeout behaviour with no deadline is a configuration error,
+	 * not a schedule (task-expiry-and-outcomes D-6).
+	 *
+	 * @param Task $task The task being built, its deadlines already set.
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskValidationException On an unknown behaviour or a timeout without deadline.
+	 */
+	private function applyBehaviours(Task $task, array $data): void {
 		$onTimeout = $this->validBehaviour(value: ($data['onTimeout'] ?? null), field: 'onTimeout');
-		if ($onTimeout !== null && $expiresAt === null) {
+		if ($onTimeout !== null && $task->getExpiresAt() === null) {
 			throw new TaskValidationException(
 				message: sprintf("onTimeout '%s' without an expiresAt is a configuration error: there is no deadline to time out on.", $onTimeout)
 			);
@@ -128,64 +251,29 @@ class TaskBuilder {
 
 		$task->setOnTimeout($onTimeout);
 		$task->setOnReject($this->validBehaviour(value: ($data['onReject'] ?? null), field: 'onReject'));
-		$task->setStartAt($this->parseDate(value: ($data['startAt'] ?? null), field: 'startAt'));
-		$task->setSuspendedUntil($this->parseDate(value: ($data['suspendedUntil'] ?? null), field: 'suspendedUntil'));
+	}//end applyBehaviours()
 
-		// Checklist: typed array, never a string containing JSON.
-		$task->setChecklist($this->validChecklist(value: ($data['checklist'] ?? null)));
+	/**
+	 * Copy the plain carried fields, each through its own normaliser.
+	 *
+	 * @param Task $task The task being built.
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return void
+	 */
+	private function carryFields(Task $task, array $data): void {
+		foreach (self::STRING_FIELDS as $key => $setter) {
+			$task->$setter($this->stringOrNull(value: $data[$key] ?? null));
+		}
 
-		// Plain carried fields.
-		$task->setUuid((string)($data['uuid'] ?? Uuid::v4()->toRfc4122()));
-		$task->setTaskKey($this->stringOrNull(value: $data['key'] ?? null));
-		$task->setTitle($this->stringOrNull(value: $data['title'] ?? null));
-		$task->setDescription($this->stringOrNull(value: $data['description'] ?? null));
-		$task->setMetadata($this->arrayOrNull(value: $data['metadata'] ?? null));
-		$task->setKind($this->stringOrNull(value: $data['kind'] ?? null));
-		$task->setRunUuid($this->stringOrNull(value: $data['runUuid'] ?? null));
-		$task->setNodeId($this->stringOrNull(value: $data['nodeId'] ?? null));
-		$task->setDefinitionVersion($this->intOrNull(value: ($data['definitionVersion'] ?? null)));
-		$task->setAppId($this->stringOrNull(value: $data['appId'] ?? null));
-		$task->setWorkflowStepId($this->stringOrNull(value: $data['workflowStepId'] ?? null));
-		$task->setOrganisation($this->stringOrNull(value: $data['organisation'] ?? null));
-		$task->setAssignee($this->stringOrNull(value: $data['assignee'] ?? null));
-		$task->setCandidateUsers($this->arrayOrNull(value: $data['candidateUsers'] ?? null));
-		$task->setCandidateGroups($this->arrayOrNull(value: $data['candidateGroups'] ?? null));
-		$task->setCandidateRole($this->stringOrNull(value: $data['candidateRole'] ?? null));
-		$task->setRoutingStrategy($this->stringOrNull(value: $data['routingStrategy'] ?? null));
-		$task->setRoutingFallback($this->stringOrNull(value: $data['routingFallback'] ?? null));
-		$task->setOnBehalfOf($this->stringOrNull(value: $data['onBehalfOf'] ?? null));
-		$task->setMandate($this->stringOrNull(value: $data['mandate'] ?? null));
-		$task->setRequester($this->stringOrNull(value: $data['requester'] ?? null));
-		$task->setWatchers($this->arrayOrNull(value: $data['watchers'] ?? null));
-		$task->setSlaValue($this->intOrNull(value: ($data['slaValue'] ?? null)));
-		$task->setSlaUnit($this->stringOrNull(value: $data['slaUnit'] ?? null));
-		$task->setCompliancePeriodDays($this->intOrNull(value: ($data['compliancePeriodDays'] ?? null)));
-		$task->setRecurrence($this->stringOrNull(value: $data['recurrence'] ?? null));
-		$task->setObjectUuid($this->stringOrNull(value: $data['objectUuid'] ?? null));
-		$task->setRegisterId($this->intOrNull(value: ($data['registerId'] ?? null)));
-		$task->setSchemaId($this->intOrNull(value: ($data['schemaId'] ?? null)));
-		$task->setParentTaskId($this->intOrNull(value: ($data['parentTaskId'] ?? null)));
-		$task->setEpicTaskId($this->intOrNull(value: ($data['epicTaskId'] ?? null)));
-		$task->setBlockedBy($this->stringOrNull(value: $data['blockedBy'] ?? null));
-		$task->setPercentComplete($this->intOrNull(value: ($data['percentComplete'] ?? null)));
-		$task->setResponses($this->arrayOrNull(value: $data['responses'] ?? null));
-		$task->setEvidence($this->arrayOrNull(value: $data['evidence'] ?? null));
-		$task->setCreatedBy($actor);
+		foreach (self::INT_FIELDS as $key => $setter) {
+			$task->$setter($this->intOrNull(value: $data[$key] ?? null));
+		}
 
-		// Template FREEZE at creation: id, version and the snapshot land
-		// together, and later evaluation reads only the snapshot.
-		$task->setTemplateId($this->stringOrNull(value: $data['templateId'] ?? null));
-		$task->setTemplateVersion($this->intOrNull(value: ($data['templateVersion'] ?? null)));
-		$task->setTemplateSnapshot($this->arrayOrNull(value: $data['templateSnapshot'] ?? null));
-
-		// Sequence membership (flow-approval-consolidation): the ordinal is
-		// written at provisioning and never re-derived from timestamps.
-		$task->setSequenceUuid($this->stringOrNull(value: $data['sequenceUuid'] ?? null));
-		$task->setSequencePosition($this->intOrNull(value: ($data['sequencePosition'] ?? null)));
-		$task->setLegacyStepId($this->intOrNull(value: ($data['legacyStepId'] ?? null)));
-
-		return $task;
-	}//end fromData()
+		foreach (self::ARRAY_FIELDS as $key => $setter) {
+			$task->$setter($this->arrayOrNull(value: $data[$key] ?? null));
+		}
+	}//end carryFields()
 
 	/**
 	 * The typed relations named at creation, as unsaved rows.
@@ -207,27 +295,40 @@ class TaskBuilder {
 
 		$rows = [];
 		foreach ($relations as $relation) {
-			if (is_array($relation) === false) {
-				continue;
+			if (is_array($relation) === true) {
+				$rows[] = $this->relationRow(task: $task, relation: $relation);
 			}
-
-			$role = trim((string)($relation['role'] ?? ''));
-			$objectUuid = trim((string)($relation['objectUuid'] ?? ''));
-			if ($role === '' || $objectUuid === '') {
-				throw new TaskValidationException(message: 'A task relation requires both a role and an objectUuid.');
-			}
-
-			$row = new TaskRelation();
-			$row->setTaskId((int)$task->getId());
-			$row->setRole($role);
-			$row->setObjectUuid($objectUuid);
-			$row->setRegisterId($this->intOrNull(value: ($relation['registerId'] ?? null)));
-			$row->setSchemaId($this->intOrNull(value: ($relation['schemaId'] ?? null)));
-			$rows[] = $row;
 		}
 
 		return $rows;
 	}//end relationsFor()
+
+	/**
+	 * One relation row, refused without a role or an object.
+	 *
+	 * @param Task $task The inserted task.
+	 * @param array<string, mixed> $relation The declared relation.
+	 *
+	 * @return TaskRelation The unsaved row.
+	 *
+	 * @throws TaskValidationException Without a role or an objectUuid.
+	 */
+	private function relationRow(Task $task, array $relation): TaskRelation {
+		$role = trim((string)($relation['role'] ?? ''));
+		$objectUuid = trim((string)($relation['objectUuid'] ?? ''));
+		if ($role === '' || $objectUuid === '') {
+			throw new TaskValidationException(message: 'A task relation requires both a role and an objectUuid.');
+		}
+
+		$row = new TaskRelation();
+		$row->setTaskId((int)$task->getId());
+		$row->setRole($role);
+		$row->setObjectUuid($objectUuid);
+		$row->setRegisterId($this->intOrNull(value: ($relation['registerId'] ?? null)));
+		$row->setSchemaId($this->intOrNull(value: ($relation['schemaId'] ?? null)));
+
+		return $row;
+	}//end relationRow()
 
 	/**
 	 * A declared behaviour: one value of the reserved outcome vocabulary.
@@ -278,22 +379,38 @@ class TaskBuilder {
 			return null;
 		}
 
+		$date = $this->dateOf(value: $value);
+		if ($date === null) {
+			throw new TaskValidationException(
+				message: sprintf("Field '%s' does not parse as a date.", $field)
+			);
+		}
+
+		return $date;
+	}//end parseDate()
+
+	/**
+	 * A given DateTime, or a string parsed as one; null when neither.
+	 *
+	 * @param mixed $value The raw value, not null or empty.
+	 *
+	 * @return DateTime|null The date, or null when it does not parse.
+	 */
+	private function dateOf(mixed $value): ?DateTime {
 		if ($value instanceof DateTime === true) {
 			return $value;
 		}
 
-		if (is_string($value) === true) {
-			try {
-				return new DateTime($value);
-			} catch (Throwable) {
-				// Falls through to the refusal below.
-			}
+		if (is_string($value) === false) {
+			return null;
 		}
 
-		throw new TaskValidationException(
-			message: sprintf("Field '%s' does not parse as a date.", $field)
-		);
-	}//end parseDate()
+		try {
+			return new DateTime($value);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end dateOf()
 
 	/**
 	 * The checklist must be a typed array of {id, label} items.
@@ -324,22 +441,30 @@ class TaskBuilder {
 			throw new TaskValidationException(message: 'The checklist must be a typed array of {id, label, description, checked} items.');
 		}
 
-		$items = [];
-		foreach ($value as $item) {
-			if (is_array($item) === false || trim((string)($item['id'] ?? '')) === '' || trim((string)($item['label'] ?? '')) === '') {
-				throw new TaskValidationException(message: 'Every checklist item requires an id and a label.');
-			}
+		return array_map(fn (mixed $item): array => $this->checklistItem(item: $item), array_values($value));
+	}//end validChecklist()
 
-			$items[] = [
-				'id' => (string)$item['id'],
-				'label' => (string)$item['label'],
-				'description' => ($item['description'] ?? null),
-				'checked' => (bool)($item['checked'] ?? false),
-			];
+	/**
+	 * One checklist item in its typed shape.
+	 *
+	 * @param mixed $item The declared item.
+	 *
+	 * @return array{id: string, label: string, description: mixed, checked: bool} The item.
+	 *
+	 * @throws TaskValidationException Without an id or a label.
+	 */
+	private function checklistItem(mixed $item): array {
+		if (is_array($item) === false || trim((string)($item['id'] ?? '')) === '' || trim((string)($item['label'] ?? '')) === '') {
+			throw new TaskValidationException(message: 'Every checklist item requires an id and a label.');
 		}
 
-		return $items;
-	}//end validChecklist()
+		return [
+			'id' => (string)$item['id'],
+			'label' => (string)$item['label'],
+			'description' => ($item['description'] ?? null),
+			'checked' => (bool)($item['checked'] ?? false),
+		];
+	}//end checklistItem()
 
 	/**
 	 * A trimmed string, or null for absent/empty.

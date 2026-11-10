@@ -25,10 +25,16 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -118,8 +124,9 @@ class SaveObjectsStoredStateGuardTest extends TestCase {
 
 		$result = ['invalid' => [], 'statistics' => ['invalid' => 0, 'errors' => 0]];
 		$rows = [['id' => self::UUID, 'title' => 'overwritten']];
-		$args = [$rows, $register, $schema, $flags + ['validation' => false], &$result];
-		$passed = (new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards'))->invokeArgs($this->handler(), $args);
+		$batch = new SafeguardBatchRun(objects: $rows, defaults: new BulkBatchDefaults($register, $schema), flags: $flags + ['validation' => false], result: $result);
+		$passed = (new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards'))->invokeArgs($this->handler(), [$batch]);
+		$result = $batch->result;
 		if ($passed !== []) {
 			return null;
 		}
@@ -144,16 +151,10 @@ class SaveObjectsStoredStateGuardTest extends TestCase {
 		$permissions->method('hasPermission')->willReturnCallback(fn (): bool => $this->granted);
 
 		return new SaveObjects(
-			objectEntityMapper: $mapper,
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			saveHandler: $this->createMock(SaveObject::class),
-			userSession: $session,
-			organisationService: $this->createMock(OrganisationService::class),
-			logger: new NullLogger(),
-			groupManager: $this->createMock(IGroupManager::class),
-			permissionHandler: $permissions,
-			rowRules: new BulkRowRules(runContext: $this->flow)
+			stores: new BulkSaveStores(objectEntityMapper: $mapper, schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $session, organisationService: $this->createMock(OrganisationService::class), groupManager: $this->createMock(IGroupManager::class)),
+			reporting: new BulkSaveReporting(logger: new NullLogger()),
+			checks: new BulkRowChecks(permissionHandler: $permissions, rowRules: new BulkRowRules(runContext: $this->flow))
 		);
 	}//end handler()
 

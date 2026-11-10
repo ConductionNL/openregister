@@ -29,9 +29,11 @@ namespace Unit\Service\Export;
 
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ExportProfileMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
@@ -42,6 +44,8 @@ use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\ExportService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Export\ExportProfileStores;
+use OCA\OpenRegister\Service\Export\ExportProfileSteps;
 
 final class ExportProfileServiceTest extends TestCase {
 	private ExportRightService&MockObject $rights;
@@ -70,14 +74,17 @@ final class ExportProfileServiceTest extends TestCase {
 		$schemas->method('find')->willReturn(new Schema());
 
 		return new ExportProfileService(
-			$this->mapper,
-			$registers,
-			$schemas,
-			$this->exportService,
-			$this->writer,
+			new ExportProfileStores(
+				$this->mapper,
+				new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)),
+			),
+			new ExportProfileSteps(
+				$this->exportService,
+				$this->writer,
+				new ExportProfileValidator(),
+			),
 			$this->rights,
 			$this->recorder,
-			new ExportProfileValidator()
 		);
 	}//end service()
 

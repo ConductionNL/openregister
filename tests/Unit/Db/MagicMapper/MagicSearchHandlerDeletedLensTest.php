@@ -25,6 +25,8 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\DeletedLens;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -179,7 +181,7 @@ final class MagicSearchHandlerDeletedLensTest extends TestCase {
 		);
 		$method = (new ReflectionClass(objectOrClass: MagicSearchHandler::class))->getMethod('applyBasicFilters');
 		$method->setAccessible(true);
-		$method->invoke($this->handlerWithDb(), $qb, DeletedLens::ONLY, MagicSearchHandler::ARCHIVED_ANY, [], null, []);
+		$method->invoke($this->handlerWithDb(), new TableFilterRun(qb: $qb, query: ['_deleted' => 'true', '_archived' => 'any'], table: new MagicReadTable(schema: new Schema())));
 
 		$this->assertContains('t._deleted IS NOT NULL', $added);
 		$this->assertNotContains('t._deleted IS NULL', $added);

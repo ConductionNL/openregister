@@ -92,5 +92,12 @@ module.exports = {
 		'<rootDir>/\\.migration/',
 	],
 	coveragePathIgnorePatterns: ['index.js', 'index.ts'],
+	// Without this, a file no spec imports is left out of the total entirely.
+	collectCoverageFrom: [
+		'src/**/*.{js,ts,vue}',
+		'!src/**/*.spec.{js,ts}',
+		'!src/**/*.test.{js,ts}',
+		'!src/tests/**',
+	],
 	coverageDirectory: '<rootDir>/coverage-frontend/',
 }

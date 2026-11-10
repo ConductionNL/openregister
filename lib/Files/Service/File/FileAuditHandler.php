@@ -69,11 +69,8 @@ class FileAuditHandler {
 	 * in the `changed` payload so consumers can reconstruct the contents
 	 * of the archive.
 	 *
-	 * @param ObjectEntity $object The parent object whose files were zipped.
-	 * @param int[] $fileIds File IDs included in the archive.
-	 * @param string[] $fileNames File names included in the archive (parallel index to fileIds).
-	 * @param string $zipName The generated ZIP filename.
-	 * @param int|null $totalBytes Total uncompressed bytes across included files (best-effort).
+	 * @param ObjectEntity        $object  The parent object whose files were zipped.
+	 * @param BulkDownloadArchive $archive The file ids, file names, ZIP name and byte total of the archive.
 	 *
 	 * @return AuditTrail|null The persisted audit row, or null on failure.
 	 *
@@ -81,13 +78,12 @@ class FileAuditHandler {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-4
 	 */
-	public function logBulkDownload(
-		ObjectEntity $object,
-		array $fileIds,
-		array $fileNames,
-		string $zipName,
-		?int $totalBytes = null,
-	): ?AuditTrail {
+	public function logBulkDownload(ObjectEntity $object, BulkDownloadArchive $archive): ?AuditTrail {
+		$fileIds = $archive->fileIds;
+		$fileNames = $archive->fileNames;
+		$zipName = $archive->zipName;
+		$totalBytes = $archive->totalBytes;
+
 		try {
 			$auditTrail = new AuditTrail();
 			$auditTrail->setUuid((string)Uuid::v4());

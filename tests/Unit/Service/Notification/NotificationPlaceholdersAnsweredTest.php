@@ -44,6 +44,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 
 /**
  * The evaluator's rule, and the shipped templates held to it.
@@ -143,17 +144,13 @@ class NotificationPlaceholdersAnsweredTest extends TestCase {
 		// a reader fixing them would work through.
 		$this->assertSame(
 			['target', 'reason'],
-			$templating->unanswered(
-				template: 'De overdracht naar {{target}} stopte: {{reason}}. Zaak {{known}}.',
-				data: ['known' => '2026-0042'],
-				context: []
-			)
+			$templating->unanswered(template: 'De overdracht naar {{target}} stopte: {{reason}}. Zaak {{known}}.', values: new PlaceholderValues(data: ['known' => '2026-0042'], context: []))
 		);
 
 		// The control: a template everything answers reports nothing.
 		$this->assertSame(
 			[],
-			$templating->unanswered(template: 'Zaak {{known}}.', data: ['known' => 'x'], context: [])
+			$templating->unanswered(template: 'Zaak {{known}}.', values: new PlaceholderValues(data: ['known' => 'x'], context: []))
 		);
 	}//end testItCanSayWhatItCouldNotAnswer()
 
@@ -173,7 +170,7 @@ class NotificationPlaceholdersAnsweredTest extends TestCase {
 
 		$rendered = $templating->interpolate(template: $template, data: $data, context: $context);
 
-		foreach ($templating->unanswered(template: $template, data: $data, context: $context) as $key) {
+		foreach ($templating->unanswered(template: $template, values: new PlaceholderValues(data: $data, context: $context)) as $key) {
 			$this->assertStringContainsString(
 				'{{' . $key . '}}',
 				$rendered,
@@ -184,7 +181,7 @@ class NotificationPlaceholdersAnsweredTest extends TestCase {
 		// And the other direction: nothing it left is absent from the list.
 		preg_match_all('/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/', $rendered, $left);
 		$this->assertSame(
-			$templating->unanswered(template: $template, data: $data, context: $context),
+			$templating->unanswered(template: $template, values: new PlaceholderValues(data: $data, context: $context)),
 			array_values(array_unique($left[1]))
 		);
 	}//end testTheGuardAgreesWithTheRenderer()

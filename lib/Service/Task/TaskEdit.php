@@ -189,10 +189,12 @@ class TaskEdit {
 		}
 
 		try {
-			return new DateTime($value);
+			$date = new DateTime($value);
 		} catch (Throwable) {
-			return null;
+			$date = null;
 		}
+
+		return $date;
 	}//end isoDate()
 
 	/**
@@ -238,11 +240,11 @@ class TaskEdit {
 		}
 
 		$text = trim((string)$value);
-		if ($text === '') {
-			return null;
+		if ($text !== '') {
+			return $text;
 		}
 
-		return $text;
+		return null;
 	}//end text()
 
 	/**

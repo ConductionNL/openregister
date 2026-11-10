@@ -36,10 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Deferral;
 
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
-use OCP\BackgroundJob\IJobList;
-use OCP\IAppConfig;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * Buffers deferred listener work and enqueues actor-forwarded chunk jobs.
@@ -49,7 +46,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/event-driven-architecture/spec.md
  */
-class ListenerDeferralService {
+class ListenerDeferralService implements ListenerDeferralInterface {
 
 	/**
 	 * Kill-switch value that restores synchronous listener execution.
@@ -64,13 +61,6 @@ class ListenerDeferralService {
 	 * @var string
 	 */
 	public const MODE_BACKGROUND = 'background';
-
-	/**
-	 * Default number of entries per enqueued job.
-	 *
-	 * @var integer
-	 */
-	public const DEFAULT_CHUNK_SIZE = 100;
 
 	/**
 	 * The longest job argument Nextcloud 32 and 33 accept, as its own JSON
@@ -140,21 +130,17 @@ class ListenerDeferralService {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param IUserSession $userSession Session used to capture the acting user.
-	 * @param OrganisationServiceInterface $organisation Resolver for the active organisation.
-	 * @param IJobList $jobList Job list the chunk jobs are enqueued on.
-	 * @param IAppConfig $appConfig App config holding the kill switch.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param int|null $argumentLimit Job argument limit to respect; null reads the running server's.
+	 * @param IUserSession                 $userSession   Session used to capture the acting user.
+	 * @param OrganisationServiceInterface $organisation  Resolver for the active organisation.
+	 * @param DeferralQueueServices        $queue         Job list, kill-switch config and logger.
+	 * @param int|null                     $argumentLimit Job argument limit to respect; null reads the running server's.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly OrganisationServiceInterface $organisation,
-		private readonly IJobList $jobList,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
+		private readonly DeferralQueueServices $queue,
 		private readonly ?int $argumentLimit = null,
 	) {
 	}//end __construct()
@@ -200,7 +186,7 @@ class ListenerDeferralService {
 	 */
 	public function isDeferralEnabled(): bool {
 		try {
-			$mode = $this->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, self::MODE_BACKGROUND);
+			$mode = $this->queue->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, self::MODE_BACKGROUND);
 		} catch (\Throwable $e) {
 			return true;
 		}
@@ -235,34 +221,39 @@ class ListenerDeferralService {
 		int $chunkSize = self::DEFAULT_CHUNK_SIZE,
 		?string $dedupeKey = null,
 	): void {
+		$options = new DeferralOptions(chunkSize: $chunkSize, dedupeKey: $dedupeKey);
+		$this->deferEntry(deferred: new DeferredEntry(jobClass: $jobClass, entry: $entry), options: $options);
+	}//end defer()
+
+	/**
+	 * Buffer one entry for its job class, flushing full chunks immediately.
+	 *
+	 * Fail-soft like defer(): a capture or enqueue failure is logged and never
+	 * breaks the save that triggered it.
+	 *
+	 * @param DeferredEntry   $deferred The entry and the job class it is enqueued for.
+	 * @param DeferralOptions $options  Chunk size and optional coalescing key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function deferEntry(DeferredEntry $deferred, DeferralOptions $options = new DeferralOptions()): void {
+		$jobClass = $deferred->jobClass;
 		try {
 			$this->captureActor();
+			$this->ensureBuffer(jobClass: $jobClass, chunkSize: $options->chunkSize);
 
-			if (isset($this->buffers[$jobClass]) === false) {
-				$this->buffers[$jobClass] = [
-					'entries' => [],
-					'dedupe' => [],
-					'chunkSize' => max(1, $chunkSize),
-				];
+			if ($this->isDuplicate(jobClass: $jobClass, dedupeKey: $options->dedupeKey) === true) {
+				return;
 			}
 
-			if ($dedupeKey !== null) {
-				if (isset($this->buffers[$jobClass]['dedupe'][$dedupeKey]) === true) {
-					return;
-				}
-
-				$this->buffers[$jobClass]['dedupe'][$dedupeKey] = true;
-			}
-
-			$this->buffers[$jobClass]['entries'][] = $entry;
+			$this->buffers[$jobClass]['entries'][] = $deferred->entry;
 
 			$this->hookShutdown();
-
-			if (count($this->buffers[$jobClass]['entries']) >= $this->buffers[$jobClass]['chunkSize']) {
-				$this->flushBuffer(jobClass: $jobClass);
-			}
+			$this->flushWhenFull(jobClass: $jobClass);
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->queue->logger->error(
 				message: '[ListenerDeferralService] Failed to buffer deferred listener entry',
 				context: [
 					'file' => __FILE__,
@@ -272,7 +263,59 @@ class ListenerDeferralService {
 				]
 			);
 		}//end try
-	}//end defer()
+	}//end deferEntry()
+
+	/**
+	 * Open the buffer of a job class on its first entry; its chunk size is fixed then.
+	 *
+	 * @param string $jobClass  The job class.
+	 * @param int    $chunkSize The requested chunk size (at least 1 is used).
+	 *
+	 * @return void
+	 */
+	private function ensureBuffer(string $jobClass, int $chunkSize): void {
+		if (isset($this->buffers[$jobClass]) === false) {
+			$this->buffers[$jobClass] = [
+				'entries' => [],
+				'dedupe' => [],
+				'chunkSize' => max(1, $chunkSize),
+			];
+		}
+	}//end ensureBuffer()
+
+	/**
+	 * Whether the dedupe key was already buffered for this job class; marks it seen otherwise.
+	 *
+	 * @param string      $jobClass  The job class.
+	 * @param string|null $dedupeKey The dedupe key, or null for none.
+	 *
+	 * @return bool
+	 */
+	private function isDuplicate(string $jobClass, ?string $dedupeKey): bool {
+		if ($dedupeKey === null) {
+			return false;
+		}
+
+		if (isset($this->buffers[$jobClass]['dedupe'][$dedupeKey]) === true) {
+			return true;
+		}
+
+		$this->buffers[$jobClass]['dedupe'][$dedupeKey] = true;
+		return false;
+	}//end isDuplicate()
+
+	/**
+	 * Flush the buffer of a job class once it holds a full chunk.
+	 *
+	 * @param string $jobClass The job class.
+	 *
+	 * @return void
+	 */
+	private function flushWhenFull(string $jobClass): void {
+		if (count($this->buffers[$jobClass]['entries']) >= $this->buffers[$jobClass]['chunkSize']) {
+			$this->flushBuffer(jobClass: $jobClass);
+		}
+	}//end flushWhenFull()
 
 	/**
 	 * Flush every remaining buffer to the job list.
@@ -339,70 +382,94 @@ class ListenerDeferralService {
 		$envelope = new DeferredListenerContext(userId: $this->capturedUserId, orgUuid: $this->capturedOrgUuid, entries: []);
 		// Measured the way the job list measures: plain json_encode. Each entry
 		// adds its own length plus the comma that joins it to the next.
-		$budget = ($this->getArgumentLimit() - strlen((string)json_encode($envelope->toJobArguments())));
+		$budget = new JobArgumentBudget(
+			jobClass: $jobClass,
+			room: ($this->getArgumentLimit() - strlen((string)json_encode($envelope->toJobArguments())))
+		);
 
-		$chunks  = [];
-		$current = [];
-		$used    = 0;
+		$packing = new DeferredChunkPacking(budget: $budget);
 		foreach ($entries as $entry) {
-			$length = (strlen((string)json_encode($entry)) + 1);
-			if ($length > $budget && array_key_exists('oldData', $entry) === true) {
-				// The previous data is the bulk of a large update. Losing it beats
-				// losing the entry, but it is not free: rules that compare old
-				// against new fail closed without it and are skipped.
-				$reduced = $entry;
-				unset($reduced['oldData']);
-				$reducedLength = (strlen((string)json_encode($reduced)) + 1);
-				if ($reducedLength <= $budget) {
-					$this->logger->warning(
-						message: '[ListenerDeferralService] A deferred listener entry was too large for a background job; '
-							. 'it was enqueued without its previous data; conditioned updated rules and '
-							. 'calculatedChange rules are skipped for this object',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'jobClass' => $jobClass,
-							'uuid' => (string)($entry['uuid'] ?? ''),
-							'length' => $length,
-							'limit' => $this->getArgumentLimit(),
-						]
-					);
-					$entry  = $reduced;
-					$length = $reducedLength;
-				}
+			$fitted = $this->fitEntry(entry: $entry, budget: $budget);
+			if ($fitted !== null) {
+				$packing->add(fitted: $fitted);
 			}
-
-			if ($length > $budget) {
-				$this->logger->error(
-					message: '[ListenerDeferralService] A deferred listener entry is larger than a background job may carry; it was not enqueued',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'jobClass' => $jobClass,
-						'uuid' => (string)($entry['uuid'] ?? ''),
-						'length' => $length,
-						'limit' => $this->getArgumentLimit(),
-					]
-				);
-				continue;
-			}
-
-			if ($current !== [] && ($used + $length) > $budget) {
-				$chunks[] = $current;
-				$current  = [];
-				$used     = 0;
-			}
-
-			$current[] = $entry;
-			$used     += $length;
-		}//end foreach
-
-		if ($current !== []) {
-			$chunks[] = $current;
 		}
 
-		return $chunks;
+		return $packing->chunks();
 	}//end chunksUnderLimit()
+
+	/**
+	 * An entry with its encoded length, reduced if it must be, or null when it
+	 * cannot fit a job at all (logged as an error; the entry is not enqueued).
+	 *
+	 * @param array<string, mixed> $entry  The entry.
+	 * @param JobArgumentBudget    $budget The job class (for the log) and the room an entry may take in a job.
+	 *
+	 * @return array{entry: array<string, mixed>, length: int}|null
+	 */
+	private function fitEntry(array $entry, JobArgumentBudget $budget): ?array {
+		$fitted = $this->withoutOldDataWhenTooLarge(entry: $entry, budget: $budget);
+		if ($fitted['length'] <= $budget->room) {
+			return $fitted;
+		}
+
+		$this->queue->logger->error(
+			message: '[ListenerDeferralService] A deferred listener entry is larger than a background job may carry; it was not enqueued',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'jobClass' => $budget->jobClass,
+				'uuid' => (string)($fitted['entry']['uuid'] ?? ''),
+				'length' => $fitted['length'],
+				'limit' => $this->getArgumentLimit(),
+			]
+		);
+		return null;
+	}//end fitEntry()
+
+	/**
+	 * An entry with its encoded length; an oversized entry whose previous data
+	 * is the bulk loses `oldData` when that makes it fit (logged as a warning).
+	 *
+	 * The previous data is the bulk of a large update. Losing it beats losing
+	 * the entry, but it is not free: rules that compare old against new fail
+	 * closed without it and are skipped.
+	 *
+	 * @param array<string, mixed> $entry  The entry.
+	 * @param JobArgumentBudget    $budget The job class (for the log) and the room an entry may take in a job.
+	 *
+	 * @return array{entry: array<string, mixed>, length: int}
+	 */
+	private function withoutOldDataWhenTooLarge(array $entry, JobArgumentBudget $budget): array {
+		// Measured the way the job list measures: plain json_encode, plus the
+		// comma that joins the entry to the next.
+		$length = (strlen((string)json_encode($entry)) + 1);
+		if ($length <= $budget->room || array_key_exists('oldData', $entry) === false) {
+			return ['entry' => $entry, 'length' => $length];
+		}
+
+		$reduced = $entry;
+		unset($reduced['oldData']);
+		$reducedLength = (strlen((string)json_encode($reduced)) + 1);
+		if ($reducedLength > $budget->room) {
+			return ['entry' => $entry, 'length' => $length];
+		}
+
+		$this->queue->logger->warning(
+			message: '[ListenerDeferralService] A deferred listener entry was too large for a background job; '
+				. 'it was enqueued without its previous data; conditioned updated rules and '
+				. 'calculatedChange rules are skipped for this object',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'jobClass' => $budget->jobClass,
+				'uuid' => (string)($entry['uuid'] ?? ''),
+				'length' => $length,
+				'limit' => $this->getArgumentLimit(),
+			]
+		);
+		return ['entry' => $reduced, 'length' => $reducedLength];
+	}//end withoutOldDataWhenTooLarge()
 
 	/**
 	 * Enqueue one chunk job.
@@ -420,9 +487,9 @@ class ListenerDeferralService {
 		);
 
 		try {
-			$this->jobList->add($jobClass, $context->toJobArguments());
+			$this->queue->jobList->add($jobClass, $context->toJobArguments());
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->queue->logger->error(
 				message: '[ListenerDeferralService] Failed to enqueue deferred listener job',
 				context: [
 					'file' => __FILE__,

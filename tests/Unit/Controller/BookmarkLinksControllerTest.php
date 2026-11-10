@@ -25,6 +25,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\BookmarkLinksController;
+use OCA\OpenRegister\Controller\Support\BookmarkLinksControllerServices;
 use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Db\BookmarkLink;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -55,10 +56,11 @@ class BookmarkLinksControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->controller = new BookmarkLinksController(
-			'openregister',
 			$this->request,
-			$this->service,
-			$this->objectService,
+			new BookmarkLinksControllerServices(
+				bookmarkLinkService: $this->service,
+				objectService: $this->objectService,
+			),
 		);
 	}
 

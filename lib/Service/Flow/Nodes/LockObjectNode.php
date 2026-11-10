@@ -61,13 +61,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use DateTime;
-use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
-use OCA\OpenRegister\Service\Flow\FlowRunContext;
-use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
-use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -75,7 +72,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\IUser;
 use OCP\IUserManager;
 use OCP\WorkflowEngine\IManager;
 use RuntimeException;
@@ -87,7 +83,7 @@ use UnexpectedValueException;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, LockObjectNodeInterface {
 
 	/**
 	 * The step type this node answers to.
@@ -144,22 +140,64 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	public const SLOT_ATTEMPTS = 'lockAttempts';
 
 	/**
+	 * Refusal when the run did not identify itself.
+	 *
+	 * @var string
+	 */
+	private const REFUSE_NO_RUN = 'A lock step needs the run it belongs to; this run did not identify itself.';
+
+	/**
+	 * Refusal when the run names no acting identity: a lock must be attributable.
+	 *
+	 * @var string
+	 */
+	private const REFUSE_NO_IDENTITY = 'This flow run has no acting identity (runAs); a lock must be attributable.';
+
+	/**
+	 * Refusal when an item names no object.
+	 *
+	 * @var string
+	 */
+	private const REFUSE_NO_TARGET = 'A lock step could not work out which object to lock from the item it received.';
+
+	/**
+	 * The run, owner and target checks this step shares with the other lock step.
+	 *
+	 * @var LockStepContext
+	 */
+	private readonly LockStepContext $lockContext;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Resolves the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objects Object lock operations, RBAC-enforcing.
 	 * @param IUserManager $userManager Resolves the run's acting identity.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 * @param FlowRunSubjectRecorder|null $subjects Records the locked object under the declared role.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		private readonly IUserManager $userManager,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		IUserManager $userManager,
+		FlowNodePresentation $presentation,
 		private readonly ?FlowRunSubjectRecorder $subjects = null,
 	) {
-
+		$this->l10n = $presentation->l10n;
+		$this->urls = $presentation->urls;
+		$this->lockContext = new LockStepContext(userManager: $userManager, l10n: $this->l10n);
 	}//end __construct()
 
 	/**
@@ -337,12 +375,26 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	public function execute(array $items, array $config, array $context): array {
 		// An empty firing must not suspend the whole run. After a route, the
 		// un-taken branch is marked and its steps still fire with zero items.
-		if ($items === []) {
-			return $items;
+		if ($items !== []) {
+			$this->validateConfig(config: $config);
+			$this->lockTargets(run: new LockStepRun(items: $items, config: $config, context: $context, resume: $this->resumeSlot(context: $context)));
 		}
 
-		$this->validateConfig(config: $config);
+		// Returning normally clears the slot, so a later re-entry of this node
+		// starts a fresh budget, which is correct: it is a different wait.
+		return $items;
+	}//end execute()
 
+	/**
+	 * This node's resume slot; a lock step cannot wait without one.
+	 *
+	 * @param array<string, mixed> $context The run context.
+	 *
+	 * @return FlowNodeResumeState
+	 *
+	 * @throws RuntimeException When the run provided no slot.
+	 */
+	private function resumeSlot(array $context): FlowNodeResumeState {
 		$resume = ($context[FlowNodeResumeState::CONTEXT_KEY] ?? null);
 		if ($resume instanceof FlowNodeResumeState === false) {
 			// Without a slot the node cannot remember its deadline, so every
@@ -352,49 +404,82 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			);
 		}
 
-		$runUuid = $this->resolveRunUuid(context: $context);
-		$owner = $this->resolveOwner(context: $context);
-		$targets = $this->resolveTargets(items: $items, config: $config);
+		return $resume;
+	}//end resumeSlot()
 
-		$duration = $this->seconds(config: $config, key: 'duration', default: self::DEFAULT_DURATION);
-		$process = trim((string)($config['process'] ?? ''));
-		if ($process === '') {
-			$process = sprintf('flow run %s', $runUuid);
-		}
-
-		$deadline = $this->deadline(resume: $resume, config: $config);
-
+	/**
+	 * Take the lock on every target, or park the run on the first contended one.
+	 *
+	 * @param LockStepRun $run The firing: items, configuration, run context and resume slot.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowSuspension When a lock is contended and the budget remains.
+	 * @throws RuntimeException When the budget is spent, or the step cannot act.
+	 */
+	private function lockTargets(LockStepRun $run): void {
+		$hold = $this->holdFor(run: $run);
+		$targets = $this->lockContext->targets(items: $run->items, config: $run->config, refusal: $this->l10n->t(self::REFUSE_NO_TARGET));
+		$deadline = $this->deadline(run: $run);
 		foreach ($targets as $uuid) {
-			try {
-				$this->objects->runAs(
-					$owner,
-					fn (): array => $this->objects->lockObject(
-						identifier: $uuid,
-						process: $process,
-						duration: $duration,
-						advisory: false,
-						runUuid: $runUuid,
-						nodeId: $resume->nodeId()
-					)
-				);
-			} catch (Throwable $e) {
-				$this->parkOrGiveUp(
-					resume: $resume,
-					deadline: $deadline,
-					uuid: $uuid,
-					cause: $e
-				);
-			}//end try
+			$this->lockOne(hold: $hold, attempt: new LockAttempt(resume: $run->resume, deadline: $deadline, uuid: $uuid));
 		}
 
 		// Every target is held. Only now, with the lock actually taken, is the
 		// object something the run can honestly say it is working on.
-		$this->recordSubject(targets: $targets, config: $config, context: $context);
+		$this->recordSubject(run: $run, targets: $targets);
+	}//end lockTargets()
 
-		// Returning normally clears the slot, so a later re-entry of this node
-		// starts a fresh budget, which is correct: it is a different wait.
-		return $items;
-	}//end execute()
+	/**
+	 * Who takes the lock, for which run and process, and for how long.
+	 *
+	 * @param LockStepRun $run The firing.
+	 *
+	 * @return LockHold
+	 *
+	 * @throws RuntimeException When the run did not identify itself or has no acting identity.
+	 */
+	private function holdFor(LockStepRun $run): LockHold {
+		$runUuid = $this->lockContext->runUuid(context: $run->context, refusal: $this->l10n->t(self::REFUSE_NO_RUN));
+		$owner = $this->lockContext->owner(context: $run->context, refusal: $this->l10n->t(self::REFUSE_NO_IDENTITY));
+		$process = trim((string)($run->config['process'] ?? ''));
+		if ($process === '') {
+			$process = sprintf('flow run %s', $runUuid);
+		}
+
+		$duration = self::seconds(raw: ($run->config['duration'] ?? null), default: self::DEFAULT_DURATION);
+
+		return new LockHold(owner: $owner, runUuid: $runUuid, process: $process, duration: $duration);
+	}//end holdFor()
+
+	/**
+	 * Take one lock as the run's acting identity, or park or fail on contention.
+	 *
+	 * @param LockHold    $hold    Who takes it, for which run and process, for how long.
+	 * @param LockAttempt $attempt The target, the resume slot and the wait deadline.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowSuspension When the lock is contended and the budget remains.
+	 * @throws RuntimeException When the budget is spent.
+	 */
+	private function lockOne(LockHold $hold, LockAttempt $attempt): void {
+		try {
+			$this->objects->runAs(
+				$hold->owner,
+				fn (): array => $this->objects->lockObject(
+					identifier: $attempt->uuid,
+					process: $hold->process,
+					duration: $hold->duration,
+					advisory: false,
+					runUuid: $hold->runUuid,
+					nodeId: $attempt->resume->nodeId()
+				)
+			);
+		} catch (Throwable $e) {
+			$this->parkOrGiveUp(attempt: $attempt, cause: $e);
+		}
+	}//end lockOne()
 
 	/**
 	 * Record the locked object under the role its author named.
@@ -410,23 +495,24 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 * A task attaching to this role is anchored by uuid alone, which is what
 	 * the inbox and the sidebar match on.
 	 *
-	 * @param array<int, string>   $targets The uuids this step locked.
-	 * @param array<string, mixed> $config  The step configuration.
-	 * @param array<string, mixed> $context The run context.
+	 * @param LockStepRun        $run     The firing: its configuration and run context.
+	 * @param array<int, string> $targets The uuids this step locked.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	private function recordSubject(array $targets, array $config, array $context): void {
+	private function recordSubject(LockStepRun $run, array $targets): void {
 		// The empty role is NOT guarded here. Recording is opt-in and the
 		// recorder enforces that, so a second guard would be a second copy of
 		// one rule — and this class is at its complexity budget, which is the
 		// concrete cost of keeping the copy.
 		$this->subjects?->recordOne(
-			context: $context,
-			role: (string)($config['subjectRole'] ?? ''),
-			uuids: array_values(array_unique($targets))
+			context: $run->context,
+			candidates: new FlowSubjectCandidates(
+				role: (string)($run->config['subjectRole'] ?? ''),
+				uuids: array_values(array_unique($targets))
+			)
 		);
 
 	}//end recordSubject()
@@ -434,42 +520,35 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * Park the run and retry, or fail because the budget is spent.
 	 *
-	 * @param FlowNodeResumeState $resume This node's resume slot.
-	 * @param DateTime $deadline The absolute wait deadline.
-	 * @param string $uuid The contended object.
-	 * @param Throwable $cause Why the acquire failed.
+	 * @param LockAttempt $attempt The contended object, this node's resume slot and the absolute wait deadline.
+	 * @param Throwable   $cause   Why the acquire failed.
 	 *
 	 * @return void
 	 *
 	 * @throws FlowSuspension To park the run.
 	 * @throws RuntimeException When the budget is spent.
 	 */
-	private function parkOrGiveUp(
-		FlowNodeResumeState $resume,
-		DateTime $deadline,
-		string $uuid,
-		Throwable $cause,
-	): void {
+	private function parkOrGiveUp(LockAttempt $attempt, Throwable $cause): void {
 		$now = new DateTime();
-		if ($now >= $deadline) {
+		if ($now >= $attempt->deadline) {
 			// Fail, naming the holder. Do NOT break the lock and do NOT
 			// proceed: proceeding is the data race the lock exists to stop.
 			throw new RuntimeException(
 				$this->l10n->t(
 					'Waited as long as allowed for object %s, and it is still locked: %s',
-					[$uuid, $cause->getMessage()]
+					[$attempt->uuid, $cause->getMessage()]
 				),
 				0,
 				$cause
 			);
 		}
 
-		$attempts = ((int)$resume->get(self::SLOT_ATTEMPTS, 0) + 1);
-		$resume->set(self::SLOT_ATTEMPTS, $attempts);
+		$attempts = ((int)$attempt->resume->get(self::SLOT_ATTEMPTS, 0) + 1);
+		$attempt->resume->set(self::SLOT_ATTEMPTS, $attempts);
 
 		throw new FlowSuspension(
-			resumeAt: $this->nextAttemptAt(attempts: $attempts, deadline: $deadline),
-			reason: sprintf('waiting for a lock on %s', $uuid)
+			resumeAt: $this->nextAttemptAt(attempts: $attempts, deadline: $attempt->deadline),
+			reason: sprintf('waiting for a lock on %s', $attempt->uuid)
 		);
 	}//end parkOrGiveUp()
 
@@ -502,13 +581,12 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * The absolute wait deadline, stamped ONCE on the first attempt.
 	 *
-	 * @param FlowNodeResumeState $resume This node's resume slot.
-	 * @param array $config The step configuration.
+	 * @param LockStepRun $run The firing: this node's resume slot and the step configuration.
 	 *
 	 * @return DateTime The deadline.
 	 */
-	private function deadline(FlowNodeResumeState $resume, array $config): DateTime {
-		$stored = $resume->get(self::SLOT_DEADLINE, '');
+	private function deadline(LockStepRun $run): DateTime {
+		$stored = $run->resume->get(self::SLOT_DEADLINE, '');
 		if (is_string($stored) === true && trim($stored) !== '') {
 			try {
 				return new DateTime($stored);
@@ -520,9 +598,9 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			}
 		}
 
-		$wait = $this->seconds(config: $config, key: 'waitSeconds', default: self::DEFAULT_WAIT_SECONDS);
+		$wait = self::seconds(raw: ($run->config['waitSeconds'] ?? null), default: self::DEFAULT_WAIT_SECONDS);
 		$stamp = (new DateTime())->modify('+' . $wait . ' seconds')->format('c');
-		$resume->set(self::SLOT_DEADLINE, $stamp);
+		$run->resume->set(self::SLOT_DEADLINE, $stamp);
 
 		// Return the value as PERSISTED, not as computed. `format('c')` drops
 		// sub-second precision, so the deadline this attempt compares against
@@ -535,124 +613,18 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	/**
 	 * Read a positive integer from the config.
 	 *
-	 * @param array $config The step configuration.
-	 * @param string $key The key to read.
-	 * @param int $default The fallback.
+	 * @param mixed $raw     The configured value.
+	 * @param int   $default The fallback.
 	 *
 	 * @return int The value.
 	 */
-	private function seconds(array $config, string $key, int $default): int {
-		$raw = ($config[$key] ?? null);
+	private static function seconds(mixed $raw, int $default): int {
 		if (is_numeric($raw) === false || (int)$raw < 1) {
 			return $default;
 		}
 
 		return (int)$raw;
 	}//end seconds()
-
-	/**
-	 * Which objects to lock.
-	 *
-	 * Defaults to the uuid each item carries, which is what `object-read`
-	 * injects for exactly this purpose. An explicit `uuid` is templated
-	 * against the item, and a placeholder that renders empty throws rather
-	 * than locking nothing and reporting success.
-	 *
-	 * @param array $items The incoming items.
-	 * @param array $config The step configuration.
-	 *
-	 * @return array<int, string> The distinct target uuids.
-	 *
-	 * @throws RuntimeException When a target cannot be resolved.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate is the engine's
-	 * stateless template renderer and every node calls it this way.
-	 */
-	private function resolveTargets(array $items, array $config): array {
-		$configured = ($config['uuid'] ?? null);
-		$targets = [];
-
-		foreach ($items as $item) {
-			$json = ($item[FlowItems::JSON] ?? []);
-			if (is_array($json) === false) {
-				$json = [];
-			}
-
-			$uuid = trim((string)($json['uuid'] ?? ''));
-			if (is_string($configured) === true && trim($configured) !== '') {
-				$uuid = trim((string)FlowValueTemplate::render($configured, $json));
-			}
-
-			if ($uuid === '') {
-				throw new RuntimeException(
-					$this->l10n->t('A lock step could not work out which object to lock from the item it received.')
-				);
-			}
-
-			$targets[$uuid] = $uuid;
-		}
-
-		return array_values($targets);
-	}//end resolveTargets()
-
-	/**
-	 * The run's uuid, which IS the lock holder's identity.
-	 *
-	 * @param array $context The run context.
-	 *
-	 * @return string The run uuid.
-	 *
-	 * @throws RuntimeException When the run cannot identify itself.
-	 */
-	private function resolveRunUuid(array $context): string {
-		$runUuid = trim((string)($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? '')));
-		if ($runUuid === '') {
-			// A run-scoped lock with no run is a lock nobody can release and
-			// the predicate refuses everybody for. Refuse to take it.
-			throw new RuntimeException(
-				$this->l10n->t('A lock step needs the run it belongs to; this run did not identify itself.')
-			);
-		}
-
-		return $runUuid;
-	}//end resolveRunUuid()
-
-	/**
-	 * The acting identity the lock is taken under.
-	 *
-	 * Load-bearing: `LockHandler::callerMayUnlock()` reads `IUserSession`
-	 * directly, and under the cron worker that is nobody, so an unwrapped
-	 * lock or unlock is refused as anonymous.
-	 *
-	 * @param array $context The run context.
-	 *
-	 * @return IUser The acting user.
-	 *
-	 * @throws RuntimeException When there is no usable acting identity.
-	 */
-	private function resolveOwner(array $context): IUser {
-		$uid = ($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? null);
-		if (is_string($uid) === false || trim($uid) === '') {
-			throw new RuntimeException(
-				$this->l10n->t('This flow run has no acting identity (runAs); a lock must be attributable.')
-			);
-		}
-
-		$user = $this->userManager->get(trim($uid));
-		if ($user === null) {
-			throw new RuntimeException(
-				$this->l10n->t('This flow run acts as "%s", which is not a user account.', [trim($uid)])
-			);
-		}
-
-		if ($user->isEnabled() === false) {
-			throw new RuntimeException(
-				$this->l10n->t('This flow run acts as "%s", whose account is disabled.', [trim($uid)])
-			);
-		}
-
-		return $user;
-	}//end resolveOwner()
 
 	/**
 	 * What kind of step this is. Calls the register to lock.

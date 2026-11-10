@@ -27,17 +27,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\PartyControllerServices;
+use OCA\OpenRegister\Controller\Support\PartyObjectAccess;
+use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
-use OCA\OpenRegister\Service\Party\PartyRoleService;
-use OCA\OpenRegister\Service\Party\PartySearchService;
-use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Party\PartyDefinition;
+use OCA\OpenRegister\Service\Party\PartyIndicatorGuardInterface;
+use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
+use OCA\OpenRegister\Service\Party\PartySearchInterface;
+use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -54,66 +55,56 @@ use OCP\IRequest;
 class PartyController extends Controller {
 
 	/**
-	 * Object service, to resolve the object a party sits on.
+	 * Resolves the object a party sits on and asks the update right of a write.
 	 *
-	 * @var ObjectOperationsInterface
+	 * @var PartyObjectAccess
 	 */
-	private readonly ObjectOperationsInterface $objects;
+	private readonly PartyObjectAccess $objectAccess;
 
 	/**
 	 * The parties on an object.
 	 *
-	 * @var PartyRoleService
+	 * @var PartyRoleServiceInterface
 	 */
-	private readonly PartyRoleService $roles;
+	private readonly PartyRoleServiceInterface $roles;
 
 	/**
 	 * The party records.
 	 *
-	 * @var PartyService
+	 * @var PartyServiceInterface
 	 */
-	private readonly PartyService $parties;
+	private readonly PartyServiceInterface $parties;
 
 	/**
 	 * The declared effects.
 	 *
-	 * @var PartyIndicatorGuard
+	 * @var PartyIndicatorGuardInterface
 	 */
-	private readonly PartyIndicatorGuard $indicators;
+	private readonly PartyIndicatorGuardInterface $indicators;
 
 	/**
 	 * The capped party query.
 	 *
-	 * @var PartySearchService
+	 * @var PartySearchInterface
 	 */
-	private readonly PartySearchService $search;
-
-	/**
-	 * The object-level permission check a party write asks.
-	 *
-	 * @var PermissionHandler
-	 */
-	private readonly PermissionHandler $permissions;
+	private readonly PartySearchInterface $search;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param PartyControllerServices $services The party controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		PartyControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-		$this->objects = $services->domain->objects;
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->objectAccess = new PartyObjectAccess(objects: $services->domain->objects, permissions: $services->search->permissions);
 		$this->roles = $services->domain->roles;
 		$this->parties = $services->domain->parties;
 		$this->indicators = $services->domain->indicators;
 		$this->search = $services->search->search;
-		$this->permissions = $services->search->permissions;
 	}//end __construct()
 
 	/**
@@ -131,18 +122,24 @@ class PartyController extends Controller {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		return $this->withObject(
-			register: $register,
-			schema: $schema,
-			id: $id,
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse The listing.
+	 */
+	private function indexForObject(ObjectRef $ref): JSONResponse {
+		return $this->objectAccess->read(
+			target: [(string)$ref->register, (string)$ref->schema, $ref->id],
 			handler: fn (ObjectEntity $object): JSONResponse => new JSONResponse(
-				$this->roles->listForObject(
-					objectUuid: (string)$object->getUuid(),
-					schemaId: $object->getSchema()
-				)
+				$this->roles->listForObject(objectUuid: (string)$object->getUuid(), schemaId: $object->getSchema())
 			)
 		);
-	}//end index()
+	}//end indexForObject()
 
 	/**
 	 * Give a party a role on an object.
@@ -159,22 +156,22 @@ class PartyController extends Controller {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		return $this->withWritableObject(
-			register: $register,
-			schema: $schema,
-			id: $id,
-			handler: function (ObjectEntity $object): JSONResponse {
-				$link = $this->roles->addParty(
-					objectUuid: (string)$object->getUuid(),
-					registerId: (int)($object->getRegister() ?? 0),
-					schemaId: $object->getSchema(),
-					payload: $this->request->getParams()
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
-		);
+		return $this->createForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end create()
+
+	/**
+	 * create() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse The link as stored, or the refusal naming the kind.
+	 */
+	private function createForObject(ObjectRef $ref): JSONResponse {
+		return $this->objectAccess->write(
+			target: [(string)$ref->register, (string)$ref->schema, $ref->id],
+			handler: fn (ObjectEntity $object): JSONResponse => new JSONResponse($this->addParty(object: $object)->jsonSerialize(), 201)
+		);
+	}//end createForObject()
 
 	/**
 	 * Replace the party the object is filed against.
@@ -191,27 +188,22 @@ class PartyController extends Controller {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function replacePrimary(string $register, string $schema, string $id): JSONResponse {
-		return $this->withWritableObject(
-			register: $register,
-			schema: $schema,
-			id: $id,
-			handler: function (ObjectEntity $object): JSONResponse {
-				$partyUuid = trim((string)$this->request->getParam('partyUuid', ''));
-				if ($partyUuid === '') {
-					return new JSONResponse(['error' => 'partyUuid is required'], 400);
-				}
-
-				$role = self::textOrNull(value: $this->request->getParam('role', ''));
-				$link = $this->roles->replacePrimaryParty(
-					object: $object,
-					partyUuid: $partyUuid,
-					role: $role
-				);
-
-				return new JSONResponse($link->jsonSerialize());
-			}
-		);
+		return $this->replacePrimaryForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end replacePrimary()
+
+	/**
+	 * replacePrimary() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse The new primary link.
+	 */
+	private function replacePrimaryForObject(ObjectRef $ref): JSONResponse {
+		return $this->objectAccess->write(
+			target: [(string)$ref->register, (string)$ref->schema, $ref->id],
+			handler: fn (ObjectEntity $object): JSONResponse => $this->replacePrimaryOf(object: $object)
+		);
+	}//end replacePrimaryForObject()
 
 	/**
 	 * Take a party off an object: every role, or the one named by `?role=`.
@@ -229,23 +221,25 @@ class PartyController extends Controller {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function destroy(string $register, string $schema, string $id, string $partyUuid): JSONResponse {
-		return $this->withWritableObject(
-			register: $register,
-			schema: $schema,
-			id: $id,
-			handler: function (ObjectEntity $object) use ($partyUuid): JSONResponse {
-				return new JSONResponse(
-					[
-						'removed' => $this->roles->removeParty(
-							objectUuid: (string)$object->getUuid(),
-							partyUuid: $partyUuid,
-							role: self::textOrNull(value: $this->request->getParam('role', ''))
-						),
-					]
-				);
-			}
-		);
+		return $this->destroyForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), partyUuid: $partyUuid);
 	}//end destroy()
+
+	/**
+	 * destroy() for the object the route names.
+	 *
+	 * @param ObjectRef $ref       The object the route names.
+	 * @param string    $partyUuid The party.
+	 *
+	 * @return JSONResponse How many roles went.
+	 */
+	private function destroyForObject(ObjectRef $ref, string $partyUuid): JSONResponse {
+		return $this->objectAccess->write(
+			target: [(string)$ref->register, (string)$ref->schema, $ref->id],
+			handler: fn (ObjectEntity $object): JSONResponse => new JSONResponse(
+				['removed' => $this->removeParty(object: $object, partyUuid: $partyUuid)]
+			)
+		);
+	}//end destroyForObject()
 
 	/**
 	 * Every object a party holds a role on, and the indicators it carries.
@@ -271,27 +265,9 @@ class PartyController extends Controller {
 	 */
 	public function show(string $partyUuid): JSONResponse {
 		try {
-			$party = $this->parties->find(partyUuid: $partyUuid);
-			if ($party === null) {
-				return new JSONResponse(['error' => 'Party not found'], 404);
-			}
-
-			$definition = $this->parties->definitionFor(party: $party);
-			if ($definition === null) {
-				return new JSONResponse(['error' => 'Object "' . $partyUuid . '" is not a party'], 400);
-			}
-
-			return new JSONResponse(
-				[
-					'uuid' => $party->getUuid(),
-					'kind' => $definition->kind(),
-					'addresses' => $this->parties->addresses(party: $party, definition: $definition),
-					'indicators' => $this->parties->indicators(party: $party, definition: $definition),
-					'objects' => $this->indicators->objectsOfParty(partyUuid: $partyUuid),
-				]
-			);
+			return $this->describe(partyUuid: $partyUuid);
 		} catch (Exception $e) {
-			return $this->errorResponse(exception: $e);
+			return $this->objectAccess->errorResponse(exception: $e);
 		}
 	}//end show()
 
@@ -318,7 +294,7 @@ class PartyController extends Controller {
 				)
 			);
 		} catch (Exception $e) {
-			return $this->errorResponse(exception: $e);
+			return $this->objectAccess->errorResponse(exception: $e);
 		}
 	}//end search()
 
@@ -346,84 +322,118 @@ class PartyController extends Controller {
 			return new JSONResponse(['error' => 'No party holds that address'], 404);
 		}
 
-		return new JSONResponse(
-			[
-				'uuid' => $party->getUuid(),
-				'register' => $party->getRegister(),
-				'schema' => $party->getSchema(),
-				'addresses' => $this->parties->addresses(party: $party),
-			]
-		);
+		return new JSONResponse($this->addressed(party: $party));
 	}//end resolve()
 
 	/**
-	 * Run a handler against a resolved object, mapping the failures to status codes.
+	 * Give a party a role on an object, from the request payload.
 	 *
-	 * @param string $register The register slug.
-	 * @param string $schema The schema slug.
-	 * @param string $id The object id.
-	 * @param callable $handler What to do with the object.
+	 * @param ObjectEntity $object The object, its update right already asked.
 	 *
-	 * @return JSONResponse The handler's response, or the error.
+	 * @return ContactLink The link as stored.
 	 */
-	private function withObject(string $register, string $schema, string $id, callable $handler): JSONResponse {
-		try {
-			$this->objects->setRegister($register);
-			$this->objects->setSchema($schema);
-			$this->objects->setObject($id);
-			$object = $this->objects->getObject();
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			return $handler($object);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->errorResponse(exception: $e);
-		}//end try
-	}//end withObject()
+	private function addParty(ObjectEntity $object): ContactLink {
+		return $this->roles->addParty(
+			objectUuid: (string)$object->getUuid(),
+			registerId: (int)($object->getRegister() ?? 0),
+			schemaId: $object->getSchema(),
+			payload: $this->request->getParams()
+		);
+	}//end addParty()
 
 	/**
-	 * Run a handler against a resolved object the caller may update.
+	 * Replace the primary party of an object, from the request.
 	 *
-	 * Who holds a role on an object is part of the object, so a party write
-	 * asks the same `update` verdict as any other write on it, before anything
-	 * is written. A refusal is a 403.
+	 * @param ObjectEntity $object The object, its update right already asked.
 	 *
-	 * @param string $register The register slug.
-	 * @param string $schema The schema slug.
-	 * @param string $id The object id.
-	 * @param callable $handler What to do with the object.
-	 *
-	 * @return JSONResponse The handler's response, or the error.
-	 *
-	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-write-needs-the-update-right-on-the-object-req-prm-005
+	 * @return JSONResponse The new primary link, or 400 without a party.
 	 */
-	private function withWritableObject(string $register, string $schema, string $id, callable $handler): JSONResponse {
-		return $this->withObject(
-			register: $register,
-			schema: $schema,
-			id: $id,
-			handler: function (ObjectEntity $object) use ($handler): JSONResponse {
-				$schemaEntity = $this->objects->getCurrentSchemaEntity();
-				if ($schemaEntity === null) {
-					throw new NotAuthorizedException(message: 'The object\'s schema could not be read, so its update right cannot be asked');
-				}
+	private function replacePrimaryOf(ObjectEntity $object): JSONResponse {
+		$partyUuid = trim((string)$this->request->getParam('partyUuid', ''));
+		if ($partyUuid === '') {
+			return new JSONResponse(['error' => 'partyUuid is required'], 400);
+		}
 
-				$this->permissions->checkPermission(
-					schema: $schemaEntity,
-					action: 'update',
-					userId: null,
-					objectOwner: $object->getOwner(),
-					_rbac: true,
-					object: $object
-				);
+		$role = self::textOrNull(value: $this->request->getParam('role', ''));
+		$link = $this->roles->replacePrimaryParty(object: $object, partyUuid: $partyUuid, role: $role);
 
-				return $handler($object);
-			}
+		return new JSONResponse($link->jsonSerialize());
+	}//end replacePrimaryOf()
+
+	/**
+	 * Take a party off an object: every role, or the one the request names.
+	 *
+	 * @param ObjectEntity $object    The object, its update right already asked.
+	 * @param string       $partyUuid The party.
+	 *
+	 * @return int How many roles went.
+	 */
+	private function removeParty(ObjectEntity $object, string $partyUuid): int {
+		return $this->roles->removeParty(
+			objectUuid: (string)$object->getUuid(),
+			partyUuid: $partyUuid,
+			role: self::textOrNull(value: $this->request->getParam('role', ''))
 		);
-	}//end withWritableObject()
+	}//end removeParty()
+
+	/**
+	 * A party's kind, addresses, indicators and objects, or the refusal.
+	 *
+	 * @param string $partyUuid The party.
+	 *
+	 * @return JSONResponse The party, 404 when unreadable, 400 when not a party.
+	 */
+	private function describe(string $partyUuid): JSONResponse {
+		$party = $this->parties->find(partyUuid: $partyUuid);
+		if ($party === null) {
+			return new JSONResponse(['error' => 'Party not found'], 404);
+		}
+
+		$definition = $this->parties->definitionFor(party: $party);
+		if ($definition === null) {
+			return new JSONResponse(['error' => 'Object "' . $partyUuid . '" is not a party'], 400);
+		}
+
+		$body = $this->described(party: $party, definition: $definition);
+		$body['objects'] = $this->indicators->objectsOfParty(partyUuid: $partyUuid);
+
+		return new JSONResponse($body);
+	}//end describe()
+
+	/**
+	 * The body of a party read.
+	 *
+	 * The caller adds the objects of the party, keyed on the party as asked for.
+	 *
+	 * @param ObjectEntity    $party      The party record.
+	 * @param PartyDefinition $definition Its party definition.
+	 *
+	 * @return array<string, mixed> The body.
+	 */
+	private function described(ObjectEntity $party, PartyDefinition $definition): array {
+		return [
+			'uuid' => $party->getUuid(),
+			'kind' => $definition->kind(),
+			'addresses' => $this->parties->addresses(party: $party, definition: $definition),
+			'indicators' => $this->parties->indicators(party: $party, definition: $definition),
+		];
+	}//end described()
+
+	/**
+	 * The body of an address resolution.
+	 *
+	 * @param ObjectEntity $party The party holding the address.
+	 *
+	 * @return array<string, mixed> The body.
+	 */
+	private function addressed(ObjectEntity $party): array {
+		return [
+			'uuid' => $party->getUuid(),
+			'register' => $party->getRegister(),
+			'schema' => $party->getSchema(),
+			'addresses' => $this->parties->addresses(party: $party),
+		];
+	}//end addressed()
 
 	/**
 	 * A trimmed request parameter, or null when it carries nothing.
@@ -440,20 +450,4 @@ class PartyController extends Controller {
 
 		return $text;
 	}//end textOrNull()
-
-	/**
-	 * An exception as a response, keeping the status it named.
-	 *
-	 * @param Exception $exception The exception.
-	 *
-	 * @return JSONResponse The error.
-	 */
-	private function errorResponse(Exception $exception): JSONResponse {
-		$code = (int)$exception->getCode();
-		if (in_array($code, [400, 401, 403, 404, 409, 422], true) === true) {
-			return new JSONResponse(['error' => $exception->getMessage()], $code);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
-	}//end errorResponse()
 }//end class

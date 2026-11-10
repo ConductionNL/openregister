@@ -38,7 +38,7 @@ use OCP\IAppConfig;
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
  */
-class ExampleSetRecord {
+class ExampleSetRecord implements ExampleSetRecordInterface {
 	/**
 	 * The prefix of the app-config key that holds a record.
 	 */
@@ -82,6 +82,16 @@ class ExampleSetRecord {
 	];
 
 	/**
+	 * The parts that hold gid and uid pairs.
+	 */
+	private const PAIRS = ['memberships', 'subAdmins'];
+
+	/**
+	 * The parts that hold a list of names.
+	 */
+	private const NAMES = ['groups', 'organisations'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig Holds the records.
@@ -112,51 +122,55 @@ class ExampleSetRecord {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
 	public function read(string $set): array {
-		$record  = self::BLANK;
 		$decoded = json_decode($this->stored(set: $set), true);
 		if (is_array($decoded) === false) {
-			return $record;
+			return self::BLANK;
 		}
 
-		foreach ((array) ($decoded['users'] ?? []) as $uid => $how) {
-			if (in_array($how, ['created', 'adopted'], true) === true) {
-				$record['users'][(string) $uid] = $how;
-			}
+		$record = self::BLANK;
+		foreach (array_keys(self::BLANK) as $part) {
+			$record[$part] = $this->part(part: $part, stored: (array) ($decoded[$part] ?? []));
 		}
-
-		$record['groups']      = array_values(array_filter((array) ($decoded['groups'] ?? []), 'is_string'));
-		$record['groupNames']  = array_filter((array) ($decoded['groupNames'] ?? []), 'is_array');
-		$record['memberships'] = $this->memberships(decoded: (array) ($decoded['memberships'] ?? []));
-		$record['subAdmins']   = $this->memberships(decoded: (array) ($decoded['subAdmins'] ?? []));
-		$record['objects']     = $this->objects(decoded: (array) ($decoded['objects'] ?? []));
-		$record['changes']     = array_filter((array) ($decoded['changes'] ?? []), 'is_array');
-		$record['registers']   = array_filter((array) ($decoded['registers'] ?? []), 'is_array');
-		$record['files']       = array_filter((array) ($decoded['files'] ?? []), 'is_array');
-		$record['appConfig']   = array_filter((array) ($decoded['appConfig'] ?? []), 'is_array');
-		$record['userPreferences'] = array_filter((array) ($decoded['userPreferences'] ?? []), 'is_array');
-		$record['organisations'] = array_values(array_filter((array) ($decoded['organisations'] ?? []), 'is_string'));
-		$record['tasks']         = array_filter((array) ($decoded['tasks'] ?? []), 'is_array');
-		$record['views']         = array_filter((array) ($decoded['views'] ?? []), 'is_array');
-		$record['watchers']      = array_filter((array) ($decoded['watchers'] ?? []), 'is_array');
-		$record['parties']       = array_filter((array) ($decoded['parties'] ?? []), 'is_array');
-		$record['notes']         = array_filter((array) ($decoded['notes'] ?? []), 'is_array');
-		$record['readStates']    = array_filter((array) ($decoded['readStates'] ?? []), 'is_array');
-		$record['flows']         = array_filter((array) ($decoded['flows'] ?? []), 'is_array');
-		$record['exportRuns']    = array_filter((array) ($decoded['exportRuns'] ?? []), 'is_array');
-		$record['deckCards']     = array_filter((array) ($decoded['deckCards'] ?? []), 'is_array');
-		$record['appointments']  = array_filter((array) ($decoded['appointments'] ?? []), 'is_array');
-		$record['casePlans']     = array_filter((array) ($decoded['casePlans'] ?? []), 'is_array');
-		$record['collectivesPages'] = array_filter((array) ($decoded['collectivesPages'] ?? []), 'is_array');
-		$record['talkConversations'] = array_filter((array) ($decoded['talkConversations'] ?? []), 'is_array');
-		$record['auditEntries']  = array_filter((array) ($decoded['auditEntries'] ?? []), 'is_array');
-		$record['timelineEntries'] = array_filter((array) ($decoded['timelineEntries'] ?? []), 'is_array');
-		$record['emailLinks']    = array_filter((array) ($decoded['emailLinks'] ?? []), 'is_array');
-		$record['accessLinks']   = array_filter((array) ($decoded['accessLinks'] ?? []), 'is_array');
-		$record['grants']        = array_filter((array) ($decoded['grants'] ?? []), 'is_array');
-		$record['archival']      = array_filter((array) ($decoded['archival'] ?? []), 'is_array');
 
 		return $record;
 	}//end read()
+
+	/**
+	 * The well-formed entries of one stored part: accounts that were created or adopted, gid and uid pairs, objects
+	 * with an id, lists of names, or (every other part) the entries that are maps.
+	 *
+	 * @param string                   $part   The part.
+	 * @param array<int|string, mixed> $stored The stored part.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function part(string $part, array $stored): array {
+		return match (true) {
+			$part === 'users'   => $this->users(decoded: $stored),
+			$part === 'objects' => $this->objects(decoded: $stored),
+			in_array($part, self::PAIRS, true) => $this->memberships(decoded: $stored),
+			in_array($part, self::NAMES, true) => array_values(array_filter($stored, 'is_string')),
+			default => array_filter($stored, 'is_array'),
+		};
+	}//end part()
+
+	/**
+	 * The accounts of a stored record, each `created` or `adopted`.
+	 *
+	 * @param array<int|string, mixed> $decoded The stored accounts.
+	 *
+	 * @return array<string, string>
+	 */
+	private function users(array $decoded): array {
+		$users = [];
+		foreach ($decoded as $uid => $how) {
+			if (in_array($how, ['created', 'adopted'], true) === true) {
+				$users[(string) $uid] = $how;
+			}
+		}
+
+		return $users;
+	}//end users()
 
 	/**
 	 * The well-formed gid and uid pairs of a stored record.
@@ -187,20 +201,33 @@ class ExampleSetRecord {
 		$objects = [];
 		foreach ($decoded as $key => $object) {
 			if (is_array($object) === true && is_string($object['id'] ?? null) === true && $object['id'] !== '') {
-				$objects[(string) $key] = [
-					'register' => (string) ($object['register'] ?? ''),
-					'schema'   => (string) ($object['schema'] ?? ''),
-					'id'       => $object['id'],
-				];
-				// What the install wrote into the object's reference fields, so a later install can tell its own value from an edit.
-				if (is_array($object['refs'] ?? null) === true && $object['refs'] !== []) {
-					$objects[(string) $key]['refs'] = $object['refs'];
-				}
+				$objects[(string) $key] = $this->object(object: $object);
 			}
 		}
 
 		return $objects;
 	}//end objects()
+
+	/**
+	 * One well-formed object of a stored record.
+	 *
+	 * @param array<string, mixed> $object The stored object, with an id.
+	 *
+	 * @return array{register: string, schema: string, id: string, refs?: array<string, mixed>}
+	 */
+	private function object(array $object): array {
+		$kept = [
+			'register' => (string) ($object['register'] ?? ''),
+			'schema'   => (string) ($object['schema'] ?? ''),
+			'id'       => $object['id'],
+		];
+		// What the install wrote into the object's reference fields, so a later install can tell its own value from an edit.
+		if (is_array($object['refs'] ?? null) === true && $object['refs'] !== []) {
+			$kept['refs'] = $object['refs'];
+		}
+
+		return $kept;
+	}//end object()
 
 	/**
 	 * Whether a record names nothing.
@@ -260,9 +287,8 @@ class ExampleSetRecord {
 	 * and remove leave what they wrote alone, and the report names each under `left`. An entry another part keys
 	 * by an object (`<app>/<key>#references`) is not a declaration of this part and stays.
 	 *
+	 * @param ExampleSetRecordPart $part     The record part, which is also the fragment's list of declarations, and its noun.
 	 * @param array<string, mixed> $fragment The fragment, as gathered for this run.
-	 * @param string               $part     The record part, which is also the fragment's list of declarations.
-	 * @param string               $noun     The part's word in the report.
 	 * @param array<string, mixed> $report   The report; gains a `left` line per entry let go.
 	 * @param array<string, mixed> $record   The record; loses the entries let go.
 	 *
@@ -270,51 +296,119 @@ class ExampleSetRecord {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 */
-	public static function letGoUndeclared(array $fragment, string $part, string $noun, array &$report, array &$record): bool {
+	public static function letGoUndeclared(ExampleSetRecordPart $part, array $fragment, array &$report, array &$record): bool {
+		$held  = array_keys((array) ($record[$part->part] ?? []));
+		$names = self::undeclared(declared: self::declared(fragment: $fragment, part: $part), held: $held);
+		foreach ($names as $name) {
+			unset($record[$part->part][$name]);
+			$report['left'][] = $part->noun.' '.$name.': the set no longer declares it';
+		}
+
+		return $names !== [];
+	}//end letGoUndeclared()
+
+	/**
+	 * The held record keys, in order, that are the app's own declarations of the part and that the fragment no
+	 * longer declares.
+	 *
+	 * @param FragmentDeclarations $declared The app's prefix and the record keys the fragment declares.
+	 * @param array<int, int|string> $held   The record keys the part holds.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function undeclared(FragmentDeclarations $declared, array $held): array {
+		$names = [];
+		foreach ($held as $name) {
+			if (self::isUndeclared(name: (string) $name, declared: $declared) === true) {
+				$names[] = (string) $name;
+			}
+		}
+
+		return $names;
+	}//end undeclared()
+
+	/**
+	 * The app's prefix, `<app>/`, and the record keys of the declarations of one part in a fragment.
+	 *
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param ExampleSetRecordPart $part     The part.
+	 *
+	 * @return FragmentDeclarations
+	 */
+	private static function declared(array $fragment, ExampleSetRecordPart $part): FragmentDeclarations {
 		$prefix   = $fragment['app'].'/';
 		$declared = [];
-		foreach ((array) ($fragment[$part] ?? []) as $entry) {
+		foreach ((array) ($fragment[$part->part] ?? []) as $entry) {
 			$declared[$prefix.($entry['key'] ?? '')] = true;
 		}
 
-		$changed = false;
-		foreach (array_keys((array) ($record[$part] ?? [])) as $name) {
-			$name = (string) $name;
-			if (str_starts_with($name, $prefix) === false || str_contains($name, '#') === true || isset($declared[$name]) === true) {
-				continue;
-			}
+		return new FragmentDeclarations(prefix: $prefix, keys: $declared);
+	}//end declared()
 
-			unset($record[$part][$name]);
-			$report['left'][] = $noun.' '.$name.': the set no longer declares it';
-			$changed          = true;
-		}
-
-		return $changed;
-	}//end letGoUndeclared()
+	/**
+	 * Whether a held entry is one of the app's own declarations of this part that the fragment no longer declares.
+	 *
+	 * @param string               $name     The record key.
+	 * @param FragmentDeclarations $declared The app's prefix and the record keys the fragment declares.
+	 *
+	 * @return bool
+	 */
+	private static function isUndeclared(string $name, FragmentDeclarations $declared): bool {
+		return str_starts_with($name, $declared->prefix) === true && str_contains($name, '#') === false && isset($declared->keys[$name]) === false;
+	}//end isUndeclared()
 
 	/**
 	 * Hold what following a held change or preference made of its entry, and report a write or a failure.
 	 *
-	 * @param string                                                         $set    The set id.
-	 * @param string                                                         $part   `changes` or `userPreferences`.
-	 * @param string                                                         $name   The record key.
-	 * @param array{error: string, entry: array<string, mixed>, wrote: bool} $made   What follow() made.
-	 * @param array<string, mixed>                                           $report The report so far.
-	 * @param array<string, mixed>                                           $record The record; written when the entry changed.
+	 * @param string                  $set      The set id.
+	 * @param ExampleSetFollowedEntry $followed The entry's part and record key, and what follow() made.
+	 * @param array<string, mixed>    $report   The report so far.
+	 * @param array<string, mixed>    $record   The record; written when the entry changed.
 	 *
 	 * @return array<string, mixed> The report.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
 	 */
-	public function hold(string $set, string $part, string $name, array $made, array $report, array &$record): array {
+	public function hold(string $set, ExampleSetFollowedEntry $followed, array $report, array &$record): array {
+		if (self::took(followed: $followed, record: $record) === true) {
+			$this->write(set: $set, record: $record);
+		}
+
+		return self::reported(followed: $followed, report: $report);
+	}//end hold()
+
+	/**
+	 * Put what following made of an entry into the record, when it differs from what the record holds.
+	 *
+	 * @param ExampleSetFollowedEntry $followed The entry's part and record key, and what follow() made.
+	 * @param array<string, mixed>    $record   The record; updated.
+	 *
+	 * @return bool Whether the record changed.
+	 */
+	private static function took(ExampleSetFollowedEntry $followed, array &$record): bool {
+		if ($followed->made['entry'] === $record[$followed->part][$followed->name]) {
+			return false;
+		}
+
+		$record[$followed->part][$followed->name] = $followed->made['entry'];
+		return true;
+	}//end took()
+
+	/**
+	 * The report with a followed entry's failure and write.
+	 *
+	 * @param ExampleSetFollowedEntry $followed The entry's part and record key, and what follow() made.
+	 * @param array<string, mixed>    $report   The report so far.
+	 *
+	 * @return array<string, mixed> The report.
+	 */
+	private static function reported(ExampleSetFollowedEntry $followed, array $report): array {
+		$part = $followed->part;
+		$name = $followed->name;
+		$made = $followed->made;
 		if ($made['error'] !== '') {
 			$report['dropped'][]  = $part.' '.$name.': not refreshed: '.$made['error'];
 			$report[$part][$name] = 'failed';
-		}
-
-		if ($made['entry'] !== $record[$part][$name]) {
-			$record[$part][$name] = $made['entry'];
-			$this->write(set: $set, record: $record);
 		}
 
 		if ($made['wrote'] === true) {
@@ -322,7 +416,7 @@ class ExampleSetRecord {
 		}
 
 		return $report;
-	}//end hold()
+	}//end reported()
 
 	/**
 	 * The stored record as JSON text, '' when there is none.

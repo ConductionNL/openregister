@@ -43,6 +43,7 @@ class ObjectSourceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider',
 				'OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider',
 				'OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider',
+				'OCA\OpenRegister\Service\ObjectSource\OrganisationActingUser',
 				'OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider',
 				'OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider',
 				'OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider',
@@ -57,6 +58,7 @@ class ObjectSourceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\ObjectSource\TablesTableReader',
 				'OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper',
 				'OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService',
+				'OCA\OpenRegister\Service\ObjectSource\TablesProviderParts',
 				'OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider',
 			],
 			actual: $context->services

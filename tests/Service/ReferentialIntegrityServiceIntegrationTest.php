@@ -21,6 +21,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -239,9 +240,7 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 	public function testDeletionAnalysisToArray(): void {
 		$analysis = new DeletionAnalysis(
 			true,
-			['cascade1'],
-			['nullify1'],
-			['default1'],
+			new DeletionEffects(['cascade1'], ['nullify1'], ['default1']),
 			[],
 			['path1']
 		);
@@ -265,9 +264,7 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 	public function testDeletionAnalysisWithBlockers(): void {
 		$analysis = new DeletionAnalysis(
 			false,
-			[],
-			[],
-			[],
+			new DeletionEffects([], [], []),
 			[
 				['schema' => '1', 'property' => 'ref', 'objectUuid' => 'abc'],
 			]
@@ -285,9 +282,7 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 	public function testLogRestrictBlock(): void {
 		$analysis = new DeletionAnalysis(
 			false,
-			[],
-			[],
-			[],
+			new DeletionEffects([], [], []),
 			[
 				['schema' => '1', 'property' => 'ref', 'objectUuid' => 'test-uuid'],
 			]

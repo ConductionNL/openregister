@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Files\Service\File\FileReadScopeRules;
+use OCA\OpenRegister\Files\Service\File\FileReadScopeTree;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
@@ -69,7 +71,17 @@ class FileReadScopeManagedFileTest extends TestCase {
 		$access = $this->createMock(ObjectFileAccess::class);
 		$access->method('mayRead')->willReturn($mayRead);
 
-		return new FileReadScope($root, $session, new NullLogger(), $fileService, $access);
+		return new FileReadScope(
+			tree: new FileReadScopeTree(
+				rootFolder: $root,
+				userSession: $session
+			),
+			rules: new FileReadScopeRules(
+				objectFileAccess: $access
+			),
+			logger: new NullLogger(),
+			fileService: $fileService
+		);
 	}//end scopeWhereObjectIs()
 
 	public function testAHandlerKeepsTheHitOnTheIntakesAttachment(): void {

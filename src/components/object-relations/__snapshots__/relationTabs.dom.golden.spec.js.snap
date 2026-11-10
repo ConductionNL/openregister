@@ -1155,7 +1155,7 @@ exports[`store relation tab events shows the state items 1`] = `
       </div>
       <div class="events-tab__content">
         <div class="events-tab__summary">Meet</div>
-        <div class="events-tab__meta"><span class="events-tab__calendar">Home</span><span class="events-tab__separator">·</span><span class="events-tab__date">1/2/2026, 1:00:00 AM</span></div>
+        <div class="events-tab__meta"><span class="events-tab__calendar">Home</span><span class="events-tab__separator">·</span><span class="events-tab__date">1/2/2026, 12:00:00 AM</span></div>
       </div>
       <x-ncbutton variant="tertiary" aria-label="t:Unlink event">
         <slot-icon>

@@ -7,6 +7,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -37,12 +39,9 @@ class ValidateObjectBranchCoverageTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->validator = new ValidateObject(
-			$this->config,
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->urlGenerator,
-			$this->logger,
-			$this->createMock(\OCP\IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->config, schemaMapper: $this->schemaMapper, urlGenerator: $this->urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $this->logger
 		);
 	}
 

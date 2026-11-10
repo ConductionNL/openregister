@@ -32,13 +32,4 @@ use RuntimeException;
  * Thrown when a declared system write cannot be elevated.
  */
 class SystemContextUnavailableException extends RuntimeException {
-
-	/**
-	 * Build the refusal.
-	 *
-	 * @param string $message Why, naming what was being attempted.
-	 */
-	public function __construct(string $message) {
-		parent::__construct(message: $message);
-	}//end __construct()
 }//end class

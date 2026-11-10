@@ -30,6 +30,7 @@ use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices;
 
 /**
  * @covers \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider
@@ -63,11 +64,13 @@ class ProviderItemsBelongToObjectTest extends TestCase {
 		$tasks->expects($this->never())->method('updateTask');
 
 		return new TasksProvider(
-			$tasks,
-			$this->createMock(RegisterMapperInterface::class),
-			$this->createMock(SchemaMapperInterface::class),
-			$this->createMock(ObjectOperationsInterface::class),
-			$this->createMock(IL10N::class)
+			new TasksProviderServices(
+				$tasks,
+				$this->createMock(RegisterMapperInterface::class),
+				$this->createMock(SchemaMapperInterface::class),
+				$this->createMock(ObjectOperationsInterface::class),
+			),
+			$this->createMock(IL10N::class),
 		);
 	}
 

@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
-use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -86,10 +86,10 @@ final class MagicPropertyDate {
 	private function fromMoment(DateTimeInterface $value, string $format): string {
 		$moment = DateTimeImmutable::createFromInterface($value);
 		if ($format !== 'date') {
-			$moment = $moment->setTimezone(new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE));
+			$moment = $moment->setTimezone(new DateTimeZone(DateTimeNormalizerInterface::DATABASE_TIMEZONE));
 		}
 
-		return $moment->format(DateTimeNormalizer::DATABASE_FORMAT);
+		return $moment->format(DateTimeNormalizerInterface::DATABASE_FORMAT);
 	}//end fromMoment()
 
 	/**
@@ -101,7 +101,7 @@ final class MagicPropertyDate {
 	 * @return mixed
 	 */
 	private function fromText(string $value, string $format): mixed {
-		$normalizer = $this->container->get(DateTimeNormalizer::class);
+		$normalizer = $this->container->get(DateTimeNormalizerInterface::class);
 		if ($format === 'date') {
 			return $normalizer->formatDateForDatabase($value);
 		}

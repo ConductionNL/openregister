@@ -81,21 +81,12 @@
 			<div class="settings-group compact">
 				<div class="setting-item">
 					<label for="extraction-scope">Extract Text From</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="fileSettings.extractionScope"
 						inputId="extraction-scope"
 						:inputLabel="t('openregister', 'Extraction Scope')"
 						:options="extractionScopes"
-						@update:modelValue="saveSettings">
-						<template #option="{ label, description }">
-							<div class="option-item">
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
-						</template>
-					</NcSelect>
+						@update:modelValue="saveSettings" />
 					<p class="setting-description">
 						Choose which files should have text extracted for search and
 						AI features.
@@ -104,23 +95,14 @@
 
 				<div class="setting-item">
 					<label for="text-extractor">Text Extractor</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="fileSettings.textExtractor"
 						inputId="text-extractor"
 						:inputLabel="t('openregister', 'Text Extraction Engine')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="textExtractors"
-						@update:modelValue="saveSettings">
-						<template #option="{ label, description, icon }">
-							<div class="option-item">
-								<span class="option-icon">{{ icon }}</span>
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
-						</template>
-					</NcSelect>
+						withIcon
+						@update:modelValue="saveSettings" />
 					<p class="setting-description">
 						Choose the text extraction engine for processing documents.
 					</p>
@@ -170,13 +152,7 @@
 
 						<NcButton variant="secondary" @click="testDolphinConnection">
 							<template #icon>
-								<CheckIcon
-									v-if="dolphinConnectionTested === 'success'"
-									:size="20" />
-								<AlertCircleIcon
-									v-else-if="dolphinConnectionTested === 'error'"
-									:size="20" />
-								<RefreshIcon v-else :size="20" />
+								<ConnectionTestIcon :result="dolphinConnectionTested" />
 							</template>
 							Test Connection
 						</NcButton>
@@ -185,22 +161,13 @@
 
 				<div class="setting-item">
 					<label for="extraction-mode">Extraction Mode</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="fileSettings.extractionMode"
 						inputId="extraction-mode"
 						:inputLabel="t('openregister', 'Extraction Mode')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="extractionModes"
-						@update:modelValue="saveSettings">
-						<template #option="{ label, description }">
-							<div class="option-item">
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
-						</template>
-					</NcSelect>
+						@update:modelValue="saveSettings" />
 					<p class="setting-description">
 						Control when extraction happens relative to file upload.
 					</p>
@@ -317,21 +284,12 @@
 			<div class="settings-group compact">
 				<div class="setting-item">
 					<label for="object-extraction-mode">Extraction Mode</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="objectSettings.extractionMode"
 						inputId="object-extraction-mode"
 						:inputLabel="t('openregister', 'Object Extraction Mode')"
 						:options="extractionModes"
-						@update:modelValue="saveObjectSettings">
-						<template #option="{ label, description }">
-							<div class="option-item">
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
-						</template>
-					</NcSelect>
+						@update:modelValue="saveObjectSettings" />
 					<p class="setting-description">
 						Control when text extraction happens for OpenRegister
 						objects. Objects contain structured data that is converted to
@@ -367,22 +325,13 @@
 					v-if="fileSettings.entityRecognitionEnabled"
 					class="setting-item">
 					<label for="entity-recognition-method">Detection Method</label>
-					<NcSelect
+					<LabeledSelect
 						v-model="fileSettings.entityRecognitionMethod"
 						inputId="entity-recognition-method"
 						:inputLabel="t('openregister', 'Entity Recognition Method')"
 						:options="entityRecognitionMethods"
-						@update:modelValue="saveSettings">
-						<template #option="{ label, description, icon }">
-							<div class="option-item">
-								<span class="option-icon">{{ icon }}</span>
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
-						</template>
-					</NcSelect>
+						withIcon
+						@update:modelValue="saveSettings" />
 					<p class="setting-description">
 						Choose how entities are detected. Regex is fast and local;
 						external services provide better accuracy for names and
@@ -482,40 +431,19 @@
 								"
 								@click="testBackend(backend.name)">
 								<template #icon>
-									<NcLoadingIcon
-										v-if="testingBackendMethod === backend.name"
-										:size="20" />
-									<CheckIcon
-										v-else-if="
-											backendTestResults[backend.name]
-											=== 'success'
-										"
-										:size="20" />
-									<AlertCircleIcon
-										v-else-if="
-											backendTestResults[backend.name]
-											=== 'error'
-										"
-										:size="20" />
-									<RefreshIcon v-else :size="20" />
+									<ConnectionTestIcon
+										:result="backendTestResults[backend.name]"
+										:testing="testingBackendMethod === backend.name"
+										testingFirst />
 								</template>
 								{{ t('openregister', 'Test connection') }}
 							</NcButton>
 						</li>
 					</ul>
-					<p
+					<OpenAnonymiserHint
 						v-if="openAnonymiserHint"
-						class="setting-description backend-hint"
-						role="status">
-						{{ openAnonymiserHint }}
-						<a
-							:href="openAnonymiserInstallLink"
-							target="_blank"
-							rel="noopener noreferrer"
-							class="backend-install-link">
-							{{ t('openregister', 'Install OpenAnonymiser') }}
-						</a>
-					</p>
+						:hint="openAnonymiserHint"
+						:installLink="openAnonymiserInstallLink" />
 				</div>
 
 				<!-- Presidio API Configuration -->
@@ -547,16 +475,9 @@
 							variant="secondary"
 							@click="testPresidioConnection">
 							<template #icon>
-								<CheckIcon
-									v-if="presidioConnectionTested === 'success'"
-									:size="20" />
-								<AlertCircleIcon
-									v-else-if="presidioConnectionTested === 'error'"
-									:size="20" />
-								<NcLoadingIcon
-									v-else-if="testingPresidio"
-									:size="20" />
-								<RefreshIcon v-else :size="20" />
+								<ConnectionTestIcon
+									:result="presidioConnectionTested"
+									:testing="testingPresidio" />
 							</template>
 							Test Connection
 						</NcButton>
@@ -601,42 +522,19 @@
 									)
 								}}
 							</p>
-							<p
+							<OpenAnonymiserHint
 								v-if="openAnonymiserHint"
-								class="setting-description backend-hint"
-								role="status">
-								{{ openAnonymiserHint }}
-								<a
-									:href="openAnonymiserInstallLink"
-									target="_blank"
-									rel="noopener noreferrer"
-									class="backend-install-link">
-									{{ t('openregister', 'Install OpenAnonymiser') }}
-								</a>
-							</p>
+								:hint="openAnonymiserHint"
+								:installLink="openAnonymiserInstallLink" />
 							<NcButton
 								variant="secondary"
 								:disabled="testingBackendMethod === 'openanonymiser'"
 								@click="testBackend('openanonymiser')">
 								<template #icon>
-									<NcLoadingIcon
-										v-if="
-											testingBackendMethod === 'openanonymiser'
-										"
-										:size="20" />
-									<CheckIcon
-										v-else-if="
-											backendTestResults.openanonymiser
-											=== 'success'
-										"
-										:size="20" />
-									<AlertCircleIcon
-										v-else-if="
-											backendTestResults.openanonymiser
-											=== 'error'
-										"
-										:size="20" />
-									<RefreshIcon v-else :size="20" />
+									<ConnectionTestIcon
+										:result="backendTestResults.openanonymiser"
+										:testing="testingBackendMethod === 'openanonymiser'"
+										testingFirst />
 								</template>
 								{{ t('openregister', 'Test connection') }}
 							</NcButton>
@@ -741,22 +639,9 @@
 								variant="secondary"
 								@click="testOpenAnonymiserConnection">
 								<template #icon>
-									<CheckIcon
-										v-if="
-											openAnonymiserConnectionTested
-											=== 'success'
-										"
-										:size="20" />
-									<AlertCircleIcon
-										v-else-if="
-											openAnonymiserConnectionTested
-											=== 'error'
-										"
-										:size="20" />
-									<NcLoadingIcon
-										v-else-if="testingOpenAnonymiser"
-										:size="20" />
-									<RefreshIcon v-else :size="20" />
+									<ConnectionTestIcon
+										:result="openAnonymiserConnectionTested"
+										:testing="testingOpenAnonymiser" />
 								</template>
 								{{ t('openregister', 'Test connection') }}
 							</NcButton>
@@ -906,7 +791,6 @@ import {
 	NcButton,
 	NcCheckboxRadioSwitch,
 	NcLoadingIcon,
-	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
 import { mapStores } from 'pinia'
@@ -920,8 +804,12 @@ import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import RefreshIcon from 'vue-material-design-icons/Refresh.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import ConnectionTestIcon from './ConnectionTestIcon.vue'
+import LabeledSelect from './LabeledSelect.vue'
+import OpenAnonymiserHint from './OpenAnonymiserHint.vue'
 import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
+import { saveMessageMethods } from './saveMessage.js'
 
 /**
  * File configuration settings component for managing file upload and text extraction.
@@ -954,6 +842,15 @@ const OPEN_ANONYMISER_HINTS = new Map([
 			),
 	],
 ])
+
+// The display name of each entity recognition backend, by its id.
+const BACKEND_LABELS = {
+	regex: 'Regex',
+	presidio: 'Presidio',
+	openanonymiser: 'OpenAnonymiser',
+	llm: 'LLM',
+	hybrid: 'Hybrid',
+}
 
 // The select fields of the file settings: the option list each picks from,
 // and the option it falls back to when the stored id is not in the list.
@@ -1115,6 +1012,54 @@ function extractionStatsOf(stats) {
 }
 
 /**
+ * The file types text can be extracted from, one row each: extension, label,
+ * icon, whether it is enabled by default, LLPhant support and whether Dolphin
+ * reads it with OCR.
+ */
+const FILE_TYPE_ROWS = [
+	// Text formats (LLPhant supported)
+	['txt', 'Text Files', '📝', true, 'yes', false],
+	['md', 'Markdown', '📋', true, 'yes', false],
+	['html', 'HTML Files', '🌐', true, 'yes', false],
+	['json', 'JSON Files', '📦', true, 'yes', false],
+	['xml', 'XML Files', '📰', true, 'yes', false],
+	['csv', 'CSV Files', '📊', true, 'yes', false],
+	// Document formats (LLPhant supported)
+	['pdf', 'PDF Documents', '📄', true, 'yes', true],
+	['docx', 'Word Documents', '📘', true, 'yes', false],
+	['doc', 'Word (Legacy)', '📘', true, 'yes', false],
+	['xlsx', 'Excel Spreadsheets', '📊', true, 'yes', false],
+	['xls', 'Excel (Legacy)', '📊', true, 'yes', false],
+	['pptx', 'PowerPoint', '📽️', false, 'yes', false],
+	// Image formats (Dolphin required for OCR)
+	['jpg', 'JPEG Images', '🖼️', false, 'none', true],
+	['jpeg', 'JPEG Images', '🖼️', false, 'none', true],
+	['png', 'PNG Images', '🖼️', false, 'none', true],
+	['gif', 'GIF Images', '🖼️', false, 'none', true],
+	['webp', 'WebP Images', '🖼️', false, 'none', true],
+	// Other formats
+	['odt', 'OpenDocument Text', '📄', false, 'yes', false],
+	['rtf', 'Rich Text Format', '📝', false, 'yes', false],
+]
+
+/**
+ * One row of FILE_TYPE_ROWS as the form edits it.
+ *
+ * @param {Array} row The row
+ * @return {object} The file type
+ */
+function toFileType(row) {
+	return {
+		extension: row[0],
+		label: row[1],
+		icon: row[2],
+		enabled: row[3],
+		llphantSupport: row[4],
+		dolphinOcr: row[5],
+	}
+}
+
+/**
  * The state every instance of this component starts from.
  */
 const INITIAL_STATE = {
@@ -1161,167 +1106,7 @@ const INITIAL_STATE = {
 		extractionMode: { id: 'background', label: 'Background Job' },
 	},
 
-	fileTypes: [
-		// Text formats (LLPhant supported)
-		{
-			extension: 'txt',
-			label: 'Text Files',
-			icon: '📝',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'md',
-			label: 'Markdown',
-			icon: '📋',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'html',
-			label: 'HTML Files',
-			icon: '🌐',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'json',
-			label: 'JSON Files',
-			icon: '📦',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'xml',
-			label: 'XML Files',
-			icon: '📰',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'csv',
-			label: 'CSV Files',
-			icon: '📊',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-
-		// Document formats (LLPhant supported)
-		{
-			extension: 'pdf',
-			label: 'PDF Documents',
-			icon: '📄',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: true,
-		},
-		{
-			extension: 'docx',
-			label: 'Word Documents',
-			icon: '📘',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'doc',
-			label: 'Word (Legacy)',
-			icon: '📘',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'xlsx',
-			label: 'Excel Spreadsheets',
-			icon: '📊',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'xls',
-			label: 'Excel (Legacy)',
-			icon: '📊',
-			enabled: true,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'pptx',
-			label: 'PowerPoint',
-			icon: '📽️',
-			enabled: false,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-
-		// Image formats (Dolphin required for OCR)
-		{
-			extension: 'jpg',
-			label: 'JPEG Images',
-			icon: '🖼️',
-			enabled: false,
-			llphantSupport: 'none',
-			dolphinOcr: true,
-		},
-		{
-			extension: 'jpeg',
-			label: 'JPEG Images',
-			icon: '🖼️',
-			enabled: false,
-			llphantSupport: 'none',
-			dolphinOcr: true,
-		},
-		{
-			extension: 'png',
-			label: 'PNG Images',
-			icon: '🖼️',
-			enabled: false,
-			llphantSupport: 'none',
-			dolphinOcr: true,
-		},
-		{
-			extension: 'gif',
-			label: 'GIF Images',
-			icon: '🖼️',
-			enabled: false,
-			llphantSupport: 'none',
-			dolphinOcr: true,
-		},
-		{
-			extension: 'webp',
-			label: 'WebP Images',
-			icon: '🖼️',
-			enabled: false,
-			llphantSupport: 'none',
-			dolphinOcr: true,
-		},
-
-		// Other formats
-		{
-			extension: 'odt',
-			label: 'OpenDocument Text',
-			icon: '📄',
-			enabled: false,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-		{
-			extension: 'rtf',
-			label: 'Rich Text Format',
-			icon: '📝',
-			enabled: false,
-			llphantSupport: 'yes',
-			dolphinOcr: false,
-		},
-	],
+	fileTypes: FILE_TYPE_ROWS.map(toFileType),
 
 	textExtractors: [
 		{
@@ -1451,7 +1236,6 @@ export default {
 		SettingsCard,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
-		NcSelect,
 		NcButton,
 		NcTextField,
 		NcActions,
@@ -1463,7 +1247,10 @@ export default {
 		KeyIcon,
 		CheckIcon,
 		AlertCircleIcon,
+		ConnectionTestIcon,
 		DotsVertical,
+		LabeledSelect,
+		OpenAnonymiserHint,
 	},
 
 	data() {
@@ -1517,13 +1304,7 @@ export default {
 			if (!this.backendState || !this.backendState.backends) {
 				return []
 			}
-			const labels = {
-				regex: 'Regex',
-				presidio: 'Presidio',
-				openanonymiser: 'OpenAnonymiser',
-				llm: 'LLM',
-				hybrid: 'Hybrid',
-			}
+			const labels = BACKEND_LABELS
 			return Object.values(this.backendState.backends).map((backend) => ({
 				name: backend.name,
 				label: labels[backend.name] || backend.name,
@@ -1562,14 +1343,7 @@ export default {
 		 * @return {object} Map of method id to label.
 		 */
 		methodLabels() {
-			return {
-				auto: 'Auto',
-				regex: 'Regex',
-				presidio: 'Presidio',
-				openanonymiser: 'OpenAnonymiser',
-				llm: 'LLM',
-				hybrid: 'Hybrid',
-			}
+			return { auto: 'Auto', ...BACKEND_LABELS }
 		},
 
 		/**
@@ -1622,6 +1396,8 @@ export default {
 	},
 
 	methods: {
+		...saveMessageMethods,
+
 		/**
 		 * Load file configuration settings
 		 *
@@ -2154,21 +1930,6 @@ export default {
 		},
 
 		/**
-		 * Show save message
-		 *
-		 * @spec exclude UI plumbing — transient inline message with auto-clear timeout.
-		 * @param {string} message - The message to show
-		 * @param {string} type - The type of message to show
-		 */
-		showSaveMessage(message, type = 'success') {
-			this.saveMessage = message
-			this.saveMessageType = type
-			setTimeout(() => {
-				this.saveMessage = ''
-			}, 3000)
-		},
-
-		/**
 		 * Format number with thousands separator
 		 *
 		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
@@ -2346,26 +2107,6 @@ export default {
 	margin: 4px 0;
 }
 
-.option-item {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.option-icon {
-	font-size: 18px;
-	margin-right: 8px;
-}
-
-.option-label {
-	font-weight: 500;
-}
-
-.option-description {
-	font-size: 12px;
-	color: var(--color-text-maxcontrast);
-}
-
 .api-config {
 	background: var(--color-background-dark);
 	border: 1px solid var(--color-border-dark);
@@ -2393,17 +2134,6 @@ export default {
 @include loading-icon;
 
 @media (max-width: 768px) {
-	.section-header-inline {
-		position: static;
-		margin-bottom: 1rem;
-		flex-direction: column;
-		align-items: stretch;
-	}
-
-	.button-group {
-		justify-content: center;
-	}
-
 	.file-types-grid {
 		grid-template-columns: 1fr;
 	}
@@ -2622,11 +2352,6 @@ export default {
 
 .backend-hint {
 	margin-top: 8px;
-}
-
-.backend-install-link {
-	color: var(--color-primary-element);
-	text-decoration: underline;
 }
 
 @media (prefers-reduced-motion: reduce) {

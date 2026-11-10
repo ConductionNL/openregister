@@ -236,7 +236,7 @@ class ObjectFolderControllerTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($this->schema);
 
 		$logger = new NullLogger();
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,
@@ -280,7 +280,6 @@ class ObjectFolderControllerTest extends TestCase {
 		$browser = new ObjectFolderBrowser(fileService: $this->fileService);
 
 		return ObjectFolderControllerFactory::create(
-			'openregister',
 			$this->request,
 			new ObjectFileAccess(
 				objectService: $this->objectService,

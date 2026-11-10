@@ -53,7 +53,7 @@ use OCA\OpenRegister\Service\Rules\RuleVocabulary;
  *   document: array<string, mixed>
  * }
  */
-class StateConditionEvaluator {
+class StateConditionEvaluator implements StateConditionEvaluatorInterface {
 
 	/**
 	 * The refusal code an `entry` condition produces.

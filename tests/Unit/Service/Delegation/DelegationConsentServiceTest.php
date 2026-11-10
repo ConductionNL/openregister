@@ -35,7 +35,9 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapper;
+use OCA\OpenRegister\Service\Delegation\DelegationCaller;
 use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
+use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -96,7 +98,10 @@ class DelegationConsentServiceTest extends TestCase {
 			static fn (DelegationGrant $grant): DelegationGrant => $grant
 		);
 
-		return new DelegationConsentService($mapper);
+		$clock = $this->createMock(ITimeFactory::class);
+		$clock->method('getDateTime')->willReturnCallback(fn (): DateTime => clone $this->now);
+
+		return new DelegationConsentService($mapper, $clock);
 	}
 
 	/**
@@ -121,7 +126,7 @@ class DelegationConsentServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testARequestIsCreatedPending(): void {
-		$grant = $this->service()->request('alice', 'mayor', [], 'covering leave', $this->now);
+		$grant = $this->service()->request('alice', 'mayor', [], 'covering leave');
 
 		$this->assertSame(DelegationGrant::STATUS_PENDING, $grant->getStatus());
 		$this->assertSame('alice', $grant->getPrincipal());
@@ -144,7 +149,7 @@ class DelegationConsentServiceTest extends TestCase {
 	public function testAnOutstandingRequestIsReusedRatherThanDuplicated(): void {
 		$this->outstanding = $this->pendingRequest();
 
-		$grant = $this->service()->request('alice', 'mayor', [], 'again', $this->now);
+		$grant = $this->service()->request('alice', 'mayor', [], 'again');
 
 		$this->assertSame($this->outstanding, $grant);
 		$this->assertSame([], $this->inserted, 'no second request may be created');
@@ -165,7 +170,7 @@ class DelegationConsentServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/may not/');
 
-		$this->service()->answer($this->pendingRequest(), 'alice', true, $this->now);
+		$this->service()->answer($this->pendingRequest(), new DelegationCaller('alice', false), true);
 	}
 
 	/**
@@ -177,7 +182,7 @@ class DelegationConsentServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheNamedIdentityMayAnswer(): void {
-		$grant = $this->service()->answer($this->pendingRequest(), 'mayor', true, $this->now);
+		$grant = $this->service()->answer($this->pendingRequest(), new DelegationCaller('mayor', false), true);
 
 		$this->assertSame(DelegationGrant::STATUS_GRANTED, $grant->getStatus());
 		$this->assertSame('mayor', $grant->getGrantedBy());
@@ -189,7 +194,7 @@ class DelegationConsentServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAdministratorMayAnswer(): void {
-		$grant = $this->service()->answer($this->pendingRequest(), 'admin', true, $this->now, isAdmin: true);
+		$grant = $this->service()->answer($this->pendingRequest(), new DelegationCaller('admin', true), true);
 
 		$this->assertSame(DelegationGrant::STATUS_GRANTED, $grant->getStatus());
 	}
@@ -206,7 +211,7 @@ class DelegationConsentServiceTest extends TestCase {
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public function testAGrantedDelegationExpiresByDefault(): void {
-		$grant = $this->service()->answer($this->pendingRequest(), 'mayor', true, $this->now);
+		$grant = $this->service()->answer($this->pendingRequest(), new DelegationCaller('mayor', false), true);
 
 		$this->assertNotNull($grant->getExpiresAt());
 		$this->assertGreaterThan($this->now, $grant->getExpiresAt());
@@ -220,7 +225,7 @@ class DelegationConsentServiceTest extends TestCase {
 	public function testAnExplicitExpiryIsHonoured(): void {
 		$until = new DateTime('2026-09-01 00:00:00');
 
-		$grant = $this->service()->answer($this->pendingRequest(), 'mayor', true, $this->now, until: $until);
+		$grant = $this->service()->answer($this->pendingRequest(), new DelegationCaller('mayor', false), true, until: $until);
 
 		$this->assertEquals($until, $grant->getExpiresAt());
 	}
@@ -237,7 +242,7 @@ class DelegationConsentServiceTest extends TestCase {
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public function testADenialIsRecordedAndCools(): void {
-		$grant = $this->service()->answer($this->pendingRequest(), 'mayor', false, $this->now);
+		$grant = $this->service()->answer($this->pendingRequest(), new DelegationCaller('mayor', false), false);
 
 		$this->assertSame(DelegationGrant::STATUS_DENIED, $grant->getStatus());
 		$this->assertNotNull($grant->getAnsweredAt());
@@ -256,7 +261,7 @@ class DelegationConsentServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/already been answered/');
 
-		$this->service()->answer($grant, 'mayor', false, $this->now);
+		$this->service()->answer($grant, new DelegationCaller('mayor', false), false);
 	}
 
 	/**
@@ -272,7 +277,7 @@ class DelegationConsentServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/not delegation/');
 
-		$this->service()->request('alice', 'alice', [], 'why', $this->now);
+		$this->service()->request('alice', 'alice', [], 'why');
 	}
 
 	/**
@@ -286,7 +291,7 @@ class DelegationConsentServiceTest extends TestCase {
 
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->service()->revoke($granted, 'alice', $this->now);
+		$this->service()->revoke($granted, new DelegationCaller('alice', false));
 	}
 
 	/**
@@ -298,7 +303,7 @@ class DelegationConsentServiceTest extends TestCase {
 		$granted = $this->pendingRequest();
 		$granted->setStatus(DelegationGrant::STATUS_GRANTED);
 
-		$revoked = $this->service()->revoke($granted, 'mayor', $this->now);
+		$revoked = $this->service()->revoke($granted, new DelegationCaller('mayor', false));
 
 		$this->assertSame(DelegationGrant::STATUS_REVOKED, $revoked->getStatus());
 		$this->assertEquals($this->now, $revoked->getRevokedAt());

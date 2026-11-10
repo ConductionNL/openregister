@@ -10,6 +10,7 @@ use OCA\OpenRegister\Db\EndpointLog;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\EndpointMapper;
 use OCA\OpenRegister\Service\EndpointService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\EndpointsControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -41,7 +42,7 @@ class EndpointsControllerTest extends TestCase {
 		$groupManager = $this->createMock(\OCP\IGroupManager::class);
 		$groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new EndpointsController(
+		$this->controller = EndpointsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->endpointMapper,

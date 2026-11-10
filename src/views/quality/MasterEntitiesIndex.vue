@@ -2,109 +2,77 @@
 	<NcAppContent>
 		<div class="viewContainer" :class="{ withDetail: selectedObject }">
 			<div class="viewMain">
-				<div class="viewHeader">
-					<h1>{{ t('openregister', 'Master entities') }}</h1>
-					<p>
-						{{
-							t(
-								'openregister',
-								'Survivorship-enabled objects for a register and schema, with their materialised quality columns.',
-							)
-						}}
-					</p>
-				</div>
-
-				<RegisterSchemaSelector />
-
-				<div v-if="hasSelection && masterEntities.length" class="sortBar">
-					<NcSelect
-						v-model="sortModel"
-						class="sortSelect"
-						:options="sortOptions"
-						:inputLabel="t('openregister', 'Sort by')"
-						:clearable="false"
-						label="label"
-						@update:modelValue="handleSortChange" />
-				</div>
-
-				<NcEmptyContent
-					v-if="!hasSelection"
-					:name="t('openregister', 'Select a register and schema')"
-					:description="
-						t(
-							'openregister',
-							'Choose a survivorship-enabled register and schema above to list its master entities.',
-						)
-					">
+				<QualityPageFrame
+					:title="t('openregister', 'Master entities')"
+					:description="t('openregister', 'Survivorship-enabled objects for a register and schema, with their materialised quality columns.')"
+					:selectDescription="t('openregister', 'Choose a survivorship-enabled register and schema above to list its master entities.')"
+					:empty="masterEntities.length === 0"
+					:emptyName="t('openregister', 'No master entities found')"
+					:emptyDescription="t('openregister', 'This schema has no objects yet.')">
+					<template #toolbar>
+						<div v-if="hasSelection && masterEntities.length" class="sortBar">
+							<NcSelect
+								v-model="sortModel"
+								class="sortSelect"
+								:options="sortOptions"
+								:inputLabel="t('openregister', 'Sort by')"
+								:clearable="false"
+								label="label"
+								@update:modelValue="handleSortChange" />
+						</div>
+					</template>
 					<template #icon>
 						<AccountMultipleOutline :size="64" />
 					</template>
-				</NcEmptyContent>
-
-				<template v-else-if="loading">
-					<NcLoadingIcon :size="32" />
-				</template>
-
-				<template v-else-if="masterEntities.length === 0">
-					<NcEmptyContent
-						:name="t('openregister', 'No master entities found')"
-						:description="
-							t('openregister', 'This schema has no objects yet.')
-						">
-						<template #icon>
-							<AccountMultipleOutline :size="64" />
-						</template>
-					</NcEmptyContent>
-				</template>
-
-				<table v-else class="masterEntitiesTable">
-					<thead>
-						<tr>
-							<th scope="col">
-								{{ t('openregister', 'Id') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Quality score') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Quality status') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr
-							v-for="entity in masterEntities"
-							:key="entity.id"
-							data-testid="mdm-master-entity-row"
-							:class="{
-								selectedRow:
-									selectedObject
-									&& selectedObject.id === entity.id,
-							}">
-							<td>{{ entity.id }}</td>
-							<td>{{ entity.qualityScore ?? '—' }}</td>
-							<td>
-								<span
-									:class="
-										'badge badge-status-' + entity.qualityStatus
-									"
-									>{{ entity.qualityStatus ?? '—' }}</span
-								>
-							</td>
-							<td>
-								<NcButton
-									variant="tertiary"
-									data-testid="mdm-view-golden-record"
-									@click="selectEntity(entity)">
-									{{ t('openregister', 'View golden record') }}
-								</NcButton>
-							</td>
-						</tr>
-					</tbody>
-				</table>
+					<table class="masterEntitiesTable">
+						<thead>
+							<tr>
+								<th scope="col">
+									{{ t('openregister', 'Id') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Quality score') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Quality status') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Actions') }}
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr
+								v-for="entity in masterEntities"
+								:key="entity.id"
+								data-testid="mdm-master-entity-row"
+								:class="{
+									selectedRow:
+										selectedObject
+										&& selectedObject.id === entity.id,
+								}">
+								<td>{{ entity.id }}</td>
+								<td>{{ entity.qualityScore ?? '—' }}</td>
+								<td>
+									<span
+										:class="
+											'badge badge-status-' + entity.qualityStatus
+										"
+										>{{ entity.qualityStatus ?? '—' }}</span
+									>
+								</td>
+								<td>
+									<NcButton
+										variant="tertiary"
+										data-testid="mdm-view-golden-record"
+										@click="selectEntity(entity)">
+										{{ t('openregister', 'View golden record') }}
+									</NcButton>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</QualityPageFrame>
 			</div>
 
 			<GoldenRecordDetail
@@ -120,28 +88,26 @@ import { translate as t } from '@nextcloud/l10n'
 import {
 	NcAppContent,
 	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
 	NcSelect,
 } from '@nextcloud/vue'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import GoldenRecordDetail from './GoldenRecordDetail.vue'
-import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import { qualityStore } from '../../store/store.js'
+import { qualityListPage, QualityPageFrame } from './qualityListPage.js'
 
 export default {
 	name: 'MasterEntitiesIndex',
 
 	components: {
 		NcAppContent,
-		NcEmptyContent,
-		NcLoadingIcon,
 		NcButton,
 		NcSelect,
 		AccountMultipleOutline,
-		RegisterSchemaSelector,
+		QualityPageFrame,
 		GoldenRecordDetail,
 	},
+
+	mixins: [qualityListPage()],
 
 	data() {
 		return {
@@ -166,20 +132,6 @@ export default {
 
 	computed: {
 		/**
-		 * @spec exclude UI plumbing — proxies the store's hasSelection getter, no backend contract of its own
-		 */
-		hasSelection() {
-			return qualityStore.hasSelection
-		},
-
-		/**
-		 * @spec exclude UI plumbing — proxies the store's loading flag, no backend contract of its own
-		 */
-		loading() {
-			return qualityStore.isLoading
-		},
-
-		/**
 		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		masterEntities() {
@@ -194,23 +146,17 @@ export default {
 		},
 	},
 
-	/**
-	 * @spec openspec/specs/mdm-frontend/spec.md
-	 */
-	mounted() {
-		if (this.hasSelection) {
-			this.loadData()
-		}
-		this.$watch(
-			() => [qualityStore.selectedRegister, qualityStore.selectedSchema],
-			() => {
-				this.selectedObject = null
-				this.loadData()
-			},
-		)
-	},
-
 	methods: {
+		/**
+		 * Drop the open record and reload for the new register and schema.
+		 *
+		 * @spec exclude UI plumbing — delegates to loadData
+		 */
+		selectionChanged() {
+			this.selectedObject = null
+			this.loadData()
+		},
+
 		/**
 		 * Load master-entity objects (via the existing object-read
 		 * endpoint) for the current selection, sorted by quality. No
@@ -268,10 +214,6 @@ export default {
 .viewMain {
 	flex: 1;
 	min-width: 0;
-}
-
-.viewHeader h1 {
-	margin-bottom: 4px;
 }
 
 .sortBar {

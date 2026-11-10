@@ -25,7 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
+use OCA\OpenRegister\Formats\ExtendedFieldTypeValidatorInterface;
+use OCA\OpenRegister\Formats\FormatFactory;
 use OCP\IRequest;
 
 /**
@@ -65,7 +66,7 @@ final class RecurrenceOccurrences {
 		}
 
 		$count = $this->requestedCount();
-		$validator = new ExtendedFieldTypeValidator();
+		$validator = FormatFactory::extendedFieldTypes();
 		foreach ($rules as $propertyName => $rrule) {
 			$key = self::occurrencesKey(propertyName: $propertyName, ruleCount: count($rules));
 			$objectData[$key] = $validator->materialiseOccurrences(rrule: $rrule, count: $count);
@@ -124,7 +125,7 @@ final class RecurrenceOccurrences {
 	private function requestedCount(): int {
 		$raw = $this->request?->getParam('recurrenceOccurrences', null);
 		if (is_numeric($raw) === false) {
-			return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
+			return ExtendedFieldTypeValidatorInterface::DEFAULT_OCCURRENCES;
 		}
 
 		return (int)$raw;

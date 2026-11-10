@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 
+use OCA\OpenRegister\Service\Form\FormFileStorage;
 use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryAppData;
@@ -46,7 +47,7 @@ class FormIdempotencyStoreTest extends TestCase {
 		$this->locks = new MemoryLockingProvider();
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
-		$this->store = new FormIdempotencyStore(appData: $this->appData, time: $time, locks: $this->locks, l10n: $l10n);
+		$this->store = new FormIdempotencyStore(storage: new FormFileStorage(appData: $this->appData, time: $time), locks: $this->locks, l10n: $l10n);
 	}//end setUp()
 
 	/**
@@ -166,7 +167,7 @@ class FormIdempotencyStoreTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('warning')->with($this->stringContains('locking provider is a no-op'));
-		$noop = new FormIdempotencyStore(appData: $this->appData, time: $time, locks: new NoopLockingProvider(), l10n: $l10n, logger: $logger);
+		$noop = new FormIdempotencyStore(storage: new FormFileStorage(appData: $this->appData, time: $time), locks: new NoopLockingProvider(), l10n: $l10n, logger: $logger);
 
 		$this->assertTrue($noop->reservationIsANoop());
 		$noop->reserve(scope: 'form-1', key: 'k1');

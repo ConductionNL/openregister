@@ -62,7 +62,7 @@ use Psr\Log\LoggerInterface;
  *   cause vocabulary; each is required for the degrade-don't-throw lookup
  *   surface (AD-23).
  */
-class KvkProvider extends AbstractIntegrationProvider {
+class KvkProvider extends AbstractIntegrationProvider implements KvkLookupInterface {
 
 	use ConnectorRoutedProviderTrait;
 	use CompanyLookupCalls;

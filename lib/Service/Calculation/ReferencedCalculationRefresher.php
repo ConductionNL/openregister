@@ -36,12 +36,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Container\ContainerInterface;
@@ -56,7 +54,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A re-save reads the referrers, resolves their schemas
  *   and hands each row back in its stored form; each collaborator is one of those steps.
  */
-class ReferencedCalculationRefresher {
+class ReferencedCalculationRefresher implements ReferencedCalculationRefresherInterface {
 
 	/**
 	 * The most objects re-saved per dependency within one save.
@@ -85,20 +83,14 @@ class ReferencedCalculationRefresher {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface     $registers The registers.
-	 * @param SchemaMapperInterface       $schemas   The schemas.
-	 * @param MagicMapperInterface        $rows      Finds the referring objects.
-	 * @param ContainerInterface $container Hands out the object service on first use.
-	 * @param LoggerInterface    $logger    The logger.
-	 * @param SchemaTypeConverter $types    Restores the stored form of `type: string` values the read decoded.
+	 * @param SchemaCatalogInterface $catalog   The registers, the schemas and the rows that find the referring objects.
+	 * @param ContainerInterface     $container Hands out the object service on first use.
+	 * @param LoggerInterface        $logger    The logger.
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly MagicMapperInterface $rows,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
-		private readonly SchemaTypeConverter $types=new SchemaTypeConverter(),
 	) {
 	}//end __construct()
 
@@ -119,8 +111,8 @@ class ReferencedCalculationRefresher {
 		}
 
 		try {
-			$target   = $this->schemas->find(id: (string) $updated->getSchema(), _rbac: false, _multitenancy: false);
-			$register = $this->registers->find(id: (string) $updated->getRegister(), _rbac: false, _multitenancy: false);
+			$target   = $this->catalog->schemas()->find(id: (string) $updated->getSchema(), _rbac: false, _multitenancy: false);
+			$register = $this->catalog->registers()->find(id: (string) $updated->getRegister(), _rbac: false, _multitenancy: false);
 		} catch (Throwable) {
 			return 0;
 		}
@@ -197,7 +189,7 @@ class ReferencedCalculationRefresher {
 		$dependents = [];
 		foreach ($register->getSchemas() as $schemaId) {
 			try {
-				$schema = $this->schemas->find(id: $schemaId, _rbac: false, _multitenancy: false);
+				$schema = $this->catalog->schemas()->find(id: $schemaId, _rbac: false, _multitenancy: false);
 			} catch (Throwable) {
 				continue;
 			}
@@ -305,7 +297,12 @@ class ReferencedCalculationRefresher {
 	 */
 	private function resave(Register $register, Schema $schema, string $field, string $uuid): int {
 		try {
-			$rows = $this->rows->findAllInRegisterSchemaTable(register: $register, schema: $schema, limit: self::SYNC_LIMIT, filters: [$field => $uuid]);
+			$rows = $this->catalog->tables()->findAllInRegisterSchemaTable(
+				register: $register,
+				schema: $schema,
+				limit: self::SYNC_LIMIT,
+				filters: [$field => $uuid]
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[ReferencedCalculationRefresher] referrers could not be read',
@@ -328,7 +325,7 @@ class ReferencedCalculationRefresher {
 			try {
 				// The read decodes JSON held in a `type: string` property; hand it back as stored.
 				$service->saveObject(
-					object: $this->types->restoreStringTypedValues(data: ($row->getObject() ?? []), properties: ($schema->getProperties() ?? [])),
+					object: (new SchemaTypeConverter())->restoreStringTypedValues(data: ($row->getObject() ?? []), properties: ($schema->getProperties() ?? [])),
 					register: $row->getRegister(),
 					schema: $row->getSchema(),
 					uuid: $row->getUuid(),

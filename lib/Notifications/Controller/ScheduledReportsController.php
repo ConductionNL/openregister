@@ -27,7 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
+use OCA\OpenRegister\Notifications\Controller\Support\ScheduledReportsControllerServices;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledReportRunNowJob;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
@@ -46,22 +48,41 @@ use OCP\IRequest;
  */
 class ScheduledReportsController extends Controller {
 	/**
+	 * Business logic.
+	 *
+	 * @var ScheduledReportsInterface
+	 */
+	private readonly ScheduledReportsInterface $service;
+
+	/**
+	 * Background job list (for run-now).
+	 *
+	 * @var IJobList
+	 */
+	private readonly IJobList $jobList;
+
+	/**
+	 * Session, group manager and logger.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
-	 * @param IRequest $request HTTP request.
-	 * @param ScheduledReportsInterface $service Business logic.
-	 * @param IJobList $jobList Background job list (for run-now).
-	 * @param ControllerSession $session Session, group manager and logger.
+	 * @param IRequest $request Request.
+	 * @param ScheduledReportsControllerServices $services The controller's services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ScheduledReportsInterface $service,
-		private readonly IJobList $jobList,
-		private readonly ControllerSession $session,
+		ScheduledReportsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+
+		$this->service = $services->service;
+		$this->jobList = $services->jobList;
+		$this->session = $services->session;
 	}//end __construct()
 
 	/**

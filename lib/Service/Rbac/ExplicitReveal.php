@@ -52,14 +52,7 @@ use OCA\OpenRegister\Support\OrderParameter;
  *
  * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
  */
-class ExplicitReveal {
-
-	/**
-	 * The authorization key and value that make a property explicit-reveal.
-	 */
-	public const KEY = 'reveal';
-
-	public const EXPLICIT = 'explicit';
+class ExplicitReveal implements ExplicitRevealInterface {
 
 	/**
 	 * How many characters of the value the mask keeps.
@@ -327,17 +320,27 @@ class ExplicitReveal {
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
 	public static function restoreMasked(?Schema $schema, array $incoming, array $stored): array {
-		foreach (self::explicitProperties(schema: $schema) as $name) {
-			if (array_key_exists($name, $incoming) === false || array_key_exists($name, $stored) === false) {
-				continue;
-			}
-
-			$mask = self::mask(value: $stored[$name]);
-			if ($mask !== '' && $incoming[$name] === $mask) {
-				$incoming[$name] = $stored[$name];
-			}
+		foreach (array_intersect(self::explicitProperties(schema: $schema), array_keys($incoming), array_keys($stored)) as $name) {
+			$incoming[$name] = self::unmasked(sent: $incoming[$name], stored: $stored[$name]);
 		}
 
 		return $incoming;
 	}//end restoreMasked()
+
+	/**
+	 * The stored value when a write sent back its mask, otherwise what was sent.
+	 *
+	 * @param mixed $sent   The value in the write payload.
+	 * @param mixed $stored The stored value.
+	 *
+	 * @return mixed The value to write.
+	 */
+	private static function unmasked(mixed $sent, mixed $stored): mixed {
+		$mask = self::mask(value: $stored);
+		if ($mask !== '' && $sent === $mask) {
+			return $stored;
+		}
+
+		return $sent;
+	}//end unmasked()
 }//end class

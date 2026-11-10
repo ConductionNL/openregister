@@ -55,14 +55,7 @@ use OCP\AppFramework\IAppContainer;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Query methods handle complex operations that benefit from cohesion
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class QueryHandler {
-	/**
-	 * Hard maximum page size for list/search requests. A client-supplied
-	 * `_limit` above this is clamped down, so an oversized request (e.g.
-	 * `_limit=1000000`) cannot force an unbounded result load (DoS/OOM).
-	 */
-	public const MAX_PAGE_SIZE = 1000;
-
+class QueryHandler implements QueryHandlerInterface {
 	/**
 	 * What a search answers when history left nothing to search in.
 	 *

@@ -6,6 +6,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Service\TenantDirectory;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroup;
@@ -43,8 +44,7 @@ class TenantLifecycleServiceTest extends TestCase {
 
 		$this->service = new TenantLifecycleService(
 			$this->organisationMapper,
-			$this->groupManager,
-			$this->userManager,
+			new TenantDirectory($this->groupManager, $this->userManager),
 			$this->logger
 		);
 	}
@@ -53,9 +53,17 @@ class TenantLifecycleServiceTest extends TestCase {
 	 * @dataProvider validTransitionsProvider
 	 */
 	public function testValidTransitions(string $from, string $to): void {
-		// Should not throw.
-		$this->service->validateTransition($from, $to);
-		$this->assertTrue(true);
+		// Each allowed pair must not be refused, and must be what the service
+		// itself offers as a next state from $from.
+		$refusal = null;
+		try {
+			$this->service->validateTransition($from, $to);
+		} catch (\Exception $e) {
+			$refusal = $e->getMessage();
+		}
+
+		$this->assertNull($refusal, "The transition {$from} -> {$to} was refused.");
+		$this->assertContains($to, $this->service->getValidTransitions($from));
 	}
 
 	public static function validTransitionsProvider(): array {

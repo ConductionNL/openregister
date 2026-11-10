@@ -74,7 +74,7 @@ final class ImportedSchemaChangeLog
 			return $this->versioning->classify(existing: $existing, newDefinition: $this->definition(existing: $existing, data: $data));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				message: '[ImportHandler] Could not classify an imported schema change: ' . $e->getMessage(),
+				message: ImportLogTag::PREFIX.'Could not classify an imported schema change: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'schema_id' => $existing->getId()]
 			);
 			return null;

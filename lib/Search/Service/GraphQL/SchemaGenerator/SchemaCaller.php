@@ -18,7 +18,7 @@
 
 namespace OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
 
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCP\IUserSession;
 
 /**
@@ -30,11 +30,11 @@ final class SchemaCaller {
 	 * Constructor.
 	 *
 	 * @param IUserSession $session The session that says who is asking
-	 * @param PropertyRbacHandler $propertyRbac Decides which properties that caller may read
+	 * @param PropertyRbacHandlerInterface $propertyRbac Decides which properties that caller may read
 	 */
 	public function __construct(
 		public readonly IUserSession $session,
-		public readonly PropertyRbacHandler $propertyRbac,
+		public readonly PropertyRbacHandlerInterface $propertyRbac,
 	) {
 	}//end __construct()
 }//end class

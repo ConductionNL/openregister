@@ -30,18 +30,16 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
 use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\Rules\ConditionTracer;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
-use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use OCP\IUserSession;
 
 /**
  * Rejects invalid lifecycle transitions before they are written.
@@ -67,6 +65,8 @@ use OCP\IUserSession;
  * DB-level CHECK constraint on the lifecycle column once the enum vocabulary
  * is treated as a closed set rather than a schema-author-defined list.
  *
+ * @spec openspec/specs/object-lifecycle/spec.md
+ *
  * @template-implements IEventListener<ObjectUpdatingEvent>
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The listener is the save path's one
@@ -76,26 +76,18 @@ class LifecycleValidationListener implements IEventListener {
 	/**
 	 * Wire collaborators used to validate transitions and run guards.
 	 *
-	 * @param LifecycleEditReader $edits Reads the edit and the transition it amounts to.
-	 * @param LifecycleGuardRegistry $guardRegistry Registry resolving guard ids to instances.
-	 * @param IUserSession $userSession Current user session.
-	 * @param PermissionHandler $permissionHandler RBAC handler used to evaluate declarative per-transition authorization.
-	 * @param LifecycleConditionEvaluator $conditionEvaluator Decides whether a transition `condition` lets it through.
-	 * @param ConditionTracer $conditionTracer Names the operand that decided a condition.
-	 * @param RuleRunRecorder $ruleRuns Records each condition's verdict for the rule inventory.
+	 * @param LifecycleTransitionAccess $access   The edit reader, the current user session and the RBAC handler.
+	 * @param LifecycleTransitionChecks $checks   The guard registry and the condition evaluator and tracer.
+	 * @param RuleRunRecorderInterface  $ruleRuns Records each condition's verdict for the rule inventory.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly LifecycleEditReader $edits,
-		private readonly LifecycleGuardRegistry $guardRegistry,
-		private readonly IUserSession $userSession,
-		private readonly PermissionHandler $permissionHandler,
-		private readonly LifecycleConditionEvaluator $conditionEvaluator,
-		private readonly ConditionTracer $conditionTracer,
-		private readonly RuleRunRecorder $ruleRuns,
+		private readonly LifecycleTransitionAccess $access,
+		private readonly LifecycleTransitionChecks $checks,
+		private readonly RuleRunRecorderInterface $ruleRuns,
 	) {
 	}//end __construct()
 
@@ -125,7 +117,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @return void
 	 */
 	private function validate(ObjectUpdatingEvent $event): void {
-		$edit = $this->edits->editOf(event: $event, logAs: 'Lifecycle listener');
+		$edit = $this->access->edits->editOf(event: $event, logAs: 'Lifecycle listener');
 		if ($edit === null || $edit->changesState() === false) {
 			return;
 		}
@@ -177,7 +169,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is the static scope check every system guard reads.
 	 */
 	private function writesDeclaredState(LifecycleEdit $edit): bool {
-		return SystemOperationContext::isActive() === true && $this->edits->writesDeclaredState(edit: $edit) === true;
+		return SystemOperationContext::isActive() === true && $this->access->edits->writesDeclaredState(edit: $edit) === true;
 	}//end writesDeclaredState()
 
 	/**
@@ -210,7 +202,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @return array<string, mixed>|null
 	 */
 	private function transitionRefusal(LifecycleEdit $edit): ?array {
-		$attempt = $this->edits->attemptOf(edit: $edit);
+		$attempt = $this->access->edits->attemptOf(edit: $edit);
 		if ($attempt === null) {
 			return $this->noTransition(edit: $edit);
 		}
@@ -255,9 +247,9 @@ class LifecycleValidationListener implements IEventListener {
 			return null;
 		}
 
-		$authorized = $this->permissionHandler->isTransitionAuthorized(
+		$authorized = $this->access->permissionHandler->isTransitionAuthorized(
 			authorizationList: $authorizationList,
-			userId: ($this->userSession->getUser()?->getUID() ?? null),
+			userId: ($this->access->userSession->getUser()?->getUID() ?? null),
 			schema: $attempt->edit->declaration->schema
 		);
 		if ($authorized === true) {
@@ -294,7 +286,7 @@ class LifecycleValidationListener implements IEventListener {
 	 */
 	private function conditionRefusal(LifecycleAttempt $attempt): ?array {
 		$edit    = $attempt->edit;
-		$refusal = $this->conditionEvaluator->refusal(
+		$refusal = $this->checks->conditionEvaluator->refusal(
 			spec: $attempt->spec,
 			newData: $edit->getNewData(),
 			oldData: $edit->getOldData(),
@@ -363,7 +355,7 @@ class LifecycleValidationListener implements IEventListener {
 			object: $attempt->edit->getNewData(),
 			stored: $attempt->edit->stored,
 			action: $attempt->action,
-			userId: ($this->userSession->getUser()?->getUID() ?? '')
+			userId: ($this->access->userSession->getUser()?->getUID() ?? '')
 		);
 	}//end guardContext()
 
@@ -378,7 +370,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-transition-guard-can-judge-the-stored-object
 	 */
 	private function runGuard(string $requires, LifecycleGuardContext $context): GuardResult {
-		$guard = $this->guardRegistry->resolve($requires);
+		$guard = $this->checks->guardRegistry->resolve($requires);
 		if ($guard instanceof LifecycleTransitionGuardInterface) {
 			return $guard->checkTransition(context: $context);
 		}
@@ -411,11 +403,13 @@ class LifecycleValidationListener implements IEventListener {
 		}
 
 		$this->ruleRuns->record(
-			ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_LIFECYCLE_CONDITION, schemaSlug: $slug, key: $attempt->action),
-			schemaSlug: $slug,
-			trace: $this->conditionTrace(attempt: $attempt, refusal: $refusal),
-			objectUuid: ($attempt->edit->object()->getUuid() ?? null),
-			registerSlug: ($attempt->edit->object()->getRegister() ?? null)
+			subject: new RuleRunSubject(
+				ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_LIFECYCLE_CONDITION, schemaSlug: $slug, key: $attempt->action),
+				schemaSlug: $slug,
+				objectUuid: ($attempt->edit->object()->getUuid() ?? null),
+				registerSlug: ($attempt->edit->object()->getRegister() ?? null)
+			),
+			trace: $this->conditionTrace(attempt: $attempt, refusal: $refusal)
 		);
 	}//end recordCondition()
 
@@ -449,7 +443,7 @@ class LifecycleValidationListener implements IEventListener {
 			$message = (string)($refusal['message'] ?? '');
 		}
 
-		return $this->conditionTracer->trace(
+		return $this->checks->conditionTracer->trace(
 			condition: $attempt->spec['condition'],
 			document: $this->conditionDocument(attempt: $attempt),
 			verdict: $verdict,
@@ -467,7 +461,7 @@ class LifecycleValidationListener implements IEventListener {
 	private function conditionDocument(LifecycleAttempt $attempt): array {
 		$edit = $attempt->edit;
 
-		return $this->conditionEvaluator->document(
+		return $this->checks->conditionEvaluator->document(
 			newData: $edit->getNewData(),
 			oldData: $edit->getOldData(),
 			action: $attempt->action,

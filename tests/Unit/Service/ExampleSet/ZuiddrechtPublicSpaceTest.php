@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -140,12 +142,9 @@ class ZuiddrechtPublicSpaceTest extends TestCase {
 		$urls = $this->createMock(originalClassName: IURLGenerator::class);
 		$urls->method('getBaseUrl')->willReturn('http://localhost:8080');
 		$validator = new ValidateObject(
-			config: $this->createMock(originalClassName: IAppConfig::class),
-			objectMapper: $this->createMock(originalClassName: MagicMapper::class),
-			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
-			urlGenerator: $urls,
-			logger: $this->createMock(originalClassName: LoggerInterface::class),
-			userManager: $this->createMock(originalClassName: IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->createMock(originalClassName: IAppConfig::class), schemaMapper: $this->createMock(originalClassName: SchemaMapper::class), urlGenerator: $urls),
+			lookups: new ValidationLookups(objectMapper: $this->createMock(originalClassName: MagicMapper::class), userManager: $this->createMock(originalClassName: IUserManager::class)),
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
 		$schemas = self::read(path: self::DESCRIPTOR_FILE)['components']['schemas'];

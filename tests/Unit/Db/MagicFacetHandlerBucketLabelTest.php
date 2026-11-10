@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
-use OCA\OpenRegister\Db\MagicMapper\TableTermsFacet;
+use OCA\OpenRegister\Db\MagicMapper\TermsFacetTable;
 use OCA\OpenRegister\Db\MagicMapper\TermsFacetUnion;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -106,14 +106,12 @@ class MagicFacetHandlerBucketLabelTest extends TestCase {
 
 		return $method->invoke(
 			$handler,
-			new TableTermsFacet(
+			(new TermsFacetTable(
 				'openregister_table_1_2',
-				$column,
 				[],
-				false,
 				$this->createMock(Register::class),
 				$schema
-			)
+			))->forPropertyField($column)
 		);
 	}//end facetOver()
 

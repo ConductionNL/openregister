@@ -18,10 +18,14 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
+use OCA\OpenRegister\Service\Object\MigrationMapping;
+use OCA\OpenRegister\Service\Object\MigrationStorage;
 use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Event\ObjectLeavingEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Info\DataInfo;
 use Opis\JsonSchema\ValidationResult;
@@ -65,6 +69,11 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 	private bool $removalFails = false;
 
 	private bool $auditFails = false;
+
+	private ?IEventDispatcher $guards = null;
+
+	/** @var list<ObjectEntity|null> */
+	private array $oldObjects = [];
 
 	/**
 	 * Build the source table.
@@ -122,6 +131,44 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 
 		$this->assertSame(['headline' => 'scanned'], $this->tables[self::TARGET][self::UUID]->getRelations());
 	}//end testRelationsAreRebuiltFromTheMappedData()
+
+	/**
+	 * The guards read what the row holds, not what the mapping turns it into.
+	 *
+	 * @return void
+	 */
+	public function testTheGuardsReadTheStoredDataAndKeepTheObject(): void {
+		$heard = [];
+		$this->guards = $this->createMock(IEventDispatcher::class);
+		$this->guards->method('dispatchTyped')->willReturnCallback(
+			static function (ObjectLeavingEvent $event) use (&$heard): void {
+				$heard[] = $event->getObject()->getObject();
+				$event->setErrors(['message' => 'Records hold this value.']);
+				$event->stopPropagation();
+			}
+		);
+
+		$report = $this->migrate();
+
+		$this->assertSame([['id' => self::UUID, 'title' => 'T', 'note' => 'N']], $heard);
+		$this->assertSame(1, $report['statistics']['objectsFailed']);
+		$this->assertStringContainsString('Records hold this value.', $report['errors'][0]);
+		$this->assertSame([self::UUID], array_keys($this->tables[self::SOURCE]));
+		$this->assertSame([], $this->tables[self::TARGET]);
+	}//end testTheGuardsReadTheStoredDataAndKeepTheObject()
+
+	/**
+	 * The target write names the row as stored as its old object, so the update guards see what the mapping changed.
+	 *
+	 * @return void
+	 */
+	public function testTheTargetWriteJudgesTheChangeFromTheStoredRow(): void {
+		$this->migrate();
+
+		$this->assertCount(1, $this->oldObjects);
+		$this->assertSame(['id' => self::UUID, 'title' => 'T', 'note' => 'N'], $this->oldObjects[0]?->getObject());
+		$this->assertSame(['1', '10'], [$this->oldObjects[0]?->getRegister(), $this->oldObjects[0]?->getSchema()]);
+	}//end testTheTargetWriteJudgesTheChangeFromTheStoredRow()
 
 	/**
 	 * An object that does not fit the target stays where it is and is reported.
@@ -193,7 +240,7 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 	 * @return array<string, mixed> The report.
 	 */
 	private function migrate(): array {
-		return $this->handler()->migrateObjects(1, 10, 2, 20, [self::UUID], ['headline' => 'title']);
+		return $this->handler()->migrateObjects([1, 10], [2, 20], [self::UUID], ['headline' => 'title']);
 	}//end migrate()
 
 	/**
@@ -215,12 +262,8 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 		);
 
 		return new MigrationHandler(
-			objectMapper: $mapper,
-			utilityHandler: $this->utility(),
-			dataManipHandler: $manipulation,
-			mover: new MoveObject(objects: $mapper, validator: $this->validator(), audit: $audit, logger: $logger),
-			relationScanner: $scanner,
-			auditTrail: $audit,
+			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(objects: $mapper, validator: $this->validator(), reporting: new \OCA\OpenRegister\Service\Object\MoveReporting(audit: $audit, logger: $logger), events: ($this->guards ?? $this->createStub(IEventDispatcher::class))), auditTrail: $audit),
+			mapping: new MigrationMapping(utilityHandler: $this->utility(), dataManipHandler: $manipulation, relationScanner: $scanner),
 			logger: $logger
 		);
 	}//end handler()
@@ -237,7 +280,8 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 			fn (string $uuid, Register $register, Schema $schema): ObjectEntity => clone $this->tables[$this->table($register, $schema)][$uuid]
 		);
 		$mapper->method('update')->willReturnCallback(
-			function (ObjectEntity $entity, Register $register, Schema $schema): ObjectEntity {
+			function (ObjectEntity $entity, Register $register, Schema $schema, ?ObjectEntity $oldEntity = null): ObjectEntity {
+				$this->oldObjects[] = $oldEntity;
 				$this->tables[$this->table($register, $schema)][$entity->getUuid()] = clone $entity;
 				return $entity;
 			}

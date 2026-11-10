@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Service\TenantLifecycleService;
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -44,13 +44,13 @@ class TenantDeprovisionJob extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param TenantLifecycleService $tenantLifecycleService Lifecycle service
+	 * @param TenantLifecycleServiceInterface $tenantLifecycleService Lifecycle service
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly TenantLifecycleService $tenantLifecycleService,
+		private readonly TenantLifecycleServiceInterface $tenantLifecycleService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -78,7 +78,7 @@ class TenantDeprovisionJob extends TimedJob {
 			// organisation in this table but NOT a tenant of this installation, and
 			// selecting on status alone would sweep it up with the tenants.
 			$organisations = $this->organisationMapper->findLocalTenants(
-				filters: ['status' => TenantLifecycleService::STATUS_DEPROVISIONING]
+				filters: ['status' => TenantLifecycleServiceInterface::STATUS_DEPROVISIONING]
 			);
 		} catch (\Exception $e) {
 			$this->logger->error(

@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use Adbar\Dot;
@@ -45,9 +46,10 @@ use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\FacetableAnalyzer;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -65,7 +67,7 @@ use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\DeletionGraph\ReadableDeletionAnalysis;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\ObjectDeleteRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
@@ -128,7 +130,6 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCA\OpenRegister\Service\Object\SearchTrailRecorder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Service\Object\BulkCacheInvalidator;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
@@ -205,7 +206,7 @@ use OCA\OpenRegister\Service\Object\SavedScopeIds;
  * @spec openspec/specs/objects-crud/spec.md#requirement-partial-object-updates-are-protected-against-lost-updates
  * @spec openspec/specs/object-lifecycle/spec.md#requirement-declared-initial-lifecycle-state-applied-on-create
  */
-class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
+class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface, ObjectStreamingSaveInterface, ObjectHandlerAccessInterface
 {
 
     /**
@@ -317,7 +318,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @param DataManipulationHandler        $dataManipHandler     Handler for data manipulation operations.
      * @param DeleteObject                   $deleteHandler        Handler for object deletion.
      * @param GetObject                      $getHandler           Handler for object retrieval.
-     * @param PermissionHandler              $permissionHandler    Handler for permission checks.
+     * @param PermissionHandlerInterface              $permissionHandler    Handler for permission checks.
      * @param RenderObject                   $renderHandler        Handler for object rendering.
      * @param SaveObjectInterface                     $saveHandler          Handler for individual object saving.
      * @param SaveObjects                    $saveObjectsHandler   Handler for bulk object saving operations.
@@ -342,7 +343,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @param MagicMapperInterface                    $objectMapper         Unified mapper for object
      *                                                             operations (routes to
      *                                                             magic tables).
-     * @param FileService                    $fileService          Service for file operations.
+     * @param FileFolderServiceInterface                    $fileService          Service for file operations.
      * @param IUserSession                   $userSession          User session for getting current user.
      * @param SearchTrailService             $searchTrailService   Service for search trail operations.
      * @param IGroupManager                  $groupManager         Group manager for checking user groups.
@@ -364,7 +365,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         private readonly DataManipulationHandler $dataManipHandler,
         private readonly DeleteObject $deleteHandler,
         private readonly GetObject $getHandler,
-        private readonly PermissionHandler $permissionHandler,
+        private readonly PermissionHandlerInterface $permissionHandler,
         private readonly RenderObject $renderHandler,
         private readonly SaveObjectInterface $saveHandler,
         private readonly SaveObjects $saveObjectsHandler,
@@ -397,7 +398,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         private readonly SchemaMapperInterface $schemaMapper,
         private readonly ViewMapperInterface $viewMapper,
         private readonly MagicMapperInterface $objectMapper,
-        private readonly FileService $fileService,
+        private readonly FileFolderServiceInterface $fileService,
         private readonly IUserSession $userSession,
         private readonly SearchTrailService $searchTrailService,
         private readonly IGroupManager $groupManager,
@@ -440,44 +441,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
     }//end __construct()
-
-    /**
-     * Check if the current user has permission to perform a specific CRUD action on objects of a given schema
-
-    /**
-     * Check permission and throw exception if not granted
-     *
-     * @param Schema            $schema      Schema to check permissions for
-     * @param string            $action      Action to check permission for
-     * @param string|null       $userId      User ID to check permissions for
-     * @param string|null       $objectOwner Object owner ID
-     * @param bool              $_rbac       Whether to enforce RBAC checks
-     * @param ObjectEntity|null $object      Optional object entity for conditional authorization matching
-     * @param string|null       $register    The register written to, for a check whose object names none
-     *
-     * @return void
-     *
-     * @throws \Exception If permission is not granted
-     */
-    private function checkPermission(
-        Schema $schema,
-        string $action,
-        ?string $userId=null,
-        ?string $objectOwner=null,
-        bool $_rbac=true,
-        ?ObjectEntity $object=null,
-        ?string $register=null
-    ): void {
-        $this->permissionHandler->checkPermission(
-            schema: $schema,
-            action: $action,
-            userId: $userId,
-            objectOwner: $objectOwner,
-            _rbac: $_rbac,
-            object: $object,
-            register: $register
-        );
-    }//end checkPermission()
 
     /**
      * The id of the register this service is set to, or null when none is set.
@@ -634,7 +597,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * A THIRD thing decides access without living on the session: the grant
      * an API token carries ({@see TokenGrantSource}, bound by
-     * AuthorizationService before it sets a user). PermissionHandler consults
+     * AuthorizationService before it sets a user). PermissionHandlerInterface consults
      * it ahead of even the admin and owner bypasses, so a request that
      * authenticated with a scoped token would be judged as nobody INTERSECTED
      * WITH THAT TOKEN'S GRANT — narrower than the public answer, and narrower
@@ -1306,40 +1269,70 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         bool $_render=true,
         bool $_audit=true
     ): ?ObjectEntity {
-        // BUG-OBJ-13 (openregister#1520): find() is a read operation and MUST NOT
-        // leave the shared `currentRegister` / `currentSchema` instance state
-        // mutated for the next caller, so any re-anchoring done for this call's
-        // rendering / RBAC stays local to this invocation. A caller that omits
-        // register/schema gets MagicMapper's cross-table search, never a previous
-        // caller's leftover schema.
-        $request = new ObjectFindRequest(
-            id: $id,
-            extend: $_extend,
-            files: $files,
-            rbac: $_rbac,
-            multitenancy: $_multitenancy,
-            audit: $_audit
-        );
+        $request = new ObjectFindRequest(id: $id, extend: $_extend, files: $files, rbac: $_rbac, multitenancy: $_multitenancy, audit: $_audit);
         $target  = new ObjectFindTarget(register: $register, schema: $schema);
+        if ($_render === false) {
+            return $this->findUnrendered(request: $request, target: $target);
+        }
 
+        return $this->findRendered(request: $request, target: $target);
+    }//end find()
+
+    /**
+     * Find one object, check the caller may read it, and render it.
+     *
+     * BUG-OBJ-13 (openregister#1520): a read MUST NOT leave the shared
+     * `currentRegister` / `currentSchema` state mutated for the next caller, so
+     * any re-anchoring done for this call stays local to it. A caller that omits
+     * register/schema gets MagicMapper's cross-table search, never a previous
+     * caller's leftover schema.
+     *
+     * @param ObjectFindRequest $request What to find and how.
+     * @param ObjectFindTarget  $target  The register and schema to find it in.
+     *
+     * @return ObjectEntity|null The rendered object.
+     *
+     * @spec exclude Private step of find(); read/RBAC/render behavior owned by object-interactions / rbac-scopes.
+     */
+    private function findRendered(ObjectFindRequest $request, ObjectFindTarget $target): ?ObjectEntity
+    {
         return $this->preservingScope(
-            operation: function () use ($request, $target, $_render): ObjectEntity {
+            operation: function () use ($request, $target): ObjectEntity {
                 $object = $this->loadForFind(request: $request, target: $target);
                 $this->assertFindAllowed(object: $object, request: $request);
-
-                // The caller is the render site itself (ObjectsController::show()): the
-                // read path above still ran, but the expensive render pass runs once,
-                // in the caller.
-                if ($_render === false) {
-                    // AVG / GDPR per-access read logging still applies to the read.
-                    $this->logProcessingRead(object: $object);
-                    return $object;
-                }
 
                 return $this->renderFoundObject(object: $object, request: $request);
             }
         );
-    }//end find()
+    }//end findRendered()
+
+    /**
+     * Find one object and check the caller may read it, leaving the render to the caller.
+     *
+     * The caller is the render site itself (ObjectsController::show()): the read
+     * path still runs, but the expensive render pass runs once, in the caller.
+     * Scope is kept local as in findRendered().
+     *
+     * @param ObjectFindRequest $request What to find and how.
+     * @param ObjectFindTarget  $target  The register and schema to find it in.
+     *
+     * @return ObjectEntity|null The raw entity.
+     *
+     * @spec exclude Private step of find(); read/RBAC behavior owned by object-interactions / rbac-scopes.
+     */
+    private function findUnrendered(ObjectFindRequest $request, ObjectFindTarget $target): ?ObjectEntity
+    {
+        return $this->preservingScope(
+            operation: function () use ($request, $target): ObjectEntity {
+                $object = $this->loadForFind(request: $request, target: $target);
+                $this->assertFindAllowed(object: $object, request: $request);
+                // AVG / GDPR per-access read logging still applies to the read.
+                $this->logProcessingRead(object: $object);
+
+                return $object;
+            }
+        );
+    }//end findUnrendered()
 
     /**
      * Loads the object for find() and anchors the context to it.
@@ -1389,7 +1382,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function assertFindAllowed(ObjectEntity $object, ObjectFindRequest $request): void
     {
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'read',
             userId: null,
@@ -1757,28 +1750,44 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
-        // Same contract as find(), which has restored its context since
-        // BUG-OBJ-13. findSilent() differs from find() only in skipping the
-        // audit row; there is no reason for it to differ in what it leaves
-        // behind. See restoreScopeContext().
-        return $this->preservingScope(
-            operation: function () use ($id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy): ObjectEntity {
-                $this->discardPendingSchemaRef();
-                $this->applyScope(register: $register, schema: $schema);
+        $request = new ObjectFindRequest(id: $id, extend: $_extend, files: $files, rbac: $_rbac, multitenancy: $_multitenancy, audit: false);
+        return $this->findWithoutAudit(request: $request, target: new ObjectFindTarget(register: $register, schema: $schema));
+    }//end findSilent()
 
-                // Use the silent find method from the GetObject handler.
+    /**
+     * Find one object without writing an audit row.
+     *
+     * Same contract as find(), which has restored its context since
+     * BUG-OBJ-13. findSilent() differs from find() only in skipping the
+     * audit row; there is no reason for it to differ in what it leaves
+     * behind. See restoreScopeContext().
+     *
+     * @param ObjectFindRequest $request What to find and how; its id is a string.
+     * @param ObjectFindTarget  $target  The register and schema to find it in.
+     *
+     * @return ObjectEntity The object.
+     *
+     * @spec exclude Private step of findSilent(); read behavior owned by the GetObject handler.
+     */
+    private function findWithoutAudit(ObjectFindRequest $request, ObjectFindTarget $target): ObjectEntity
+    {
+        return $this->preservingScope(
+            operation: function () use ($request, $target): ObjectEntity {
+                $this->discardPendingSchemaRef();
+                $this->applyScope(register: $target->register, schema: $target->schema);
+
                 return $this->getHandler->findSilent(
-                    id: $id,
+                    id: (string) $request->id,
                     register: $this->currentRegister,
                     schema: $this->currentSchema,
-                    _extend: $_extend,
-                    files: $files,
-                    _rbac: $_rbac,
-                    _multitenancy: $_multitenancy
+                    _extend: $request->extend,
+                    files: $request->files,
+                    _rbac: $request->rbac,
+                    _multitenancy: $request->multitenancy
                 );
             }
         );
-    }//end findSilent()
+    }//end findWithoutAudit()
 
     /**
      * Find all objects matching the configuration.
@@ -2331,7 +2340,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function settleSaveFolder(ObjectSaveRun $run): void
     {
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
-        $run->options['folderId'] = $this->ensureObjectFolder(
+        $this->ensureObjectFolder(
             uuid: $run->uuid,
             currentUser: $run->options['currentUser']
         );
@@ -2592,7 +2601,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             schema: $this->currentSchema,
             data: $object,
             uuid: $options['uuid'],
-            folderId: $options['folderId'],
             _rbac: $options['_rbac'],
             _multitenancy: $options['_multitenancy'],
             persist: true,
@@ -2814,7 +2822,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function assertMayCreate(SaveAccessRequest $request): void
     {
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'create',
             userId: null,
@@ -2839,7 +2847,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function assertMayUpdate(ObjectEntity $stored, bool $_rbac): void
     {
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'update',
             userId: null,
@@ -3638,12 +3646,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *                                 Non-HTTP callers (cron, import
      *                                 pipelines) MUST pass an explicit user.
      *
-     * @return int|null Folder ID if created/exists, null otherwise
+     * @return void
      */
-    private function ensureObjectFolder(?string $uuid, ?IUser $currentUser=null): ?int
+    private function ensureObjectFolder(?string $uuid, ?IUser $currentUser=null): void
     {
         if ($uuid === null) {
-            return null;
+            return;
         }
 
         $this->revalidateFolderBinding(uuid: $uuid, currentUser: $currentUser);
@@ -3658,7 +3666,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // folder_access_denied. The folder is created on demand the
         // first time a file is actually uploaded to the object
         // (CreateFileHandler → getObjectFolder, which creates-if-missing).
-        return null;
     }//end ensureObjectFolder()
 
     /**
@@ -4193,7 +4200,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function assertMayDeleteRow(ObjectDeleteRequest $request, ObjectEntity $row): void
     {
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'delete',
             userId: $request->actingUserId(),
@@ -4296,7 +4303,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             return;
         }
 
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'delete',
             userId: $request->actingUserId(),
@@ -4351,7 +4358,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function deleteFromObjectSource(Schema $schema, ObjectDeleteRequest $request): bool
     {
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $schema,
             action: 'delete',
             userId: $request->actingUserId(),
@@ -5423,7 +5430,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // database — is consulted. A denied user receives the same
         // NotAuthorizedException a native schema raises, whether or not any
         // matching external rows exist.
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $schema,
             action: 'read',
             userId: null,
@@ -5649,11 +5656,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * actions a reader may take on the record they just read, and the rules
      * behind them. The verdict itself stays inside this service.
      *
-     * @return PermissionHandler The permission handler.
+     * @return PermissionHandlerInterface The permission handler.
      *
      * @spec openspec/specs/rbac-scopes/spec.md
      */
-    public function getPermissionHandler(): PermissionHandler
+    public function getPermissionHandler(): PermissionHandlerInterface
     {
         return $this->permissionHandler;
     }//end getPermissionHandler()
@@ -6087,7 +6094,21 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         [$registerEntity, $schemaEntity] = $this->resolveRawTarget(register: $register, schema: $schema);
+        return $this->appendRawRows(table: new RegisterSchema(register: $registerEntity, schema: $schemaEntity), objects: $objects);
+    }//end appendObjectsRaw()
 
+    /**
+     * Append rows to a resolved table without the per-object save pipeline.
+     *
+     * @param RegisterSchema $table   The register and schema whose table receives the rows.
+     * @param array          $objects The objects, in the shape appendObjectsRaw() takes.
+     *
+     * @return int The number of rows written.
+     *
+     * @spec exclude Private step of appendObjectsRaw(); the contract is documented there.
+     */
+    private function appendRawRows(RegisterSchema $table, array $objects): int
+    {
         $rows = array_map(
             fn (array $object): array => $this->prepareRawRow(object: $object),
             array_values($objects)
@@ -6096,19 +6117,19 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // The bulk upsert creates a missing table only after a failed statement;
         // creating it up front keeps the first append on the same path as
         // every later one.
-        $this->objectMapper->ensureTableForRegisterSchema(register: $registerEntity, schema: $schemaEntity);
-        $tableName = $this->objectMapper->getTableNameForRegisterSchema(register: $registerEntity, schema: $schemaEntity);
+        $this->objectMapper->ensureTableForRegisterSchema(register: $table->register, schema: $table->schema);
+        $tableName = $this->objectMapper->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema);
 
         $written = $this->objectMapper->bulkUpsert(
             objects: $rows,
-            register: $registerEntity,
-            schema: $schemaEntity,
+            register: $table->register,
+            schema: $table->schema,
             tableName: $tableName,
             needsPreUpdateState: false
         );
 
         return count($written);
-    }//end appendObjectsRaw()
+    }//end appendRawRows()
 
 
     /**
@@ -6266,60 +6287,91 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         array $objectIds,
         array $mapping
     ): array {
-        $sourceRegisterEntity = $this->utilityHandler->normalizeEntity(entity: $sourceRegister, type: 'register');
-        $sourceSchemaEntity   = $this->utilityHandler->normalizeEntity(entity: $sourceSchema, type: 'schema');
-        $targetSchemaEntity   = $this->utilityHandler->normalizeEntity(entity: $targetSchema, type: 'schema');
-        if (($sourceRegisterEntity instanceof Register) === false
-            || ($sourceSchemaEntity instanceof Schema) === false
-            || ($targetSchemaEntity instanceof Schema) === false
-        ) {
+        $source = new RegisterSchemaRef(register: $sourceRegister, schema: $sourceSchema);
+        $target = new RegisterSchemaRef(register: $targetRegister, schema: $targetSchema);
+        return $this->migrate(migration: new ObjectMigration(source: $source, target: $target, objectIds: $objectIds, mapping: $mapping));
+    }//end migrateObjects()
+
+    /**
+     * Migrate objects between registers and/or schemas.
+     *
+     * The caller needs create permission on the target schema. Only the source
+     * objects the caller may read (RBAC and multitenancy of the source table) and
+     * update are moved; any other requested id is reported as not found.
+     *
+     * @param ObjectMigration $migration Which objects move, from where to where, and how.
+     *
+     * @return array Migration report with success status, statistics, details, warnings, and errors.
+     *
+     * @throws OcpDoesNotExistException If register or schema not found.
+     * @throws NotAuthorizedException If the caller may not create objects in the target schema.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    public function migrate(ObjectMigration $migration): array
+    {
+        $source       = $this->migrationSource(ref: $migration->source);
+        $targetSchema = $this->utilityHandler->normalizeEntity(entity: $migration->target->schema, type: 'schema');
+        if ($source === null || ($targetSchema instanceof Schema) === false) {
             throw new OcpDoesNotExistException('One or more registers/schemas not found');
         }
 
-        $this->checkPermission(schema: $targetSchemaEntity, action: 'create');
+        $this->permissionHandler->checkPermission(schema: $targetSchema, action: 'create');
 
-        $permitted = $this->migratableObjectIds(
-            register: $sourceRegisterEntity,
-            schema: $sourceSchemaEntity,
-            objectIds: $objectIds
-        );
-
-        $report = $this->migrationHandler->migrateObjects(
-            sourceRegister: $sourceRegister,
-            sourceSchema: $sourceSchema,
-            targetRegister: $targetRegister,
-            targetSchema: $targetSchema,
+        $permitted = $this->migratableObjectIds(table: $source, objectIds: $migration->objectIds);
+        $report    = $this->migrationHandler->migrateObjects(
+            source: [$migration->source->register, $migration->source->schema],
+            target: [$migration->target->register, $migration->target->schema],
             objectIds: $permitted,
-            mapping: $mapping
+            mapping: $migration->mapping
         );
 
         return $this->reportUnmigratedAsNotFound(
             report: $report,
-            objectIds: array_values(array_diff(array_map('strval', $objectIds), $permitted))
+            objectIds: array_values(array_diff(array_map('strval', $migration->objectIds), $permitted))
         );
-    }//end migrateObjects()
+    }//end migrate()
+
+    /**
+     * The source table of a migration, or null when its register or schema does not resolve.
+     *
+     * @param RegisterSchemaRef $ref The source register and schema.
+     *
+     * @return RegisterSchema|null The resolved table.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function migrationSource(RegisterSchemaRef $ref): ?RegisterSchema
+    {
+        $register = $this->utilityHandler->normalizeEntity(entity: $ref->register, type: 'register');
+        $schema   = $this->utilityHandler->normalizeEntity(entity: $ref->schema, type: 'schema');
+        if (($register instanceof Register) === false || ($schema instanceof Schema) === false) {
+            return null;
+        }
+
+        return new RegisterSchema(register: $register, schema: $schema);
+    }//end migrationSource()
 
     /**
      * The requested source objects the caller may read and update.
      *
-     * @param Register $register  The source register.
-     * @param Schema   $schema    The source schema.
-     * @param array    $objectIds The requested object uuids.
+     * @param RegisterSchema $table     The source register and schema.
+     * @param array          $objectIds The requested object uuids.
      *
      * @return array<int, string> The uuids that may be migrated.
      */
-    private function migratableObjectIds(Register $register, Schema $schema, array $objectIds): array
+    private function migratableObjectIds(RegisterSchema $table, array $objectIds): array
     {
         $readable = $this->objectMapper->filterReadableUuids(
-            registerId: (int) $register->getId(),
-            schemaId: (int) $schema->getId(),
+            registerId: (int) $table->register->getId(),
+            schemaId: (int) $table->schema->getId(),
             uuids: array_values(array_map('strval', $objectIds))
         );
 
         $permitted = [];
         foreach ($this->objectMapper->findMultiple($readable) as $object) {
             $mayUpdate = $this->permissionHandler->hasPermission(
-                schema: $schema,
+                schema: $table->schema,
                 action: 'update',
                 objectOwner: $object->getOwner(),
                 object: $object

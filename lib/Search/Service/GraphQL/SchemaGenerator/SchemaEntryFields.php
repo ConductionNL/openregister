@@ -210,7 +210,7 @@ class SchemaEntryFields {
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
 	private function singleResolver(RegisterSchema $schema): callable {
-		return fn ($root, $args) => $this->resolver?->resolveSingle($schema, $root, $args);
+		return fn ($root, $args) => $this->resolver?->resolveSingle($schema, $args);
 	}//end singleResolver()
 
 	/**
@@ -223,7 +223,7 @@ class SchemaEntryFields {
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
 	private function listResolver(RegisterSchema $schema): callable {
-		return fn ($root, $args) => $this->resolver?->resolveList($schema, $root, $args);
+		return fn ($root, $args) => $this->resolver?->resolveList($schema, $args);
 	}//end listResolver()
 
 	/**

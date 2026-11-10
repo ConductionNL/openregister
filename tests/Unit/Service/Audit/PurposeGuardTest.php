@@ -221,6 +221,30 @@ final class PurposeGuardTest extends TestCase {
 		$guard->enforce($this->register(null), $this->schema(true));
 	}//end testARefusalThatCannotBeRecordedIsStillARefusal()
 
+	public function testAllowsLetsAnUnannotatedTableThrough(): void {
+		$guard = new PurposeGuard($this->registry(true, false), $this->context(null), $this->createMock(AuditTrailMapper::class), new NullLogger());
+
+		self::assertTrue($guard->allows($this->register(null), $this->schema(null)));
+	}//end testAllowsLetsAnUnannotatedTableThrough()
+
+	public function testAllowsRefusesABoundTableWithoutRecordingARefusal(): void {
+		$audit = $this->createMock(AuditTrailMapper::class);
+		$audit->expects(self::never())->method('createPurposeRefusalEntry');
+		$context = $this->context(null);
+		$guard = new PurposeGuard($this->registry(true, false), $context, $audit, new NullLogger());
+
+		self::assertFalse($guard->allows($this->register(null), $this->schema(true)));
+		self::assertNull($context->accepted());
+	}//end testAllowsRefusesABoundTableWithoutRecordingARefusal()
+
+	public function testAllowsABoundTableUnderADeclaredPurposeAndRemembersIt(): void {
+		$context = $this->context('brp-adresonderzoek');
+		$guard = new PurposeGuard($this->registry(true, true), $context, $this->createMock(AuditTrailMapper::class), new NullLogger());
+
+		self::assertTrue($guard->allows($this->register(true), $this->schema(null)));
+		self::assertSame('activity-uuid', $context->acceptedActivity()?->getUuid());
+	}//end testAllowsABoundTableUnderADeclaredPurposeAndRemembersIt()
+
 	public function testAnAnnotationWithNoAdministeredPurposesDoesNotBrickTheSchema(): void {
 		// Refusing here would refuse every read of this schema with no value
 		// any caller could possibly name. It is logged instead, and the

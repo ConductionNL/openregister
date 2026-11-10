@@ -61,7 +61,7 @@ use Throwable;
  * @uses \OCA\OpenRegister\Files\Controller\Support\FilePlatform
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileGuards
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileEditing
- * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileObjectRoute
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class FilesControllerActionsGoldenTest extends TestCase {
@@ -391,7 +391,6 @@ class FilesControllerActionsGoldenTest extends TestCase {
 		}
 
 		return new FilesController(...FilesControllerFactory::args(
-			appName: 'openregister',
 			request: $this->request(),
 			fileService: $this->fileService(),
 			objectService: $this->objectService(),

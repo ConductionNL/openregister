@@ -88,6 +88,32 @@ class ListenerRegistrarTest extends TestCase {
 	}//end testEveryOpenRegisterEventExists()
 
 	/**
+	 * A move asks only the guards of values others hold; webhooks hear no delete of an object that still exists.
+	 *
+	 * @return void
+	 */
+	public function testAMoveAsksTheGuardsOfHeldValues(): void {
+		$context = new RecordingRegistrationContext();
+		ListenerRegistrar::register(context: $context);
+
+		$listeners = array_column(
+			array_filter(
+				$context->listeners,
+				static fn (array $registration): bool => $registration['event'] === \OCA\OpenRegister\Event\ObjectLeavingEvent::class
+			),
+			'listener'
+		);
+
+		$this->assertSame(
+			expected: [
+				\OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener::class,
+				\OCA\OpenRegister\Listener\ConceptDeleteGuardListener::class,
+			],
+			actual: $listeners
+		);
+	}//end testAMoveAsksTheGuardsOfHeldValues()
+
+	/**
 	 * The draft listeners are registered last, after every object listener.
 	 *
 	 * @return void

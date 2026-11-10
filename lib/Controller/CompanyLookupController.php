@@ -40,9 +40,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
-use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
-use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\CompanyLookupControllerServices;
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactoryInterface;
+use OCA\OpenRegister\Service\Integration\Providers\KvkLookupInterface;
+use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesSearchInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -55,20 +57,40 @@ use OCP\IRequest;
  */
 class CompanyLookupController extends Controller {
 	/**
+	 * KvK lookup leaf.
+	 *
+	 * @var KvkLookupInterface
+	 */
+	private readonly KvkLookupInterface $kvkProvider;
+
+	/**
+	 * OpenCorporates search leaf.
+	 *
+	 * @var OpenCorporatesSearchInterface
+	 */
+	private readonly OpenCorporatesSearchInterface $openCorporatesProvider;
+
+	/**
+	 * Builds the search either leaf takes.
+	 *
+	 * @var CompanySearchFactoryInterface
+	 */
+	private readonly CompanySearchFactoryInterface $searches;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
-	 * @param IRequest $request HTTP request.
-	 * @param KvkProvider $kvkProvider KvK lookup leaf.
-	 * @param OpenCorporatesProvider $openCorporatesProvider OpenCorporates search leaf.
+	 * @param IRequest                        $request  HTTP request.
+	 * @param CompanyLookupControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly KvkProvider $kvkProvider,
-		private readonly OpenCorporatesProvider $openCorporatesProvider,
+		CompanyLookupControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->kvkProvider = $services->kvkProvider;
+		$this->openCorporatesProvider = $services->openCorporatesProvider;
+		$this->searches = $services->searches;
 	}//end __construct()
 
 	/**
@@ -127,7 +149,7 @@ class CompanyLookupController extends Controller {
 			}
 		}
 
-		$search = (new CompanySearch(query: $query, limit: $limit, page: $page))->narrowedBy(criteria: $criteria);
+		$search = $this->searches->search(query: $query, limit: $limit, page: $page)->narrowedBy(criteria: $criteria);
 		$result = $this->kvkProvider->searchCompanies($search);
 
 		return $this->relay(result: $result, sourceLabel: 'kvk');
@@ -160,7 +182,7 @@ class CompanyLookupController extends Controller {
 		$limit = (int)$this->request->getParam('limit', 30);
 		$page = (int)$this->request->getParam('page', 1);
 
-		$search = (new CompanySearch(query: $query, limit: $limit, page: $page))->narrowedBy(criteria: ['jurisdiction' => $jurisdiction]);
+		$search = $this->searches->search(query: $query, limit: $limit, page: $page)->narrowedBy(criteria: ['jurisdiction' => $jurisdiction]);
 		$result = $this->openCorporatesProvider->searchCompanies($search);
 
 		return $this->relay(result: $result, sourceLabel: 'opencorporates');

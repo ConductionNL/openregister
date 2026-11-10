@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Decision;
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
  */
-final class ReviewAnnotationValidator {
+final class ReviewAnnotationValidator implements ReviewAnnotationValidatorInterface {
 
 	/**
 	 * The refusals for a schema configuration; empty when it is sound or absent.

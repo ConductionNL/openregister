@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Contract\RegisterSlugResolution;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Support\RegisterSlugAliases;
+use OCA\OpenRegister\Support\RegisterSlugAliasesInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -83,13 +83,7 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 	public function resolve(string $canonical, array $candidates=[]): RegisterSlugResolution {
 		$probe = $this->candidateList(canonical: $canonical, candidates: $candidates);
 		if ($probe === []) {
-			return new RegisterSlugResolution(
-				canonical: $canonical,
-				slug: null,
-				state: RegisterSlugResolution::ABSENT,
-				candidates: [],
-				matched: []
-			);
+			return (new RegisterSlugProbe(canonical: $canonical, probe: []))->resolved(state: RegisterSlugResolution::ABSENT, matched: []);
 		}
 
 		$memoKey = implode('|', $probe);
@@ -97,8 +91,8 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 			return $this->memo[$memoKey];
 		}
 
-		$matched = $this->matchingSlugs(candidates: $probe);
-		$resolution = $this->interpret(canonical: $canonical, probe: $probe, matched: $matched);
+		$matched    = $this->matchingSlugs(candidates: $probe);
+		$resolution = $this->interpret(run: new RegisterSlugProbe(canonical: $canonical, probe: $probe), matched: $matched);
 
 		$this->memo[$memoKey] = $resolution;
 		return $resolution;
@@ -129,15 +123,6 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 	 * @param list<string> $candidates Explicit candidates, or empty.
 	 *
 	 * @return list<string> Lower-cased candidates, newest first, deduplicated.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) RegisterSlugAliases is a final class
-	 *  holding one `const` array and no state. StaticAccess exists to catch a
-	 *  hidden dependency that should have been injected; there is nothing here
-	 *  to inject and nothing a test would want to swap. Making it a service
-	 *  would mean a DI registration and a constructor argument whose only
-	 *  purpose is to reach a compile-time constant, and would let a caller
-	 *  substitute a different alias map, which is precisely the drift the
-	 *  single declared map exists to prevent.
 	 */
 	private function candidateList(string $canonical, array $candidates): array {
 		$key = strtolower(trim($canonical));
@@ -145,12 +130,23 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 			return [];
 		}
 
-		$declared = RegisterSlugAliases::candidatesFor(canonical: $key);
+		$declared = (RegisterSlugAliasesInterface::ALIASES[$key] ?? [$key]);
 		if ($candidates !== []) {
 			$declared = $candidates;
 		}
 
-		$probe = [$key];
+		return $this->appendCandidates(probe: [$key], declared: $declared);
+	}//end candidateList()
+
+	/**
+	 * Append each declared candidate, normalised, unless empty or already probed.
+	 *
+	 * @param list<string> $probe    The probe list so far.
+	 * @param array<mixed> $declared The declared or explicit candidates.
+	 *
+	 * @return list<string> The extended probe list.
+	 */
+	private function appendCandidates(array $probe, array $declared): array {
 		foreach ($declared as $candidate) {
 			$normalised = strtolower(trim((string)$candidate));
 			if ($normalised === '' || in_array($normalised, $probe, true) === true) {
@@ -161,7 +157,7 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 		}
 
 		return $probe;
-	}//end candidateList()
+	}//end appendCandidates()
 
 	/**
 	 * Which of the probed slugs exist here, in probe order.
@@ -177,8 +173,49 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 	 * @return list<string> Matching slugs, in probe order.
 	 */
 	private function matchingSlugs(array $candidates): array {
+		$idsBySlug = $this->readIdsBySlug(candidates: $candidates);
+
+		$matched = [];
+		foreach ($candidates as $candidate) {
+			$ids = ($idsBySlug[$candidate] ?? []);
+			if ($ids === []) {
+				continue;
+			}
+
+			$this->warnIfShared(slug: $candidate, ids: $ids);
+			$matched[] = $candidate;
+		}
+
+		return $matched;
+	}//end matchingSlugs()
+
+	/**
+	 * Warn when more than one register row carries the same slug.
+	 *
+	 * @param string             $slug The probed slug.
+	 * @param array<int, string> $ids  The register ids carrying it.
+	 *
+	 * @return void
+	 */
+	private function warnIfShared(string $slug, array $ids): void {
+		if (count($ids) > 1) {
+			$this->logger->warning(
+				message: '[RegisterSlugResolver] More than one register carries the same slug',
+				context: ['slug' => $slug, 'ids' => $ids]
+			);
+		}
+	}//end warnIfShared()
+
+	/**
+	 * Read the register ids per probed slug; a failed read logs and yields none.
+	 *
+	 * @param list<string> $candidates The lower-cased probe list.
+	 *
+	 * @return array<string, array<int, string>> Register ids keyed by slug.
+	 */
+	private function readIdsBySlug(array $candidates): array {
 		try {
-			$idsBySlug = $this->registerMapper->findIdsBySlugs(slugs: $candidates);
+			return $this->registerMapper->findIdsBySlugs(slugs: $candidates);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[RegisterSlugResolver] Could not read register slugs; treating the register as unavailable',
@@ -189,62 +226,45 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 			);
 			return [];
 		}
-
-		$matched = [];
-		foreach ($candidates as $candidate) {
-			$ids = ($idsBySlug[$candidate] ?? []);
-			if ($ids === []) {
-				continue;
-			}
-
-			if (count($ids) > 1) {
-				$this->logger->warning(
-					message: '[RegisterSlugResolver] More than one register carries the same slug',
-					context: ['slug' => $candidate, 'ids' => $ids]
-				);
-			}
-
-			$matched[] = $candidate;
-		}
-
-		return $matched;
-	}//end matchingSlugs()
+	}//end readIdsBySlug()
 
 	/**
 	 * Turn a match list into a resolution, logging the state that needs an operator.
 	 *
-	 * @param string       $canonical The canonical register slug.
-	 * @param list<string> $probe     The probe list, newest first.
-	 * @param list<string> $matched   The slugs that exist here, in probe order.
+	 * @param RegisterSlugProbe $run     The canonical slug and the probe list.
+	 * @param list<string>      $matched The slugs that exist here, in probe order.
 	 *
 	 * @return RegisterSlugResolution The resolution.
 	 */
-	private function interpret(string $canonical, array $probe, array $matched): RegisterSlugResolution {
+	private function interpret(RegisterSlugProbe $run, array $matched): RegisterSlugResolution {
 		if ($matched === []) {
-			return new RegisterSlugResolution(
-				canonical: $canonical,
-				slug: null,
-				state: RegisterSlugResolution::ABSENT,
-				candidates: $probe,
-				matched: []
-			);
+			return $run->resolved(state: RegisterSlugResolution::ABSENT, matched: []);
 		}
 
 		if (count($matched) === 1) {
-			return new RegisterSlugResolution(
-				canonical: $canonical,
-				slug: $matched[0],
-				state: RegisterSlugResolution::RESOLVED,
-				candidates: $probe,
-				matched: $matched
-			);
+			return $run->resolved(state: RegisterSlugResolution::RESOLVED, matched: $matched);
 		}
 
-		// Two rows the rename should have collapsed into one. The repair step
-		// refuses to merge in this case rather than guessing, so this is an
-		// operator's decision, not the resolver's. Reads go to the FIRST
-		// candidate, the canonical migrated row, so that a consumer keeps
-		// working while it is sorted out.
+		$this->warnAmbiguous(canonical: $run->canonical, matched: $matched);
+
+		return $run->resolved(state: RegisterSlugResolution::AMBIGUOUS, matched: $matched);
+	}//end interpret()
+
+	/**
+	 * Log the two-rows-for-one-register state that needs an operator.
+	 *
+	 * Two rows the rename should have collapsed into one. The repair step
+	 * refuses to merge in this case rather than guessing, so this is an
+	 * operator's decision, not the resolver's. Reads go to the FIRST
+	 * candidate, the canonical migrated row, so that a consumer keeps
+	 * working while it is sorted out.
+	 *
+	 * @param string       $canonical The canonical register slug.
+	 * @param list<string> $matched   The slugs that exist here, in probe order.
+	 *
+	 * @return void
+	 */
+	private function warnAmbiguous(string $canonical, array $matched): void {
 		$this->logger->warning(
 			message: '[RegisterSlugResolver] A register answers to more than one of its slugs; '
 				. 'reads use the first. Run the owning app\'s register-slug repair step.',
@@ -253,13 +273,5 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 				'matched'   => $matched,
 			]
 		);
-
-		return new RegisterSlugResolution(
-			canonical: $canonical,
-			slug: $matched[0],
-			state: RegisterSlugResolution::AMBIGUOUS,
-			candidates: $probe,
-			matched: $matched
-		);
-	}//end interpret()
+	}//end warnAmbiguous()
 }//end class

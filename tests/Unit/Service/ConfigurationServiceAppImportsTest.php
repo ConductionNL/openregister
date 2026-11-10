@@ -30,6 +30,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
+use OCA\OpenRegister\Service\Configuration\ConfigurationGitHosts;
+use OCA\OpenRegister\Service\Configuration\ConfigurationServicePlatform;
+use OCA\OpenRegister\Service\Configuration\ConfigurationTransferHandlers;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
@@ -94,16 +97,22 @@ class ConfigurationServiceAppImportsTest extends TestCase {
 
 		return new ConfigurationService(
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			appManager: $this->createMock(IAppManager::class),
-			container: $container,
-			appConfig: $this->createMock(IAppConfig::class),
-			logger: $this->createMock(LoggerInterface::class),
-			githubHandler: $this->createMock(GitHubHandler::class),
-			gitlabHandler: $this->createMock(GitLabHandler::class),
-			cacheHandler: $this->createMock(CacheHandler::class),
-			previewHandler: $this->createMock(PreviewHandler::class),
-			exportHandler: $this->createMock(ExportHandler::class),
-			uploadHandler: $this->createMock(UploadHandler::class));
+			platform: new ConfigurationServicePlatform(
+				appManager: $this->createMock(IAppManager::class),
+				container: $container,
+				appConfig: $this->createMock(IAppConfig::class),
+				logger: $this->createMock(LoggerInterface::class)
+			),
+			gitHosts: new ConfigurationGitHosts(
+				githubHandler: $this->createMock(GitHubHandler::class),
+				gitlabHandler: $this->createMock(GitLabHandler::class)
+			),
+			transfer: new ConfigurationTransferHandlers(
+				cacheHandler: $this->createMock(CacheHandler::class),
+				previewHandler: $this->createMock(PreviewHandler::class),
+				exportHandler: $this->createMock(ExportHandler::class),
+				uploadHandler: $this->createMock(UploadHandler::class)
+			));
 	}
 
 	/**

@@ -30,7 +30,7 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<CospendLink>
  * @method list<CospendLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class CospendLinkMapper extends QBMapper {
+class CospendLinkMapper extends QBMapper implements CospendLinkMapperInterface {
 
 	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;

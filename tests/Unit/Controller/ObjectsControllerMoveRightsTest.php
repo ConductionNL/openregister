@@ -147,7 +147,7 @@ class ObjectsControllerMoveRightsTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static fn (string $id) => ($id === MoveObject::class) ? $mover : $permissions
+			static fn (string $id) => ($id === \OCA\OpenRegister\Service\Object\MoveObjectInterface::class) ? $mover : $permissions
 		);
 
 		$registers = $this->createMock(RegisterMapper::class);

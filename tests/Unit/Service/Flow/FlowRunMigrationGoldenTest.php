@@ -27,14 +27,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
 use Closure;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FlowRunFilter;
+use OCA\OpenRegister\Db\FlowRunListing;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationTimers;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationValidator;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -163,7 +167,12 @@ final class FlowRunMigrationGoldenTest extends TestCase {
 			}
 		};
 
-		return new FlowRunMigrationService($runs, new FlowRunMigrationValidator(versions: $versions), $timerMapper, $timerService, $logger);
+		return new FlowRunMigrationService(
+			$runs,
+			new FlowRunMigrationValidator(versions: $versions),
+			new FlowRunMigrationTimers(timers: $timerMapper, timerService: $timerService),
+			$logger
+		);
 	}//end service()
 
 	public function testMigrationMatchesGolden(): void {
@@ -173,32 +182,32 @@ final class FlowRunMigrationGoldenTest extends TestCase {
 
 		$cases = [
 			'migrate renamed with timers' => fn () => $this->service(['r1' => self::aRun('r1', 2, ['review' => 1])], $none, [], $timers)
-				->migrate(runUuid: 'r1', targetVersion: 3, reason: '  renamed  ', actor: 'anna', mapping: ['review' => 'assess']),
+				->migrate(runUuid: 'r1', target: new FlowRunMigrationTarget(targetVersion: 3, reason: '  renamed  ', actor: 'anna', mapping: ['review' => 'assess'])),
 			'migrate without mapping' => fn () => $this->service(['r1' => self::aRun('r1', 2, ['intake' => 1], 'running', 'not-a-list')], $none, [], $timers)
-				->migrate(runUuid: 'r1', targetVersion: 3, reason: 'why', actor: 'anna'),
-			'migrate blank reason' => fn () => $this->service([], $none, [], [])->migrate(runUuid: 'r1', targetVersion: 3, reason: '  ', actor: 'anna'),
-			'migrate unknown run' => fn () => $this->service([], $none, [], [])->migrate(runUuid: 'nope', targetVersion: 3, reason: 'why', actor: 'anna'),
+				->migrate(runUuid: 'r1', target: new FlowRunMigrationTarget(targetVersion: 3, reason: 'why', actor: 'anna')),
+			'migrate blank reason' => fn () => $this->service([], $none, [], [])->migrate(runUuid: 'r1', target: new FlowRunMigrationTarget(targetVersion: 3, reason: '  ', actor: 'anna')),
+			'migrate unknown run' => fn () => $this->service([], $none, [], [])->migrate(runUuid: 'nope', target: new FlowRunMigrationTarget(targetVersion: 3, reason: 'why', actor: 'anna')),
 			'migrate does not fit' => fn () => $this->service(['r1' => self::aRun('r1', 2, ['review' => 1])], $none, [], $timers)
-				->migrate(runUuid: 'r1', targetVersion: 4, reason: 'why', actor: 'anna'),
+				->migrate(runUuid: 'r1', target: new FlowRunMigrationTarget(targetVersion: 4, reason: 'why', actor: 'anna')),
 			'migrate unknown version' => fn () => $this->service(['r1' => self::aRun('r1', 2, ['review' => 1])], $none, [], [])
-				->migrate(runUuid: 'r1', targetVersion: 9, reason: 'why', actor: 'anna'),
+				->migrate(runUuid: 'r1', target: new FlowRunMigrationTarget(targetVersion: 9, reason: 'why', actor: 'anna')),
 			'migrate finished run' => fn () => $this->service(['r1' => self::aRun('r1', 2, ['review' => 1], 'completed')], $none, [], [])
-				->migrate(runUuid: 'r1', targetVersion: 3, reason: 'why', actor: 'anna', mapping: ['review' => 'assess']),
+				->migrate(runUuid: 'r1', target: new FlowRunMigrationTarget(targetVersion: 3, reason: 'why', actor: 'anna', mapping: ['review' => 'assess'])),
 			'preview fits' => fn () => $this->service(['r1' => self::aRun('r1', 2, ['review' => 1])], $none, [], $timers)
-				->preview(runUuid: 'r1', targetVersion: 3, reason: '', actor: 'anna', mapping: ['review' => 'assess']),
+				->preview(runUuid: 'r1', target: new FlowRunMigrationTarget(targetVersion: 3, reason: '', actor: 'anna', mapping: ['review' => 'assess'])),
 			'preview does not fit' => fn () => $this->service(['r1' => self::aRun('r1', 2, ['review' => 1])], $none, [], [])
-				->preview(runUuid: 'r1', targetVersion: 3, reason: '', actor: 'anna'),
+				->preview(runUuid: 'r1', target: new FlowRunMigrationTarget(targetVersion: 3, reason: '', actor: 'anna')),
 			'runsOnVersion' => fn () => array_map(
 				static fn (FlowRun $run): string => (string)$run->getUuid(),
 				$this->service([], $none, ['junk', self::aRun('a', 2, []), self::aRun('b', 3, []), self::aRun('c', 2, [], 'completed'), self::aRun('d', 2, [], 'waiting')], [])
-					->runsOnVersion(flowId: 'flow-1', version: 2, limit: 7)
+					->runsOnVersion(listing: new FlowRunListing(filter: new FlowRunFilter(flowId: 'flow-1'), limit: 7), version: 2)
 			),
 			'migrateRunsOfVersion' => fn () => $this->service(
 				['a' => self::aRun('a', 2, ['review' => 1]), 'd' => self::aRun('d', 2, ['decide' => 1], 'waiting'), 'e' => self::aRun('e', 2, ['intake' => 1])],
 				$none,
 				[self::aRun('a', 2, []), self::aRun('d', 2, [], 'waiting'), self::aRun('e', 2, [])],
 				[]
-			)->migrateRunsOfVersion(flowId: 'flow-1', sourceVersion: 2, targetVersion: 4, reason: 'bulk', actor: 'bo', mapping: ['decide' => 'review']),
+			)->migrateRunsOfVersion(flowId: 'flow-1', sourceVersion: 2, target: new FlowRunMigrationTarget(targetVersion: 4, reason: 'bulk', actor: 'bo', mapping: ['decide' => 'review'])),
 			'subject store unreadable' => fn () => $this->service([], static fn () => throw new RuntimeException('db'), [], [])
 				->migrateRunForSubject(subjectUuid: 's1', targetDefinitionRef: '3', actorUid: 'carl'),
 			'subject no runs' => fn () => $this->service([], $none, [], [])->migrateRunForSubject(subjectUuid: 's1', targetDefinitionRef: '3', actorUid: 'carl'),

@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\RegisterSchemaLinkageRepairService;
+use OCA\OpenRegister\Service\RegisterSchemaLinkageRepairServiceInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -49,12 +49,12 @@ class RelinkRegisterSchemasCommand extends Command {
 	/**
 	 * Wire the repair service.
 	 *
-	 * @param RegisterSchemaLinkageRepairService $repair The linkage repair service.
+	 * @param RegisterSchemaLinkageRepairServiceInterface $repair The linkage repair service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RegisterSchemaLinkageRepairService $repair,
+		private readonly RegisterSchemaLinkageRepairServiceInterface $repair,
 	) {
 		parent::__construct();
 	}//end __construct()

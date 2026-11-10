@@ -23,6 +23,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Notifications\Service\EmailLinkedSchemas;
+use OCA\OpenRegister\Notifications\Service\EmailMailAppReader;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCP\App\IAppManager;
@@ -103,12 +105,9 @@ class ForeignTablePrefixTest extends TestCase {
 
 		$service = new EmailService(
 			$this->createMock(EmailLinkMapper::class),
-			$apps,
-			$this->connection(),
-			$session,
-			new NullLogger(),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(MagicMapper::class)
+			new EmailMailAppReader($apps, $this->connection(), $session),
+			new EmailLinkedSchemas($this->createMock(SchemaMapper::class), $this->createMock(MagicMapper::class)),
+			new NullLogger()
 		);
 
 		(new ReflectionMethod($service, 'findMessageIdsBySender'))->invoke($service, 'a@example.org');

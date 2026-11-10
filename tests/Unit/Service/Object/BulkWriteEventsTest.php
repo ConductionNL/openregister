@@ -31,7 +31,11 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\BulkWriteEvents;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -189,18 +193,10 @@ class BulkWriteEventsTest extends TestCase {
 	 */
 	private function saveObjects(IEventDispatcher $dispatcher): SaveObjects {
 		return new SaveObjects(
-			objectEntityMapper: $this->objectMapper,
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->registerMapper,
-			saveHandler: $this->createMock(SaveObject::class),
-			userSession: $this->userSession,
-			organisationService: $this->organisationService,
-			logger: $this->createMock(LoggerInterface::class),
-			groupManager: $this->groupManager,
-			permissionHandler: $this->permissionHandler,
-			eventDispatcher: $dispatcher,
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			rowRules: new BulkRowRules(bulkWriteEvents: $this->policy($dispatcher))
+			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->registerMapper, saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: $this->groupManager),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: $dispatcher, auditTrailMapper: $this->createMock(AuditTrailMapper::class)),
+			checks: new BulkRowChecks(permissionHandler: $this->permissionHandler, rowRules: new BulkRowRules(bulkWriteEvents: $this->policy($dispatcher)))
 		);
 	}//end saveObjects()
 

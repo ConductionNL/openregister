@@ -108,15 +108,31 @@ class SeedVersionLedger {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function record(string $appId, string $seed, string $version): void {
-		$map = $this->map(appId: $appId);
-		if (($map[$seed] ?? null) === $version) {
-			return;
-		}
-
-		$map[$seed] = $version;
-		$this->maps[$appId] = $map;
-		$this->dirty[$appId] = true;
+		$this->recordVersions(appId: $appId, versions: [$seed => $version]);
 	}//end record()
+
+	/**
+	 * Record the versions seeds were shipped at, each only when it differs from the recorded one.
+	 *
+	 * Kept in memory until {@see self::flush()}, as {@see self::record()} is.
+	 *
+	 * @param string                $appId    The importing app id.
+	 * @param array<string, string> $versions Seed identity (register id, schema id and slug) to shipped version.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function recordVersions(string $appId, array $versions): void {
+		$map = $this->map(appId: $appId);
+		foreach ($versions as $seed => $version) {
+			if (($map[$seed] ?? null) !== $version) {
+				$map[$seed] = $version;
+				$this->maps[$appId] = $map;
+				$this->dirty[$appId] = true;
+			}
+		}
+	}//end recordVersions()
 
 	/**
 	 * Write every map that changed, once per app id.
@@ -145,23 +161,34 @@ class SeedVersionLedger {
 	 */
 	private function map(string $appId): array {
 		if (isset($this->maps[$appId]) === false) {
-			$decoded = json_decode($this->appConfig->getValueString('openregister', $this->key(appId: $appId), '', lazy: true), true);
-			if (is_array($decoded) === false) {
-				$decoded = [];
-			}
-
-			$map = [];
-			foreach ($decoded as $seed => $version) {
-				if (is_string($version) === true) {
-					$map[(string)$seed] = $version;
-				}
-			}
-
-			$this->maps[$appId] = $map;
+			$this->maps[$appId] = $this->read(appId: $appId);
 		}
 
 		return $this->maps[$appId];
 	}//end map()
+
+	/**
+	 * One app id's stored map; entries whose version is not text are left out.
+	 *
+	 * @param string $appId The app id.
+	 *
+	 * @return array<string, string> Seed identity to shipped version.
+	 */
+	private function read(string $appId): array {
+		$decoded = json_decode($this->appConfig->getValueString('openregister', $this->key(appId: $appId), '', lazy: true), true);
+		if (is_array($decoded) === false) {
+			return [];
+		}
+
+		$map = [];
+		foreach ($decoded as $seed => $version) {
+			if (is_string($version) === true) {
+				$map[(string)$seed] = $version;
+			}
+		}
+
+		return $map;
+	}//end read()
 
 	/**
 	 * The app-config key of an app id's map, hashed when the plain key would pass Nextcloud's limit.

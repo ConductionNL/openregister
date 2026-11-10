@@ -30,11 +30,9 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Rbac\OrphanCleanupFlag;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
-use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
-use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
-use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
+use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use RuntimeException;
 
 /**
@@ -48,7 +46,7 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass - Injected via DI container
  */
-class SchemasToolProvider implements IMcpToolProvider {
+class SchemasToolProvider extends AbstractBuiltInToolProvider {
 
 	/**
 	 * Tool id for the schemas tool
@@ -59,29 +57,20 @@ class SchemasToolProvider implements IMcpToolProvider {
 	 * Constructor
 	 *
 	 * @param SchemaMapperInterface          $schemaMapper Schema database mapper
-	 * @param DefinitionWriteRights $rights       The rights of the signed-in user
+	 * @param DefinitionWriteRightsInterface $rights       The rights of the signed-in user
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly DefinitionWriteRights $rights,
+		private readonly DefinitionWriteRightsInterface $rights,
 	) {
 	}//end __construct()
-
-	/**
-	 * Returns the owning app id.
-	 *
-	 * @return string Always "openregister"
-	 */
-	public function getAppId(): string {
-		return 'openregister';
-	}//end getAppId()
 
 	/**
 	 * The tool definitions.
 	 *
 	 * @var array<int, array<string, mixed>>
 	 */
-	private const TOOLS = [
+	protected const TOOLS = [
 		[
 			'id' => self::TOOL_ID,
 			'name' => 'schemas',
@@ -89,11 +78,7 @@ class SchemasToolProvider implements IMcpToolProvider {
 			'inputSchema' => [
 				'type' => 'object',
 				'properties' => [
-					'action' => [
-						'type' => 'string',
-						'enum' => ['list', 'get', 'create', 'update', 'delete'],
-						'description' => 'The CRUD action to perform',
-					],
+					...CrudToolSchema::ACTION,
 					'id' => [
 						'type' => 'integer',
 						'description' => 'Schema ID (required for get, update, delete)',
@@ -102,28 +87,12 @@ class SchemasToolProvider implements IMcpToolProvider {
 						'type' => 'object',
 						'description' => 'Schema fields (for create and update)',
 					],
-					'limit' => [
-						'type' => 'integer',
-						'description' => 'Maximum number of results (for list)',
-					],
-					'offset' => [
-						'type' => 'integer',
-						'description' => 'Number of results to skip (for list)',
-					],
+					...CrudToolSchema::PAGING,
 				],
 				'required' => ['action'],
 			],
 		],
 	];
-
-	/**
-	 * Returns tool descriptors.
-	 *
-	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
-	 */
-	public function getTools(): array {
-		return self::TOOLS;
-	}//end getTools()
 
 	/**
 	 * Invoke the schemas tool.
@@ -241,7 +210,7 @@ class SchemasToolProvider implements IMcpToolProvider {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function refuseOrphanCleanupChange(Schema $schema, array $document): void {
-		if ((new OrphanCleanupFlag())->changedBy(schema: $schema, document: $document) === true && $this->rights->isAdmin() === false) {
+		if (RbacRuleChecks::orphanCleanupFlag()->changedBy(schema: $schema, document: $document) === true && $this->rights->isAdmin() === false) {
 			throw new InvalidArgumentException('Only an administrator can change orphanCleanup on a schema');
 		}
 	}//end refuseOrphanCleanupChange()
@@ -303,7 +272,7 @@ class SchemasToolProvider implements IMcpToolProvider {
 			return $data;
 		}
 
-		$change = new CrossOrganisationMarkerChange();
+		$change = RbacRuleChecks::crossOrganisationMarkerChange();
 		$stored = $change->asStored(authorization: $data['authorization']);
 		if ($change->widens(old: $old, new: $stored) === true && $this->rights->isAdmin() === false) {
 			throw new RuntimeException('Only an administrator may let a rule read across organisations (crossOrganisation: true)');
@@ -313,7 +282,7 @@ class SchemasToolProvider implements IMcpToolProvider {
 			return $data;
 		}
 
-		if ((new ExternalGrantGuard())->refusalFor($stored) !== null) {
+		if (RbacChecks::externalGrants()->refusalFor($stored) !== null) {
 			throw new RuntimeException('An external grant needs an end date');
 		}
 
@@ -321,20 +290,4 @@ class SchemasToolProvider implements IMcpToolProvider {
 
 		return $data;
 	}//end checkedBody()
-
-	/**
-	 * Assert a parameter is present in arguments.
-	 *
-	 * @param array<string, mixed> $arguments Tool arguments
-	 * @param string $param Required parameter name
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException If parameter is missing
-	 */
-	private function requireParam(array $arguments, string $param): void {
-		if (isset($arguments[$param]) === false) {
-			throw new InvalidArgumentException('Missing required parameter: ' . $param);
-		}
-	}//end requireParam()
 }//end class
