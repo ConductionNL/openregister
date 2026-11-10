@@ -27,8 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Schema;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\IRequest;
 
 /**
@@ -51,26 +50,24 @@ class SchemaObjectReader implements SchemaObjectReaderInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register lookup (resolve population register).
-	 * @param IRequest $request Request (reads an explicit `registerId` override).
-	 * @param MagicMapperInterface|null $objects Reads the stored values a conversion preview is measured over.
+	 * @param SchemaCatalogInterface $catalog Register lookup and the magic tables a conversion preview reads.
+	 * @param IRequest               $request Request (reads an explicit `registerId` override).
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly IRequest $request,
-		private readonly ?MagicMapperInterface $objects = null,
 	) {
 	}//end __construct()
 
 	/**
-	 * Whether stored values can be read (the object mapper is available).
+	 * Whether stored values can be read (the catalog always carries the magic tables).
 	 *
 	 * @return boolean True when a conversion preview can read stored values.
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function canReadValues(): bool {
-		return ($this->objects !== null);
+		return true;
 	}//end canReadValues()
 
 	/**
@@ -84,10 +81,6 @@ class SchemaObjectReader implements SchemaObjectReaderInterface {
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function storedValues(int $schemaId, string $property): array {
-		if ($this->objects === null) {
-			return [];
-		}
-
 		$registerId = $this->resolveRegisterId(schemaId: $schemaId);
 		if ($registerId === null) {
 			return [];
@@ -107,7 +100,7 @@ class SchemaObjectReader implements SchemaObjectReaderInterface {
 	private function scan(int $schemaId, int $registerId): array {
 		$query = ['@self' => ['register' => $registerId, 'schema' => $schemaId], '_limit' => self::CONVERSION_SCAN_LIMIT];
 		try {
-			$objects = $this->objects?->searchObjects(query: $query, _rbac: false, _multitenancy: false);
+			$objects = $this->catalog->tables()->searchObjects(query: $query, _rbac: false, _multitenancy: false);
 		} catch (\Throwable $unreadable) {
 			return [];
 		}
@@ -165,7 +158,7 @@ class SchemaObjectReader implements SchemaObjectReaderInterface {
 	 * @return int|null The register id, or null when none lists it.
 	 */
 	private function registerHolding(int $schemaId): ?int {
-		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+		foreach ($this->catalog->registers()->findAll(_rbac: false, _multitenancy: false) as $register) {
 			$schemas = array_map('strval', ($register->getSchemas() ?? []));
 			if (in_array((string)$schemaId, $schemas, true) === true) {
 				return (int)$register->getId();

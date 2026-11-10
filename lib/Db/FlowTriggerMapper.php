@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
@@ -71,19 +72,42 @@ class FlowTriggerMapper implements FlowTriggerMapperInterface {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
 	 */
 	public function flowUuidsFor(string $event, string $register, string $schema): array {
+		return $this->flowUuidsSubscribedTo(event: $event, table: new RegisterSchemaRef(register: $register, schema: $schema));
+	}//end flowUuidsFor()
+
+	/**
+	 * The UUIDs of enabled flows subscribed to one event on one register and schema.
+	 *
+	 * ONE indexed read, whatever the number of flows or the number of triggers
+	 * each carries. The register and schema slugs are matched exactly.
+	 *
+	 * @param string            $event The event id.
+	 * @param RegisterSchemaRef $table The register and schema slugs the event fired on.
+	 *
+	 * @return array<int, string> The flow UUIDs, each at most once.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
+	 */
+	public function flowUuidsSubscribedTo(string $event, RegisterSchemaRef $table): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectDistinct('flow_uuid')
 			->from(self::TABLE)
 			->where($qb->expr()->eq('event', $qb->createNamedParameter($event)))
-			->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($register)))
-			->andWhere($qb->expr()->eq('schema_slug', $qb->createNamedParameter($schema)))
-			->andWhere(
-				$qb->expr()->eq(
-					'enabled',
-					$qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)
-				)
-			);
+			->andWhere($qb->expr()->eq('register', $qb->createNamedParameter((string)$table->register)))
+			->andWhere($qb->expr()->eq('schema_slug', $qb->createNamedParameter((string)$table->schema)))
+			->andWhere($qb->expr()->eq('enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
 
+		return $this->flowUuidsOf(qb: $qb);
+	}//end flowUuidsSubscribedTo()
+
+	/**
+	 * Run a select of the flow_uuid column and return the uuids as strings.
+	 *
+	 * @param IQueryBuilder $qb The select.
+	 *
+	 * @return array<int, string> The flow UUIDs.
+	 */
+	private function flowUuidsOf(IQueryBuilder $qb): array {
 		$result = $qb->executeQuery();
 		$uuids = [];
 		while (($row = $result->fetch()) !== false) {
@@ -93,7 +117,7 @@ class FlowTriggerMapper implements FlowTriggerMapperInterface {
 		$result->closeCursor();
 
 		return $uuids;
-	}//end flowUuidsFor()
+	}//end flowUuidsOf()
 
 	/**
 	 * Every trigger row that names one schema, whatever the register or event.
@@ -146,15 +170,7 @@ class FlowTriggerMapper implements FlowTriggerMapperInterface {
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectDistinct('flow_uuid')->from(self::TABLE);
 
-		$result = $qb->executeQuery();
-		$uuids = [];
-		while (($row = $result->fetch()) !== false) {
-			$uuids[] = (string)$row['flow_uuid'];
-		}
-
-		$result->closeCursor();
-
-		return $uuids;
+		return $this->flowUuidsOf(qb: $qb);
 	}//end representedFlowUuids()
 
 	/**
@@ -176,25 +192,36 @@ class FlowTriggerMapper implements FlowTriggerMapperInterface {
 	public function replaceFor(string $flowUuid, array $triggers, bool $enabled): int {
 		$this->deleteFor(flowUuid: $flowUuid);
 
-		$written = 0;
 		foreach ($triggers as $trigger) {
-			$qb = $this->db->getQueryBuilder();
-			$qb->insert(self::TABLE)
-				->values(
-					[
-						'flow_uuid' => $qb->createNamedParameter($flowUuid),
-						'event' => $qb->createNamedParameter((string)$trigger['event']),
-						'register' => $qb->createNamedParameter((string)$trigger['register']),
-						'schema_slug' => $qb->createNamedParameter((string)$trigger['schema']),
-						'enabled' => $qb->createNamedParameter($enabled, IQueryBuilder::PARAM_BOOL),
-					]
-				);
-			$qb->executeStatement();
-			$written++;
+			$this->insertRow(
+				row: [
+					'flow_uuid' => $flowUuid,
+					'event' => (string)$trigger['event'],
+					'register' => (string)$trigger['register'],
+					'schema_slug' => (string)$trigger['schema'],
+				],
+				enabled: $enabled
+			);
 		}
 
-		return $written;
+		return count($triggers);
 	}//end replaceFor()
+
+	/**
+	 * Insert one trigger row.
+	 *
+	 * @param array<string, string> $row     The flow uuid, event, register and schema slug, by column.
+	 * @param bool                  $enabled Whether the flow is enabled.
+	 *
+	 * @return void
+	 */
+	private function insertRow(array $row, bool $enabled): void {
+		$qb = $this->db->getQueryBuilder();
+		$values = array_map(static fn (string $value): string => $qb->createNamedParameter($value), $row);
+		$values['enabled'] = $qb->createNamedParameter($enabled, IQueryBuilder::PARAM_BOOL);
+		$qb->insert(self::TABLE)->values($values);
+		$qb->executeStatement();
+	}//end insertRow()
 
 	/**
 	 * Drop one flow's trigger rows.
