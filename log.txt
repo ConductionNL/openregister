@@ -2832,3 +2832,4 @@
 2026-11-10T19:36:47Z precheck-20261110T113051-6c6f1023 GREEN tree 6f75421fc3 on dev 8cd70ed9c1 prs 1 front=skip: Tests: 54883, Assertions: 181909, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
 2026-11-10T19:38:08Z integrator-20261110T111852-c9674639 RED tree 0e413d07f9 prs 50 front=ok: Tests: 55055, Assertions: 182495, Errors: 7, Failures: 11, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\AppHost\LeafRegistrationOrderTest::testRegistrationOrderAndSharedFactories
 2026-11-10T19:38:30Z integrator-20261110T111852-c9674639 CONFLICT-DEV #9029 34e90443
+2026-11-10T19:38:42Z integrator-20261110T111852-c9674639 CONFLICT-DEV #9044 7a9138aa
