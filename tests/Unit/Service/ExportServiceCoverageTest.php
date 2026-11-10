@@ -251,8 +251,8 @@ class ExportServiceCoverageTest extends TestCase {
 	}
 
 	public function testConvertValueToStringBool(): void {
-		$result = $this->invokeMethod($this->service, 'convertValueToString', [true]);
-		$this->assertSame('1', $result);
+		$this->assertSame('true', $this->invokeMethod($this->service, 'convertValueToString', [true]));
+		$this->assertSame('false', $this->invokeMethod($this->service, 'convertValueToString', [false]));
 	}
 
 	public function testConvertValueToStringArray(): void {
