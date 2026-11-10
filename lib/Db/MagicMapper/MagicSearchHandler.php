@@ -2669,12 +2669,7 @@ class MagicSearchHandler {
 	 */
 	private function applyOrganisationBoundary(IQueryBuilder $qb, OrganisationBoundary $boundary): void {
 		if ($boundary->crossBranch === null) {
-			$this->organizationHandler->applyOrganizationFilter(
-				qb: $qb,
-				table: $boundary->scopeTable(),
-				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-				withOrgless: $boundary->withOrgless
-			);
+			$this->organizationHandler->applyOrganizationFilter(qb: $qb, boundary: $boundary);
 			return;
 		}
 
