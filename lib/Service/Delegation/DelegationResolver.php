@@ -88,13 +88,7 @@ class DelegationResolver {
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public function resolve(DelegationRequest $request): DelegationVerdict {
-		$trimmed = new DelegationRequest(
-			principal: trim($request->principal),
-			actingAs: trim($request->actingAs),
-			scope: $request->scope,
-			now: $request->now
-		);
-
+		$trimmed = $this->trimmed(request: $request);
 		if ($trimmed->principal === '' || $trimmed->actingAs === '') {
 			return DelegationVerdict::refused(
 				reason: DelegationVerdict::REASON_UNNAMED,
@@ -109,6 +103,22 @@ class DelegationResolver {
 
 		return $this->resolveFromStore(request: $trimmed);
 	}//end resolve()
+
+	/**
+	 * The request with both parties trimmed.
+	 *
+	 * @param DelegationRequest $request The request as asked.
+	 *
+	 * @return DelegationRequest The same request, its parties trimmed.
+	 */
+	private function trimmed(DelegationRequest $request): DelegationRequest {
+		return new DelegationRequest(
+			principal: trim($request->principal),
+			actingAs: trim($request->actingAs),
+			scope: $request->scope,
+			now: $request->now
+		);
+	}//end trimmed()
 
 	/**
 	 * Judge a named, non-self request against the grants the store holds for it.
@@ -127,14 +137,25 @@ class DelegationResolver {
 		}
 
 		if ($candidates === []) {
-			return DelegationVerdict::refused(
-				reason: DelegationVerdict::REASON_NONE,
-				detail: sprintf('"%s" holds no grant to act as "%s".', $request->principal, $request->actingAs)
-			);
+			return $this->noGrant(request: $request);
 		}
 
 		return $this->judge(candidates: $candidates, request: $request);
 	}//end resolveFromStore()
+
+	/**
+	 * The refusal for parties between whom the store holds no grant at all.
+	 *
+	 * @param DelegationRequest $request The trimmed request.
+	 *
+	 * @return DelegationVerdict The refusal.
+	 */
+	private function noGrant(DelegationRequest $request): DelegationVerdict {
+		return DelegationVerdict::refused(
+			reason: DelegationVerdict::REASON_NONE,
+			detail: sprintf('"%s" holds no grant to act as "%s".', $request->principal, $request->actingAs)
+		);
+	}//end noGrant()
 
 	/**
 	 * The grants stored between the request's parties, or null when the store cannot be read.
