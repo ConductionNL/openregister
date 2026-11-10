@@ -44,10 +44,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
-use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
-use OCA\OpenRegister\Service\Survivorship\TrustTierResolverInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -110,27 +107,6 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	];
 
 	/**
-	 * Pure golden-record resolver.
-	 *
-	 * @var SurvivorshipResolverInterface
-	 */
-	private readonly SurvivorshipResolverInterface $resolver;
-
-	/**
-	 * Pure trust-tier lookup + decay engine.
-	 *
-	 * @var TrustTierResolverInterface
-	 */
-	private readonly TrustTierResolverInterface $trustResolver;
-
-	/**
-	 * Mode-aware source-record resolver (embedded | reverseFk).
-	 *
-	 * @var SourceRecordResolverInterface
-	 */
-	private readonly SourceRecordResolverInterface $sourceRecordResolver;
-
-	/**
 	 * Wire collaborators used to look up the schema, load linked sources +
 	 * trust rows, and resolve the golden record.
 	 *
@@ -147,12 +123,9 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ObjectOperationsInterface $objectService,
-		SurvivorshipResolvers $resolvers,
+		private readonly SurvivorshipResolvers $resolvers,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->resolver = $resolvers->resolver;
-		$this->trustResolver = $resolvers->trustResolver;
-		$this->sourceRecordResolver = $resolvers->sourceRecordResolver;
 	}//end __construct()
 
 	/**
@@ -288,7 +261,7 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.2
 	 */
 	private function sourcesOf(SurvivorshipRecomputeRun $run): array {
-		return $this->sourceRecordResolver->resolveSources(
+		return $this->resolvers->sourceRecordResolver->resolveSources(
 			masterData: $run->data,
 			masterUuid: (string)$run->object?->getUuid(),
 			config: $run->config,
@@ -312,13 +285,13 @@ class SurvivorshipRecomputeListener implements IEventListener {
 		$trustRows = $this->loadTrustRows(entityType: $entityType);
 		$overridesField = self::fieldName(config: $run->config, key: 'overridesField');
 
-		return $this->resolver->resolveGoldenRecord(
+		return $this->resolvers->resolver->resolveGoldenRecord(
 			sourceRecords: $sourceRecords,
 			config: $run->config,
 			trust: new SurvivorshipTrustLookup(
 				entityType: $entityType,
 				trustRows: $trustRows,
-				trustResolver: $this->trustResolver,
+				trustResolver: $this->resolvers->trustResolver,
 				asOf: new DateTimeImmutable()
 			),
 			overrides: ($run->data[$overridesField] ?? null)
@@ -448,7 +421,7 @@ class SurvivorshipRecomputeListener implements IEventListener {
 			return true;
 		}
 
-		return $this->sourceRecordResolver->isReverseFk(config: $config);
+		return $this->resolvers->sourceRecordResolver->isReverseFk(config: $config);
 	}//end hasSourceLinkage()
 
 	/**
@@ -475,7 +448,7 @@ class SurvivorshipRecomputeListener implements IEventListener {
 			return false;
 		}
 
-		if ($this->sourceRecordResolver->isReverseFk(config: $run->config) === false) {
+		if ($this->resolvers->sourceRecordResolver->isReverseFk(config: $run->config) === false) {
 			return false;
 		}
 
