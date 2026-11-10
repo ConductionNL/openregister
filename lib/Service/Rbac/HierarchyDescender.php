@@ -340,25 +340,35 @@ class HierarchyDescender {
 	 * @return IQueryBuilder The query.
 	 */
 	private function childrenQuery(ChildrenRead $read, array $parents): IQueryBuilder {
-		$parentColumn = $read->parentColumn;
-		$limit = $read->remaining();
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('_uuid', $parentColumn)
+		$qb->select('_uuid', $read->parentColumn)
 			->from($read->table)
 			->where(
 				$qb->expr()->in(
-					$parentColumn,
+					$read->parentColumn,
 					$qb->createNamedParameter($parents, IQueryBuilder::PARAM_STR_ARRAY)
 				)
 			);
-
-		if ($limit !== null) {
-			$qb->andWhere($qb->expr()->neq('_uuid', $parentColumn));
-			$qb->setMaxResults($limit);
-		}
+		self::boundByBudget(qb: $qb, read: $read);
 
 		return $qb;
 	}//end childrenQuery()
+
+	/**
+	 * Bound a children query by the read's remaining budget, leaving out self-parented rows; unbounded reads are left alone.
+	 *
+	 * @param IQueryBuilder $qb   The children query.
+	 * @param ChildrenRead  $read The read, for its budget and parent column.
+	 *
+	 * @return void
+	 */
+	private static function boundByBudget(IQueryBuilder $qb, ChildrenRead $read): void {
+		$limit = $read->remaining();
+		if ($limit !== null) {
+			$qb->andWhere($qb->expr()->neq('_uuid', $read->parentColumn));
+			$qb->setMaxResults($limit);
+		}
+	}//end boundByBudget()
 
 	/**
 	 * Child uuid => parent uuid from fetched rows, dropping blanks and self-parents.
