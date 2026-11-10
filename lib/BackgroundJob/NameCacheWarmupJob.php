@@ -92,6 +92,18 @@ class NameCacheWarmupJob extends TimedJob {
 
 		$logger->info(message: '[NameCacheWarmupJob] 🌙 Name Cache Nightly Warmup Job Started', context: $this->startedContext());
 
+		$this->warmUp(logger: $logger, startTime: $startTime);
+	}//end run()
+
+	/**
+	 * Warm the name cache, logging the outcome either way.
+	 *
+	 * @param LoggerInterface $logger    The run's logger.
+	 * @param float           $startTime When the run started (microtime).
+	 *
+	 * @return void
+	 */
+	private function warmUp(LoggerInterface $logger, float $startTime): void {
 		try {
 			// @var ObjectNameCacheInterface $cacheHandler.
 			$cacheHandler = $this->container->get(ObjectNameCacheInterface::class);
@@ -109,7 +121,7 @@ class NameCacheWarmupJob extends TimedJob {
 				context: $this->failedContext(error: $e, startTime: $startTime)
 			);
 		}//end try
-	}//end run()
+	}//end warmUp()
 
 	/**
 	 * The context the start of a warmup is logged with.

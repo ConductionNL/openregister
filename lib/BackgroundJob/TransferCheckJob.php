@@ -144,14 +144,26 @@ class TransferCheckJob extends TimedJob {
 		$transferList = $this->services->transferListService->createTransferList($eligibleObjects);
 		$this->services->transferListService->notifyArchivists($transferList);
 
+		$this->logListCreated(transferList: $transferList, objectCount: count($eligibleObjects));
+	}//end listEligibleObjects()
+
+	/**
+	 * Log a created transfer list.
+	 *
+	 * @param array $transferList The created list.
+	 * @param int   $objectCount  How many objects it holds.
+	 *
+	 * @return void
+	 */
+	private function logListCreated(array $transferList, int $objectCount): void {
 		$this->logger->info(
 			message: '[TransferCheckJob] Transfer list created',
 			context: [
 				'uuid' => $transferList['uuid'],
-				'objectCount' => count($eligibleObjects),
+				'objectCount' => $objectCount,
 			]
 		);
-	}//end listEligibleObjects()
+	}//end logListCreated()
 
 	/**
 	 * Check if e-Depot is configured.

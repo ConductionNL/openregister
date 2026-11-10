@@ -130,10 +130,7 @@ class TemporalCalculationSweepJob extends TimedJob {
 	 */
 	protected function run($argument): void {
 		if ($this->isSweepEnabled() === false) {
-			$this->logger->info(
-				message: '[TemporalCalculationSweepJob] sweep disabled (temporal_calculation_sweep_enabled=false), skipping',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->logDisabled();
 			return;
 		}
 
@@ -162,6 +159,18 @@ class TemporalCalculationSweepJob extends TimedJob {
 			FILTER_VALIDATE_BOOLEAN
 		);
 	}//end isSweepEnabled()
+
+	/**
+	 * Log that a run was skipped because the sweep is switched off.
+	 *
+	 * @return void
+	 */
+	private function logDisabled(): void {
+		$this->logger->info(
+			message: '[TemporalCalculationSweepJob] sweep disabled (temporal_calculation_sweep_enabled=false), skipping',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logDisabled()
 
 	/**
 	 * Run one sweep and log it when it rewrote something or hit errors.
