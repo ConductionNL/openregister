@@ -2738,3 +2738,4 @@
 2026-11-10T18:25:09Z integrator-20261110T111852-c9674639 RESOLVED #9056 a3dec786 -> 099b0f71 use/map lines only
 2026-11-10T18:28:21Z integrator-20261110T111852-c9674639 GREEN tree d8e8373b4a on dev bcaaca2b4f prs 50 front=skip: Tests: 54842, Assertions: 181700, Errors: 6, Failures: 11, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
 2026-11-10T18:29:31Z integrator-20261110T111852-c9674639 MERGED-TREE d8e8373b4a: 50 PRs in one push, main now d8e8373b4a = tested tree
+2026-11-10T18:30:34Z integrator-20261110T111852-c9674639 CONFLICT-DEV #9029 34e90443
