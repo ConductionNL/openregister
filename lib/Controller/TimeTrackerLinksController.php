@@ -48,6 +48,7 @@ use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\TimeTracker\TimeEntry;
 use OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -217,7 +218,7 @@ class TimeTrackerLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	private function linkEntry(ObjectEntity $object, string $entryType, string $entryId): TimeTrackerLink {
-		return $this->linkService->linkEntry($this->linkTargetOf(object: $object), $entryType, $entryId);
+		return $this->linkService->linkEntry($this->linkTargetOf(object: $object), new TimeEntry(type: $entryType, id: $entryId));
 	}//end linkEntry()
 
 	/**

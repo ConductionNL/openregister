@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\XwikiLink;
 
 /**
@@ -66,8 +67,7 @@ interface XwikiLinkServiceInterface {
 	 * Create a new page in remote xWiki via OpenConnector and link it.
 	 *
 	 * @param LinkTarget $target The object to link to.
-	 * @param string $space Target xWiki space.
-	 * @param string $title New page title.
+	 * @param XwikiPageDraft $draft The target xWiki space and the new page title.
 	 *
 	 * @return XwikiLink The persisted link row.
 	 *
@@ -76,7 +76,7 @@ interface XwikiLinkServiceInterface {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function createAndLinkPage(LinkTarget $target, string $space, string $title): XwikiLink;
+	public function createAndLinkPage(LinkTarget $target, XwikiPageDraft $draft): XwikiLink;
 
 	/**
 	 * Unlink a page from an object.
@@ -145,10 +145,8 @@ interface XwikiLinkServiceInterface {
 	 * throwing, so the caller degrades to an empty/Configure state and never a
 	 * fatal (AD-23).
 	 *
-	 * @param string|null $query Free-text query (title/content). Null/empty
-	 *                           lists the most recent / available pages.
-	 * @param int $limit Max results (clamped 1..100).
-	 * @param int $offset Pagination offset (clamped >= 0).
+	 * @param ListQuery $query Free-text search (title/content; none lists the most recent / available pages),
+	 *                         limit (clamped 1..100) and offset (clamped >= 0; none is 0).
 	 *
 	 * @return array<string,mixed> `{ results, total, limit, offset }` on
 	 *                             success, or `{ unavailable, cause, results,
@@ -157,5 +155,5 @@ interface XwikiLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
-	public function searchPages(?string $query = null, int $limit = 25, int $offset = 0): array;
+	public function searchPages(ListQuery $query): array;
 }//end interface
