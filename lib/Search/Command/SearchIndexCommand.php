@@ -31,6 +31,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
 
 /**
  * The search index under administration, from the command line.
@@ -134,13 +135,10 @@ class SearchIndexCommand extends Command {
 	private function rebuild(IndexMaintenanceRun $run): int {
 		$output = $run->output;
 		$apply  = $run->apply();
-		$report = $this->maintenance->rebuild(
-			registerId: $run->registerId(),
-			apply: $apply,
-			progress: static function (string $table, string $index, int $position, int $total) use ($output): void {
-				$output->writeln("  [{$position}/{$total}] {$table} · {$index}");
-			}
-		);
+		$progress = static function (string $table, string $index, int $position, int $total) use ($output): void {
+			$output->writeln("  [{$position}/{$total}] {$table} · {$index}");
+		};
+		$report   = $this->maintenance->rebuild(registerId: $run->registerId(), pass: new SearchIndexPass(apply: $apply, progress: $progress));
 
 		if (($report['state'] ?? '') === 'refused') {
 			$output->writeln('<error>' . ($report['reason'] ?? 'Refused.') . '</error>');
