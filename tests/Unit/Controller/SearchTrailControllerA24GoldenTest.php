@@ -12,7 +12,9 @@ use Exception;
 use OCA\OpenRegister\Controller\SearchTrailController;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Service\SearchPeriod;
 use OCA\OpenRegister\Service\SearchTrailService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SearchTrailControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
@@ -22,7 +24,6 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use OCA\OpenRegister\Tests\Unit\Controller\Support\SearchTrailControllerFactory;
 
 /**
  * Golden outcomes of every SearchTrailController action.
@@ -251,7 +252,7 @@ class SearchTrailControllerA24GoldenTest extends TestCase {
 	}
 
 	public function testActivityPassesTheInterval(): void {
-		$this->service->expects($this->once())->method('getSearchActivity')->with('week', null, null)->willReturn(['a' => 1]);
+		$this->service->expects($this->once())->method('getSearchActivity')->with(new SearchPeriod(), 'week')->willReturn(['a' => 1]);
 
 		$this->assertOutcome(200, ['a' => 1], $this->controller('admin', ['interval' => 'week'])->activity());
 	}
@@ -263,7 +264,7 @@ class SearchTrailControllerA24GoldenTest extends TestCase {
 	}
 
 	public function testPopularTermsPagesTheTermsAndAddsTheMetadata(): void {
-		$this->service->expects($this->once())->method('getPopularSearchTerms')->with(5, null, null)
+		$this->service->expects($this->once())->method('getPopularSearchTerms')->with(new SearchPeriod(), 5)
 			->willReturn(['terms' => ['t1', 't2'], 'total_unique_terms' => 12, 'total_searches' => 99, 'period' => ['days' => 7]]);
 
 		$response = $this->controller('admin', ['_limit' => '5', 'page' => '2'], '/terms?page=2')->popularTerms();
@@ -277,7 +278,7 @@ class SearchTrailControllerA24GoldenTest extends TestCase {
 	}
 
 	public function testPopularTermsDefaults(): void {
-		$this->service->expects($this->once())->method('getPopularSearchTerms')->with(10, null, null)->willReturn([]);
+		$this->service->expects($this->once())->method('getPopularSearchTerms')->with(new SearchPeriod(), 10)->willReturn([]);
 
 		$response = $this->controller()->popularTerms();
 
@@ -322,7 +323,7 @@ class SearchTrailControllerA24GoldenTest extends TestCase {
 	}
 
 	public function testUserAgentStatsStructuredResult(): void {
-		$this->service->expects($this->once())->method('getUserAgentStatistics')->with(10, null, null)->willReturn([
+		$this->service->expects($this->once())->method('getUserAgentStatistics')->with(new SearchPeriod(), 10)->willReturn([
 			'user_agents' => ['a' => 'ua1', 'b' => 'ua2'],
 			'total_user_agents' => 2,
 			'period' => 'p',

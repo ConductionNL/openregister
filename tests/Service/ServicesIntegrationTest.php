@@ -31,18 +31,20 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AuthenticationException;
-use OCA\OpenRegister\Service\AuthenticationService;
-use OCA\OpenRegister\Service\AuthorizationService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
+use OCA\OpenRegister\Service\AuthenticationService;
+use OCA\OpenRegister\Service\AuthorizationService;
 use OCA\OpenRegister\Service\MappingService;
-use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
+use OCA\OpenRegister\Service\SearchMeasurement;
+use OCA\OpenRegister\Service\SearchPeriod;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -380,10 +382,7 @@ class ServicesIntegrationTest extends TestCase {
 				'schema' => $this->testSchema->getId(),
 				'_search' => 'test query',
 			],
-			resultCount: 5,
-			totalResults: 25,
-			responseTime: 42.5,
-			executionType: 'sync'
+			measured: new SearchMeasurement(5, 25, 42.5, 'sync')
 		);
 
 		$this->createdSearchTrailIds[] = $trail->getId();
@@ -401,11 +400,7 @@ class ServicesIntegrationTest extends TestCase {
 		$service = \OC::$server->get(SearchTrailService::class);
 
 		// Create a trail first.
-		$trail = $service->createSearchTrail(
-			query: ['register' => $this->testRegister->getId(), 'schema' => $this->testSchema->getId()],
-			resultCount: 3,
-			totalResults: 10
-		);
+		$trail = $service->createSearchTrail(['register' => $this->testRegister->getId(), 'schema' => $this->testSchema->getId()], new SearchMeasurement(3, 10));
 		$this->createdSearchTrailIds[] = $trail->getId();
 
 		$result = $service->getSearchTrails(['limit' => 5, 'page' => 1]);
@@ -426,11 +421,7 @@ class ServicesIntegrationTest extends TestCase {
 	public function testSearchTrailServiceGetTrailById(): void {
 		$service = \OC::$server->get(SearchTrailService::class);
 
-		$trail = $service->createSearchTrail(
-			query: ['register' => $this->testRegister->getId(), 'schema' => $this->testSchema->getId()],
-			resultCount: 1,
-			totalResults: 1
-		);
+		$trail = $service->createSearchTrail(['register' => $this->testRegister->getId(), 'schema' => $this->testSchema->getId()], new SearchMeasurement(1, 1));
 		$this->createdSearchTrailIds[] = $trail->getId();
 
 		$found = $service->getSearchTrail($trail->getId());
@@ -445,11 +436,7 @@ class ServicesIntegrationTest extends TestCase {
 	public function testSearchTrailServiceStatistics(): void {
 		$service = \OC::$server->get(SearchTrailService::class);
 
-		$trail = $service->createSearchTrail(
-			query: ['register' => $this->testRegister->getId(), 'schema' => $this->testSchema->getId()],
-			resultCount: 5,
-			totalResults: 10
-		);
+		$trail = $service->createSearchTrail(['register' => $this->testRegister->getId(), 'schema' => $this->testSchema->getId()], new SearchMeasurement(5, 10));
 		$this->createdSearchTrailIds[] = $trail->getId();
 
 		$stats = $service->getSearchStatistics();
@@ -468,11 +455,7 @@ class ServicesIntegrationTest extends TestCase {
 	public function testSearchTrailServiceStatisticsWithDateRange(): void {
 		$service = \OC::$server->get(SearchTrailService::class);
 
-		$trail = $service->createSearchTrail(
-			query: ['register' => $this->testRegister->getId(), 'schema' => $this->testSchema->getId()],
-			resultCount: 5,
-			totalResults: 10
-		);
+		$trail = $service->createSearchTrail(['register' => $this->testRegister->getId(), 'schema' => $this->testSchema->getId()], new SearchMeasurement(5, 10));
 		$this->createdSearchTrailIds[] = $trail->getId();
 
 		$from = new DateTime('-7 days');
@@ -493,14 +476,10 @@ class ServicesIntegrationTest extends TestCase {
 	public function testSearchTrailServicePopularTerms(): void {
 		$service = \OC::$server->get(SearchTrailService::class);
 
-		$trail = $service->createSearchTrail(
-			query: ['_search' => 'popular term', 'register' => $this->testRegister->getId()],
-			resultCount: 10,
-			totalResults: 50
-		);
+		$trail = $service->createSearchTrail(['_search' => 'popular term', 'register' => $this->testRegister->getId()], new SearchMeasurement(10, 50));
 		$this->createdSearchTrailIds[] = $trail->getId();
 
-		$result = $service->getPopularSearchTerms(5);
+		$result = $service->getPopularSearchTerms(new SearchPeriod(), 5);
 
 		$this->assertArrayHasKey('terms', $result);
 		$this->assertArrayHasKey('total_unique_terms', $result);
@@ -516,14 +495,10 @@ class ServicesIntegrationTest extends TestCase {
 	public function testSearchTrailServiceActivity(): void {
 		$service = \OC::$server->get(SearchTrailService::class);
 
-		$trail = $service->createSearchTrail(
-			query: ['register' => $this->testRegister->getId()],
-			resultCount: 5,
-			totalResults: 10
-		);
+		$trail = $service->createSearchTrail(['register' => $this->testRegister->getId()], new SearchMeasurement(5, 10));
 		$this->createdSearchTrailIds[] = $trail->getId();
 
-		$result = $service->getSearchActivity('day');
+		$result = $service->getSearchActivity(new SearchPeriod(), 'day');
 
 		$this->assertArrayHasKey('activity', $result);
 		$this->assertArrayHasKey('insights', $result);
@@ -539,11 +514,7 @@ class ServicesIntegrationTest extends TestCase {
 	public function testSearchTrailServiceRegisterSchemaStats(): void {
 		$service = \OC::$server->get(SearchTrailService::class);
 
-		$trail = $service->createSearchTrail(
-			query: ['register' => $this->testRegister->getId(), 'schema' => $this->testSchema->getId()],
-			resultCount: 3,
-			totalResults: 7
-		);
+		$trail = $service->createSearchTrail(['register' => $this->testRegister->getId(), 'schema' => $this->testSchema->getId()], new SearchMeasurement(3, 7));
 		$this->createdSearchTrailIds[] = $trail->getId();
 
 		$result = $service->getRegisterSchemaStatistics();
@@ -561,14 +532,10 @@ class ServicesIntegrationTest extends TestCase {
 	public function testSearchTrailServiceUserAgentStats(): void {
 		$service = \OC::$server->get(SearchTrailService::class);
 
-		$trail = $service->createSearchTrail(
-			query: ['register' => $this->testRegister->getId()],
-			resultCount: 5,
-			totalResults: 10
-		);
+		$trail = $service->createSearchTrail(['register' => $this->testRegister->getId()], new SearchMeasurement(5, 10));
 		$this->createdSearchTrailIds[] = $trail->getId();
 
-		$result = $service->getUserAgentStatistics(5);
+		$result = $service->getUserAgentStatistics(new SearchPeriod(), 5);
 
 		$this->assertArrayHasKey('user_agents', $result);
 		$this->assertArrayHasKey('browser_distribution', $result);
@@ -613,11 +580,7 @@ class ServicesIntegrationTest extends TestCase {
 	public function testSearchTrailServiceConfigProcessing(): void {
 		$service = \OC::$server->get(SearchTrailService::class);
 
-		$trail = $service->createSearchTrail(
-			query: ['register' => $this->testRegister->getId()],
-			resultCount: 1,
-			totalResults: 1
-		);
+		$trail = $service->createSearchTrail(['register' => $this->testRegister->getId()], new SearchMeasurement(1, 1));
 		$this->createdSearchTrailIds[] = $trail->getId();
 
 		// Test with _limit, _offset, _page, _search, sort, order, from, to.
