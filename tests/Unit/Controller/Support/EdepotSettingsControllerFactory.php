@@ -50,7 +50,7 @@ final class EdepotSettingsControllerFactory {
 					restTransport: $restTransport,
 					ocTransport: $ocTransport,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\EdepotSettingsPlatform(
+				platform: new \OCA\OpenRegister\Controller\Support\ConnectionReporting(
 					connectionReporter: $connectionReporter,
 					appConfig: $appConfig,
 				),

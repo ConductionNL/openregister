@@ -1762,11 +1762,6 @@ parameters:
 			path: lib/Controller/Settings/ApiTokenSettingsController.php
 
 		-
-			message: "#^Parameter \\$appDataFactory of method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\CacheSettingsController\\:\\:__construct\\(\\) has invalid type OC\\\\Files\\\\AppData\\\\Factory\\.$#"
-			count: 2
-			path: lib/Controller/Settings/CacheSettingsController.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\ConfigurationSettingsController\\:\\:\\$logger is never read, only written\\.$#"
 			count: 1
 			path: lib/Controller/Settings/ConfigurationSettingsController.php

@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Notifications\Service\Timeline;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\TextBlock;
 use OCA\OpenRegister\Notifications\Db\TextBlockMapper;
+use OCA\OpenRegister\Notifications\Db\TextBlockScope;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
 
@@ -79,9 +80,7 @@ class TextBlockService {
 	 */
 	public function listBlocks(?string $register = null, ?string $schema = null): array {
 		return $this->blocks->findInScope(
-			register: $register,
-			schema: $schema,
-			groups: $this->callerGroups()
+			scope: new TextBlockScope(register: $register, schema: $schema, groups: $this->callerGroups())
 		);
 	}//end listBlocks()
 

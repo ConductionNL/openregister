@@ -429,7 +429,7 @@ class FlowDefinitionBuilder {
 		$tos = [];
 		foreach ($this->graph()->outgoing(nodeId: $id, edges: $net->edges) as $edge) {
 			foreach ($edge['to'] as $target) {
-				$tos[] = $this->graph()->targetPlace(nodeId: $target, edgeId: $edge['id'], nodes: $net->nodes);
+				$tos[] = $this->graph()->targetPlace(arrival: new EdgeArrival(nodeId: $target, edgeId: $edge['id']), nodes: $net->nodes);
 			}
 		}
 

@@ -130,9 +130,7 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$this->createMock(IDBConnection::class),
-					$this->createMock(IUserSession::class),
-					$this->createMock(IRequest::class),
-					new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class)),
+					new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class), $this->createMock(IUserSession::class), $this->createMock(IRequest::class)),
 				]
 			)
 			->onlyMethods(['insert'])
