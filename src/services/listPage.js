@@ -220,6 +220,32 @@ export async function getJson(endpoint) {
 }
 
 /**
+ * Mark the store busy with the job, when the job names a flag for it.
+ *
+ * @param {object} store The store
+ * @param {{flag: string|undefined}} job The job
+ * @return {void}
+ */
+function raiseFlag(store, job) {
+	if (job.flag) {
+		store[job.flag] = true
+	}
+}
+
+/**
+ * Mark the store no longer busy with the job, when the job names a flag.
+ *
+ * @param {object} store The store
+ * @param {{flag: string|undefined}} job The job
+ * @return {void}
+ */
+function lowerFlag(store, job) {
+	if (job.flag) {
+		store[job.flag] = false
+	}
+}
+
+/**
  * Send one JSON request for a store: raise the store's loading flag while it
  * runs, hand the answer to `keep`, and log a failure before rethrowing it.
  *
@@ -233,9 +259,7 @@ export async function getJson(endpoint) {
  * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 export async function storeRequest(store, job) {
-	if (job.flag) {
-		store[job.flag] = true
-	}
+	raiseFlag(store, job)
 	try {
 		const data = await requestJson(job.url, job.request)
 		job.keep?.(data)
@@ -244,9 +268,7 @@ export async function storeRequest(store, job) {
 		job.log(error)
 		throw error
 	} finally {
-		if (job.flag) {
-			store[job.flag] = false
-		}
+		lowerFlag(store, job)
 	}
 }
 
