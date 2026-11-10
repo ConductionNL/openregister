@@ -191,9 +191,7 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-shares/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\SharesProvider::class => [
-			'db'         => \OCP\IDBConnection::class,
-			'appManager' => \OCP\App\IAppManager::class,
-			'l10n'       => \OCP\IL10N::class,
+			'l10n' => \OCP\IL10N::class,
 		],
 		// @spec openspec/specs/integration-shares/spec.md
 		\OCA\OpenRegister\Service\ShareLinkService::class => [

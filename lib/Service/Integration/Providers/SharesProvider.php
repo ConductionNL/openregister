@@ -21,10 +21,8 @@
  *
  * Lazy-resolution policy: `IManager`, `FileService`, and
  * `IUserSession` are pulled from the server container on demand rather
- * than constructor-injected, so the ctor signature
- * `(IDBConnection, IAppManager, IL10N)` stays compatible with the
- * existing `Application.php` registration. Tests inject a mock
- * `ContainerInterface` via the optional fourth ctor arg.
+ * than constructor-injected. Tests inject a mock `ContainerInterface`
+ * via the optional second ctor arg.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -49,9 +47,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // Getters mirror the contract in the interface.
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCP\App\IAppManager;
 use OCP\Files\Folder;
-use OCP\IDBConnection;
 use OCP\IL10N;
 use OCP\Server;
 use OCP\Share\IManager;
@@ -107,17 +103,9 @@ class SharesProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * Required args mirror the registration block in `Application.php`
-	 * so the wiring there stays untouched. The optional container
-	 * argument is for unit tests only; production uses
+	 * The optional container argument is for unit tests only; production uses
 	 * `\OCP\Server::get(...)` via {@see resolveContainer()}.
 	 *
-	 * @param IDBConnection $db NC DB connection (unused at runtime since
-	 *                          the IManager pivot owns query construction —
-	 *                          kept for parity with the registration block).
-	 * @param IAppManager $appManager NC app manager (unused at runtime: NC core
-	 *                                sharing is always available — kept for
-	 *                                registration-block parity).
 	 * @param IL10N $l10n Localisation.
 	 * @param ContainerInterface|null $container Optional server-container override (tests
 	 *                                           only).
@@ -125,8 +113,6 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
 		private IL10N $l10n,
 		private ?ContainerInterface $container = null,
 	) {

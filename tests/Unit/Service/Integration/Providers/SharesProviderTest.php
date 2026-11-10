@@ -49,10 +49,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
-use OCP\App\IAppManager;
 use OCP\Files\Folder;
 use OCP\Files\Node;
-use OCP\IDBConnection;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -80,16 +78,6 @@ class SharesProviderTest extends TestCase {
 		$mock->method('t')->willReturnArgument(0);
 		return $mock;
 	}//end buildL10n()
-
-	/**
-	 * Build an IAppManager mock (unused at runtime by the post-pivot
-	 * provider but still required by the ctor signature).
-	 *
-	 * @return IAppManager
-	 */
-	private function buildAppManager(): IAppManager {
-		return $this->createMock(IAppManager::class);
-	}//end buildAppManager()
 
 	/**
 	 * Build an IUserSession that returns a user with the given UID.
@@ -265,8 +253,6 @@ class SharesProviderTest extends TestCase {
 	 */
 	public function testMetadataMatchesLeafSpec(): void {
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(),
 			l10n: $this->buildL10n(),
 		);
 
@@ -339,8 +325,6 @@ class SharesProviderTest extends TestCase {
 		]);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(),
 			l10n: $this->buildL10n(),
 			container: $container,
 		);
@@ -389,8 +373,6 @@ class SharesProviderTest extends TestCase {
 		]);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(),
 			l10n: $this->buildL10n(),
 			container: $container,
 		);
@@ -409,8 +391,6 @@ class SharesProviderTest extends TestCase {
 		$container = $this->buildContainer([]);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(),
 			l10n: $this->buildL10n(),
 			container: $container,
 		);
@@ -429,8 +409,6 @@ class SharesProviderTest extends TestCase {
 		]);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(),
 			l10n: $this->buildL10n(),
 			container: $container,
 		);
@@ -451,8 +429,6 @@ class SharesProviderTest extends TestCase {
 		$container = $this->buildContainer([]);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(),
 			l10n: $this->buildL10n(),
 			container: $container,
 		);
@@ -487,8 +463,6 @@ class SharesProviderTest extends TestCase {
 		]);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(),
 			l10n: $this->buildL10n(),
 			container: $container,
 		);
@@ -508,8 +482,6 @@ class SharesProviderTest extends TestCase {
 		$container = $this->buildContainer([]);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(),
 			l10n: $this->buildL10n(),
 			container: $container,
 		);
@@ -569,8 +541,6 @@ class SharesProviderTest extends TestCase {
 		]);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(),
 			l10n: $this->buildL10n(),
 			container: $container,
 		);
@@ -623,8 +593,6 @@ class SharesProviderTest extends TestCase {
 		]);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(),
 			l10n: $this->buildL10n(),
 			container: $container,
 		);
@@ -652,8 +620,6 @@ class SharesProviderTest extends TestCase {
 	 */
 	public function testCreateFallsBackToNotImplementedWhenServiceMissing(): void {
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(),
 			l10n: $this->buildL10n(),
 			container: $this->buildContainer([]),
 		);
@@ -689,8 +655,6 @@ class SharesProviderTest extends TestCase {
 		]);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(),
 			l10n: $this->buildL10n(),
 			container: $container,
 		);
@@ -721,8 +685,6 @@ class SharesProviderTest extends TestCase {
 		]);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(),
 			l10n: $this->buildL10n(),
 			container: $container,
 		);
