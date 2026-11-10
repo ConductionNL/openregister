@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RemovedDraft;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -218,7 +219,7 @@ class DraftRemovalRecordTest extends TestCase {
 		$record = new DraftRemovalRecord(auditTrail: $this->auditTrail(), logger: $this->logger());
 		$draft = $this->stored(status: 'draft');
 
-		$written = DraftRemovalRecord::asJob(job: 'DraftExpiryJob', operation: fn (): bool => $record->write(draft: $draft, register: $register, schema: $schema));
+		$written = DraftRemovalRecord::asJob(job: 'DraftExpiryJob', operation: fn (): bool => $record->write(new RemovedDraft(draft: $draft, register: $register, schema: $schema)));
 		$this->assertTrue($written);
 		$this->assertSame('job:DraftExpiryJob', $this->entries[0]['actorId']);
 		$this->assertSame('DraftExpiryJob', $this->entries[0]['actorName']);
@@ -226,7 +227,7 @@ class DraftRemovalRecordTest extends TestCase {
 		$this->assertHoldsNoTypedValue(written: $this->entries[0]['context']);
 
 		// Afterwards nobody is a job any more.
-		$record->write(draft: $draft, register: $register, schema: $schema);
+		$record->write(new RemovedDraft(draft: $draft, register: $register, schema: $schema));
 		$this->assertNull($this->entries[1]['actorId']);
 		$this->assertNull($this->entries[1]['context']['job']);
 
@@ -237,7 +238,7 @@ class DraftRemovalRecordTest extends TestCase {
 			// Expected.
 		}
 
-		$record->write(draft: $draft, register: null, schema: null);
+		$record->write(new RemovedDraft(draft: $draft, register: null, schema: null));
 		$this->assertNull($this->entries[2]['actorId']);
 		$this->assertSame(['register' => null, 'schema' => null], array_intersect_key($this->entries[2]['context'], ['register' => 0, 'schema' => 0]));
 	}//end testARemovalByAJobNamesTheJob()
@@ -249,7 +250,7 @@ class DraftRemovalRecordTest extends TestCase {
 		[$register, $schema] = $this->scope();
 		$record = new DraftRemovalRecord(auditTrail: $this->auditTrail(fails: true), logger: $this->logger());
 
-		$this->assertFalse($record->write(draft: $this->stored(status: 'draft'), register: $register, schema: $schema));
+		$this->assertFalse($record->write(new RemovedDraft(draft: $this->stored(status: 'draft'), register: $register, schema: $schema)));
 
 		$this->assertCount(1, $this->errors);
 		$this->assertStringContainsString('audit-trail entry could not be written', $this->errors[0][0]);

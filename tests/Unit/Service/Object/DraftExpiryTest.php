@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RemovedDraft;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -179,7 +180,7 @@ class DraftExpiryTest extends TestCase {
 						return new AuditTrail();
 					}
 				);
-				(new DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(draft: new ObjectEntity(), register: null, schema: null);
+				(new DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(new RemovedDraft(draft: new ObjectEntity(), register: null, schema: null));
 
 				if ($uuid === 'frozen') {
 					throw new RuntimeException('This schema refuses deletes.');

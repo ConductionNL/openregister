@@ -56,6 +56,7 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\DraftListLens;
+use OCA\OpenRegister\Service\Object\DraftListing;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
@@ -2830,10 +2831,9 @@ class AggregationRunner implements AggregationRunnerInterface {
 			$ownerBinding = '?';
 		}
 
-		$draftPredicate = $draftLens->sql(
-			mode: $draftLens->modeFor(query: [], schema: $schema),
-			columnPrefix: '',
-			owner: $ownerBinding
+		$draftPredicate = $draftLens->clauseFor(
+			listing: new DraftListing(mode: $draftLens->modeFor(query: [], schema: $schema), owner: $ownerBinding),
+			columnPrefix: ''
 		);
 		if ($draftPredicate === null) {
 			return;
