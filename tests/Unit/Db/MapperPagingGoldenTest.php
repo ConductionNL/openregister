@@ -78,7 +78,7 @@ class MapperPagingGoldenTest extends TestCase {
 			'bulk job all' => [BulkJobMapper::class, 'findAllJobs', ['state' => null]],
 			'email link by object' => [EmailLinkMapper::class, 'findByObjectUuid', ['objectUuid' => 'o-2']],
 			'endpoint log all (newest first trait)' => [EndpointLogMapper::class, 'findAll', []],
-			'import preview by actor' => [ImportPreviewMapper::class, 'findByActor', ['createdBy' => 'bob', 'state' => null]],
+			'import preview by actor' => [ImportPreviewMapper::class, 'findByActor', ['createdBy' => 'bob', 'query' => ListQuery::class]],
 			'schema changelog by schema' => [SchemaChangelogMapper::class, 'findBySchema', ['schemaId' => 3]],
 			'schema run entry by run' => [SchemaRunEntryMapper::class, 'findByRun', ['runId' => 5, 'outcome' => 'failed']],
 			'schema run by schema' => [SchemaRunMapper::class, 'findBySchema', ['schemaId' => 6]],
