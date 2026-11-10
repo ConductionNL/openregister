@@ -1248,6 +1248,13 @@ class ImportHandler {
 			}
 		} catch (\Throwable $ignore) {
 			// No pre-existing schema anywhere (or ambiguous) — nothing to note.
+			$this->logger->debug(
+				message: '[ImportHandler] No unambiguous pre-existing schema outside the register scope',
+				context: [
+					'slug' => $data['slug'],
+					'exception' => $ignore->getMessage(),
+				]
+			);
 		}
 
 		return null;
@@ -1331,6 +1338,13 @@ class ImportHandler {
 			}
 		} catch (\Throwable $ignore) {
 			// No pre-existing schema (or ambiguous) — nothing to warn about.
+			$this->logger->debug(
+				message: '[ImportHandler] No unambiguous pre-existing schema to check the owning app of',
+				context: [
+					'slug' => $data['slug'],
+					'exception' => $ignore->getMessage(),
+				]
+			);
 		}
 
 		return null;
@@ -3861,6 +3875,13 @@ class ImportHandler {
 				}
 			} catch (Exception $e) {
 				// No configuration found by sourceUrl.
+				$this->logger->debug(
+					message: '[ImportHandler] No configuration found by source URL',
+					context: [
+						'sourceUrl' => $sourceUrl,
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}//end if
 

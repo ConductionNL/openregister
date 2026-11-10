@@ -292,7 +292,14 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 			try {
 				$this->stores->translationMapper->delete($row);
 			} catch (\Throwable $e) {
-				// Best effort.
+				// Best effort: the row is retried on the next projection of this object.
+				$this->logger->warning(
+					message: '[TranslationProjection] Stale translation row not deleted',
+					context: [
+						'uuid' => $uuid,
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}
 	}//end deleteRowsNotIn()

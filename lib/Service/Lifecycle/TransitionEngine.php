@@ -294,6 +294,13 @@ class TransitionEngine {
 			}
 		} catch (\Throwable $e) {
 			// Keep the id; a missing slug must not break the transition.
+			$this->logger->debug(
+				message: '[TransitionEngine] Register slug not resolved, keeping the id',
+				context: [
+					'register' => $registerRef,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		try {
@@ -304,6 +311,13 @@ class TransitionEngine {
 			}
 		} catch (\Throwable $e) {
 			// Keep the id; a missing slug must not break the transition.
+			$this->logger->debug(
+				message: '[TransitionEngine] Schema slug not resolved, keeping the id',
+				context: [
+					'schema' => $schemaRef,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return [

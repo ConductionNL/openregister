@@ -258,6 +258,7 @@ class DeckCardService implements DeckCardServiceInterface {
 			}
 		} catch (\Throwable $e) {
 			// GetDuedate missing on this Deck version — leave null.
+			$this->runtime->logger()->debug('[DeckCardService] Card due date not readable: ' . $e->getMessage());
 		}
 
 		return null;
@@ -286,6 +287,7 @@ class DeckCardService implements DeckCardServiceInterface {
 			}
 		} catch (\Throwable $e) {
 			// GetLabels missing or returned unexpected shape — leave empty.
+			$this->runtime->logger()->debug('[DeckCardService] Card labels not readable: ' . $e->getMessage());
 		}
 
 		return [];
@@ -313,6 +315,7 @@ class DeckCardService implements DeckCardServiceInterface {
 			}
 		} catch (\Throwable $e) {
 			// GetAssignedUsers missing — leave empty.
+			$this->runtime->logger()->debug('[DeckCardService] Card assignees not readable: ' . $e->getMessage());
 		}
 
 		return [];

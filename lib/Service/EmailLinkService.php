@@ -273,8 +273,9 @@ class EmailLinkService implements EmailLinkServiceInterface {
 		if ($row['date'] !== null) {
 			try {
 				$link->setMailDate(new DateTime($row['date']));
-			} catch (Throwable $e) {
+			} catch (\Exception $e) {
 				// Leave date null when the mail date string is unparseable.
+				$this->runtime->logger()->debug('[EmailLinkService] Mail date not parseable: ' . $e->getMessage());
 			}
 		}
 	}//end applyHarvest()

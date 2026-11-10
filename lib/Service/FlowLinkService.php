@@ -437,13 +437,9 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 * @return array<int|string,mixed>
 	 */
 	private function decodeJsonText(string $text): array {
-		try {
-			$decoded = json_decode($text, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-		} catch (Throwable $e) {
-			// Fall through.
+		$decoded = json_decode($text, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
 		}
 
 		return [];
