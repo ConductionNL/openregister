@@ -169,7 +169,7 @@ final class SlaAddition {
 	 */
 	public function examine(DateTimeImmutable $day, ?WalkCollector $collector): bool {
 		$working = $this->calendar()->isWorkingDay($day);
-		$collector?->examine(day: $day, counted: $working, rule: $this->skipRule(day: $day, counted: $working));
+		$collector?->examine(day: $day, kind: WalkCollector::kindOf(counted: $working, rule: $this->skipRule(day: $day, counted: $working)));
 
 		return $working;
 	}//end examine()

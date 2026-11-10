@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
+use OCA\OpenRegister\Service\Case\CasePlanTrigger;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -91,6 +92,6 @@ class CaseObjectEventListener implements IEventListener {
 			return;
 		}
 
-		$this->plans->onObjectEvent(objectUuid: $uuid, event: $trigger, payload: $object->getObject());
+		$this->plans->onObjectEvent(trigger: new CasePlanTrigger(objectUuid: $uuid, event: $trigger, payload: $object->getObject()));
 	}//end forward()
 }//end class

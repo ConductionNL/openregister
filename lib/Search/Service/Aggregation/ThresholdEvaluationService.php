@@ -305,7 +305,14 @@ class ThresholdEvaluationService {
 			// still has continuity across maintenance restarts.
 			$this->stateCache?->set($stateKey, $newState, (60 * 60 * 24 * 30));
 		} catch (\Throwable $e) {
-			// Don't escalate.
+			// A lost state write can repeat a crossing notification; not escalated.
+			$this->logger->warning(
+				message: '[ThresholdEvaluationService] Could not store the threshold state',
+				context: [
+					'stateKey' => $stateKey,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end storeState()
 }//end class
