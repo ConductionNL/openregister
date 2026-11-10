@@ -243,9 +243,8 @@ class SearchAccessWiringGoldenTest extends TestCase {
 
 		return new ObjectsProvider(
 			$objects,
-			$schemas,
-			new ObjectsProviderOutput($l10n, new ObjectSearchResultFormatter($urls, $deepLinks, $preview), $logger),
-			$registers
+			new \OCA\OpenRegister\Db\SchemaCatalog($registers, $schemas, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
+			new ObjectsProviderOutput($l10n, new ObjectSearchResultFormatter($urls, $deepLinks, $preview), $logger)
 		);
 	}//end provider()
 
