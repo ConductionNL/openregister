@@ -40,6 +40,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Quality\DedupRun;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Search\Controller\DuplicateController
@@ -114,7 +115,7 @@ class DuplicateControllerTest extends TestCase {
 
 		$this->duplicates->expects($this->once())
 			->method('findDuplicates')
-			->with('reg', 'sch', null, null)
+			->with(new DedupRun(register: 'reg', schema: 'sch', matchRules: null, threshold: null))
 			->willReturn($pairs);
 
 		$response = $this->controller->index('reg', 'sch');
@@ -136,7 +137,7 @@ class DuplicateControllerTest extends TestCase {
 
 		$this->duplicates->expects($this->once())
 			->method('findDuplicates')
-			->with('reg', 'sch', null, 0.9)
+			->with(new DedupRun(register: 'reg', schema: 'sch', matchRules: null, threshold: 0.9))
 			->willReturn([]);
 
 		$response = $this->controller->index('reg', 'sch');

@@ -191,7 +191,7 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			return $entity;
 		});
 		$files = $this->createMock(FilePropertyHandler::class);
-		$files->method('isFileProperty')->willReturnCallback(static fn ($value, $schema = null, $propertyName = null): bool => $propertyName === 'doc');
+		$files->method('isFileInSchema')->willReturnCallback(static fn ($schema, $propertyName): bool => $propertyName === 'doc');
 		$files->method('handleFileProperty')->willReturnCallback(function (ObjectEntity $objectEntity, array &$object, string $propertyName) use ($case): void {
 			$this->trace[] = ['file', $propertyName, $object[$propertyName]];
 			if (($case['fileFails'] ?? false) === true) {

@@ -19,6 +19,8 @@ use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -136,11 +138,8 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 		$runner = $this->runner(case: $case);
 		try {
 			$result = $runner->run(
-				registerRef: 'reg',
-				schemaRef: 'things',
-				name: $case['name'],
-				bypassRbac: $case['bypass'],
-				extraFilter: $case['extra']
+				ref: new NamedAggregationRef(register: 'reg', schema: 'things', name: $case['name']),
+				options: new NamedAggregationOptions(bypassRbac: $case['bypass'], extraFilter: $case['extra'])
 			);
 			$outcome = ['result' => $result];
 		} catch (Throwable $e) {

@@ -73,6 +73,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
+use OCA\OpenRegister\Service\Sharing\ShareGrantee;
+use OCA\OpenRegister\Service\Sharing\ShareListCheck;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
@@ -944,10 +946,8 @@ class CredentialBrokerService {
 		// applied to stored data, so an entry that omits `permission` is treated
 		// as the default here rather than being silently dropped.
 		return $deriver->grants(
-			sharedWith: $sharedWith,
-			userId: $uid,
-			userGroups: $this->groupsOf(uid: $uid),
-			permissions: ['use', null]
+			grantee: new ShareGrantee(userId: $uid, groups: $this->groupsOf(uid: $uid)),
+			check: new ShareListCheck(sharedWith: $sharedWith, permissions: ['use', null])
 		);
 	}//end sharedPrincipalAdmits()
 
@@ -1282,12 +1282,10 @@ class CredentialBrokerService {
 			$this->deny(reason: 'oauth2 refresh service is unavailable', credentialId: $credentialId);
 		}
 
+		$address = new TokenSetAddress(credentialId: $credentialId, scope: $scope);
+
 		return $this->oauth2Refresh->accessTokenFor(
-			credential: $data,
-			provider: $provider,
-			credentialId: $credentialId,
-			scope: $scope,
-			actingUserId: $actingUserId
+			target: new OAuth2RefreshTarget(credential: $data, provider: $provider, address: $address, actingUserId: $actingUserId)
 		);
 	}//end injectionSecret()
 

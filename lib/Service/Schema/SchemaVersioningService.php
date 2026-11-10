@@ -99,23 +99,6 @@ class SchemaVersioningService {
 	}//end classify()
 
 	/**
-	 * Enforce the breaking-change acknowledgement gate.
-	 *
-	 * @param SchemaChangeSet $changeSet The classified change set.
-	 * @param bool $acknowledged Whether acknowledgeBreaking was set.
-	 * @param int $schemaId The schema id (for invalid-count lookup).
-	 *
-	 * @return void
-	 *
-	 * @throws BreakingSchemaChangeException When breaking and unacknowledged.
-	 *
-	 * @spec openspec/specs/schema-migration/spec.md
-	 */
-	public function enforceGate(SchemaChangeSet $changeSet, bool $acknowledged, int $schemaId): void {
-		$this->gateChange(schemaId: $schemaId, record: new SchemaChangeRecord(changeSet: $changeSet, acknowledged: $acknowledged));
-	}//end enforceGate()
-
-	/**
 	 * Enforce the breaking-change acknowledgement gate on a change record.
 	 *
 	 * @param int                $schemaId The schema id (for invalid-count lookup).
@@ -156,28 +139,6 @@ class SchemaVersioningService {
 	public function nextVersion(Schema $existing, SchemaChangeSet $changeSet): string {
 		return $this->diffService->nextVersion($existing->getVersion(), $changeSet);
 	}//end nextVersion()
-
-	/**
-	 * Record a changelog entry for an applied schema update.
-	 *
-	 * No entry is written for a metadata-only (no structural change) update.
-	 *
-	 * @param int $schemaId The schema id.
-	 * @param string|null $version The resulting version.
-	 * @param SchemaChangeSet $changeSet The classified change set.
-	 * @param bool $acknowledged Whether the change was acknowledged.
-	 * @param string|null $origin Where the change came from (import, agent tool, source merge), for the log.
-	 *
-	 * @return SchemaChangelog|null The recorded entry, or null for a no-op.
-	 *
-	 * @spec openspec/specs/schema-migration/spec.md
-	 */
-	public function recordChangelog(int $schemaId, ?string $version, SchemaChangeSet $changeSet, bool $acknowledged, ?string $origin = null)
-	: ?SchemaChangelog {
-		$record = new SchemaChangeRecord(changeSet: $changeSet, acknowledged: $acknowledged, version: $version, origin: $origin);
-
-		return $this->recordChange(schemaId: $schemaId, record: $record);
-	}//end recordChangelog()
 
 	/**
 	 * Record a changelog entry for an applied schema change.

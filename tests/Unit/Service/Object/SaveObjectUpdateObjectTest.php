@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\RecordUpdate;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -182,15 +183,15 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 			return $log;
 		});
 		$files = $this->createMock(FilePropertyHandler::class);
-		$files->method('isFileProperty')->willReturnCallback(static fn ($value, $schema = null, $propertyName = null): bool => $propertyName === 'doc');
+		$files->method('isFileInSchema')->willReturnCallback(static fn ($schema, $propertyName): bool => $propertyName === 'doc');
 		$files->method('handleFileProperty')->willReturnCallback(function (ObjectEntity $objectEntity, array &$object, string $propertyName): void {
 			$this->trace[] = ['file', $propertyName, $object[$propertyName]];
 			$object[$propertyName] = 42;
 		});
 		$retention = $this->createMock(RetentionService::class);
-		$retention->method('recalculateArchiveActionDate')->willReturnCallback(function (ObjectEntity $object, Schema $schema, array $oldObject): ObjectEntity {
-			$this->trace[] = ['retention', $oldObject];
-			return $object;
+		$retention->method('recalculateActionDate')->willReturnCallback(function (RecordUpdate $update): ObjectEntity {
+			$this->trace[] = ['retention', $update->previousData];
+			return $update->object;
 		});
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id): object => ($id === RetentionServiceInterface::class) ? $retention : throw new \RuntimeException('no ' . $id));

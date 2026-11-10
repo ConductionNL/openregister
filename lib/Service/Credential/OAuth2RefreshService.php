@@ -113,11 +113,8 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	/**
 	 * Return an access token that is valid now, refreshing first when it is not.
 	 *
-	 * @param array<string, mixed> $credential The credential object's serialised data (must carry an `id`/`uuid`).
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $credentialId The credential UUID.
-	 * @param string $scope The credential scope (`personal`|`organisation`).
-	 * @param string|null $actingUserId The asserted user for a sessionless caller.
+	 * @param OAuth2RefreshTarget $target The credential's serialised data (must carry an `id`/`uuid`), its catalogue
+	 *                                    provider entry, its UUID and scope, and the asserted user for a sessionless caller.
 	 *
 	 * @return string The access token to inject.
 	 *
@@ -127,10 +124,7 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	 *
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
 	 */
-	public function accessTokenFor(array $credential, array $provider, string $credentialId, string $scope, ?string $actingUserId=null): string {
-		$address = new TokenSetAddress(credentialId: $credentialId, scope: $scope);
-		$target  = new OAuth2RefreshTarget(credential: $credential, provider: $provider, address: $address, actingUserId: $actingUserId);
-
+	public function accessTokenFor(OAuth2RefreshTarget $target): string {
 		return $this->validAccessToken(target: $target);
 	}//end accessTokenFor()
 
@@ -349,7 +343,7 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	private function rotate(OAuth2RefreshTarget $target, OAuth2TokenSet $current): OAuth2TokenSet {
 		$refreshToken = $this->refreshTokenOf(target: $target, current: $current);
 		$response = $this->redeemOrRelink(target: $target, refreshToken: $refreshToken);
-		$rotated = OAuth2TokenSet::fromTokenResponse(response: $response, requestedScopes: $current->getScopes(), previous: $current);
+		$rotated = OAuth2TokenSet::fromResponse(response: $response, options: new TokenResponseOptions(requestedScopes: $current->getScopes(), previous: $current));
 		$this->persist(address: new TokenSetAddress(credentialId: $target->credentialId, scope: $target->scope), set: $rotated);
 
 		return $rotated;
@@ -392,13 +386,7 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	 */
 	private function redeemOrRelink(OAuth2RefreshTarget $target, #[\SensitiveParameter] string $refreshToken): array {
 		try {
-			return $this->steps->exchange->redeem(
-				credential: $target->credential,
-				provider: $target->provider,
-				credentialId: $target->credentialId,
-				refreshToken: $refreshToken,
-				actingUserId: $target->actingUserId
-			);
+			return $this->steps->exchange->redeemFor(target: $target, refreshToken: $refreshToken);
 		} catch (CredentialRelinkRequiredException $grantGone) {
 			$this->markRelinkNeeded(credential: $target->credential, credentialId: $target->credentialId, reason: OAuth2RefreshExchange::TERMINAL_ERROR);
 			throw $grantGone;

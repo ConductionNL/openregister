@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\LanguageService;
@@ -80,7 +81,7 @@ class TranslationHandlerRenderGoldenTest extends TestCase {
 		);
 
 		$handler = new TranslationHandler($languages, $this->createMock(LoggerInterface::class));
-		return $handler->resolveTranslationsForRender(objectData: $data, schema: $schema, register: $register);
+		return $handler->resolveTranslationsForRender(objectData: $data, scope: new TranslationScope($schema, $register));
 	}//end render()
 
 	/**

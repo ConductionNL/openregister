@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Reference;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -189,17 +190,15 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	 * sync. Used by the cache-invalidation hook (design.md D4) to invalidate
 	 * every URL shape a cached preview of this object might be keyed under.
 	 *
-	 * @param int $registerId The register database ID
-	 * @param int $schemaId The schema database ID
-	 * @param string $uuid The object UUID
+	 * @param ObjectRef $ref The register and schema database ids and the object UUID.
 	 *
 	 * @return string[] Every canonical URL for this object, one per pattern
 	 *
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d4
 	 */
-	public function buildCanonicalUrls(int $registerId, int $schemaId, string $uuid): array {
+	public function buildCanonicalUrls(ObjectRef $ref): array {
 		return $this->canonicalUrls(
-			placeholders: ['{registerId}' => (string)$registerId, '{schemaId}' => (string)$schemaId, '{uuid}' => $uuid]
+			placeholders: ['{registerId}' => (string)$ref->register, '{schemaId}' => (string)$ref->schema, '{uuid}' => $ref->id]
 		);
 	}//end buildCanonicalUrls()
 

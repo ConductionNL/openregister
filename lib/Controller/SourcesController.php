@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
+use OCA\OpenRegister\Service\Sync\HarvestRun;
 use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -381,7 +382,7 @@ class SourcesController extends Controller {
 		$executionId = (string)Uuid::v4();
 
 		try {
-			$summary = $this->services->domain->pipeline->run(source: $source, fetcher: $fetcher, executionId: $executionId, since: null);
+			$summary = $this->services->domain->pipeline->run(new HarvestRun(source: $source, fetcher: $fetcher, executionId: $executionId));
 			$this->recordSync(source: $source, status: (string)($summary['status'] ?? 'success'));
 			return new JSONResponse(data: $summary);
 		} catch (Throwable $e) {

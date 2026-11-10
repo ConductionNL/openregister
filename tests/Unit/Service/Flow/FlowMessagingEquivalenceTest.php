@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
@@ -332,16 +333,11 @@ class FlowMessagingEquivalenceTest extends TestCase {
 
 		// The FLOW path: a send-notification node's config with the same
 		// recipients and templates, against the same object as an item.
-		$this->makeMessaging()->sendNotification(
-			config: [
+		$this->makeMessaging()->notify(request: new MessageSend(config: [
 				'recipients' => ['bob', 'carol'],
 				'title' => 'Case {{ title }} moved',
 				'message' => 'Case {{ title }} is now {{ status }}.',
-			],
-			items: [FlowItems::item(json: $data)],
-			context: ['runAs' => 'alice'],
-			stepName: 'openregister.send-notification'
-		);
+			], items: [FlowItems::item(json: $data)], context: ['runAs' => 'alice'], stepName: 'openregister.send-notification'));
 		$flow = $this->recorder->sends;
 
 		// Identical in channel, body and recipients — and both lists exist at

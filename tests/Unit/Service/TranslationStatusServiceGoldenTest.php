@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\TranslationFilter;
 use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
+use OCA\OpenRegister\Service\LanguageGapScan;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\TranslationSearch;
 use OCA\OpenRegister\Service\TranslationStatusService;
@@ -208,6 +209,6 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 		$this->mapper->expects($this->once())->method('findObjectsMissingLanguage')
 			->with('en', ['title'], ['u1', 'u2'])
 			->willReturn(['u2']);
-		$this->assertSame(['u2'], $this->service->findObjectsMissingLanguage('en', $schema, ['u1', 'u2']));
+		$this->assertSame(['u2'], $this->service->findObjectsMissingLanguage($schema, new LanguageGapScan('en', ['u1', 'u2'])));
 	}//end testFindObjectsMissingLanguageUsesTranslatableProperties()
 }//end class

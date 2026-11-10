@@ -378,7 +378,7 @@ class CacheHandlerTenantScopeTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 
 		$this->organisationMapper->method('findAllWithUserCount')->willReturn([]);
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 
 		$registerMapper->method('findAll')->willReturn([
 			$this->createRegister(1, [5], ['schemas' => ['test-schema' => ['magicMapping' => true]]]),

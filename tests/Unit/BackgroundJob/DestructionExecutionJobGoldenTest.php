@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
@@ -181,10 +182,10 @@ class DestructionExecutionJobGoldenTest extends TestCase
                 return $object->getUuid() === 'held';
             }
         );
-        $service->method('generateDestructionCertificate')->willReturnCallback(
-            function (array $list, int $count, string $at): array {
-                $this->record('generateDestructionCertificate', [self::mask($list), $count, $at === '' ? '' : 'T']);
-                return ['certificate' => $count];
+        $service->method('certify')->willReturnCallback(
+            function (ExecutedDestruction $execution): array {
+                $this->record('generateDestructionCertificate', [self::mask($execution->destructionList), $execution->destroyedCount, $execution->executedAt === '' ? '' : 'T']);
+                return ['certificate' => $execution->destroyedCount];
             }
         );
         return $service;
