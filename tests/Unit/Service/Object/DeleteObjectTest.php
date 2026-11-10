@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -768,7 +770,7 @@ class DeleteObjectTest extends TestCase {
 		$this->integrityService
 			->expects($this->once())
 			->method('logRestrictBlock')
-			->with('uuid-do-2', '10', $analysis, 'system');
+			->with(new RefusedDeletion(objectUuid: 'uuid-do-2', schemaId: '10', userId: 'system'), $analysis);
 
 		$this->withNoUser();
 
@@ -807,7 +809,7 @@ class DeleteObjectTest extends TestCase {
 		$this->integrityService
 			->expects($this->once())
 			->method('applyDeletionActions')
-			->with($analysis, 'system', 'uuid-do-3', null, 'my-schema')
+			->with($analysis, new CascadeDeleteOrigin(userId: 'system', cascadeSource: 'uuid-do-3', triggerSchemaSlug: 'my-schema', organisationId: null))
 			->willReturn(['retained' => []]);
 
 		$this->withNoUser();
