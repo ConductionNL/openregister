@@ -6346,10 +6346,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         $permitted = $this->migratableObjectIds(table: $source, objectIds: $migration->objectIds);
         $report    = $this->migrationHandler->migrateObjects(
-            source: [$migration->source->register, $migration->source->schema],
-            target: [$migration->target->register, $migration->target->schema],
-            objectIds: $permitted,
-            mapping: $migration->mapping
+            migration: new ObjectMigration(
+                source: $migration->source,
+                target: $migration->target,
+                objectIds: $permitted,
+                mapping: $migration->mapping
+            )
         );
 
         return $this->reportUnmigratedAsNotFound(

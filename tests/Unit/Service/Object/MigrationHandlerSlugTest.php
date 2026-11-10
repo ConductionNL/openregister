@@ -23,6 +23,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\ObjectMigration;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -88,7 +90,14 @@ class MigrationHandlerSlugTest extends TestCase {
 
 		$handler = $this->migrationHandler(mapper: $mapper, utility: $utility, dataManip: $manip);
 
-		$report = $handler->migrateObjects([1, 10], [2, 20], ['11111111-1111-1111-1111-111111111111'], ['title' => 'title']);
+		$report = $handler->migrateObjects(
+			migration: new ObjectMigration(
+				source: new RegisterSchemaRef(register: 1, schema: 10),
+				target: new RegisterSchemaRef(register: 2, schema: 20),
+				objectIds: ['11111111-1111-1111-1111-111111111111'],
+				mapping: ['title' => 'title']
+			)
+		);
 
 		$this->assertSame(1, $report['statistics']['objectsMigrated'], json_encode($report));
 		$this->assertSame('hello-world-20261030120000', $written);
