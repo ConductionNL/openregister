@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Search\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use Psr\Log\LoggerInterface;
 
@@ -162,7 +163,7 @@ class DashboardSizes {
 		$scope = new DashboardScope(registerId: $registerId, schemaId: $schemaId);
 
 		try {
-			foreach ($this->auditTrailMapper->findAll(filters: $scope->logFilters()) as $log) {
+			foreach ($this->auditTrailMapper->findTrail(query: ListQuery::unbounded(filters: $scope->logFilters(), sort: ['created' => 'DESC'])) as $log) {
 				$this->resaveLog(log: $log, tally: $tally);
 			}
 

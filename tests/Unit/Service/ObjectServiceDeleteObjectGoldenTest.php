@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -343,7 +344,10 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 
 		$permissionHandler = $this->createMock(PermissionHandler::class);
 		$permissionHandler->method('checkPermission')->willReturnCallback(
-			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): void {
+			function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true): void {
+				$userId = $options->userId;
+				$objectOwner = $options->objectOwner;
+				$object = $options->object;
 				$this->calls[] = ['checkPermission' => $action, 'schema' => $schema->getId(), 'userId' => $userId, 'owner' => $objectOwner, 'rbac' => $_rbac, 'object' => $object?->getUuid()];
 				$actor = ($userId ?? 'alice');
 				if ($this->grantTo === null || $actor !== $this->grantTo) {

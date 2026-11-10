@@ -111,6 +111,8 @@ use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsFactory;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsInterface;
+use OCA\OpenRegister\Search\Service\Geo\FeatureShape;
+use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -147,6 +149,7 @@ use OCA\OpenRegister\Notifications\Service\PresenceBeat;
 use OCA\OpenRegister\Notifications\Service\PresenceLookup;
 use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * Objects controller for OpenRegister
@@ -2309,9 +2312,7 @@ class ObjectsController extends Controller {
 
 		$collection = $this->geo->geoFeatureBuilder->buildFeatureCollection(
 			rows: $rows,
-			geoProperty: $this->geoPropertyParam(params: $params),
-			fields: $this->parseFieldsParam(params: $params),
-			includeArea: true
+			shape: new FeatureShape(geoProperty: $this->geoPropertyParam(params: $params), fields: $this->parseFieldsParam(params: $params), includeArea: true)
 		);
 
 		// Body is a valid GeoJSON FeatureCollection. The default
@@ -2378,8 +2379,7 @@ class ObjectsController extends Controller {
 
 		$response = $this->geo->geoFeatureBuilder->buildWfsResponse(
 			rows: $rows,
-			geoProperty: $this->geoPropertyParam(params: $params),
-			maxFeatures: $this->wfsMaxFeatures(params: $params)
+			request: new GetFeatureRequest(geoProperty: $this->geoPropertyParam(params: $params), maxFeatures: $this->wfsMaxFeatures(params: $params))
 		);
 
 		return $this->geoCollectionResponse(collection: $response, crs: $crs);
@@ -4804,7 +4804,7 @@ class ObjectsController extends Controller {
 		// (404 when the object GET would be, the doelbinding guard, and no
 		// `session`, `request`, `ipAddress` or property the caller may not see).
 		if ($this->isCurrentUserAdmin() === false) {
-			return $this->logsForReader(register: $register, schema: $schema, id: $id);
+			return $this->logsForReader(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 		}
 
 		// Set the register and schema context first.
@@ -4912,16 +4912,14 @@ class ObjectsController extends Controller {
 	/**
 	 * One object's history for a non-admin, when they may read the object.
 	 *
-	 * @param string $register The register slug or identifier
-	 * @param string $schema The schema slug or identifier
-	 * @param string $id The object ID or UUID
+	 * @param ObjectRef $ref The register, the schema and the object ID or UUID, as the route names them.
 	 *
 	 * @return JSONResponse 200 with the redacted page, 404 when the object is not readable to this caller,
 	 *                      or the doelbinding refusal.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
-	private function logsForReader(string $register, string $schema, string $id): JSONResponse {
+	private function logsForReader(ObjectRef $ref): JSONResponse {
 		$config = $this->getConfig();
 		$search = null;
 		if ($config['_search'] !== null) {
@@ -4930,7 +4928,7 @@ class ObjectsController extends Controller {
 
 		try {
 			$page = $this->container->get(ObjectHistoryForReadersInterface::class)->page(
-				ref: new ObjectRef(register: $register, schema: $schema, id: $id),
+				ref: $ref,
 				params: [
 					'limit' => $config['limit'],
 					'offset' => $config['offset'],
@@ -4944,7 +4942,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
 		} catch (MultipleObjectsReturnedException $e) {
 			// The 409 an administrator gets on this route (#4037), not a 500.
-			return $this->ambiguousIdentifierResponse(id: $id);
+			return $this->ambiguousIdentifierResponse(id: $ref->id);
 		}
 
 		if ($page === null) {
@@ -5784,10 +5782,12 @@ class ObjectsController extends Controller {
 	 */
 	private function csvExport(ObjectExport $export): DataDownloadResponse {
 		$content = $this->services->transfer->exportService->exportToCsv(
-			register: $export->register,
-			schema: $export->schema,
-			filters: $export->filters,
-			currentUser: $this->userSession->getUser()
+			request: new ObjectExportRequest(
+				register: $export->register,
+				schema: $export->schema,
+				filters: $export->filters,
+				currentUser: $this->userSession->getUser(),
+			),
 		);
 
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'csv', rowCount: $this->countCsvExportRows(csv: $content)));
@@ -5806,9 +5806,7 @@ class ObjectsController extends Controller {
 	 */
 	private function jsonExport(ObjectExport $export): DataDownloadResponse {
 		$content = $this->services->transfer->exportService->exportToJson(
-			register: $export->register,
-			schema: $export->schema,
-			filters: $export->filters
+			request: new ObjectExportRequest(register: $export->register, schema: $export->schema, filters: $export->filters),
 		);
 
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'json', rowCount: $this->countJsonExportRows(json: $content)));
@@ -5828,10 +5826,12 @@ class ObjectsController extends Controller {
 	private function pdfExport(ObjectExport $export): DataDownloadResponse|JSONResponse {
 		try {
 			$content = $this->services->transfer->exportService->exportToPdf(
-				register: $export->register,
-				schema: $export->schema,
-				filters: $export->filters,
-				currentUser: $this->userSession->getUser()
+				request: new ObjectExportRequest(
+					register: $export->register,
+					schema: $export->schema,
+					filters: $export->filters,
+					currentUser: $this->userSession->getUser(),
+				),
 			);
 		} catch (ExportTooLargeException $e) {
 			return self::exportTooLargeResponse(exception: $e);
@@ -5855,9 +5855,7 @@ class ObjectsController extends Controller {
 	 */
 	private function recordPdfExport(ObjectExport $export): void {
 		$rowCount = $this->services->transfer->exportService->countExportRows(
-			register: $export->register,
-			schema: $export->schema,
-			filters: $export->filters
+			request: new ObjectExportRequest(register: $export->register, schema: $export->schema, filters: $export->filters),
 		);
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'pdf', rowCount: $rowCount));
 	}//end recordPdfExport()
@@ -5894,10 +5892,12 @@ class ObjectsController extends Controller {
 	 */
 	private function excelExport(ObjectExport $export): DataDownloadResponse {
 		$spreadsheet = $this->services->transfer->exportService->exportToExcel(
-			register: $export->register,
-			schema: $export->schema,
-			filters: $export->filters,
-			currentUser: $this->userSession->getUser()
+			request: new ObjectExportRequest(
+				register: $export->register,
+				schema: $export->schema,
+				filters: $export->filters,
+				currentUser: $this->userSession->getUser(),
+			),
 		);
 
 		// Create Excel writer and get content.

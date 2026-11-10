@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
@@ -206,7 +207,7 @@ class NotificationsAnnotationInstaller implements IEventListener, NotificationsA
 	 */
 	private function findByName(string $name): ?Webhook {
 		try {
-			$matches = $this->webhookMapper->findAll(filters: ['name' => $name]);
+			$matches = $this->webhookMapper->findAll(ListQuery::unbounded(filters: ['name' => $name]));
 			foreach ($matches as $w) {
 				if ($w->getName() === $name) {
 					return $w;

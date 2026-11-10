@@ -12,6 +12,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
 use Exception;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
@@ -424,7 +426,8 @@ class FilePropertyHandlerStoreGoldenTest extends TestCase {
 
 		$fileService = $this->createMock(FileService::class);
 		$fileService->method('addFile')->willReturnCallback(
-			function (ObjectEntity $objectEntity, string $fileName, string $content, bool $share = false, array $tags = []): File {
+			function (FileTarget $target, FileUpload $upload): File {
+				[$objectEntity, $fileName, $content, $share, $tags] = [$target->object, $upload->fileName, $upload->content, $upload->share, $upload->tags];
 				$this->calls[] = [
 					'addFile' => (string) preg_replace('/_\d+_[0-9a-f]{8}\./', '_T_R.', $fileName),
 					'object'  => $objectEntity->getUuid(),

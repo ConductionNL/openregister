@@ -31,6 +31,9 @@ use DateTime;
 use OCA\OpenRegister\Controller\Support\BatchOutcome;
 use OCA\OpenRegister\Controller\Support\DeletedControllerServices;
 use OCA\OpenRegister\Controller\Support\PurgeRequest;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -44,6 +47,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowQuery;
 
 /**
@@ -484,12 +488,13 @@ class DeletedController extends Controller {
 		}
 
 		try {
-			$this->services->store->auditTrailMapper->createAuditTrailEntry(
-				object: $object,
-				action: 'object.restored',
-				context: $context,
-				actorId: $actor,
-				actorName: $actorName
+			$this->services->store->auditTrailMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: 'object.restored',
+					context: $context,
+					options: new ObjectAuditEventOptions(actor: new NamedActor(id: $actor, name: $actorName))
+				)
 			);
 		} catch (\Throwable $e) {
 			// Swallowed on purpose, see the docblock.
@@ -776,14 +781,16 @@ class DeletedController extends Controller {
 		$object = $purge->object;
 		try {
 			$scopeReport = $this->services->store->deletion->destruction->scope->destroy(object: $object, schema: $purge->schema);
-			$record = $this->services->store->deletion->destruction->recorder->record(
-				object: $object,
-				scope: $scopeReport,
-				rule: 'destroy-right-granted',
-				context: [
-					'deletionWindow' => $purge->window?->toArray(),
-					'windowWaived' => ($purge->force === true),
-				]
+			$record = $this->services->store->deletion->destruction->recorder->recordDestruction(
+				command: new RecordDestructionCommand(
+					object: $object,
+					scope: $scopeReport,
+					rule: 'destroy-right-granted',
+					context: [
+						'deletionWindow' => $purge->window?->toArray(),
+						'windowWaived' => ($purge->force === true),
+					]
+				)
 			);
 		} catch (DestructionRefusedException $e) {
 			return new JSONResponse(

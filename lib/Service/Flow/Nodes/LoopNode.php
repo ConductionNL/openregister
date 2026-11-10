@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -160,8 +161,7 @@ class LoopNode extends ObjectNodeBase implements IFlowNode, LoopNodeInterface, I
 						$batch
 					),
 				],
-				binary: [],
-				fromItemIndex: ($batchIndex * $size)
+				options: new FlowItemOptions(binary: [], fromItemIndex: ($batchIndex * $size))
 			);
 		}
 

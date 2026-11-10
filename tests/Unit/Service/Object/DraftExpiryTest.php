@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
 use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -178,13 +179,13 @@ class DraftExpiryTest extends TestCase {
 				];
 								// What the real delete path does for a draft: ask the removal record to write its entry.
 				$audit = $this->createMock(AuditTrailMapper::class);
-				$audit->method('createAuditTrailEntry')->willReturnCallback(
+				$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 					function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null): AuditTrail {
 						$this->actors[] = $actorId;
 
 						return new AuditTrail();
 					}
-				);
+				));
 				(new DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(new RemovedDraft(draft: new ObjectEntity(), register: null, schema: null));
 
 				if ($uuid === 'frozen') {

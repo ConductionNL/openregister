@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -827,9 +829,8 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testHasGroupPermissionAdmin(): void {
 		$result = $this->permissionHandler->hasGroupPermission(
-			['read' => ['editors']],
-			'admin',
-			'read'
+			request: (new GroupRuleRequest(authorization: ['read' => ['editors']], action: 'read'))
+				->forGroup(groupId: 'admin', userGroup: null)
 		);
 		$this->assertTrue($result);
 	}
@@ -838,7 +839,10 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 * Test hasGroupPermission with no authorization.
 	 */
 	public function testHasGroupPermissionNoAuthorization(): void {
-		$result = $this->permissionHandler->hasGroupPermission(null, 'users', 'read');
+		$result = $this->permissionHandler->hasGroupPermission(
+			request: (new GroupRuleRequest(authorization: null, action: 'read'))
+				->forGroup(groupId: 'users', userGroup: null)
+		);
 		$this->assertTrue($result);
 	}
 
@@ -846,7 +850,10 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 * Test hasGroupPermission with empty authorization.
 	 */
 	public function testHasGroupPermissionEmptyAuthorization(): void {
-		$result = $this->permissionHandler->hasGroupPermission([], 'users', 'read');
+		$result = $this->permissionHandler->hasGroupPermission(
+			request: (new GroupRuleRequest(authorization: [], action: 'read'))
+				->forGroup(groupId: 'users', userGroup: null)
+		);
 		$this->assertTrue($result);
 	}
 
@@ -860,9 +867,8 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		// then. Asserting the old default-open answer here would be asserting a
 		// hole, so the test follows the fail-closed rule.
 		$result = $this->permissionHandler->hasGroupPermission(
-			['create' => ['editors']],
-			'users',
-			'read'
+			request: (new GroupRuleRequest(authorization: ['create' => ['editors']], action: 'read'))
+				->forGroup(groupId: 'users', userGroup: null)
 		);
 		$this->assertFalse($result, 'an action a non-empty authorization block does not list MUST be denied');
 	}
@@ -872,9 +878,8 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testHasGroupPermissionMatchingGroup(): void {
 		$result = $this->permissionHandler->hasGroupPermission(
-			['read' => ['editors', 'public']],
-			'editors',
-			'read'
+			request: (new GroupRuleRequest(authorization: ['read' => ['editors', 'public']], action: 'read'))
+				->forGroup(groupId: 'editors', userGroup: null)
 		);
 		$this->assertTrue($result);
 	}
@@ -884,9 +889,8 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testHasGroupPermissionNonMatchingGroup(): void {
 		$result = $this->permissionHandler->hasGroupPermission(
-			['delete' => ['admin']],
-			'editors',
-			'delete'
+			request: (new GroupRuleRequest(authorization: ['delete' => ['admin']], action: 'delete'))
+				->forGroup(groupId: 'editors', userGroup: null)
 		);
 		$this->assertFalse($result);
 	}
@@ -896,12 +900,9 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testHasGroupPermissionOwnerOverride(): void {
 		$result = $this->permissionHandler->hasGroupPermission(
-			['delete' => ['admin']],
-			'users',
-			'delete',
-			'user1',
-			null,
-			'user1' // objectOwner matches userId
+			request: (new GroupRuleRequest(authorization: ['delete' => ['admin']], action: 'delete'))
+				->forGroup(groupId: 'users', userGroup: null)
+				->forUser(userId: 'user1', objectOwner: 'user1')
 		);
 		$this->assertTrue($result);
 	}
@@ -918,15 +919,9 @@ class ObjectHandlersIntegrationTest extends TestCase {
 
 		// Without active organisation, condition fails.
 		$result = $this->permissionHandler->hasGroupPermission(
-			$authorization,
-			'editors',
-			'read',
-			null,
-			null,
-			null,
-			null,
-			'org-uuid-123',
-			null  // no active organisation
+			(new GroupRuleRequest(authorization: $authorization, action: 'read'))
+				->forGroup(groupId: 'editors', userGroup: null)
+				->onObject(data: null, organisation: 'org-uuid-123')
 		);
 		$this->assertFalse($result);
 
@@ -951,14 +946,9 @@ class ObjectHandlersIntegrationTest extends TestCase {
 			}
 
 			$result2 = $this->permissionHandler->hasGroupPermission(
-				$authorization,
-				'editors',
-				'read',
-				null,
-				null,
-				null,
-				null,
-				$activeOrg->getUuid()
+				request: (new GroupRuleRequest(authorization: $authorization, action: 'read'))
+					->forGroup(groupId: 'editors', userGroup: null)
+					->onObject(data: null, organisation: $activeOrg->getUuid())
 			);
 		} finally {
 			$userSession->setUser($previous);
@@ -978,9 +968,8 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		];
 
 		$result = $this->permissionHandler->hasGroupPermission(
-			$authorization,
-			'editors',
-			'read'
+			request: (new GroupRuleRequest(authorization: $authorization, action: 'read'))
+				->forGroup(groupId: 'editors', userGroup: null)
 		);
 		$this->assertTrue($result);
 	}
@@ -1014,8 +1003,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 			$this->permissionHandler->checkPermission(
 				$restrictedSchema,
 				'delete',
-				'admin',
-				null,
+				new PermissionCheckOptions(userId: 'admin'),
 				true
 			);
 			$this->assertTrue(true, 'Admin can delete');
