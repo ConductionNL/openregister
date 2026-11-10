@@ -157,6 +157,46 @@ class AggregationRunnerNativeMultiMetricGoldenTest extends TestCase {
 	}//end testNativeMultiMetricMatchesTheGolden()
 
 	/**
+	 * Entries whose metric or field is not a string, on every native platform shape.
+	 *
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public static function untypedEntries(): array {
+		$entries = [
+			'int metric' => [['metric' => 1], ['metric' => 'count']],
+			'bool metric' => [['metric' => true], ['metric' => 'count']],
+			'missing metric' => [['field' => 'amount'], ['metric' => 'count']],
+			'int field' => [['metric' => 'sum', 'field' => 7], ['metric' => 'count']],
+		];
+		$shapes = [
+			'pg grouped' => ['platform' => 'postgres', 'groupBy' => ['field' => 'status']],
+			'mysql ungrouped' => ['platform' => 'mysql'],
+			'sqlite ungrouped' => ['platform' => 'sqlite'],
+			'unknown platform' => ['platform' => 'unknown', 'groupBy' => ['field' => 'status']],
+		];
+		$cases = [];
+		foreach ($entries as $entryName => $metrics) {
+			foreach ($shapes as $shapeName => $shape) {
+				$cases[$entryName . ', ' . $shapeName] = [$shape + ['metrics' => $metrics, 'rows' => []]];
+			}
+		}
+
+		return $cases;
+	}//end untypedEntries()
+
+	#[DataProvider('untypedEntries')]
+	public function testANonStringEntryMetricOrFieldThrowsInsteadOfFallingBack(array $case): void {
+		$this->expectException(\TypeError::class);
+		// A missing key warns before the TypeError; the warning is not what this pins.
+		set_error_handler(static fn (): bool => true, E_WARNING);
+		try {
+			$this->observe(case: $case);
+		} finally {
+			restore_error_handler();
+		}
+	}//end testANonStringEntryMetricOrFieldThrowsInsteadOfFallingBack()
+
+	/**
 	 * Run the case and record the statements and the result.
 	 *
 	 * @param array<string, mixed> $case The case.

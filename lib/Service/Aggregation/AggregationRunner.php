@@ -3349,14 +3349,16 @@ class AggregationRunner implements AggregationRunnerInterface {
 				request: new NativeAggregationRequest(
 					register: $request->register,
 					schema: $request->schema,
-					spec: [
-						'metric'     => $entry['metric'],
-						'field'      => ($entry['field'] ?? null),
-						'filter'     => $spec['filter'],
-						'groupBy'    => $spec['groupBy'],
-						'dateBucket' => null,
-						'rowRbac'    => $spec['rowRbac'],
-					]
+					spec: $this->entrySpec(
+						metric: $entry['metric'],
+						field: ($entry['field'] ?? null),
+						rest: [
+							'filter'     => $spec['filter'],
+							'groupBy'    => $spec['groupBy'],
+							'dateBucket' => null,
+							'rowRbac'    => $spec['rowRbac'],
+						]
+					)
 				)
 			);
 
@@ -3372,6 +3374,24 @@ class AggregationRunner implements AggregationRunnerInterface {
 
 		return $perMetric;
 	}//end nativePerMetric()
+
+	/**
+	 * The native spec for one metric/field pair of a multi-entry spec.
+	 *
+	 * The typed parameters reject a non-string metric or field (TypeError)
+	 * instead of letting it reach the native SQL path.
+	 *
+	 * @param string               $metric The entry's metric.
+	 * @param string|null          $field  The entry's field, null for count.
+	 * @param array<string, mixed> $rest   The other spec keys.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function entrySpec(string $metric, ?string $field, array $rest): array {
+		return ['metric' => $metric, 'field' => $field] + $rest;
+	}//end entrySpec()
 
 	/**
 	 * Merge the per-metric groups into one `values` map per group, in first-seen group order.
@@ -4348,13 +4368,15 @@ class AggregationRunner implements AggregationRunnerInterface {
 				request: new NativeAggregationRequest(
 					register: $joined->register,
 					schema: $joined->schema,
-					spec: [
-						'metric'  => $entry['metric'],
-						'field'   => $entry['field'],
-						'filter'  => $joined->filter,
-						'groupBy' => $groupBySpec,
-						'rowRbac' => $joined->rowRbac,
-					]
+					spec: $this->entrySpec(
+						metric: $entry['metric'],
+						field: $entry['field'],
+						rest: [
+							'filter'  => $joined->filter,
+							'groupBy' => $groupBySpec,
+							'rowRbac' => $joined->rowRbac,
+						]
+					)
 				)
 			);
 
