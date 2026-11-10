@@ -1223,33 +1223,6 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * Delegates to UpdateFileHandler for single-responsibility file update operations.
 	 *
-	 * @param string|int $filePath The path (from root) where to save the file,
-	 *                             including filename and extension, or file ID.
-	 * @param string|resource|null $content Optional content of the file: a byte string, or a
-	 *                                      readable stream resource (streamed straight to storage
-	 *                                      via OCP\Files\File::putContent()).
-	 *                                      If null, only metadata like tags will be updated.
-	 * @param array $tags Optional array of tags to attach to the file
-	 *                    (excluding object tags which are preserved).
-	 * @param ObjectEntity|null $object Optional object entity to search in object folder first.
-	 *
-	 * @throws Exception If the file doesn't exist or if file operations fail.
-	 *
-	 * @return File The updated file.
-	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
-	 * @spec openspec/specs/file-actions/spec.md#file-update-guards-locks-preserves-object-tags-and-persists-or-side-metadata-separately
-	 *   (updates a file's content and tags within an object's folder)
-	 */
-	public function updateFile(string|int $filePath, mixed $content = null, array $tags = [], ?ObjectEntity $object = null): File {
-		return $this->overwriteFile(overwrite: new FileOverwrite(filePath: $filePath, content: $content, tags: $tags, object: $object));
-	}//end updateFile()
-
-	/**
-	 * Overwrite an existing file in NextCloud, as one overwrite.
-	 *
 	 * @param FileOverwrite $overwrite The file, its new content, its tags and the object searched first.
 	 *
 	 * @throws Exception If the file is locked, doesn't exist or if file operations fail.
@@ -1279,29 +1252,8 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * Update a file's OpenRegister-side metadata.
 	 *
 	 * Fronts `UpdateFileHandler::updateFileMetadata()` the same way this
-	 * service already fronts `updateFile()`, so the controller keeps talking to
+	 * service already fronts `overwriteFile()`, so the controller keeps talking to
 	 * one collaborator instead of reaching through this one to the handler.
-	 *
-	 * @param integer       $fileId      The Nextcloud filecache fileid.
-	 * @param string|null   $description New description; '' clears, null skips.
-	 * @param string|null   $category    New category; '' clears, null skips.
-	 * @param string[]|null $labels      New labels; [] clears, null skips.
-	 *
-	 * @return \OCA\OpenRegister\Files\Db\File The persisted metadata row.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function updateFileMetadata(
-		int $fileId,
-		?string $description = null,
-		?string $category = null,
-		?array $labels = null,
-	): \OCA\OpenRegister\Files\Db\File {
-		return $this->changeFileMetadata(change: new FileMetadataChange(fileId: $fileId, description: $description, category: $category, labels: $labels));
-	}//end updateFileMetadata()
-
-	/**
-	 * Update a file's OpenRegister-side metadata, as one metadata change.
 	 *
 	 * @param FileMetadataChange $change The file id and the description, category and labels to write.
 	 *
@@ -1926,23 +1878,6 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	/**
 	 * Rename a file attached to an object.
 	 *
-	 * @param ObjectEntity $object The parent object entity.
-	 * @param int $fileId The file ID.
-	 * @param string $newName The new file name.
-	 *
-	 * @return File The renamed file.
-	 *
-	 * @throws Exception If the rename fails.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function renameFile(ObjectEntity $object, int $fileId, string $newName): File {
-		return $this->renameAttachedFile(rename: new FileRename(object: $object, fileId: $fileId, newName: $newName));
-	}//end renameFile()
-
-	/**
-	 * Rename a file attached to an object, as one rename.
-	 *
 	 * @param FileRename $rename The object, the file id and the new name.
 	 *
 	 * @return File The renamed file.
@@ -2133,23 +2068,6 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 
 	/**
 	 * Move a file to another object (copy + delete source).
-	 *
-	 * @param ObjectEntity $sourceObject The source object entity.
-	 * @param int $fileId The source file ID.
-	 * @param ObjectEntity $targetObject The target object entity.
-	 *
-	 * @return File The moved file.
-	 *
-	 * @throws Exception If the move fails.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function moveFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File {
-		return $this->moveAttachedFile(transfer: new FileTransfer(source: $sourceObject, fileId: $fileId, target: $targetObject));
-	}//end moveFile()
-
-	/**
-	 * Move a file to another object (copy + delete source), as one transfer.
 	 *
 	 * @param FileTransfer $transfer The source object, the file id and the target object.
 	 *

@@ -85,14 +85,14 @@ class RegisterResolverServiceTest extends TestCase {
 			->with('opencatalogi', 'theme_register', '')
 			->willReturn('theme-2026');
 
-		$this->assertSame('theme-2026', $this->resolver->resolveRegisterId('opencatalogi', 'theme_register'));
+		$this->assertSame('theme-2026', $this->resolver->lookupId(new ConfigLookup('opencatalogi', 'theme_register')));
 
 	}//end testResolveRegisterIdHappyPath()
 
 	public function testResolveRegisterIdFallsBackToDefault(): void {
 		$this->appConfig->method('getValueString')->willReturn('');
 
-		$result = $this->resolver->resolveRegisterId('opencatalogi', 'theme_register', 'theme-default');
+		$result = $this->resolver->lookupId(new ConfigLookup('opencatalogi', 'theme_register', 'theme-default'));
 
 		$this->assertSame('theme-default', $result);
 
@@ -102,7 +102,7 @@ class RegisterResolverServiceTest extends TestCase {
 		$this->appConfig->method('getValueString')->willReturn('');
 
 		try {
-			$this->resolver->resolveRegisterId('opencatalogi', 'theme_register');
+			$this->resolver->lookupId(new ConfigLookup('opencatalogi', 'theme_register'));
 			$this->fail('Expected MissingConfigException');
 		} catch (MissingConfigException $e) {
 			$this->assertSame('opencatalogi', $e->getAppId());
@@ -112,33 +112,30 @@ class RegisterResolverServiceTest extends TestCase {
 	}//end testResolveRegisterIdThrowsMissingConfigExceptionWithDiagnostics()
 
 	/**
-	 * Every case for each of the two id reads: config value, default, empty default, missing.
+	 * Every case of an id read: config value, default, empty default, missing.
 	 *
-	 * @return array<string, array{string, string, ?string, ?string}>
+	 * @return array<string, array{string, ?string, ?string}>
 	 */
 	public static function idReadCases(): array {
-		$cases = [];
-		foreach (['resolveRegisterId', 'resolveSchemaId'] as $method) {
-			$cases[$method . ' config wins'] = [$method, 'configured', 'fallback', 'configured'];
-			$cases[$method . ' default'] = [$method, '', 'fallback', 'fallback'];
-			$cases[$method . ' empty default'] = [$method, '', '', null];
-			$cases[$method . ' no default'] = [$method, '', null, null];
-		}
-
-		return $cases;
+		return [
+			'config wins' => ['configured', 'fallback', 'configured'],
+			'default' => ['', 'fallback', 'fallback'],
+			'empty default' => ['', '', null],
+			'no default' => ['', null, null],
+		];
 	}//end idReadCases()
 
 	/**
 	 * @dataProvider idReadCases
 	 */
-	public function testIdReadsShareOneRule(string $method, string $stored, ?string $default, ?string $expected): void {
+	public function testIdReadsShareOneRule(string $stored, ?string $default, ?string $expected): void {
 		$this->appConfig->expects($this->once())->method('getValueString')
 			->with('someapp', 'some_key', '')
 			->willReturn($stored);
 
 		if ($expected === null) {
 			try {
-				$this->resolver->$method('someapp', 'some_key', $default, 'org-uuid');
+				$this->resolver->lookupId(new ConfigLookup('someapp', 'some_key', $default, 'org-uuid'));
 				$this->fail('Expected MissingConfigException');
 			} catch (MissingConfigException $e) {
 				$this->assertSame(['someapp', 'some_key'], [$e->getAppId(), $e->getConfigKey()]);
@@ -147,7 +144,7 @@ class RegisterResolverServiceTest extends TestCase {
 			return;
 		}
 
-		$this->assertSame($expected, $this->resolver->$method('someapp', 'some_key', $default, 'org-uuid'));
+		$this->assertSame($expected, $this->resolver->lookupId(new ConfigLookup('someapp', 'some_key', $default, 'org-uuid')));
 	}//end testIdReadsShareOneRule()
 
 	public function testResolveSchemaIdHappyPath(): void {
@@ -155,7 +152,7 @@ class RegisterResolverServiceTest extends TestCase {
 			->with('opencatalogi', 'listing_schema', '')
 			->willReturn('listing-v2');
 
-		$this->assertSame('listing-v2', $this->resolver->resolveSchemaId('opencatalogi', 'listing_schema'));
+		$this->assertSame('listing-v2', $this->resolver->lookupId(new ConfigLookup('opencatalogi', 'listing_schema')));
 
 	}//end testResolveSchemaIdHappyPath()
 

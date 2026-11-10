@@ -49,6 +49,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\File\FileRename;
 
 /**
  * @group DB
@@ -179,11 +180,7 @@ class FileActionsLifecycleIntegrationTest extends TestCase {
 		$this->assertSame(['lifecycle', 'integration-test'], $entity->getLabels());
 
 		// 3. RENAME ----------------------------------------------------
-		$renamed = $this->fileService->renameFile(
-			$this->sourceObject,
-			$fileId,
-			'lifecycle-renamed.txt'
-		);
+		$renamed = $this->fileService->renameAttachedFile(rename: new FileRename(object: $this->sourceObject, fileId: $fileId, newName: 'lifecycle-renamed.txt'));
 		$this->assertSame('lifecycle-renamed.txt', $renamed->getName());
 		$this->assertSame(
 			$fileId,

@@ -46,6 +46,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Throwable;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
+use OCA\OpenRegister\Service\File\FileOverwrite;
+use OCA\OpenRegister\Service\File\FileRename;
 
 /**
  * Golden test for what each file action answers and does, in every world it can meet.
@@ -702,8 +705,8 @@ class FilesControllerActionsGoldenTest extends TestCase {
 			$this->work(call: 'saveFile');
 			return $this->file;
 		});
-		$service->method('updateFile')->willReturnCallback(function (string|int $filePath, mixed $content = null, array $tags = [], ?ObjectEntity $object = null): File {
-			$this->note(call: 'updateFile', detail: [$filePath, $content, $tags, $object?->getUuid()]);
+		$service->method('overwriteFile')->willReturnCallback(function (FileOverwrite $overwrite): File {
+			$this->note(call: 'updateFile', detail: [$overwrite->filePath, $overwrite->content, $overwrite->tags, $overwrite->object?->getUuid()]);
 			$this->work(call: 'updateFile');
 			return $this->file;
 		});
@@ -712,13 +715,14 @@ class FilesControllerActionsGoldenTest extends TestCase {
 			$this->work(call: 'deleteFile');
 			return ($this->world['deleted'] ?? true);
 		});
-		$service->method('renameFile')->willReturnCallback(function (ObjectEntity $object, int $fileId, string $newName): File {
-			$this->note(call: 'renameFile', detail: [$object->getUuid(), $fileId, $newName]);
+		$service->method('renameAttachedFile')->willReturnCallback(function (FileRename $rename): File {
+			$this->note(call: 'renameFile', detail: [$rename->object->getUuid(), $rename->fileId, $rename->newName]);
 			$this->work(call: 'renameFile');
 			return $this->file;
 		});
-		$service->method('updateFileMetadata')->willReturnCallback(function (int $fileId, ?string $description = null, ?string $category = null, ?array $labels = null): FileEntity {
-			$this->note(call: 'updateFileMetadata', detail: [$fileId, $description, $category, $labels]);
+		$service->method('changeFileMetadata')->willReturnCallback(function (FileMetadataChange $change): FileEntity {
+			$description = $change->description;
+			$this->note(call: 'updateFileMetadata', detail: [$change->fileId, $description, $change->category, $change->labels]);
 			$this->work(call: 'updateFileMetadata');
 			$entity = new FileEntity();
 			$entity->setDescription($description);

@@ -28,6 +28,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
 
 class FilesControllerTest extends TestCase {
 	private FilesController $controller;
@@ -79,8 +80,8 @@ class FilesControllerTest extends TestCase {
 
 		$entity = new \OCA\OpenRegister\Files\Db\File();
 		$this->fileService->expects($this->once())
-			->method('updateFileMetadata')
-			->with(7, 'a scanned invoice', 'finance', ['paid'])
+			->method('changeFileMetadata')
+			->with(new FileMetadataChange(7, 'a scanned invoice', 'finance', ['paid']))
 			->willReturn($entity);
 
 		$response = $this->controller->updateMetadata(
@@ -106,8 +107,8 @@ class FilesControllerTest extends TestCase {
 		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
 
 		$this->fileService->expects($this->once())
-			->method('updateFileMetadata')
-			->with(7, null, 'finance', null)
+			->method('changeFileMetadata')
+			->with(new FileMetadataChange(7, null, 'finance', null))
 			->willReturn(new \OCA\OpenRegister\Files\Db\File());
 
 		$this->controller->updateMetadata(register: 'reg', schema: 'sch', id: 'obj-1', fileId: 7);
@@ -124,8 +125,8 @@ class FilesControllerTest extends TestCase {
 		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
 
 		$this->fileService->expects($this->once())
-			->method('updateFileMetadata')
-			->with(7, '', null, null)
+			->method('changeFileMetadata')
+			->with(new FileMetadataChange(7, '', null, null))
 			->willReturn(new \OCA\OpenRegister\Files\Db\File());
 
 		$this->controller->updateMetadata(register: 'reg', schema: 'sch', id: 'obj-1', fileId: 7);
@@ -139,7 +140,7 @@ class FilesControllerTest extends TestCase {
 	public function testUpdateMetadataOnAMissingObjectIs404(): void {
 		$this->request->method('getParams')->willReturn(['category' => 'x']);
 		$this->objectService->method('getObject')->willReturn(null);
-		$this->fileService->expects($this->never())->method('updateFileMetadata');
+		$this->fileService->expects($this->never())->method('changeFileMetadata');
 
 		$this->assertSame(
 			404,
@@ -1371,7 +1372,7 @@ class FilesControllerTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$file = $this->createMock(File::class);
-		$this->fileService->method('updateFile')->willReturn($file);
+		$this->fileService->method('overwriteFile')->willReturn($file);
 		$this->fileService->method('formatFile')->willReturn(['id' => 1, 'name' => 'updated.txt']);
 
 		$this->request->method('getParams')->willReturn([
@@ -1389,7 +1390,7 @@ class FilesControllerTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$file = $this->createMock(File::class);
-		$this->fileService->method('updateFile')->willReturn($file);
+		$this->fileService->method('overwriteFile')->willReturn($file);
 		$this->fileService->method('formatFile')->willReturn(['id' => 1]);
 
 		$this->request->method('getParams')->willReturn([
@@ -1416,7 +1417,7 @@ class FilesControllerTest extends TestCase {
 		$object = $this->createMock(ObjectEntity::class);
 		$this->setupObjectServiceMocks($object);
 
-		$this->fileService->method('updateFile')
+		$this->fileService->method('overwriteFile')
 			->willThrowException(new Exception('Update failed'));
 
 		$this->request->method('getParams')->willReturn([
@@ -1435,7 +1436,7 @@ class FilesControllerTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$file = $this->createMock(File::class);
-		$this->fileService->method('updateFile')->willReturn($file);
+		$this->fileService->method('overwriteFile')->willReturn($file);
 		$this->fileService->method('formatFile')->willReturn(['id' => 1]);
 
 		$this->request->method('getParams')->willReturn([]);
