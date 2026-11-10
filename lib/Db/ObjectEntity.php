@@ -1305,25 +1305,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @return static Returns the hydrated entity
 	 */
 	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		if (isset($object['metadata']) === false) {
-			$object['metadata'] = [];
-		}
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
+		(new EmptyJsonHydration())->hydrate(entity: $this, object: $object);
 
 		return $this;
 	}//end hydrate()
