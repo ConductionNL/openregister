@@ -222,6 +222,29 @@ function failureText(error) {
 	return error.response?.data?.message || error.message || 'Unknown error'
 }
 
+/**
+ * Whether objects are still attached to a register.
+ *
+ * @param {object} register The register row
+ * @return {boolean} True while it holds objects
+ */
+function hasAttachedObjects(register) {
+	return register.stats?.total > 0
+}
+
+/**
+ * Why the delete entry is locked: '' unless objects are still attached.
+ *
+ * @param {object} register The register row
+ * @return {string} The reason
+ */
+function deleteLockReason(register) {
+	if (!hasAttachedObjects(register)) {
+		return ''
+	}
+	return t('openregister', 'Cannot delete: objects are still attached')
+}
+
 export default {
 	name: 'RegistersIndex',
 	components: {
@@ -456,18 +479,31 @@ export default {
 		 * @return {object}
 		 */
 		lockedEdit(register) {
-			const locked = this.isManagedByExternalConfig(register)
-			const title = this.getManagingConfiguration(register)?.title
-			return editAction(() => this.$refs.indexPage.openFormDialog(register), {
-				title: locked
-					? t(
-							'openregister',
-							'Cannot edit: This register is managed by external configuration {title}',
-							{ title },
-						)
-					: '',
-				disabled: locked,
+			const openForm = () => this.$refs.indexPage.openFormDialog(register)
+			return editAction(openForm, {
+				title: this.editLockReason(register),
+				disabled: this.isManagedByExternalConfig(register),
 			})
+		},
+
+		/**
+		 * Why the edit entry is locked: '' unless an external configuration
+		 * manages the register.
+		 *
+		 * @spec exclude UI plumbing — menu entry state.
+		 * @param {object} register - register row
+		 * @return {string}
+		 */
+		editLockReason(register) {
+			if (!this.isManagedByExternalConfig(register)) {
+				return ''
+			}
+			const title = this.getManagingConfiguration(register)?.title
+			return t(
+				'openregister',
+				'Cannot edit: This register is managed by external configuration {title}',
+				{ title },
+			)
 		},
 
 		/**
@@ -479,13 +515,10 @@ export default {
 		 * @return {object}
 		 */
 		lockedDelete(register, selected) {
-			const locked = register.stats?.total > 0
 			const run = selected(() => navigationStore.setDialog('deleteRegister'))
 			return deleteAction(run, {
-				title: locked
-					? t('openregister', 'Cannot delete: objects are still attached')
-					: '',
-				disabled: locked,
+				title: deleteLockReason(register),
+				disabled: hasAttachedObjects(register),
 			})
 		},
 
