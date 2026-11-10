@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
-use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityFactory;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
@@ -243,7 +243,7 @@ class FlowMessagingEquivalenceTest extends TestCase {
 				eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class)
 			),
 			overrides: new FlowMessagingOverrides(
-				optOut: OptOutAuthorityFactory::create(
+				optOut: new OptOutAuthority(
 					eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class),
 					appConfig: $this->appConfig,
 					logger: $this->logger
