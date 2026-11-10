@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * A history that cannot be read lists nothing; one that can is listed in full, reindexed.
@@ -57,7 +58,7 @@ class AuditTrailProviderFailureTest extends TestCase {
 	public function testHistoryIsAskedInFullAndReindexed(): void {
 		$history = $this->createMock(ObjectHistoryForReaders::class);
 		$history->expects($this->once())->method('page')
-			->with('r', 's', 'o', ['limit' => PHP_INT_MAX])
+			->with(new ObjectRef(register: 'r', schema: 's', id: 'o'), ['limit' => PHP_INT_MAX])
 			->willReturn(['results' => [3 => ['id' => 'b'], 7 => ['id' => 'a']]]);
 
 		$provider = new AuditTrailProvider(history: $history, l10n: $this->createMock(IL10N::class));
