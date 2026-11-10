@@ -83,48 +83,95 @@ class EmbeddingGeneratorHandler {
 	 *
 	 * @throws \Exception If configuration is invalid or generator cannot be created
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple provider configurations require separate conditions
-	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function getGenerator(array $config): EmbeddingGeneratorInterface {
 		$cacheKey = $config['provider'] . '_' . $config['model'];
 
 		if (isset($this->generatorCache[$cacheKey]) === false) {
-			$this->logger->debug(
-				message: '[EmbeddingGeneratorHandler] Creating new embedding generator',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'provider' => $config['provider'],
-					'model' => $config['model'],
-				]
-			);
-
-			// Create appropriate generator based on provider and model.
-			$generator = match ($config['provider']) {
-				'openai' => $this->createOpenAIGenerator(model: $config['model'], config: $config),
-				'fireworks' => $this->createFireworksGenerator(model: $config['model'], config: $config),
-				'ollama' => $this->createOllamaGenerator(model: $config['model'], config: $config),
-				default => throw new Exception("Unsupported embedding provider: {$config['provider']}")
-			};
-
-			$this->generatorCache[$cacheKey] = $generator;
-
-			$this->logger->info(
-				message: '[EmbeddingGeneratorHandler] Embedding generator created',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'provider' => $config['provider'],
-					'model' => $config['model'],
-					'dimensions' => $generator->getEmbeddingLength(),
-				]
-			);
-		}//end if
+			$this->generatorCache[$cacheKey] = $this->createGenerator(config: $config);
+		}
 
 		return $this->generatorCache[$cacheKey];
 	}//end getGenerator()
+
+	/**
+	 * Create and log a new embedding generator for a configuration
+	 *
+	 * @param array $config Embedding configuration with provider, model, api_key, base_url
+	 *
+	 * @return EmbeddingGeneratorInterface The new generator
+	 *
+	 * @throws \Exception If the provider is not supported
+	 */
+	private function createGenerator(array $config): EmbeddingGeneratorInterface {
+		$this->logCreating(config: $config);
+
+		$generator = $this->createProviderGenerator(config: $config);
+
+		$this->logCreated(config: $config, generator: $generator);
+
+		return $generator;
+	}//end createGenerator()
+
+	/**
+	 * Log that a generator is about to be created
+	 *
+	 * @param array $config Embedding configuration with provider and model
+	 *
+	 * @return void
+	 */
+	private function logCreating(array $config): void {
+		$this->logger->debug(
+			message: '[EmbeddingGeneratorHandler] Creating new embedding generator',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'provider' => $config['provider'],
+				'model' => $config['model'],
+			]
+		);
+	}//end logCreating()
+
+	/**
+	 * Log a created generator with its dimensions
+	 *
+	 * @param array                       $config    Embedding configuration with provider and model
+	 * @param EmbeddingGeneratorInterface $generator The created generator
+	 *
+	 * @return void
+	 */
+	private function logCreated(array $config, EmbeddingGeneratorInterface $generator): void {
+		$this->logger->info(
+			message: '[EmbeddingGeneratorHandler] Embedding generator created',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'provider' => $config['provider'],
+				'model' => $config['model'],
+				'dimensions' => $generator->getEmbeddingLength(),
+			]
+		);
+	}//end logCreated()
+
+	/**
+	 * Pick the generator factory for the configured provider
+	 *
+	 * @param array $config Embedding configuration with provider and model
+	 *
+	 * @return EmbeddingGeneratorInterface The new generator
+	 *
+	 * @throws \Exception If the provider is not supported
+	 */
+	private function createProviderGenerator(array $config): EmbeddingGeneratorInterface {
+		// Create appropriate generator based on provider and model.
+		return match ($config['provider']) {
+			'openai' => $this->createOpenAIGenerator(model: $config['model'], config: $config),
+			'fireworks' => $this->createFireworksGenerator(model: $config['model'], config: $config),
+			'ollama' => $this->createOllamaGenerator(model: $config['model'], config: $config),
+			default => throw new Exception("Unsupported embedding provider: {$config['provider']}")
+		};
+	}//end createProviderGenerator()
 
 	/**
 	 * Get default dimensions for a model
@@ -180,188 +227,18 @@ class EmbeddingGeneratorHandler {
 	/**
 	 * Create Fireworks AI embedding generator
 	 *
-	 * Fireworks AI uses OpenAI-compatible API, so we create a custom wrapper
-	 * that works with any Fireworks model.
+	 * Fireworks AI uses an OpenAI-compatible API, so a dedicated client
+	 * works with any Fireworks model name without LLPhant's restrictions.
 	 *
 	 * @param string $model Model name (e.g., 'nomic-ai/nomic-embed-text-v1.5')
 	 * @param array $config Configuration array with api_key and base_url
 	 *
 	 * @return object Generator instance
 	 *
-	 * @throws \Exception If model is not supported
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Anonymous class requires complete implementation
-	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	private function createFireworksGenerator(string $model, array $config): object {
-		// Create a custom anonymous class that implements the EmbeddingGeneratorInterface.
-		// This allows us to use any Fireworks model name without LLPhant's restrictions.
-		return new class($model, $config, $this->logger) implements EmbeddingGeneratorInterface {
-			/**
-			 * Model name
-			 *
-			 * @var string
-			 */
-			private string $model;
-
-			/**
-			 * Configuration array
-			 *
-			 * @var array
-			 */
-			private array $config;
-
-			/**
-			 * Logger instance
-			 *
-			 * @var \Psr\Log\LoggerInterface
-			 */
-			private readonly \Psr\Log\LoggerInterface $logger;
-
-			/**
-			 * Constructor
-			 *
-			 * @param string $model Model name
-			 * @param array<string, mixed> $config Configuration array
-			 * @param \Psr\Log\LoggerInterface $logger Logger instance
-			 *
-			 * @return void
-			 */
-			public function __construct(string $model, array $config, \Psr\Log\LoggerInterface $logger) {
-				$this->model = $model;
-				$this->config = $config;
-				$this->logger = $logger;
-			}//end __construct()
-
-			/**
-			 * Embed text using Fireworks AI API
-			 *
-			 * @param string $text Text to embed
-			 *
-			 * @return array<float> Embedding vector
-			 *
-			 * @throws \Exception If API call fails
-			 *
-			 * @spec openspec/specs/vector-embeddings/spec.md
-			 */
-			public function embedText(string $text): array {
-				$url = rtrim($this->config['base_url'] ?? 'https://api.fireworks.ai/inference/v1', '/') . '/embeddings';
-
-				$this->logger->debug(
-					message: '[EmbeddingGeneratorHandler] Calling Fireworks AI API',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'url' => $url,
-						'model' => $this->model,
-					]
-				);
-
-				$ch = curl_init($url);
-				curl_setopt($ch, CURLOPT_POST, true);
-				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-				// Bound the request: without timeouts a hung/slow embedding
-				// provider blocks the whole batch (and cron) until PHP's
-				// max_execution_time kills it (optimize-vectorization-pipeline).
-				curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-				curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-				curl_setopt(
-					$ch,
-					CURLOPT_HTTPHEADER,
-					[
-						'Authorization: Bearer ' . $this->config['api_key'],
-						'Content-Type: application/json',
-					]
-				);
-				curl_setopt(
-					$ch,
-					CURLOPT_POSTFIELDS,
-					json_encode(
-						[
-							'model' => $this->model,
-							'input' => $text,
-						]
-					)
-				);
-
-				$response = curl_exec($ch);
-				$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-				$error = curl_error($ch);
-				// No curl_close(): deprecated since PHP 8.0 and a no-op — the
-				// CurlHandle object is freed when it goes out of scope.
-				if ($error !== '') {
-					throw new Exception("Fireworks API request failed: {$error}");
-				}
-
-				if ($httpCode !== 200) {
-					throw new Exception("Fireworks API returned HTTP {$httpCode}: {$response}");
-				}
-
-				// Ensure $response is a string.
-				if (is_string($response) === false) {
-					throw new Exception('Fireworks API request failed: Invalid response type');
-				}
-
-				$data = json_decode($response, true);
-				if (isset($data['data'][0]['embedding']) === false) {
-					throw new Exception("Unexpected Fireworks API response format: {$response}");
-				}
-
-				return $data['data'][0]['embedding'];
-			}//end embedText()
-
-			/**
-			 * Get embedding length
-			 *
-			 * @return int Embedding length
-			 *
-			 * @psalm-return 768|1024
-			 *
-			 * @spec openspec/specs/vector-embeddings/spec.md
-			 */
-			public function getEmbeddingLength(): int {
-				// Return expected dimensions based on model.
-				return match ($this->model) {
-					'nomic-ai/nomic-embed-text-v1.5' => 768,
-					'thenlper/gte-base' => 768,
-					'thenlper/gte-large' => 1024,
-					'WhereIsAI/UAE-Large-V1' => 1024,
-					default => 768
-				};
-			}//end getEmbeddingLength()
-
-			/**
-			 * Embed a document
-			 *
-			 * @param \LLPhant\Embeddings\Document $document Document to embed
-			 *
-			 * @return \LLPhant\Embeddings\Document Embedded document
-			 *
-			 * @spec openspec/specs/vector-embeddings/spec.md
-			 */
-			public function embedDocument(\LLPhant\Embeddings\Document $document): \LLPhant\Embeddings\Document {
-				$document->embedding = $this->embedText(text: $document->content);
-				return $document;
-			}//end embedDocument()
-
-			/**
-			 * Embed multiple documents
-			 *
-			 * @param array<int,\LLPhant\Embeddings\Document> $documents Documents to embed
-			 *
-			 * @return array<int,\LLPhant\Embeddings\Document> Embedded documents
-			 *
-			 * @spec openspec/specs/vector-embeddings/spec.md
-			 */
-			public function embedDocuments(array $documents): array {
-				foreach ($documents as $document) {
-					$document->embedding = $this->embedText(text: $document->content);
-				}
-
-				return $documents;
-			}//end embedDocuments()
-		};
+		return new FireworksEmbeddingGenerator(config: $config, logger: $this->logger);
 	}//end createFireworksGenerator()
 
 	/**
