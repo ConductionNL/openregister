@@ -119,7 +119,7 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 		$rules = new ExampleSetFieldRules();
 		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'an email link'),
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'an email link', fields: self::FIELDS)),
 				fn (): string => $this->neededRefusal(data: $data),
 				fn (): string => $this->mailRefusal(data: $data, users: $users),
 				fn (): string => $this->detailRefusal(data: $data),

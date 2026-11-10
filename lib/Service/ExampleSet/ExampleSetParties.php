@@ -116,8 +116,8 @@ class ExampleSetParties extends ExampleSetEngineRows {
 		$rules = new ExampleSetFieldRules();
 		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'a party'),
-				fn (): string => $rules->missingRefusal(data: $data, required: self::REQUIRED, row: 'a party link'),
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a party', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a party link', required: self::REQUIRED)),
 				fn (): string => $rules->datesRefusal(data: $data, fields: ['validFrom', 'validUntil']),
 			]
 		);

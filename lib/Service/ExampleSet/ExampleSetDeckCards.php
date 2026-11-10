@@ -120,8 +120,8 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 		$rules = new ExampleSetFieldRules();
 		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'a deck card'),
-				fn (): string => $rules->missingRefusal(data: $data, required: self::REQUIRED, row: 'a deck card'),
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a deck card', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a deck card', required: self::REQUIRED)),
 				fn (): string => $rules->strangerRefusal(people: $this->people(data: $data), users: $users),
 				fn (): string => $rules->datesRefusal(data: $data, fields: ['due', 'done']),
 			]

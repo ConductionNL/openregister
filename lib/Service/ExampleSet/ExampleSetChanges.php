@@ -230,7 +230,7 @@ class ExampleSetChanges {
 	 */
 	private function withSet(array $row, array $set): array {
 		foreach ($set as $path => $value) {
-			$row = $this->paths->withPath(row: $row, path: (string) $path, value: $value);
+			$row = $this->paths->withPath(row: $row, set: new ExampleSetPathValue(path: (string) $path, value: $value));
 		}
 
 		return $row;
@@ -251,7 +251,7 @@ class ExampleSetChanges {
 				$list[] = $value;
 			}
 
-			$row = $this->paths->withPath(row: $row, path: (string) $path, value: array_values($list));
+			$row = $this->paths->withPath(row: $row, set: new ExampleSetPathValue(path: (string) $path, value: array_values($list)));
 		}
 
 		return $row;
