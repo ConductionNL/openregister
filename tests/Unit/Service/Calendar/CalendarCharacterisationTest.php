@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Calendar\DeadlineDateResolver;
 use OCA\OpenRegister\Service\Calendar\DeadlineLookup;
 use OCA\OpenRegister\Service\Calendar\CalendarYearSpan;
 use OCA\OpenRegister\Service\Calendar\IcalendarWriter;
+use OCA\OpenRegister\Service\Calendar\CalendarContents;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedRendering;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedSources;
@@ -673,12 +674,12 @@ class CalendarCharacterisationTest extends TestCase {
 	}
 
 	public function testACalendarWithoutAZoneCarriesNoTimeZoneParts(): void {
-		$body = (new IcalendarWriter())->calendar(
+		$body = (new IcalendarWriter())->calendar(new CalendarContents(
 			calendarName: 'Zaken; open',
 			timeZone: null,
 			componentLines: ['BEGIN:VEVENT', 'END:VEVENT'],
 			years: new CalendarYearSpan(fromYear: 2026, toYear: 2026)
-		);
+		));
 
 		$this->assertSame(
 			"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:" . IcalendarWriter::PRODID . "\r\nCALSCALE:GREGORIAN\r\n"
@@ -688,12 +689,12 @@ class CalendarCharacterisationTest extends TestCase {
 	}
 
 	public function testACalendarWithAZoneCoversTheRequestedYears(): void {
-		$body = (new IcalendarWriter())->calendar(
+		$body = (new IcalendarWriter())->calendar(new CalendarContents(
 			calendarName: 'Zaken',
 			timeZone: new DateTimeZone('Europe/Amsterdam'),
 			componentLines: [],
 			years: new CalendarYearSpan(fromYear: 2027, toYear: 2028)
-		);
+		));
 
 		$this->assertStringContainsString("X-WR-TIMEZONE:Europe/Amsterdam\r\nBEGIN:VTIMEZONE\r\n", $body);
 		$this->assertStringContainsString('DTSTART:2027', $body);
