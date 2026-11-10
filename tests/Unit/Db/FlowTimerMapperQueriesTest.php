@@ -28,6 +28,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\IdCursor;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 
@@ -137,7 +138,7 @@ class FlowTimerMapperQueriesTest extends TestCase {
 		self::assertTrue($this->saw('expr.in', 'state'), 'a run read only reaches open timers');
 
 		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: []));
-		$mapper->findByStatePaged(state: FlowTimer::STATE_ARMED, afterId: 40, limit: 500);
+		$mapper->findByStatePaged(state: FlowTimer::STATE_ARMED, cursor: new IdCursor(afterId: 40, limit: 500));
 		self::assertTrue($this->saw('expr.gt', 'id'));
 		self::assertTrue($this->saw('setMaxResults', 500));
 	}//end testSubjectRunSuccessorAndPagedReadsFilterWhatTheyClaim()
