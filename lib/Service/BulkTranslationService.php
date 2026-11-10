@@ -62,37 +62,6 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 	}//end __construct()
 
 	/**
-	 * Translate an object's translatable properties from one language to another.
-	 *
-	 * Fills only slots that are currently empty in the target language.
-	 *
-	 * Returns a per-property patch:
-	 *   `[propertyName => translatedValue]`
-	 * The caller merges this into the object's `{lang: value}` JSONB
-	 * map for `$toLong` and persists via the standard save path —
-	 * which triggers the projection listener to populate the sidecar.
-	 *
-	 * Note: this method also writes directly to the sidecar so the
-	 * translation is queryable immediately, even before the caller
-	 * persists the object. Callers who don't want that immediate
-	 * write should invoke the provider directly.
-	 *
-	 * @param ObjectEntity $object The object to translate.
-	 * @param string $fromLong Source language code.
-	 * @param string $toLong Target language code.
-	 * @param string[]|null $properties Optional whitelist of property
-	 *                                  names to translate; null = all.
-	 *
-	 * @return array{translated: array<string, string>, skipped: array<string, string>}
-	 *
-	 * @spec openspec/specs/register-i18n/spec.md
-	 */
-	public function translateObject(ObjectEntity $object, string $fromLong, string $toLong, ?array $properties = null): array {
-		$request = new ObjectTranslationRequest(object: $object, fromLong: $fromLong, toLong: $toLong);
-		return $this->translate(request: $request, properties: $properties);
-	}//end translateObject()
-
-	/**
 	 * Translate one object's translatable properties from one language to another.
 	 *
 	 * @param ObjectTranslationRequest $request    The object and the source and target language.
