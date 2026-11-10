@@ -58,8 +58,8 @@ final class B15ControllerHelpersGoldenTest extends TestCase {
 		$connect = $this->createMock(OAuth2ConnectService::class);
 		$connect->method('oauth2Provider')->willReturn(['oauth2' => ['defaultScopes' => ['read', 'write']]]);
 		$connect->method('ensureInstanceClient')->willReturnCallback(
-			static function (array $provider, array $claims, string $redirectUri) use (&$captured): array {
-				$captured = $claims;
+			static function (\OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration $registration) use (&$captured): array {
+				$captured = $registration->claims;
 				throw new RuntimeException('stop after the claims');
 			}
 		);

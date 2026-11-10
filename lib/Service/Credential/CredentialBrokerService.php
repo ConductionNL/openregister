@@ -1251,12 +1251,10 @@ class CredentialBrokerService {
 			$this->deny(reason: 'oauth2 refresh service is unavailable', credentialId: $credentialId);
 		}
 
+		$address = new TokenSetAddress(credentialId: $credentialId, scope: $scope);
+
 		return $this->oauth2Refresh->accessTokenFor(
-			credential: $data,
-			provider: $provider,
-			credentialId: $credentialId,
-			scope: $scope,
-			actingUserId: $actingUserId
+			target: new OAuth2RefreshTarget(credential: $data, provider: $provider, address: $address, actingUserId: $actingUserId)
 		);
 	}//end injectionSecret()
 

@@ -51,6 +51,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
 
 /**
  * Characterisation of CredentialController's branching endpoints.
@@ -465,7 +466,7 @@ class CredentialControllerCharacterisationTest extends TestCase {
 	 */
 	public function testTheTokenEndpointBrokersWithTheTokensApp(): void {
 		$this->params = ['method' => 'POST', 'path' => '/x', 'headers' => ['A' => 1, 2 => 'b', 'C' => []], 'body' => ['k' => 'v']];
-		$this->tokens->expects($this->once())->method('verify')->with('tok', 'POST', '/x')
+		$this->tokens->expects($this->once())->method('verify')->with('tok', new BrokerTokenBinding(method: 'POST', path: '/x'))
 			->willReturn(['credentialId' => 'cred-1', 'appId' => 'hermiq']);
 		$this->broker->expects($this->once())->method('request')
 			->with('cred-1', 'hermiq', 'POST', '/x', ['A' => '1'], '{"k":"v"}')
