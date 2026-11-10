@@ -361,8 +361,8 @@ abstract class ExampleSetEngineRows {
 	 * Write the rows of one fragment that the record does not hold, and let go of the held ones it no longer declares.
 	 *
 	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
-	 * @param array<string, mixed>    $report The report; gains the outcomes under part() and `dropped`.
-	 * @param array<string, mixed>    $record The record; gains the rows written under part().
+	 * @param RecordLedger            $ledger The report (gains the outcomes under part() and `dropped`) and the record
+	 *                                        (gains the rows written under part()), held by reference.
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
@@ -371,12 +371,12 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetRecord::letGoUndeclared() is a pure function of its arguments, shared by every part.
 	 */
-	public function installFragment(ExampleSetFragmentWrite $write, array &$report, array &$record): bool {
+	public function installFragment(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
 		$fragment = $write->fragment;
 		$install  = new ExampleSetRowInstall(rows: $this, refusal: $this->refusalIn(...), fill: $this->fillContext(...), values: $write->values);
-		$changed  = $install->fragment(fragment: $fragment, context: $write->context, report: $report, record: $record);
+		$changed  = $install->fragment(fragment: $fragment, context: $write->context, report: $ledger->report, record: $ledger->record);
 		$part     = new ExampleSetRecordPart(part: $this->part(), noun: $this->noun());
-		if (ExampleSetRecord::letGoUndeclared(part: $part, fragment: $fragment, report: $report, record: $record) === true) {
+		if (ExampleSetRecord::letGoUndeclared(part: $part, fragment: $fragment, report: $ledger->report, record: $ledger->record) === true) {
 			$changed = true;
 		}
 
