@@ -1,0 +1,176 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`a schema with byEveryReference merges into the sidebar properties 1`] = `
+{
+  "merged": {
+    "age": {
+      "type": "integer",
+    },
+    "city": {
+      "order": 1,
+    },
+    "name": {
+      "order": "2",
+      "type": "string",
+    },
+    "own": {
+      "order": 5,
+    },
+    "shared": {
+      "from": "own",
+      "order": "0",
+    },
+  },
+  "order": [
+    "name",
+    "shared",
+    "age",
+    "city",
+    "own",
+  ],
+}
+`;
+
+exports[`a schema with byEveryReference normalizes into the page schema 1`] = `
+{
+  "normalized": {
+    "allOf": [
+      {
+        "id": 1,
+      },
+      "u-2",
+      3,
+      "4",
+    ],
+    "properties": {
+      "age": {
+        "type": "integer",
+      },
+      "city": {
+        "order": 1,
+      },
+      "name": {
+        "order": 2,
+        "type": "string",
+      },
+      "own": {
+        "order": 5,
+      },
+      "shared": {
+        "from": "own",
+        "order": 0,
+      },
+    },
+  },
+  "order": [
+    "name",
+    "shared",
+    "age",
+    "city",
+    "own",
+  ],
+  "same": false,
+}
+`;
+
+exports[`a schema with noAllOf merges into the sidebar properties 1`] = `
+{
+  "merged": {
+    "own": {
+      "order": "7",
+    },
+  },
+  "order": [
+    "own",
+  ],
+}
+`;
+
+exports[`a schema with noAllOf normalizes into the page schema 1`] = `
+{
+  "normalized": {
+    "properties": {
+      "own": {
+        "order": 7,
+      },
+    },
+  },
+  "order": [
+    "own",
+  ],
+  "same": false,
+}
+`;
+
+exports[`a schema with noProperties merges into the sidebar properties 1`] = `
+{
+  "merged": {
+    "name": {
+      "order": "2",
+      "type": "string",
+    },
+    "shared": {
+      "from": "parent-1",
+    },
+  },
+  "order": [
+    "name",
+    "shared",
+  ],
+}
+`;
+
+exports[`a schema with noProperties normalizes into the page schema 1`] = `
+{
+  "normalized": {
+    "allOf": [
+      1,
+    ],
+  },
+  "order": [],
+  "same": true,
+}
+`;
+
+exports[`a schema with none merges into the sidebar properties 1`] = `
+{
+  "merged": {},
+  "order": [],
+}
+`;
+
+exports[`a schema with none normalizes into the page schema 1`] = `
+{
+  "normalized": null,
+  "order": null,
+  "same": true,
+}
+`;
+
+exports[`a schema with unknownParent merges into the sidebar properties 1`] = `
+{
+  "merged": {
+    "own": {},
+  },
+  "order": [
+    "own",
+  ],
+}
+`;
+
+exports[`a schema with unknownParent normalizes into the page schema 1`] = `
+{
+  "normalized": {
+    "allOf": [
+      "nope",
+    ],
+    "properties": {
+      "own": {},
+    },
+  },
+  "order": [
+    "own",
+  ],
+  "same": false,
+}
+`;
