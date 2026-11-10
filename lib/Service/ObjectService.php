@@ -7726,8 +7726,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         return $restorer['converter']->restoreStringTypedValues(
             data: $merged,
-            properties: ($restorer['schema']->getProperties() ?? []),
-            suppliedKeys: array_keys($data)
+            properties: array_diff_key(($restorer['schema']->getProperties() ?? []), $data)
         );
     }//end patchedBody()
 

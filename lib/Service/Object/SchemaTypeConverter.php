@@ -185,20 +185,20 @@ class SchemaTypeConverter implements SchemaTypeConverterInterface {
 	 * which is the failure direction this method must preserve: loud, not
 	 * silent.
 	 *
-	 * @param array $data         The object data about to be saved.
-	 * @param array $properties   The schema's property definitions, keyed by property name.
-	 * @param array $suppliedKeys Keys the caller actually sent; these are left exactly as merged.
+	 * A key without a property definition is left exactly as it is: a PATCH passes the definitions without
+	 * the keys the caller sent, so those stay exactly as merged.
+	 *
+	 * @param array $data       The object data about to be saved.
+	 * @param array $properties The property definitions to restore by, keyed by property name.
 	 *
 	 * @return array The data with untouched string-typed JSON values restored to their stored form.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-patch-leaves-an-untouched-translatable-property-as-it-is
 	 */
-	public function restoreStringTypedValues(array $data, array $properties, array $suppliedKeys=[]): array {
+	public function restoreStringTypedValues(array $data, array $properties): array {
 		foreach ($data as $key => $value) {
-			if (in_array($key, $suppliedKeys, true) === false) {
-				$data[$key] = $this->restoredValue(value: $value, property: ($properties[$key] ?? null));
-			}
+			$data[$key] = $this->restoredValue(value: $value, property: ($properties[$key] ?? null));
 		}
 
 		return $data;

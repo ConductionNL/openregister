@@ -200,7 +200,7 @@ class ObjectsControllerSmallUnitsGoldenTest extends TestCase {
 	public function testRestoreHandsTheConverterItsThreeInputs(): void {
 		$converter = $this->createMock(SchemaTypeConverter::class);
 		$converter->expects($this->once())->method('restoreStringTypedValues')
-			->with(['a' => [1]], ['p' => 1], ['b'])
+			->with(['a' => [1]], ['p' => 1])
 			->willReturn(['restored' => true]);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->with(SchemaTypeConverterInterface::class)->willReturn($converter);
