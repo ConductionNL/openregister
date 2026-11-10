@@ -34,7 +34,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\BackgroundJob;
 
+use OCA\OpenRegister\Db\ListQuery;
 use DateTime;
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
@@ -45,6 +47,7 @@ use OCA\OpenRegister\Db\TaskInboxOrder;
 use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -223,13 +226,16 @@ class TaskScheduledNotificationJob extends TimedJob {
 		$adapter = new TaskObjectAdapter(task: $task, row: $this->candidates->inbox->enrich(task: $task));
 		$payload = ($adapter->getObject() ?? []);
 
-		if ($this->candidates->filters->matches(objectData: $payload, filter: $run->sweep->filter, now: $run->nowDt) === false) {
+		$target = new ScheduledFilterTarget(objectData: $payload, now: $run->nowDt);
+		if ($this->candidates->filters->matchesTarget(filter: $run->sweep->filter, target: $target) === false) {
 			return;
 		}
 
 		$run->matched++;
 		$fingerprint = $this->fingerprint(payload: $payload, watched: $run->sweep->watched);
-		$existing = $this->delivery->dedupe->findOne(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $run->sweep->name, objectUuid: (string)$task->getUuid());
+		$existing = $this->delivery->dedupe->findByKey(
+			key: new NotificationDedupeKey(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $run->sweep->name, objectUuid: (string)$task->getUuid())
+		);
 		if ($existing !== null && (string)$existing->getFingerprint() === $fingerprint) {
 			return;
 		}
@@ -259,9 +265,11 @@ class TaskScheduledNotificationJob extends TimedJob {
 			);
 			$this->delivery->dedupe->upsert(
 				key: new NotificationDedupeKey(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $name, objectUuid: $uuid),
-				fingerprint: $this->fingerprint(payload: ($adapter->getObject() ?? []), watched: $run->sweep->watched),
-				now: $run->now,
-				dispatched: true
+				sighting: new DedupeSighting(
+					fingerprint: $this->fingerprint(payload: ($adapter->getObject() ?? []), watched: $run->sweep->watched),
+					now: $run->now,
+					dispatched: true
+				)
 			);
 			return 1;
 		} catch (Throwable $failure) {
@@ -294,7 +302,7 @@ class TaskScheduledNotificationJob extends TimedJob {
 		);
 
 		try {
-			return $this->candidates->tasks->findInbox(criteria: $criteria, limit: self::PAGE, offset: $offset);
+			return $this->candidates->tasks->findInbox(criteria: $criteria, page: new ListQuery(limit: self::PAGE, offset: $offset));
 		} catch (Throwable $failure) {
 			$this->delivery->logger->warning('[TaskScheduledNotificationJob] Candidate query failed: ' . $failure->getMessage());
 
@@ -379,6 +387,7 @@ class TaskScheduledNotificationJob extends TimedJob {
 			$values[$field] = ($payload[$field] ?? null);
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		return sha1((string)json_encode($values));
 	}//end fingerprint()
 }//end class

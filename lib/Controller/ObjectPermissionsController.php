@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -256,8 +257,7 @@ class ObjectPermissionsController extends Controller {
 	private function accessSetOf(ObjectEntity $object): array {
 		return $this->report->setFor(
 			object: $object,
-			registerRef: $this->objectService->getRegister(),
-			schemaRef: $this->objectService->getSchema()
+			table: new RegisterSchemaRef(register: $this->objectService->getRegister(), schema: $this->objectService->getSchema())
 		);
 	}//end accessSetOf()
 
@@ -310,6 +310,6 @@ class ObjectPermissionsController extends Controller {
 	 * @return ObjectEntity|JSONResponse The object, or the refusal.
 	 */
 	private function resolveObject(ObjectRef $ref): ObjectEntity|JSONResponse {
-		return ($this->gate->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id) ?? ObjectSharingEndpoint::notFound());
+		return ($this->gate->resolve(ref: $ref) ?? ObjectSharingEndpoint::notFound());
 	}//end resolveObject()
 }//end class

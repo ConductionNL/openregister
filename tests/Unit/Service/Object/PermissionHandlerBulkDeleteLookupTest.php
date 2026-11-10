@@ -109,7 +109,7 @@ class PermissionHandlerBulkDeleteLookupTest extends TestCase {
 	 */
 	public function testResolvedUuidSurvivesTheFilter(): void {
 		$mapper = $this->createMock(MagicMapper::class);
-		$mapper->method('findAll')->willReturn([]);
+		$mapper->method('findAllListed')->willReturn([]);
 		$mapper->method('findMultipleAcrossAllMagicTables')
 			->willReturn([$this->entity('uuid-alpha')]);
 
@@ -132,7 +132,7 @@ class PermissionHandlerBulkDeleteLookupTest extends TestCase {
 	 */
 	public function testLookupIncludesSoftDeletedRows(): void {
 		$mapper = $this->createMock(MagicMapper::class);
-		$mapper->method('findAll')->willReturn([]);
+		$mapper->method('findAllListed')->willReturn([]);
 		$mapper->expects($this->once())
 			->method('findMultipleAcrossAllMagicTables')
 			->with(['uuid-alpha'], true)
@@ -155,7 +155,7 @@ class PermissionHandlerBulkDeleteLookupTest extends TestCase {
 	 */
 	public function testUnresolvableUuidIsDropped(): void {
 		$mapper = $this->createMock(MagicMapper::class);
-		$mapper->method('findAll')->willReturn([]);
+		$mapper->method('findAllListed')->willReturn([]);
 		$mapper->method('findMultipleAcrossAllMagicTables')
 			->willReturn([$this->entity('uuid-alpha')]);
 

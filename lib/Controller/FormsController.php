@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\FormsControllerServices;
+use OCA\OpenRegister\Service\Form\FormDestination;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
@@ -196,7 +197,10 @@ class FormsController extends Controller {
 			$mapping = [];
 		}
 
-		$findings = $this->validator->validate(mapping: $mapping, schema: $schema, options: $options);
+		$findings = $this->validator->validate(
+			mapping: $mapping,
+			destination: new FormDestination(schema: $schema, audience: ($options['audience'] ?? null))
+		);
 
 		return new JSONResponse(data: ['accepted' => ($findings === []), 'findings' => $findings]);
 	}//end validate()
@@ -239,7 +243,9 @@ class FormsController extends Controller {
 				$draftId = null;
 			}
 
-			$answer = $this->submitForm(form: $form, subject: $subject, key: $key, draftId: $draftId);
+			$submitter = new FormSubmitter(subject: $subject, scope: $form['id'], draftId: $draftId);
+			$submission = new FormSubmission(writes: $this->writesOf(form: $form), payload: $this->payload(), submitter: $submitter);
+			$answer = $this->submitter->submit($submission, $key);
 		} catch (FormSubmitRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
 		}
@@ -353,24 +359,6 @@ class FormsController extends Controller {
 	private function signInRequired(): JSONResponse {
 		return new JSONResponse(data: ['message' => $this->l10n->t('Please sign in to send this form.'), 'findings' => []], statusCode: 401);
 	}//end signInRequired()
-
-	/**
-	 * One destination or a journey's writes, through FormSubmitService::submit().
-	 *
-	 * @param array{id: string, writes: array<int, array<string, mixed>>, audience: string} $form    The form.
-	 * @param IUser|null                                                                         $subject The subject.
-	 * @param string|null                                                                   $key     The Idempotency-Key.
-	 * @param string|null                                                                   $draftId The subject's draft to leave, when sent.
-	 *
-	 * @return array<string, mixed> The answer.
-	 *
-	 * @throws FormSubmitRefusedException On any refusal.
-	 */
-	private function submitForm(array $form, ?IUser $subject, ?string $key, ?string $draftId = null): array {
-		$submitter = new FormSubmitter(subject: $subject, scope: $form['id'], draftId: $draftId);
-
-		return $this->submitter->submit(new FormSubmission(writes: $this->writesOf(form: $form), payload: $this->payload(), submitter: $submitter), $key);
-	}//end submitForm()
 
 	/**
 	 * The form's writes as submitted: a journey's as they are, one destination as `{ register, schema, mapping }`.

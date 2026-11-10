@@ -131,8 +131,10 @@ final class MagicDecimalWidener {
 
 		return (new MagicNumberColumn())->widening(
 			currentColumn: $columns->current[$columnName],
-			precision: (int)($columnDef['precision'] ?? MagicNumberColumn::INTEGER_DIGITS + MagicNumberColumn::DEFAULT_SCALE),
-			scale: (int)($columnDef['scale'] ?? MagicNumberColumn::DEFAULT_SCALE)
+			required: [
+				'precision' => (int)($columnDef['precision'] ?? MagicNumberColumn::INTEGER_DIGITS + MagicNumberColumn::DEFAULT_SCALE),
+				'scale' => (int)($columnDef['scale'] ?? MagicNumberColumn::DEFAULT_SCALE),
+			]
 		);
 	}//end widerSize()
 

@@ -22,15 +22,18 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
-use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Db\XwikiLinkMapper;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\XwikiLinkService;
+use OCA\OpenRegister\Service\XwikiPageDraft;
 use OCP\App\IAppManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -104,7 +107,7 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 		$link = $this->storedLink(cachedAt: null);
 		$this->mapper->method('findByObjectUuid')->willReturn([$link]);
 		$this->provider->expects($this->once())->method('get')
-			->with('3', '4', 'obj-1', 'Main.Old')
+			->with(new ObjectRef(register: '3', schema: '4', id: 'obj-1'), 'Main.Old')
 			->willReturn(['reference' => 'Main.Old', 'title' => 'New', 'space' => 'Docs', 'url' => 'https://new']);
 		$this->mapper->expects($this->once())->method('update')->willReturnArgument(0);
 
@@ -162,7 +165,7 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 			->with('XwikiLinkService: XwikiProvider unavailable: no provider');
 
 		try {
-			$service->createAndLinkPage($this->target(), 'Docs', 'Page');
+			$service->createAndLinkPage($this->target(), new XwikiPageDraft('Docs', 'Page'));
 			$this->fail('expected an exception');
 		} catch (Exception $e) {
 			$this->assertSame('OpenConnector is not available', $e->getMessage());
@@ -176,7 +179,7 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 		);
 
 		try {
-			$this->service->createAndLinkPage($this->target(), 'Docs', 'Page');
+			$this->service->createAndLinkPage($this->target(), new XwikiPageDraft('Docs', 'Page'));
 			$this->fail('expected an exception');
 		} catch (Exception $e) {
 			$this->assertSame('xwiki:' . ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING, $e->getMessage());
@@ -190,7 +193,7 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 			->with('XwikiLinkService::createAndLinkPage failed: boom');
 
 		try {
-			$this->service->createAndLinkPage($this->target(), 'Docs', 'Page');
+			$this->service->createAndLinkPage($this->target(), new XwikiPageDraft('Docs', 'Page'));
 			$this->fail('expected an exception');
 		} catch (Exception $e) {
 			$this->assertSame('Failed to create xWiki page', $e->getMessage());
@@ -200,10 +203,10 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 
 	public function testCreateFallsBackToTheGivenSpaceTitleAndReference(): void {
 		$this->provider->expects($this->once())->method('create')
-			->with('3', '4', 'obj-1', ['space' => 'Docs', 'title' => 'Page'])
+			->with(new ObjectRef(register: '3', schema: '4', id: 'obj-1'), ['space' => 'Docs', 'title' => 'Page'])
 			->willReturn(['url' => '']);
 
-		$link = $this->service->createAndLinkPage($this->target(), '  Docs ', ' Page ');
+		$link = $this->service->createAndLinkPage($this->target(), new XwikiPageDraft('  Docs ', ' Page '));
 
 		$this->assertSame('Docs.Page', $link->getPageReference());
 		$this->assertSame('Page', $link->getTitle());
@@ -215,7 +218,7 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 	public function testAnEmptyTitleIsReportedBeforeAnEmptySpace(): void {
 		$this->expectExceptionMessage('Page title is required');
 		$this->expectExceptionCode(400);
-		$this->service->createAndLinkPage($this->target(), '', '');
+		$this->service->createAndLinkPage($this->target(), new XwikiPageDraft('', ''));
 	}//end testAnEmptyTitleIsReportedBeforeAnEmptySpace()
 
 	public function testASoftResolveFailureKeepsTheGivenReference(): void {
@@ -243,7 +246,7 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 	}//end testAnEmptyResolvedReferenceFallsBackToTheGivenOne()
 
 	public function testBrowseRowsFallBackToIdForReferenceAndTitleAndSkipNonArrays(): void {
-		$this->provider->expects($this->once())->method('list')->with('', '', '', ['_search' => 'x'])
+		$this->provider->expects($this->once())->method('list')->with(new ObjectRef(register: '', schema: '', id: ''), ['_search' => 'x'])
 			->willReturn([['id' => 'A.B', 'url' => 7], 'junk']);
 
 		$result = $this->service->getAvailablePages('x');
@@ -259,7 +262,7 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 		$this->logger->expects($this->exactly(2))->method('warning');
 
 		$pages  = $this->service->getAvailablePages(null);
-		$search = $this->service->searchPages('  q ', 10, 25);
+		$search = $this->service->searchPages(new ListQuery(limit: 10, offset: 25, search: '  q '));
 
 		$this->assertSame(ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, $pages['cause']);
 		$this->assertSame(
@@ -270,9 +273,9 @@ class XwikiLinkServiceGoldenTest extends TestCase {
 
 	public function testSearchSendsTrimmedQueryAndPage(): void {
 		$this->provider->expects($this->once())->method('list')
-			->with('', '', '', ['_limit' => 10, '_page' => 3, '_search' => 'q'])
+			->with(new ObjectRef(register: '', schema: '', id: ''), ['_limit' => 10, '_page' => 3, '_search' => 'q'])
 			->willReturn([]);
 
-		$this->assertSame(['results' => [], 'total' => 0, 'limit' => 10, 'offset' => 25], $this->service->searchPages('  q ', 10, 25));
+		$this->assertSame(['results' => [], 'total' => 0, 'limit' => 10, 'offset' => 25], $this->service->searchPages(new ListQuery(limit: 10, offset: 25, search: '  q ')));
 	}//end testSearchSendsTrimmedQueryAndPage()
 }//end class

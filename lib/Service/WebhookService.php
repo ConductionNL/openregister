@@ -41,8 +41,8 @@ use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
-use OCP\EventDispatcher\Event;
 use OCP\IRequest;
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventAttributes;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
@@ -502,16 +502,15 @@ class WebhookService {
 	/**
 	 * Dispatch event to all matching webhooks
 	 *
-	 * @param Event $_event The event to dispatch (unused but provided by event system)
 	 * @param string $eventName Event class name
-	 * @param array $payload Event payload data
+	 * @param array  $payload   Event payload data
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function dispatchEvent(Event $_event, string $eventName, array $payload): void {
+	public function dispatchEvent(string $eventName, array $payload): void {
 		$this->dispatch(event: new WebhookEvent(name: $eventName, payload: $payload));
 	}//end dispatchEvent()
 
@@ -610,34 +609,7 @@ class WebhookService {
 	}//end webhooksForEvent()
 
 	/**
-	 * Deliver webhook to target URL
-	 *
-	 * @param Webhook $webhook Webhook configuration
-	 * @param string $eventName Event name
-	 * @param array $payload Payload data
-	 * @param int $attempt Current attempt number (for retries)
-	 * @param int|null $timeoutCapSeconds Optional hard cap on connect + total timeout;
-	 *                                    used by the synchronous interception path
-	 *                                    (INTERCEPTION_TIMEOUT_SECONDS). Null keeps the
-	 *                                    per-webhook timeout (async deliveries).
-	 *
-	 * @return bool Success status
-	 *
-	 * @spec openspec/specs/webhook-payload-mapping/spec.md
-	 */
-	public function deliverWebhook(
-		Webhook $webhook,
-		string $eventName,
-		array $payload,
-		int $attempt = 1,
-		?int $timeoutCapSeconds = null,
-	): bool {
-		$event = new WebhookEvent(name: $eventName, payload: $payload);
-		return $this->deliver(delivery: new WebhookDelivery(webhook: $webhook, event: $event, attempt: $attempt, timeoutCapSeconds: $timeoutCapSeconds));
-	}//end deliverWebhook()
-
-	/**
-	 * Deliver one event to one webhook and log the outcome (value-object form of deliverWebhook()).
+	 * Deliver one event to one webhook and log the outcome.
 	 *
 	 * @param WebhookDelivery $delivery The webhook, event, attempt number and optional timeout cap.
 	 *
@@ -645,7 +617,7 @@ class WebhookService {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function deliver(WebhookDelivery $delivery): bool {
+	public function deliverWebhook(WebhookDelivery $delivery): bool {
 		$webhook = $delivery->webhook;
 		$eventName = $delivery->event->name;
 		$skipReason = $this->deliverySkipReason(webhook: $webhook, payload: $delivery->event->payload);
@@ -672,7 +644,7 @@ class WebhookService {
 		} catch (\Exception $e) {
 			return $recorder->recordUnexpectedFailure(delivery: $attempt, exception: $e);
 		}
-	}//end deliver()
+	}//end deliverWebhook()
 
 	/**
 	 * Why a delivery is skipped: the webhook is disabled or its filters do not match.
@@ -760,21 +732,6 @@ class WebhookService {
 	 * shaped it: a delivery whose mapping is missing or fails falls back to the
 	 * standard payload, and the preview must not show that fallback as mapped.
 	 *
-	 * @param Webhook $webhook   The webhook, saved or as the dialog holds it.
-	 * @param string  $eventName The event class the payload is for.
-	 * @param array   $payload   The event payload.
-	 *
-	 * @return array{payload: array, mapped: bool}
-	 *
-	 * @spec openspec/specs/webhook-payload-mapping/spec.md
-	 */
-	public function previewPayload(Webhook $webhook, string $eventName, array $payload): array {
-		return $this->previewEvent(webhook: $webhook, event: new WebhookEvent(name: $eventName, payload: $payload));
-	}//end previewPayload()
-
-	/**
-	 * The payload a delivery of this webhook would send for one event (value-object form of previewPayload()).
-	 *
 	 * @param Webhook      $webhook The webhook, saved or as the dialog holds it.
 	 * @param WebhookEvent $event   The event name and payload.
 	 *
@@ -782,7 +739,7 @@ class WebhookService {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function previewEvent(Webhook $webhook, WebhookEvent $event): array {
+	public function previewPayload(Webhook $webhook, WebhookEvent $event): array {
 		$delivery = new WebhookDelivery(webhook: $webhook, event: $event);
 		$mapped = false;
 		$mappingId = $webhook->getMapping();
@@ -794,7 +751,7 @@ class WebhookService {
 			'payload' => $this->buildPayload(delivery: $delivery),
 			'mapped' => $mapped,
 		];
-	}//end previewEvent()
+	}//end previewPayload()
 
 	/**
 	 * Build webhook payload
@@ -848,10 +805,12 @@ class WebhookService {
 			);
 
 			return $this->dispatch->cloudEventFormatter->formatAsCloudEvent(
-				eventType: $eventName,
-				payload: $enrichedPayload,
-				source: $config['cloudEventSource'] ?? null,
-				subject: $config['cloudEventSubject'] ?? null
+				attributes: new CloudEventAttributes(
+					type: $eventName,
+					source: $config['cloudEventSource'] ?? null,
+					subject: $config['cloudEventSubject'] ?? null
+				),
+				payload: $enrichedPayload
 			);
 		}
 
@@ -1083,7 +1042,7 @@ class WebhookService {
 				// Deliver webhook. Interception blocks the object write, so the
 				// delivery timeout is capped hard — see INTERCEPTION_TIMEOUT_SECONDS.
 				$event = new WebhookEvent(name: $eventType, payload: $webhookPayload);
-				$success = $this->deliver(
+				$success = $this->deliverWebhook(
 					delivery: new WebhookDelivery(webhook: $webhook, event: $event, timeoutCapSeconds: self::INTERCEPTION_TIMEOUT_SECONDS)
 				);
 

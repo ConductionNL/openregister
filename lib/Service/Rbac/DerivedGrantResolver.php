@@ -73,6 +73,16 @@ class DerivedGrantResolver {
 	public const ONE_OF_KEY = 'oneOf';
 
 	/**
+	 * Constructor.
+	 *
+	 * @param GrantConstraints $constraints The reader of `until` and `scopedTo`.
+	 */
+	public function __construct(
+		private readonly GrantConstraints $constraints = new GrantConstraints(),
+	) {
+	}//end __construct()
+
+	/**
 	 * Derive the grants one sign-in produces.
 	 *
 	 * @param array<string, mixed>            $claims The claims the identity provider asserted.
@@ -151,19 +161,18 @@ class DerivedGrantResolver {
 	 * at sign-in is asked about once per register a person opens, and the answer
 	 * is different in each.
 	 *
-	 * @param array<int, array<string, mixed>> $grants      The stored grants.
-	 * @param array<string, mixed>             $area        Keys `register` and `schema`.
-	 * @param GrantConstraints                 $constraints The reader of `until` and `scopedTo`.
+	 * @param array<int, array<string, mixed>> $grants The stored grants.
+	 * @param array<string, mixed>             $area   Keys `register` and `schema`.
 	 *
 	 * @return array<int, string> The group ids this caller holds here.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function groupsFor(array $grants, array $area, GrantConstraints $constraints): array {
-		$now = new DateTimeImmutable();
+	public function groupsFor(array $grants, array $area): array {
+		$point    = new ConstraintPoint(area: $area, now: new DateTimeImmutable());
 		$reaching = array_filter(
 			$grants,
-			static fn (mixed $grant): bool => is_array($grant) === true && $constraints->reaches(entry: $grant, area: $area, now: $now) === true
+			fn (mixed $grant): bool => is_array($grant) === true && $this->constraints->reaches(entry: $grant, point: $point) === true
 		);
 
 		return $this->groupsIn(grants: $reaching);

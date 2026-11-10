@@ -99,17 +99,17 @@ class ClassificationOverride {
 	/**
 	 * The category that applies: the record's override, else the schema's.
 	 *
-	 * @param array<string, mixed> $archive       The schema's archive block.
-	 * @param array<string, mixed> $data          The record's data.
-	 * @param array<string, mixed> $configuration The schema's configuration.
+	 * @param CategoryDeclaration  $declaration The schema's archive block and configuration.
+	 * @param array<string, mixed> $data        The record's data.
 	 *
 	 * @return string|null The effective category, or null when neither declares one.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function effective(array $archive, array $data, array $configuration = []): ?string {
-		$requested = $this->requested(property: $this->propertyOf(archive: $archive, configuration: $configuration), data: $data);
-		return $this->requestedOrDeclared(requested: $requested, archive: $archive);
+	public function effective(CategoryDeclaration $declaration, array $data): ?string {
+		$property  = $this->propertyOf(archive: $declaration->archive, configuration: $declaration->configuration);
+		$requested = $this->requested(property: $property, data: $data);
+		return $this->requestedOrDeclared(requested: $requested, archive: $declaration->archive);
 	}//end effective()
 
 	/**

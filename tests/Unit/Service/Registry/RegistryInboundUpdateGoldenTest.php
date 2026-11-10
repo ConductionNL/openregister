@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Registry;
 
+use OCA\OpenRegister\Service\Registry\RegistryIdentity;
+use OCA\OpenRegister\Service\Registry\InboundUpdate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\RegistrySubscriptionMapper;
@@ -28,6 +30,7 @@ use OCA\OpenRegister\Service\Registry\RegistryInboundServices;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionNotifier;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
 use OCA\OpenRegister\Service\Registry\RegistryUpdateTargetGuard;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -95,12 +98,12 @@ class RegistryInboundUpdateGoldenTest extends TestCase {
 
 		$audits = [];
 		$audit  = $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (...$args) use (&$audits) {
 				$audits[] = $args;
 				return new \OCA\OpenRegister\Db\AuditTrail();
 			}
-		);
+		));
 		$notifier = new RegistrySubscriptionNotifier($this->createMock(IEventDispatcher::class), $audit);
 
 		$service = new RegistrySubscriptionService(
@@ -110,7 +113,7 @@ class RegistryInboundUpdateGoldenTest extends TestCase {
 			$logger,
 		);
 
-		$result = $service->applyInboundUpdate('brp', '999990019', ['address' => 'Dam 1', 'givenNames' => 'S'], 'evt-2');
+		$result = $service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['address' => 'Dam 1', 'givenNames' => 'S'], 'evt-2'));
 
 		self::assertSame(
 			[

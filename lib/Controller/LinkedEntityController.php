@@ -91,9 +91,9 @@ class LinkedEntityController extends Controller {
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->linkedEntityService = $services->linkedEntityService;
-		$this->logger = $services->logger;
-		$this->userSession = $services->userSession;
-		$this->groupManager = $services->groupManager;
+		$this->logger = $services->session->logger;
+		$this->userSession = $services->session->userSession;
+		$this->groupManager = $services->session->groupManager;
 	}//end __construct()
 
 	/**

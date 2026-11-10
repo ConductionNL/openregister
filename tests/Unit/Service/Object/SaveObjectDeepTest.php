@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
+use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -128,10 +130,8 @@ class SaveObjectDeepTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->objectEntityMapper,
-						unifiedObjectMapper: $this->unifiedObjectMapper,
-						schemaMapper: $this->schemaMapper,
-						registerMapper: $this->registerMapper
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->auditTrailMapper,
@@ -729,54 +729,6 @@ class SaveObjectDeepTest extends TestCase {
 		$this->assertSame('https://example.com/image.png', $entity->getImage());
 	}
 
-	public function testHydrateObjectMetadataPublishedDate(): void {
-		// objectPublishedField is deprecated — should not throw.
-		$entity = $this->createObjectEntity(1, 'uuid-1', ['publicatieDatum' => '2025-01-01']);
-		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'publicatieDatum']);
-
-		$this->metaHydrationHandler->method('extractMetadataValue')
-			->willReturn('2025-01-01');
-
-		$this->handler->hydrateObjectMetadata($entity, $schema);
-		$this->assertTrue(true);
-	}
-
-	public function testHydrateObjectMetadataInvalidPublishedDate(): void {
-		// objectPublishedField is deprecated — should not throw.
-		$entity = $this->createObjectEntity(1, 'uuid-1', ['date' => 'not-a-date']);
-		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'date']);
-
-		$this->metaHydrationHandler->method('extractMetadataValue')
-			->willReturn('not-a-date');
-
-		$this->handler->hydrateObjectMetadata($entity, $schema);
-		$this->assertTrue(true);
-	}
-
-	public function testHydrateObjectMetadataDepublishedDate(): void {
-		// objectDepublishedField is deprecated — should not throw.
-		$entity = $this->createObjectEntity(1, 'uuid-1', ['endDate' => '2025-12-31']);
-		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
-
-		$this->metaHydrationHandler->method('extractMetadataValue')
-			->willReturn('2025-12-31');
-
-		$this->handler->hydrateObjectMetadata($entity, $schema);
-		$this->assertTrue(true);
-	}
-
-	public function testHydrateObjectMetadataInvalidDepublishedDate(): void {
-		// objectDepublishedField is deprecated — should not throw.
-		$entity = $this->createObjectEntity(1, 'uuid-1', ['end' => 'invalid']);
-		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'end']);
-
-		$this->metaHydrationHandler->method('extractMetadataValue')
-			->willReturn('invalid');
-
-		$this->handler->hydrateObjectMetadata($entity, $schema);
-		$this->assertTrue(true);
-	}
-
 	public function testHydrateObjectMetadataImageArrayNumericFileIds(): void {
 		$entity = $this->createObjectEntity(1, 'uuid-1', ['images' => [123, 456]]);
 		$schema = $this->createMockSchema(1, 'test', ['objectImageField' => 'images']);
@@ -785,7 +737,9 @@ class SaveObjectDeepTest extends TestCase {
 			->willReturn([123, 456]);
 
 		$this->handler->hydrateObjectMetadata($entity, $schema);
-		$this->assertTrue(true);
+
+		// A bare file id is not a file record, so no image URL is set.
+		$this->assertNull($entity->getImage());
 	}
 
 	// ── clearAllCaches / cache management tests ─────────────────────────
@@ -959,54 +913,12 @@ class SaveObjectDeepTest extends TestCase {
 	public function testSetSelfMetadataNoLongerSetsTheSlug(): void {
 		// ObjectSlugHandler decides the slug after hydration (#4037).
 		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['slug' => 'my-slug'], []]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: ['slug' => 'my-slug'])]);
 		$this->assertNull($entity->getSlug());
 	}
 
 	public function testClientSlugReadsSelfFirst(): void {
-		$this->assertSame('my-slug', $this->invokePrivateMethod('clientSlug', [['slug' => 'my-slug'], ['slug' => 'data-slug']]));
-	}
-
-	public function testSetSelfMetadataPublishedDate(): void {
-		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['published' => '2025-06-15T10:00:00+00:00'], []]);
-		$this->assertTrue(true);
-	}
-
-	public function testSetSelfMetadataPublishedEmpty(): void {
-		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['published' => ''], []]);
-		$this->assertTrue(true);
-	}
-
-	public function testSetSelfMetadataPublishedNotPresent(): void {
-		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, [], []]);
-		$this->assertTrue(true);
-	}
-
-	public function testSetSelfMetadataInvalidPublishedDate(): void {
-		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['published' => 'not-a-date-at-all!!!'], []]);
-		$this->assertTrue(true);
-	}
-
-	public function testSetSelfMetadataDepublishedDate(): void {
-		// Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['depublished' => '2025-12-31T23:59:59+00:00'], []]);
-		$this->assertTrue(true);
-	}
-
-	public function testSetSelfMetadataDepublishedEmpty(): void {
-		// Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['depublished' => ''], []]);
-		$this->assertTrue(true);
+		$this->assertSame('my-slug', (new ObjectPayload(data: ['slug' => 'data-slug'], selfData: ['slug' => 'my-slug']))->clientSlug());
 	}
 
 	public function testSetSelfMetadataOwnerIsIgnored(): void {
@@ -1018,7 +930,7 @@ class SaveObjectDeepTest extends TestCase {
 		// Ensure owner starts as null (default for a new entity).
 		$this->assertNull($entity->getOwner());
 		// Pass a client-supplied owner value — it must be silently ignored.
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['owner' => 'injected-owner'], []]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: ['owner' => 'injected-owner'])]);
 		// Owner remains null; applyOwnerAttribution() will set it from the session.
 		$this->assertNull($entity->getOwner());
 	}
@@ -1031,7 +943,7 @@ class SaveObjectDeepTest extends TestCase {
 		// BOTH arms of the gate are closed and the organisation must NOT be stamped
 		// from client input.
 		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['organisation' => 'org-uuid'], []]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: ['organisation' => 'org-uuid'])]);
 		$this->assertNull($entity->getOrganisation());
 	}
 
@@ -1044,19 +956,13 @@ class SaveObjectDeepTest extends TestCase {
 			->willReturn(true);
 
 		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['organisation' => 'org-uuid'], []]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, new SelfSubmission(selfData: ['organisation' => 'org-uuid'])]);
 		$this->assertSame('org-uuid', $entity->getOrganisation());
 	}
 
 	public function testClientSlugFallsBackToTheData(): void {
-		$this->assertSame('data-slug', $this->invokePrivateMethod('clientSlug', [[], ['slug' => 'data-slug']]));
-		$this->assertNull($this->invokePrivateMethod('clientSlug', [['slug' => ''], []]));
+		$this->assertSame('data-slug', (new ObjectPayload(data: ['slug' => 'data-slug'], selfData: []))->clientSlug());
+		$this->assertNull((new ObjectPayload(data: [], selfData: ['slug' => '']))->clientSlug());
 	}
 
-	public function testSetSelfMetadataDepublishedNotPresent(): void {
-		// Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createObjectEntity(1, 'uuid-1');
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, [], []]);
-		$this->assertTrue(true);
-	}
 }

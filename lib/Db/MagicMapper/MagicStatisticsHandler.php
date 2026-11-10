@@ -331,21 +331,16 @@ class MagicStatisticsHandler {
 	/**
 	 * Get statistics for objects across all magic tables.
 	 *
-	 * @param int|array|null $registerId Register ID filter
-	 * @param int|array|null $schemaId Schema ID filter
-	 * @param array $exclude Exclusions
+	 * @param StatisticsScope $scope The registers and schemas to cover and the pairs to leave out; every table when omitted.
 	 *
 	 * @return int[] Statistics data
 	 *
 	 * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int}
 	 *
 	 */
-	public function getStatistics(
-		int|array|null $registerId = null,
-		int|array|null $schemaId = null,
-		array $exclude = [],
-	): array {
-		return $this->pairStatistics(filter: new StatisticsPairFilter(wanted: ['register' => $registerId, 'schema' => $schemaId], exclude: $exclude));
+	public function getStatistics(StatisticsScope $scope=new StatisticsScope()): array {
+		$wanted = ['register' => $scope->registerId, 'schema' => $scope->schemaId];
+		return $this->pairStatistics(filter: new StatisticsPairFilter(wanted: $wanted, exclude: $scope->exclude));
 	}//end getStatistics()
 
 	/**
@@ -545,24 +540,9 @@ class MagicStatisticsHandler {
 	}//end chartOf()
 
 	/**
-	 * Convert a database row from a magic mapper table to an ObjectEntity.
-	 *
-	 * This method is public to allow bulk handlers to convert rows for event dispatching.
-	 *
-	 * @param array $row Database row
-	 * @param Register $_register Register context
-	 * @param Schema $_schema Schema context
-	 *
-	 * @return ObjectEntity|null Converted entity or null on failure
-	 *
-	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
-	 */
-	public function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity {
-		return $this->rowToEntity(row: $row, table: new RegisterSchema(register: $_register, schema: $_schema));
-	}//end convertRowToObjectEntity()
-
-	/**
 	 * Convert a row of a magic table to an ObjectEntity; a row that fails is logged and skipped.
+	 *
+	 * Public so the mapper can convert rows for its readers and for event dispatching.
 	 *
 	 * @param array          $row   Database row data.
 	 * @param RegisterSchema $table The register and schema the table belongs to.
@@ -571,7 +551,7 @@ class MagicStatisticsHandler {
 	 *
 	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
-	private function rowToEntity(array $row, RegisterSchema $table): ?ObjectEntity {
+	public function toObjectEntity(array $row, RegisterSchema $table): ?ObjectEntity {
 		try {
 			$objectEntity = $this->entityInContext(register: $table->register, schema: $table->schema);
 
@@ -586,7 +566,7 @@ class MagicStatisticsHandler {
 			$this->logConversionFailure(exception: $e, row: $row);
 			return null;
 		}
-	}//end rowToEntity()
+	}//end toObjectEntity()
 
 	/**
 	 * Log a row that could not be converted to an ObjectEntity.

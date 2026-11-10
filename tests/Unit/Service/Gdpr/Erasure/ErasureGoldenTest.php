@@ -57,6 +57,7 @@ use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewUnknownException;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRefusedException;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner;
 use OCA\OpenRegister\Service\Gdpr\Erasure\SubjectPartyCounter;
+use OCA\OpenRegister\Service\Gdpr\GdprCallerMembership;
 use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IResult;
@@ -70,6 +71,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
+use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
 
 final class ErasureGoldenTest extends TestCase {
 	private const SUBJECT = 'jan@example.org';
@@ -578,8 +580,9 @@ final class ErasureGoldenTest extends TestCase {
 		);
 
 		$recorder = $this->createMock(DestructionRecorder::class);
-		$recorder->method('record')->willReturnCallback(
-			function (ObjectEntity $object, array $scope, string $rule, array $context): array {
+		$recorder->method('recordDestruction')->willReturnCallback(
+			function (RecordDestructionCommand $command): array {
+				[$object, $scope, $rule, $context] = [$command->object, $command->scope, $command->rule, $command->context];
 				$this->calls[] = 'record:' . $object->getUuid() . ':' . $rule . ':' . json_encode($context);
 				if ($object->getUuid() === 'x3') {
 					throw new RuntimeException('record failed');
@@ -767,7 +770,7 @@ final class ErasureGoldenTest extends TestCase {
 			}
 		);
 
-		return new ErasurePreviewStore($mapper, $session, $groups, new NullLogger());
+		return new ErasurePreviewStore($mapper, new GdprCallerMembership($session, $groups, new NullLogger()));
 	}//end store()
 
 	private function row(string $status, string $owner = 'handler', ?DateTime $consumedAt = null): ErasurePreview {

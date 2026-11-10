@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -88,8 +89,7 @@ class ComputedFieldsIntegrationTest extends TestCase {
 
 		$result = $this->handler->evaluateComputedFields(
 			['firstName' => 'Femke', 'lastName' => 'Halsema'],
-			$schema,
-			'save'
+			new ComputedPass(schema: $schema, evaluateOn: 'save')
 		);
 
 		$this->assertSame('Femke Halsema', $result['fullName']);
@@ -116,7 +116,7 @@ class ComputedFieldsIntegrationTest extends TestCase {
 			],
 		]);
 
-		$saveResult = $this->handler->evaluateComputedFields(['price' => 100], $schema, 'save');
+		$saveResult = $this->handler->evaluateComputedFields(['price' => 100], new ComputedPass(schema: $schema, evaluateOn: 'save'));
 		$this->assertSame('21', (string)$saveResult['taxAmount'], 'save-time computed property MUST be evaluated');
 		$this->assertArrayNotHasKey(
 			'totalLabel',
@@ -124,7 +124,7 @@ class ComputedFieldsIntegrationTest extends TestCase {
 			'evaluateOn=read property MUST NOT fire during save-time evaluation'
 		);
 
-		$readResult = $this->handler->evaluateComputedFields(['price' => 100], $schema, 'read');
+		$readResult = $this->handler->evaluateComputedFields(['price' => 100], new ComputedPass(schema: $schema, evaluateOn: 'read'));
 		$this->assertSame(
 			'Total: 121',
 			$readResult['totalLabel'] ?? null,
@@ -139,7 +139,7 @@ class ComputedFieldsIntegrationTest extends TestCase {
 		]);
 
 		$input = ['title' => 'Hello', 'tag' => 'world'];
-		$result = $this->handler->evaluateComputedFields($input, $schema, 'save');
+		$result = $this->handler->evaluateComputedFields($input, new ComputedPass(schema: $schema, evaluateOn: 'save'));
 
 		$this->assertSame($input, $result, 'object MUST pass through unchanged when no computed properties exist');
 	}
@@ -172,7 +172,7 @@ class ComputedFieldsIntegrationTest extends TestCase {
 			],
 		]);
 
-		$result = $this->handler->evaluateComputedFields(['title' => 'x'], $schema, 'save');
+		$result = $this->handler->evaluateComputedFields(['title' => 'x'], new ComputedPass(schema: $schema, evaluateOn: 'save'));
 
 		$this->assertArrayHasKey('broken', $result);
 		$this->assertNull($result['broken'], 'invalid expression MUST evaluate to null, not crash the save');

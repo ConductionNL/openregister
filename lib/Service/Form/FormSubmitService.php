@@ -48,10 +48,12 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\Object\DraftFinder;
 use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
+use OCA\OpenRegister\Service\Object\OwnDraftSearch;
 use Throwable;
 
 /**
@@ -248,7 +250,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	private function rememberedOrSubmitted(FormSubmission $submission, string $key): array {
 		$keyScope = $submission->keyScope();
 		$binding = $this->keeping->keys->bindingFor(subject: $submission->submitter(), payload: $submission->payload);
-		$remembered = $this->keeping->keys->find(scope: $keyScope, key: $key, binding: $binding);
+		$remembered = $this->keeping->keys->answerFor(request: new IdempotentRequest(scope: $keyScope, key: $key, binding: $binding));
 		if ($remembered !== null) {
 			/*
 			 * @var array<string, mixed> $remembered
@@ -257,7 +259,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		}
 
 		$answer = $this->submitOnce(submission: $submission);
-		$this->keeping->keys->remember(scope: $keyScope, key: $key, response: $answer, binding: $binding);
+		$this->keeping->keys->keep(request: new IdempotentRequest(scope: $keyScope, key: $key, binding: $binding), response: $answer);
 
 		return $answer;
 	}//end rememberedOrSubmitted()
@@ -397,7 +399,10 @@ class FormSubmitService implements FormSubmitServiceInterface {
 
 		$owner = DraftOwner::resolve(subject: $submitter->subject, owner: $submitter->owner);
 
-		return $this->drafts->own(register: $pair[0], schema: $pair[1], draftId: $submitter->draftId, owner: $owner) !== null;
+		return $this->drafts->own(
+			address: new DraftAddress(register: $pair[0], schema: $pair[1], draftId: $submitter->draftId),
+			owner: $owner
+		) !== null;
 	}//end isOwnerOfDraft()
 
 	/**
@@ -414,7 +419,10 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	 * @throws FormSubmitRefusedException 404.
 	 */
 	private function draftData(array $plan, OwnedDraft $draft): array {
-		$stored = $this->drafts->own(register: $plan['register'], schema: $plan['schema'], draftId: $draft->draftId, owner: $draft->owner);
+		$stored = $this->drafts->own(
+			address: new DraftAddress(register: $plan['register'], schema: $plan['schema'], draftId: $draft->draftId),
+			owner: $draft->owner
+		);
 		if ($stored === null) {
 			throw $this->refusals->draftGone();
 		}
@@ -441,7 +449,10 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		$register = $this->register(reference: $destination['register'] ?? null);
 		$schema = $this->schema(reference: $destination['schema'] ?? null);
 		$owner = DraftOwner::resolve(subject: $submitter->subject, owner: $submitter->owner);
-		$draft = $this->drafts->own(register: $register, schema: $schema, draftId: (string)$submitter->draftId, owner: $owner);
+		$draft = $this->drafts->own(
+			address: new DraftAddress(register: $register, schema: $schema, draftId: (string)$submitter->draftId),
+			owner: $owner
+		);
 		if ($draft === null) {
 			throw $this->refusals->draftGone();
 		}
@@ -471,7 +482,9 @@ class FormSubmitService implements FormSubmitServiceInterface {
 			return null;
 		}
 
-		return $this->answerOf(draft: $this->drafts->newest(register: $pair[0], schema: $pair[1], owner: $owner, match: $match));
+		return $this->answerOf(draft: $this->drafts->newest(
+			search: new OwnDraftSearch(register: $pair[0], schema: $pair[1], owner: $owner, match: $match)
+		));
 	}//end findDraft()
 
 	/**
@@ -618,8 +631,8 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	 */
 	private function findingsOf(array $plan, string $mode): array {
 		$write = $this->refusals->writeLabelOf(plan: $plan);
-		$object = $this->references->resolveWriteReferences(object: $plan['object'], ids: [], pending: true);
-		$excused = $this->excusalsOf(plan: $plan, object: $object, mode: $mode);
+		$object = $this->references->withPlaceholders(object: $plan['object']);
+		$excused = $this->excusalsOf(plan: array_merge($plan, ['object' => $object]), mode: $mode);
 		try {
 			$result = $this->destinations->validator->validateObject(object: $object, schema: $plan['schema'], notSupplied: $excused);
 
@@ -635,15 +648,14 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	 * An upload token moved its file out of the object (mapPayload), so the
 	 * property is absent from the validated object although it was supplied.
 	 *
-	 * @param array<string, mixed> $plan   The plan.
-	 * @param array<string, mixed> $object The object as validated.
-	 * @param string               $mode   MODE_FULL or MODE_DRAFT.
+	 * @param array<string, mixed> $plan The plan, its object as validated.
+	 * @param string               $mode MODE_FULL or MODE_DRAFT.
 	 *
 	 * @return array<string, string> Property => why it is excused.
 	 */
-	private function excusalsOf(array $plan, array $object, string $mode): array {
+	private function excusalsOf(array $plan, string $mode): array {
 		$policy = new DraftStatusPolicy();
-		$excused = $policy->serverFilledExcusals(schema: $plan['schema'], object: $object);
+		$excused = $policy->serverFilledExcusals(schema: $plan['schema'], object: $plan['object']);
 		if ($mode === self::MODE_DRAFT) {
 			$excused = array_merge($policy->requiredExcusals(schema: $plan['schema']), $excused);
 		}
@@ -670,7 +682,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		$ids = [];
 		foreach ($plans as $plan) {
 			// Earlier writes' ids filled in; 422 when a reference names no earlier write.
-			$object = $this->references->resolveWriteReferences(object: $plan['object'], ids: $ids, pending: false);
+			$object = $this->references->withEarlierIds(object: $plan['object'], ids: $ids);
 			$entity = $this->saveOrCompensate(plan: array_merge($plan, ['object' => $object]), context: $context, created: $created);
 			$created[] = ['plan' => $plan, 'object' => $entity];
 			$ids[$plan['as']] = (string)$entity->getUuid();
@@ -710,7 +722,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		try {
 			return $this->save(plan: $plan, context: $context);
 		} catch (Throwable $exception) {
-			$this->compensation->compensate(created: $created, failedAt: $plan['as'], reason: $exception);
+			$this->compensation->compensate(created: $created, failure: new FormSubmitFailure(failedAt: $plan['as'], reason: $exception));
 			throw $this->refusals->refusalFor(exception: $exception, plan: $plan);
 		}
 	}//end saveOrCompensate()

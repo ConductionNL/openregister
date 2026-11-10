@@ -55,7 +55,7 @@ final class ConfigurationExplainerSentenceTest extends TestCase {
 					return $snapshot;
 				}
 
-				return ConfigurationSnapshot::absent($layer, $ref, $key);
+				return ConfigurationSnapshot::absent(new ConfigurationAddress($layer, $ref, $key));
 			}
 		);
 
@@ -105,7 +105,7 @@ final class ConfigurationExplainerSentenceTest extends TestCase {
 	}//end testAValueOlderThanTheFirstDeploymentSaysSo()
 
 	public function testAKeyNoLayerSetsSaysSo(): void {
-		$answer = $this->explainer(ConfigurationSnapshot::absent(ConfigurationLayer::INSTANCE, null, 'k'), null)->explain('k');
+		$answer = $this->explainer(ConfigurationSnapshot::absent(new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'k')), null)->explain('k');
 
 		$this->assertSame('no layer sets "k"', $answer['explanation']);
 	}//end testAKeyNoLayerSetsSaysSo()

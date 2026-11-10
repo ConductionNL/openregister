@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 
 use OCA\OpenRegister\Service\Schema\SchemaPopulationRuns;
 use DateTime;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\SchemaChangelog;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
@@ -27,8 +28,8 @@ use OCA\OpenRegister\Db\SchemaRunEntry;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
-use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -64,7 +65,6 @@ class SchemaVersioningServiceGoldenTest extends TestCase {
 		$userSession->method('getUser')->willReturn($user);
 
 		$this->service = new SchemaVersioningService(
-			new SchemaDiffService(),
 			$this->changelogMapper,
 			new SchemaPopulationRuns($this->runMapper, $this->runEntryMapper, $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)),
 			$userSession,
@@ -98,7 +98,7 @@ class SchemaVersioningServiceGoldenTest extends TestCase {
 		$data = null;
 		$stored = $this->captureChangelog($data);
 
-		$this->assertSame($stored, $this->service->recordChangelog(3, '2.0.0', $this->breaking(), false, 'import'));
+		$this->assertSame($stored, $this->service->recordChange(3, new SchemaChangeRecord($this->breaking(), false, '2.0.0', 'import')));
 
 		$changes = [['property' => 'email', 'kind' => 'removed']];
 		$this->assertSame(
@@ -118,7 +118,7 @@ class SchemaVersioningServiceGoldenTest extends TestCase {
 		$data = null;
 		$this->captureChangelog($data);
 
-		$this->service->recordChangelog(3, '2.0.0', $this->breaking(), true);
+		$this->service->recordChange(3, new SchemaChangeRecord($this->breaking(), true, '2.0.0'));
 
 		$this->assertSame(
 			['schemaId', 'version', 'classification', 'changes', 'actor', 'acknowledgedBy', 'acknowledgedAt'],
@@ -134,7 +134,7 @@ class SchemaVersioningServiceGoldenTest extends TestCase {
 		$this->captureChangelog($data);
 		$changeSet = new SchemaChangeSet([['property' => 'x', 'kind' => 'added']], SchemaChangeSet::CLASS_COMPATIBLE, 'minor');
 
-		$this->service->recordChangelog(3, '1.1.0', $changeSet, true);
+		$this->service->recordChange(3, new SchemaChangeRecord($changeSet, true, '1.1.0'));
 
 		$this->assertSame(['schemaId', 'version', 'classification', 'changes', 'actor'], array_keys($data));
 		$this->assertSame([], $this->warnings);
@@ -143,7 +143,7 @@ class SchemaVersioningServiceGoldenTest extends TestCase {
 	public function testAFailedWriteIsLoggedAndReturnsNull(): void {
 		$this->changelogMapper->method('createFromArray')->willThrowException(new RuntimeException('db down'));
 
-		$this->assertNull($this->service->recordChangelog(3, '1.1.0', $this->breaking(), true));
+		$this->assertNull($this->service->recordChange(3, new SchemaChangeRecord($this->breaking(), true, '1.1.0')));
 		$this->assertSame(
 			[['[SchemaVersioningService] Failed to record changelog', ['schema_id' => 3, 'error' => 'db down']]],
 			$this->warnings
@@ -161,7 +161,7 @@ class SchemaVersioningServiceGoldenTest extends TestCase {
 
 	private function gateCount(): ?int {
 		try {
-			$this->service->enforceGate($this->breaking(), false, 3);
+			$this->service->gateChange(3, new SchemaChangeRecord($this->breaking(), false));
 		} catch (BreakingSchemaChangeException $e) {
 			return $e->toResponse()['invalidCount'] ?? null;
 		}
@@ -170,7 +170,7 @@ class SchemaVersioningServiceGoldenTest extends TestCase {
 	}
 
 	public function testTheGateReadsTheFirstCompletedRevalidationReport(): void {
-		$this->runMapper->expects($this->once())->method('findBySchema')->with(3, 25)->willReturn(
+		$this->runMapper->expects($this->once())->method('findBySchema')->with(3, new ListQuery(limit: 25))->willReturn(
 			[
 				$this->schemaRun(SchemaRun::TYPE_MIGRATION, SchemaRun::STATE_COMPLETED, ['invalid' => 9]),
 				$this->schemaRun(SchemaRun::TYPE_REVALIDATION, SchemaRun::STATE_RUNNING, ['invalid' => 8]),

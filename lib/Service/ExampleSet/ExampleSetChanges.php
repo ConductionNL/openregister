@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * Applies, proves and reverts changes to existing objects.
  *
@@ -133,7 +135,7 @@ class ExampleSetChanges {
 	 */
 	private function located(array $change, array $context): array {
 		$gaps = [];
-		$fill = (array) $this->values->fill(value: $this->declaredParts(change: $change), context: $context, gaps: $gaps);
+		$fill = (array) $this->values->fill(value: $this->declaredParts(change: $change), scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
 		if ($gaps !== []) {
 			return ['refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))];
 		}
@@ -230,7 +232,7 @@ class ExampleSetChanges {
 	 */
 	private function withSet(array $row, array $set): array {
 		foreach ($set as $path => $value) {
-			$row = $this->paths->withPath(row: $row, path: (string) $path, value: $value);
+			$row = $this->paths->withPath(row: $row, set: new ExampleSetPathValue(path: (string) $path, value: $value));
 		}
 
 		return $row;
@@ -251,7 +253,7 @@ class ExampleSetChanges {
 				$list[] = $value;
 			}
 
-			$row = $this->paths->withPath(row: $row, path: (string) $path, value: array_values($list));
+			$row = $this->paths->withPath(row: $row, set: new ExampleSetPathValue(path: (string) $path, value: array_values($list)));
 		}
 
 		return $row;
@@ -548,6 +550,9 @@ class ExampleSetChanges {
 			return [];
 		}
 
-		return $this->store->matching(register: (string) $change['register'], schema: (string) $change['schema'], where: $where);
+		return $this->store->rowsMatching(
+			table: new RegisterSchemaRef(register: (string) $change['register'], schema: (string) $change['schema']),
+			where: $where
+		);
 	}//end target()
 }//end class

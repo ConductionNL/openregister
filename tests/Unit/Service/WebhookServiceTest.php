@@ -37,11 +37,13 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
-use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
-use OCA\OpenRegister\Service\WebhookRequestOptions;
+use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookDispatchServices;
+use OCA\OpenRegister\Service\WebhookEvent;
+use OCA\OpenRegister\Service\WebhookRequestOptions;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Service\WebhookStores;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -648,7 +650,7 @@ class WebhookServiceTest extends TestCase {
 		// No delivery should happen
 		$this->webhookLogMapper->expects($this->never())->method('insert');
 
-		$this->service->dispatchEvent($event, 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', ['test' => 'data']);
+		$this->service->dispatchEvent('OCA\\OpenRegister\\Event\\ObjectCreatedEvent', ['test' => 'data']);
 	}
 
 	public function testDispatchEventWithExceptionOnFindForEvent(): void {
@@ -660,7 +662,7 @@ class WebhookServiceTest extends TestCase {
 		// Should silently skip
 		$this->webhookLogMapper->expects($this->never())->method('insert');
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['test' => 'data']);
+		$this->service->dispatchEvent('SomeEvent', ['test' => 'data']);
 	}
 
 	public function testDispatchEventEnqueuesDeliveryJobPerWebhookAndDoesNotDeliverSynchronously(): void {
@@ -685,7 +687,6 @@ class WebhookServiceTest extends TestCase {
 			});
 
 		$this->service->dispatchEvent(
-			$event,
 			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			['test' => 'data']
 		);
@@ -712,7 +713,7 @@ class WebhookServiceTest extends TestCase {
 		$this->logger->expects($this->atLeastOnce())->method('error')
 			->with($this->stringContains('could not be enqueued'), $this->callback(static fn (array $context): bool => $context['webhook_id'] === 1));
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['test' => str_repeat('x', 5000)]);
+		$this->service->dispatchEvent('SomeEvent', ['test' => str_repeat('x', 5000)]);
 
 		$this->assertSame([2], $enqueued, 'the refusal is contained to the one delivery');
 	}
@@ -722,7 +723,12 @@ class WebhookServiceTest extends TestCase {
 	public function testDeliverWebhookReturnsFalseWhenDisabled(): void {
 		$webhook = $this->createTestWebhook(enabled: false);
 
-		$result = $this->service->deliverWebhook($webhook, 'SomeEvent', ['data' => 'test']);
+		$result = $this->service->deliverWebhook(
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'SomeEvent', payload: ['data' => 'test'])
+			)
+		);
 
 		$this->assertFalse($result);
 	}
@@ -732,7 +738,12 @@ class WebhookServiceTest extends TestCase {
 		// Set filters as JSON string (Entity expects string type)
 		$webhook->setFilters(json_encode(['action' => 'delete']));
 
-		$result = $this->service->deliverWebhook($webhook, 'SomeEvent', ['action' => 'create']);
+		$result = $this->service->deliverWebhook(
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'SomeEvent', payload: ['action' => 'create'])
+			)
+		);
 
 		$this->assertFalse($result);
 	}
@@ -1231,9 +1242,10 @@ class WebhookServiceTest extends TestCase {
 			}));
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['objectType' => 'object']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['objectType' => 'object'])
+			)
 		);
 
 		$this->assertTrue($result);
@@ -1271,9 +1283,10 @@ class WebhookServiceTest extends TestCase {
 			}));
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['objectType' => 'object']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['objectType' => 'object'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -1309,9 +1322,10 @@ class WebhookServiceTest extends TestCase {
 			}));
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'SomeEvent',
-			['data' => 'test']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'SomeEvent', payload: ['data' => 'test'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -1339,9 +1353,10 @@ class WebhookServiceTest extends TestCase {
 			}));
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'SomeEvent',
-			['data' => 'test']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'SomeEvent', payload: ['data' => 'test'])
+			)
 		);
 
 		$this->assertFalse($result);
@@ -1387,10 +1402,11 @@ class WebhookServiceTest extends TestCase {
 			);
 
 		$this->service->deliverWebhook(
-			$webhook,
-			'SomeEvent',
-			['data' => 'test'],
-			2
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'SomeEvent', payload: ['data' => 'test']),
+				attempt: 2
+			)
 		);
 	}//end testDeliverWebhookSchedulesRetryOnFailure()
 
@@ -1421,10 +1437,11 @@ class WebhookServiceTest extends TestCase {
 			}));
 
 		$this->service->deliverWebhook(
-			$webhook,
-			'SomeEvent',
-			['data' => 'test'],
-			3
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'SomeEvent', payload: ['data' => 'test']),
+				attempt: 3
+			)
 		);
 	}//end testDeliverWebhookDoesNotRetryAtMaxAttempts()
 
@@ -1455,9 +1472,10 @@ class WebhookServiceTest extends TestCase {
 			}));
 
 		$this->service->deliverWebhook(
-			$webhook,
-			'SomeEvent',
-			['data' => 'test']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'SomeEvent', payload: ['data' => 'test'])
+			)
 		);
 	}//end testDeliverWebhookExtractsJsonMessageFromErrorResponse()
 
@@ -1488,9 +1506,10 @@ class WebhookServiceTest extends TestCase {
 			}));
 
 		$this->service->deliverWebhook(
-			$webhook,
-			'SomeEvent',
-			['data' => 'test']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'SomeEvent', payload: ['data' => 'test'])
+			)
 		);
 	}//end testDeliverWebhookExtractsJsonErrorKeyFromResponse()
 
@@ -1626,7 +1645,7 @@ class WebhookServiceTest extends TestCase {
 				$this->anything()
 			);
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['data' => 'test']);
+		$this->service->dispatchEvent('SomeEvent', ['data' => 'test']);
 	}//end testDispatchEventLogsDebugForNoWebhooks()
 
 	/**
@@ -1649,7 +1668,7 @@ class WebhookServiceTest extends TestCase {
 				})
 			);
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['data' => 'test']);
+		$this->service->dispatchEvent('SomeEvent', ['data' => 'test']);
 	}//end testDispatchEventLogsInfoWhenWebhooksFound()
 
 	// ─── interceptRequest with CloudEventFormatter ──────────────────
@@ -2114,10 +2133,11 @@ class WebhookServiceTest extends TestCase {
 			}));
 
 		$this->service->deliverWebhook(
-			$webhook,
-			'SomeEvent',
-			['data' => 'test'],
-			3
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'SomeEvent', payload: ['data' => 'test']),
+				attempt: 3
+			)
 		);
 	}//end testDeliverWebhookPassesAttemptToBuildPayload()
 
@@ -2248,9 +2268,10 @@ class WebhookServiceTest extends TestCase {
 		$this->webhookLogMapper->method('insert');
 
 		$result = $this->service->deliverWebhook(
-			$webhook,
-			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-			['objectType' => 'object', 'action' => 'create']
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['objectType' => 'object', 'action' => 'create'])
+			)
 		);
 
 		$this->assertTrue($result);

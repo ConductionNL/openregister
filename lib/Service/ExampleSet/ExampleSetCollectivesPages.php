@@ -100,8 +100,8 @@ class ExampleSetCollectivesPages extends ExampleSetEngineRows {
 		$rules = new ExampleSetFieldRules();
 		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'a collectives page'),
-				fn (): string => $rules->missingRefusal(data: $data, required: self::REQUIRED, row: 'a collectives page'),
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a collectives page', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a collectives page', required: self::REQUIRED)),
 				fn (): string => $rules->strangerRefusal(people: [(string) $data['owner']], users: $users),
 				fn (): string => $this->shareRefusal(shareWith: ($data['shareWith'] ?? [])),
 			]

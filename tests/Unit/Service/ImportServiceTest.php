@@ -16,11 +16,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Import\ImportValueCaster;
 use OCA\OpenRegister\Service\Import\ImportTarget;
 use OCA\OpenRegister\Service\Import\MappedSheet;
+use OCA\OpenRegister\Service\Import\RowImportTarget;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
@@ -33,6 +35,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportOptions;
 
 /**
  * Unit tests for ImportService
@@ -84,7 +89,7 @@ class ImportServiceTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
 		// The CSV codec is invoked as a translatable-property pre-pass
-		// inside transformCsvRowToObject; without a stub the default
+		// inside transformCsvRow; without a stub the default
 		// mock returns null and wipes the row data. Pass-through.
 		$translationCsvCodec = $this->createMock(\OCA\OpenRegister\Service\Translation\TranslationCsvCodec::class);
 		$translationCsvCodec->method('unflattenFromCsv')
@@ -226,7 +231,7 @@ class ImportServiceTest extends TestCase {
 	public function testImportFromCsvWithInvalidPath(): void {
 		$this->expectException(\Exception::class);
 
-		$this->service->importFromCsv('/nonexistent/path.csv');
+		$this->service->importFromCsv(request: new ImportRequest(filePath: '/nonexistent/path.csv'));
 	}
 
 	public function testImportFromCsvRequiresSchema(): void {
@@ -238,7 +243,7 @@ class ImportServiceTest extends TestCase {
 			$this->expectExceptionMessage('CSV import requires a specific schema');
 
 			$register = $this->createRegister(1);
-			$this->service->importFromCsv($tmpFile, $register, null);
+			$this->service->importFromCsv(request: new ImportRequest(filePath: $tmpFile, scope: new ImportScope(register: $register)));
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -265,7 +270,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$this->assertIsArray($result);
 
 			// Get the first (and only) sheet result.
@@ -298,10 +308,11 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromCsv(
-				$tmpFile,
-				$register,
-				$schema,
-				publish: true
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+					options: new ImportOptions(publish: true),
+				),
 			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'Test', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
@@ -322,7 +333,12 @@ class ImportServiceTest extends TestCase {
 		]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$this->assertIsArray($result);
 
 			$sheetResult = reset($result);
@@ -355,7 +371,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'John', 'age' => 30, 'active' => true, 'tags' => ['a', 'b', 'c'], '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
@@ -383,7 +404,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$sheetResult = reset($result);
 			$this->assertCount(2, $sheetResult['unchanged']);
 			$this->assertStringContainsString('operations avoided', $sheetResult['deduplication_efficiency']);
@@ -412,7 +438,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
@@ -451,10 +482,10 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromCsv(
-				$tmpFile,
-				$register,
-				$schema,
-				currentUser: $user
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema, currentUser: $user),
+				),
 			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
@@ -494,10 +525,10 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromCsv(
-				$tmpFile,
-				$register,
-				$schema,
-				currentUser: $user
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema, currentUser: $user),
+				),
 			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2, 'organisation' => '12345678-1234-1234-1234-123456789abc']]], $saved);
@@ -527,10 +558,11 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromCsv(
-				$tmpFile,
-				$register,
-				$schema,
-				validation: true
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+					options: new ImportOptions(validation: true),
+				),
 			);
 			$sheetResult = reset($result);
 			$this->assertNotEmpty($sheetResult['errors']);
@@ -557,7 +589,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$sheetResult = reset($result);
 			$this->assertArrayHasKey('performance', $sheetResult);
 			$this->assertArrayHasKey('totalTime', $sheetResult['performance']);
@@ -584,7 +621,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$sheetResult = reset($result);
 			$this->assertArrayHasKey('schema', $sheetResult);
 			$this->assertSame(2, $sheetResult['schema']['id']);
@@ -614,7 +656,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$sheetResult = reset($result);
 			$this->assertCount(1, $sheetResult['updated']);
 			$this->assertSame('uuid-1', $sheetResult['updated'][0]);
@@ -645,10 +692,10 @@ class ImportServiceTest extends TestCase {
 		try {
 			// Explicitly set publish to false to cover the "publish disabled" log branch.
 			$result = $this->service->importFromCsv(
-				$tmpFile,
-				$register,
-				$schema,
-				publish: false
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
 			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'Test', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
@@ -677,7 +724,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$this->assertIsArray($result);
 			$this->assertSame([['id' => 'uuid-existing', 'name' => 'John', '@self' => ['register' => 1, 'schema' => 2, 'id' => 'uuid-existing']]], $saved);
 		} finally {
@@ -717,10 +769,10 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromCsv(
-				$tmpFile,
-				$register,
-				$schema,
-				currentUser: $user
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema, currentUser: $user),
+				),
 			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
@@ -760,10 +812,10 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromCsv(
-				$tmpFile,
-				$register,
-				$schema,
-				currentUser: $user
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema, currentUser: $user),
+				),
 			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2, 'published' => '2025-01-01 00:00:00']]], $saved);
@@ -789,7 +841,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$sheetResult = reset($result);
 			$this->assertSame(3, $sheetResult['found']);
 			$this->assertCount(1, $sheetResult['created']);
@@ -823,7 +880,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'Item', 'price' => 9.99, '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
@@ -852,7 +914,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'Item', 'metadata' => ['key' => 'value'], '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
@@ -884,7 +951,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'Child', 'parent' => 'parent-uuid', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
@@ -914,10 +986,11 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromCsv(
-				$tmpFile,
-				$register,
-				$schema,
-				validation: true
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+					options: new ImportOptions(validation: true),
+				),
 			);
 			$sheetResult = reset($result);
 			$this->assertNotEmpty($sheetResult['errors']);
@@ -935,7 +1008,7 @@ class ImportServiceTest extends TestCase {
 	public function testImportFromExcelWithInvalidPath(): void {
 		$this->expectException(\Exception::class);
 
-		$this->service->importFromExcel('/nonexistent/path.xlsx');
+		$this->service->importFromExcel(request: new ImportRequest(filePath: '/nonexistent/path.xlsx'));
 	}
 
 	public function testImportFromExcelWithValidFile(): void {
@@ -964,7 +1037,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromExcel($tmpFile, $register, $schema);
+			$result = $this->service->importFromExcel(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$this->assertIsArray($result);
 			$sheetResult = reset($result);
 			$this->assertSame(2, $sheetResult['found']);
@@ -993,7 +1071,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromExcel($tmpFile, $register, $schema);
+			$result = $this->service->importFromExcel(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$sheetResult = reset($result);
 			$this->assertArrayHasKey('schema', $sheetResult);
 			$this->assertSame(2, $sheetResult['schema']['id']);
@@ -1017,7 +1100,7 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
-			$this->service->importFromExcel($tmpFile, $register);
+			$this->service->importFromExcel(request: new ImportRequest(filePath: $tmpFile, scope: new ImportScope(register: $register)));
 		} finally {
 			@unlink($tmpFile);
 		}
@@ -1050,7 +1133,7 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromExcel($tmpFile, $register);
+			$result = $this->service->importFromExcel(request: new ImportRequest(filePath: $tmpFile, scope: new ImportScope(register: $register)));
 			$this->assertIsArray($result);
 			$this->assertArrayHasKey('test-schema', $result);
 			$this->assertSame(1, $result['test-schema']['found']);
@@ -1082,10 +1165,11 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromExcel(
-				$tmpFile,
-				$register,
-				$schema,
-				publish: true
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+					options: new ImportOptions(publish: true),
+				),
 			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'Test', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
@@ -1106,7 +1190,12 @@ class ImportServiceTest extends TestCase {
 		]);
 
 		try {
-			$result = $this->service->importFromExcel($tmpFile, $register, $schema);
+			$result = $this->service->importFromExcel(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$sheetResult = reset($result);
 			$this->assertNotEmpty($sheetResult['errors']);
 		} finally {
@@ -1130,7 +1219,12 @@ class ImportServiceTest extends TestCase {
 		]);
 
 		try {
-			$result = $this->service->importFromExcel($tmpFile, $register, $schema);
+			$result = $this->service->importFromExcel(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$sheetResult = reset($result);
 			$this->assertNotEmpty($sheetResult['errors']);
 		} finally {
@@ -1160,7 +1254,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromExcel($tmpFile, $register, $schema);
+			$result = $this->service->importFromExcel(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$this->assertIsArray($result);
 			$sheetResult = reset($result);
 			$this->assertSame(1, $sheetResult['found']);
@@ -1191,7 +1290,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromExcel($tmpFile, $register, $schema);
+			$result = $this->service->importFromExcel(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
 		} finally {
@@ -1231,10 +1335,10 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromExcel(
-				$tmpFile,
-				$register,
-				$schema,
-				currentUser: $user
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema, currentUser: $user),
+				),
 			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'John', '@self' => ['organisation' => '12345678-1234-1234-1234-123456789abc', 'register' => 1, 'schema' => 2]]], $saved);
@@ -1275,10 +1379,10 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromExcel(
-				$tmpFile,
-				$register,
-				$schema,
-				currentUser: $user
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema, currentUser: $user),
+				),
 			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
@@ -1309,7 +1413,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromExcel($tmpFile, $register, $schema);
+			$result = $this->service->importFromExcel(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$this->assertIsArray($result);
 			$this->assertSame([['id' => 'uuid-existing', 'name' => 'John', '@self' => ['register' => 1, 'schema' => 2, 'id' => 'uuid-existing']]], $saved);
 		} finally {
@@ -1325,7 +1434,7 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			// No register, no schema - should process but not save.
-			$result = $this->service->importFromExcel($tmpFile);
+			$result = $this->service->importFromExcel(request: new ImportRequest(filePath: $tmpFile));
 			$this->assertIsArray($result);
 			$sheetResult = reset($result);
 			// Should have found 1 object but not created any (no register/schema).
@@ -1359,10 +1468,11 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromExcel(
-				$tmpFile,
-				$register,
-				$schema,
-				validation: true
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+					options: new ImportOptions(validation: true),
+				),
 			);
 			$sheetResult = reset($result);
 			$this->assertNotEmpty($sheetResult['errors']);
@@ -1390,7 +1500,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromExcel($tmpFile, $register, $schema);
+			$result = $this->service->importFromExcel(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$sheetResult = reset($result);
 			$this->assertCount(1, $sheetResult['unchanged']);
 			$this->assertStringContainsString('operations avoided', $sheetResult['deduplication_efficiency']);
@@ -1432,10 +1547,10 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromExcel(
-				$tmpFile,
-				$register,
-				$schema,
-				currentUser: $user
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema, currentUser: $user),
+				),
 			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
@@ -1469,7 +1584,7 @@ class ImportServiceTest extends TestCase {
 			// Using register + schema=null triggers multi-schema path.
 			// But since there's no matching schema, it errors.
 			// Test the case where schema is explicitly null but register is set.
-			$result = $this->service->importFromExcel($tmpFile, $register, null);
+			$result = $this->service->importFromExcel(request: new ImportRequest(filePath: $tmpFile, scope: new ImportScope(register: $register)));
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'John', 'count' => '42', '@self' => ['register' => 1, 'schema' => null]]], $saved);
 		} finally {
@@ -1964,12 +2079,12 @@ class ImportServiceTest extends TestCase {
 	}
 
 	// =========================================================================
-	// Private method testing via Reflection: transformCsvRowToObject
+	// Private method testing via Reflection: transformCsvRow
 	// =========================================================================
 
 	public function testTransformCsvRowToObject(): void {
 		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformCsvRowToObject');
+		$method = $ref->getMethod('transformCsvRow');
 		$method->setAccessible(true);
 
 		$register = $this->createRegister(1);
@@ -1983,7 +2098,7 @@ class ImportServiceTest extends TestCase {
 			'age' => '30',
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, $schema, null);
+		$result = $method->invoke($this->service, $rowData, new RowImportTarget(new RegisterSchema($register, $schema)));
 
 		$this->assertSame('John', $result['name']);
 		$this->assertSame(30, $result['age']);
@@ -1993,7 +2108,7 @@ class ImportServiceTest extends TestCase {
 
 	public function testTransformCsvRowToObjectWithIdField(): void {
 		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformCsvRowToObject');
+		$method = $ref->getMethod('transformCsvRow');
 		$method->setAccessible(true);
 
 		$register = $this->createRegister(1);
@@ -2006,14 +2121,14 @@ class ImportServiceTest extends TestCase {
 			'name' => 'John',
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, $schema, null);
+		$result = $method->invoke($this->service, $rowData, new RowImportTarget(new RegisterSchema($register, $schema)));
 
 		$this->assertSame('existing-uuid', $result['@self']['id']);
 	}
 
 	public function testTransformCsvRowToObjectSkipsEmptyValues(): void {
 		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformCsvRowToObject');
+		$method = $ref->getMethod('transformCsvRow');
 		$method->setAccessible(true);
 
 		$register = $this->createRegister(1);
@@ -2028,7 +2143,7 @@ class ImportServiceTest extends TestCase {
 			'phone' => null,
 		];
 
-		$result = $method->invoke($this->service, $rowData, $register, $schema, null);
+		$result = $method->invoke($this->service, $rowData, new RowImportTarget(new RegisterSchema($register, $schema)));
 
 		$this->assertSame('John', $result['name']);
 		$this->assertArrayNotHasKey('email', $result);
@@ -2037,7 +2152,7 @@ class ImportServiceTest extends TestCase {
 
 	public function testTransformCsvRowToObjectCachesSchemaProperties(): void {
 		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformCsvRowToObject');
+		$method = $ref->getMethod('transformCsvRow');
 		$method->setAccessible(true);
 
 		$register = $this->createRegister(1);
@@ -2048,8 +2163,8 @@ class ImportServiceTest extends TestCase {
 		$rowData = ['name' => 'John'];
 
 		// Call twice to test caching.
-		$method->invoke($this->service, $rowData, $register, $schema, null);
-		$result = $method->invoke($this->service, $rowData, $register, $schema, null);
+		$method->invoke($this->service, $rowData, new RowImportTarget(new RegisterSchema($register, $schema)));
+		$result = $method->invoke($this->service, $rowData, new RowImportTarget(new RegisterSchema($register, $schema)));
 
 		$this->assertSame('John', $result['name']);
 	}
@@ -2392,15 +2507,13 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromCsv(
-				$tmpFile,
-				$register,
-				$schema,
-				validation: false,
-				events: true,
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+					options: new ImportOptions(events: true, enrich: false),
+				),
 				_rbac: false,
 				_multitenancy: false,
-				publish: false,
-				enrich: false
 			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'John', '@self' => ['register' => 1, 'schema' => 2]]], $saved);
@@ -2430,7 +2543,12 @@ class ImportServiceTest extends TestCase {
 			]);
 
 		try {
-			$result = $this->service->importFromCsv($tmpFile, $register, $schema);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema),
+				),
+			);
 			$sheetResult = reset($result);
 
 			$perf = $sheetResult['performance'];
@@ -2479,10 +2597,10 @@ class ImportServiceTest extends TestCase {
 
 		try {
 			$result = $this->service->importFromExcel(
-				$tmpFile,
-				$register,
-				$schema,
-				currentUser: $user
+				request: new ImportRequest(
+					filePath: $tmpFile,
+					scope: new ImportScope(register: $register, schema: $schema, currentUser: $user),
+				),
 			);
 			$this->assertIsArray($result);
 			$this->assertSame([['name' => 'John', '@self' => ['created' => '2025-01-01 00:00:00', 'register' => 1, 'schema' => 2]]], $saved);

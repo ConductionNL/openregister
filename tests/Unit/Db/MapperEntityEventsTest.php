@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ApplicationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FlowRun;
@@ -183,15 +184,12 @@ final class MapperEntityEventsTest extends TestCase {
 		$objects->method('getStatistics')->willReturn(['total' => 0]);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($objects);
-		[$session, $groups, $organisations] = $this->caller();
 		$mapper = new RegisterMapper(
 			$this->connection(),
 			$this->createMock(SchemaMapperInterface::class),
 			$this->dispatcher(),
 			$container,
-			$organisations,
-			$session,
-			$groups,
+			$this->tenancy(),
 			$this->createMock(IAppConfig::class),
 			new NullLogger()
 		);
@@ -222,8 +220,8 @@ final class MapperEntityEventsTest extends TestCase {
 		);
 
 		$relation = $this->given(new EntityRelation(), ['id' => 11, 'skipAnonymization' => false]);
-		$mapper->updateDecisionMetadata(relation: $relation, fields: ['skipAnonymization' => true], actingUser: $this->user);
-		$mapper->updateDecisionMetadata(relation: $relation, fields: ['skipAnonymization' => true], actingUser: $this->user);
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(relation: $relation, fields: ['skipAnonymization' => true], actingUser: $this->user));
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(relation: $relation, fields: ['skipAnonymization' => true], actingUser: $this->user));
 
 		$this->assertSame(
 			[

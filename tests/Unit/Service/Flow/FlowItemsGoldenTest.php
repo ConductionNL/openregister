@@ -26,6 +26,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use JsonSerializable;
+use OCA\OpenRegister\Service\Flow\LiveSubject;
+use OCA\OpenRegister\Service\Flow\FlowSubjectItems;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use PHPUnit\Framework\TestCase;
 use stdClass;
@@ -89,8 +92,8 @@ class FlowItemsGoldenTest extends TestCase {
 		}
 
 		$actual['item / defaults'] = FlowItems::item(json: ['a' => 1]);
-		$actual['item / full'] = FlowItems::item(json: ['a' => 1], binary: ['b' => 2], fromItemIndex: 0, output: 'out');
-		$actual['item / empty output'] = FlowItems::item(json: [], binary: [], fromItemIndex: null, output: '');
+		$actual['item / full'] = FlowItems::item(json: ['a' => 1], options: new FlowItemOptions(binary: ['b' => 2], fromItemIndex: 0, output: 'out'));
+		$actual['item / empty output'] = FlowItems::item(json: [], options: new FlowItemOptions(binary: [], fromItemIndex: null, output: ''));
 		$actual['outputOf'] = [FlowItems::outputOf(member: []), FlowItems::outputOf(member: ['output' => 'x']), FlowItems::outputOf(member: ['output' => ''])];
 
 		$plain = new stdClass();
@@ -130,7 +133,7 @@ class FlowItemsGoldenTest extends TestCase {
 		];
 		foreach ($cases as $name => [$list, $subject, $uuid]) {
 			try {
-				$actual['refresh / ' . $name] = FlowItems::refreshSubjectProjection(items: $list, subject: $subject, subjectUuid: $uuid);
+				$actual['refresh / ' . $name] = FlowSubjectItems::refreshSubjectProjection(items: $list, subject: new LiveSubject(subject: $subject, uuid: $uuid));
 			} catch (Throwable $error) {
 				$actual['refresh / ' . $name] = ['error' => get_class($error), 'message' => $error->getMessage()];
 			}

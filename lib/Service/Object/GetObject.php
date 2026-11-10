@@ -29,8 +29,12 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -223,7 +227,10 @@ class GetObject
      */
     private function findInSource(ObjectSourceBinding $source, string $id): ObjectEntity
     {
-        $virtual = $source->provider?->find(register: $source->register, schema: $source->schema, id: $id, config: $source->config());
+        $virtual = $source->provider?->find(
+            source: new SourcedTable(table: new RegisterSchema(register: $source->register, schema: $source->schema), config: $source->config()),
+            id: $id
+        );
         if ($virtual === null) {
             throw new DoesNotExistException(sprintf('Object %s not found', $id));
         }
@@ -394,10 +401,20 @@ class GetObject
         // handler honours them. These are read from the query array downstream;
         // passing them only as method arguments left them silently dropped, so
         // a caller's `_rbac:false` (e.g. installer/system context) had no effect.
-        $objects = $this->objectMapper->findAll(
-            limit: $limit, offset: $offset, filters: array_merge($filters, ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy]),
-            sort: $sort, search: $search, ids: $ids, uses: $uses, register: $register, schema: $schema
+        $listing = new ListQuery(
+            limit: ($limit ?? ListQuery::UNBOUNDED),
+            offset: $offset,
+            filters: array_merge($filters, ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy]),
+            sort: $sort,
+            search: $search
         );
+        $table   = null;
+        if ($register !== null && $schema !== null) {
+            $table = new RegisterSchema(register: $register, schema: $schema);
+        }
+
+        $request = new MagicListRequest(table: $table, query: $listing, ids: $ids, uses: $uses);
+        $objects = $this->objectMapper->findAllListed(request: $request);
         return $this->withFilesHydrated(objects: $objects, files: $files);
     }//end findAll()
 
@@ -413,7 +430,10 @@ class GetObject
      */
     private function findAllInSource(ObjectSourceBinding $source, array $query): array
     {
-        return $source->provider?->findAll(register: $source->register, schema: $source->schema, query: $query, config: $source->config()) ?? [];
+        return $source->provider?->findAll(
+            source: new SourcedTable(table: new RegisterSchema(register: $source->register, schema: $source->schema), config: $source->config()),
+            query: $query
+        ) ?? [];
     }//end findAllInSource()
 
     /**
@@ -495,6 +515,6 @@ class GetObject
         unset($filters['object'], $filters['register'], $filters['schema']);
         $filters['object_uuid'] = $object->getUuid();
 
-        return $this->auditTrailMapper->findAll(filters: $filters, sort: ['created' => 'DESC']);
+        return $this->auditTrailMapper->findTrail(query: ListQuery::unbounded(filters: $filters, sort: ['created' => 'DESC']));
     }//end findLogs()
 }//end class

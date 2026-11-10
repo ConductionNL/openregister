@@ -59,6 +59,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller {
 	// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 	use OCA\OpenRegister\Notifications\Controller\GraphQLSubscriptionController;
+	use OCA\OpenRegister\Notifications\Service\GraphQL\EventStreamFilter;
 	use OCA\OpenRegister\Notifications\Service\GraphQL\SubscriptionService;
 	use OCP\AppFramework\Http\Response;
 	use OCP\IRequest;
@@ -155,10 +156,10 @@ namespace OCA\OpenRegister\Tests\Unit\Controller {
 			];
 
 			$calls = [];
-			$this->subscriptionService->method('getEventsSince')
+			$this->subscriptionService->method('eventsMatching')
 				->willReturnCallback(
-					static function ($lastId, $schemaId, $registerId) use (&$calls, $events) {
-						$calls[] = [$lastId, $schemaId, $registerId];
+					static function (EventStreamFilter $filter) use (&$calls, $events) {
+						$calls[] = [$filter->lastEventId, $filter->schemaId, $filter->registerId];
 						if (count($calls) === 1) {
 							return $events;
 						}
@@ -203,10 +204,10 @@ namespace OCA\OpenRegister\Tests\Unit\Controller {
 			$this->givenRequest([], null);
 
 			$calls = [];
-			$this->subscriptionService->method('getEventsSince')
+			$this->subscriptionService->method('eventsMatching')
 				->willReturnCallback(
-					static function ($lastId, $schemaId, $registerId) use (&$calls) {
-						$calls[] = [$lastId, $schemaId, $registerId];
+					static function (EventStreamFilter $filter) use (&$calls) {
+						$calls[] = [$filter->lastEventId, $filter->schemaId, $filter->registerId];
 						return [];
 					}
 				);
@@ -230,7 +231,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller {
 		public function testSubscribeEmitsKeepAliveHeartbeats(): void {
 			$this->givenRequest(['schema' => '1'], null);
 
-			$this->subscriptionService->method('getEventsSince')->willReturn([]);
+			$this->subscriptionService->method('eventsMatching')->willReturn([]);
 			$this->subscriptionService->expects($this->never())->method('formatAsSSE');
 
 			[, $output] = $this->runSubscribe();

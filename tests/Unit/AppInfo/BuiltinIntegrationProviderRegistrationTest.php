@@ -112,14 +112,14 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\ContactsProvider' => [
-			'OCA\OpenRegister\Service\ContactService',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
+			'OCA\OpenRegister\Service\ContactService',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\DeckProvider' => [
-			'OCA\OpenRegister\Service\DeckLinkService',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
+			'OCA\OpenRegister\Service\DeckLinkService',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\EmailProvider' => [
 			'OCA\OpenRegister\Notifications\Service\EmailServiceInterface',
@@ -141,8 +141,6 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Db\FormLinkMapperInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\SharesProvider' => [
-			'OCP\IDBConnection',
-			'OCP\App\IAppManager',
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\ShareLinkService' => [
@@ -162,9 +160,9 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IGroupManager',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider' => [
-			'OCA\OpenRegister\Db\BookmarkLinkMapperInterface',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
+			'OCA\OpenRegister\Db\BookmarkLinkMapperInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\TalkProvider' => [
 			'OCP\App\IAppManager',
@@ -278,7 +276,6 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		'OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner' => [
 		],
 		'OCA\OpenRegister\Service\Schema\SchemaVersioningService' => [
-			'OCA\OpenRegister\Service\Schema\SchemaDiffService',
 			'OCA\OpenRegister\Db\SchemaChangelogMapperInterface',
 			'OCA\OpenRegister\Db\SchemaRunMapperInterface',
 			'OCA\OpenRegister\Db\SchemaRunEntryMapperInterface',

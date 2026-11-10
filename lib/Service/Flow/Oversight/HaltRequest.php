@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Oversight;
 
 /**
- * What engaging a halt asks for, already trimmed.
+ * What engaging a halt asks for; {@see self::trimmed()} is the form a halt stores.
  *
  * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
  */
@@ -46,6 +46,17 @@ final class HaltRequest {
 		public readonly string $nodeTypePrefix = '',
 	) {
 	}//end __construct()
+
+	/**
+	 * The same request with every value trimmed.
+	 *
+	 * @return self The trimmed request.
+	 *
+	 * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
+	 */
+	public function trimmed(): self {
+		return new self(organisation: trim($this->organisation), app: trim($this->app), reason: trim($this->reason), nodeTypePrefix: trim($this->nodeTypePrefix));
+	}//end trimmed()
 
 	/**
 	 * The node-type prefix the halt stops: the declared one, or "<app>.".

@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
@@ -145,12 +146,13 @@ class SendTalkMessageNode extends MessagingNodeBase implements
 	 */
 	public function configForm(): array {
 		return [
-			$this->requiredField(key: 'conversation', label: $this->l10n->t('Conversation'), type: 'text', help: $this->l10n->t(
+			$this->requiredField(field: new NodeFormField(
+				key: 'conversation', label: $this->l10n->t('Conversation'), type: 'text', help: $this->l10n->t(
 				'A conversation token, or a field on the item such as {{ conversationToken }}. The acting user must be a participant.'
-			)),
-			$this->requiredField(key: 'message', label: $this->l10n->t('Message'), type: 'textarea', help: $this->l10n->t(
+			))),
+			$this->requiredField(field: new NodeFormField(key: 'message', label: $this->l10n->t('Message'), type: 'textarea', help: $this->l10n->t(
 				'What the message says. Placeholders such as {{ name }} read fields from the item.'
-			)),
+			))),
 		];
 	}//end configForm()
 
@@ -161,15 +163,13 @@ class SendTalkMessageNode extends MessagingNodeBase implements
 	 * an unknown conversation, the acting user not a participant, a refused
 	 * post — throw and are routed through the step's `onError` policy.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param MessageSend $step The step configuration, the items, run-level metadata and this node's type.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
-	protected function send(array $items, array $config, array $context): void {
-		$this->messaging->sendTalkMessage(config: $config, items: $items, context: $context, stepName: self::TYPE);
+	protected function send(MessageSend $step): void {
+		$this->messaging->talk(request: $step);
 	}//end send()
 }//end class

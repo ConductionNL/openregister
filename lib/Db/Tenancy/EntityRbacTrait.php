@@ -92,6 +92,7 @@ trait EntityRbacTrait {
 			return true;
 		}
 
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return SystemOperationContext::isActive() === true;
 	}//end isTrustedSystemCaller()
 

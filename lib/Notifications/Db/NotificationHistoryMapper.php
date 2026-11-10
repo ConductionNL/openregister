@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Db;
 
+use OCA\OpenRegister\Db\ListQuery;
 use DateTime;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -143,21 +144,19 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 * `schemaId`, `registerId`, `status`, `subjectType` and `subjectId`.
 	 * Unknown keys are silently ignored. All filters are AND-combined.
 	 *
-	 * @param array<string, string|null> $filters Filter map.
-	 * @param int|null $limit Result limit.
-	 * @param int|null $offset Result offset.
-	 * @param DateTime|null $asOf The moment a snooze is measured against, defaulting to now.
+	 * @param ListQuery     $query The filter map, the result limit (unbounded for none) and the offset.
+	 * @param DateTime|null $asOf  The moment a snooze is measured against, defaulting to now.
 	 *
 	 * @return array<int, NotificationHistory>
 	 */
-	public function findFiltered(array $filters = [], ?int $limit = null, ?int $offset = null, ?DateTime $asOf = null): array {
+	public function findFiltered(ListQuery $query, ?DateTime $asOf = null): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName());
 
-		$this->applyFilters(qb: $qb, filter: new HistoryListFilter(filters: $filters, asOf: ($asOf ?? new DateTime())));
+		$this->applyFilters(qb: $qb, filter: new HistoryListFilter(filters: $query->filters, asOf: ($asOf ?? new DateTime())));
 		$qb->orderBy('dispatched_at', 'DESC');
-		$this->page(qb: $qb, limit: $limit, offset: $offset);
+		$this->page(qb: $qb, query: $query);
 
 		return $this->findEntities(query: $qb);
 	}//end findFiltered()
@@ -378,17 +377,16 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 	 * addressed to somebody else: the `WHERE` is the authorization, not a check
 	 * the caller could be trusted to have made first.
 	 *
-	 * @param int $id The history row id.
-	 * @param string $recipient The uid the notice is addressed to.
-	 * @param DateTime|null $readAt The moment, defaulting to now.
+	 * @param RecipientNotice $notice The history row and the uid it is addressed to.
+	 * @param DateTime|null   $readAt The moment, defaulting to now.
 	 *
 	 * @return boolean True when a row was marked.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
-	public function markRead(int $id, string $recipient, ?DateTime $readAt = null): bool {
+	public function markRead(RecipientNotice $notice, ?DateTime $readAt = null): bool {
 		$qb = $this->updateSetting(column: 'read_at', value: ($readAt ?? new DateTime()));
-		$this->whereEquals(qb: $qb, columns: ['id' => $id, 'recipient' => $recipient]);
+		$this->whereEquals(qb: $qb, columns: ['id' => $notice->id, 'recipient' => $notice->recipient]);
 		$qb->andWhere($qb->expr()->isNull('read_at'));
 
 		return ($qb->executeStatement() > 0);
