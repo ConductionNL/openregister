@@ -144,16 +144,22 @@ class ImportHandlerKeptLocalReportTest extends TestCase {
 		$configMapper->method('update')->willReturnArgument(0);
 
 		$handler = new class (
-			schemaMapper: $schemaMapper,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $configMapper,
-			mappingMapper: $this->createMock(MappingMapper::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $schemaMapper,
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $configMapper,
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(
+				shippedGuard: $this->guard()
+			),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: '/tmp',
-			objectService: $this->createMock(ObjectService::class),
-			shippedGuard: $this->guard()
+			objectService: $this->createMock(ObjectService::class)
 		) extends ImportHandler {
 
 			/**

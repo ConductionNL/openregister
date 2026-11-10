@@ -122,16 +122,21 @@ class ImportHandlerImportJobTest extends TestCase {
 	 */
 	private function handler(?AppImportJobRecorder $recorder): ImportHandler {
 		return new ImportHandler(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->configurationMapper,
-			mappingMapper: $this->createMock(MappingMapper::class),
-			appConfig: $this->appConfig,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->configurationMapper,
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->appConfig,
+				importJobs: $recorder
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: '/tmp',
-			objectService: $this->createMock(ObjectService::class),
-			importJobRecorder: $recorder
+			objectService: $this->createMock(ObjectService::class)
 		);
 	}
 

@@ -294,12 +294,17 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 	 */
 	private function makeHandler(): ImportHandler {
 		return new ImportHandler(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
-			objectEntityMapper: $this->objectEntityMapper,
-			configurationMapper: $this->configurationMapper,
-			mappingMapper: $this->mappingMapper,
-			appConfig: $this->appConfig,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $this->objectEntityMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->configurationMapper,
+				mappings: $this->mappingMapper,
+				appConfig: $this->appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $this->logger,
 			appDataPath: '/tmp',
 			objectService: $this->objectService

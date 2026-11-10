@@ -35,16 +35,17 @@ use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Mapping;
-use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -163,9 +164,9 @@ class ImportHandler {
 	/**
 	 * Configuration mapper instance for handling configuration operations.
 	 *
-	 * @var ConfigurationMapper The configuration mapper instance.
+	 * @var ConfigurationMapperInterface The configuration mapper instance.
 	 */
-	private readonly ConfigurationMapper $configurationMapper;
+	private readonly ConfigurationMapperInterface $configurationMapper;
 
 	/**
 	 * App config for storing version information.
@@ -226,9 +227,9 @@ class ImportHandler {
 	/**
 	 * Mapping mapper instance for handling mapping operations.
 	 *
-	 * @var MappingMapper The mapping mapper instance.
+	 * @var MappingMapperInterface The mapping mapper instance.
 	 */
-	private readonly MappingMapper $mappingMapper;
+	private readonly MappingMapperInterface $mappingMapper;
 
 	/**
 	 * OpenConnector configuration service for optional integration.
@@ -360,55 +361,54 @@ class ImportHandler {
 	private ?RbacGroupCollector $rbacGroupCollector = null;
 
 	/**
+	 * Stamps each app import with an import job id; null imports untagged.
+	 *
+	 * @var AppImportJobRecorder|null
+	 */
+	private readonly ?AppImportJobRecorder $importJobRecorder;
+
+	/**
+	 * Installs a schema's flows and webhooks when an import fired no SchemaUpdatedEvent.
+	 *
+	 * @var SchemaImportInstaller|null
+	 */
+	private readonly ?SchemaImportInstaller $schemaInstaller;
+
+	/**
 	 * Constructor for ImportHandler.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
-	 * @param RegisterMapperInterface $registerMapper The register mapper.
-	 * @param MagicMapperInterface $objectEntityMapper The object entity mapper.
-	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
-	 * @param MappingMapper $mappingMapper The mapping mapper.
-	 * @param IAppConfig $appConfig The app config.
+	 * @param SchemaCatalogInterface $catalog The register, schema and magic-table mappers.
+	 * @param ConfigurationImportRecords $records The configuration rows, mappings, version keys and import jobs.
+	 * @param SchemaImportSteps $schemaSteps The optional shape check, shipped guard and install of a schema.
 	 * @param LoggerInterface $logger The logger interface.
 	 * @param string $appDataPath The app data path.
 	 * @param ObjectOperationsInterface $objectService The object service.
-	 * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
-	 * @param ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard Optional
-	 *        guard that keeps local changes to an app-shipped schema.
-	 * @param ?AppImportJobRecorder $importJobRecorder Stamps each app import with an import job id and
-	 *        records the jobs that created objects; null imports untagged, as before.
-	 * @param ?SchemaImportInstaller $schemaInstaller Installs a schema's flows and webhooks when an
-	 *        import fired no SchemaUpdatedEvent; null leaves an unchanged re-import installing nothing.
 	 */
 	public function __construct(
-		SchemaMapperInterface $schemaMapper,
-		RegisterMapperInterface $registerMapper,
-		MagicMapperInterface $objectEntityMapper,
-		ConfigurationMapper $configurationMapper,
-		MappingMapper $mappingMapper,
-		IAppConfig $appConfig,
+		SchemaCatalogInterface $catalog,
+		ConfigurationImportRecords $records,
+		SchemaImportSteps $schemaSteps,
 		LoggerInterface $logger,
 		string $appDataPath,
 		ObjectOperationsInterface $objectService,
-		?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
-		?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
-		private readonly ?AppImportJobRecorder $importJobRecorder = null,
-		private readonly ?SchemaImportInstaller $schemaInstaller = null,
 	) {
-		$this->schemaMapper = $schemaMapper;
-		$this->registerMapper = $registerMapper;
-		$this->objectEntityMapper = $objectEntityMapper;
-		$this->configurationMapper = $configurationMapper;
-		$this->mappingMapper = $mappingMapper;
-		$this->appConfig = $appConfig;
+		$this->schemaMapper = $catalog->schemas();
+		$this->registerMapper = $catalog->registers();
+		$this->objectEntityMapper = $catalog->tables();
+		$this->configurationMapper = $records->configurations;
+		$this->mappingMapper = $records->mappings;
+		$this->appConfig = $records->appConfig;
+		$this->importJobRecorder = $records->importJobs;
+		$this->schemaInstaller = $schemaSteps->installer;
 		$this->logger = $logger;
 		$this->appDataPath = $appDataPath;
 		$this->objectService = $objectService;
 		$this->shippedContent = new ShippedSeedContent();
 		$this->relatedItems = new SeedRelatedItems(logger: $logger);
-		$this->duplicates = new ImportDuplicates(registerMapper: $registerMapper, schemaMapper: $schemaMapper, logger: $logger);
-		$this->shippedBaseline = new ShippedSchemaBaseline(guard: $shippedGuard, logger: $logger);
-		$this->appConfigurations = new AppConfigurationRecord(configurationMapper: $configurationMapper, logger: $logger);
-		$this->schemaShape = new ImportedSchemaShape(validator: $schemaShapeValidator, logger: $logger);
+		$this->duplicates = new ImportDuplicates(registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper, logger: $logger);
+		$this->shippedBaseline = new ShippedSchemaBaseline(guard: $schemaSteps->shippedGuard, logger: $logger);
+		$this->appConfigurations = new AppConfigurationRecord(configurationMapper: $this->configurationMapper, logger: $logger);
+		$this->schemaShape = new ImportedSchemaShape(validator: $schemaSteps->shapeValidator, logger: $logger);
 		$this->rejectedSchemas = new RejectedSchemaReport(logger: $logger);
 	}//end __construct()
 

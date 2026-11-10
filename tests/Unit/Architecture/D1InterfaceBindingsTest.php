@@ -67,8 +67,8 @@ final class D1InterfaceBindingsTest extends TestCase {
 	/**
 	 * Class => the outside callers deliberately left naming it, relative to lib/.
 	 *
-	 * ExportHandler and ImportHandler are rewritten by the open flow
-	 * export/import PR (#5968); they and the registrar that builds them keep
+	 * ExportHandler is rewritten by the open flow export/import PR (#5968);
+	 * it and the registrar that builds the import and export handlers keep
 	 * the concrete MappingMapper until that lands.
 	 *
 	 * @var array<class-string, list<string>>
@@ -77,7 +77,6 @@ final class D1InterfaceBindingsTest extends TestCase {
 		MappingMapper::class => [
 			'Service/Configuration/ConfigurationServiceRegistrar.php',
 			'Service/Configuration/ExportHandler.php',
-			'Service/Configuration/ImportHandler.php',
 		],
 	];
 

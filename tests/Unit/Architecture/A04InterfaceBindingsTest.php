@@ -63,7 +63,6 @@ final class A04InterfaceBindingsTest extends TestCase {
 	private const STILL_NAMING = [
 		ConfigurationMapper::class => [
 			'Service/Configuration/ExportHandler.php',
-			'Service/Configuration/ImportHandler.php',
 		],
 		FlowMapper::class => ['Service/ExampleSet/ExampleSetFlows.php'],
 	];
