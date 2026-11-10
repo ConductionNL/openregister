@@ -13,7 +13,7 @@ import FileConfiguration from './FileConfiguration.vue'
 
 jest.mock('@nextcloud/axios', () => ({
 	__esModule: true,
-	default: { post: jest.fn() },
+	default: { get: jest.fn(), post: jest.fn() },
 }))
 jest.mock('@nextcloud/dialogs', () => ({
 	__esModule: true,
@@ -209,4 +209,45 @@ describe('ApiTokenConfiguration token tests', () => {
 			})
 		}
 	}
+})
+
+describe('ApiTokenConfiguration token settings', () => {
+	const STATE = {
+		githubToken: 'ghp_x',
+		gitlabToken: 'glpat_x',
+		gitlabUrl: 'https://gitlab.example',
+	}
+
+	for (const method of ['saveGitHubToken', 'saveGitLabToken', 'saveGitLabUrl']) {
+		for (const outcome of ['saves', 'fails']) {
+			it(`${method} ${outcome}`, async () => {
+				axios.post.mockImplementation((...args) => {
+					log.push(['post', ...args])
+					return outcome === 'saves'
+						? Promise.resolve({ data: {} })
+						: Promise.reject(new Error('down'))
+				})
+				await section(ApiTokenConfiguration, STATE)[method]()
+				expect(log).toMatchSnapshot()
+			})
+		}
+	}
+
+	it.each([
+		['all settings', { github_token: 'a', gitlab_token: 'b', gitlab_url: 'c' }],
+		['no settings', {}],
+	])('loadTokens reads %s', async (_name, data) => {
+		axios.get.mockImplementation((...args) => {
+			log.push(['get', ...args])
+			return Promise.resolve({ data })
+		})
+		await section(ApiTokenConfiguration, {}).loadTokens()
+		expect(log).toMatchSnapshot()
+	})
+
+	it('loadTokens logs a failure quietly', async () => {
+		axios.get.mockImplementation(() => Promise.reject(new Error('down')))
+		await section(ApiTokenConfiguration, {}).loadTokens()
+		expect(log).toMatchSnapshot()
+	})
 })

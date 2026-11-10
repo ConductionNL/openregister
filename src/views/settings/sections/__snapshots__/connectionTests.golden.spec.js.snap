@@ -1,5 +1,309 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`ApiTokenConfiguration token settings loadTokens logs a failure quietly 1`] = `
+[
+  [
+    "set",
+    "loading",
+    true,
+  ],
+  [
+    "console",
+    "Failed to load API tokens:",
+    [Error: down],
+  ],
+  [
+    "set",
+    "loading",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings loadTokens reads all settings 1`] = `
+[
+  [
+    "set",
+    "loading",
+    true,
+  ],
+  [
+    "get",
+    "/gen/apps/openregister/api/settings/api-tokens",
+  ],
+  [
+    "set",
+    "githubToken",
+    "a",
+  ],
+  [
+    "set",
+    "gitlabToken",
+    "b",
+  ],
+  [
+    "set",
+    "gitlabUrl",
+    "c",
+  ],
+  [
+    "set",
+    "originalGithubToken",
+    "a",
+  ],
+  [
+    "set",
+    "originalGitlabToken",
+    "b",
+  ],
+  [
+    "set",
+    "originalGitlabUrl",
+    "c",
+  ],
+  [
+    "set",
+    "loading",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings loadTokens reads no settings 1`] = `
+[
+  [
+    "set",
+    "loading",
+    true,
+  ],
+  [
+    "get",
+    "/gen/apps/openregister/api/settings/api-tokens",
+  ],
+  [
+    "set",
+    "githubToken",
+    "",
+  ],
+  [
+    "set",
+    "gitlabToken",
+    "",
+  ],
+  [
+    "set",
+    "gitlabUrl",
+    "",
+  ],
+  [
+    "set",
+    "originalGithubToken",
+    "",
+  ],
+  [
+    "set",
+    "originalGitlabToken",
+    "",
+  ],
+  [
+    "set",
+    "originalGitlabUrl",
+    "",
+  ],
+  [
+    "set",
+    "loading",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings saveGitHubToken fails 1`] = `
+[
+  [
+    "set",
+    "saving",
+    true,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens",
+    {
+      "github_token": "ghp_x",
+    },
+  ],
+  [
+    "console",
+    "Failed to save GitHub token:",
+    [Error: down],
+  ],
+  [
+    "error",
+    "Failed to save GitHub token",
+  ],
+  [
+    "set",
+    "saving",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings saveGitHubToken saves 1`] = `
+[
+  [
+    "set",
+    "saving",
+    true,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens",
+    {
+      "github_token": "ghp_x",
+    },
+  ],
+  [
+    "set",
+    "originalGithubToken",
+    "ghp_x",
+  ],
+  [
+    "success",
+    "GitHub token saved successfully",
+  ],
+  [
+    "set",
+    "saving",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings saveGitLabToken fails 1`] = `
+[
+  [
+    "set",
+    "saving",
+    true,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens",
+    {
+      "gitlab_token": "glpat_x",
+    },
+  ],
+  [
+    "console",
+    "Failed to save GitLab token:",
+    [Error: down],
+  ],
+  [
+    "error",
+    "Failed to save GitLab token",
+  ],
+  [
+    "set",
+    "saving",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings saveGitLabToken saves 1`] = `
+[
+  [
+    "set",
+    "saving",
+    true,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens",
+    {
+      "gitlab_token": "glpat_x",
+    },
+  ],
+  [
+    "set",
+    "originalGitlabToken",
+    "glpat_x",
+  ],
+  [
+    "success",
+    "GitLab token saved successfully",
+  ],
+  [
+    "set",
+    "saving",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings saveGitLabUrl fails 1`] = `
+[
+  [
+    "set",
+    "saving",
+    true,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens",
+    {
+      "gitlab_url": "https://gitlab.example",
+    },
+  ],
+  [
+    "console",
+    "Failed to save GitLab URL:",
+    [Error: down],
+  ],
+  [
+    "error",
+    "Failed to save GitLab URL",
+  ],
+  [
+    "set",
+    "saving",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings saveGitLabUrl saves 1`] = `
+[
+  [
+    "set",
+    "saving",
+    true,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens",
+    {
+      "gitlab_url": "https://gitlab.example",
+    },
+  ],
+  [
+    "set",
+    "originalGitlabUrl",
+    "https://gitlab.example",
+  ],
+  [
+    "success",
+    "GitLab URL saved successfully",
+  ],
+  [
+    "set",
+    "saving",
+    false,
+  ],
+]
+`;
+
 exports[`ApiTokenConfiguration token tests testGitHubToken fails with a server message 1`] = `
 [
   [
