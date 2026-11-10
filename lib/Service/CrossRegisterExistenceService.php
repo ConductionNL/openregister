@@ -369,22 +369,36 @@ class CrossRegisterExistenceService {
 	private function partition(array $reveal, array $rules): array {
 		$allowed = [];
 		$refused = [];
-		foreach ($reveal as $field) {
-			$field = trim((string)$field);
-			if ($field === '') {
+		foreach (self::namedFields(reveal: $reveal) as $field) {
+			if (self::isRevealable(field: $field, rules: $rules) === true) {
+				$allowed[] = $field;
 				continue;
 			}
 
-			if (self::isRevealable(field: $field, rules: $rules) === false) {
-				$refused[] = $field;
-				continue;
-			}
-
-			$allowed[] = $field;
+			$refused[] = $field;
 		}
 
 		return [$allowed, $refused];
 	}//end partition()
+
+	/**
+	 * The requested field names, trimmed, without the empty ones.
+	 *
+	 * @param array $reveal The fields the probe asks to reveal.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function namedFields(array $reveal): array {
+		$fields = [];
+		foreach ($reveal as $field) {
+			$field = trim((string)$field);
+			if ($field !== '') {
+				$fields[] = $field;
+			}
+		}
+
+		return $fields;
+	}//end namedFields()
 
 	/**
 	 * Whether a field may be revealed: the schema declares it and does not withhold it.
