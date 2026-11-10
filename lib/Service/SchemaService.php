@@ -1003,7 +1003,22 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @return array{type: string, length: int, item_types: array<string, int>, sample_item: mixed}
 	 */
 	private static function listStructure(array $list): array {
-		// Analyze item types in the list.
+		return [
+			'type' => 'list',
+			'length' => count($list),
+			'item_types' => self::itemTypeCounts(list: $list),
+			'sample_item' => $list[0] ?? null,
+		];
+	}//end listStructure()
+
+	/**
+	 * How many items of each gettype() type a list holds, in the order the types first appear.
+	 *
+	 * @param array $list The list.
+	 *
+	 * @return array<string, int>
+	 */
+	private static function itemTypeCounts(array $list): array {
 		$itemTypes = [];
 		foreach ($list as $item) {
 			$type = gettype($item);
@@ -1014,13 +1029,8 @@ class SchemaService implements SchemaExplorationInterface {
 			$itemTypes[$type]++;
 		}
 
-		return [
-			'type' => 'list',
-			'length' => count($list),
-			'item_types' => $itemTypes,
-			'sample_item' => $list[0] ?? null,
-		];
-	}//end listStructure()
+		return $itemTypes;
+	}//end itemTypeCounts()
 
 	/**
 	 * Analyze object structure for nested properties
