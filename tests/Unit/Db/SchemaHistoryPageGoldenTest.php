@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\QueryPage;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -40,11 +41,11 @@ final class SchemaHistoryPageGoldenTest extends TestCase {
 	public function testOutcomesMatchGolden(): void {
 		$row = ['id' => 7, 'schema_id' => 3];
 		$actual = [
-			'changelog unbounded' => $this->recorded(fn (IDBConnection $db): mixed => count((new SchemaChangelogMapper($db))->findBySchema(3)), [[$row]]),
-			'changelog page' => $this->recorded(fn (IDBConnection $db): mixed => count((new SchemaChangelogMapper($db))->findBySchema(3, 5, 10)), [[$row]]),
-			'changelog limit only' => $this->recorded(fn (IDBConnection $db): mixed => count((new SchemaChangelogMapper($db))->findBySchema(3, 5)), [[]]),
-			'runs unbounded' => $this->recorded(fn (IDBConnection $db): mixed => count((new SchemaRunMapper($db))->findBySchema(4)), [[$row]]),
-			'runs page' => $this->recorded(fn (IDBConnection $db): mixed => count((new SchemaRunMapper($db))->findBySchema(4, 25, 0)), [[$row, $row]]),
+			'changelog unbounded' => $this->recorded(fn (IDBConnection $db): mixed => count((new SchemaChangelogMapper($db))->findBySchema(3, new QueryPage(null, null))), [[$row]]),
+			'changelog page' => $this->recorded(fn (IDBConnection $db): mixed => count((new SchemaChangelogMapper($db))->findBySchema(3, new QueryPage(5, 10))), [[$row]]),
+			'changelog limit only' => $this->recorded(fn (IDBConnection $db): mixed => count((new SchemaChangelogMapper($db))->findBySchema(3, new QueryPage(5, null))), [[]]),
+			'runs unbounded' => $this->recorded(fn (IDBConnection $db): mixed => count((new SchemaRunMapper($db))->findPageForSchema(4, new QueryPage(null, null))), [[$row]]),
+			'runs page' => $this->recorded(fn (IDBConnection $db): mixed => count((new SchemaRunMapper($db))->findPageForSchema(4, new QueryPage(25, 0))), [[$row, $row]]),
 			'runs offset only' => $this->recorded(fn (IDBConnection $db): mixed => count((new SchemaRunMapper($db))->findBySchema(4, null, 2)), [[]]),
 		];
 

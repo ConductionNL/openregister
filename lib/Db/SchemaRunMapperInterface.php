@@ -31,6 +31,16 @@ namespace OCA\OpenRegister\Db;
 interface SchemaRunMapperInterface extends SchemaRunStoreInterface {
 
 	/**
+	 * Find one page of the runs of a schema, newest first.
+	 *
+	 * @param int $schemaId The schema id.
+	 * @param QueryPage $page The page bounds; a null bound is left off.
+	 *
+	 * @return SchemaRun[] The runs.
+	 */
+	public function findPageForSchema(int $schemaId, QueryPage $page): array;
+
+	/**
 	 * Find runs for a schema, newest first.
 	 *
 	 * @param int $schemaId The schema id.

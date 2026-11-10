@@ -29,6 +29,7 @@ use OCA\OpenRegister\Controller\SchemaMigrationController;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationDomain;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationMappers;
+use OCA\OpenRegister\Db\QueryPage;
 use OCA\OpenRegister\Controller\Support\RetentionPlatform;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\Schema;
@@ -229,8 +230,8 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 	public function testChangelogAndRunsPassNumericPagingOnly(): void {
 		$controller = $this->controller();
 		$this->params = ['_limit' => '5', '_offset' => 'x'];
-		$this->changelog->expects($this->once())->method('findBySchema')->with(3, 5, null)->willReturn([]);
-		$this->runs->expects($this->once())->method('findBySchema')->with(3, 5, null)->willReturn([$this->aRun(1, 3)]);
+		$this->changelog->expects($this->once())->method('findBySchema')->with(3, $this->equalTo(new QueryPage(5, null)))->willReturn([]);
+		$this->runs->expects($this->once())->method('findPageForSchema')->with(3, $this->equalTo(new QueryPage(5, null)))->willReturn([$this->aRun(1, 3)]);
 
 		$this->assertSame([200, ['results' => []]], $this->pair($controller->changelog(3)));
 		$this->assertSame([200, ['results' => [$this->aRun(1, 3)->jsonSerialize()]]], $this->pair($controller->runs(3)));

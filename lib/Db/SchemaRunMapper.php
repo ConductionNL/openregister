@@ -73,16 +73,28 @@ class SchemaRunMapper extends QBMapper implements SchemaRunMapperInterface {
 	 * @return SchemaRun[] The runs.
 	 */
 	public function findBySchema(int $schemaId, ?int $limit = null, ?int $offset = null): array {
+		return $this->findPageForSchema(schemaId: $schemaId, page: new QueryPage(limit: $limit, offset: $offset));
+	}//end findBySchema()
+
+	/**
+	 * Find one page of the runs of a schema, newest first.
+	 *
+	 * @param int $schemaId The schema id.
+	 * @param QueryPage $page The page bounds; a null bound is left off.
+	 *
+	 * @return SchemaRun[] The runs.
+	 */
+	public function findPageForSchema(int $schemaId, QueryPage $page): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
 			->orderBy('id', 'DESC');
 
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		$page->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
-	}//end findBySchema()
+	}//end findPageForSchema()
 
 	/**
 	 * Find the active (blocking) run for a schema, if any.

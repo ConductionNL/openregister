@@ -211,10 +211,9 @@ class SchemaMigrationController extends Controller {
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function changelog(int $id): JSONResponse {
-		$limit = $this->intParam(name: '_limit');
-		$offset = $this->intParam(name: '_offset');
+		$page = new QueryPage(limit: $this->intParam(name: '_limit'), offset: $this->intParam(name: '_offset'));
 
-		$entries = $this->mappers->changelogMapper->findBySchema(schemaId: $id, limit: $limit, offset: $offset);
+		$entries = $this->mappers->changelogMapper->findBySchema(schemaId: $id, page: $page);
 
 		return new JSONResponse(['results' => array_map(static fn ($e) => $e->jsonSerialize(), $entries)]);
 	}//end changelog()
@@ -274,10 +273,9 @@ class SchemaMigrationController extends Controller {
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function runs(int $id): JSONResponse {
-		$runs = $this->mappers->runMapper->findBySchema(
+		$runs = $this->mappers->runMapper->findPageForSchema(
 			schemaId: $id,
-			limit: $this->intParam(name: '_limit'),
-			offset: $this->intParam(name: '_offset')
+			page: new QueryPage(limit: $this->intParam(name: '_limit'), offset: $this->intParam(name: '_offset'))
 		);
 
 		return new JSONResponse(['results' => array_map(static fn ($r) => $r->jsonSerialize(), $runs)]);

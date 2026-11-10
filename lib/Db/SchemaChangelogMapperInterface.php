@@ -43,10 +43,9 @@ interface SchemaChangelogMapperInterface {
 	 * Find changelog entries for a schema, newest first.
 	 *
 	 * @param int $schemaId The schema id.
-	 * @param int|null $limit Optional page size.
-	 * @param int|null $offset Optional page offset.
+	 * @param QueryPage $page The page bounds; a null bound is left off.
 	 *
 	 * @return SchemaChangelog[] The entries.
 	 */
-	public function findBySchema(int $schemaId, ?int $limit = null, ?int $offset = null): array;
+	public function findBySchema(int $schemaId, QueryPage $page): array;
 }//end interface
