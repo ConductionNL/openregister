@@ -143,7 +143,7 @@ class StateConditionEvaluator implements StateConditionEvaluatorInterface {
 	 *
 	 * @return array{state: string, key: string, condition: mixed, message: string|null}|null The declaration.
 	 */
-	private function declaredCondition(StateSave $save, array $half): ?array {
+	private function declaredCondition(StateSave $save, array $half): array|null {
 		if ($half['state'] === null || $half['state'] === '') {
 			return null;
 		}
