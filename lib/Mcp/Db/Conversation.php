@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Mcp\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\ConversationInterface;
 use OCP\AppFramework\Db\Entity;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\Organisation;
@@ -68,7 +69,7 @@ use OCA\OpenRegister\Db\Organisation;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Conversation extends Entity implements JsonSerializable {
+class Conversation extends Entity implements JsonSerializable, ConversationInterface {
 
 	/**
 	 * Unique identifier for the conversation

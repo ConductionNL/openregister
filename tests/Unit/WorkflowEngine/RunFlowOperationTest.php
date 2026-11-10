@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\WorkflowEngine\RunFlowOperation;
 use OCA\OpenRegister\WorkflowEngine\RunFlowOperationFlows;
 use OCP\EventDispatcher\Event;
@@ -95,7 +96,7 @@ final class RunFlowOperationTest extends TestCase {
 			}
 		);
 
-		return new RunFlowOperation($l10n, $urls, new RunFlowOperationFlows($mapper, $runner), $logger);
+		return new RunFlowOperation(new FlowNodePresentation($l10n, $urls), new RunFlowOperationFlows($mapper, $runner), $logger);
 	}//end operation()
 
 	/**
@@ -230,4 +231,22 @@ final class RunFlowOperationTest extends TestCase {
 
 		$this->assertSame([], $this->queued);
 	}//end testAnUnrelatedEventDoesNothing()
+
+	/**
+	 * A matcher that cannot list its flows queues nothing and logs no warning.
+	 *
+	 * @return void
+	 */
+	public function testAFailingMatcherQueuesNothing(): void {
+		$this->flows = [$this->flow('u-1', 'Intake')];
+		$object = new ObjectEntity();
+		$object->setUuid('obj-1');
+		$matcher = $this->createMock(IRuleMatcher::class);
+		$matcher->method('getFlows')->willThrowException(new \RuntimeException('no rules'));
+
+		$this->operation()->onEvent(ObjectCreatedEvent::class, new ObjectCreatedEvent($object), $matcher);
+
+		$this->assertSame([], $this->queued);
+		$this->assertSame([], $this->warnings);
+	}//end testAFailingMatcherQueuesNothing()
 }//end class

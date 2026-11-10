@@ -76,32 +76,63 @@ class GrantRuleFit {
 	 * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
 	 */
 	public function fitOf(mixed $entry, mixed $role, array $envelope): ?array {
-		$match = null;
+		return $this->fitOfMatch(match: $this->matchClauseOf(entry: $entry, role: $role), envelope: $envelope);
+	}//end fitOf()
+
+	/**
+	 * The `match` clause of a direct entry; a role grant carries none of its own.
+	 *
+	 * @param mixed $entry The entry as written.
+	 * @param mixed $role  The role it came through, or null.
+	 *
+	 * @return mixed The clause, or null.
+	 */
+	private function matchClauseOf(mixed $entry, mixed $role): mixed {
 		if ($role === null && is_array($entry) === true) {
-			$match = ($entry['match'] ?? null);
+			return ($entry['match'] ?? null);
 		}
 
+		return null;
+	}//end matchClauseOf()
+
+	/**
+	 * How one `match` clause fits this record, or null when its static part does not.
+	 *
+	 * @param mixed                $match    The clause as written.
+	 * @param array<string, mixed> $envelope The record as the matcher reads it.
+	 *
+	 * @return array{matchedOn: string[], relative: bool}|null The fit.
+	 */
+	private function fitOfMatch(mixed $match, array $envelope): ?array {
 		if (is_array($match) === false || $match === []) {
 			return ['matchedOn' => [], 'relative' => false];
 		}
 
-		$static = [];
-		$relative = false;
-		foreach ($match as $property => $value) {
-			if ($this->readsTheCaller(value: $value) === true) {
-				$relative = true;
-				continue;
-			}
-
-			$static[$property] = $value;
-		}
-
+		$static = $this->staticPart(match: $match);
 		if ($static !== [] && $this->matcher->objectMatchesConditions(object: $envelope, match: $static) === false) {
 			return null;
 		}
 
-		return ['matchedOn' => array_map('strval', array_keys($match)), 'relative' => $relative];
-	}//end fitOf()
+		return ['matchedOn' => array_map('strval', array_keys($match)), 'relative' => count($static) !== count($match)];
+	}//end fitOfMatch()
+
+	/**
+	 * The part of a `match` clause that does not read who is asking.
+	 *
+	 * @param array<string, mixed> $match The clause.
+	 *
+	 * @return array<string, mixed> The static conditions.
+	 */
+	private function staticPart(array $match): array {
+		$static = [];
+		foreach ($match as $property => $value) {
+			if ($this->readsTheCaller(value: $value) === false) {
+				$static[$property] = $value;
+			}
+		}
+
+		return $static;
+	}//end staticPart()
 
 	/**
 	 * Whether a match value reads who is asking.

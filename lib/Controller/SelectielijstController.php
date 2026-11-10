@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\Archival\SelectielijstImportServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
@@ -88,22 +89,18 @@ class SelectielijstController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                     $appName         The app name.
 	 * @param IRequest                   $request         The request.
 	 * @param SelectielijstControllerServices $services The services, bundled.
-	 * @param ControllerSession $session Session, group manager and logger.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		SelectielijstControllerServices $services,
-		ControllerSession $session,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->selectielijst = $services->selectielijst;
 		$this->settingsHandler = $services->settingsHandler;
 
-		$this->session = $session;
+		$this->session = $services->session;
 	}//end __construct()
 
 	/**

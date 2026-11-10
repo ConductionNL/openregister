@@ -333,7 +333,7 @@ class CaseUnitsGoldenTest extends TestCase {
 		$realiser = $this->realiser();
 		$anchor = $this->createMock(CaseAnchorReader::class);
 		$anchor->method('read')->willReturn(['status' => 'open']);
-		$anchor->method('mayRead')->willReturnCallback(static fn (string $objectUuid): bool => $objectUuid !== self::THIRD);
+		$anchor->method('mayRead')->willReturnCallback(static fn (CaseAnchor $anchor): bool => $anchor->objectUuid !== self::THIRD);
 		$writer = $this->createMock(CaseBusinessStateWriter::class);
 		$writer->method('mirrorStatus')->willReturnCallback(
 			static function (CaseItem $milestone) use (&$writes): bool {
