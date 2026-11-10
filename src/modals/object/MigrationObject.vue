@@ -544,10 +544,7 @@ export default {
 				)
 
 				// Load target schema properties
-				const response = await fetch(
-					`/index.php/apps/openregister/api/schemas/${this.targetSchema.id}`,
-				)
-				const targetSchemaData = await response.json()
+				const targetSchemaData = await fetchSchema(this.targetSchema.id)
 				this.targetProperties =
 					this.extractSchemaProperties(targetSchemaData)
 
@@ -707,6 +704,17 @@ export default {
 			}
 		},
 	},
+}
+
+/**
+ * Fetch a schema by id.
+ *
+ * @param {number|string} id The schema id
+ * @return {Promise<object>} The schema
+ */
+async function fetchSchema(id) {
+	const response = await fetch(`/index.php/apps/openregister/api/schemas/${id}`)
+	return response.json()
 }
 </script>
 
