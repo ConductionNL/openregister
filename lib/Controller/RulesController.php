@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
 use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleSwitch;
 use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
@@ -224,7 +225,7 @@ class RulesController extends Controller {
 			return $this->unprocessable(code: 'rule-switch-no-state', message: 'A boolean "enabled" is required.');
 		}
 
-		return $this->answer(result: $this->enablement->setEnabled(schema: $entity, ruleId: $ruleId, enabled: $enabled));
+		return $this->answer(result: $this->enablement->setEnabled(switch: new RuleSwitch(schema: $entity, ruleId: $ruleId, enabled: $enabled)));
 
 	}//end setEnabled()
 
