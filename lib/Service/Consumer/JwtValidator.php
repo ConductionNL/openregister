@@ -135,9 +135,8 @@ class JwtValidator {
 	 * key be used as an HMAC secret (algorithm confusion). The header's alg
 	 * must equal the pinned one.
 	 *
-	 * @param string $token         The compact JWS.
-	 * @param array  $header        The decoded header.
-	 * @param array  $configuration The consumer's authorization configuration (algorithm, publicKey).
+	 * @param DecodedJwt $jwt           The compact JWS and its decoded header.
+	 * @param array      $configuration The consumer's authorization configuration (algorithm, publicKey).
 	 *
 	 * @return void
 	 *
@@ -145,12 +144,12 @@ class JwtValidator {
 	 *
 	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
-	public function verifyPinned(string $token, array $header, array $configuration): void {
+	public function verifyPinned(DecodedJwt $jwt, array $configuration): void {
 		$key = new JwsKey(
-			algorithm: $this->pinnedAlgorithm(header: $header, configuration: $configuration),
+			algorithm: $this->pinnedAlgorithm(header: $jwt->header, configuration: $configuration),
 			material: (string)($configuration['publicKey'] ?? '')
 		);
-		$this->verifyWithKey(token: $token, key: $key);
+		$this->verifyWithKey(token: $jwt->token, key: $key);
 	}//end verifyPinned()
 
 	/**
