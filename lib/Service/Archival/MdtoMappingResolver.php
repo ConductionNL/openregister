@@ -75,13 +75,8 @@ class MdtoMappingResolver {
 			return null;
 		}
 
-		try {
-			$configuration = ($this->lookup->schemaMapper->find($schemaId)->getConfiguration() ?? []);
-		} catch (Throwable $e) {
-			$this->lookup->logger->warning(
-				'[MdtoMappingResolver] Could not read the schema of ' . (string)$object->getUuid()
-				. ', so its MDTO mapping is unknown: ' . $e->getMessage()
-			);
+		$configuration = $this->schemaConfiguration(object: $object, schemaId: $schemaId);
+		if ($configuration === null) {
 			return null;
 		}
 
@@ -92,6 +87,26 @@ class MdtoMappingResolver {
 
 		return $mapping;
 	}//end mappingFor()
+
+	/**
+	 * The configuration of a record's schema; null (logged) when the schema cannot be read.
+	 *
+	 * @param ObjectEntity $object   The record.
+	 * @param string       $schemaId Its schema id.
+	 *
+	 * @return array<string, mixed>|null The configuration.
+	 */
+	private function schemaConfiguration(ObjectEntity $object, string $schemaId): ?array {
+		try {
+			return ($this->lookup->schemaMapper->find($schemaId)->getConfiguration() ?? []);
+		} catch (Throwable $e) {
+			$this->lookup->logger->warning(
+				'[MdtoMappingResolver] Could not read the schema of ' . (string)$object->getUuid()
+				. ', so its MDTO mapping is unknown: ' . $e->getMessage()
+			);
+			return null;
+		}
+	}//end schemaConfiguration()
 
 	/**
 	 * The mandatory MDTO elements this object's mapping does not fill.
