@@ -95,4 +95,21 @@ class CreateMissingRegisterFoldersTest extends TestCase {
 
 		(new CreateMissingRegisterFolders($container, $this->createMock(LoggerInterface::class)))->run($output);
 	}
+
+	public function testTheSkipIsLoggedAndPrintedWithItsReason(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new RuntimeException('not wired'));
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())
+			->method('info')
+			->with('[CreateMissingRegisterFolders] Skipped: not wired', $this->arrayHasKey('line'));
+
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->once())
+			->method('info')
+			->with('Register folders: skipped, services unavailable (not wired)');
+
+		(new CreateMissingRegisterFolders($container, $logger))->run($output);
+	}
 }
