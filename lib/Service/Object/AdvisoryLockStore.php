@@ -91,9 +91,7 @@ class AdvisoryLockStore {
 	 * A still-valid lock raises LockedException; an expired one is silently
 	 * overwritten.
 	 *
-	 * @param string $identifier The arbitrary advisory-lock identifier.
-	 * @param string|null $process Optional process tag (who holds the lock).
-	 * @param int|null $duration Lock duration in seconds.
+	 * @param LockRequest $request The identifier, the process tag and the duration in seconds.
 	 *
 	 * @return array{uuid: string, locked: array<string, mixed>} Advisory lock result.
 	 *
@@ -101,42 +99,51 @@ class AdvisoryLockStore {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function acquire(string $identifier, ?string $process = null, ?int $duration = null): array {
-		$duration = ($duration ?? self::DEFAULT_DURATION);
-		$key = $this->key(identifier: $identifier);
+	public function acquire(LockRequest $request): array {
 		$now = new DateTime();
+		$this->assertNotHeld(identifier: $request->identifier, now: $now);
 
-		$this->assertNotHeld(key: $key, identifier: $identifier, now: $now);
-
-		$expiration = (clone $now)->modify("+{$duration} seconds");
-		$lock = [
-			'user' => $this->userSession->getUser()?->getUID(),
-			'process' => $process,
-			'created' => $now->format(DateTime::ATOM),
-			'duration' => $duration,
-			'expiration' => $expiration->format(DateTime::ATOM),
-			'advisory' => true,
-		];
-
-		$this->appConfig->setValueString('openregister', $key, json_encode($lock));
+		$lock = $this->payload(request: $request, now: $now);
+		$this->appConfig->setValueString('openregister', $this->key(identifier: $request->identifier), json_encode($lock));
 
 		$this->logger->info(
 			message: '[AdvisoryLockStore] Advisory (pre-creation) lock acquired',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'identifier' => $identifier,
-				'process' => $process,
+				'identifier' => $request->identifier,
+				'process' => $request->process,
 			]
 		);
 
-		return ['uuid' => $identifier, 'locked' => $lock];
+		return ['uuid' => $request->identifier, 'locked' => $lock];
 	}//end acquire()
+
+	/**
+	 * The stored payload of an advisory lock taken now, for the default duration when none was asked.
+	 *
+	 * @param LockRequest $request The process tag and the duration in seconds.
+	 * @param DateTime    $now     The moment the lock is taken.
+	 *
+	 * @return array<string, mixed> The lock payload.
+	 */
+	private function payload(LockRequest $request, DateTime $now): array {
+		$duration = ($request->duration ?? self::DEFAULT_DURATION);
+		$expiration = (clone $now)->modify("+{$duration} seconds");
+
+		return [
+			'user' => $this->userSession->getUser()?->getUID(),
+			'process' => $request->process,
+			'created' => $now->format(DateTime::ATOM),
+			'duration' => $duration,
+			'expiration' => $expiration->format(DateTime::ATOM),
+			'advisory' => true,
+		];
+	}//end payload()
 
 	/**
 	 * Refuse while a stored advisory lock has not expired; an unreadable one does not hold.
 	 *
-	 * @param string   $key        The app-config key of the lock.
 	 * @param string   $identifier The locked identifier.
 	 * @param DateTime $now        The moment of the attempt.
 	 *
@@ -146,8 +153,8 @@ class AdvisoryLockStore {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	private function assertNotHeld(string $key, string $identifier, DateTime $now): void {
-		$existingRaw = $this->appConfig->getValueString('openregister', $key, '');
+	private function assertNotHeld(string $identifier, DateTime $now): void {
+		$existingRaw = $this->appConfig->getValueString('openregister', $this->key(identifier: $identifier), '');
 		if ($existingRaw === '') {
 			return;
 		}

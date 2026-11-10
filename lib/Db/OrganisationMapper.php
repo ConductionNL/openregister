@@ -27,16 +27,13 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Support\ConfigServices;
-use OCA\OpenRegister\Event\OrganisationCreatedEvent;
-use OCA\OpenRegister\Event\OrganisationDeletedEvent;
-use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IDBConnection;
@@ -113,13 +110,13 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	 *
 	 * @param IDBConnection $db Database connection
 	 * @param LoggerInterface $logger Logger interface
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher
+	 * @param EntityEventsInterface $entityEvents Announces organisation events
 	 * @param ConfigServices $configs App configuration (default org) and system configuration (DB table prefix)
 	 */
 	public function __construct(
 		IDBConnection $db,
 		private readonly LoggerInterface $logger,
-		private readonly IEventDispatcher $eventDispatcher,
+		private readonly EntityEventsInterface $entityEvents,
 		ConfigServices $configs,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_organisations', entityClass: Organisation::class);
@@ -149,7 +146,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 		$entity = parent::insert(entity: $entity);
 
 		// Dispatch creation event.
-		$this->eventDispatcher->dispatchTyped(new OrganisationCreatedEvent(organisation: $entity));
+		$this->entityEvents->organisationCreated(organisation: $entity);
 
 		return $entity;
 	}//end insert()
@@ -189,11 +186,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 		$entity = parent::update(entity: $entity);
 
 		// Dispatch update event.
-		$event = new OrganisationUpdatedEvent(
-			newOrganisation: $entity,
-			oldOrganisation: $oldEntity ?? $entity
-		);
-		$this->eventDispatcher->dispatchTyped($event);
+		$this->entityEvents->organisationUpdated(newOrganisation: $entity, oldOrganisation: $oldEntity ?? $entity);
 
 		return $entity;
 	}//end update()
@@ -209,7 +202,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 		$entity = parent::delete(entity: $entity);
 
 		// Dispatch deletion event.
-		$this->eventDispatcher->dispatchTyped(new OrganisationDeletedEvent(organisation: $entity));
+		$this->entityEvents->organisationDeleted(organisation: $entity);
 
 		return $entity;
 	}//end delete()

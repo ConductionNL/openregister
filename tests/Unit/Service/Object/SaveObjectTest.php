@@ -27,6 +27,8 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
@@ -196,6 +198,21 @@ class SaveObjectTest extends TestCase {
 		$call = new ObjectSaveCall();
 		$call->uuid = $uuid;
 		return $call;
+	}
+
+	/**
+	 * A cascade pass over the given parent and data, as SaveObject builds it.
+	 *
+	 * @param ObjectEntity $parent The parent object.
+	 * @param array        $data   The parent's data.
+	 *
+	 * @return CascadeRun The pass.
+	 */
+	private static function cascadeRun(ObjectEntity $parent, array $data): CascadeRun {
+		$run = new CascadeRun();
+		$run->parent = $parent;
+		$run->data = $data;
+		return $run;
 	}
 
 	/**
@@ -2191,7 +2208,7 @@ class SaveObjectTest extends TestCase {
 			->method('setObjectName')
 			->with('test-uuid', 'Hydrated Name');
 
-		$this->invokePrivateMethod('preCacheParentName', [$entity, $schema, ['name' => 'Test']]);
+		$this->invokePrivateMethod('preCacheParentName', [self::cascadeRun(parent: $entity, data: ['name' => 'Test']), $schema]);
 	}
 
 	public function testPreCacheParentNameReturnsEarlyOnNullUuid(): void {
@@ -2202,7 +2219,7 @@ class SaveObjectTest extends TestCase {
 
 		$this->metaHydrationHandler->expects($this->never())->method('hydrateObjectMetadata');
 
-		$this->invokePrivateMethod('preCacheParentName', [$entity, $schema, []]);
+		$this->invokePrivateMethod('preCacheParentName', [self::cascadeRun(parent: $entity, data: []), $schema]);
 	}
 
 	public function testPreCacheParentNameFallsBackToNaam(): void {
@@ -2221,7 +2238,7 @@ class SaveObjectTest extends TestCase {
 			->method('setObjectName')
 			->with('test-uuid', 'Dutch Name');
 
-		$this->invokePrivateMethod('preCacheParentName', [$entity, $schema, ['naam' => 'Dutch Name']]);
+		$this->invokePrivateMethod('preCacheParentName', [self::cascadeRun(parent: $entity, data: ['naam' => 'Dutch Name']), $schema]);
 	}
 
 	public function testPreCacheParentNameHandlesHydrationException(): void {
@@ -2236,7 +2253,7 @@ class SaveObjectTest extends TestCase {
 		$this->cacheHandler->expects($this->never())->method('setObjectName');
 
 		// Should not throw.
-		$this->invokePrivateMethod('preCacheParentName', [$entity, $schema, ['name' => 'Test']]);
+		$this->invokePrivateMethod('preCacheParentName', [self::cascadeRun(parent: $entity, data: ['name' => 'Test']), $schema]);
 	}
 
 	// =========================================================================
@@ -2795,7 +2812,7 @@ class SaveObjectTest extends TestCase {
 
 		// Associative array (not a list).
 		$propData = ['key' => 'value'];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -2806,7 +2823,7 @@ class SaveObjectTest extends TestCase {
 
 		// All items are empty.
 		$propData = [[], []];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -2817,7 +2834,7 @@ class SaveObjectTest extends TestCase {
 
 		// Only UUIDs (strings), no objects to create.
 		$propData = ['dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4'];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -2827,7 +2844,7 @@ class SaveObjectTest extends TestCase {
 		$property = ['items' => []]; // No $ref.
 
 		$propData = [['name' => 'Test']];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -2845,7 +2862,7 @@ class SaveObjectTest extends TestCase {
 
 		// Only UUIDs, no objects to create (tests the $ref copy logic).
 		$propData = ['dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4'];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -2859,7 +2876,7 @@ class SaveObjectTest extends TestCase {
 		$definition = []; // No $ref.
 		$object = ['name' => 'Test'];
 
-		$result = $this->invokePrivateMethod('cascadeSingleObject', [$entity, $definition, $object]);
+		$result = $this->invokePrivateMethod('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: $definition), $object]);
 
 		$this->assertNull($result);
 	}
@@ -2869,7 +2886,7 @@ class SaveObjectTest extends TestCase {
 		$definition = ['$ref' => '#/components/schemas/test'];
 		$object = [];
 
-		$result = $this->invokePrivateMethod('cascadeSingleObject', [$entity, $definition, $object]);
+		$result = $this->invokePrivateMethod('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: $definition), $object]);
 
 		$this->assertNull($result);
 	}
@@ -2879,7 +2896,7 @@ class SaveObjectTest extends TestCase {
 		$definition = ['$ref' => '#/components/schemas/test'];
 		$object = ['id' => ''];
 
-		$result = $this->invokePrivateMethod('cascadeSingleObject', [$entity, $definition, $object]);
+		$result = $this->invokePrivateMethod('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: $definition), $object]);
 
 		$this->assertNull($result);
 	}
@@ -2890,7 +2907,7 @@ class SaveObjectTest extends TestCase {
 		$definition = ['$ref' => '#/components/schemas/test'];
 		$object = ['name' => 'Test'];
 
-		$result = $this->invokePrivateMethod('cascadeSingleObject', [$entity, $definition, $object]);
+		$result = $this->invokePrivateMethod('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: $definition), $object]);
 
 		$this->assertNull($result);
 	}
@@ -2910,7 +2927,7 @@ class SaveObjectTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Invalid schema reference');
 
-		$this->invokePrivateMethod('cascadeSingleObject', [$entity, $definition, $object]);
+		$this->invokePrivateMethod('cascadeSingleObject', [new NestedObjectTarget(parent: $entity, definition: $definition), $object]);
 	}
 
 	// =========================================================================
@@ -3044,7 +3061,7 @@ class SaveObjectTest extends TestCase {
 		$schema->method('getSchemaObject')->willThrowException(new Exception('Schema error'));
 
 		$data = ['name' => 'Test'];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [self::cascadeRun(parent: $entity, data: $data), $schema]);
 
 		$this->assertSame($data, $result);
 	}
@@ -3064,7 +3081,7 @@ class SaveObjectTest extends TestCase {
 
 		// 'related' is NOT in data.
 		$data = ['name' => 'Test'];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [self::cascadeRun(parent: $entity, data: $data), $schema]);
 
 		$this->assertSame($data, $result);
 	}
@@ -3083,7 +3100,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 
 		$data = ['related' => []];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [self::cascadeRun(parent: $entity, data: $data), $schema]);
 
 		$this->assertSame($data, $result);
 	}
@@ -3104,7 +3121,7 @@ class SaveObjectTest extends TestCase {
 
 		// Property has writeBack=true, so it should be skipped by cascadeObjects.
 		$data = ['related' => ['name' => 'Sub']];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [self::cascadeRun(parent: $entity, data: $data), $schema]);
 
 		// Data should be unchanged because writeBack properties are skipped.
 		$this->assertSame(['name' => 'Sub'], $result['related']);
@@ -4583,7 +4600,7 @@ class SaveObjectTest extends TestCase {
 
 		// Only string UUIDs — no new objects created but tests the inversedBy copy logic.
 		$propData = ['dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4'];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -4600,7 +4617,7 @@ class SaveObjectTest extends TestCase {
 
 		// Only string UUIDs.
 		$propData = ['dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4'];
-		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [$entity, $property, $propData]);
+		$result = $this->invokePrivateMethod('cascadeMultipleObjects', [new NestedObjectTarget(parent: $entity, definition: $property), $propData]);
 
 		$this->assertSame([], $result);
 	}
@@ -4719,7 +4736,7 @@ class SaveObjectTest extends TestCase {
 		$this->cacheHandler->expects($this->never())
 			->method('setObjectName');
 
-		$this->invokePrivateMethod('preCacheParentName', [$entity, $schema, []]);
+		$this->invokePrivateMethod('preCacheParentName', [self::cascadeRun(parent: $entity, data: []), $schema]);
 	}
 
 	// =========================================================================

@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 
 use DateTime;
 use OCA\OpenRegister\Db\RuleRunSummary;
+use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
@@ -79,9 +80,7 @@ class RuleSummaryThrottleTest extends TestCase {
 		$this->assertFalse(
 			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_FIRED, lastRun: '2026-09-14 12:00:00'),
-				verdict: RuleVocabulary::VERDICT_FIRED,
-				moment: new DateTime('2026-09-14 12:00:30'),
-				isError: false
+				evaluation: new RuleEvaluation(verdict: RuleVocabulary::VERDICT_FIRED, moment: new DateTime('2026-09-14 12:00:30'))
 			)
 		);
 
@@ -99,9 +98,7 @@ class RuleSummaryThrottleTest extends TestCase {
 		$this->assertTrue(
 			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_FIRED, lastRun: '2026-09-14 12:00:00'),
-				verdict: RuleVocabulary::VERDICT_FIRED,
-				moment: new DateTime('2026-09-14 12:02:00'),
-				isError: false
+				evaluation: new RuleEvaluation(verdict: RuleVocabulary::VERDICT_FIRED, moment: new DateTime('2026-09-14 12:02:00'))
 			)
 		);
 
@@ -120,9 +117,7 @@ class RuleSummaryThrottleTest extends TestCase {
 		$this->assertTrue(
 			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_FIRED, lastRun: '2026-09-14 12:00:00'),
-				verdict: RuleVocabulary::VERDICT_REFUSED,
-				moment: new DateTime('2026-09-14 12:00:01'),
-				isError: false
+				evaluation: new RuleEvaluation(verdict: RuleVocabulary::VERDICT_REFUSED, moment: new DateTime('2026-09-14 12:00:01'))
 			)
 		);
 
@@ -140,9 +135,7 @@ class RuleSummaryThrottleTest extends TestCase {
 		$this->assertTrue(
 			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_ERROR, lastRun: '2026-09-14 12:00:00'),
-				verdict: RuleVocabulary::VERDICT_ERROR,
-				moment: new DateTime('2026-09-14 12:00:01'),
-				isError: true
+				evaluation: new RuleEvaluation(verdict: RuleVocabulary::VERDICT_ERROR, moment: new DateTime('2026-09-14 12:00:01'), error: 'the rule failed')
 			)
 		);
 
@@ -159,9 +152,7 @@ class RuleSummaryThrottleTest extends TestCase {
 		$this->assertTrue(
 			condition: $this->mapper()->worthWriting(
 				summary: new RuleRunSummary(),
-				verdict: RuleVocabulary::VERDICT_FIRED,
-				moment: new DateTime('2026-09-14 12:00:00'),
-				isError: false
+				evaluation: new RuleEvaluation(verdict: RuleVocabulary::VERDICT_FIRED, moment: new DateTime('2026-09-14 12:00:00'))
 			)
 		);
 

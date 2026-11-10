@@ -261,25 +261,21 @@ class LlmSettingsController extends Controller {
 				return $invalid;
 			}
 
-			return $this->testResult(result: $this->runChatTest(provider: $provider, config: $config, message: $testMessage));
+			$result = $this->chatService()->testChat(provider: $provider, config: $config, _testMessage: $testMessage);
+			return $this->testResult(result: $result);
 		} catch (Exception $e) {
 			return $this->testFailure(prefix: 'Failed to test chat: ', e: $e);
 		}
 	}//end testChat()
 
 	/**
-	 * Send the test message through the chat service.
+	 * The chat service that sends a test message, resolved when a test runs.
 	 *
-	 * @param string $provider The provider to test.
-	 * @param mixed  $config   The provider configuration.
-	 * @param string $message  The test message.
-	 *
-	 * @return array The chat service's test result
+	 * @return mixed The chat service
 	 */
-	private function runChatTest(string $provider, mixed $config, string $message): array {
-		$chatService = $this->container->get('OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface');
-		return $chatService->testChat(provider: $provider, config: $config, _testMessage: $message);
-	}//end runChatTest()
+	private function chatService(): mixed {
+		return $this->container->get('OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface');
+	}//end chatService()
 
 	/**
 	 * The 400 answer for a connection test that names no provider or no config, if any.

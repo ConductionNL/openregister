@@ -29,12 +29,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Decision;
 
+use OCA\OpenRegister\Kernel\Contracts\ReviewPolicyInterface;
+
 /**
  * The review policy of one schema, or of the instance for files without one.
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
  */
-final class ReviewPolicy {
+final class ReviewPolicy implements ReviewPolicyInterface {
 
 	/**
 	 * The schema configuration key.
