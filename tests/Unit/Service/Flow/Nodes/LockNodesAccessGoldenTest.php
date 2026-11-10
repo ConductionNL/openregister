@@ -41,6 +41,8 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 
 /**
  * Pins the allowed and refused outcomes of lock-object and unlock-object.
@@ -76,8 +78,8 @@ final class LockNodesAccessGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('lockObject')->willReturnCallback(
-			function (...$args): array {
-				$this->calls[] = ['lockObject', $args];
+			function (LockRequest $request, bool $advisory=false): array {
+				$this->calls[] = ['lockObject', [$request->identifier, $request->process, $request->duration, $advisory, $request->runUuid, $request->nodeId]];
 				if ($this->lockRefuses === true) {
 					throw new RuntimeException('held by another run');
 				}
@@ -86,8 +88,8 @@ final class LockNodesAccessGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('unlockObject')->willReturnCallback(
-			function (...$args): bool {
-				$this->calls[] = ['unlockObject', $args];
+			function (UnlockRequest $request): bool {
+				$this->calls[] = ['unlockObject', [$request->identifier, $request->advisory, $request->runUuid]];
 				return true;
 			}
 		);

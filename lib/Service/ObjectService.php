@@ -115,7 +115,6 @@ use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\LockRequest;
 use OCA\OpenRegister\Service\Object\UnlockRequest;
-use OCA\OpenRegister\Service\Object\LockRunStep;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
@@ -5766,40 +5765,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * Locks an object to prevent concurrent modifications.
      *
-     * @param string      $identifier Object ID or UUID
-     * @param string|null $process    Process ID (for tracking who locked it)
-     * @param int|null    $duration   Lock duration in seconds
-     * @param bool        $advisory   When true, treat the identifier as a synthetic
-     *                                pre-creation key and take the appConfig-backed
-     *                                advisory lock without scanning object tables
-     * @param string|null $runUuid    Flow run taking the lock, for a run-scoped lock
-     *                                that refuses every other caller including the
-     *                                run's own runAs user
-     * @param string|null $nodeId     Flow node that took it, recorded for the sweep
-     *
-     * @return array Lock information
-     *
-     * @throws \Exception If lock operation fails
-     *
-     * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
-     */
-    public function lockObject(
-        string $identifier,
-        ?string $process=null,
-        ?int $duration=null,
-        bool $advisory=false,
-        ?string $runUuid=null,
-        ?string $nodeId=null
-    ): array {
-        $step = new LockRunStep(runUuid: $runUuid, nodeId: $nodeId);
-        $request = new LockRequest(identifier: $identifier, process: $process, duration: $duration, runStep: $step);
-        return $this->lock(request: $request, advisory: $advisory);
-    }//end lockObject()
-
-    /**
-     * Lock an object, as one lock request.
-     *
-     * @param LockRequest $request  The object, process, duration and flow run step of the lock.
+     * @param LockRequest $request  The object, process, duration and flow run step of the lock. A
+     *                              run-scoped lock refuses every other caller including the run's
+     *                              own runAs user.
      * @param bool        $advisory When true, treat the identifier as a synthetic
      *                              pre-creation key and take the appConfig-backed
      *                              advisory lock without scanning object tables
@@ -5808,36 +5776,38 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @throws \Exception If lock operation fails
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The advisory flag mirrors lockObject() and the lock handler.
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The advisory flag mirrors the lock handler.
      *
      * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
      */
-    public function lock(LockRequest $request, bool $advisory=false): array
+    public function lockObject(LockRequest $request, bool $advisory=false): array
     {
         return $this->lockHandler->lock(request: $request, advisory: $advisory);
-    }//end lock()
+    }//end lockObject()
 
     /**
      * Unlock an object
      *
      * Removes the lock from an object, allowing other processes to modify it.
      *
-     * @param string|int $identifier The object to unlock
-     * @param bool       $advisory   When true, release the appConfig-backed advisory
-     *                               lock for this synthetic key without scanning tables
-     * @param string|null $runUuid   Flow run releasing the lock, for a run-scoped lock
+     * @param UnlockRequest $request The object, the advisory flag and the flow run releasing a
+     *                               run-scoped lock. A request with `break` set is refused;
+     *                               breakObjectLock() breaks a lock.
      *
      * @return bool True if unlocked successfully
      *
+     * @throws \InvalidArgumentException When the request asks to break the lock
      * @throws \Exception If unlock operation fails
      *
      * @spec exclude One-line delegation to lock handler; unlock behavior owned by object-lifecycle.
      */
-    public function unlockObject(string|int $identifier, bool $advisory=false, ?string $runUuid=null): bool
+    public function unlockObject(UnlockRequest $request): bool
     {
-        return $this->lockHandler->unlock(
-            request: new UnlockRequest(identifier: (string) $identifier, advisory: $advisory, runUuid: $runUuid, break: false)
-        );
+        if ($request->break === true) {
+            throw new \InvalidArgumentException('unlockObject() does not break locks; use breakObjectLock().');
+        }
+
+        return $this->lockHandler->unlock(request: $request);
     }//end unlockObject()
 
     /**

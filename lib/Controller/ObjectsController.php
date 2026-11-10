@@ -143,6 +143,8 @@ use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Notifications\Service\PresenceBeat;
 use OCA\OpenRegister\Notifications\Service\PresenceLookup;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 
 /**
  * Objects controller for OpenRegister
@@ -3603,7 +3605,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$this->objectService->unlockObject($objectEntity->getUuid());
+			$this->objectService->unlockObject(request: new UnlockRequest(identifier: $objectEntity->getUuid()));
 		} catch (\Exception $e) {
 			// The write succeeded, so a failed release is not the caller's
 			// problem and must not turn a 200 into an error. The entity keeps
@@ -4811,9 +4813,7 @@ class ObjectsController extends Controller {
 		$data = $this->request->getParams();
 
 		$lockResult = $this->objectService->lockObject(
-			identifier: $id,
-			process: ($data['process'] ?? null),
-			duration: self::lockDuration(data: $data)
+			request: new LockRequest(identifier: $id, process: ($data['process'] ?? null), duration: self::lockDuration(data: $data))
 		);
 
 		// 🔴 `locked` WAS THE LITERAL `true`, WHICH IS WHY THE STEP
@@ -4875,7 +4875,7 @@ class ObjectsController extends Controller {
 		try {
 			$this->objectService->setRegister(register: $register);
 			$this->objectService->setSchema(schema: $schema);
-			$released = $this->objectService->unlockObject($id);
+			$released = $this->objectService->unlockObject(request: new UnlockRequest(identifier: $id));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (MultipleObjectsReturnedException $e) {

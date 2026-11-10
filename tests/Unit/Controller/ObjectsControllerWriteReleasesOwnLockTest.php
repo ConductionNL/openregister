@@ -46,6 +46,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 
 /**
  * Covers the post-write release and what the response says about it.
@@ -178,7 +179,7 @@ class ObjectsControllerWriteReleasesOwnLockTest extends TestCase {
 
 		$this->objectService->expects($this->once())
 			->method('unlockObject')
-			->with('uuid-123')
+			->with(new UnlockRequest(identifier: 'uuid-123'))
 			->willReturn(true);
 
 		$body = $this->updateReturningLock($this->liveLockHeldBy(self::CALLER));

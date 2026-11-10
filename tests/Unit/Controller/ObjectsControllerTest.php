@@ -34,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\LockRequest;
 
 /**
  * Unit tests for ObjectsController
@@ -6733,7 +6734,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testLockAnswersWhetherItIsHeld(): void {
 		$this->request->method('getParams')->willReturn(['process' => 'edit', 'duration' => '60']);
-		$this->objectService->expects($this->once())->method('lockObject')->with('id', 'edit', 60)
+		$this->objectService->expects($this->once())->method('lockObject')->with(new LockRequest(identifier: 'id', process: 'edit', duration: 60))
 			->willReturn(['uuid' => 'id', 'held' => false]);
 
 		$result = $this->controller->lock('r', 's', 'id');
@@ -6748,7 +6749,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testLockWithoutAHoldReport(): void {
 		$this->request->method('getParams')->willReturn([]);
-		$this->objectService->expects($this->once())->method('lockObject')->with('id', null, null)->willReturn(['uuid' => 'id']);
+		$this->objectService->expects($this->once())->method('lockObject')->with(new LockRequest(identifier: 'id'))->willReturn(['uuid' => 'id']);
 
 		$this->assertSame(['uuid' => 'id', 'locked' => true], $this->controller->lock('r', 's', 'id')->getData());
 	}

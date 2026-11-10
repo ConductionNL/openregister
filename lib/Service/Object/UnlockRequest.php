@@ -41,9 +41,9 @@ final class UnlockRequest {
 	 */
 	public function __construct(
 		public readonly string $identifier,
-		public readonly bool $advisory,
-		public readonly ?string $runUuid,
-		public readonly bool $break,
+		public readonly bool $advisory=false,
+		public readonly ?string $runUuid=null,
+		public readonly bool $break=false,
 	) {
 	}//end __construct()
 }//end class

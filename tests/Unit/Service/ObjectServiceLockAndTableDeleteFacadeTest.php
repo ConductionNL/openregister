@@ -57,7 +57,7 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 		return $service;
 	}
 
-	public function testLockObjectForwardsAllSixArguments(): void {
+	public function testLockObjectForwardsTheRequestAndTheAdvisoryFlag(): void {
 		$lock = $this->createMock(LockHandler::class);
 		$lock->expects($this->once())->method('lock')
 			->with(
@@ -67,7 +67,10 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 			->willReturn(['locked' => true]);
 
 		$result = $this->service($lock, $this->createMock(IAppContainer::class))
-			->lockObject('obj-1', 'import', 600, true, 'run-1', 'node-1');
+			->lockObject(
+				request: new LockRequest(identifier: 'obj-1', process: 'import', duration: 600, runStep: new LockRunStep(runUuid: 'run-1', nodeId: 'node-1')),
+				advisory: true
+			);
 
 		$this->assertSame(['locked' => true], $result);
 	}
@@ -81,7 +84,7 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 			)
 			->willReturn([]);
 
-		$this->service($lock, $this->createMock(IAppContainer::class))->lockObject('obj-1');
+		$this->service($lock, $this->createMock(IAppContainer::class))->lockObject(request: new LockRequest(identifier: 'obj-1'));
 	}
 
 	public function testDeleteObjectsBySchemaForwardsIdsAndHardDeleteAsBulkDelete(): void {

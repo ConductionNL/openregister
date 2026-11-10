@@ -53,9 +53,9 @@ final class LockRequest {
 	 */
 	public function __construct(
 		public readonly string $identifier,
-		public readonly ?string $process,
-		public readonly ?int $duration,
-		LockRunStep $runStep,
+		public readonly ?string $process=null,
+		public readonly ?int $duration=null,
+		LockRunStep $runStep=new LockRunStep(runUuid: null, nodeId: null),
 	) {
 		$this->runUuid = $runStep->runUuid;
 		$this->nodeId = $runStep->nodeId;

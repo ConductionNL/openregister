@@ -1047,9 +1047,7 @@ class ObjectServiceTest extends TestCase {
 			->willReturn($lockInfo);
 
 		$result = $this->service->lockObject(
-			identifier: 'obj-uuid',
-			process: 'import',
-			duration: 3600
+			request: new LockRequest(identifier: 'obj-uuid', process: 'import', duration: 3600)
 		);
 
 		$this->assertSame($lockInfo, $result);
@@ -1065,9 +1063,20 @@ class ObjectServiceTest extends TestCase {
 			->with(new UnlockRequest(identifier: 'obj-uuid', advisory: false, runUuid: null, break: false))
 			->willReturn(true);
 
-		$result = $this->service->unlockObject(identifier: 'obj-uuid');
+		$result = $this->service->unlockObject(request: new UnlockRequest(identifier: 'obj-uuid'));
 
 		$this->assertTrue($result);
+	}
+
+	/**
+	 * Test unlockObject refuses a break request and leaves the lock handler untouched.
+	 */
+	public function testUnlockObjectRefusesABreakRequest(): void {
+		$this->lockHandler->expects($this->never())->method('unlock');
+
+		$this->expectException(\InvalidArgumentException::class);
+
+		$this->service->unlockObject(request: new UnlockRequest(identifier: 'obj-uuid', break: true));
 	}
 
 	// ── 13. count() tests ───────────────────────────────────────────────
