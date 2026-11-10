@@ -448,16 +448,17 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				new ViewDefinition('Config View', 'From configuration', [
-					'registers' => [1, 2],
-					'schemas' => [3],
-					'source' => 'manual',
-					'searchTerms' => ['test'],
-					'facetFilters' => ['status' => 'active'],
-					'enabledFacets' => ['status'],
-				], null),
-				new ViewAudience('testuser', true, true, null),
-				null
+				new ViewEdit(
+					definition: new ViewDefinition('Config View', 'From configuration', [
+						'registers' => [1, 2],
+						'schemas' => [3],
+						'source' => 'manual',
+						'searchTerms' => ['test'],
+						'facetFilters' => ['status' => 'active'],
+						'enabledFacets' => ['status'],
+					], null),
+					audience: new ViewAudience('testuser', true, true, null)
+				)
 			)
 			->willReturn($view);
 
@@ -480,16 +481,17 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				new ViewDefinition('Minimal Config View', '', [
-					'registers' => [],
-					'schemas' => [],
-					'source' => 'auto',
-					'searchTerms' => [],
-					'facetFilters' => [],
-					'enabledFacets' => [],
-				], null),
-				new ViewAudience('testuser', false, false, null),
-				null
+				new ViewEdit(
+					definition: new ViewDefinition('Minimal Config View', '', [
+						'registers' => [],
+						'schemas' => [],
+						'source' => 'auto',
+						'searchTerms' => [],
+						'facetFilters' => [],
+						'enabledFacets' => [],
+					], null),
+					audience: new ViewAudience('testuser', false, false, null)
+				)
 			)
 			->willReturn($view);
 
@@ -960,9 +962,10 @@ class ViewsControllerTest extends TestCase {
 		$this->viewService->expects($this->once())
 			->method('create')
 			->with(
-				new ViewDefinition('Kanban View', '', ['registers' => [1], 'schemas' => [2]], $presentation),
-				new ViewAudience('testuser', false, false, null),
-				null
+				new ViewEdit(
+					definition: new ViewDefinition('Kanban View', '', ['registers' => [1], 'schemas' => [2]], $presentation),
+					audience: new ViewAudience('testuser', false, false, null)
+				)
 			)
 			->willReturn($view);
 
