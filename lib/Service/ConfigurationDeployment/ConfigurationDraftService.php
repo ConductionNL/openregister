@@ -210,46 +210,86 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	private function stage(string $setUuid, ConfigurationDraftChange $change): ConfigurationDraft {
-		$address = $change->address;
-		$value = $change->value;
-		$removes = $change->removes;
-
 		$set = $this->loadSet(uuid: $setUuid);
 		$this->requireEditable(set: $set);
 		$this->requireDraftableAddress(change: $change);
 
-		$live = $this->store->read(layer: $address->layer, layerRef: $address->layerRef, configKey: $address->configKey);
-		$existing = $this->drafts->findAtAddress(
-			setUuid: $setUuid,
+		$run     = new DraftStageRun(setUuid: $setUuid, change: $change);
+		$address = $change->address;
+
+		$run->live = $this->store->read(layer: $address->layer, layerRef: $address->layerRef, configKey: $address->configKey);
+		$existing  = $this->draftAt(run: $run);
+
+		if ($existing !== null) {
+			return $this->restage(run: $run, draft: $existing);
+		}
+
+		return $this->createDraft(run: $run);
+
+	}//end stage()
+
+	/**
+	 * The pending value already drafted at the run's address in its set, if any.
+	 *
+	 * @param DraftStageRun $run The stage.
+	 *
+	 * @return ConfigurationDraft|null The pending value, or null.
+	 */
+	private function draftAt(DraftStageRun $run): ?ConfigurationDraft {
+		$address = $run->change->address;
+
+		return $this->drafts->findAtAddress(
+			setUuid: $run->setUuid,
 			layer: $address->layer,
 			layerRef: $address->layerRef,
 			configKey: $address->configKey
 		);
 
-		if ($existing !== null) {
-			$existing->setDraftValue(['value' => $value]);
-			$existing->setBaseValue(['value' => $live->value]);
-			$existing->setBasePresent($live->present);
-			$existing->setRemoves($removes);
+	}//end draftAt()
 
-			return $this->drafts->save($existing);
-		}
+	/**
+	 * Replace a pending value at the address and rebase it on the live value.
+	 *
+	 * @param DraftStageRun      $run   The stage.
+	 * @param ConfigurationDraft $draft The pending value already at the address.
+	 *
+	 * @return ConfigurationDraft The saved pending value.
+	 */
+	private function restage(DraftStageRun $run, ConfigurationDraft $draft): ConfigurationDraft {
+		$draft->setDraftValue(['value' => $run->change->value]);
+		$draft->setBaseValue(['value' => $run->live->value]);
+		$draft->setBasePresent($run->live->present);
+		$draft->setRemoves($run->change->removes);
+
+		return $this->drafts->save($draft);
+
+	}//end restage()
+
+	/**
+	 * Write a first pending value at the address, against the live value.
+	 *
+	 * @param DraftStageRun $run The stage.
+	 *
+	 * @return ConfigurationDraft The created pending value.
+	 */
+	private function createDraft(DraftStageRun $run): ConfigurationDraft {
+		$address = $run->change->address;
 
 		return $this->drafts->createFromArray(
 			[
-				'setUuid' => $setUuid,
+				'setUuid' => $run->setUuid,
 				'layer' => $address->layer,
 				'layerRef' => $address->layerRef,
 				'configKey' => $address->configKey,
-				'baseValue' => ['value' => $live->value],
-				'basePresent' => $live->present,
-				'draftValue' => ['value' => $value],
-				'removes' => $removes,
+				'baseValue' => ['value' => $run->live->value],
+				'basePresent' => $run->live->present,
+				'draftValue' => ['value' => $run->change->value],
+				'removes' => $run->change->removes,
 				'createdBy' => $this->actor(),
 			]
 		);
 
-	}//end stage()
+	}//end createDraft()
 
 	/**
 	 * The pending values in a set.
