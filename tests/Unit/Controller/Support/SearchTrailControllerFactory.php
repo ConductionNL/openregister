@@ -40,8 +40,7 @@ final class SearchTrailControllerFactory {
 			new \OCA\OpenRegister\Controller\Support\SearchTrailControllerServices(
 				searchTrailService: $searchTrailService,
 				searchTrailMapper: $searchTrailMapper,
-				userSession: $userSession,
-				groupManager: $groupManager,
+				principal: new \OCA\OpenRegister\Controller\Support\SessionPrincipal(userSession: $userSession, groupManager: $groupManager),
 			),
 		];
 	}
