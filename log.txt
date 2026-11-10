@@ -782,3 +782,4 @@
 2026-11-10T00:28:32Z integrator-20261109T234320-9cfff978 NORESULT tree 399568eee7 prs 50: php-1.log: no Tests line
 2026-11-10T00:29:07Z integrator-20261109T234320-9cfff978 CONFLICT-DEV #8121 ba825979
 2026-11-10T00:29:17Z integrator-20261109T234320-9cfff978 CONFLICT-DEV #8219 fa312138
+2026-11-10T00:29:16Z integrator-20261109T215605-00331343 GREEN tree 88e9355335 on dev 8b6f101d22 prs 1 front=skip: Tests: 54413, Assertions: 178045, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
