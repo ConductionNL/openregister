@@ -1912,6 +1912,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @return void
 	 *
 	 * @throws DoesNotExistException When the row is gone.
+	 * @throws Exception When the lookup, the guard or the update fails otherwise.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
