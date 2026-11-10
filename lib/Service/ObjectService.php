@@ -4390,7 +4390,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         $deleter = ($request->currentUser ?? $this->userSession->getUser());
         if ($request->rbac === true && $object !== null && $this->currentSchema !== null
-            && $this->draftKeptFromCaller(object: $object, schema: $this->currentSchema, user: $deleter) === true
+            && (new DraftCallerRule())->keptFromCaller(
+                object: $object,
+                schema: $this->currentSchema,
+                caller: $this->draftCaller(user: $deleter)
+            ) === true
         ) {
             throw new OcpDoesNotExistException('Object not found');
         }
@@ -4498,31 +4502,25 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end isDeletableDraft()
 
     /**
-     * Whether a stored draft is kept from the caller (DraftStatusPolicy::keptFromCaller(), the one rule of every draft guard).
+     * The caller as the draft rule sees them (DraftCallerRule::keptFromCaller(), the one rule of every draft guard).
      *
      * One answer for the single delete and the bulk delete: another user's
      * draft is not theirs to remove. An administrator reads every draft, so
      * is not kept from one.
      *
-     * @param ObjectEntity $object The stored object.
-     * @param Schema       $schema Its schema.
-     * @param IUser|null   $user   The caller.
+     * @param IUser|null $user The caller.
      *
-     * @return bool True when the object is a draft the caller may not touch.
+     * @return DraftCaller Their user id, and whether they are an administrator.
      *
      * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
      */
-    private function draftKeptFromCaller(ObjectEntity $object, Schema $schema, ?IUser $user): bool
+    private function draftCaller(?IUser $user): DraftCaller
     {
-        return (new DraftCallerRule())->keptFromCaller(
-            object: $object,
-            schema: $schema,
-            caller: new DraftCaller(
-                userId: $user?->getUID(),
-                isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
-            )
+        return new DraftCaller(
+            userId: $user?->getUID(),
+            isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
         );
-    }//end draftKeptFromCaller()
+    }//end draftCaller()
 
     /**
      * Refuse a delete on an archival-annotated schema.
@@ -6958,7 +6956,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function draftDeleteRefusal(array $scope, array $run): ?array
     {
         if ($scope['draft'] === true && $run['_rbac'] === true
-            && $this->draftKeptFromCaller(object: $scope['row'], schema: $scope['gateSchema'], user: $this->userSession->getUser()) === true
+            && (new DraftCallerRule())->keptFromCaller(
+                object: $scope['row'],
+                schema: $scope['gateSchema'],
+                caller: $this->draftCaller(user: $this->userSession->getUser())
+            ) === true
         ) {
             return [
                 'error'   => 'OBJECT_NOT_PERMITTED',
