@@ -93,19 +93,7 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 		// The task verb's authorization FIRST, fail-closed and audited on
 		// denial, before a single byte reaches the subject object.
 		$task = $this->tasks->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: $actor), uuid: $uuid);
-
-		try {
-			$described = $this->forms->describe(task: $task);
-			$this->refuseUnresolvable(described: $described);
-			$this->refuseUncheckedItems(task: $task, required: $described['requireChecklist']);
-			$this->writer->write(task: $task, form: $described['form'], data: $data);
-		} catch (TaskFormRefusedException | TaskSubjectWriteRefusedException $refused) {
-			// A refused attempt, distinguishable from a completion: the task
-			// keeps its pre-call state and the audit says somebody tried.
-			$this->tasks->recordRefusedCompletion(task: $task, attempt: new TaskAct(verb: 'complete', actor: $actor, reason: $refused->getMessage()));
-
-			throw $refused;
-		}
+		$this->submit(submission: new TaskFormSubmission(task: $task, data: $data, actor: $actor));
 
 		return $this->tasks->complete(
 			uuid: $uuid,
@@ -115,6 +103,34 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 			actor: $actor
 		);
 	}//end complete()
+
+	/**
+	 * Check the form and the checklist, then write the submitted values onto
+	 * the subject; a refusal is audited as a refused completion and rethrown.
+	 *
+	 * @param TaskFormSubmission $submission The opened task, values and actor.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskFormRefusedException When the form, checklist or values are refused.
+	 * @throws TaskSubjectWriteRefusedException When the subject refuses the write.
+	 */
+	private function submit(TaskFormSubmission $submission): void {
+		$task = $submission->task;
+		try {
+			$described = $this->forms->describe(task: $task);
+			$this->refuseUnresolvable(described: $described);
+			$this->refuseUncheckedItems(task: $task, required: $described['requireChecklist']);
+			$this->writer->write(submission: $submission, form: $described['form']);
+		} catch (TaskFormRefusedException | TaskSubjectWriteRefusedException $refused) {
+			// A refused attempt, distinguishable from a completion: the task
+			// keeps its pre-call state and the audit says somebody tried.
+			$attempt = new TaskAct(verb: 'complete', actor: $submission->actor, reason: $refused->getMessage());
+			$this->tasks->recordRefusedCompletion(task: $task, attempt: $attempt);
+
+			throw $refused;
+		}
+	}//end submit()
 
 	/**
 	 * An unresolvable form completes nothing: an empty form would report success for a task that required evidence.

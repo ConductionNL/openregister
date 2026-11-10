@@ -43,6 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\TaskCompletionCommand;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TaskControllerServices;
 use OCA\OpenRegister\Db\TaskInboxAnchor;
@@ -606,20 +607,37 @@ class TaskController extends Controller {
 		?string $comment = null,
 		mixed $data = null,
 	): JSONResponse {
+		$answer = new TaskAnswer(outcome: $outcome, resultText: $resultText, comment: $comment);
+
+		return $this->completeTask(command: new TaskCompletionCommand(uuid: $uuid, answer: $answer, data: $data));
+	}//end complete()
+
+	/**
+	 * Complete a task through the form-aware completion; a `data` that is
+	 * not an object is a 400 before any service is reached.
+	 *
+	 * @param TaskCompletionCommand $command The task, answer and field values.
+	 *
+	 * @return JSONResponse The completed task, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 */
+	private function completeTask(TaskCompletionCommand $command): JSONResponse {
+		$data = $command->data;
 		if ($data !== null && is_array($data) === false) {
 			return new JSONResponse(['error' => 'Field "data" must be an object of field values.'], Http::STATUS_BAD_REQUEST);
 		}
 
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->completion->complete(
-				uuid: $uuid,
-				answer: new TaskAnswer(outcome: $outcome, resultText: $resultText, comment: $comment),
+				uuid: $command->uuid,
+				answer: $command->answer,
 				data: ($data ?? []),
 				actor: $this->uid()
 			),
-			uuid: $uuid
+			uuid: $command->uuid
 		);
-	}//end complete()
+	}//end completeTask()
 
 	/**
 	 * Cancel a task.

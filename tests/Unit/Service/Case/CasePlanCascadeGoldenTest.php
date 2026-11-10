@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemAuditMapper;
 use OCA\OpenRegister\Db\CaseItemMapper;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
+use OCA\OpenRegister\Service\Case\CaseAnchor;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
@@ -160,8 +161,8 @@ class CasePlanCascadeGoldenTest extends TestCase {
 
 		$anchor = $this->createMock(CaseAnchorReader::class);
 		$anchor->method('read')->willReturnCallback(
-			function (string $objectUuid, ?int $registerId, ?int $schemaId): array {
-				$this->calls[] = sprintf('anchor:%s:%s:%s', $objectUuid, $registerId ?? '-', $schemaId ?? '-');
+			function (CaseAnchor $anchor): array {
+				$this->calls[] = sprintf('anchor:%s:%s:%s', $anchor->objectUuid, $anchor->registerId ?? '-', $anchor->schemaId ?? '-');
 				return ['status' => 'withdrawn'];
 			}
 		);
