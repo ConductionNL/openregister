@@ -220,13 +220,8 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->current->setFrozen(['by' => 'bob', 'at' => '2026-09-01T00:00:00+00:00']);
 
 		$this->magic->expects($this->never())->method('update');
-<<<<<<< HEAD
 		$this->audit->expects($this->never())->method('revertObjectWith');
-		$this->audit->expects($this->never())->method('createAuditTrail');
-=======
-		$this->audit->expects($this->never())->method('revertObject');
 		$this->audit->expects($this->never())->method('recordChange');
->>>>>>> origin/cloud/v01-audit-change-1
 
 		$this->expectException(ObjectStateWriteException::class);
 
@@ -244,13 +239,8 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->current->setArchived(['by' => 'anna', 'at' => '2026-09-12T00:00:00+00:00', 'reason' => 'closed']);
 
 		$this->magic->expects($this->never())->method('update');
-<<<<<<< HEAD
 		$this->audit->expects($this->never())->method('revertObjectWith');
-		$this->audit->expects($this->never())->method('createAuditTrail');
-=======
-		$this->audit->expects($this->never())->method('revertObject');
 		$this->audit->expects($this->never())->method('recordChange');
->>>>>>> origin/cloud/v01-audit-change-1
 
 		try {
 			$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));

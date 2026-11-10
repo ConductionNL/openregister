@@ -81,13 +81,8 @@ final class LockHandlerReleaseOrderGoldenTest extends TestCase {
 				$this->events[] = 'entry:' . $action . ':' . json_encode($context);
 				return new AuditTrail();
 			}
-<<<<<<< HEAD
 		));
-		$audit->method('createAuditTrail')->willReturnCallback(
-=======
-		);
 		$audit->method('recordChange')->willReturnCallback(AuditChangeCalls::positional(
->>>>>>> origin/cloud/v01-audit-change-1
 			function (?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail {
 				$this->events[] = 'trail:' . $action . ':' . ($old?->getUuid()) . '>' . ($new?->getUuid());
 				return new AuditTrail();

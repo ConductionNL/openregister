@@ -336,13 +336,8 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 				$this->auditEntries[] = [$action, $context];
 				return new AuditTrail();
 			}
-<<<<<<< HEAD
 		));
-		$audit->method('createAuditTrail')->willReturnCallback(
-=======
-		);
 		$audit->method('recordChange')->willReturnCallback(AuditChangeCalls::positional(
->>>>>>> origin/cloud/v01-audit-change-1
 			function (ObjectEntity $old, ObjectEntity $new, string $action): AuditTrail {
 				if ($this->auditFails === true) {
 					throw new Exception('audit down');

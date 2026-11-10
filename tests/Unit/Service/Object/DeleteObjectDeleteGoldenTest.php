@@ -254,13 +254,8 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 				$calls[] = ['audit' => $action, 'old' => $old === null ? null : $this->entityFacts($old, $lookedUp, $stored), 'new' => $new?->getUuid(), 'cascadeContext' => $cascadeContext];
 				return new AuditTrail();
 			}
-<<<<<<< HEAD
-		);
-		$auditMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
-=======
 		));
-		$auditMapper->method('createAuditTrailEntry')->willReturnCallback(
->>>>>>> origin/cloud/v01-audit-change-1
+		$auditMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null) use (&$calls): AuditTrail {
 				$calls[] = ['auditEntry' => $action, 'object' => $object->getUuid(), 'context' => $context, 'actorId' => $actorId];
 				return new AuditTrail();
