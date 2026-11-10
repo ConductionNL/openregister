@@ -134,17 +134,14 @@ class LinkExposure implements LinkExposureInterface {
 	/**
 	 * The far record as this reader sees it through this link.
 	 *
-	 * @param array<string, mixed> $farObject    The far record.
-	 * @param array<string, mixed> $relationType The relation type descriptor.
-	 * @param array<int, string>   $readable     The properties the reader's own rules allow.
+	 * @param array<string, mixed> $farObject The far record.
+	 * @param array<int, string>   $visible   The properties visible through the link, as visibleProperties() answers them.
 	 *
 	 * @return array<string, mixed> The projection, with withheld properties marked.
 	 *
 	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
 	 */
-	public function project(array $farObject, array $relationType, array $readable): array {
-		$visible = $this->visibleProperties(relationType: $relationType, readable: $readable);
-
+	public function project(array $farObject, array $visible): array {
 		$projection = [];
 		foreach (array_keys($farObject) as $property) {
 			$property = (string)$property;
@@ -198,31 +195,46 @@ class LinkExposure implements LinkExposureInterface {
 	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
 	 */
 	public function refusalFor(array $relationType, array $farProperties, string $typeName): ?string {
-		if ($this->declaresExposure(relationType: $relationType) === false) {
+		return $this->declarationRefusal(
+			declaration: new ExposureDeclaration(relationType: $relationType, farProperties: $farProperties, typeName: $typeName)
+		);
+	}//end refusalFor()
+
+	/**
+	 * Why a declared `exposes` may not be saved, or null when it may.
+	 *
+	 * @param ExposureDeclaration $declaration The relation type, the far schema's properties and the type name.
+	 *
+	 * @return string|null The reason.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 */
+	public function declarationRefusal(ExposureDeclaration $declaration): ?string {
+		if ($this->declaresExposure(relationType: $declaration->relationType) === false) {
 			return null;
 		}
 
-		foreach ($relationType[self::KEY] as $property) {
-			$refusal = self::propertyRefusal(property: (string)$property, farProperties: $farProperties, typeName: $typeName);
+		foreach ($declaration->relationType[self::KEY] as $property) {
+			$refusal = self::propertyRefusal(declaration: $declaration, property: (string)$property);
 			if ($refusal !== null) {
 				return $refusal;
 			}
 		}
 
 		return null;
-	}//end refusalFor()
+	}//end declarationRefusal()
 
 
 	/**
 	 * Why one exposed property may not be saved, or null when it may.
 	 *
-	 * @param string             $property      The exposed property name.
-	 * @param array<int, string> $farProperties The far schema's declared properties.
-	 * @param string             $typeName      The type, for the message.
+	 * @param ExposureDeclaration $declaration The declaration the property is in.
+	 * @param string              $property    The exposed property name.
 	 *
 	 * @return string|null The reason.
 	 */
-	private static function propertyRefusal(string $property, array $farProperties, string $typeName): string|null {
+	private static function propertyRefusal(ExposureDeclaration $declaration, string $property): string|null {
+		$typeName = $declaration->typeName;
 		if ($property === '') {
 			return sprintf('relation type "%s" exposes an unnamed property', $typeName);
 		}
@@ -230,7 +242,7 @@ class LinkExposure implements LinkExposureInterface {
 		// Refused at SAVE, because a name that matches nothing is silently
 		// absent from every projection afterwards — the author sees a 200
 		// and a link that exposes one field fewer than they wrote.
-		if (in_array($property, $farProperties, true) === false) {
+		if (in_array($property, $declaration->farProperties, true) === false) {
 			return sprintf('relation type "%s" exposes "%s", which the linked schema does not declare', $typeName, $property);
 		}
 

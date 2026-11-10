@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * The methods of FlowTriggerMapper that callers outside the Db component use.
  *
@@ -73,6 +75,18 @@ interface FlowTriggerMapperInterface {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
 	 */
 	public function flowUuidsFor(string $event, string $register, string $schema): array;
+
+	/**
+	 * The UUIDs of enabled flows subscribed to one event on one register and schema.
+	 *
+	 * @param string            $event The event id.
+	 * @param RegisterSchemaRef $table The register and schema slugs the event fired on.
+	 *
+	 * @return array<int, string> The flow UUIDs, each at most once.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
+	 */
+	public function flowUuidsSubscribedTo(string $event, RegisterSchemaRef $table): array;
 
 	/**
 	 * Replace one flow's trigger rows with the given set.

@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -544,7 +545,7 @@ class RelatedRowAccessGoldenTest extends TestCase {
 			$this->assertSame($expectedParameters, $parameters, $label);
 			$this->assertCount(1, $this->rbacCalls, $label);
 			$this->assertSame(2, $this->rbacCalls[0][0]->getId(), $label);
-			$this->assertSame(['rel0', 'read', 'openregister_table_1_2'], array_slice($this->rbacCalls[0], 1), $label);
+			$this->assertEquals([new AliasedRows(alias: 'rel0', action: 'read', tableName: 'openregister_table_1_2')], array_slice($this->rbacCalls[0], 1), $label);
 		}
 	}//end testThePredicateForEveryScope()
 
@@ -578,7 +579,7 @@ class RelatedRowAccessGoldenTest extends TestCase {
 			$this->assertSame($related, $this->scopeCalls[0][0], $label);
 			$this->assertSame(1, $this->scopeCalls[0][1], $label);
 			$this->assertSame($related, $this->rbacCalls[0][0], $label);
-			$this->assertSame(['rel0', 'read', 'openregister_table_1_2'], [$this->rbacCalls[0][1], $this->rbacCalls[0][2], $this->rbacCalls[0][3]], $label);
+			$this->assertEquals(new AliasedRows(alias: 'rel0', action: 'read', tableName: 'openregister_table_1_2'), $this->rbacCalls[0][1], $label);
 		}
 	}//end testTheApplierRendersTheRelatedSchemasPredicateForEveryScope()
 

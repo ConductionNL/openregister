@@ -42,6 +42,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * Locks `like` on the QueryBuilder path and the raw-SQL UNION path, for object
@@ -163,7 +164,7 @@ class MagicSearchHandlerLikeOperatorTest extends TestCase {
 	 */
 	private function applyObject(array $filters, string $platformClass = PostgreSQL120Platform::class): array {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
-		$method->invoke($this->handler($platformClass), $this->queryBuilder(), $filters, $this->schema());
+		$method->invoke($this->handler($platformClass), new TableFilterRun(qb: $this->queryBuilder(), query: [], table: new MagicReadTable(schema: $this->schema())), $filters);
 
 		return $this->captured;
 	}//end applyObject()

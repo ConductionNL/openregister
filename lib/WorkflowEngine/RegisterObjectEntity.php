@@ -111,12 +111,10 @@ class RegisterObjectEntity implements RegisterObjectEntityInterface {
 	 */
 	public function prepareRuleMatcher(IRuleMatcher $ruleMatcher, string $eventName, Event $event): void {
 		$object = $this->objectFromEvent(event: $event);
-		if ($object === null) {
-			return;
+		if ($object !== null) {
+			$this->object = $object;
+			$ruleMatcher->setEntitySubject($this, $object);
 		}
-
-		$this->object = $object;
-		$ruleMatcher->setEntitySubject($this, $object);
 	}//end prepareRuleMatcher()
 
 	/**

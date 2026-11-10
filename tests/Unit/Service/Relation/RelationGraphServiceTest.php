@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Relation\RelationGraphService;
 use OCA\OpenRegister\Service\Relation\RelationGraphSources;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCP\IAppConfig;
+use OCA\OpenRegister\Service\Relation\GraphExportOptions;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -293,7 +294,7 @@ class RelationGraphServiceTest extends TestCase {
 	public function testTheExportIsAnEdgeListThatCarriesItsTruncation(): void {
 		$service = $this->service(['a' => ['b'], 'b' => ['c'], 'c' => []]);
 
-		$export = $service->export(rootUuid: 'a', depth: 1);
+		$export = $service->export(rootUuid: 'a', options: new GraphExportOptions(depth: 1));
 
 		$this->assertSame(
 			['from', 'fromTitle', 'relation', 'direction', 'to', 'toTitle', 'origin', 'distance'],
@@ -316,7 +317,7 @@ class RelationGraphServiceTest extends TestCase {
 	public function testACompleteExportCarriesNoTruncationRow(): void {
 		$service = $this->service(['a' => ['b'], 'b' => []]);
 
-		$export = $service->export(rootUuid: 'a', depth: 2);
+		$export = $service->export(rootUuid: 'a', options: new GraphExportOptions(depth: 2));
 
 		$this->assertFalse($export['graph']['truncated']);
 		$this->assertCount(2, $export['rows']);

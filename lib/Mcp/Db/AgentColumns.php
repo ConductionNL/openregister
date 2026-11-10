@@ -124,27 +124,9 @@ final class AgentColumns
 
         $values = ['uuid' => $uuid];
         foreach (self::HYDRATED as $column => [$fallback, $default]) {
-            $values[$column] = $object[$column] ?? self::fallback(object: $object, key: $fallback, default: $default);
+            $values[$column] = $object[$column] ?? $object[$fallback ?? $column] ?? $default;
         }
 
         return $values;
     }//end hydrationValues()
-
-    /**
-     * The snake_case fallback value, or the default when there is none.
-     *
-     * @param array<string, mixed> $object  The input array
-     * @param string|null          $key     The fallback key
-     * @param mixed                $default The default value
-     *
-     * @return mixed The fallback value or the default
-     */
-    private static function fallback(array $object, ?string $key, mixed $default): mixed
-    {
-        if ($key === null) {
-            return $default;
-        }
-
-        return $object[$key] ?? $default;
-    }//end fallback()
 }//end class

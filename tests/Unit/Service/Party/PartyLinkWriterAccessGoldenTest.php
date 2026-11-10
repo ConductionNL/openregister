@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
+use OCA\OpenRegister\Service\Party\PartyLinkRequest;
 use OCA\OpenRegister\Service\Party\PartyLinkTarget;
 use OCA\OpenRegister\Service\Party\PartyLinkWriter;
 use OCA\OpenRegister\Service\Party\PartyService;
@@ -124,7 +125,7 @@ class PartyLinkWriterAccessGoldenTest extends TestCase {
 	 */
 	private function outcome(PartyLinkWriter $writer, ?string $linkedBy): ContactLink|array {
 		try {
-			return $writer->write(new PartyLinkTarget('case-1', 3, 7), 'party-a', 'aanvrager', $linkedBy);
+			return $writer->write(new PartyLinkRequest(new PartyLinkTarget('case-1', 3, 7), 'party-a', 'aanvrager', $linkedBy));
 		} catch (Exception $e) {
 			return [$e->getCode(), $e->getMessage()];
 		}
