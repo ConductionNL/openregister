@@ -193,17 +193,7 @@ class ElevationService implements ElevationServiceInterface {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-administration-requires-a-fresh-expiring-authentication-req-ihc-002
 	 */
 	public function remainingSeconds(): int {
-		try {
-			$since = $this->identity->session->get(self::SESSION_KEY);
-		} catch (Throwable) {
-			return 0;
-		}
-
-		if (is_int($since) === false && is_string($since) === false) {
-			return 0;
-		}
-
-		$since = (int)$since;
+		$since = $this->elevatedSince();
 		if ($since <= 0) {
 			return 0;
 		}
@@ -223,6 +213,25 @@ class ElevationService implements ElevationServiceInterface {
 		return $left;
 
 	}//end remainingSeconds()
+
+	/**
+	 * The moment this session was elevated, or 0 when it holds no readable moment.
+	 *
+	 * @return integer The unix time stored at elevation, or 0.
+	 */
+	private function elevatedSince(): int {
+		try {
+			$since = $this->identity->session->get(self::SESSION_KEY);
+		} catch (Throwable) {
+			return 0;
+		}
+
+		if (is_int($since) === false && is_string($since) === false) {
+			return 0;
+		}
+
+		return (int)$since;
+	}//end elevatedSince()
 
 	/**
 	 * Refuse an administration write unless the period is running.
