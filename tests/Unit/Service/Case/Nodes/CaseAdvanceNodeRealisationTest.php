@@ -72,8 +72,7 @@ class CaseAdvanceNodeRealisationTest extends TestCase
         $session = $this->createMock(IUserSession::class);
         $node    = new CaseAdvanceNode(
             new CaseStepRunner(plans: $plans, scope: $scope, session: $session),
-            $this->createMock(IL10N::class),
-            $this->createMock(IURLGenerator::class)
+            new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($this->createMock(IL10N::class), $this->createMock(IURLGenerator::class))
         );
 
         $out = $node->execute(

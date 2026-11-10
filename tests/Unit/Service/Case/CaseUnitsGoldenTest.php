@@ -862,7 +862,7 @@ class CaseUnitsGoldenTest extends TestCase {
 		$l10n->method('t')->willReturnCallback(static fn (string $text, array $params = []): string => vsprintf($text, $params));
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('imagePath')->willReturn('/icon.svg');
-		$collaborators = ['steps' => new CaseStepRunner(plans: $this->service(writes: $writes), scope: $scope, session: $session), 'l10n' => $l10n, 'urls' => $urls];
+		$collaborators = ['steps' => new CaseStepRunner(plans: $this->service(writes: $writes), scope: $scope, session: $session), 'presentation' => new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($l10n, $urls)];
 		$open = new CaseOpenNode(...$collaborators);
 		$advance = new CaseAdvanceNode(...$collaborators);
 		$out = [];
