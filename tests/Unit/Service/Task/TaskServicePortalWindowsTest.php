@@ -144,7 +144,7 @@ class TaskServicePortalWindowsTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($task);
 		$this->authorization->expects($this->once())->method('assertMay')->with(new TaskAct(verb: 'complete', actor: 'party:bsn-1'), $task);
 
-		$this->assertSame($task, $this->service->openFor(verb: 'complete', uuid: 't-1', actor: 'party:bsn-1'));
+		$this->assertSame($task, $this->service->openFor(act: new TaskAct(verb: 'complete', actor: 'party:bsn-1'), uuid: 't-1'));
 		$this->assertSame(Task::STATE_ACTIVE, $task->getState());
 	}//end testOpenForReturnsTheOpenAuthorizedTask()
 
@@ -169,7 +169,7 @@ class TaskServicePortalWindowsTest extends TestCase {
 		);
 
 		try {
-			$this->service->openFor(verb: 'complete', uuid: 't-1', actor: 'party:bsn-2');
+			$this->service->openFor(act: new TaskAct(verb: 'complete', actor: 'party:bsn-2'), uuid: 't-1');
 			$this->fail('The denial was swallowed.');
 		} catch (TaskAccessDeniedException) {
 			$this->addToAssertionCount(1);
@@ -194,7 +194,7 @@ class TaskServicePortalWindowsTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($task);
 
 		$this->expectException(TaskConflictException::class);
-		$this->service->openFor(verb: 'complete', uuid: 't-1', actor: 'party:bsn-1');
+		$this->service->openFor(act: new TaskAct(verb: 'complete', actor: 'party:bsn-1'), uuid: 't-1');
 	}//end testOpenForConflictsOnATerminalTask()
 
 	/**
