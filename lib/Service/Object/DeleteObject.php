@@ -327,9 +327,7 @@ class DeleteObject {
 
 		if ($objectEntity->isDraft() === true) {
 			(new DraftRemovalRecord(auditTrail: $this->auditTrailMapper, logger: $this->logger))->write(
-				draft: $objectEntity,
-				register: $target->register,
-				schema: $target->schema
+				removed: new RemovedDraft(draft: $objectEntity, register: $target->register, schema: $target->schema)
 			);
 		}
 

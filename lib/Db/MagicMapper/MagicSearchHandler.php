@@ -60,6 +60,7 @@ use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\LanguageServiceInterface;
 use OCA\OpenRegister\Service\Object\DraftListLens;
+use OCA\OpenRegister\Service\Object\DraftListing;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Search\SearchGrammar;
@@ -1238,7 +1239,7 @@ class MagicSearchHandler {
 			return null;
 		}
 
-		return $lens->sql(mode: $mode, columnPrefix: $columns->prefix, owner: $request->owner);
+		return $lens->clauseFor(listing: new DraftListing(mode: $mode, owner: $request->owner), columnPrefix: $columns->prefix);
 	}//end draftConditionSql()
 
 	/**
