@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Schema;
 
 use DateTime;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaChangelog;
@@ -258,7 +259,7 @@ class SchemaVersioningService {
 	 */
 	private function latestInvalidCount(int $schemaId): ?int {
 		try {
-			$runs = $this->runs->runMapper->findBySchema($schemaId, 25);
+			$runs = $this->runs->runMapper->findBySchema($schemaId, new ListQuery(limit: 25));
 		} catch (\Throwable $e) {
 			return null;
 		}
