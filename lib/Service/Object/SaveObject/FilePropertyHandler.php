@@ -779,7 +779,7 @@ class FilePropertyHandler {
 			$this->blockExecutableFiles(fileData: $fileData, errorPrefix: $errorPrefix);
 		}
 
-		$this->parts->guard->assertAccepted(fileData: $fileData, fileConfig: $request->fileConfig, errorPrefix: $errorPrefix);
+		$this->parts->guard->assertAccepted(check: new UploadCheck(fileData: $fileData, errorPrefix: $errorPrefix, fileConfig: $request->fileConfig));
 	}//end validateFileAgainstConfig()
 
 	/**
@@ -808,15 +808,12 @@ class FilePropertyHandler {
 		if (($fileData['content'] ?? null) !== null && empty($fileData['content']) === false) {
 			// The checks live in ExecutableContentDetector, shared with FileValidationHandler.
 			$this->parts->guard->blockExecutableContent(
-				content: $fileData['content'],
-				errorPrefix: $errorPrefix,
-				fileName: (string)($fileData['filename'] ?? '')
+				upload: new UploadedContent(content: $fileData['content'], errorPrefix: $errorPrefix, fileName: (string)($fileData['filename'] ?? ''))
 			);
 		}
 
 		$this->parts->guard->blockMimeTypeIn(
-			fileData: $fileData,
-			errorPrefix: $errorPrefix,
+			check: new UploadCheck(fileData: $fileData, errorPrefix: $errorPrefix),
 			mimeTypes: $this->getExecutableMimeTypes()
 		);
 	}//end blockExecutableFiles()
