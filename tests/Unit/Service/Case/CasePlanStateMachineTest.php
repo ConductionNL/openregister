@@ -26,11 +26,13 @@ use OCA\OpenRegister\Db\CaseItemAudit;
 use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
+use OCA\OpenRegister\Service\Case\CasePlanMove;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CasePlanTree;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
+use OCA\OpenRegister\Service\Case\CaseTransitionCause;
 use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -149,7 +151,7 @@ class CasePlanStateMachineTest extends TestCase {
 		$this->db->expects($this->once())->method('commit');
 		$this->db->expects($this->never())->method('rollBack');
 
-		$moved = $this->machine()->transition(item: $item, to: CaseItem::STATE_ACTIVE, cause: CaseItemAudit::CAUSE_SENTRY, causeRef: 'entry:default', actor: 'alice');
+		$moved = $this->machine()->commit(move: new CasePlanMove(item: $item, to: CaseItem::STATE_ACTIVE, why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_SENTRY, causeRef: 'entry:default', actor: 'alice', reason: null), tree: null));
 
 		$this->assertSame(CaseItem::STATE_ACTIVE, $moved->getState());
 		$this->assertFalse($moved->getIsTerminal());
@@ -186,9 +188,9 @@ class CasePlanStateMachineTest extends TestCase {
 		$this->realiser->expects($this->once())->method('terminate')->with($byUser, 'done by hand');
 		$machine = $this->machine();
 
-		$machine->transition(item: $milestone, to: CaseItem::STATE_COMPLETED, cause: CaseItemAudit::CAUSE_SENTRY, causeRef: 's', actor: null);
-		$machine->transition(item: $viaTask, to: CaseItem::STATE_COMPLETED, cause: CaseItemAudit::CAUSE_REALISATION, causeRef: 'task-a', actor: null);
-		$machine->transition(item: $byUser, to: CaseItem::STATE_COMPLETED, cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: 'alice', reason: 'done by hand');
+		$machine->commit(move: new CasePlanMove(item: $milestone, to: CaseItem::STATE_COMPLETED, why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_SENTRY, causeRef: 's', actor: null, reason: null), tree: null));
+		$machine->commit(move: new CasePlanMove(item: $viaTask, to: CaseItem::STATE_COMPLETED, why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_REALISATION, causeRef: 'task-a', actor: null, reason: null), tree: null));
+		$machine->commit(move: new CasePlanMove(item: $byUser, to: CaseItem::STATE_COMPLETED, why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: 'alice', reason: 'done by hand'), tree: null));
 
 		$this->assertTrue($milestone->getIsTerminal());
 		$this->assertNotNull($milestone->getEnteredAt(), 'A milestone is entered when it completes.');
@@ -217,14 +219,13 @@ class CasePlanStateMachineTest extends TestCase {
 		$this->items->seed([$stage, $active, $unentered, $milestone, $done, $inner, $innerChild]);
 		$this->realiser->expects($this->once())->method('terminate')->with($active, $this->stringContains("Stage 'hearing' exited"));
 
-		$this->machine()->transition(
-			item: $stage,
-			to: CaseItem::STATE_TERMINATED,
-			cause: CaseItemAudit::CAUSE_USER,
-			causeRef: null,
-			actor: 'alice',
-			reason: 'Bezwaar ingetrokken.',
-			tree: new CasePlanTree(items: $this->items->findByObject(CaseFixtures::OBJECT))
+		$this->machine()->commit(
+			move: new CasePlanMove(
+				item: $stage,
+				to: CaseItem::STATE_TERMINATED,
+				why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: 'alice', reason: 'Bezwaar ingetrokken.'),
+				tree: new CasePlanTree(items: $this->items->findByObject(CaseFixtures::OBJECT))
+			)
 		);
 
 		$this->assertSame('Bezwaar ingetrokken.', $stage->getTerminatedReason());
@@ -260,7 +261,7 @@ class CasePlanStateMachineTest extends TestCase {
 		$machine = $this->machine();
 
 		try {
-			$machine->transition(item: $milestone, to: CaseItem::STATE_ACTIVE, cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: 'a');
+			$machine->commit(move: new CasePlanMove(item: $milestone, to: CaseItem::STATE_ACTIVE, why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: 'a', reason: null), tree: null));
 			$this->fail('illegal');
 		} catch (CaseTransitionException) {
 			$this->assertSame(0, $this->items->updates, 'Refused before any write.');
@@ -270,7 +271,7 @@ class CasePlanStateMachineTest extends TestCase {
 		$this->items->failUpdateFor['item-2'] = true;
 		$this->db->expects($this->once())->method('rollBack');
 		try {
-			$machine->transition(item: $raced, to: CaseItem::STATE_COMPLETED, cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: 'a');
+			$machine->commit(move: new CasePlanMove(item: $raced, to: CaseItem::STATE_COMPLETED, why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: 'a', reason: null), tree: null));
 			$this->fail('raced');
 		} catch (CaseTransitionException $lost) {
 			$this->assertStringContainsString("moved concurrently out of 'active'", $lost->getMessage());
@@ -293,23 +294,23 @@ class CasePlanStateMachineTest extends TestCase {
 		$this->audits->failNext = true;
 		$this->db->expects($this->once())->method('rollBack');
 		try {
-			$machine->transition(item: $item, to: CaseItem::STATE_COMPLETED, cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: 'a');
+			$machine->commit(move: new CasePlanMove(item: $item, to: CaseItem::STATE_COMPLETED, why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: 'a', reason: null), tree: null));
 			$this->fail('audit failure must propagate');
 		} catch (RuntimeException $failure) {
 			$this->assertSame('audit table unavailable', $failure->getMessage());
 		}
 
-		$machine->recordDenial(item: $item, to: CaseItem::STATE_ENABLED, actor: 'stranger', reason: 'denied');
+		$machine->recordRefusal(attempt: new CasePlanMove(item: $item, to: CaseItem::STATE_ENABLED, why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: 'stranger', reason: 'denied'), tree: null));
 		$this->assertFalse($this->audits->entries[0]->getAuthorized());
 		$this->assertSame('stranger', $this->audits->entries[0]->getActor());
 		$this->assertSame(CaseItem::STATE_ENABLED, $this->audits->entries[0]->getToState());
 
-		$machine->recordDenial(item: new CaseItem(), to: 'x', actor: null, reason: 'unsaved: ignored');
+		$machine->recordRefusal(attempt: new CasePlanMove(item: new CaseItem(), to: 'x', why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: null, reason: 'unsaved: ignored'), tree: null));
 		$this->audits->failNext = true;
-		$machine->recordDenial(item: $item, to: 'x', actor: null, reason: 'logged, not thrown');
+		$machine->recordRefusal(attempt: new CasePlanMove(item: $item, to: 'x', why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: null, reason: 'logged, not thrown'), tree: null));
 		$this->assertCount(1, $this->audits->entries);
 
-		$machine->recordCreation(item: $item, cause: CaseItemAudit::CAUSE_IMPORT, causeRef: 'flow-1', actor: null);
+		$machine->recordCreationOf(item: $item, why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_IMPORT, causeRef: 'flow-1', actor: null, reason: null));
 		// The fake mapper has no real rollback, so the row kept the state the
 		// failed transition wrote; what matters is the empty from-state.
 		$this->assertStringEndsWith('(import)', $this->audits->trail(1)[1]);
@@ -340,7 +341,7 @@ class CasePlanStateMachineTest extends TestCase {
 			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->writer, dispatcher: $dispatcher)
 		);
 
-		$machine->transition(item: $item, to: CaseItem::STATE_COMPLETED, cause: CaseItemAudit::CAUSE_SENTRY, causeRef: 's', actor: null);
+		$machine->commit(move: new CasePlanMove(item: $item, to: CaseItem::STATE_COMPLETED, why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_SENTRY, causeRef: 's', actor: null, reason: null), tree: null));
 		$machine->flushEvents();
 		$this->assertSame(CaseItem::STATE_COMPLETED, $item->getState());
 
@@ -351,7 +352,7 @@ class CasePlanStateMachineTest extends TestCase {
 		);
 		$other = CaseFixtures::row(id: 2, key: 'y', type: CaseItem::TYPE_MILESTONE, state: CaseItem::STATE_AVAILABLE);
 		$this->items->seed([$other]);
-		$silent->transition(item: $other, to: CaseItem::STATE_TERMINATED, cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: 'a', reason: 'r');
+		$silent->commit(move: new CasePlanMove(item: $other, to: CaseItem::STATE_TERMINATED, why: new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: 'a', reason: 'r'), tree: null));
 		$this->assertSame('r', $other->getTerminatedReason());
 	}//end testNestedTransitionsDeferEventsAndListenerFailuresAreSwallowed()
 }//end class

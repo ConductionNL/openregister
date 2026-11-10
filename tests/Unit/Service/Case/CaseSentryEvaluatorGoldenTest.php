@@ -29,12 +29,13 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Case\CasePlanTree;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseSentryOccasion;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Golden test for CaseSentryEvaluator: validateCriteria(), entrySentry(), exitSentry() and dataFor().
+ * Golden test for CaseSentryEvaluator: validateCriteria(), entrySentryOn(), exitSentryOn() and dataOn().
  *
  * Every criteria case is evaluated as entry and as exit criteria against two
  * plans (the milestone still available, and completed) and three events. The
@@ -145,12 +146,13 @@ class CaseSentryEvaluatorGoldenTest extends TestCase {
 				foreach ([['amount' => 5], ['amount' => 6]] as $object) {
 					$key = $label . ' / amount ' . $object['amount'];
 					$payload = ['flag' => $object['amount'] === 5];
-					$actual['entry'][$key] = $evaluator->entrySentry($item, $tree, $object, $event, $payload);
-					$actual['exit'][$key]  = $evaluator->exitSentry($item, $tree, $object, $event, $payload);
+					$occasion = new CaseSentryOccasion(tree: $tree, object: $object, event: $event, payload: $payload);
+					$actual['entry'][$key] = $evaluator->entrySentryOn(item: $item, occasion: $occasion);
+					$actual['exit'][$key]  = $evaluator->exitSentryOn(item: $item, occasion: $occasion);
 				}
 			}
 
-			$actual['data'][$adviceState] = $evaluator->dataFor($tree, ['amount' => 5], 'object.updated', ['flag' => true]);
+			$actual['data'][$adviceState] = $evaluator->dataOn(occasion: new CaseSentryOccasion(tree: $tree, object: ['amount' => 5], event: 'object.updated', payload: ['flag' => true]));
 		}//end foreach
 
 		$golden = [];
