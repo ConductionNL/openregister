@@ -48,6 +48,7 @@ use OCP\Security\ICredentialsManager;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
 
 /**
  * Golden outcomes of the credential support classes.
@@ -68,11 +69,11 @@ class CredentialSupportGoldenTest extends TestCase {
 		$signature = rtrim(strtr(base64_encode(hash_hmac('sha256', $payload, 'SECRET', true)), '+/', '-_'), '=');
 		$this->assertSame($payload . '.' . $signature, $service->issueToken(appId: 'hermiq', credentialId: 'cred-1'));
 
-		$bound = $service->issueToken(appId: 'hermiq', credentialId: 'cred-1', method: 'get', path: 'v1/x');
+		$bound = $service->issueToken(appId: 'hermiq', credentialId: 'cred-1', binding: new BrokerTokenBinding(method: 'get', path: 'v1/x'));
 		$claims = json_decode(base64_decode(strtr(explode('.', $bound)[0], '-_', '+/')), true);
 		$this->assertSame(hash('sha256', 'GET /v1/x'), $claims['req']);
 
-		$unbound = $service->issueToken(appId: 'hermiq', credentialId: 'cred-1', method: 'GET', path: null);
+		$unbound = $service->issueToken(appId: 'hermiq', credentialId: 'cred-1', binding: new BrokerTokenBinding(method: 'GET', path: null));
 		$this->assertArrayNotHasKey('req', json_decode(base64_decode(strtr(explode('.', $unbound)[0], '-_', '+/')), true));
 	}
 
@@ -98,11 +99,11 @@ class CredentialSupportGoldenTest extends TestCase {
 		$this->assertSame(['appId' => 'hermiq', 'credentialId' => 'cred-1'], $service->verify(token: $service->issueToken(appId: 'hermiq', credentialId: 'cred-1')));
 		$this->assertSame(
 			['appId' => 'hermiq', 'credentialId' => 'cred-1'],
-			$service->verify(token: $service->issueToken(appId: 'hermiq', credentialId: 'cred-1', method: 'get', path: '/v1/x'), method: 'GET', path: 'v1/x')
+			$service->verify(token: $service->issueToken(appId: 'hermiq', credentialId: 'cred-1', binding: new BrokerTokenBinding(method: 'get', path: '/v1/x')), request: new BrokerTokenBinding(method: 'GET', path: 'v1/x'))
 		);
 		$this->assertSame(
 			['appId' => 'hermiq', 'credentialId' => 'cred-1'],
-			$service->verify(token: $service->issueToken(appId: 'hermiq', credentialId: 'cred-1'), method: 'POST', path: '/other')
+			$service->verify(token: $service->issueToken(appId: 'hermiq', credentialId: 'cred-1'), request: new BrokerTokenBinding(method: 'POST', path: '/other'))
 		);
 
 		$token = $service->issueToken(appId: 'hermiq', credentialId: 'cred-1');
@@ -149,7 +150,7 @@ class CredentialSupportGoldenTest extends TestCase {
 		[$token, $method, $path] = $make($service, $this);
 
 		try {
-			$service->verify(token: $token, method: $method, path: $path);
+			$service->verify(token: $token, request: new BrokerTokenBinding(method: $method, path: $path));
 			$this->fail('token accepted');
 		} catch (CredentialAccessDeniedException $refused) {
 			$this->assertSame($message, $refused->getMessage());
