@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
@@ -89,7 +90,6 @@ use OCA\OpenRegister\Db\MagicMapper\MagicPaginatedSearch;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchRequest;
 use OCA\OpenRegister\Db\MagicMapper\LinkedEntityRef;
 use OCA\OpenRegister\Db\MagicMapper\FolderRecord;
-use OCA\OpenRegister\Db\MagicMapper\MagicUpsertBatch;
 use OCA\OpenRegister\Db\MagicMapper\RelationBatchLookup;
 use OCA\OpenRegister\Db\MagicMapper\UuidBatchLookup;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -7519,49 +7519,25 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Perform bulk upsert operation on register+schema table
 	 *
 	 * This method provides high-performance bulk insert/update operations for dynamic tables.
-	 * It delegates to MagicBulkHandler for the actual database operations.
+	 * It delegates to MagicBulkHandler for the actual database operations, and creates the
+	 * table when the first statement finds it missing.
 	 *
-	 * @param array $objects Array of object data in standard format
-	 * @param Register $register Register context
-	 * @param Schema $schema Schema context
-	 * @param string $tableName Target table name
-	 * @param bool $needsPreUpdateState Whether anything downstream will read the
-	 *                                  pre-update rows (audit changeset or update
-	 *                                  event). False narrows the fetch to the uuid.
+	 * @param BulkUpsertCommand $command The rows, their register and schema, the target table
+	 *                                   name, and whether anything downstream reads the
+	 *                                   pre-update rows.
 	 *
 	 * @return array[] Array of complete objects with object_status field
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs
 	 *
 	 * @psalm-return list<array<string, mixed>>
-	 */
-	public function bulkUpsert(
-		array $objects,
-		Register $register,
-		Schema $schema,
-		string $tableName,
-		bool $needsPreUpdateState = true,
-	): array {
-		$target = new MagicTableTarget(register: $register, schema: $schema);
-		$target->tableName = $tableName;
-		return $this->bulkUpsertInto(target: $target, batch: new MagicUpsertBatch(objects: $objects, needsPreUpdateState: $needsPreUpdateState));
-	}//end bulkUpsert()
-
-	/**
-	 * Bulk upsert rows into a register+schema table, creating the table when it is missing (see bulkUpsert()).
 	 *
-	 * @param MagicTableTarget $target The register, schema and table name to write to.
-	 * @param MagicUpsertBatch $batch  The rows and whether their pre-update state is needed.
-	 *
-	 * @return array The handler's upsert result.
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	public function bulkUpsertInto(MagicTableTarget $target, MagicUpsertBatch $batch): array {
-		$register            = $target->register;
-		$schema              = $target->schema;
-		$tableName           = $target->tableName;
-		$objects             = $batch->objects;
-		$needsPreUpdateState = $batch->needsPreUpdateState;
+	public function bulkUpsert(BulkUpsertCommand $command): array {
+		$register  = $command->table->register;
+		$schema    = $command->table->schema;
+		$tableName = $command->tableName;
 
 		$this->logger->debug(
 			message: '[MagicMapper] Delegating bulk upsert to MagicBulkHandler',
@@ -7571,22 +7547,23 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				'register' => $register->getId(),
 				'schema' => $schema->getId(),
 				'table' => $tableName,
-				'object_count' => count($objects),
+				'object_count' => count($command->objects),
 			]
 		);
 
 		// The bulk path never went through SaveObject's encryption step. An
 		// encrypted property used to have no column, so bulk dropped its value;
 		// now that it has one, encrypt here so it can only ever hold an envelope.
-		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $objects, schema: $schema);
+		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $command->objects, schema: $schema);
 
 		try {
-			return $this->bulkHandler->bulkUpsert(
-				objects: $objects,
-				register: $register,
-				schema: $schema,
-				tableName: $tableName,
-				needsPreUpdateState: $needsPreUpdateState
+			return $this->bulkHandler->upsert(
+				command: new BulkUpsertCommand(
+					objects: $objects,
+					table: $command->table,
+					tableName: $tableName,
+					needsPreUpdateState: $command->needsPreUpdateState
+				)
 			);
 		} catch (\Exception $e) {
 			$target = new MagicTableTarget(register: $register, schema: $schema);
@@ -7594,14 +7571,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$this->createMissingBulkTable(error: $e, target: $target);
 
 			// Retry the bulk upsert.
-			return $this->bulkHandler->bulkUpsert(
-				objects: $objects,
-				register: $register,
-				schema: $schema,
-				tableName: $tableName
+			return $this->bulkHandler->upsert(
+				command: new BulkUpsertCommand(objects: $objects, table: $command->table, tableName: $tableName)
 			);
 		}//end try
-	}//end bulkUpsertInto()
+	}//end bulkUpsert()
 
 	/**
 	 * Create the table a failed bulk upsert found missing, or rethrow the failure.
@@ -9520,11 +9494,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 
 		return $this->bulkUpsert(
-			objects: $group->insertObjects,
-			register: $register,
-			schema: $schema,
-			tableName: 'openregister_table_' . $register->getId() . '_' . $schema->getId(),
-			needsPreUpdateState: $group->needsPreUpdateState
+			command: new BulkUpsertCommand(
+				objects: $group->insertObjects,
+				table: new RegisterSchema(register: $register, schema: $schema),
+				tableName: 'openregister_table_' . $register->getId() . '_' . $schema->getId(),
+				needsPreUpdateState: $group->needsPreUpdateState
+			)
 		);
 	}//end ultraFastBulkSaveSingleSchema()
 
