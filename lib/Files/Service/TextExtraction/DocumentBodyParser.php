@@ -139,25 +139,6 @@ class DocumentBodyParser {
 	/**
 	 * Parse a document part into its title and sections.
 	 *
-	 * @param DOMDocument $document The parsed document part.
-	 * @param DOMDocument|null $styles The parsed styles part, or null.
-	 * @param DOMDocument|null $numbering The parsed numbering part, or null.
-	 * @param Relationships $relationships The document part's relationships.
-	 *
-	 * @return array{title: string, sections: list<DocumentSection>, truncated: bool}|null Null when the part has no body.
-	 *
-	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
-	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-hostile-input-is-bounded-req-docx-009
-	 */
-	public function parse(DOMDocument $document, ?DOMDocument $styles, ?DOMDocument $numbering, array $relationships): ?array {
-		return $this->parsePart(
-			part: new DocumentPart(document: $document, styles: $styles, numbering: $numbering, relationships: $relationships)
-		);
-	}//end parse()
-
-	/**
-	 * Parse a document part into its title and sections.
-	 *
 	 * @param DocumentPart $part The document part, its styles and numbering parts, and its relationships.
 	 *
 	 * @return array{title: string, sections: list<DocumentSection>, truncated: bool}|null Null when the part has no body.
