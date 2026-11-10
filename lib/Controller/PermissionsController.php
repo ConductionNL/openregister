@@ -49,6 +49,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\PermissionsControllerServices;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCP\AppFramework\Controller;
@@ -65,21 +67,32 @@ use OCP\IRequest;
 class PermissionsController extends Controller {
 
 	/**
+	 * The grantable set.
+	 *
+	 * @var PermissionCatalogueInterface
+	 */
+	private readonly PermissionCatalogueInterface $catalogue;
+
+	/**
+	 * The staging switch.
+	 *
+	 * @var DenyEnforcementModeInterface
+	 */
+	private readonly DenyEnforcementModeInterface $enforcement;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string              $appName        Application identifier.
-	 * @param IRequest            $request        Active HTTP request.
-	 * @param PermissionCatalogueInterface $catalogue      The grantable set.
-	 * @param DenyEnforcementModeInterface $enforcement    The staging switch.
+	 * @param IRequest                      $request  Active HTTP request.
+	 * @param PermissionsControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly PermissionCatalogueInterface $catalogue,
-		private readonly DenyEnforcementModeInterface $enforcement,
+		PermissionsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->catalogue = $services->catalogue;
+		$this->enforcement = $services->enforcement;
 	}//end __construct()
 	/**
 	 * Every permission that may be granted on this instance.

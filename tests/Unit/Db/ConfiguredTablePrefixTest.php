@@ -213,9 +213,10 @@ class ConfiguredTablePrefixTest extends TestCase {
 			)
 		);
 
-		$results = [];
+		$run = new \OCA\OpenRegister\Service\Object\MagicNameLoadRun(uuidList: ['u1']);
 		$method = new ReflectionMethod($handler, 'batchLoadNamesFromRegisters');
-		$method->invokeArgs($handler, [['u1'], &$results]);
+		$method->invoke($handler, $run);
+		$results = $run->results;
 
 		$this->assertSame('Found', $results['u1']['name']);
 	}

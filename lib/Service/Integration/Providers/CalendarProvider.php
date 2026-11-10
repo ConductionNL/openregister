@@ -210,6 +210,18 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+		$this->unlinkEventOf(objectId: $objectId, entityId: $entityId);
+	}//end delete()
+
+	/**
+	 * Unlink one of an object's events, in either entity-id shape.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 * @param string $entityId `{calendarId}/{eventUri}` (legacy) or a bare event uid.
+	 *
+	 * @return void
+	 */
+	private function unlinkEventOf(string $objectId, string $entityId): void {
 		// New shape: simple eventUid (Tier-2 link-table). Legacy shape:
 		// "{calendarId}/{eventUri}" (CalendarProvider Phase B-2). We accept
 		// both — if the entityId contains a slash, treat as legacy and
@@ -224,7 +236,7 @@ class CalendarProvider extends AbstractIntegrationProvider {
 
 		// EntityId is a bare eventUid — Tier-2 link-only removal.
 		$this->calendarLinkService->unlinkEvent(objectUuid: $objectId, eventUid: $entityId);
-	}//end delete()
+	}//end unlinkEventOf()
 
 	/**
 	 * Health descriptor.
