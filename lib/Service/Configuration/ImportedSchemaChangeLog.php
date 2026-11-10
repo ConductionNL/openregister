@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Configuration;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use Psr\Log\LoggerInterface;
@@ -96,12 +97,9 @@ final class ImportedSchemaChangeLog
 			return;
 		}
 
-		$this->versioning->recordChangelog(
+		$this->versioning->recordChange(
 			schemaId: (int)$schema->getId(),
-			version: $schema->getVersion(),
-			changeSet: $changeSet,
-			acknowledged: false,
-			origin: $this->origin()
+			record: new SchemaChangeRecord(changeSet: $changeSet, acknowledged: false, version: $schema->getVersion(), origin: $this->origin())
 		);
 	}//end record()
 

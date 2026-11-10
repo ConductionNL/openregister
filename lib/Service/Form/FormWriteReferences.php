@@ -45,27 +45,6 @@ final readonly class FormWriteReferences {
 	}//end __construct()
 
 	/**
-	 * Replace `{ "$write": "<as>" }` values with that write's id (or a placeholder while validating).
-	 *
-	 * @param array<string, mixed>  $object  The object.
-	 * @param array<string, string> $ids     Ids of earlier writes, by `as`.
-	 * @param bool                  $pending True while validating, before any write.
-	 *
-	 * @return array<string, mixed> The object.
-	 *
-	 * @throws FormSubmitRefusedException 422 when a reference names no earlier write.
-	 *
-	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
-	 */
-	public function resolveWriteReferences(array $object, array $ids, bool $pending): array {
-		if ($pending === true) {
-			return $this->withPlaceholders(object: $object);
-		}
-
-		return $this->withEarlierIds(object: $object, ids: $ids);
-	}//end resolveWriteReferences()
-
-	/**
 	 * Replace `{ "$write": "<as>" }` values with the placeholder id, while validating before any write.
 	 *
 	 * @param array<string, mixed> $object The object.

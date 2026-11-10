@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Registry;
 
+use OCA\OpenRegister\Service\Registry\RegistryIdentity;
+use OCA\OpenRegister\Service\Registry\InboundUpdate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\RegistrySubscriptionMapper;
@@ -110,7 +112,7 @@ class RegistryInboundUpdateGoldenTest extends TestCase {
 			$logger,
 		);
 
-		$result = $service->applyInboundUpdate('brp', '999990019', ['address' => 'Dam 1', 'givenNames' => 'S'], 'evt-2');
+		$result = $service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['address' => 'Dam 1', 'givenNames' => 'S'], 'evt-2'));
 
 		self::assertSame(
 			[

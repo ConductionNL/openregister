@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -232,7 +233,7 @@ class RetentionServiceTest extends TestCase {
 			$entry->setVersion($version);
 		}
 
-		$this->objectMapper->method('findAll')->willReturn([$entry]);
+		$this->objectMapper->method('findAllListed')->willReturn([$entry]);
 	}//end stubSelectielijstEntry()
 
 	/**
@@ -427,11 +428,10 @@ class RetentionServiceTest extends TestCase {
 		$list->setObject(['objects' => [['uuid' => 'already-listed']]]);
 
 		$this->objectMapper->expects($this->once())
-			->method('findAll')
+			->method('findAllListed')
 			->with(
-				$this->anything(),
-				$this->anything(),
-				$this->callback(function (array $filters): bool {
+				$this->callback(function (MagicListRequest $request): bool {
+					$filters = $request->query->filters;
 					return array_key_exists('status', $filters)
 						&& array_key_exists('object->status', $filters) === false;
 				})

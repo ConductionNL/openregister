@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
@@ -94,8 +95,7 @@ class MapsOverviewServiceTest extends TestCase {
 				new GeoFeatureCollectionBuilder(),
 				$registry
 			),
-			userSession: $this->buildUserSession('alice'),
-			groupManager: $this->buildGroupManager(false),
+			caller: new CallerContext(userSession: $this->buildUserSession('alice'), groupManager: $this->buildGroupManager(false)),
 		);
 
 		$result = $service->registerOverview(
@@ -131,8 +131,7 @@ class MapsOverviewServiceTest extends TestCase {
 				new GeoFeatureCollectionBuilder(),
 				$this->buildRegistry()
 			),
-			userSession: $this->buildUserSession('alice'),
-			groupManager: $this->buildGroupManager(false),
+			caller: new CallerContext(userSession: $this->buildUserSession('alice'), groupManager: $this->buildGroupManager(false)),
 		);
 
 		$custom = ['type' => 'xyz', 'provider' => 'osm', 'url' => 'https://tile.osm.org/{z}/{x}/{y}.png'];
@@ -158,8 +157,7 @@ class MapsOverviewServiceTest extends TestCase {
 				new GeoFeatureCollectionBuilder(),
 				$this->buildRegistry()
 			),
-			userSession: $this->buildUserSession('alice'),
-			groupManager: $this->buildGroupManager(false),
+			caller: new CallerContext(userSession: $this->buildUserSession('alice'), groupManager: $this->buildGroupManager(false)),
 		);
 
 		$this->expectException(InvalidArgumentException::class);
@@ -178,8 +176,7 @@ class MapsOverviewServiceTest extends TestCase {
 				new GeoFeatureCollectionBuilder(),
 				$this->buildRegistry()
 			),
-			userSession: $this->buildUserSession('alice'),
-			groupManager: $this->buildGroupManager(false),
+			caller: new CallerContext(userSession: $this->buildUserSession('alice'), groupManager: $this->buildGroupManager(false)),
 		);
 
 		$this->expectException(InvalidArgumentException::class);
@@ -198,8 +195,7 @@ class MapsOverviewServiceTest extends TestCase {
 				new GeoFeatureCollectionBuilder(),
 				$this->buildRegistry()
 			),
-			userSession: $this->buildUserSession(null),
-			groupManager: $this->buildGroupManager(false),
+			caller: new CallerContext(userSession: $this->buildUserSession(null), groupManager: $this->buildGroupManager(false)),
 		);
 
 		$this->expectException(InvalidArgumentException::class);
@@ -245,8 +241,7 @@ class MapsOverviewServiceTest extends TestCase {
 				new GeoFeatureCollectionBuilder(),
 				$this->buildRegistry()
 			),
-			userSession: $this->buildUserSession('alice'),
-			groupManager: $this->buildGroupManager(false),
+			caller: new CallerContext(userSession: $this->buildUserSession('alice'), groupManager: $this->buildGroupManager(false)),
 		);
 
 		$points = $service->queryPoints(source: new MapMarkerSource(register: 'zaakregister', schema: 'zaak'));
@@ -307,8 +302,7 @@ class MapsOverviewServiceTest extends TestCase {
 				new GeoFeatureCollectionBuilder(),
 				$this->buildRegistry()
 			),
-			userSession: $this->buildUserSession('alice'),
-			groupManager: $this->buildGroupManager(false),
+			caller: new CallerContext(userSession: $this->buildUserSession('alice'), groupManager: $this->buildGroupManager(false)),
 		);
 
 		$points = $service->queryPoints(source: new MapMarkerSource(register: 'zaakregister', schema: 'zaak'));
@@ -345,8 +339,7 @@ class MapsOverviewServiceTest extends TestCase {
 				new GeoFeatureCollectionBuilder(),
 				$this->buildRegistry()
 			),
-			userSession: $this->buildUserSession(null),
-			groupManager: $this->buildGroupManager(false),
+			caller: new CallerContext(userSession: $this->buildUserSession(null), groupManager: $this->buildGroupManager(false)),
 		);
 
 		$service->queryPoints(source: new MapMarkerSource(register: 'zaakregister', schema: 'zaak'));
@@ -382,8 +375,7 @@ class MapsOverviewServiceTest extends TestCase {
 				new GeoFeatureCollectionBuilder(),
 				$this->buildRegistry()
 			),
-			userSession: $this->buildUserSession('root'),
-			groupManager: $this->buildGroupManager(true),
+			caller: new CallerContext(userSession: $this->buildUserSession('root'), groupManager: $this->buildGroupManager(true)),
 		);
 
 		$service->queryPoints(source: new MapMarkerSource(register: '1', schema: '2'));
@@ -415,8 +407,7 @@ class MapsOverviewServiceTest extends TestCase {
 				new GeoFeatureCollectionBuilder(),
 				$this->buildRegistry()
 			),
-			userSession: $this->buildUserSession('alice'),
-			groupManager: $this->buildGroupManager(false),
+			caller: new CallerContext(userSession: $this->buildUserSession('alice'), groupManager: $this->buildGroupManager(false)),
 		);
 
 		$service->queryPoints(
@@ -445,8 +436,7 @@ class MapsOverviewServiceTest extends TestCase {
 				new GeoFeatureCollectionBuilder(),
 				$this->buildRegistry()
 			),
-			userSession: $this->buildUserSession('alice'),
-			groupManager: $this->buildGroupManager(false),
+			caller: new CallerContext(userSession: $this->buildUserSession('alice'), groupManager: $this->buildGroupManager(false)),
 		);
 
 		$this->expectException(InvalidArgumentException::class);

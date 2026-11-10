@@ -33,6 +33,7 @@ use OCA\OpenRegister\Notifications\Controller\TimelineEntriesController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Notifications\Service\Timeline\EntrySearch;
 use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntrySearchService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
@@ -254,15 +255,15 @@ class TimelineEntriesControllerTest extends TestCase {
 
 	public function testASearchWithoutATermIsABadRequest(): void {
 		$this->request->method('getParams')->willReturn([]);
-		$this->search->expects($this->never())->method('searchAsArrays');
+		$this->search->expects($this->never())->method('findHitsAsArrays');
 
 		$this->assertSame(400, $this->controller->searchEntries()->getStatus());
 	}
 
 	public function testASearchPassesOnlyAKnownVisibility(): void {
 		$this->request->method('getParams')->willReturn(['q' => 'Jansen', 'visibility' => 'intern']);
-		$this->search->expects($this->once())->method('searchAsArrays')
-			->with('Jansen', null, null, 25)
+		$this->search->expects($this->once())->method('findHitsAsArrays')
+			->with(new EntrySearch('Jansen', null, null, 25))
 			->willReturn([]);
 
 		$this->controller->searchEntries();
@@ -270,8 +271,8 @@ class TimelineEntriesControllerTest extends TestCase {
 
 	public function testASearchHandsBackTheHitsAndTheirCount(): void {
 		$this->request->method('getParams')->willReturn(['q' => 'Jansen', 'visibility' => 'public', 'kind' => 'contactmoment']);
-		$this->search->expects($this->once())->method('searchAsArrays')
-			->with('Jansen', 'public', 'contactmoment', 25)
+		$this->search->expects($this->once())->method('findHitsAsArrays')
+			->with(new EntrySearch('Jansen', 'public', 'contactmoment', 25))
 			->willReturn([['id' => 'e1'], ['id' => 'e2']]);
 
 		$data = $this->controller->searchEntries()->getData();

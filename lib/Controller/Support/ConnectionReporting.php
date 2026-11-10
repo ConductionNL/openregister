@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenRegister edepot settings platform
+ * OpenRegister connection reporting for settings controllers
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -26,11 +26,11 @@ use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCP\IAppConfig;
 
 /**
- * Services of the edepot settings API.
+ * App config plus the connection reporter: what a settings controller that tests a connection needs.
  *
  * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
  */
-final class EdepotSettingsPlatform {
+final class ConnectionReporting {
 	/**
 	 * Bundle the services.
 	 *

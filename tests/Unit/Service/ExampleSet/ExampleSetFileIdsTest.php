@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
@@ -113,7 +114,7 @@ class ExampleSetFileIdsTest extends ExampleSetTestCase {
 
 		$dossier  = $this->store->ids(register: 'docs', schema: 'dossier')[0];
 		$attached = array_map(callback: 'intval', array: array_keys(array: $this->files[$dossier]));
-		$document = $this->store->get(register: 'docs', schema: 'documentVersion', id: $this->store->ids(register: 'docs', schema: 'documentVersion')[0]);
+		$document = $this->store->row(ref: new ObjectRef(register: 'docs', schema: 'documentVersion', id: $this->store->ids(register: 'docs', schema: 'documentVersion')[0]));
 		$this->assertSame(expected: $attached[1], actual: $document['fileId']);
 	}
 

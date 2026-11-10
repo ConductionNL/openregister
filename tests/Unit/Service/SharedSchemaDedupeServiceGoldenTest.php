@@ -18,11 +18,14 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\SharedSchema\OwnerCandidates;
 use OCA\OpenRegister\Service\SharedSchema\RegisterConfigurationLocator;
 use OCA\OpenRegister\Service\SharedSchema\SchemaAttribution;
+use OCA\OpenRegister\Service\SharedSchema\SchemaIdSwap;
 use OCA\OpenRegister\Service\SharedSchema\SchemaTableMigrator;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaOwnership;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaStore;
@@ -119,7 +122,7 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 			->with([1 => ['slug' => 'person', 'v' => 1], 2 => null], $entity->jsonSerialize())
 			->willReturn(['status' => 'attributed', 'matches' => [1]]);
 		$this->attribution->method('resolveOwner')
-			->with(['status' => 'attributed', 'matches' => [1]], 5, [1, 2], ['global' => null])
+			->with(['status' => 'attributed', 'matches' => [1]], new OwnerCandidates(schemaId: 5, registerIds: [1, 2], keep: ['global' => null]))
 			->willReturn(['owner' => 1, 'source' => 'evidence']);
 		$this->migrator->method('tableNameFor')->with(2, 5)->willReturn('t_2_5');
 		$this->migrator->method('countRows')->with('t_2_5')->willReturn(4);
@@ -188,9 +191,9 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 		unset($expectedClone['id'], $expectedClone['uuid'], $expectedClone['uri'], $expectedClone['created'], $expectedClone['updated']);
 		$expectedClone['application'] = 'app-two';
 		$this->schemaMapper->expects($this->once())->method('createFromArray')->with($expectedClone)->willReturn($created);
-		$this->attribution->method('replaceSchemaId')->with([5, 6], 5, 11)->willReturn([11, 6]);
+		$this->attribution->method('replaceSchemaId')->with([5, 6], new SchemaIdSwap(oldId: 5, newId: 11))->willReturn([11, 6]);
 		$this->registerMapper->expects($this->once())->method('update')->with($register)->willReturnArgument(0);
-		$this->migrator->expects($this->once())->method('migrate')->with($register, $created, 5)
+		$this->migrator->expects($this->once())->method('migrate')->with(new RegisterSchema(register: $register, schema: $created), 5)
 			->willReturn(['rows' => 3, 'unmapped' => ['q'], 'backup' => 'bk']);
 		$this->logger->expects($this->once())->method('warning')->with(
 			'[SharedSchemaDedupe] Register 2 split off shared schema 5 onto 11 (3 row(s) moved).',
