@@ -40,6 +40,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
@@ -157,7 +158,7 @@ class CascadeCreateRightsTest extends TestCase {
 	 *
 	 * @return SaveObject
 	 */
-	private function saveHandler(PermissionHandler $permissions): SaveObject {
+	private function saveHandler(PermissionHandler $permissions, ?LoggerInterface $logger = null): SaveObject {
 		$handler = $this->getMockBuilder(SaveObject::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['saveObject'])
@@ -180,6 +181,7 @@ class CascadeCreateRightsTest extends TestCase {
 		SaveLookupsAccess::set($handler, 'schemaCache', ['2' => self::note()]);
 		$reflection->getProperty('urlGenerator')->setValue($handler, $this->createMock(IURLGenerator::class));
 		$reflection->getProperty('permissionHandler')->setValue($handler, $permissions);
+		$reflection->getProperty('logger')->setValue($handler, $logger ?? new NullLogger());
 
 		return $handler;
 	}//end saveHandler()
@@ -310,7 +312,12 @@ class CascadeCreateRightsTest extends TestCase {
 		$parentSchema = new Schema();
 		$parentSchema->setId(1);
 		$parentSchema->setProperties(['note' => ['type' => 'object', '$ref' => 'note', 'inversedBy' => 'incident']]);
-		$handler = $this->saveHandler(permissions: $this->permissions(groups: ['mallory' => ['editors'], 'alice' => ['clerks']]));
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with(
+			$this->stringContains('Cascade of an object property failed'),
+			$this->callback(static fn (array $context): bool => $context['property'] === 'note' && $context['exception'] === 'storage')
+		);
+		$handler = $this->saveHandler(permissions: $this->permissions(groups: ['mallory' => ['editors'], 'alice' => ['clerks']]), logger: $logger);
 
 		$data = self::onParent(handler: $handler, method: 'cascadeObjects', args: [$parentSchema, ['note' => ['text' => 'boom']], []]);
 

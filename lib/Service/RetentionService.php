@@ -39,6 +39,9 @@ namespace OCA\OpenRegister\Service;
 use DateInterval;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Archival\HoldStamp;
 use OCA\OpenRegister\Service\Archival\LegalHoldLedger;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -48,12 +51,14 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Archival\Appraisal;
 use OCA\OpenRegister\Service\Archival\ActionDateFollower;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
+use OCA\OpenRegister\Service\Archival\CategoryDeclaration;
 use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\HoldAction;
 
 /**
  * Service for managing retention lifecycle of register objects.
@@ -158,7 +163,7 @@ class RetentionService implements RetentionServiceInterface {
 		// The schema's category, unless this record names its own through the
 		// property the schema declares for that (DECISIONS row 48).
 		$classification = (new ClassificationOverride())->effective(
-			archive: $archiveConfig,
+			declaration: new CategoryDeclaration(archive: $archiveConfig),
 			data: ($object->getObject() ?? [])
 		);
 
@@ -170,9 +175,7 @@ class RetentionService implements RetentionServiceInterface {
 		// Calculate archiefactiedatum if bewaartermijn is set.
 		if ($retentionPeriod !== null) {
 			$retention['archiefactiedatum'] = $this->calculateArchiveActionDate(
-				object: $object,
-				schema: $schema,
-				retentionPeriod: $retentionPeriod
+				clock: new RetentionClock(object: $object, schema: $schema, retentionPeriod: $retentionPeriod)
 			);
 		}
 
@@ -312,7 +315,8 @@ class RetentionService implements RetentionServiceInterface {
 
 		$this->guardClassificationOverride(schema: $update->schema, data: $data);
 
-		return $this->rederiveCategory(update: $update, effective: $override->effective(archive: $archive, data: $data, configuration: ($update->schema->getConfiguration() ?? [])));
+		$declaration = new CategoryDeclaration(archive: $archive, configuration: ($update->schema->getConfiguration() ?? []));
+		return $this->rederiveCategory(update: $update, effective: $override->effective(declaration: $declaration, data: $data));
 	}//end applyClassification()
 
 	/**
@@ -368,24 +372,18 @@ class RetentionService implements RetentionServiceInterface {
 	 * when it cannot be answered. Kept here because callers and the spec both
 	 * name this method.
 	 *
-	 * @param ObjectEntity $object The object to calculate for
-	 * @param Schema $schema The schema with afleidingswijze config
-	 * @param string $retentionPeriod ISO 8601 duration (e.g., P5Y, P20Y)
+	 * @param RetentionClock $clock The object, its schema (with the afleidingswijze config) and the ISO 8601 retention period
 	 *
 	 * @return string|null ISO 8601 date string or null if calculation not possible
 	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
-	public function calculateArchiveActionDate(
-		ObjectEntity $object,
-		Schema $schema,
-		string $retentionPeriod,
-	): ?string {
+	public function calculateArchiveActionDate(RetentionClock $clock): ?string {
 		return $this->rules->actionDateCalculator->calculate(
-			object: $object,
-			schema: $schema,
-			retentionPeriod: $retentionPeriod
+			object: $clock->object,
+			schema: $clock->schema,
+			retentionPeriod: $clock->retentionPeriod
 		);
 	}//end calculateArchiveActionDate()
 
@@ -521,11 +519,9 @@ class RetentionService implements RetentionServiceInterface {
 	public function placeHold(ObjectEntity $object, HoldOrder $order): ObjectEntity {
 		// One hold per matter, the same ledger LegalHoldService writes (#4172).
 		$object->setRetention(
-			(new LegalHoldLedger())->place(
+			(new LegalHoldLedger())->placeAction(
 				retention: ($object->getRetention() ?? []),
-				reason: $order->reason,
-				ownerKey: $order->ownerKey,
-				stamp: $this->holdStamp()
+				action: new HoldAction(ownerKey: $order->ownerKey, reason: $order->reason, stamp: $this->holdStamp())
 			)
 		);
 
@@ -550,11 +546,9 @@ class RetentionService implements RetentionServiceInterface {
 		}
 
 		$object->setRetention(
-			$ledger->release(
+			$ledger->releaseAction(
 				retention: $retention,
-				ownerKey: $order->ownerKey,
-				releaseReason: $order->reason,
-				stamp: $this->holdStamp()
+				action: new HoldAction(ownerKey: $order->ownerKey, reason: $order->reason, stamp: $this->holdStamp())
 			)
 		);
 
@@ -940,12 +934,11 @@ class RetentionService implements RetentionServiceInterface {
 			// feeds is "objects already on a pending destruction list", which
 			// means every sweep re-listed objects that were already awaiting
 			// approval, and nothing said so.
-			$pendingLists = $this->stores->objectMapper->findAll(
-				filters: [
-					'status' => ['in_review', 'approved', 'awaiting_second_approval'],
-				],
-				register: $register,
-				schema: $schema
+			$pendingLists = $this->stores->objectMapper->findAllListed(
+				request: new MagicListRequest(
+					table: new RegisterSchema(register: $register, schema: $schema),
+					query: ListQuery::unbounded(filters: ['status' => ['in_review', 'approved', 'awaiting_second_approval']])
+				)
 			);
 
 			return array_unique($this->listedObjectUuids(lists: $pendingLists));

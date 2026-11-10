@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -40,6 +41,7 @@ use OCP\Files\NotPermittedException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\File\FileOverwrite;
 
 /**
  * Pins the allowed and refused outcomes of addFile() and saveFile().
@@ -121,7 +123,7 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 		$this->fileService->expects($this->once())->method('createShareLink')->with('/or/doc.txt');
 		$this->fileService->expects($this->once())->method('attachTagsToFile')->with('11', ['object:u1', 't1']);
 
-		$result = $this->handler()->addFile(new ObjectEntity(), new FileUpload('doc.txt', 'plain', true, ['t1']));
+		$result = $this->handler()->addFile(new FileTarget(new ObjectEntity()), new FileUpload('doc.txt', 'plain', true, ['t1']));
 
 		$this->assertSame($this->file, $result);
 		$this->assertSame(['block', 'newFile', 'check', 'put', 'own'], $this->calls);
@@ -133,7 +135,7 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 		$this->folder->expects($this->never())->method('newFile');
 
 		try {
-			$this->handler()->addFile(new ObjectEntity(), new FileUpload('evil.exe', "MZ\x90\x00", false));
+			$this->handler()->addFile(new FileTarget(new ObjectEntity()), new FileUpload('evil.exe', "MZ\x90\x00", false));
 			$this->fail('An executable must be refused.');
 		} catch (NotPermittedException $e) {
 			$this->fail('The refusal is a plain exception.');
@@ -149,7 +151,7 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 
 		$this->expectException(NotPermittedException::class);
 		$this->expectExceptionMessage('Cannot create file doc.txt: not readable');
-		$this->handler()->addFile(new ObjectEntity(), new FileUpload('doc.txt', 'plain', false));
+		$this->handler()->addFile(new FileTarget(new ObjectEntity()), new FileUpload('doc.txt', 'plain', false));
 	}//end testAnUnreadableNodeIsRefusedBeforeContentIsWritten()
 
 	public function testAnEmptyNameIsRefusedBeforeANodeIsCreated(): void {
@@ -157,7 +159,7 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Failed to create file : Failed to create file because no filename has been provided for object ');
-		$this->handler()->addFile(new ObjectEntity(), new FileUpload('', 'plain', false));
+		$this->handler()->addFile(new FileTarget(new ObjectEntity()), new FileUpload('', 'plain', false));
 	}//end testAnEmptyNameIsRefusedBeforeANodeIsCreated()
 
 	public function testAFolderPermissionRefusalIsRethrown(): void {
@@ -168,7 +170,7 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 
 		$this->expectException(NotPermittedException::class);
 		$this->expectExceptionMessage('Cannot create file doc.txt: no create');
-		$this->handler()->addFile(new ObjectEntity(), new FileUpload('doc.txt', 'plain', false));
+		$this->handler()->addFile(new FileTarget(new ObjectEntity()), new FileUpload('doc.txt', 'plain', false));
 	}//end testAFolderPermissionRefusalIsRethrown()
 
 	public function testContentIsDecodedFromADataUriAndBase64(): void {
@@ -180,9 +182,9 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 		$this->folder->method('newFile')->willReturn($this->file);
 
 		$handler = $this->handler();
-		$handler->addFile(new ObjectEntity(), new FileUpload('a.txt', 'data:text/plain;base64,' . base64_encode('hello'), false));
-		$handler->addFile(new ObjectEntity(), new FileUpload('b.txt', base64_encode('world'), false));
-		$handler->addFile(new ObjectEntity(), new FileUpload('c.txt', 'data:text/plain,raw%20text', false));
+		$handler->addFile(new FileTarget(new ObjectEntity()), new FileUpload('a.txt', 'data:text/plain;base64,' . base64_encode('hello'), false));
+		$handler->addFile(new FileTarget(new ObjectEntity()), new FileUpload('b.txt', base64_encode('world'), false));
+		$handler->addFile(new FileTarget(new ObjectEntity()), new FileUpload('c.txt', 'data:text/plain,raw%20text', false));
 
 		$this->assertSame(['hello', 'world', 'data:text/plain,raw%20text'], $written);
 	}//end testContentIsDecodedFromADataUriAndBase64()
@@ -194,7 +196,7 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 			->with('uuid-later', 5)
 			->willReturn($this->folder);
 
-		$this->assertSame($this->file, $this->handler()->addFile('uuid-later', new FileUpload('doc.txt', 'plain', false, []), 5));
+		$this->assertSame($this->file, $this->handler()->addFile(new FileTarget('uuid-later', 5), new FileUpload('doc.txt', 'plain', false, [])));
 	}//end testAStringObjectThatDoesNotExistStillGetsAFile()
 
 	public function testSaveUpdatesAnExistingFile(): void {
@@ -202,8 +204,8 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 		$existing = $this->createMock(File::class);
 		$existing->method('getId')->willReturn(4);
 		$this->fileService->method('getFile')->with($entity, 'doc.txt')->willReturn($existing);
-		$this->fileService->expects($this->once())->method('updateFile')
-			->with(4, 'new', ['t'], $entity)
+		$this->fileService->expects($this->once())->method('overwriteFile')
+			->with(new FileOverwrite(4, 'new', ['t'], $entity))
 			->willReturn($existing);
 		$this->folder->expects($this->never())->method('newFile');
 
@@ -212,7 +214,7 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 
 	public function testSaveCreatesAMissingFile(): void {
 		$this->fileService->method('getFile')->willReturn(null);
-		$this->fileService->expects($this->never())->method('updateFile');
+		$this->fileService->expects($this->never())->method('overwriteFile');
 
 		$this->assertSame($this->file, $this->handler()->saveFile(new ObjectEntity(), new FileUpload('doc.txt', 'new', false)));
 	}//end testSaveCreatesAMissingFile()
@@ -221,7 +223,7 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 		$existing = $this->createMock(File::class);
 		$existing->method('getId')->willReturn(4);
 		$this->fileService->method('getFile')->willReturn($existing);
-		$this->fileService->method('updateFile')->willThrowException(new NotPermittedException('locked'));
+		$this->fileService->method('overwriteFile')->willThrowException(new NotPermittedException('locked'));
 
 		$this->expectException(NotPermittedException::class);
 		$this->expectExceptionMessage('Cannot save file doc.txt: locked');

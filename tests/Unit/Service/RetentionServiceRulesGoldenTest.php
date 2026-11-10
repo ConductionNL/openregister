@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\RecordUpdate;
 use OCA\OpenRegister\Service\DisposalSweep;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -517,11 +518,11 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 		$listB->setObject(['objects' => [['uuid' => 'b'], ['uuid' => 'c']]]);
 		$listC = new ObjectEntity();
 		$listC->setObject([]);
-		$this->objectMapper->expects($this->exactly(2))->method('findAll')->willReturnCallback(
-			function (...$args) use ($register, $schema, $listA, $listB, $listC) {
-				$this->assertSame(['status' => ['in_review', 'approved', 'awaiting_second_approval']], $args[2]);
-				$this->assertSame($register, $args[10]);
-				$this->assertSame($schema, $args[11]);
+		$this->objectMapper->expects($this->exactly(2))->method('findAllListed')->willReturnCallback(
+			function (MagicListRequest $request) use ($register, $schema, $listA, $listB, $listC) {
+				$this->assertSame(['status' => ['in_review', 'approved', 'awaiting_second_approval']], $request->query->filters);
+				$this->assertSame($register, $request->table->register);
+				$this->assertSame($schema, $request->table->schema);
 				static $call = 0;
 				$call++;
 				if ($call === 2) {

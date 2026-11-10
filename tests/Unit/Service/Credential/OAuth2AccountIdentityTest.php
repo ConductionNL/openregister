@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Credential\TokenResponseOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity
@@ -180,10 +181,7 @@ class OAuth2AccountIdentityTest extends TestCase {
 	 * @return OAuth2TokenSet The set.
 	 */
 	private function tokenSet(): OAuth2TokenSet {
-		return OAuth2TokenSet::fromTokenResponse(
-			response: ['access_token' => 'ACCESS_TOKEN_HERE', 'expires_in' => 3600],
-			requestedScopes: ['read:accounts']
-		);
+		return OAuth2TokenSet::fromResponse(response: ['access_token' => 'ACCESS_TOKEN_HERE', 'expires_in' => 3600], options: new TokenResponseOptions(requestedScopes: ['read:accounts']));
 	}
 
 	/**

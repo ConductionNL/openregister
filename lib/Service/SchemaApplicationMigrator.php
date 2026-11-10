@@ -56,7 +56,6 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 
 	}//end __construct()
 
-
 	/**
 	 * Which slugs appear under BOTH application ids.
 	 *
@@ -84,7 +83,6 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 
 	}//end planCollisions()
 
-
 	/**
 	 * The lower-cased slugs as a set, in first-seen order.
 	 *
@@ -101,7 +99,6 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 		return $set;
 
 	}//end lowerSlugSet()
-
 
 	/**
 	 * Count rows owned by an application id.
@@ -126,7 +123,6 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 		return (int)($row['c'] ?? 0);
 
 	}//end countFor()
-
 
 	/**
 	 * Read every schema slug owned by an application id.
@@ -155,7 +151,6 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 
 	}//end slugsFor()
 
-
 	/**
 	 * Find slugs that exist under BOTH application ids.
 	 *
@@ -173,24 +168,6 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 		);
 
 	}//end collidingSlugs()
-
-
-	/**
-	 * Re-point every row owned by `from` at `to`.
-	 *
-	 * @param string $table The table to update.
-	 * @param string $from  The current application id.
-	 * @param string $to    The new application id.
-	 *
-	 * @return int The number of rows updated.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	public function moveApplication(string $table, string $from, string $to): int {
-		return $this->moveTable(table: $table, move: new ApplicationMove(from: $from, to: $to));
-
-	}//end moveApplication()
-
 
 	/**
 	 * Re-point every row of one table owned by the move's `from` at its `to`.
@@ -211,7 +188,6 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 		return (int)$qb->executeStatement();
 
 	}//end moveTable()
-
 
 	/**
 	 * Perform the migration, refusing when it would create duplicates.
@@ -247,7 +223,6 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 
 	}//end migrate()
 
-
 	/**
 	 * Move the schemas, then the registers, and record the counts as a successful migration.
 	 *
@@ -265,6 +240,5 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 		return $result;
 
 	}//end moveBoth()
-
 
 }//end class

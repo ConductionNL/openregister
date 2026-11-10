@@ -40,13 +40,12 @@ interface ProblemDetailsBuilderInterface {
 	/**
 	 * Wrap a list of validation errors as a 422 problem document.
 	 *
-	 * @param array $errors List of validation errors (each free-form, typically `{path, message}`).
-	 * @param string $detail Optional human-readable explanation.
-	 * @param string $instance Instance URI, '' = omit.
+	 * @param array              $errors      List of validation errors (each free-form, typically `{path, message}`).
+	 * @param ProblemDescription $description The optional explanation and instance URI ('' = omit); its type is ignored.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-10
 	 */
-	public function validationFailed(array $errors, string $detail = '', string $instance = ''): array;
+	public function validationFailed(array $errors, ProblemDescription $description = new ProblemDescription()): array;
 }//end interface

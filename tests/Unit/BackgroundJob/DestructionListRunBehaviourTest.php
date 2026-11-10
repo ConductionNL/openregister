@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
@@ -226,7 +227,8 @@ class DestructionListRunBehaviourTest extends TestCase {
 
 		$delete = $this->createMock(DeleteObject::class);
 		$delete->method('deleteObject')->willReturnCallback(
-			function ($register, $schema, string $uuid, $original, bool $rbac, bool $multitenancy): bool {
+			function (DeletionRequest $request, bool $rbac, bool $multitenancy): bool {
+				[$register, $schema, $uuid, $original] = [$request->register, $request->schema, $request->uuid, $request->options->originalObjectId];
 				if (in_array($uuid, $this->undeletable, true) === true) {
 					throw new RuntimeException('locked '.$uuid);
 				}

@@ -417,6 +417,12 @@ class RateLimiter implements RateLimiterInterface {
 			$limits[1] = $this->configuredPositive(key: self::CONFIG_DEFAULT_REFILL_SECONDS, default: self::DEFAULT_REFILL_SECONDS);
 		} catch (\Throwable $e) {
 			// Fall through with what was read so far.
+			$this->logger->warning(
+				message: '[RateLimiter] Could not read the configured limits, using what was read so far',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 
 		return $limits;
@@ -492,7 +498,14 @@ class RateLimiter implements RateLimiterInterface {
 		try {
 			$this->cache?->set($bucket->key, $state, self::STATE_TTL);
 		} catch (\Throwable $e) {
-			// Don't escalate.
+			// The bucket refills from scratch on a lost write; not escalated.
+			$this->logger->debug(
+				message: '[RateLimiter] Could not persist the bucket state',
+				context: [
+					'key' => $bucket->key,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 
 	}//end persist()

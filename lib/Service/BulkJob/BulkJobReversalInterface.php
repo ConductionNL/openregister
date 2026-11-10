@@ -47,9 +47,7 @@ interface BulkJobReversalInterface {
 	 * and commits it, which is what makes the members it will skip readable
 	 * before anything is written.
 	 *
-	 * @param BulkJob     $original      The job to undo.
-	 * @param string      $actorUid      The uid of the person undoing it.
-	 * @param string|null $justification The reason they typed.
+	 * @param ReversalRequest $request The job to undo, who undoes it and the reason they typed.
 	 *
 	 * @return BulkJob The previewed reversal.
 	 *
@@ -58,5 +56,5 @@ interface BulkJobReversalInterface {
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function reverse(BulkJob $original, string $actorUid, ?string $justification = null): BulkJob;
+	public function reverse(ReversalRequest $request): BulkJob;
 }//end interface

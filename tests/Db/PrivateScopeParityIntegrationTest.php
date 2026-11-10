@@ -50,6 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\ScopeChange;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Rbac\GrantTerms;
@@ -505,7 +506,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 * (task 9.1). The flow engine never runs in the caller's authority: it runs a
 	 * flow AS ITS OWNER, and triggers, scheduled runs and background jobs have no
 	 * session at all to evaluate against. So all four OpenRegisterFlowResolver
-	 * paths — resolveFlow(), resolveSubject(), scheduledFlows() and
+	 * paths — resolveFlow(), resolveObject(), scheduledFlows() and
 	 * buildTriggerIndex() — load with `_rbac: false` on purpose.
 	 *
 	 * If the scope predicate were applied OUTSIDE that gate, making flows private
@@ -1159,7 +1160,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 			'a custom verb must map to no core permission bit'
 		);
 		$this->assertFalse(
-			$this->grantResolver()->isGranted($this->testUid, $entity->getUuid(), 'besluit_nemen'),
+			$this->grantResolver()->isGranted(new GrantLookup($this->testUid, $entity->getUuid()), 'besluit_nemen'),
 			'a grant must not admit a verb it cannot carry'
 		);
 	}//end testAGrantCannotAdmitACustomVerb()
