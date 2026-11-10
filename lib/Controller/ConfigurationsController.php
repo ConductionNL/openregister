@@ -79,8 +79,8 @@ class ConfigurationsController extends Controller {
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
-		$this->configurationMapper = $services->configurationMapper;
-		$this->configurationService = $services->configurationService;
+		$this->configurationMapper = $services->records->configurationMapper;
+		$this->configurationService = $services->records->configurationService;
 	}//end __construct()
 
 	/**

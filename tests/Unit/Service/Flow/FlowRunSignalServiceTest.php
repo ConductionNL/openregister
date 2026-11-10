@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunAssignee;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
@@ -95,8 +96,8 @@ class FlowRunSignalServiceTest extends TestCase {
 		return new FlowRunSignalService(
 			mapper: $this->mapper,
 			runner: $this->runner,
-			logger: $this->logger,
-			groupManager: $groups
+			assignees: new FlowRunAssignee(groupManager: $groups),
+			logger: $this->logger
 		);
 	}//end seam()
 

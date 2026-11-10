@@ -193,19 +193,28 @@ class FlowTriggerMapper implements FlowTriggerMapperInterface {
 		$this->deleteFor(flowUuid: $flowUuid);
 
 		foreach ($triggers as $trigger) {
-			$this->insertRow(
-				row: [
-					'flow_uuid' => $flowUuid,
-					'event' => (string)$trigger['event'],
-					'register' => (string)$trigger['register'],
-					'schema_slug' => (string)$trigger['schema'],
-				],
-				enabled: $enabled
-			);
+			$this->insertRow(row: self::triggerRow(flowUuid: $flowUuid, trigger: $trigger), enabled: $enabled);
 		}
 
 		return count($triggers);
 	}//end replaceFor()
+
+	/**
+	 * The columns of one flow's trigger, before the enabled flag.
+	 *
+	 * @param string               $flowUuid The flow's UUID.
+	 * @param array<string, mixed> $trigger  The derived trigger: event, register and schema.
+	 *
+	 * @return array<string, string> The flow uuid, event, register and schema slug, by column.
+	 */
+	private static function triggerRow(string $flowUuid, array $trigger): array {
+		return [
+			'flow_uuid' => $flowUuid,
+			'event' => (string)$trigger['event'],
+			'register' => (string)$trigger['register'],
+			'schema_slug' => (string)$trigger['schema'],
+		];
+	}//end triggerRow()
 
 	/**
 	 * Insert one trigger row.
