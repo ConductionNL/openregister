@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Query;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeResolverInterface;
 use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -101,9 +102,7 @@ class RelatedRowAccess {
 		$alias         = $source->alias;
 		$rbacPredicate = $this->rbac->buildRbacPredicateForAlias(
 			schema: $source->schema,
-			alias: $alias,
-			action: 'read',
-			tableName: $source->tableName
+			rows: new AliasedRows(alias: $alias, action: 'read', tableName: $source->tableName)
 		);
 		$column        = $alias . '._organisation';
 		$mode   = ($scope['mode'] ?? null);

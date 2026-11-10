@@ -29,7 +29,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
-use OCA\OpenRegister\Service\Object\ObjectStateRecording;
 use OCA\OpenRegister\Service\Object\ObjectStateRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -81,12 +80,7 @@ final class ArchiveHandlerTest extends TestCase {
 	 * @return ArchiveHandler The handler.
 	 */
 	private function handler(): ArchiveHandler {
-		return new ArchiveHandler(
-			$this->magic,
-			$this->permissions,
-			$this->session,
-			new ObjectStateRecording($this->audit, $this->createMock(LoggerInterface::class))
-		);
+		return new ArchiveHandler($this->permissions, $this->session, new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->magic, $this->audit, $this->createMock(LoggerInterface::class), $this->createStub(\OCP\EventDispatcher\IEventDispatcher::class)));
 	}//end handler()
 
 	/**

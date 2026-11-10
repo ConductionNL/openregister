@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Schema;
@@ -265,7 +266,7 @@ class RuleKeyColumnsGoldenTest extends TestCase {
 
 		return [
 			'union'    => $handler->buildRbacConditionsSql(schema: $allow, action: 'read')['conditions'],
-			'aliased'  => $handler->buildRbacPredicateForAlias(schema: $allow, alias: 'r0'),
+			'aliased'  => $handler->buildRbacPredicateForAlias(schema: $allow, rows: new AliasedRows(alias: 'r0')),
 			'row'      => $handler->buildRbacRowPredicateSql(schema: $allow),
 			'crossSql' => $handler->getCrossOrganisationBranchSql(schema: $cross),
 			'crossQb'  => (string)$handler->getCrossOrganisationBranch($this->queryBuilder(), $cross),
@@ -289,7 +290,7 @@ class RuleKeyColumnsGoldenTest extends TestCase {
 
 		return [
 			'union'   => $this->denyTerm(sql: (string)($handler->buildRbacConditionsSql(schema: $deny, action: 'read')['conditions'][0] ?? '')),
-			'aliased' => $this->denyTerm(sql: $handler->buildRbacPredicateForAlias(schema: $deny, alias: 'r0')),
+			'aliased' => $this->denyTerm(sql: $handler->buildRbacPredicateForAlias(schema: $deny, rows: new AliasedRows(alias: 'r0'))),
 			'qb'      => $this->denyTerm(sql: (string)($wheres[0] ?? '')),
 		];
 	}//end denied()

@@ -154,11 +154,11 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 	/**
 	 * Finds all sources
 	 *
-	 * @param int|null $limit The limit of the results
-	 * @param int|null $offset The offset of the results
+	 * Kept for callers outside this lane (SourcesController); builds the ListQuery and delegates.
+	 *
+	 * @param int|null   $limit   The limit of the results, null for all.
+	 * @param int|null   $offset  The offset of the results
 	 * @param array|null $filters The filters to apply
-	 * @param array|null $searchConditions The search conditions to apply
-	 * @param array|null $searchParams The search parameters to apply
 	 *
 	 * @return Source[]
 	 *
@@ -166,13 +166,23 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
 	 */
-	public function findAll(
-		int|null $limit = null,
-		int|null $offset = null,
-		array|null $filters = [],
-		array|null $searchConditions = [],
-		array|null $searchParams = [],
-	): array {
+	public function findAll(int|null $limit=null, int|null $offset=null, array|null $filters=[]): array {
+		$limit = ($limit ?? ListQuery::UNBOUNDED);
+		return $this->findList(query: new ListQuery(limit: $limit, offset: $offset, filters: ($filters ?? [])));
+	}//end findAll()
+
+	/**
+	 * Finds the sources one list query asks for.
+	 *
+	 * @param ListQuery $query The limit (unbounded for all), offset and column filters.
+	 *
+	 * @return Source[]
+	 *
+	 * @throws \Exception If user doesn't have read permission
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
+	 */
+	public function findList(ListQuery $query): array {
 		// Verify RBAC permission to read.
 		$this->verifyRbacPermission(action: 'read', entityType: 'source');
 
@@ -180,39 +190,16 @@ class SourceMapper extends QBMapper implements SourceMapperInterface {
 
 		$qb->select('*')
 			->from('openregister_sources')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+			->setMaxResults($query->limitOrNull())
+			->setFirstResult($query->offset);
 
-		$this->applyColumnFilters(qb: $qb, filters: $filters);
-		$this->applySearchConditions(qb: $qb, searchConditions: $searchConditions, searchParams: $searchParams);
+		$this->applyColumnFilters(qb: $qb, filters: $query->filters);
 
 		// Apply organisation filter (all users including admins must have active org).
 		$this->applyOrganisationFilter(qb: $qb);
 
 		return $this->findEntities(query: $qb);
-	}//end findAll()
-
-	/**
-	 * OR the raw search conditions into the query and bind their parameters.
-	 *
-	 * Nothing is added, and no parameter is bound, when there are no conditions.
-	 *
-	 * @param IQueryBuilder $qb               The query to add the conditions to.
-	 * @param array|null    $searchConditions SQL fragments, joined with OR.
-	 * @param array|null    $searchParams     Parameter name to value for those fragments.
-	 *
-	 * @return void
-	 */
-	private function applySearchConditions(IQueryBuilder $qb, array|null $searchConditions, array|null $searchParams): void {
-		if (empty($searchConditions) === true) {
-			return;
-		}
-
-		$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
-		foreach ($searchParams ?? [] as $param => $value) {
-			$qb->setParameter($param, $value);
-		}
-	}//end applySearchConditions()
+	}//end findList()
 
 	/**
 	 * Find all sources that have scheduled sync enabled.

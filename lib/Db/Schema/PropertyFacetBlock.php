@@ -41,16 +41,28 @@ final class PropertyFacetBlock {
 	 * @return array|null
 	 */
 	public function built(array $properties, ?string $version, int $generatedAt): ?array {
+		return $this->builtFor(properties: $properties, stamp: new FacetBlockStamp(version: $version, generatedAt: $generatedAt));
+	}//end built()
+
+	/**
+	 * The facet block for the facetable properties, stamped; null when the schema has no properties.
+	 *
+	 * @param array           $properties The schema's properties.
+	 * @param FacetBlockStamp $stamp      The schema version and the generation time.
+	 *
+	 * @return array|null
+	 */
+	public function builtFor(array $properties, FacetBlockStamp $stamp): ?array {
 		if (empty($properties) === true) {
 			return null;
 		}
 
 		return [
 			'object_fields' => $this->objectFields(properties: $properties),
-			'generated_at' => $generatedAt,
-			'schema_version' => $version ?? '1.0',
+			'generated_at' => $stamp->generatedAt,
+			'schema_version' => $stamp->version ?? '1.0',
 		];
-	}//end built()
+	}//end builtFor()
 
 	/**
 	 * The facets of the properties marked `facetable: true`, keyed by property name.

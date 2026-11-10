@@ -76,8 +76,8 @@ class ObjectSlugStoreScopeTest extends TestCase {
 		$this->magic->expects($this->never())->method('findSlugState');
 		$scope = new ObjectSlugScope(null, new Schema());
 
-		$this->assertNull($this->store()->holderOf($scope, 'jan', 'u-1'));
-		$this->assertSame(['holders' => [], 'stored' => []], $this->store()->state($scope, ['jan'], ['u-1']));
+		$this->assertNull($this->store()->holderOf(want: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant(slug: 'jan', scope: $scope, objectUuid: 'u-1', path: 'save'), slug: 'jan'));
+		$this->assertSame(['holders' => [], 'stored' => []], $this->store()->state(scope: $scope, claims: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClaims(slugs: ['jan'], uuids: ['u-1'])));
 
 	}//end testARegisterlessScopeAsksNothing()
 
@@ -99,8 +99,8 @@ class ObjectSlugStoreScopeTest extends TestCase {
 			->willReturn(['holders' => ['jan' => 'u-9'], 'stored' => []]);
 		$scope = new ObjectSlugScope($register, $schema);
 
-		$this->assertSame('u-9', $this->store()->holderOf($scope, 'jan', 'u-1'));
-		$this->assertSame(['jan' => 'u-9'], $this->store()->state($scope, ['jan'], ['u-1'])['holders']);
+		$this->assertSame('u-9', $this->store()->holderOf(want: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant(slug: 'jan', scope: $scope, objectUuid: 'u-1', path: 'save'), slug: 'jan'));
+		$this->assertSame(['jan' => 'u-9'], $this->store()->state(scope: $scope, claims: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClaims(slugs: ['jan'], uuids: ['u-1']))['holders']);
 
 	}//end testAScopedLookupAsksTheStore()
 }//end class

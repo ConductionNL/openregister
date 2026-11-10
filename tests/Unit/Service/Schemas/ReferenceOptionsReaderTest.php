@@ -31,9 +31,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Schemas;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
+use OCA\OpenRegister\Service\Schemas\ReferencePick;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -92,11 +94,7 @@ class ReferenceOptionsReaderTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnresolvedOperandYieldsNoOptionsAndNamesIt(): void {
-		$plan = $this->reader->plan(
-			schema: $this->filteredSchema(),
-			property: 'contact',
-			record: []
-		);
+		$plan = $this->reader->plan(schema: $this->filteredSchema(), pick: new ReferencePick(property: 'contact', record: []));
 
 		$this->assertFalse($this->reader->isAnswerable($plan));
 		$this->assertSame(['organisation'], $plan['needs']);
@@ -111,11 +109,7 @@ class ReferenceOptionsReaderTest extends TestCase {
 	 * @return void
 	 */
 	public function testAResolvedOperandYieldsTheFilter(): void {
-		$plan = $this->reader->plan(
-			schema: $this->filteredSchema(),
-			property: 'contact',
-			record: ['organisation' => 'org-1']
-		);
+		$plan = $this->reader->plan(schema: $this->filteredSchema(), pick: new ReferencePick(property: 'contact', record: ['organisation' => 'org-1']));
 
 		$this->assertTrue($this->reader->isAnswerable($plan));
 		$this->assertSame([], $plan['needs']);
@@ -131,11 +125,7 @@ class ReferenceOptionsReaderTest extends TestCase {
 	 * @return void
 	 */
 	public function testThePlanNamesTheReferencedSchemaAndRegister(): void {
-		$plan = $this->reader->plan(
-			schema: $this->filteredSchema(),
-			property: 'contact',
-			record: ['organisation' => 'org-1']
-		);
+		$plan = $this->reader->plan(schema: $this->filteredSchema(), pick: new ReferencePick(property: 'contact', record: ['organisation' => 'org-1']));
 
 		$this->assertSame('contact', $plan['target']['schema']);
 		$this->assertSame('crm', $plan['target']['register']);
@@ -153,7 +143,7 @@ class ReferenceOptionsReaderTest extends TestCase {
 		$schema = new Schema();
 		$schema->setProperties(['contact' => ['type' => 'string', '$ref' => 'contact']]);
 
-		$plan = $this->reader->plan(schema: $schema, property: 'contact', record: []);
+		$plan = $this->reader->plan(schema: $schema, pick: new ReferencePick(property: 'contact', record: []));
 
 		$this->assertFalse($plan['filtered']);
 		$this->assertTrue($this->reader->isAnswerable($plan));
@@ -171,7 +161,7 @@ class ReferenceOptionsReaderTest extends TestCase {
 			'contacts' => ['type' => 'array', 'items' => ['$ref' => 'contact']],
 		]);
 
-		$plan = $this->reader->plan(schema: $schema, property: 'contacts', record: []);
+		$plan = $this->reader->plan(schema: $schema, pick: new ReferencePick(property: 'contacts', record: []));
 
 		$this->assertSame('contact', $plan['target']['schema']);
 	}//end testAnArrayOfReferencesTakesItsTargetFromItsItems()
@@ -187,7 +177,7 @@ class ReferenceOptionsReaderTest extends TestCase {
 	public function testAnUnknownPropertyIsRefused(): void {
 		$this->expectException(ReferenceFilterException::class);
 
-		$this->reader->plan(schema: $this->filteredSchema(), property: 'nope', record: []);
+		$this->reader->plan(schema: $this->filteredSchema(), pick: new ReferencePick(property: 'nope', record: []));
 	}//end testAnUnknownPropertyIsRefused()
 
 	/**
@@ -222,13 +212,9 @@ class ReferenceOptionsReaderTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheQueryCarriesTheFilterAndThePaging(): void {
-		$plan = $this->reader->plan(
-			schema: $this->filteredSchema(),
-			property: 'contact',
-			record: ['organisation' => 'org-1']
-		);
+		$plan = $this->reader->plan(schema: $this->filteredSchema(), pick: new ReferencePick(property: 'contact', record: ['organisation' => 'org-1']));
 
-		$query = $this->reader->queryFor(plan: $plan, limit: 25, offset: 50);
+		$query = $this->reader->queryFor(plan: $plan, page: new ListQuery(limit: 25, offset: 50));
 
 		$this->assertSame('org-1', $query['organisation']);
 		$this->assertSame(25, $query['_limit']);
@@ -241,12 +227,8 @@ class ReferenceOptionsReaderTest extends TestCase {
 	 * @return void
 	 */
 	public function testANegativeOffsetIsClamped(): void {
-		$plan = $this->reader->plan(
-			schema: $this->filteredSchema(),
-			property: 'contact',
-			record: ['organisation' => 'org-1']
-		);
+		$plan = $this->reader->plan(schema: $this->filteredSchema(), pick: new ReferencePick(property: 'contact', record: ['organisation' => 'org-1']));
 
-		$this->assertSame(0, $this->reader->queryFor(plan: $plan, limit: 10, offset: -20)['_offset']);
+		$this->assertSame(0, $this->reader->queryFor(plan: $plan, page: new ListQuery(limit: 10, offset: -20))['_offset']);
 	}//end testANegativeOffsetIsClamped()
 }//end class
