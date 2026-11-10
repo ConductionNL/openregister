@@ -583,12 +583,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 * @throws RuntimeException Naming the chain, the object and the step.
 	 */
 	private function migratedTask(array $step): Task {
-		$taskUuid = trim((string)($step['migrated_task_uuid'] ?? ''));
-		if ($taskUuid === '') {
-			throw new RuntimeException(
-				'Approval migration failed: no migrated task recorded for ' . self::stepLabel(step: $step) . '. The migration did NOT succeed.'
-			);
-		}
+		$taskUuid = self::migratedTaskUuid(step: $step);
 
 		try {
 			return $this->tasks->findByUuid(uuid: $taskUuid);
@@ -599,6 +594,26 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 			);
 		}
 	}//end migratedTask()
+
+	/**
+	 * The uuid of the task a step was migrated into.
+	 *
+	 * @param array $step The approval_steps row.
+	 *
+	 * @return string The recorded task uuid.
+	 *
+	 * @throws RuntimeException When the step records no migrated task.
+	 */
+	private static function migratedTaskUuid(array $step): string {
+		$taskUuid = trim((string)($step['migrated_task_uuid'] ?? ''));
+		if ($taskUuid === '') {
+			throw new RuntimeException(
+				'Approval migration failed: no migrated task recorded for ' . self::stepLabel(step: $step) . '. The migration did NOT succeed.'
+			);
+		}
+
+		return $taskUuid;
+	}//end migratedTaskUuid()
 
 	/**
 	 * STOP when the task does not sit at its step's ordinal.
@@ -723,124 +738,51 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 * @return array<string, mixed> The template.
 	 */
 	private function templateFor(array $chain): array {
-		return [
-			'templateId' => self::templateIdFor(chain: $chain),
-			'templateVersion' => 1,
-			'name' => (string)$chain['name'],
-			'schemaId' => self::schemaIdOf(chain: $chain),
-			'separationOfDuties' => false,
-			'migratedFromChainId' => (int)$chain['id'],
-			'positions' => self::positionsOf(chain: $chain),
-		];
-	}//end templateFor()
-
-	/**
-	 * The positions a chain declares, skipping entries without a role.
-	 *
-	 * An entry without an `order` takes its place among the kept entries.
-	 *
-	 * @param array<string, mixed> $chain The legacy chain row.
-	 *
-	 * @return array<int, array<string, mixed>> The positions.
-	 */
-	private static function positionsOf(array $chain): array {
 		$positions = [];
-		$order = 1;
-		foreach (self::declaredSteps(chain: $chain) as $entry) {
-			if (is_array($entry) === false || trim((string)($entry['role'] ?? '')) === '') {
-				continue;
-			}
-
-			$positions[] = self::positionOf(entry: $entry, order: $order);
-			$order++;
-		}
-
-		return $positions;
-	}//end positionsOf()
-
-	/**
-	 * The chain's declared step entries, empty when the column does not decode to a list.
-	 *
-	 * @param array<string, mixed> $chain The legacy chain row.
-	 *
-	 * @return array<int|string, mixed> The decoded entries.
-	 */
-	private static function declaredSteps(array $chain): array {
 		$declared = json_decode((string)($chain['steps'] ?? '[]'), true);
-		if (is_array($declared) === false) {
-			return [];
+		if (is_array($declared) === true) {
+			$order = 1;
+			foreach ($declared as $entry) {
+				if (is_array($entry) === false || trim((string)($entry['role'] ?? '')) === '') {
+					continue;
+				}
+
+				$positions[] = [
+					'order' => (int)($entry['order'] ?? $order),
+					'role' => trim((string)$entry['role']),
+					'statusOnApprove' => ($entry['statusOnApprove'] ?? null),
+					'statusOnReject' => ($entry['statusOnReject'] ?? null),
+				];
+				$order++;
+			}
 		}
 
-		return $declared;
-	}//end declaredSteps()
-
-	/**
-	 * One declared position.
-	 *
-	 * @param array<string, mixed> $entry The declared step entry.
-	 * @param int                  $order The order to use when the entry names none.
-	 *
-	 * @return array<string, mixed> The position.
-	 */
-	private static function positionOf(array $entry, int $order): array {
-		return [
-			'order' => (int)($entry['order'] ?? $order),
-			'role' => trim((string)$entry['role']),
-			'statusOnApprove' => ($entry['statusOnApprove'] ?? null),
-			'statusOnReject' => ($entry['statusOnReject'] ?? null),
-		];
-	}//end positionOf()
-
-	/**
-	 * The chain's schema id, or null for a chain on no schema.
-	 *
-	 * @param array<string, mixed> $chain The legacy chain row.
-	 *
-	 * @return int|null The schema id.
-	 */
-	private static function schemaIdOf(array $chain): ?int {
 		$schemaId = ($chain['schema_id'] ?? null);
-		if ($schemaId === null) {
-			return null;
-		}
-
-		return (int)$schemaId;
-	}//end schemaIdOf()
-
-	/**
-	 * The deterministic template id: a uuid-shaped md5 of the namespace, the schema (or legacy chain id) and the chain name.
-	 *
-	 * @param array<string, mixed> $chain The legacy chain row.
-	 *
-	 * @return string The template id.
-	 */
-	private static function templateIdFor(array $chain): string {
 		$schemaPart = 'legacy:' . (string)$chain['id'];
-		$schemaId = self::schemaIdOf(chain: $chain);
 		if ($schemaId !== null) {
+			$schemaId = (int)$schemaId;
 			$schemaPart = (string)$schemaId;
 		}
 
-		return self::uuidShaped(hash: md5(self::TEMPLATE_ID_NS . ':' . $schemaPart . ':' . (string)$chain['name']));
-	}//end templateIdFor()
+		$hash = md5(self::TEMPLATE_ID_NS . ':' . $schemaPart . ':' . (string)$chain['name']);
 
-	/**
-	 * An md5 hex digest laid out as a uuid.
-	 *
-	 * @param string $hash The 32-character digest.
-	 *
-	 * @return string The 8-4-4-4-12 form.
-	 */
-	private static function uuidShaped(string $hash): string {
-		return sprintf(
-			'%s-%s-%s-%s-%s',
-			substr($hash, 0, 8),
-			substr($hash, 8, 4),
-			substr($hash, 12, 4),
-			substr($hash, 16, 4),
-			substr($hash, 20, 12)
-		);
-	}//end uuidShaped()
+		return [
+			'templateId' => sprintf(
+				'%s-%s-%s-%s-%s',
+				substr($hash, 0, 8),
+				substr($hash, 8, 4),
+				substr($hash, 12, 4),
+				substr($hash, 16, 4),
+				substr($hash, 20, 12)
+			),
+			'templateVersion' => 1,
+			'name' => (string)$chain['name'],
+			'schemaId' => $schemaId,
+			'separationOfDuties' => false,
+			'migratedFromChainId' => (int)$chain['id'],
+			'positions' => $positions,
+		];
+	}//end templateFor()
 
 	/**
 	 * Rebuild the candidate index rows for a migrated task.
