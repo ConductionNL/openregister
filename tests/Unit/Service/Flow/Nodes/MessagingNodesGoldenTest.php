@@ -69,9 +69,9 @@ final class MessagingNodesGoldenTest extends TestCase {
 	public function testMessagingNodesMatchTheirRecording(): void {
 		$calls = [];
 		$messaging = $this->createMock(FlowMessagingService::class);
-		$messaging->method('previewMessages')->willReturnCallback(
-			static function (string $channel, array $config, array $items, array $context) use (&$calls): array {
-				$calls[] = ['previewMessages', $channel, $config, $items, $context];
+		$messaging->method('preview')->willReturnCallback(
+			static function (string $channel, MessageSend $step) use (&$calls): array {
+				$calls[] = ['previewMessages', $channel, $step->config, $step->items, $step->context];
 				return [['to' => 'bob'], ['to' => 'eve']];
 			}
 		);

@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
@@ -427,7 +428,7 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testBinaryAttachmentsSurviveTheWrite(): void {
 		$this->objects->method('saveObject')->willReturn($this->entity('uuid-1', ['title' => 'a']));
 
-		$item = FlowItems::item(json: ['name' => 'a'], binary: ['file' => ['mimeType' => 'text/plain']]);
+		$item = FlowItems::item(json: ['name' => 'a'], options: new FlowItemOptions(binary: ['file' => ['mimeType' => 'text/plain']]));
 		$out = $this->node->execute(new FlowNodeCall(items: [$item], config: $this->config(), context: $this->registerContext));
 
 		$this->assertSame(['file' => ['mimeType' => 'text/plain']], $out[0]['binary']);

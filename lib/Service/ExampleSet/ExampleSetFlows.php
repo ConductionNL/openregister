@@ -370,7 +370,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 			$stored  = $this->container->get(FlowMapper::class)->insert($flow);
 			$version = null;
 			if (($data['publish'] ?? true) === true) {
-				$version = $this->container->get(FlowVersionService::class)->publish(flow: $stored, publishedBy: null)->getVersion();
+				$version = $this->container->get(FlowVersionService::class)->publish(flow: $stored)->getVersion();
 			}
 
 			if (($data['enabled'] ?? false) === true) {

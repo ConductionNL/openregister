@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Tests\Db;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -317,7 +318,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 	public function testBuildRbacConditionsSqlNoAuthorization(): void {
 		$schema = $this->createTestSchema();
 
-		$result = $this->rbacHandler->buildRbacConditionsSql($schema, 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('bypass', $result);
 		$this->assertArrayHasKey('conditions', $result);
@@ -334,7 +335,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			'read' => ['public'],
 		]);
 
-		$result = $this->rbacHandler->buildRbacConditionsSql($schema, 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$this->assertIsArray($result);
 		// An unconditional `public` grant reaches every non-private row, which
 		// is now expressed as a condition rather than as a bypass.
@@ -350,7 +351,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 		// rbac-default-deny: 'delete' is unconfigured on a non-empty block, so it
 		// no longer bypasses filtering. Admin still bypasses; otherwise the result
 		// is a non-bypass filter (owner-only conditions, or empty = deny-all).
-		$result = $this->rbacHandler->buildRbacConditionsSql($schema, 'delete');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('delete'));
 		$this->assertIsArray($result);
 		if ($this->rbacHandler->isAdmin() === true) {
 			$this->assertTrue($result['bypass']);
@@ -364,7 +365,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			'read' => ['nonexistent-group-' . uniqid()],
 		]);
 
-		$result = $this->rbacHandler->buildRbacConditionsSql($schema, 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('bypass', $result);
 		$this->assertArrayHasKey('conditions', $result);
@@ -379,7 +380,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			],
 		]);
 
-		$result = $this->rbacHandler->buildRbacConditionsSql($schema, 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('bypass', $result);
 
@@ -397,7 +398,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			],
 		]);
 
-		$result = $this->rbacHandler->buildRbacConditionsSql($schema, 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('bypass', $result);
 		$this->assertArrayHasKey('conditions', $result);
@@ -646,7 +647,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			],
 		]);
 
-		$result = $this->rbacHandler->buildRbacConditionsSql($schema, 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('bypass', $result);
 
@@ -663,7 +664,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			],
 		]);
 
-		$result = $this->rbacHandler->buildRbacConditionsSql($schema, 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('bypass', $result);
 	}
@@ -675,7 +676,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			],
 		]);
 
-		$result = $this->rbacHandler->buildRbacConditionsSql($schema, 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('bypass', $result);
 	}
@@ -844,7 +845,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			],
 		]);
 
-		$result = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$sql = implode(' OR ', $result['conditions']);
 
 		$this->assertFalse($result['bypass'], 'an anonymous caller MUST NOT bypass RBAC');
@@ -872,7 +873,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			],
 		]);
 
-		$result = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 
 		$this->assertFalse($result['bypass']);
 		$this->assertStringContainsString(
@@ -894,7 +895,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			],
 		]);
 
-		$result = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$sql = implode(' OR ', $result['conditions']);
 
 		$this->assertMatchesRegularExpression("/[`\"]status[`\"] = 'published'/", $sql);

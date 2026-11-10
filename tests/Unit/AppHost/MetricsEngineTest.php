@@ -104,7 +104,7 @@ class MetricsEngineTest extends TestCase {
 
 		$this->objectSource->expects($this->once())
 			->method('collect')
-			->willReturn([MetricSample::single('cases_total', 'gauge', 'Cases', 9)]);
+			->willReturn([new MetricSample('cases_total', 'gauge', 'Cases', [['labels' => [], 'value' => 9]])]);
 
 		$manifest = new ObservabilityManifest('procest', new ObservabilityProbes([], [$descriptor]));
 		$out = $this->engine()->render($manifest);
@@ -155,7 +155,7 @@ class MetricsEngineTest extends TestCase {
 		// Source must be hit exactly once across two renders within the TTL.
 		$this->tableSource->expects($this->once())
 			->method('collect')
-			->willReturn([MetricSample::single('cached', 'gauge', 'C', 1)]);
+			->willReturn([new MetricSample('cached', 'gauge', 'C', [['labels' => [], 'value' => 1]])]);
 
 		$manifest = new ObservabilityManifest('app', new ObservabilityProbes([], [$descriptor]));
 		$engine = $this->engine();

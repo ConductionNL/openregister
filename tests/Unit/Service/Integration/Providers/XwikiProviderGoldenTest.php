@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Db\XwikiLink;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\XwikiLinkMapper;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
@@ -149,7 +150,7 @@ class XwikiProviderGoldenTest extends TestCase {
 	private function scenarios(): array {
 		$rows = $this->sourceRows();
 		$list = static fn (string $objectId, array $filters = []) =>
-			static fn (XwikiProvider $p) => $p->list('reg', 'sch', $objectId, $filters);
+			static fn (XwikiProvider $p) => $p->list(new ObjectRef(register: 'reg', schema: 'sch', id: $objectId), $filters);
 		$enrich = [
 			'Main.WebHome' => ['title' => 'Live home', 'space' => '', 'url' => 'https://wiki/live', 'content' => null],
 			'Bare.Page' => ['reference' => 'Bare.Page', 'page' => 'Page'],
@@ -175,15 +176,15 @@ class XwikiProviderGoldenTest extends TestCase {
 			'get' => [
 				['Main.Web Home' => [], 'Main.Web%20Home' => $rows[1]],
 				null,
-				static fn (XwikiProvider $p) => $p->get('reg', 'sch', 'obj-1', 'Main.Web Home'),
+				static fn (XwikiProvider $p) => $p->get(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-1'), 'Main.Web Home'),
 			],
 			'create' => [
 				['' => $rows[0]],
 				null,
-				static fn (XwikiProvider $p) => $p->create('reg', 'sch', 'obj-1', ['reference' => 'https://wiki/x', 'object' => 'overridden']),
+				static fn (XwikiProvider $p) => $p->create(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-1'), ['reference' => 'https://wiki/x', 'object' => 'overridden']),
 			],
-			'update' => [['A%2FB' => $rows[6]], null, static fn (XwikiProvider $p) => $p->update('reg', 'sch', 'obj-1', 'A/B', ['title' => 'New'])],
-			'delete' => [[], null, static fn (XwikiProvider $p) => $p->delete('reg', 'sch', 'obj-1', 'A/B')],
+			'update' => [['A%2FB' => $rows[6]], null, static fn (XwikiProvider $p) => $p->update(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-1'), 'A/B', ['title' => 'New'])],
+			'delete' => [[], null, static fn (XwikiProvider $p) => $p->delete(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-1'), 'A/B')],
 			'metadata' => [[], null, static fn (XwikiProvider $p) => [
 				$p->getId(), $p->getLabel(), $p->getIcon(), $p->authRequirements(), $p->getGroup(),
 				$p->getStorageStrategy(), $p->getOpenConnectorSource(),

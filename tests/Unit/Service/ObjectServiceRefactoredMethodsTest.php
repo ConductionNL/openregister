@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -357,11 +358,8 @@ class ObjectServiceRefactoredMethodsTest extends TestCase {
 			->with(
 				$this->identicalTo($this->mockSchema),
 				'create',
-				null,
-				null,
-				false,
-				$this->anything(),
-				'1'
+				$this->callback(fn (PermissionCheckOptions $options): bool => $options->userId === null && $options->objectOwner === null && $options->register === '1'),
+				false
 			);
 
 		$result = $this->invokePrivateMethod('checkSavePermissions', [null, false]);
@@ -382,11 +380,8 @@ class ObjectServiceRefactoredMethodsTest extends TestCase {
 			->with(
 				$this->identicalTo($this->mockSchema),
 				'create',
-				null,
-				null,
-				true,
-				$this->anything(),
-				'1'
+				$this->callback(fn (PermissionCheckOptions $options): bool => $options->userId === null && $options->objectOwner === null && $options->register === '1'),
+				true
 			);
 
 		$result = $this->invokePrivateMethod('checkSavePermissions', [null, true]);
@@ -495,7 +490,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase {
 		);
 		$this->validateHandler->expects($this->once())
 			->method('validateObject')
-			->with($this->anything(), $schema, $this->anything(), $this->anything(), ['title' => 'draft', 'description' => 'draft'])
+			->with($this->anything(), $schema, $this->anything(), ['title' => 'draft', 'description' => 'draft'])
 			->willReturn($invalid);
 		$this->validateHandler->method('generateErrorMessage')->willReturn('preferredDate must match format date-time');
 

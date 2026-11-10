@@ -75,6 +75,6 @@ final class DispatchThrottle {
 			return true;
 		}
 
-		return $this->coalescer->shouldDispatch(ruleId: $firing->ruleId, recipient: $recipient, perRuleOverride: $firing->coalesce);
+		return $this->coalescer->shouldDispatch(bucket: new CoalesceBucket(ruleId: $firing->ruleId, recipient: $recipient), perRuleOverride: $firing->coalesce);
 	}//end coalesceAllows()
 }//end class

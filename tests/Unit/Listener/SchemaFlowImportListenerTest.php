@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Unit\Listener;
 
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
@@ -429,7 +430,7 @@ class SchemaFlowImportListenerTest extends TestCase {
 			->getMock();
 		$versions->expects($this->once())
 			->method('publish')
-			->with($this->isInstanceOf(Flow::class), null);
+			->with($this->isInstanceOf(Flow::class), $this->callback(static fn (FlowPublishOptions $options): bool => $options->publishedBy === null));
 		$versions->expects($this->never())->method('publishShippedUpdate');
 
 		$container = $this->createMock(ContainerInterface::class);

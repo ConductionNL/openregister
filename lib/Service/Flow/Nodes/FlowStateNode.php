@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStateHandle;
@@ -301,8 +302,7 @@ class FlowStateNode extends LogicNodeBase implements IFlowNode, FlowStateNodeInt
 		foreach ($items as $index => $item) {
 			$output[] = FlowItems::item(
 				json: $this->apply(step: $step, json: (array)($item['json'] ?? [])),
-				binary: (array)($item['binary'] ?? []),
-				fromItemIndex: (int)$index
+				options: new FlowItemOptions(binary: (array)($item['binary'] ?? []), fromItemIndex: (int)$index)
 			);
 		}
 

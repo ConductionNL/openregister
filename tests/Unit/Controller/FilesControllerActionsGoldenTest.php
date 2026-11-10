@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -44,6 +46,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\File\FileMetadataChange;
 use OCA\OpenRegister\Service\File\FileOverwrite;
 use OCA\OpenRegister\Service\File\FileRename;
@@ -564,13 +567,13 @@ class FilesControllerActionsGoldenTest extends TestCase {
 
 	private function access(): ObjectFileAccess {
 		$access = $this->createMock(ObjectFileAccess::class);
-		$access->method('readable')->willReturnCallback(function (string $register, string $schema, string $id): ObjectEntity {
-			$this->note(call: 'readable', detail: [$register, $schema, $id]);
+		$access->method('readable')->willReturnCallback(function (ObjectRef $ref): ObjectEntity {
+			$this->note(call: 'readable', detail: [$ref->register, $ref->schema, $ref->id]);
 			$this->refusal();
 			return $this->object;
 		});
-		$access->method('changeable')->willReturnCallback(function (string $register, string $schema, string $id, string $verb): ObjectEntity {
-			$this->note(call: 'changeable', detail: [$register, $schema, $id, $verb]);
+		$access->method('changeable')->willReturnCallback(function (ObjectRef $ref, string $verb): ObjectEntity {
+			$this->note(call: 'changeable', detail: [$ref->register, $ref->schema, $ref->id, $verb]);
 			$this->refusal();
 			return $this->object;
 		});
@@ -683,7 +686,8 @@ class FilesControllerActionsGoldenTest extends TestCase {
 	 * @param FileService&\PHPUnit\Framework\MockObject\MockObject $service The fake.
 	 */
 	private function stubStorage(FileService $service): void {
-		$service->method('addFile')->willReturnCallback(function (ObjectEntity|string $objectEntity, string $fileName, mixed $content, bool $share = false, array $tags = []): File {
+		$service->method('addFile')->willReturnCallback(function (FileTarget $target, FileUpload $upload): File {
+			[$fileName, $content, $share, $tags] = [$upload->fileName, $upload->content, $upload->share, $upload->tags];
 			if ($this->action === 'saveChat') {
 				$fileName = (string)preg_replace('/\d/', '#', $fileName);
 				$content = (string)preg_replace('/^Saved by.*$/m', 'Saved by', (string)$content);
@@ -697,8 +701,8 @@ class FilesControllerActionsGoldenTest extends TestCase {
 
 			return $this->file;
 		});
-		$service->method('saveFile')->willReturnCallback(function (ObjectEntity $objectEntity, string $fileName, mixed $content, bool $share = false, array $tags = []): File {
-			$this->note(call: 'saveFile', detail: [$fileName, $content, $share, $tags]);
+		$service->method('saveFile')->willReturnCallback(function (ObjectEntity $objectEntity, FileUpload $upload): File {
+			$this->note(call: 'saveFile', detail: [$upload->fileName, $upload->content, $upload->share, $upload->tags]);
 			$this->work(call: 'saveFile');
 			return $this->file;
 		});

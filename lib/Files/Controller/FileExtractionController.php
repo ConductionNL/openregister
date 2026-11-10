@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Files\Service\FileExtractionOptions;
 use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
 use OCA\OpenRegister\Files\Controller\Support\FileExtractionControllerServices;
 use OCA\OpenRegister\Files\Controller\Support\FileExtractionListing;
@@ -370,7 +371,7 @@ class FileExtractionController extends Controller {
 
 		try {
 			// ExtractFile returns void, not an object.
-			$this->textExtractor->extractFile(fileId: $id, forceReExtract: $forceReExtract);
+			$this->textExtractor->extractFile(fileId: $id, options: new FileExtractionOptions(forceReExtract: $forceReExtract));
 
 			return $this->succeeded(body: ['message' => 'File extraction completed']);
 		} catch (NotFoundException $e) {

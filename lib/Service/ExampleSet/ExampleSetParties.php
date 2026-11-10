@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use Psr\Container\ContainerInterface;
@@ -209,8 +210,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 		try {
 			$this->roles()->removeParty(
 				objectUuid: (string) $entry['objectUuid'],
-				partyUuid: (string) $entry['partyUuid'],
-				role: (string) $entry['role']
+				holding: new PartyHolding(partyUuid: (string) $entry['partyUuid'], role: (string) $entry['role'])
 			);
 		} catch (Throwable) {
 			return 'failed';

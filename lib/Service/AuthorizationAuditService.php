@@ -56,24 +56,6 @@ class AuthorizationAuditService {
 	}//end __construct()
 
 	/**
-	 * Log a schema authorization change.
-	 *
-	 * @param int $schemaId The schema ID.
-	 * @param string $schemaTitle The schema title.
-	 * @param array|null $oldAuthorization The previous authorization value.
-	 * @param array|null $newAuthorization The new authorization value.
-	 *
-	 * @return void
-	 *
-	 * @spec exclude Facade plumbing: emits one structured audit log line; sibling of recordRegisterChange
-	 *              (rbac-scopes REQ-002), no distinct behavioral contract.
-	 */
-	public function logSchemaAuthorizationChange(int $schemaId, string $schemaTitle, ?array $oldAuthorization, ?array $newAuthorization): void {
-		$change = new AuthorizationChange(entityId: $schemaId, entityTitle: $schemaTitle, before: $oldAuthorization, after: $newAuthorization);
-		$this->recordSchemaChange(change: $change);
-	}//end logSchemaAuthorizationChange()
-
-	/**
 	 * Record a change to a schema's authorization.
 	 *
 	 * @param AuthorizationChange $change The schema and its old and new authorization.

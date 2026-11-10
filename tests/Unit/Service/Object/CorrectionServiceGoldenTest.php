@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\CorrectionService;
 use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -133,7 +134,7 @@ class CorrectionServiceGoldenTest extends TestCase {
 				return $entry;
 			}
 		);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function ($object, $action, $context, $actorId) use ($o): AuditTrail {
 				$this->trace[] = ['create', $object->getUuid(), $action, $context, $actorId];
 				if (($o['createFails'] ?? false) === true) {
@@ -144,7 +145,7 @@ class CorrectionServiceGoldenTest extends TestCase {
 				$entry->setAction((string)$action);
 				return $entry;
 			}
-		);
+		));
 
 		$trace = &$this->trace;
 		$logger = new class($trace) extends AbstractLogger {

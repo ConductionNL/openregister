@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -240,8 +241,7 @@ class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface
 
 			$kept[] = FlowItems::item(
 				json: (array)($item[FlowItems::JSON] ?? []),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 

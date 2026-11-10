@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Exception\FlowRunExpired;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
@@ -65,7 +66,7 @@ class TaggingNode implements IFlowNode {
 			$json = (array)($item['json'] ?? []);
 			$json['taggedBy'] = $this->id;
 			$json['label'] = (string)($config['label'] ?? '');
-			$out[] = FlowItems::item(json: $json, binary: [], fromItemIndex: $index);
+			$out[] = FlowItems::item(json: $json, options: new FlowItemOptions(binary: [], fromItemIndex: $index));
 		}
 
 		return $out;

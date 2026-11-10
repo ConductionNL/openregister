@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\MappingMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -198,7 +199,7 @@ class MapNode extends LogicNodeBase implements IFlowNode, MapNodeInterface, IFlo
 				throw new RuntimeException(sprintf('Mapping "%s" failed on item %d: %s', $reference, $index, $e->getMessage()), 0, $e);
 			}
 
-			$mapped[] = FlowItems::item(json: $result, binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index);
+			$mapped[] = FlowItems::item(json: $result, options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index));
 		}
 
 		return $mapped;

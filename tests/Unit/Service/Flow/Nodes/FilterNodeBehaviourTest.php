@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
@@ -50,7 +51,7 @@ class FilterNodeBehaviourTest extends TestCase {
 
 	public function testOnlyItemsMatchingTheConditionAreKeptWithTheirOrigin(): void {
 		$items = [
-			FlowItems::item(json: ['status' => 'synced', 'n' => 1], binary: ['f' => ['name' => 'a.pdf']]),
+			FlowItems::item(json: ['status' => 'synced', 'n' => 1], options: new FlowItemOptions(binary: ['f' => ['name' => 'a.pdf']])),
 			FlowItems::item(json: ['status' => 'failed', 'n' => 2]),
 			FlowItems::item(json: ['status' => 'synced', 'n' => 3]),
 		];

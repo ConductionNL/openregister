@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Flow;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
@@ -90,7 +91,7 @@ class SetFieldsNodeTest extends TestCase {
 	}
 
 	public function testBinaryAttachmentsSurviveTheStep(): void {
-		$item = FlowItems::item(json: ['a' => 1], binary: ['file' => ['mimeType' => 'text/plain']]);
+		$item = FlowItems::item(json: ['a' => 1], options: new FlowItemOptions(binary: ['file' => ['mimeType' => 'text/plain']]));
 
 		$out = $this->node->execute(new FlowNodeCall(items: [$item], config: ['set' => ['b' => 2]], context: []));
 

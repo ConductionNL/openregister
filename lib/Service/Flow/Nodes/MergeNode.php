@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -172,8 +173,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 		foreach ($items as $index => $item) {
 			$out[] = FlowItems::item(
 				json: (array)($item[FlowItems::JSON] ?? []),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 
@@ -208,7 +208,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 
 		$out = [];
 		foreach ($order as $value) {
-			$out[] = FlowItems::item(json: $groups[$value]['json'], binary: [], fromItemIndex: $groups[$value]['from']);
+			$out[] = FlowItems::item(json: $groups[$value]['json'], options: new FlowItemOptions(binary: [], fromItemIndex: $groups[$value]['from']));
 		}
 
 		return $out;
@@ -237,8 +237,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 			$seen[$value] = true;
 			$out[] = FlowItems::item(
 				json: $json,
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 
