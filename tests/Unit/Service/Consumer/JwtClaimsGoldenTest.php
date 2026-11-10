@@ -40,6 +40,9 @@ final class JwtClaimsGoldenTest extends TestCase {
 	/**
 	 * Run validateClaims and return the refusal with the clock window it ran in.
 	 *
+	 * @param JwtValidator $validator The validator.
+	 * @param array        $payload   The token payload.
+	 *
 	 * @return array{0: AuthenticationException|null, 1: int, 2: int}
 	 */
 	private function attempt(JwtValidator $validator, array $payload): array {
@@ -56,6 +59,12 @@ final class JwtClaimsGoldenTest extends TestCase {
 
 	/**
 	 * Assert a refusal's message and details; 'time checked' must fall in the call's clock window.
+	 *
+	 * @param array  $attempt The attempt: refusal, clock before, clock after.
+	 * @param string $message The expected message.
+	 * @param array  $details The expected details ('time checked' is checked against the window).
+	 *
+	 * @return void
 	 */
 	private function assertRefused(array $attempt, string $message, array $details): void {
 		[$refusal, $before, $after] = $attempt;
