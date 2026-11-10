@@ -26,6 +26,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
 use OCA\OpenRegister\Db\AuditTrail\HardeningChange;
 use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
+use OCA\OpenRegister\Db\AuditTrail\RegisterAuditEvent;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
 use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
@@ -812,6 +813,23 @@ interface AuditTrailMapperInterface {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function recordExport(ExportOutcome $export): AuditTrail;
+
+	/**
+	 * Create one immutable, hash-chained audit record for a register-level event.
+	 *
+	 * For what happens to a register as a whole rather than to one of its objects, such
+	 * as a compliance export being requested. The row names the register and no object,
+	 * so it stays off every object's timeline, and it is chained and verified like any
+	 * other row.
+	 *
+	 * @param RegisterAuditEvent $event The register id; the action, namespaced as `<area>.<verb>`; the details,
+	 *                                  stored as the result summary; and the actor, the session user when unnamed.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	public function recordRegisterEvent(RegisterAuditEvent $event): AuditTrail;
 
 	/**
 	 * Create one immutable, hash-chained audit record for a slug backfill run.
