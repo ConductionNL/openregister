@@ -149,7 +149,7 @@ class SaveObjectsChunkGuardsGoldenTest extends TestCase {
 		}
 
 		$handler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->createMock(MagicMapper::class), schemaMapper: $this->createMock(SchemaMapperInterface::class), registerMapper: $this->createMock(RegisterMapperInterface::class), saveHandler: $this->createMock(SaveObject::class)),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->createMock(SchemaMapperInterface::class), tables: $this->createMock(MagicMapper::class)), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $session, organisationService: $this->createMock(OrganisationServiceInterface::class)),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
 			checks: new BulkRowChecks(permissionHandler: $permissions, validateHandler: $validator)
