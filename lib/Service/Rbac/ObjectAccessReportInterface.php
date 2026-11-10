@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
@@ -34,15 +35,14 @@ interface ObjectAccessReportInterface {
 	/**
 	 * Who holds which right on one object, and which rule put them there.
 	 *
-	 * @param ObjectEntity $object      The object.
-	 * @param mixed        $registerRef The register it belongs to, as the request named it.
-	 * @param mixed        $schemaRef   The schema it belongs to, as the request named it.
+	 * @param ObjectEntity      $object The object.
+	 * @param RegisterSchemaRef $table  The register and schema it belongs to, as the request named them.
 	 *
 	 * @return array<string, mixed> The access set.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function setFor(ObjectEntity $object, mixed $registerRef, mixed $schemaRef): array;
+	public function setFor(ObjectEntity $object, RegisterSchemaRef $table): array;
 
 	/**
 	 * How that set changed, and what it was at a named moment.
