@@ -46,4 +46,25 @@ final class CredentialMintOptions {
 		public readonly ?string $organisation=null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The options as var_dump() and print_r() show them, with the secret masked.
+	 *
+	 * @return array<string, mixed> The fields, secret replaced by a marker.
+	 *
+	 * @spec exclude ADR-011 value-object plumbing, redaction only
+	 */
+	public function __debugInfo(): array {
+		$secret = null;
+		if ($this->secret !== null) {
+			$secret = '[redacted]';
+		}
+
+		return [
+			'allowedApps'  => $this->allowedApps,
+			'secret'       => $secret,
+			'scope'        => $this->scope,
+			'organisation' => $this->organisation,
+		];
+	}//end __debugInfo()
 }//end class

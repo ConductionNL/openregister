@@ -487,7 +487,7 @@ class CredentialBrokerService {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
 	 */
-	public function mintCredential(CredentialMint $mint, CredentialMintOptions $options): ObjectEntity {
+	public function mintCredential(CredentialMint $mint, #[\SensitiveParameter] CredentialMintOptions $options): ObjectEntity {
 		$data = $this->mintData(mint: $mint, options: $options);
 
 		// Garbage-in prevention: a copy-pasted secret can carry a trailing
@@ -546,7 +546,7 @@ class CredentialBrokerService {
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
-	private function mintData(CredentialMint $mint, CredentialMintOptions $options): array {
+	private function mintData(CredentialMint $mint, #[\SensitiveParameter] CredentialMintOptions $options): array {
 		$name = trim($mint->name);
 		if ($name === '' || trim($mint->provider) === '') {
 			throw new InvalidArgumentException(message: 'A credential requires a name and a provider');
@@ -585,7 +585,7 @@ class CredentialBrokerService {
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
-	private static function mintScope(CredentialMintOptions $options): string {
+	private static function mintScope(#[\SensitiveParameter] CredentialMintOptions $options): string {
 		if ($options->scope === self::SCOPE_ORGANISATION) {
 			return self::SCOPE_ORGANISATION;
 		}
