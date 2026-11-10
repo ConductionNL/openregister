@@ -25,8 +25,6 @@ namespace OCA\OpenRegister\Files\Service\File;
 use OCA\OpenRegister\Event\FileRestrictionAdmitEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\Node;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -51,41 +49,6 @@ class FileRestrictionGuard implements FileRestrictionGuardInterface {
 	private array $memo = [];
 
 	/**
-	 * The rows.
-	 *
-	 * @var FileRestrictionStore
-	 */
-	private readonly FileRestrictionStore $store;
-
-	/**
-	 * The caller.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * The caller's groups.
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
-
-	/**
-	 * Asks apps to admit a caller who is not listed.
-	 *
-	 * @var IEventDispatcher
-	 */
-	private readonly IEventDispatcher $dispatcher;
-
-	/**
-	 * Where a failed lookup is noted.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param FileRestrictionStore  $store      The rows.
@@ -94,16 +57,11 @@ class FileRestrictionGuard implements FileRestrictionGuardInterface {
 	 * @param LoggerInterface       $logger     Where a failed lookup is noted.
 	 */
 	public function __construct(
-		FileRestrictionStore $store,
-		FileRestrictionCaller $caller,
-		IEventDispatcher $dispatcher,
-		LoggerInterface $logger,
+		private readonly FileRestrictionStore $store,
+		private readonly FileRestrictionCaller $caller,
+		private readonly IEventDispatcher $dispatcher,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->store = $store;
-		$this->userSession = $caller->userSession;
-		$this->groupManager = $caller->groupManager;
-		$this->dispatcher = $dispatcher;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -134,7 +92,7 @@ class FileRestrictionGuard implements FileRestrictionGuardInterface {
 			return [];
 		}
 
-		$userId = $this->userSession->getUser()?->getUID();
+		$userId = $this->caller->userSession->getUser()?->getUID();
 		$memoKey = static fn (int $fileId): string => ($userId ?? '') . ':' . $fileId;
 
 		$verdicts = [];
@@ -285,11 +243,11 @@ class FileRestrictionGuard implements FileRestrictionGuardInterface {
 	 * @return list<string> The groups.
 	 */
 	private function callerGroups(): array {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return [];
 		}
 
-		return array_values(array_map('strval', $this->groupManager->getUserGroupIds($user)));
+		return array_values(array_map('strval', $this->caller->groupManager->getUserGroupIds($user)));
 	}//end callerGroups()
 }//end class

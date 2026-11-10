@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -90,18 +91,33 @@ class ConfigurationDraftMapper extends QBMapper implements ConfigurationDraftMap
 		?string $layerRef,
 		string $configKey
 	): ?ConfigurationDraft {
+		$address = new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey);
+		return $this->findAt(setUuid: $setUuid, address: $address);
+	}//end findAtAddress()
+
+	/**
+	 * The pending value one set holds for one address, when it holds one.
+	 *
+	 * @param string               $setUuid The set uuid.
+	 * @param ConfigurationAddress $address The layer, layer reference and configuration key.
+	 *
+	 * @return ConfigurationDraft|null The draft, or null when the set holds none.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	public function findAt(string $setUuid, ConfigurationAddress $address): ?ConfigurationDraft {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('set_uuid', $qb->createNamedParameter($setUuid)))
-			->andWhere($qb->expr()->eq('layer', $qb->createNamedParameter($layer)))
-			->andWhere($qb->expr()->eq('config_key', $qb->createNamedParameter($configKey)))
+			->andWhere($qb->expr()->eq('layer', $qb->createNamedParameter($address->layer)))
+			->andWhere($qb->expr()->eq('config_key', $qb->createNamedParameter($address->configKey)))
 			->setMaxResults(1);
-		$this->whereLayerRef(qb: $qb, layerRef: $layerRef);
+		$this->whereLayerRef(qb: $qb, layerRef: $address->layerRef);
 
 		return $this->findOneOrNull(qb: $qb);
 
-	}//end findAtAddress()
+	}//end findAt()
 
 	/**
 	 * Match the layer reference; a null reference matches the rows without one.
