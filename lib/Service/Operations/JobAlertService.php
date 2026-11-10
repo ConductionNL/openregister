@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\JobRun;
 use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IConfig;
+use OCP\Notification\INotification;
 use Throwable;
 
 /**
@@ -298,28 +299,7 @@ class JobAlertService implements JobAlertServiceInterface {
 	private function deliver(array $breach): void {
 		try {
 			foreach ($this->administrators() as $uid) {
-				$notification = $this->delivery->notifications->createNotification();
-				$notification->setApp(self::APP_ID)
-					->setUser($uid)
-					->setDateTime(new DateTime())
-					->setObject(self::NOTIFICATION_OBJECT, (string)$breach['job'])
-					->setSubject(
-						'operations_job_failure',
-						[
-							'job' => $breach['name'],
-							'failures' => $breach['failures'],
-							'periodMinutes' => $breach['periodMinutes'],
-						]
-					)
-					->setMessage(
-						'operations_job_failure',
-						[
-							'firstFailureAt' => $breach['firstFailureAt'],
-							'firstFailureMessage' => $breach['firstFailureMessage'],
-						]
-					);
-
-				$this->delivery->notifications->notify($notification);
+				$this->delivery->notifications->notify($this->alertFor(uid: $uid, breach: $breach));
 			}
 		} catch (Throwable $exception) {
 			// An alert that cannot be delivered must not take the failing job
@@ -331,6 +311,58 @@ class JobAlertService implements JobAlertServiceInterface {
 		}
 
 	}//end deliver()
+
+	/**
+	 * The alert notification for one administrator.
+	 *
+	 * @param string               $uid    The administrator.
+	 * @param array<string, mixed> $breach The breach.
+	 *
+	 * @return INotification The notification, not yet sent.
+	 */
+	private function alertFor(string $uid, array $breach): INotification {
+		$notification = $this->delivery->notifications->createNotification();
+		$notification->setApp(self::APP_ID)
+			->setUser($uid)
+			->setDateTime(new DateTime())
+			->setObject(self::NOTIFICATION_OBJECT, (string)$breach['job'])
+			->setSubject('operations_job_failure', self::subjectParameters(breach: $breach))
+			->setMessage('operations_job_failure', self::messageParameters(breach: $breach));
+
+		return $notification;
+
+	}//end alertFor()
+
+	/**
+	 * The subject parameters of the alert: which job, how often, over what period.
+	 *
+	 * @param array<string, mixed> $breach The breach.
+	 *
+	 * @return array<string, mixed> The parameters.
+	 */
+	private static function subjectParameters(array $breach): array {
+		return [
+			'job' => $breach['name'],
+			'failures' => $breach['failures'],
+			'periodMinutes' => $breach['periodMinutes'],
+		];
+
+	}//end subjectParameters()
+
+	/**
+	 * The message parameters of the alert: when and how it first failed.
+	 *
+	 * @param array<string, mixed> $breach The breach.
+	 *
+	 * @return array<string, mixed> The parameters.
+	 */
+	private static function messageParameters(array $breach): array {
+		return [
+			'firstFailureAt' => $breach['firstFailureAt'],
+			'firstFailureMessage' => $breach['firstFailureMessage'],
+		];
+
+	}//end messageParameters()
 
 	/**
 	 * The uids the alert goes to.
