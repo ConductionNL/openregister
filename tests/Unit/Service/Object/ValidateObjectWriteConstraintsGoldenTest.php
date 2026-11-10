@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use Throwable;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * Golden record of validateReadOnlyConstraints() and validateImmutableConstraints() over omitted,
@@ -62,8 +63,8 @@ class ValidateObjectWriteConstraintsGoldenTest extends TestCase {
 			$schema = new Schema();
 			$schema->setProperties($properties);
 			$validator = $this->validator(count: 0);
-			$actual['readOnly: ' . $name]  = $this->outcome(fn () => $validator->validateReadOnlyConstraints($incoming, $existing, $schema));
-			$actual['immutable: ' . $name] = $this->outcome(fn () => $validator->validateImmutableConstraints($incoming, $existing, $schema));
+			$actual['readOnly: ' . $name]  = $this->outcome(fn () => $validator->validateReadOnlyConstraints(new WriteConstraintCheck($incoming, $existing), $schema));
+			$actual['immutable: ' . $name] = $this->outcome(fn () => $validator->validateImmutableConstraints(new WriteConstraintCheck($incoming, $existing), $schema));
 		}
 
 		foreach ($this->uniqueScenarios() as $name => [$unique, $object, $count]) {
