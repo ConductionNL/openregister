@@ -419,6 +419,12 @@ class MagicBulkHandler {
 			}
 		} catch (\Exception $e) {
 			// Use default buffer on error.
+			$this->logger->debug(
+				message: '[MagicBulkHandler] Could not size the packet buffer, keeping the default',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 	}//end initializeMaxPacketSize()
 

@@ -814,8 +814,15 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 					_rbac: $_rbac,
 					_multitenancy: $_multitenancy
 				);
-			} catch (DoesNotExistException|MultipleObjectsReturnedException|DBException) {
-				// Catch all exceptions but do nothing.
+			} catch (DoesNotExistException|MultipleObjectsReturnedException|DBException $e) {
+				// Ids that cannot be loaded are left out of the result.
+				$this->logger->debug(
+					message: '[SchemaMapper] findMultiple skips a schema id that could not be loaded',
+					context: [
+						'id' => $id,
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}
 

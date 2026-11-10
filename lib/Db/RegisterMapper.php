@@ -489,10 +489,24 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		foreach ($ids as $id) {
 			try {
 				$result[] = $this->find(id: $id, _rbac: $_rbac, _multitenancy: $_multitenancy);
-			} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException) {
-				// Catch all exceptions but do nothing.
-			} catch (\OCP\DB\Exception) {
-				// Catch all exceptions but do nothing.
+			} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+				// Ids that do not resolve to exactly one register are left out of the result.
+				$this->logger->debug(
+					message: '[RegisterMapper] findMultiple skips a register id that does not resolve',
+					context: [
+						'id' => $id,
+						'exception' => $e->getMessage(),
+					]
+				);
+			} catch (\OCP\DB\Exception $e) {
+				// A database error drops this id from the result rather than failing the whole batch.
+				$this->logger->warning(
+					message: '[RegisterMapper] findMultiple skips a register after a database error',
+					context: [
+						'id' => $id,
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}
 
