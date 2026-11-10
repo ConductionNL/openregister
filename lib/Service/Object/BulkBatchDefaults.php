@@ -41,8 +41,8 @@ final class BulkBatchDefaults {
 	 * @param Schema|string|int|null   $schema   Default schema context (null = mixed-schema).
 	 */
 	public function __construct(
-		public readonly Register|string|int|null $register,
-		public readonly Schema|string|int|null $schema,
+		public readonly Register|string|int|null $register=null,
+		public readonly Schema|string|int|null $schema=null,
 	) {
 	}//end __construct()
 }//end class

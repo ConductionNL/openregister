@@ -27,6 +27,8 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 
 /**
  * Integration tests for ObjectService
@@ -1262,15 +1264,14 @@ class ObjectServiceIntegrationTest extends TestCase {
 		}
 
 		$result = $this->service->saveObjects(
-			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true
+			objects: $objects,
+			options: new BulkSaveOptions(
+				defaults: new BulkBatchDefaults(register: $this->testRegister, schema: $this->testSchema),
+				validation: false,
+				events: false
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);

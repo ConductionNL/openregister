@@ -21,6 +21,7 @@ use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 
 /**
  * Golden record of the schema-wide validate-and-save run over every branch: the schema and
@@ -168,13 +169,25 @@ class ValidationHandlerSchemaRunGoldenTest extends TestCase {
 			/**
 			 * The bulk save double.
 			 *
-			 * @param array<int, mixed> $objects The chunk.
-			 * @param mixed             ...$rest  The named options.
+			 * @param array<int, mixed> $objects       The chunk.
+			 * @param BulkSaveOptions   $options       The register, schema, validation, events and audit choices.
+			 * @param bool              $_rbac         Whether RBAC applies.
+			 * @param bool              $_multitenancy Whether multitenancy applies.
 			 *
 			 * @return array<string, mixed>
 			 */
-			public function saveObjects(array $objects, mixed ...$rest): array {
-				return $this->test->bulkSave(objects: $objects, options: $rest);
+			public function saveObjects(array $objects, BulkSaveOptions $options = new BulkSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): array {
+				return $this->test->bulkSave(
+					objects: $objects,
+					options: [
+						'register' => $options->defaults->register,
+						'schema' => $options->defaults->schema,
+						'_rbac' => $_rbac,
+						'_multitenancy' => $_multitenancy,
+						'validation' => $options->validation,
+						'events' => $options->events,
+					]
+				);
 			}//end saveObjects()
 		}, 'saveObject'];
 	}//end saveCallback()

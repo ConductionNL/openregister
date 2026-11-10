@@ -1133,8 +1133,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		try {
 			$result = $this->objectService->saveObjects(
 				objects: [['title' => 'Bulk op test ' . uniqid()]],
-				register: $this->testRegister,
-				schema: $this->testSchema,
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: $this->testRegister, schema: $this->testSchema)
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1164,8 +1165,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		try {
 			$result = $this->objectService->saveObjects(
 				objects: [['title' => 'Anonymous bulk ' . uniqid()]],
-				register: $this->testRegister,
-				schema: $this->testSchema,
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: $this->testRegister, schema: $this->testSchema)
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

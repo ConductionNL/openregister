@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCP\IL10N;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 
 /**
  * The bulk write path of an object-write step.
@@ -157,10 +159,11 @@ final class ObjectWriteBulk {
 	private function save(ObjectWriteBulkPage $page): void {
 		$page->result = $this->objects->saveObjects(
 			objects: array_values($page->rows),
-			register: $page->plan->register,
-			schema: $page->plan->schema,
-			validation: true,
-			events: false
+			options: new BulkSaveOptions(
+				defaults: new BulkBatchDefaults(register: $page->plan->register, schema: $page->plan->schema),
+				validation: true,
+				events: false
+			)
 		);
 
 		$this->guardFailures(result: $page->result);

@@ -41,6 +41,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 
 /**
  * Characterisation of BulkController::save() path selection and arguments.
@@ -92,7 +93,8 @@ class BulkSavePathsCharacterisationTest extends TestCase {
 			}
 		);
 		$objects->method('saveObjects')->willReturnCallback(
-			function (...$args) use ($checkedFail): array {
+			function (array $objects, BulkSaveOptions $options = new BulkSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($checkedFail): array {
+				$args = [$objects, $options->defaults->register, $options->defaults->schema, $_rbac, $_multitenancy, $options->validation, $options->events, true, true, $options->audit];
 				$this->calls[] = ['checked', array_slice($args, 0, 7)];
 				if ($checkedFail === true) {
 					return [

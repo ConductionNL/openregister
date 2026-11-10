@@ -25,6 +25,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
 
 class BulkControllerTest extends TestCase {
 	private BulkController $controller;
@@ -440,12 +441,15 @@ class BulkControllerTest extends TestCase {
 			->method('saveObjects')
 			->with(
 				$this->equalTo([['name' => 'obj1']]),
-				$this->equalTo(1),
-				$this->isNull(),  // schema should be null for mixed mode
+				// Schema should be null for mixed mode.
+				$this->callback(
+					static fn (BulkSaveOptions $options): bool => $options->defaults->register == 1
+						&& $options->defaults->schema === null
+						&& $options->validation === true
+						&& $options->events === false
+				),
 				$this->equalTo(true),
-				$this->equalTo(true),
-				$this->equalTo(true),
-				$this->equalTo(false)
+				$this->equalTo(true)
 			)
 			->willReturn([
 				'statistics' => ['saved' => 1, 'updated' => 0],

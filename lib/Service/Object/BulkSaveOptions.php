@@ -43,10 +43,10 @@ final class BulkSaveOptions {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		public readonly BulkBatchDefaults $defaults,
-		public readonly bool $validation,
-		public readonly bool $events,
-		public readonly bool $audit,
+		public readonly BulkBatchDefaults $defaults=new BulkBatchDefaults(),
+		public readonly bool $validation=false,
+		public readonly bool $events=false,
+		public readonly bool $audit=true,
 	) {
 	}//end __construct()
 }//end class

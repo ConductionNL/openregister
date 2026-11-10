@@ -86,7 +86,7 @@ class ObjectServiceSaveObjectsGoldenTest extends TestCase {
 			'nothing changed' => [['stats' => ['objectsCreated' => 0, 'objectsUpdated' => 0]] + $base],
 			'no statistics' => [['stats' => []] + $base],
 			'invalidation fails' => [['cacheFails' => true] + $base],
-			'all flags' => [['args' => ['_rbac' => false, '_multitenancy' => false, 'validation' => true, 'events' => true, 'deduplicateIds' => false, 'enrich' => false, '_audit' => false]] + $base],
+			'all flags' => [['args' => ['options' => new BulkSaveOptions(validation: true, events: true, audit: false), '_rbac' => false, '_multitenancy' => false]] + $base],
 		];
 	}
 
@@ -94,7 +94,7 @@ class ObjectServiceSaveObjectsGoldenTest extends TestCase {
 	 * @dataProvider scenarios
 	 */
 	public function testSaveObjectsGolden(array $s): void {
-		$result = $this->service($s)->saveObjects([['a' => 1]], ...$s['args']);
+		$result = $this->service($s)->saveObjects(...(['objects' => [['a' => 1]]] + $s['args']));
 		$this->calls[] = ['result', $result];
 
 		$file = __DIR__ . '/fixtures/object-service-save-objects-golden.json';

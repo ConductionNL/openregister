@@ -5895,16 +5895,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * - Time complexity: O(N*M*P) → O(N*M)
      * - Processing speed: 2-3x faster for large datasets
      *
-     * @param array                    $objects        Array of objects in serialized format
-     * @param Register|string|int|null $register       Optional register filter for validation
-     * @param Schema|string|int|null   $schema         Optional schema filter for validation
-     * @param bool                     $_rbac          Whether to apply RBAC filtering
-     * @param bool                     $_multitenancy  Whether to apply multi-organization filtering
-     * @param bool                     $validation     Whether to validate objects against schema definitions
-     * @param bool                     $events         Whether to dispatch object lifecycle events
-     * @param bool                     $deduplicateIds Whether to deduplicate objects with same ID
-     * @param bool                     $enrich         Whether to enrich objects with metadata
-     * @param bool                     $_audit         Whether to write audit trail rows (bulk mirror of `silent`)
+     * @param array           $objects       Array of objects in serialized format
+     * @param BulkSaveOptions $options       The register and schema for rows that name none (optional
+     *                                       filters for validation), whether to validate objects
+     *                                       against schema definitions, whether to dispatch object
+     *                                       lifecycle events, and whether to write audit trail rows
+     *                                       (bulk mirror of `silent`)
+     * @param bool            $_rbac         Whether to apply RBAC filtering
+     * @param bool            $_multitenancy Whether to apply multi-organization filtering
      *
      * @throws \InvalidArgumentException If required fields are missing from any object
      * @throws \OCP\DB\Exception If a database error occurs during bulk operations
@@ -5916,75 +5914,52 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @phpstan-return array<string, mixed>
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every argument after $schema is a per-call
-     *   policy switch that the single-object saveObject() also takes, and the two paths have to
-     *   offer the same switches or a caller cannot move between them — which is exactly what the
-     *   `$_audit` flag exists for. Collapsing them into an options object is worth doing, but it
-     *   is a change to BOTH save paths and all their callers, not to this signature alone.
-     *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function saveObjects(
         array $objects,
-        Register|string|int|null $register=null,
-        Schema|string|int|null $schema=null,
+        BulkSaveOptions $options=new BulkSaveOptions(),
         bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $validation=false,
-        bool $events=false,
-        bool $deduplicateIds=true,
-        bool $enrich=true,
-        bool $_audit=true
+        bool $_multitenancy=true
     ): array {
         // A BULK SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
         // Same contract as saveObject(); see restoreScopeContext().
-        $options = [
-            'register'       => $register,
-            'schema'         => $schema,
-            '_rbac'          => $_rbac,
-            '_multitenancy'  => $_multitenancy,
-            '_validation'    => $validation,
-            '_events'        => $events,
-            'deduplicateIds' => $deduplicateIds,
-            'enrich'         => $enrich,
-            '_audit'         => $_audit,
-        ];
+        $access = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
 
         return $this->preservingScope(
-            operation: fn (): array => $this->saveBulkWithinScope(objects: $objects, options: $options)
+            operation: fn (): array => $this->saveBulkWithinScope(objects: $objects, options: $options, access: $access)
         );
     }//end saveObjects()
 
     /**
      * Runs one bulk save inside the context saveObjects() keeps.
      *
-     * @param array $objects The objects to save.
-     * @param array $options The arguments of the saveObjects() call.
+     * @param array           $objects The objects to save.
+     * @param BulkSaveOptions $options The register, schema, validation, events and audit choices of the call.
+     * @param AccessFlags     $access  The caller's RBAC and multitenancy flags.
      *
      * @phpstan-param array<int, array<string, mixed>> $objects
-     * @phpstan-param array<string, mixed>             $options
      * @psalm-param   array<int, array<string, mixed>> $objects
-     * @psalm-param   array<string, mixed>             $options
      *
      * @return array The bulk result of the SaveObjects handler.
      *
      * @spec exclude Private step of saveObjects(); write behaviour owned by the SaveObjects handler.
      */
-    private function saveBulkWithinScope(array $objects, array $options): array
+    private function saveBulkWithinScope(array $objects, BulkSaveOptions $options, AccessFlags $access): array
     {
-        $this->openBulkSave(register: $options['register'], schema: $options['schema']);
+        $this->openBulkSave(register: $options->defaults->register, schema: $options->defaults->schema);
 
         $bulkOptions = new BulkSaveOptions(
             defaults: new BulkBatchDefaults(register: $this->currentRegister, schema: $this->currentSchema),
-            validation: $options['_validation'],
-            events: $options['_events'],
-            audit: $options['_audit']
+            validation: $options->validation,
+            events: $options->events,
+            audit: $options->audit
         );
         $bulkResult  = $this->saveObjectsHandler->saveObjects(
             objects: $objects,
             options: $bulkOptions,
-            _rbac: $options['_rbac'],
-            _multitenancy: $options['_multitenancy']
+            _rbac: $access->rbac,
+            _multitenancy: $access->multitenancy
         );
 
         $this->invalidateAfterBulkSave(bulkResult: $bulkResult);

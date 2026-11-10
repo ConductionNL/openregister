@@ -71,6 +71,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\BulkSaveOptions;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 
 /**
  * A WRITE MUST NOT SCOPE THE NEXT READ.
@@ -579,8 +581,9 @@ class ObjectServiceContextRestorationTest extends TestCase {
 
 		$this->service->saveObjects(
 			objects: [['name' => 'bulk row']],
-			register: self::BROKER_REGISTER,
-			schema: self::BROKER_SCHEMA,
+			options: new BulkSaveOptions(
+				defaults: new BulkBatchDefaults(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
