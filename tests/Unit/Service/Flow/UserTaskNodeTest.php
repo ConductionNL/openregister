@@ -12,6 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -166,11 +167,11 @@ class UserTaskNodeTest extends TestCase {
 			);
 
 		try {
-			$this->node->execute(
-				$this->items(),
-				$this->config(['sla' => ['value' => 5, 'unit' => 'businessDays'], 'ladder' => 'awb-standard']),
-				$this->context($state)
-			);
+			$this->node->execute(new FlowNodeCall(
+				items: $this->items(),
+				config: $this->config(['sla' => ['value' => 5, 'unit' => 'businessDays'], 'ladder' => 'awb-standard']),
+				context: $this->context($state)
+			));
 		} catch (FlowSuspension $suspension) {
 			// Suspension is the normal outcome; the arming is the subject here.
 		}
@@ -250,7 +251,7 @@ class UserTaskNodeTest extends TestCase {
 		$this->timers->expects($this->never())->method('arm');
 
 		try {
-			$this->node->execute($this->items(), $this->config(), $this->context($state));
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 		} catch (FlowSuspension $suspension) {
 			// Expected.
 		}
@@ -274,11 +275,11 @@ class UserTaskNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node->execute(
-			$this->items(),
-			$this->config(['sla' => ['value' => 5, 'unit' => 'businessDays']]),
-			$this->context(new FlowResumeState())
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items(),
+			config: $this->config(['sla' => ['value' => 5, 'unit' => 'businessDays']]),
+			context: $this->context(new FlowResumeState())
+		));
 	}//end testAnUnarmableSlaFailsRatherThanSilentlyLosingTheDeadline()
 
 	/**
@@ -309,7 +310,7 @@ class UserTaskNodeTest extends TestCase {
 			->willReturn($created);
 
 		try {
-			$this->node->execute($this->items(), $this->config(), $this->context($state));
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 			$this->fail('Expected the node to suspend.');
 		} catch (FlowSuspension $suspension) {
 			$this->assertNotNull($suspension->getResumeAt(), 'a null resumeAt is the one shape the 14-day reaper fails');
@@ -330,7 +331,7 @@ class UserTaskNodeTest extends TestCase {
 	public function testAnEmptyBranchCreatesNothingAndDoesNotSuspend(): void {
 		$this->bridge->expects($this->never())->method('createTask');
 
-		$out = $this->node->execute([], $this->config(), $this->context(new FlowResumeState()));
+		$out = $this->node->execute(new FlowNodeCall(items: [], config: $this->config(), context: $this->context(new FlowResumeState())));
 
 		$this->assertSame([], $out);
 	}//end testAnEmptyBranchCreatesNothingAndDoesNotSuspend()
@@ -352,7 +353,7 @@ class UserTaskNodeTest extends TestCase {
 		$this->bridge->method('taskOrNull')->with('t-1')->willReturn($this->task(state: Task::STATE_ENABLED));
 
 		try {
-			$this->node->execute($this->items(), $this->config(), $this->context($state));
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 			$this->fail('Expected the node to suspend again.');
 		} catch (FlowSuspension $suspension) {
 			$this->assertNotNull($suspension->getResumeAt());
@@ -378,7 +379,7 @@ class UserTaskNodeTest extends TestCase {
 
 		$this->expectException(FlowSuspension::class);
 
-		$this->node->execute($this->items(), $this->config(), $this->context($state));
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 	}//end testAClaimIsNotACompletion()
 
 	/**
@@ -392,11 +393,11 @@ class UserTaskNodeTest extends TestCase {
 
 		$this->expectException(FlowSuspension::class);
 
-		$this->node->execute(
-			$this->items(),
-			$this->config(),
-			$this->context($state, extra: [FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approve', 'by' => 'stranger']])
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items(),
+			config: $this->config(),
+			context: $this->context($state, extra: [FlowRunService::SIGNAL_CONTEXT_KEY => ['decision' => 'approve', 'by' => 'stranger']])
+		));
 	}//end testASignalWithADecisionDoesNotAnswerForThePerformer()
 
 	/**
@@ -409,7 +410,7 @@ class UserTaskNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/resume slot/');
 
-		$this->node->execute($this->items(), $this->config(), ['runUuid' => 'run-1']);
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: ['runUuid' => 'run-1']));
 	}//end testANodeWithoutAResumeSlotRefusesToRun()
 
 	/**
@@ -423,7 +424,7 @@ class UserTaskNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/t-gone/');
 
-		$this->node->execute($this->items(), $this->config(), $this->context($state));
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 	}//end testAVanishedTaskFailsTheStepRatherThanInventingAnAnswer()
 
 	// ---- Continuation and outcome placement --------------------------------
@@ -441,11 +442,11 @@ class UserTaskNodeTest extends TestCase {
 		$done->setCompletedBy('alice');
 		$this->bridge->method('taskOrNull')->willReturn($done);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['id' => 1]), FlowItems::item(json: ['id' => 2])],
-			$this->config(),
-			$this->context($state)
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['id' => 1]), FlowItems::item(json: ['id' => 2])],
+			config: $this->config(),
+			context: $this->context($state)
+		));
 
 		$this->assertCount(2, $out);
 		foreach ($out as $item) {
@@ -485,11 +486,11 @@ class UserTaskNodeTest extends TestCase {
 		$done->setResponses(['reason' => 'binnen mandaat', 'amount' => 250]);
 		$this->bridge->method('taskOrNull')->willReturn($done);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['id' => 1])],
-			$this->config(),
-			$this->context($state)
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['id' => 1])],
+			config: $this->config(),
+			context: $this->context($state)
+		));
 
 		$bag = $out[0][FlowItems::JSON]['task'];
 		$this->assertArrayHasKey('answers', $bag, 'the form answers must leave the node');
@@ -514,11 +515,11 @@ class UserTaskNodeTest extends TestCase {
 		$done->setResponses(null);
 		$this->bridge->method('taskOrNull')->willReturn($done);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['id' => 1])],
-			$this->config(),
-			$this->context($state)
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['id' => 1])],
+			config: $this->config(),
+			context: $this->context($state)
+		));
 
 		$bag = $out[0][FlowItems::JSON]['task'];
 		$this->assertArrayHasKey('answers', $bag, 'the key is always present');
@@ -541,7 +542,7 @@ class UserTaskNodeTest extends TestCase {
 		$this->bridge->method('taskOrNull')->willReturn($done);
 		$this->bridge->expects($this->once())->method('recordHeartbeatRecovery')->with($done);
 
-		$out = $this->node->execute($this->items(), $this->config(), $this->context($state));
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 
 		$this->assertSame('approved', $out[0][FlowItems::JSON]['task']['outcome'], 'the recovery applies the outcome exactly as the signal path would');
 	}//end testAHeartbeatRecoveredCompletionIsAuditedOnTheTask()
@@ -560,11 +561,11 @@ class UserTaskNodeTest extends TestCase {
 		$this->bridge->method('taskOrNull')->willReturn($done);
 		$this->bridge->expects($this->never())->method('recordHeartbeatRecovery');
 
-		$out = $this->node->execute(
-			$this->items(),
-			$this->config(),
-			$this->context($state, extra: [FlowRunService::SIGNAL_CONTEXT_KEY => []])
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items(),
+			config: $this->config(),
+			context: $this->context($state, extra: [FlowRunService::SIGNAL_CONTEXT_KEY => []])
+		));
 
 		$this->assertSame('approved', $out[0][FlowItems::JSON]['task']['outcome']);
 	}//end testASignalDeliveredCompletionRecordsNoHeartbeatRecovery()
@@ -585,7 +586,7 @@ class UserTaskNodeTest extends TestCase {
 		$done->setCompletedBy('deputy');
 		$this->bridge->method('taskOrNull')->willReturn($done);
 
-		$out = $this->node->execute($this->items(), $this->config(), $this->context($state));
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 
 		$bag = $out[0][FlowItems::JSON]['task'];
 		$this->assertSame('deputy', $bag['completedBy']);
@@ -604,11 +605,11 @@ class UserTaskNodeTest extends TestCase {
 		$done->setOutcome('done');
 		$this->bridge->method('taskOrNull')->willReturn($done);
 
-		$out = $this->node->execute(
-			[FlowItems::item(json: ['id' => 1]), 'not an item'],
-			$this->config(['outcomeKey' => 'legalReview']),
-			$this->context($state)
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['id' => 1]), 'not an item'],
+			config: $this->config(['outcomeKey' => 'legalReview']),
+			context: $this->context($state)
+		));
 
 		$this->assertSame('done', $out[0][FlowItems::JSON]['legalReview']['outcome']);
 		$this->assertArrayNotHasKey('task', $out[0][FlowItems::JSON]);
@@ -629,7 +630,7 @@ class UserTaskNodeTest extends TestCase {
 		$done->setComment('Missing signature');
 		$this->bridge->method('taskOrNull')->willReturn($done);
 
-		$out = $this->node->execute($this->items(), $this->config(), $this->context($state));
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state)));
 
 		$this->assertTrue($out[0][FlowItems::JSON]['task']['rejected']);
 		$this->assertTrue($out[0][FlowItems::JSON]['task']['decided']);
@@ -647,7 +648,7 @@ class UserTaskNodeTest extends TestCase {
 		$this->bridge->method('taskOrNull')->willReturn($done);
 
 		try {
-			$this->node->execute($this->items(), $this->config(['failOnReject' => true]), $this->context($state));
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(['failOnReject' => true]), context: $this->context($state)));
 			$this->fail('Expected a FlowStop.');
 		} catch (FlowStop $stop) {
 			$this->assertTrue($stop->isError());
@@ -667,7 +668,7 @@ class UserTaskNodeTest extends TestCase {
 		$ended->setOutcome('expired');
 		$this->bridge->method('taskOrNull')->willReturn($ended);
 
-		$out = $this->node->execute($this->items(), $this->config(['failOnReject' => true]), $this->context($state));
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(['failOnReject' => true]), context: $this->context($state)));
 
 		$bag = $out[0][FlowItems::JSON]['task'];
 		$this->assertFalse($bag['decided']);
@@ -694,11 +695,11 @@ class UserTaskNodeTest extends TestCase {
 			->with($this->anything(), 'run-1', 'second', 'owner')
 			->willReturn($this->task(state: Task::STATE_ACTIVE, uuid: 't-second'));
 
-		$afterFirst = $this->node->execute($this->items(), $this->config(), $this->context($state, nodeId: 'first'));
+		$afterFirst = $this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(), context: $this->context($state, nodeId: 'first')));
 		$this->assertSame('approved', $afterFirst[0][FlowItems::JSON]['task']['outcome']);
 
 		try {
-			$this->node->execute($afterFirst, $this->config(), $this->context($state, nodeId: 'second'));
+			$this->node->execute(new FlowNodeCall(items: $afterFirst, config: $this->config(), context: $this->context($state, nodeId: 'second')));
 			$this->fail('The second node must ask its own question.');
 		} catch (FlowSuspension) {
 			// Expected.
@@ -714,7 +715,7 @@ class UserTaskNodeTest extends TestCase {
 		$this->bridge->method('createTask')->willReturn($this->task(state: Task::STATE_ACTIVE));
 
 		try {
-			$this->node->execute($this->items(), $this->config(['heartbeatMinutes' => 1]), $this->context(new FlowResumeState()));
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(['heartbeatMinutes' => 1]), context: $this->context(new FlowResumeState())));
 			$this->fail('Expected the node to suspend.');
 		} catch (FlowSuspension $suspension) {
 			$this->assertGreaterThan((new DateTime())->modify('+4 minutes'), $suspension->getResumeAt());
@@ -730,7 +731,7 @@ class UserTaskNodeTest extends TestCase {
 		$this->bridge->method('createTask')->willReturn($this->task(state: Task::STATE_ACTIVE));
 
 		try {
-			$this->node->execute($this->items(), $this->config(['advance' => 'all']), $this->context($state));
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: $this->config(['advance' => 'all']), context: $this->context($state)));
 		} catch (FlowSuspension) {
 			// Expected.
 		}

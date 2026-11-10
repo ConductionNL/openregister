@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCP\IL10N;
@@ -118,11 +119,11 @@ class SubFlowNodeFanOutGoldenTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
-			$this->items(),
-			['flowId' => 'child', 'fanOut' => true],
-			['flowStack' => ['parent'], 'runAs' => 'alice']
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items(),
+			config: ['flowId' => 'child', 'fanOut' => true],
+			context: ['flowStack' => ['parent'], 'runAs' => 'alice']
+		));
 
 		$this->assertSame([1, 2, 2, 3, 3, 3], array_map(static fn (array $item): int => $item['json']['from'], $out));
 		$this->assertSame([[$this->items()[0]], [$this->items()[1]], [$this->items()[2]]], $seeds);
@@ -145,7 +146,7 @@ class SubFlowNodeFanOutGoldenTest extends TestCase {
 	public function testAFireAndForgetFanOutQueuesOneChildPerItem(): void {
 		$this->runs->expects($this->never())->method('execute');
 
-		$out = $this->node->execute($this->items(), ['flowId' => 'child', 'fanOut' => true, 'wait' => false], []);
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items(), config: ['flowId' => 'child', 'fanOut' => true, 'wait' => false], context: []));
 
 		$this->assertSame($this->items(), $out);
 		$this->assertSame(
@@ -162,7 +163,7 @@ class SubFlowNodeFanOutGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testWithoutFanOutOneChildTakesEveryItem(): void {
-		$this->node->execute($this->items(), ['flowId' => 'child', 'wait' => false, 'fanOut' => 'yes'], []);
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: ['flowId' => 'child', 'wait' => false, 'fanOut' => 'yes'], context: []));
 
 		$this->assertCount(1, $this->queued);
 		$this->assertArrayNotHasKey('payload', ($this->queued[0]['context'] ?? $this->queued[0][3]));
@@ -175,7 +176,7 @@ class SubFlowNodeFanOutGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFanOutOverNoItemsStartsNoChild(): void {
-		$this->assertSame([], $this->node->execute([], ['flowId' => 'child', 'fanOut' => true], []));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall(items: [], config: ['flowId' => 'child', 'fanOut' => true], context: [])));
 		$this->assertSame([], $this->queued);
 
 	}//end testAFanOutOverNoItemsStartsNoChild()

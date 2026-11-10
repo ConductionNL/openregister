@@ -13,6 +13,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunStores;
@@ -72,7 +73,9 @@ class CountingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
 		$this->calls++;
 		$this->lastConfig = $config;
 
@@ -112,7 +115,7 @@ class ExplodingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
 		throw new RuntimeException('the node refused');
 	}
 }
@@ -142,7 +145,7 @@ class SuspendingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
 		throw new FlowSuspension(new \DateTime('@1900000000'), 'waiting for nothing in particular');
 	}
 }
