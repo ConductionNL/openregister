@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -60,51 +58,46 @@ class AdministeredValidationRunLog {
 	/**
 	 * Record a validation that fired as a warning.
 	 *
-	 * @param ObjectEntity         $object The object being saved.
-	 * @param Schema               $schema Its schema.
-	 * @param array<string, mixed> $entry  The outcome.
+	 * @param ValidatedWrite       $write The object being saved and its schema.
+	 * @param array<string, mixed> $entry The outcome.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
-	public function recordWarning(ObjectEntity $object, Schema $schema, array $entry): void {
-		$this->record(object: $object, schema: $schema, entry: $entry, verdict: RuleVocabulary::VERDICT_FIRED);
+	public function recordWarning(ValidatedWrite $write, array $entry): void {
+		$this->record(write: $write, verdict: new ValidationVerdict(entry: $entry, verdict: RuleVocabulary::VERDICT_FIRED));
 	}//end recordWarning()
 
 	/**
 	 * Record a validation that refused the save.
 	 *
-	 * @param ObjectEntity         $object The object being saved.
-	 * @param Schema               $schema Its schema.
-	 * @param array<string, mixed> $entry  The outcome.
+	 * @param ValidatedWrite       $write The object being saved and its schema.
+	 * @param array<string, mixed> $entry The outcome.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
-	public function recordRefusal(ObjectEntity $object, Schema $schema, array $entry): void {
-		$this->record(object: $object, schema: $schema, entry: $entry, verdict: RuleVocabulary::VERDICT_REFUSED);
+	public function recordRefusal(ValidatedWrite $write, array $entry): void {
+		$this->record(write: $write, verdict: new ValidationVerdict(entry: $entry, verdict: RuleVocabulary::VERDICT_REFUSED));
 	}//end recordRefusal()
 
 	/**
 	 * Record one validation outcome on the rule run log.
 	 *
-	 * @param ObjectEntity         $object  The object.
-	 * @param Schema               $schema  Its schema.
-	 * @param array<string, mixed> $entry   The outcome.
-	 * @param string               $verdict The verdict to record.
+	 * @param ValidatedWrite    $write   The object and its schema.
+	 * @param ValidationVerdict $verdict The outcome and the verdict to record.
 	 *
 	 * @return void
 	 */
-	private function record(ObjectEntity $object, Schema $schema, array $entry, string $verdict): void {
-		$slug = (string)($schema->getSlug() ?? '');
-		if ($slug === '' || (string)($entry['validation'] ?? '') === '') {
+	private function record(ValidatedWrite $write, ValidationVerdict $verdict): void {
+		if ($write->schemaSlug() === '' || $verdict->validation() === '') {
 			return;
 		}
 
 		try {
-			$this->write(object: $object, slug: $slug, entry: $entry, verdict: $verdict);
+			$this->write(write: $write, verdict: $verdict);
 		} catch (Throwable $e) {
 			// The run log is a courtesy on a decision already taken. Losing the
 			// row must never turn a refusal into a 500.
@@ -115,46 +108,24 @@ class AdministeredValidationRunLog {
 	/**
 	 * Write one validation outcome to the rule run log.
 	 *
-	 * @param ObjectEntity         $object  The object.
-	 * @param string               $slug    Its schema's slug.
-	 * @param array<string, mixed> $entry   The outcome, naming its validation.
-	 * @param string               $verdict The verdict to record.
-	 *
-	 * @return void
-	 */
-	private function write(ObjectEntity $object, string $slug, array $entry, string $verdict): void {
-		$this->ruleRuns->record(
-			subject: new RuleRunSubject(
-				ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_ADMINISTERED_VALIDATION, schemaSlug: $slug, key: (string)$entry['validation']),
-				schemaSlug: $slug,
-				objectUuid: ($object->getUuid() ?? null),
-				registerSlug: ($object->getRegister() ?? null)
-			),
-			trace: $this->traceOf(entry: $entry, verdict: $verdict)
-		);
-	}//end write()
-
-	/**
-	 * The trace one outcome is logged with.
-	 *
 	 * An outcome that could not be evaluated is logged as an error whatever
 	 * verdict the caller named, because nothing was decided.
 	 *
-	 * @param array<string, mixed> $entry   The outcome.
-	 * @param string               $verdict The verdict the caller names.
+	 * @param ValidatedWrite    $write   The object and its schema, which has a slug.
+	 * @param ValidationVerdict $verdict The outcome, naming its validation.
 	 *
-	 * @return RuleTrace The trace.
+	 * @return void
 	 */
-	private function traceOf(array $entry, string $verdict): RuleTrace {
-		$entryVerdict = $verdict;
-		if (($entry['unevaluable'] ?? false) === true) {
-			$entryVerdict = RuleVocabulary::VERDICT_ERROR;
-		}
-
-		return new RuleTrace(
-			verdict: $entryVerdict,
-			operand: implode(', ', ($entry['properties'] ?? [])),
-			message: (string)($entry['message'] ?? '')
+	private function write(ValidatedWrite $write, ValidationVerdict $verdict): void {
+		$slug = $write->schemaSlug();
+		$this->ruleRuns->record(
+			subject: new RuleRunSubject(
+				ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_ADMINISTERED_VALIDATION, schemaSlug: $slug, key: $verdict->validation()),
+				schemaSlug: $slug,
+				objectUuid: ($write->object->getUuid() ?? null),
+				registerSlug: ($write->object->getRegister() ?? null)
+			),
+			trace: $verdict->trace()
 		);
-	}//end traceOf()
+	}//end write()
 }//end class
