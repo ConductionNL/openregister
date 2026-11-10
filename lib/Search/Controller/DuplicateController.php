@@ -404,7 +404,10 @@ class DuplicateController extends Controller {
 		}
 
 		if ($this->mayDismiss(register: $register, schema: $schema) === false) {
-			return $this->notInADismissGroup();
+			return new JSONResponse(
+				['error' => 'You are not in a group this schema allows to dismiss duplicate pairs.'],
+				Http::STATUS_FORBIDDEN
+			);
 		}
 
 		$row = $this->dismissals->undismiss(
