@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Handoff;
 
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\HandoffQueueEntry;
 use OCA\OpenRegister\Db\HandoffQueueEntryMapper;
@@ -607,6 +608,38 @@ class HandoffServiceTest extends TestCase {
 		$this->assertSame('corr-park-1', $dispatched->getCorrelationId());
 
 	}//end testDrainSuccessIsDeferredExecution()
+
+	/**
+	 * A drain reached inside a system-operation scope leaves every entry
+	 * parked: the requester's rights cannot be re-evaluated there.
+	 *
+	 * @return void
+	 */
+	public function testDrainInsideASystemScopeLeavesEntriesParked(): void {
+		$this->wireSourceSchema(whenUnavailable: 'queue');
+		$this->wireProvider();
+		$this->objectService->method('find')->willReturn($this->sourceObject());
+		$this->objectService->method('saveObject')->willReturn($this->targetObject());
+		$this->objectMapper->method('find')->willReturnCallback(fn ($identifier) => $this->rawEntity(uuid: (string)$identifier));
+		$this->objectMapper->method('update')->willReturnArgument(0);
+
+		$entry = $this->queueEntry();
+		$this->queueMapper->method('findParked')->willReturn([$entry]);
+
+		$requester = $this->createMock(originalClassName: IUser::class);
+		$requester->method('getUID')->willReturn('alice');
+		$this->userManager->method('get')->willReturn($requester);
+
+		$this->objectService->expects($this->never())->method('saveObject');
+		$this->permissionHandler->expects($this->never())->method('checkPermission');
+		$this->queueMapper->expects($this->never())->method('update');
+
+		$summary = SystemOperationContext::run(fn () => $this->service->drainParked());
+
+		$this->assertSame(expected: ['drained' => 0, 'failed' => 0, 'skipped' => 1], actual: $summary);
+		$this->assertSame(expected: HandoffQueueEntry::STATUS_PARKED, actual: $entry->getStatus());
+
+	}//end testDrainInsideASystemScopeLeavesEntriesParked()
 
 	/**
 	 * Availability lists an installed provider as `available`, with the
