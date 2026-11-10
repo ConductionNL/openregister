@@ -256,7 +256,7 @@ class ObjectActionRunnerTest extends TestCase {
 
 	public function testInputsReachTheStepsRunAndTheRunIsAudited(): void {
 		$this->flows->expects($this->once())->method('runForAction')
-			->with('steps-flow', $this->anything(), ['action' => 'publish', 'inputs' => ['from' => '2026-11-01']], true)
+			->with('steps-flow', $this->callback(fn (\OCA\OpenRegister\Service\Flow\FlowRunOptions $o): bool => $o->context == ['action' => 'publish', 'inputs' => ['from' => '2026-11-01']] && $o->sync === true))
 			->willReturn($this->flowRun(FlowRun::STATUS_COMPLETED));
 		$this->audit->expects($this->once())->method('record')->with(
 			$this->anything(),
@@ -278,8 +278,8 @@ class ObjectActionRunnerTest extends TestCase {
 
 	public function testADefaultIsResolvedBeforeValidation(): void {
 		$this->flows->expects($this->once())->method('runForAction')->willReturnCallback(
-			function (string $uuid, array $subject, array $context): FlowRun {
-				$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $context['inputs']['from']);
+			function (string $uuid, \OCA\OpenRegister\Service\Flow\FlowRunOptions $options): FlowRun {
+				$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $options->context['inputs']['from']);
 				return $this->flowRun(FlowRun::STATUS_COMPLETED);
 			}
 		);
@@ -346,7 +346,7 @@ class ObjectActionRunnerTest extends TestCase {
 	}//end testAnUndeclaredLifecycleTransitionRunsUnderTheUpdateRight()
 
 	public function testAnAsyncActionAnswers202WithItsRun(): void {
-		$this->flows->expects($this->once())->method('runForAction')->with('steps-flow', $this->anything(), $this->anything(), false)
+		$this->flows->expects($this->once())->method('runForAction')->with('steps-flow', $this->callback(fn (\OCA\OpenRegister\Service\Flow\FlowRunOptions $o): bool => $o->sync === false))
 			->willReturn($this->flowRun(FlowRun::STATUS_QUEUED));
 
 		$answer = $this->invoke('export');
@@ -404,9 +404,9 @@ class ObjectActionRunnerTest extends TestCase {
 	public function testAWriteOnlyInputNeverReachesTheStoredContextOrTheDigest(): void {
 		$seen = [];
 		$this->flows->method('runForAction')->willReturnCallback(
-			function (string $uuid, array $subject, array $context) use (&$seen): FlowRun {
-				$seen = $context;
-				$seen['held'] = ObjectActionSecrets::read($context[ObjectActionSecrets::CONTEXT_KEY] ?? null);
+			function (string $uuid, \OCA\OpenRegister\Service\Flow\FlowRunOptions $options) use (&$seen): FlowRun {
+				$seen = $options->context;
+				$seen['held'] = ObjectActionSecrets::read($options->context[ObjectActionSecrets::CONTEXT_KEY] ?? null);
 				return $this->flowRun(FlowRun::STATUS_COMPLETED);
 			}
 		);
