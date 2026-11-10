@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Aggregation;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\Register;
@@ -162,8 +163,8 @@ class AggregationRunnerTranslatableKeysGoldenTest extends TestCase {
 			}
 		);
 		$translations->method('resolveTranslationsForRender')->willReturnCallback(
-			function (array $objectData, Schema $schema, ?Register $register = null): array {
-				$this->calls[] = ['resolve' => [$objectData, $schema->getSlug(), $register?->getSlug()]];
+			function (array $objectData, TranslationScope $scope): array {
+				$this->calls[] = ['resolve' => [$objectData, $scope->schema->getSlug(), $scope->register?->getSlug()]];
 				$resolved = [];
 				foreach ($objectData as $field => $value) {
 					if (is_array($value) === true && isset($value['nl']) === true) {

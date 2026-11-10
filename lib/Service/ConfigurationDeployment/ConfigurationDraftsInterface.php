@@ -70,11 +70,8 @@ interface ConfigurationDraftsInterface {
 	/**
 	 * Draft one pending value into a set.
 	 *
-	 * @param string      $setUuid   The set to draft into.
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference, null at instance level.
-	 * @param string      $configKey The configuration key.
-	 * @param mixed       $value     The pending value.
+	 * @param ConfigurationDraftTarget $target The set to draft into and the address of the value.
+	 * @param mixed                    $value  The pending value.
 	 *
 	 * @return ConfigurationDraft The pending value.
 	 *
@@ -82,15 +79,12 @@ interface ConfigurationDraftsInterface {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function draftValue(string $setUuid, string $layer, ?string $layerRef, string $configKey, mixed $value): ConfigurationDraft;
+	public function draftValue(ConfigurationDraftTarget $target, mixed $value): ConfigurationDraft;
 
 	/**
 	 * Draft the removal of one value.
 	 *
-	 * @param string      $setUuid   The set to draft into.
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference, null at instance level.
-	 * @param string      $configKey The configuration key.
+	 * @param ConfigurationDraftTarget $target The set to draft into and the address of the value.
 	 *
 	 * @return ConfigurationDraft The pending removal.
 	 *
@@ -98,7 +92,7 @@ interface ConfigurationDraftsInterface {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function draftRemoval(string $setUuid, string $layer, ?string $layerRef, string $configKey): ConfigurationDraft;
+	public function draftRemoval(ConfigurationDraftTarget $target): ConfigurationDraft;
 
 	/**
 	 * The pending values in a set.

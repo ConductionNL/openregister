@@ -188,7 +188,7 @@ class DedupeSharedSchemasCommandTest extends TestCase {
 		$this->dedupe->method('inspect')->willReturn($this->attributedPlan());
 		$this->dedupe->expects($this->once())
 			->method('applySplit')
-			->with($this->anything(), 16, false)
+			->with($this->anything(), 16)
 			->willReturn([
 				'newSchemaId' => 9465,
 				'rows'        => 42,
@@ -251,8 +251,8 @@ class DedupeSharedSchemasCommandTest extends TestCase {
 	public function testStrictIsPassedThroughToTheSplit(): void {
 		$this->dedupe->method('inspect')->willReturn($this->attributedPlan());
 		$this->dedupe->expects($this->once())
-			->method('applySplit')
-			->with($this->anything(), 16, true)
+			->method('applySplitStrictly')
+			->with($this->anything(), 16)
 			->willReturn(['newSchemaId' => 9465, 'rows' => 0, 'unmapped' => [], 'backup' => null]);
 
 		[$code] = $this->execute(['--write' => true, '--strict' => true]);
@@ -271,7 +271,7 @@ class DedupeSharedSchemasCommandTest extends TestCase {
 	 */
 	public function testFailedSplitIsReportedAndFailsTheRun(): void {
 		$this->dedupe->method('inspect')->willReturn($this->attributedPlan());
-		$this->dedupe->method('applySplit')->willThrowException(
+		$this->dedupe->method('applySplitStrictly')->willThrowException(
 			new \RuntimeException('Strict mode: 1 source column(s) have no destination (employee).')
 		);
 

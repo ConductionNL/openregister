@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\RegisterSchemaMappers;
+use OCA\OpenRegister\Service\SourceLanguageLookup;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStores;
 use OCP\IUserSession;
@@ -86,10 +87,7 @@ class TranslationProjectionServiceSourceLanguageTest extends TestCase {
 		]);
 
 		$resolved = $this->service->resolveSourceLanguage(
-			schema: $this->schema,
-			object: $this->object,
-			property: 'title',
-			registerDefault: 'nl'
+			new SourceLanguageLookup(schema: $this->schema, object: $this->object, property: 'title', registerDefault: 'nl')
 		);
 
 		$this->assertSame('en', $resolved);
@@ -104,10 +102,7 @@ class TranslationProjectionServiceSourceLanguageTest extends TestCase {
 		]);
 
 		$resolved = $this->service->resolveSourceLanguage(
-			schema: $this->schema,
-			object: $this->object,
-			property: 'title',
-			registerDefault: 'nl'
+			new SourceLanguageLookup(schema: $this->schema, object: $this->object, property: 'title', registerDefault: 'nl')
 		);
 
 		$this->assertSame('fr', $resolved);
@@ -122,10 +117,7 @@ class TranslationProjectionServiceSourceLanguageTest extends TestCase {
 		]);
 
 		$resolved = $this->service->resolveSourceLanguage(
-			schema: $this->schema,
-			object: $this->object,
-			property: 'body',
-			registerDefault: 'nl'
+			new SourceLanguageLookup(schema: $this->schema, object: $this->object, property: 'body', registerDefault: 'nl')
 		);
 
 		$this->assertSame('nl', $resolved);
@@ -140,10 +132,7 @@ class TranslationProjectionServiceSourceLanguageTest extends TestCase {
 		]);
 
 		$resolved = $this->service->resolveSourceLanguage(
-			schema: $this->schema,
-			object: $this->object,
-			property: 'body',
-			registerDefault: ''
+			new SourceLanguageLookup(schema: $this->schema, object: $this->object, property: 'body', registerDefault: '')
 		);
 
 		$this->assertSame('nl', $resolved);

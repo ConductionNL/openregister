@@ -257,12 +257,18 @@ class DocumentExtractor {
 		}
 
 		$relationships = $package->relationships(partPath: $mainPath);
-		$structure = $this->bodyParser->parse(
+		$structure = $this->bodyParser->parsePart(part: new DocumentPart(
 			document: $document,
-			styles: $this->relatedPart(package: $package, relationships: $relationships, typeSuffix: '/styles', fallback: 'word/styles.xml'),
-			numbering: $this->relatedPart(package: $package, relationships: $relationships, typeSuffix: '/numbering', fallback: 'word/numbering.xml'),
+			styles: $this->relatedPart(
+				package: $package,
+				lookup: new RelatedPartLookup(relationships: $relationships, typeSuffix: '/styles', fallback: 'word/styles.xml')
+			),
+			numbering: $this->relatedPart(
+				package: $package,
+				lookup: new RelatedPartLookup(relationships: $relationships, typeSuffix: '/numbering', fallback: 'word/numbering.xml')
+			),
 			relationships: $relationships
-		);
+		));
 		if ($structure !== null && $structure['title'] === '') {
 			$structure['title'] = $this->coreTitle(package: $package);
 		}
@@ -273,21 +279,19 @@ class DocumentExtractor {
 	/**
 	 * The part a relationship of the given type points at, else the conventional path.
 	 *
-	 * @param OoxmlPackage $package The opened package.
-	 * @param array<string, array{type: string, target: string, external: bool}> $relationships The owner's relationships.
-	 * @param string $typeSuffix The end of the relationship type, e.g. `/styles`.
-	 * @param string $fallback The conventional part path.
+	 * @param OoxmlPackage      $package The opened package.
+	 * @param RelatedPartLookup $lookup  The owner's relationships, the type sought and the fallback path.
 	 *
 	 * @return DOMDocument|null
 	 */
-	private function relatedPart(OoxmlPackage $package, array $relationships, string $typeSuffix, string $fallback): ?DOMDocument {
-		foreach ($relationships as $relationship) {
-			if ($relationship['external'] === false && str_ends_with($relationship['type'], $typeSuffix) === true) {
+	private function relatedPart(OoxmlPackage $package, RelatedPartLookup $lookup): ?DOMDocument {
+		foreach ($lookup->relationships as $relationship) {
+			if ($relationship['external'] === false && str_ends_with($relationship['type'], $lookup->typeSuffix) === true) {
 				return $package->readXml(path: $relationship['target']);
 			}
 		}
 
-		return $package->readXml(path: $fallback);
+		return $package->readXml(path: $lookup->fallback);
 	}//end relatedPart()
 
 	/**
@@ -302,9 +306,11 @@ class DocumentExtractor {
 	private function coreTitle(OoxmlPackage $package): string {
 		$core = $this->relatedPart(
 			package: $package,
-			relationships: $package->relationships(partPath: ''),
-			typeSuffix: '/core-properties',
-			fallback: 'docProps/core.xml'
+			lookup: new RelatedPartLookup(
+				relationships: $package->relationships(partPath: ''),
+				typeSuffix: '/core-properties',
+				fallback: 'docProps/core.xml'
+			)
 		);
 
 		return trim((string)$core?->getElementsByTagNameNS('*', 'title')->item(0)?->textContent);

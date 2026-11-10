@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowVersion;
+use OCA\OpenRegister\Service\Flow\FlowRunMigration;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationValidator;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use PHPUnit\Framework\TestCase;
@@ -55,9 +56,22 @@ class FlowRunMigrationEdgeSuffixBehaviourTest extends TestCase {
 		$run->setStatus('suspended');
 		$run->setMarking(['merge#e1' => 1, 'merge#e2' => 1]);
 
-		$verdict = (new FlowRunMigrationValidator($versions))->validate($run, 2, ['merge' => 'merge-v2']);
+		$verdict = (new FlowRunMigrationValidator($versions))->validate($run, self::onto(2, ['merge' => 'merge-v2']));
 
 		self::assertTrue($verdict['ok']);
 		self::assertSame(['merge-v2#e1' => 1, 'merge-v2#e2' => 1], $verdict['marking']);
 	}//end testAJoinPlaceKeepsItsEdgeSuffixUnderTheMappedNode()
+
+	/**
+	 * A migration request onto a version, with an optional node mapping.
+	 *
+	 * @param int                   $version The version asked for.
+	 * @param array<string, string> $mapping Old node id to new node id.
+	 *
+	 * @return FlowRunMigration
+	 */
+	private static function onto(int $version, array $mapping = []): FlowRunMigration {
+		return (new FlowRunMigration(runUuid: '', targetVersion: $version, reason: '', actor: ''))->withPlan(mapping: $mapping, dryRun: false);
+	}
+
 }//end class

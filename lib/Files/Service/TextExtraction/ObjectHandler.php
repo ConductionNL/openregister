@@ -80,7 +80,6 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 	 *
 	 * @param int $sourceId Object ID.
 	 * @param array<string, mixed> $sourceMeta Object metadata.
-	 * @param bool $force Force re-extraction.
 	 *
 	 * @return array{
 	 *     source_type: string,
@@ -100,17 +99,16 @@ class ObjectHandler implements TextExtractionHandlerInterface {
 	 *
 	 * @throws Exception When extraction fails.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force parameter follows interface contract
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $sourceMeta and $force kept to honour interface contract
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $sourceMeta kept to honour interface contract
 	 *
 	 * @spec openspec/specs/text-extraction/spec.md
 	 */
-	public function extractText(int $sourceId, array $sourceMeta, bool $force = false): array {
+	public function extractText(int $sourceId, array $sourceMeta): array {
 		return $this->extractObject(sourceId: $sourceId);
 	}//end extractText()
 
 	/**
-	 * Extract the text of one object, whatever the metadata or force flag said.
+	 * Extract the text of one object, whatever the metadata said.
 	 *
 	 * @param int $sourceId Object ID.
 	 *

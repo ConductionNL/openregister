@@ -131,7 +131,7 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class)
 		);
 
-		$this->auditTrailMapper->method('buildAuditTrail')->willReturnCallback(
+		$this->auditTrailMapper->method('buildEntry')->willReturnCallback(
 			static function (): AuditTrail {
 				return new AuditTrail();
 			}

@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Serializer;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Serializer\RegisterExpansion;
+use OCA\OpenRegister\Service\Serializer\RegisterListExtension;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -84,7 +86,7 @@ class RegisterSerializerStatsCharacterisationTest extends TestCase {
 	}
 
 	public function testStatsWithoutPrecomputedCountsAttachZero(): void {
-		$result = $this->serializer()->serialize($this->register(1, [10, 20]), ['schemas', '@self.stats']);
+		$result = $this->serializer()->serializeExpanded($this->register(1, [10, 20]), RegisterExpansion::fromExtend(extend: ['schemas', '@self.stats']));
 
 		$this->assertSame([0, 0], $this->totals($result));
 		$this->assertSame(['objects' => ['total' => 0]], $result['schemas'][0]['stats']);
@@ -93,13 +95,13 @@ class RegisterSerializerStatsCharacterisationTest extends TestCase {
 	public function testACountWithoutTotalOrForAnotherSchemaAttachesZero(): void {
 		$stats = [10 => ['other' => 4], 99 => ['total' => 8], 20 => ['total' => '5']];
 
-		$result = $this->serializer()->serialize($this->register(1, [10, 20, 30]), ['schemas', '@self.stats'], $stats);
+		$result = $this->serializer()->serializeExpanded($this->register(1, [10, 20, 30]), RegisterExpansion::fromExtend(extend: ['schemas', '@self.stats'], schemaStats: $stats));
 
 		$this->assertSame([0, 5, 0], $this->totals($result));
 	}
 
 	public function testSchemasWithoutStatsCarryNoStatsKey(): void {
-		$result = $this->serializer()->serialize($this->register(1, [10]), ['schemas'], [10 => ['total' => 3]]);
+		$result = $this->serializer()->serializeExpanded($this->register(1, [10]), RegisterExpansion::fromExtend(extend: ['schemas'], schemaStats: [10 => ['total' => 3]]));
 
 		$this->assertSame(['none'], $this->totals($result));
 	}
@@ -107,7 +109,7 @@ class RegisterSerializerStatsCharacterisationTest extends TestCase {
 	public function testSerializeManyGivesARegisterMissingFromTheMapZero(): void {
 		$registers = [$this->register(1, [10]), $this->register(2, [20])];
 
-		$result = $this->serializer()->serializeMany($registers, ['schemas', '@self.stats'], [1 => [10 => ['total' => 3]]]);
+		$result = $this->serializer()->serializePage($registers, new RegisterListExtension(extend: ['schemas', '@self.stats'], schemaStatsByRegisterId: [1 => [10 => ['total' => 3]]]));
 
 		$this->assertSame([3], $this->totals($result[0]));
 		$this->assertSame([0], $this->totals($result[1]));
@@ -116,7 +118,7 @@ class RegisterSerializerStatsCharacterisationTest extends TestCase {
 	public function testSerializeManyWithoutAMapAttachesZeroEverywhere(): void {
 		$registers = [$this->register(1, [10]), $this->register(2, [20])];
 
-		$result = $this->serializer()->serializeMany($registers, ['schemas', '@self.stats']);
+		$result = $this->serializer()->serializePage($registers, new RegisterListExtension(extend: ['schemas', '@self.stats']));
 
 		$this->assertSame([0], $this->totals($result[0]));
 		$this->assertSame([0], $this->totals($result[1]));

@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Party;
 
+use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -153,11 +154,8 @@ class PartySearchService implements PartySearchInterface {
 			$searched = $run->schemaIds[0];
 		}
 
-		$this->audit->createPartyQueryRefusalEntry(
-			query: $run->term,
-			cap: $run->cap,
-			would: $total,
-			schema: $searched
+		$this->audit->recordPartyQueryRefusal(
+			refusal: new PartyQueryRefusal(query: $run->term, cap: $run->cap, would: $total, schema: $searched)
 		);
 
 		throw new Exception(

@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Service\Object\TransitionGate;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
@@ -248,9 +249,8 @@ class LifecycleValidationListener implements IEventListener {
 		}
 
 		$authorized = $this->access->permissionHandler->isTransitionAuthorized(
-			authorizationList: $authorizationList,
-			userId: ($this->access->userSession->getUser()?->getUID() ?? null),
-			schema: $attempt->edit->declaration->schema
+			gate: new TransitionGate(authorizationList: $authorizationList, schema: $attempt->edit->declaration->schema),
+			userId: ($this->access->userSession->getUser()?->getUID() ?? null)
 		);
 		if ($authorized === true) {
 			return null;

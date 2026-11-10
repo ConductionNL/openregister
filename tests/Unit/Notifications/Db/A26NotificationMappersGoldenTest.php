@@ -31,6 +31,7 @@ use OCA\OpenRegister\Notifications\Db\HistoryEntry;
 use OCA\OpenRegister\Notifications\Db\HistoryNotice;
 use OCA\OpenRegister\Notifications\Db\HistorySubject;
 use OCA\OpenRegister\Notifications\Db\HistoryTarget;
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\BroadcastMessage;
@@ -59,6 +60,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Db\NotificationBroadcastMapper
@@ -144,15 +146,15 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			}
 		};
 		return [
-			'dedupe findOne found'          => [$dedupe, 'findOne', [2, 'r', 'o-1'], [[self::ROW]], false],
-			'dedupe findOne missing'        => [$dedupe, 'findOne', [2, 'r', 'o-1'], [[]], false],
-			'dedupe findOne failure'        => [$dedupe, 'findOne', [2, 'r', 'o-1'], [], true],
-			'dedupe upsert existing'        => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, false], [[self::ROW]], false],
-			'dedupe upsert existing sent'   => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, true], [[self::ROW]], false],
-			'dedupe upsert insert'          => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, false], [[]], false],
-			'dedupe upsert race reread'     => [$racing(true), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, true], [[], [self::ROW]], false],
-			'dedupe upsert race no row'     => [$racing(true), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, true], [[], []], false],
-			'dedupe upsert other failure'   => [$racing(false), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, true], [[]], false],
+			'dedupe findOne found'          => [$dedupe, 'findByKey', [new NotificationDedupeKey(2, 'r', 'o-1')], [[self::ROW]], false],
+			'dedupe findOne missing'        => [$dedupe, 'findByKey', [new NotificationDedupeKey(2, 'r', 'o-1')], [[]], false],
+			'dedupe findOne failure'        => [$dedupe, 'findByKey', [new NotificationDedupeKey(2, 'r', 'o-1')], [], true],
+			'dedupe upsert existing'        => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), new DedupeSighting('fp', $at, false)], [[self::ROW]], false],
+			'dedupe upsert existing sent'   => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), new DedupeSighting('fp', $at, true)], [[self::ROW]], false],
+			'dedupe upsert insert'          => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), new DedupeSighting('fp', $at, false)], [[]], false],
+			'dedupe upsert race reread'     => [$racing(true), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), new DedupeSighting('fp', $at, true)], [[], [self::ROW]], false],
+			'dedupe upsert race no row'     => [$racing(true), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), new DedupeSighting('fp', $at, true)], [[], []], false],
+			'dedupe upsert other failure'   => [$racing(false), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), new DedupeSighting('fp', $at, true)], [[]], false],
 			'dedupe deleteByObject'         => [$dedupe, 'deleteByObject', ['o-1'], [], false],
 			'dedupe deleteByObject failure' => [$dedupe, 'deleteByObject', ['o-1'], [], true],
 			'dedupe deleteByRule'           => [$dedupe, 'deleteByRule', [2, 'r'], [], false],
@@ -208,13 +210,13 @@ class A26NotificationMappersGoldenTest extends TestCase {
 					),
 				], [], false,
 			],
-			'history findFiltered'           => [$history, 'findFiltered', [$filters, 10, 5, $at], [[self::ROW]], false],
-			'history findFiltered snoozed'   => [$history, 'findFiltered', [$snoozed], [[]], false],
+			'history findFiltered'           => [$history, 'findFiltered', [new ListQuery(limit: 10, offset: 5, filters: $filters), $at], [[self::ROW]], false],
+			'history findFiltered snoozed'   => [$history, 'findFiltered', [ListQuery::unbounded(filters: $snoozed)], [[]], false],
 			'history countByStatus'          => [$history, 'countByStatus', [], [self::ROWS_TWO], false],
 			'history countByStatus since'    => [$history, 'countByStatus', [$at], [[]], false],
 			'history countFiltered'          => [$history, 'countFiltered', [$filters, $at], [[['c' => 6]]], false],
 			'history countFiltered snoozed'  => [$history, 'countFiltered', [$snoozed, $at], [[['c' => 0]]], false],
-			'history markRead'               => [$history, 'markRead', [7, 'alice', $at], [], false],
+			'history markRead'               => [$history, 'markRead', [new \OCA\OpenRegister\Notifications\Db\RecipientNotice(7, 'alice'), $at], [], false],
 			'history markReadForSubject'     => [$history, 'markReadForSubject', ['alice', 'o-1', 's-1', $at], [], false],
 			'history markReadForSubject all' => [$history, 'markReadForSubject', ['alice', 'o-1', '', $at], [], false],
 			'history snooze'                 => [$history, 'snooze', [new RecipientNotice(7, 'alice'), $at], [], false],

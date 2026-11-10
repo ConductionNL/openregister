@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Mcp\Tool;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 
@@ -351,12 +352,9 @@ class SchemaTool extends AbstractTool {
 		$schema = $this->schemaMapper->update(entity: $schema);
 
 		if ($changeSet !== null) {
-			$this->schemaVersioning?->recordChangelog(
+			$this->schemaVersioning?->recordChange(
 				schemaId: (int)$schema->getId(),
-				version: $schema->getVersion(),
-				changeSet: $changeSet,
-				acknowledged: false,
-				origin: 'agent tool'
+				record: new SchemaChangeRecord(changeSet: $changeSet, acknowledged: false, version: $schema->getVersion(), origin: 'agent tool')
 			);
 		}
 

@@ -174,7 +174,7 @@ class ObjectShareReaderTest extends TestCase {
 				: []
 		);
 
-		$found = $reader->sharesOn(object: $this->object(), sharers: ['bea'], complete: true);
+		$found = $reader->completeSharesOn(object: $this->object(), sharers: ['bea']);
 
 		$this->assertSame(['ocinternal:41'], array_keys($found));
 		$this->assertContains('openregister', array_column($this->asked, 0));
@@ -190,7 +190,7 @@ class ObjectShareReaderTest extends TestCase {
 		$reader = $this->readerFor(static fn (): array => throw new RuntimeException('share table gone'));
 
 		$this->expectException(RuntimeException::class);
-		$reader->sharesOn(object: $this->object(), sharers: ['bea'], complete: true);
+		$reader->completeSharesOn(object: $this->object(), sharers: ['bea']);
 	}//end testTheCompleteReadingThrowsOnAnUnreadableType()
 
 	/**
@@ -202,8 +202,8 @@ class ObjectShareReaderTest extends TestCase {
 		$object = $this->object();
 		$object->setFolder(null);
 
-		$this->assertSame([], $this->readerFor(static fn (): array => [])->sharesOn(object: $object, sharers: ['bea'], complete: true));
-		$this->assertSame([], $this->readerFor(static fn (): array => [], folder: 'gone')->sharesOn(object: $this->object(), sharers: ['bea'], complete: true));
+		$this->assertSame([], $this->readerFor(static fn (): array => [])->completeSharesOn(object: $object, sharers: ['bea']));
+		$this->assertSame([], $this->readerFor(static fn (): array => [], folder: 'gone')->completeSharesOn(object: $this->object(), sharers: ['bea']));
 		$this->assertFalse($this->created, 'a read must not create or recreate a folder');
 	}//end testAnObjectWithoutAFolderHasNoShares()
 
@@ -225,7 +225,7 @@ class ObjectShareReaderTest extends TestCase {
 	 */
 	public function testTheCompleteReadingThrowsWhenTheFolderCannotBeLookedUp(): void {
 		$this->expectException(RuntimeException::class);
-		$this->readerFor(static fn (): array => [], folder: 'throws')->sharesOn(object: $this->object(), sharers: ['bea'], complete: true);
+		$this->readerFor(static fn (): array => [], folder: 'throws')->completeSharesOn(object: $this->object(), sharers: ['bea']);
 	}//end testTheCompleteReadingThrowsWhenTheFolderCannotBeLookedUp()
 
 	/**
@@ -235,7 +235,7 @@ class ObjectShareReaderTest extends TestCase {
 	 */
 	public function testTheCompleteReadingThrowsWhenTheFolderHasNoOwner(): void {
 		$this->expectException(RuntimeException::class);
-		$this->readerFor(static fn (): array => [], folder: 'ownerless')->sharesOn(object: $this->object(), sharers: ['bea'], complete: true);
+		$this->readerFor(static fn (): array => [], folder: 'ownerless')->completeSharesOn(object: $this->object(), sharers: ['bea']);
 	}//end testTheCompleteReadingThrowsWhenTheFolderHasNoOwner()
 
 	/**

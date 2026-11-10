@@ -63,25 +63,23 @@ class VocabularyDeclarationResolver implements VocabularyDeclarationResolverInte
 	 * the person choosing a branch is choosing it FROM that tree, so they need
 	 * it before the save rather than after.
 	 *
-	 * @param string $schemaRef The schema id or slug, empty when none was given.
-	 * @param string $property The property name, empty when none was given.
-	 * @param string $schemeUri The scheme uri for the unsaved path, empty when none was given.
+	 * @param DeclarationLookup $lookup The schema and property of a saved declaration, and the scheme uri for the unsaved path.
 	 *
 	 * @return CodedPropertyDeclaration|null The declaration, or null when neither source yields one.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function resolveDeclaration(string $schemaRef, string $property, string $schemeUri): ?CodedPropertyDeclaration {
-		if ($schemaRef === '' || $property === '') {
-			return $this->unsavedDeclaration(schemeUri: $schemeUri);
+	public function resolveDeclaration(DeclarationLookup $lookup): ?CodedPropertyDeclaration {
+		if ($lookup->schemaRef === '' || $lookup->property === '') {
+			return $this->unsavedDeclaration(schemeUri: $lookup->schemeUri);
 		}
 
-		$schema = $this->findSchema(schemaRef: $schemaRef);
+		$schema = $this->findSchema(schemaRef: $lookup->schemaRef);
 		if ($schema === null) {
 			return null;
 		}
 
-		return ($this->savedDeclaration(schema: $schema, property: $property) ?? $this->unsavedDeclaration(schemeUri: $schemeUri));
+		return ($this->savedDeclaration(schema: $schema, property: $lookup->property) ?? $this->unsavedDeclaration(schemeUri: $lookup->schemeUri));
 	}//end resolveDeclaration()
 
 	/**
