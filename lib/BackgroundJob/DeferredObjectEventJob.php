@@ -94,13 +94,7 @@ class DeferredObjectEventJob extends QueuedJob {
 
 		$restored = $this->restoreActingUser(uid: (string)(((array)$argument)['user'] ?? ''), uuid: $uuid);
 		try {
-			$this->dispatchCreated(
-				ref: new ObjectRef(
-					register: (int)(((array)$argument)['registerId'] ?? 0),
-					schema: (int)(((array)$argument)['schemaId'] ?? 0),
-					id: $uuid
-				)
-			);
+			$this->dispatchCreated(ref: self::refOf(argument: $argument, uuid: $uuid));
 		} catch (Throwable $e) {
 			$this->logUndispatched(uuid: $uuid, error: $e);
 		} finally {
@@ -112,6 +106,22 @@ class DeferredObjectEventJob extends QueuedJob {
 		}//end try
 
 	}//end run()
+
+	/**
+	 * The reference of the object a job is for.
+	 *
+	 * @param mixed  $argument The job arguments.
+	 * @param string $uuid     The object's UUID.
+	 *
+	 * @return ObjectRef
+	 */
+	private static function refOf(mixed $argument, string $uuid): ObjectRef {
+		return new ObjectRef(
+			register: (int)(((array)$argument)['registerId'] ?? 0),
+			schema: (int)(((array)$argument)['schemaId'] ?? 0),
+			id: $uuid
+		);
+	}//end refOf()
 
 	/**
 	 * Log a deferred event that could not be dispatched.
