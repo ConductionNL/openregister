@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Export;
 
 use OCA\OpenRegister\Db\ExportProfile;
+use OCA\OpenRegister\Service\Export\ExportProfileCaller;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRefusedException;
 use PHPUnit\Framework\TestCase;
@@ -79,7 +80,7 @@ class ExportProfileOwnershipGoldenTest extends TestCase {
 
 		$service = (new ReflectionClass(ExportProfileService::class))->newInstanceWithoutConstructor();
 		try {
-			$service->assertOwnerOrAdmin($profile, $uid, $isAdmin);
+			$service->assertOwnerOrAdmin($profile, new ExportProfileCaller($uid, $isAdmin));
 		} catch (ExportRefusedException $e) {
 			return 'refused '.$e->toResponseBody()['rule'].' '.$e->getStatusCode();
 		}
