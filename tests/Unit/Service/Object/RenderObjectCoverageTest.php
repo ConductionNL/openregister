@@ -113,9 +113,7 @@ class RenderObjectCoverageTest extends TestCase {
 		$this->handler = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $this->registerMapper,
-					schemaMapper: $this->schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
