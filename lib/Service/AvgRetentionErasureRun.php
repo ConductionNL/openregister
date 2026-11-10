@@ -66,6 +66,8 @@ final class AvgRetentionErasureRun {
 	 * @param ObjectEntity $object The object to soft-delete.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function stamp(ObjectEntity $object): void {
 		$object->setDeleted($this->deletionData);
@@ -76,6 +78,8 @@ final class AvgRetentionErasureRun {
 	 * The run's result.
 	 *
 	 * @return array{erased: int, withheld: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function outcome(): array {
 		return [
