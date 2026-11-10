@@ -311,10 +311,9 @@ class DecisionTableValidator implements DecisionTableValidatorInterface {
 	 */
 	private function probeCell(string $expression, array $column): ?string {
 		try {
-			$this->evaluator->matches(
+			$this->evaluator->matchesValue(
 				expression: $expression,
-				value: self::PROBES[$column['type']],
-				type: $column['type']
+				subject: new UnaryTestValue(value: self::PROBES[$column['type']], type: $column['type'])
 			);
 		} catch (DecisionEvaluationException $e) {
 			return sprintf(

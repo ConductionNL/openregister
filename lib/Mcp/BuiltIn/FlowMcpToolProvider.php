@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCP\IUserSession;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * MCP tools for listing and running flows.
@@ -337,15 +338,17 @@ class FlowMcpToolProvider extends AbstractBuiltInToolProvider {
 		// action, rather than by widening the RBAC vocabulary.
 		$this->assertRunnable(flowId: $flowId);
 
-		$run = $this->runner->queue(
+		$run = $this->runner->queueRun(
 			flowId: $flowId,
-			subject: [
-				'uuid' => (string)($arguments['uuid'] ?? ''),
-				'register' => (string)($arguments['register'] ?? ''),
-				'schema' => (string)($arguments['schema'] ?? ''),
-			],
-			trigger: 'mcp',
-			user: $this->actingUser()
+			options: new FlowRunQueueOptions(
+				subject: [
+					'uuid' => (string)($arguments['uuid'] ?? ''),
+					'register' => (string)($arguments['register'] ?? ''),
+					'schema' => (string)($arguments['schema'] ?? ''),
+				],
+				trigger: 'mcp',
+				user: $this->actingUser()
+			)
 		);
 
 		return [
