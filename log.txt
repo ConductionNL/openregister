@@ -1038,3 +1038,4 @@
 2026-11-10T03:57:31Z integrator-20261109T234320-9cfff978 RED tree b4193e7045 prs 50 front=red: Tests: 54763, Assertions: 180119, Errors: 9, Failures: 11, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\Db\MapperEntityEventsTest::testRegisterMapperAnnouncesInsertUpdateAndDelete;OCA\OpenRegister\Tests\Unit\Service\ScheduledReportServiceAccessGoldenTest::testAssertOwnerOrAdmin;OCA\OpenRegister\Tests\Unit\Service\ScheduledReportServiceAccessGoldenTest::testDelete
 2026-11-10T03:58:18Z integrator-20261109T234320-9cfff978 CONFLICT-DEV #8451 2bc35835
 2026-11-10T03:58:28Z integrator-20261109T234320-9cfff978 CONFLICT-DEV #8471 f8415c89
+2026-11-10T03:58:42Z integrator-20261109T234320-9cfff978 CONFLICT-DEV #8492 d543473d
