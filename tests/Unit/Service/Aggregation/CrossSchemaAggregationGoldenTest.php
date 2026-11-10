@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\LanguageService;
@@ -269,14 +270,14 @@ class CrossSchemaAggregationGoldenTest extends TestCase {
 
 		$cache = $this->createMock(AggregationCache::class);
 		$cache->method('get')->willReturnCallback(
-			function (string $registerSlug, string $schemaSlug, string $name, array $filter) use ($case): ?array {
-				$this->calls[] = ['cacheGet' => [$registerSlug, $schemaSlug, $name, $filter]];
+			function (AggregationSlot $slot) use ($case): ?array {
+				$this->calls[] = ['cacheGet' => [$slot->registerSlug, $slot->schemaSlug, $slot->name, $slot->filter]];
 				return $case['cached'];
 			}
 		);
 		$cache->method('set')->willReturnCallback(
-			function (string $registerSlug, string $schemaSlug, string $name, array $filter, array $result): void {
-				$this->calls[] = ['cacheSet' => [$registerSlug, $schemaSlug, $name, $filter, $result]];
+			function (AggregationSlot $slot, array $result): void {
+				$this->calls[] = ['cacheSet' => [$slot->registerSlug, $slot->schemaSlug, $slot->name, $slot->filter, $result]];
 			}
 		);
 

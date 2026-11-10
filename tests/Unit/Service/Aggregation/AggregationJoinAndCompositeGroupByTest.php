@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -136,8 +137,8 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		// Cache always misses; every key handed to set() is recorded.
 		$this->cache->method('get')->willReturn(null);
 		$this->cache->method('set')->willReturnCallback(
-			function (string $registerSlug, string $schemaSlug, string $name, mixed $filter, mixed $result): void {
-				$this->capturedCacheKeys[] = $filter;
+			function (AggregationSlot $slot, mixed $result): void {
+				$this->capturedCacheKeys[] = $slot->filter;
 			}
 		);
 
