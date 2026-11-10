@@ -199,24 +199,22 @@ class SchemaTableMigrator {
 	 * stray table behind on MySQL, where DDL does not roll back with the
 	 * transaction.
 	 *
-	 * @param string            $table      The bare source table name.
-	 * @param array<string, mixed> $definition The register's configured definition, or null
-	 *                                      when the split falls back to cloning.
-	 * @param array<string, mixed> $content The current shared entity content.
+	 * @param SplitTableColumns $split The bare source table, the register's configured definition (null when
+	 *                                 the split falls back to cloning) and the current shared entity content.
 	 *
 	 * @return string[] Source columns with no destination.
 	 *
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
-	public function planUnmapped(string $table, ?array $definition, array $content): array {
-		$source = $this->columnsOf(table: $table);
+	public function planUnmapped(SplitTableColumns $split): array {
+		$source = $this->columnsOf(table: $split->table);
 		if ($source === []) {
-			$source = $this->columnsForDefinition(definition: $content);
+			$source = $this->columnsForDefinition(definition: $split->content);
 		}
 
-		$target = $content;
-		if ($definition !== null) {
-			$target = $definition;
+		$target = $split->content;
+		if ($split->definition !== null) {
+			$target = $split->definition;
 		}
 
 		return self::planColumnMapping(

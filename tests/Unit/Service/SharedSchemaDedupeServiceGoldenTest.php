@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\SharedSchema\SchemaAttribution;
 use OCA\OpenRegister\Service\SharedSchema\SchemaTableMigrator;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaOwnership;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaStore;
+use OCA\OpenRegister\Service\SharedSchema\SplitTableColumns;
 use OCA\OpenRegister\Service\SharedSchemaDedupeService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -123,7 +124,7 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 			->willReturn(['owner' => 1, 'source' => 'evidence']);
 		$this->migrator->method('tableNameFor')->with(2, 5)->willReturn('t_2_5');
 		$this->migrator->method('countRows')->with('t_2_5')->willReturn(4);
-		$this->migrator->method('planUnmapped')->with('t_2_5', null, $entity->jsonSerialize())->willReturn(['x']);
+		$this->migrator->method('planUnmapped')->with(new SplitTableColumns('t_2_5', null, $entity->jsonSerialize()))->willReturn(['x']);
 		return $entity;
 	}//end arrangeInspect()
 
