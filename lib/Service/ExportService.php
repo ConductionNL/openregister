@@ -824,16 +824,14 @@ class ExportService implements ObjectExporterInterface {
 	 * entities rather than a written file. Selection stays here: one place
 	 * decides what an export sees, and RBAC and multi-tenancy are applied in it.
 	 *
-	 * @param Register|null $register Optional register to export.
-	 * @param Schema|null   $schema   Optional schema to export.
-	 * @param array         $filters  Optional filters to apply.
+	 * @param ExportRequest $request The register, schema and filters to select by.
 	 *
 	 * @return ObjectEntity[] The objects this export would write.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function fetchExportObjects(?Register $register = null, ?Schema $schema = null, array $filters = []): array {
-		return $this->fetchObjectsForExport(request: new ExportRequest(register: $register, schema: $schema, filters: $filters));
+	public function fetchExportObjects(ExportRequest $request): array {
+		return $this->fetchObjectsForExport(request: $request);
 	}//end fetchExportObjects()
 
 	/**

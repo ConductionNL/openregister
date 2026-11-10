@@ -49,6 +49,7 @@ use OCP\Files\IRootFolder;
 use OCP\IUser;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Service\Export\ProfileProjection;
 
 /**
  * The built-in whole-set export.
@@ -273,7 +274,10 @@ class ExportWholeSetAction implements BulkActionInterface {
 			return $this->refuse(run: $run, refusal: $refusal);
 		}
 
-		$line = $this->writer->csvLineFor(profile: $run->profile, object: $run->step->object, schema: $run->schema);
+		$line = $this->writer->csvLineFor(
+			projection: new ProfileProjection(profile: $run->profile, schema: $run->schema),
+			object: $run->step->object
+		);
 		if ($line === '') {
 			return BulkActionResult::skipped('The object carries none of the fields the profile declares.');
 		}
