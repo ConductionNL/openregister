@@ -216,4 +216,30 @@ class CalendarFeedControllerTest extends TestCase {
 			$this->controller->recordAttendeeResponse(id: 'object-uuid')->getStatus()
 		);
 	}
+	public function testAFailingThrottlerIsLoggedAndTheFeedStillAnswersNotFound(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')
+			->with('CalendarFeedController: registerAttempt failed: down');
+		$throttler = $this->createMock(IThrottler::class);
+		$throttler->expects($this->once())->method('registerAttempt')
+			->with(CalendarFeedController::THROTTLE_ACTION, '203.0.113.10')
+			->willThrowException(new \RuntimeException('down'));
+		$request = $this->createMock(IRequest::class);
+		$request->method('getRemoteAddress')->willReturn('203.0.113.10');
+		$this->tokens->method('resolve')->willReturn(null);
+		$controller = CalendarFeedControllerFactory::create(
+			'openregister',
+			$request,
+			$this->tokens,
+			$this->feed,
+			$this->attendees,
+			$this->userSession,
+			$throttler,
+			$logger
+		);
+
+		$response = $controller->feed(token: 'revoked');
+
+		$this->assertSame([Http::STATUS_NOT_FOUND, ['message' => 'Not Found']], [$response->getStatus(), $response->getData()]);
+	}
 }
