@@ -29,11 +29,14 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCP\IGroupManager;
+use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Locks the documents' user key, signed in and not.
@@ -59,6 +62,15 @@ final class ConditionDocumentUserGoldenTest extends TestCase {
 	}//end identity()
 
 	/**
+	 * A dialect that is never asked to evaluate anything here.
+	 *
+	 * @return ConditionDialect The dialect.
+	 */
+	private function dialect(): ConditionDialect {
+		return new ConditionDialect($this->createMock(CalculationEvaluatorInterface::class));
+	}//end dialect()
+
+	/**
 	 * The transition document carries the object, previous, user and move.
 	 *
 	 * @return void
@@ -69,8 +81,8 @@ final class ConditionDocumentUserGoldenTest extends TestCase {
 			$evaluator = new LifecycleConditionEvaluator(
 				$session,
 				$groups,
-				$this->createMock(LifecycleConditionReporting::class),
-				$this->createMock(ConditionDialect::class)
+				new LifecycleConditionReporting($this->createMock(IL10N::class), $this->createMock(LoggerInterface::class)),
+				$this->dialect()
 			);
 
 			$user = ['uid' => '', 'groups' => []];
@@ -98,7 +110,7 @@ final class ConditionDocumentUserGoldenTest extends TestCase {
 	public function testTheStateRuleDocumentNamesTheSessionUser(): void {
 		foreach ([true, false] as $signedIn) {
 			[$session, $groups] = $this->identity($signedIn);
-			$resolver = new StateFieldRuleResolver($session, $groups, $this->createMock(ConditionDialect::class));
+			$resolver = new StateFieldRuleResolver($session, $groups, $this->dialect());
 
 			$user = ['uid' => '', 'groups' => []];
 			if ($signedIn === true) {
