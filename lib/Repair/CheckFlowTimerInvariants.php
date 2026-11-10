@@ -152,21 +152,35 @@ class CheckFlowTimerInvariants implements IRepairStep {
 		$counts = ['armedWithoutFireAt' => 0, 'suspendedWithClock' => 0, 'orphaned' => 0];
 
 		foreach ([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED] as $state) {
-			$afterId = 0;
-			$more = true;
-			while ($more === true) {
-				$page = $this->timers->findByStatePaged(state: $state, cursor: new IdCursor(afterId: $afterId, limit: self::PAGE));
-				foreach ($page as $timer) {
-					$afterId = (int)$timer->getId();
-					$this->inspect(timer: $timer, counts: $counts);
-				}
-
-				$more = (count($page) === self::PAGE);
-			}
+			$this->inspectState(state: $state, counts: $counts);
 		}
 
 		return $counts;
 	}//end measure()
+
+	/**
+	 * Inspect every timer in one state, page by page.
+	 *
+	 * @param string                                                               $state  The timer state.
+	 * @param array{armedWithoutFireAt: int, suspendedWithClock: int, orphaned: int} $counts The running counts, by reference.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private function inspectState(string $state, array &$counts): void {
+		$afterId = 0;
+		$more = true;
+		while ($more === true) {
+			$page = $this->timers->findByStatePaged(state: $state, cursor: new IdCursor(afterId: $afterId, limit: self::PAGE));
+			foreach ($page as $timer) {
+				$afterId = (int)$timer->getId();
+				$this->inspect(timer: $timer, counts: $counts);
+			}
+
+			$more = (count($page) === self::PAGE);
+		}
+	}//end inspectState()
 
 	/**
 	 * Inspect one open timer against the invariants.
