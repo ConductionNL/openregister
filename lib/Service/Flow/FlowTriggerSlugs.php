@@ -44,9 +44,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -139,7 +139,7 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 	 */
 	private function storedSlug(string $identifier, string $kind): ?string {
 		try {
-			return trim((string)$this->mapperFor(kind: $kind)->find(id: $identifier, _rbac: false, _multitenancy: false)->getSlug());
+			return trim((string)$this->findEntity(identifier: $identifier, kind: $kind)->getSlug());
 		} catch (Throwable $e) {
 			$this->reportUnresolved(what: $kind . ' identifier "' . $identifier . '"', error: $e);
 
@@ -148,19 +148,20 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 	}//end storedSlug()
 
 	/**
-	 * The mapper that finds this kind of entity.
+	 * The register or schema the identifier names, read as the system.
 	 *
-	 * @param string $kind `register` or `schema`.
+	 * @param string $identifier The trimmed identifier.
+	 * @param string $kind       `register` or `schema`.
 	 *
-	 * @return RegisterMapperInterface|SchemaMapperInterface The register or schema mapper.
+	 * @return Register|Schema The entity.
 	 */
-	private function mapperFor(string $kind): RegisterMapperInterface|SchemaMapperInterface {
+	private function findEntity(string $identifier, string $kind): Register|Schema {
 		if ($kind === 'register') {
-			return $this->catalog->registers();
+			return $this->catalog->registers()->find(id: $identifier, _rbac: false, _multitenancy: false);
 		}
 
-		return $this->catalog->schemas();
-	}//end mapperFor()
+		return $this->catalog->schemas()->find(id: $identifier, _rbac: false, _multitenancy: false);
+	}//end findEntity()
 
 	/**
 	 * Say out loud that an identifier resolved to nothing.
