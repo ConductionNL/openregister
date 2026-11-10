@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Db\AuditTrail\AuditActionStatistics;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
+use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
@@ -592,18 +594,71 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		array|null $sort = ['created' => 'DESC'],
 		string|null $search = null,
 	): array {
+		$query = new ListQuery(limit: ($limit ?? 0), offset: $offset, filters: ($filters ?? []), sort: ($sort ?? []), search: $search);
+		if ($limit === null) {
+			return $this->findEvery(query: $query);
+		}
+
+		return $this->findListed(query: $query);
+	}//end findAll()
+
+	/**
+	 * One page of audit trails matching a listing's filters, search and sort.
+	 *
+	 * The typed form of {@see findAll()} with a limit, which keeps its signature for other apps.
+	 *
+	 * @param ListQuery $query The limit, offset, filters, sort and search.
+	 *
+	 * @return AuditTrail[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function findListed(ListQuery $query): array {
+		return $this->findWithin(query: $query, limit: $query->limit);
+	}//end findListed()
+
+	/**
+	 * Every audit trail matching a listing's filters, search and sort, from its offset, without a limit.
+	 *
+	 * The typed form of {@see findAll()} without a limit: the query's limit is not applied.
+	 *
+	 * @param ListQuery $query The offset, filters, sort and search.
+	 *
+	 * @return AuditTrail[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function findEvery(ListQuery $query): array {
+		return $this->findWithin(query: $query, limit: null);
+	}//end findEvery()
+
+	/**
+	 * Audit trails matching a listing's filters, search and sort, from its offset, up to a limit.
+	 *
+	 * @param ListQuery $query The offset, filters, sort and search.
+	 * @param int|null  $limit The limit, or null for none.
+	 *
+	 * @return AuditTrail[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+	 */
+	private function findWithin(ListQuery $query, ?int $limit): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from('openregister_audit_trails');
 
-		$this->applyFindFilters(qb: $qb, filters: $filters ?? []);
-		$this->applyChangedSearch(qb: $qb, search: $search);
-		$this->applyFindSort(qb: $qb, sort: $sort ?? []);
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		$this->applyFindFilters(qb: $qb, filters: $query->filters);
+		$this->applyChangedSearch(qb: $qb, search: $query->search);
+		$this->applyFindSort(qb: $qb, sort: $query->sort);
+		(new QueryPage(limit: $limit, offset: $query->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end findWithin()
 
 	/**
 	 * Add the search on the changed field, when a search term is provided.
@@ -3105,40 +3160,75 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?string $from = null,
 		?string $to = null,
 	): array {
+		$window = new ActionWindow(action: $action, from: $from, to: $to);
+
+		return $this->findActorTrail(query: new ActorTrailQuery(userId: $userId, limit: $limit, offset: $offset, window: $window));
+	}//end findByActor()
+
+	/**
+	 * One page of the entries one actor produced, with the unbounded total.
+	 *
+	 * The typed form of {@see findByActor()}, which keeps its signature for other apps.
+	 *
+	 * @param ActorTrailQuery $query The actor, the page and the optional action and date range.
+	 *
+	 * @return array{results: array<int, AuditTrail>, total: int}
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function findActorTrail(ActorTrailQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($qb->expr()->eq('user', $qb->createNamedParameter($userId)))
+			->where($qb->expr()->eq('user', $qb->createNamedParameter($query->userId)))
 			->orderBy('created', 'DESC')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+			->setMaxResults($query->limit)
+			->setFirstResult($query->offset);
 
-		self::andActionIs(qb: $qb, action: $action);
-		self::andCreatedFrom(qb: $qb, from: $from);
-		self::andCreatedUntil(qb: $qb, until: $to);
+		self::andActionWindow(qb: $qb, window: $query->window);
 
-		$results = $this->findEntities(query: $qb);
+		return [
+			'results' => $this->findEntities(query: $qb),
+			'total' => $this->countActorTrail(query: $query),
+		];
+	}//end findActorTrail()
 
-		// Count total matches (unbounded).
+	/**
+	 * How many entries one actor produced within the window, unbounded by the page.
+	 *
+	 * @param ActorTrailQuery $query The actor and the optional action and date range.
+	 *
+	 * @return int The total.
+	 */
+	private function countActorTrail(ActorTrailQuery $query): int {
 		$count = $this->db->getQueryBuilder();
 		$count->select($count->func()->count('*', 'total_count'))
 			->from($this->getTableName())
-			->where($count->expr()->eq('user', $count->createNamedParameter($userId)));
+			->where($count->expr()->eq('user', $count->createNamedParameter($query->userId)));
 
-		self::andActionIs(qb: $count, action: $action);
-		self::andCreatedFrom(qb: $count, from: $from);
-		self::andCreatedUntil(qb: $count, until: $to);
+		self::andActionWindow(qb: $count, window: $query->window);
 
 		$result = $count->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
 
-		return [
-			'results' => $results,
-			'total' => (int)($row['total_count'] ?? 0),
-		];
-	}//end findByActor()
+		return (int)($row['total_count'] ?? 0);
+	}//end countActorTrail()
+
+	/**
+	 * Narrow a query to an action and a `created` range, each only when given.
+	 *
+	 * @param IQueryBuilder $qb     The query.
+	 * @param ActionWindow  $window The optional action and date range.
+	 *
+	 * @return void
+	 */
+	private static function andActionWindow(IQueryBuilder $qb, ActionWindow $window): void {
+		self::andActionIs(qb: $qb, action: $window->action);
+		self::andCreatedFrom(qb: $qb, from: $window->from);
+		self::andCreatedUntil(qb: $qb, until: $window->to);
+	}//end andActionWindow()
 
 	/**
 	 * The optional action filter of findByActor(), only when non-empty.

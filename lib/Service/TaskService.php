@@ -39,9 +39,11 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCA\OpenRegister\Service\Task\VtodoCalendarLocator;
@@ -136,15 +138,44 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 		int $limit = 50,
 		int $offset = 0,
 	): array {
+		return $this->listUserTasks(status: $status, query: new ListQuery(limit: $limit, offset: $offset));
+	}//end getAllUserTasks()
+
+	/**
+	 * One page of the session user's tasks across all VTODO calendars, soonest due first (see getAllUserTasks()).
+	 *
+	 * @param string|null $status Optional status filter (e.g. 'needs-action', 'completed')
+	 * @param ListQuery   $query  The page: limit and offset (no offset is the first task).
+	 *
+	 * @return array{results: array, total: int} Task results with total count
+	 *
+	 * @throws Exception If no user is logged in
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-the-projection-carries-a-real-assignee-not-prose
+	 */
+	public function listUserTasks(?string $status, ListQuery $query): array {
+		$allTasks = $this->userTasksByDue(status: $status);
+
+		return ['results' => array_slice($allTasks, ($query->offset ?? 0), $query->limit), 'total' => count($allTasks)];
+	}//end listUserTasks()
+
+	/**
+	 * Every task of the session user's VTODO calendars, optionally only those with a status, soonest due first.
+	 *
+	 * @param string|null $status Status filter, compared case-insensitively.
+	 *
+	 * @return list<array> The tasks.
+	 *
+	 * @throws Exception If no user is logged in
+	 */
+	private function userTasksByDue(?string $status): array {
 		$allTasks = [];
 		foreach ($this->calDavBackend->getCalendarsForUser('principals/users/' . $this->sessionUid()) as $calendar) {
 			$allTasks = array_merge($allTasks, $this->vtodoCalendarTasks(calendar: $calendar, status: $status));
 		}
 
-		$allTasks = $this->sortedByDue(tasks: $allTasks);
-
-		return ['results' => array_slice($allTasks, $offset, $limit), 'total' => count($allTasks)];
-	}//end getAllUserTasks()
+		return $this->sortedByDue(tasks: $allTasks);
+	}//end userTasksByDue()
 
 	/**
 	 * The tasks of a calendar row, or none when the calendar does not support VTODO.
@@ -381,6 +412,27 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
 	 */
 	public function createTask(int $registerId, int $schemaId, string $objectUuid, string $objectTitle, array $data): ?array {
+		$ref = new ObjectRef(register: $registerId, schema: $schemaId, id: $objectUuid);
+		return $this->createObjectTask(ref: $ref, objectTitle: $objectTitle, data: $data);
+	}//end createTask()
+
+	/**
+	 * Create a new CalDAV task linked to an OpenRegister object (see createTask()).
+	 *
+	 * A payload that carries an engine task identity is REFUSED before anything is read or stored.
+	 *
+	 * @param ObjectRef $ref         The object to link: its register id, schema id and uuid.
+	 * @param string    $objectTitle The object title for the LINK label
+	 * @param array     $data        Task data: summary, description, priority, due, status
+	 *
+	 * @return array|null The created task in JSON-friendly format, or null if the calendar data was not a VTODO
+	 *
+	 * @throws Exception If no user is logged in or no calendar found
+	 * @throws TaskAccessDeniedException If the payload attempts to set an engine task identity
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
+	 */
+	public function createObjectTask(ObjectRef $ref, string $objectTitle, array $data): ?array {
 		if ($this->carriesEngineIdentity(data: $data) === true) {
 			throw new TaskAccessDeniedException(
 				message: 'An engine task cannot be created through the object task endpoint; only OpenRegister projects engine tasks into a calendar.'
@@ -388,13 +440,13 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 		}
 
 		$calendarId = $this->findUserCalendar()['id'];
-		$link = ['registerId' => $registerId, 'schemaId' => $schemaId, 'objectUuid' => $objectUuid, 'objectTitle' => $objectTitle];
+		$link = ['registerId' => (int)$ref->register, 'schemaId' => (int)$ref->schema, 'objectUuid' => $ref->id, 'objectTitle' => $objectTitle];
 		$document = $this->documents->compose(...$link, data: $data);
 
 		$this->calDavBackend->createCalendarObject($calendarId, $document['uri'], $document['calendarData']);
 
 		return $this->vtodoToArray(calendarData: $document['calendarData'], at: new TaskLocation(calendarId: $calendarId, uri: $document['uri']));
-	}//end createTask()
+	}//end createObjectTask()
 
 	/**
 	 * Update an existing CalDAV task.

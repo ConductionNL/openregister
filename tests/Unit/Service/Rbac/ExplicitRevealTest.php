@@ -47,6 +47,10 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitReveal
@@ -333,13 +337,14 @@ class ExplicitRevealTest extends TestCase {
 
 		$service = (new ReflectionClass(McpResourcesService::class))->newInstanceWithoutConstructor();
 		$reflection = new ReflectionClass($service);
-		foreach (['schemaMapper' => $schemas, 'objectService' => $objects] as $name => $value) {
+		$catalog = new SchemaCatalog($this->createMock(RegisterMapper::class), $schemas, $this->createMock(MagicMapperInterface::class));
+		foreach (['catalog' => $catalog, 'objectService' => $objects] as $name => $value) {
 			$property = $reflection->getProperty($name);
 			$property->setValue($service, $value);
 		}
 
 		$method = $reflection->getMethod('readObjects');
-		$read = $method->invoke($service, 1, 7, '11111111-1111-4111-8111-111111111111');
+		$read = $method->invoke($service, new RegisterSchemaRef(1, 7), '11111111-1111-4111-8111-111111111111');
 
 		$this->assertSame(self::MASK, $read['citizenServiceNumber']);
 	}//end testAnMcpResourceReadsItMasked()

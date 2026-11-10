@@ -37,6 +37,7 @@ use OCA\OpenRegister\Controller\Support\ActivityLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
 use OCA\OpenRegister\Service\ActivityFilterServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -113,12 +114,23 @@ class ActivityLinksController extends Controller {
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * List filtered + paginated activity entries for an object: the body of index() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexFor(ObjectRef $ref): JSONResponse {
 		if ($this->filterService->isActivityAvailable() === false) {
 			return $this->unavailable();
 		}
 
 		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
+			$object = $this->validateObject(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
@@ -153,7 +165,7 @@ class ActivityLinksController extends Controller {
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 500);
 		}//end try
-	}//end index()
+	}//end indexFor()
 
 	/**
 	 * Distinct activity types for the filter dropdown.

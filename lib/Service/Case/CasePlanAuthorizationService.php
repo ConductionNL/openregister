@@ -133,7 +133,7 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 			return;
 		}
 
-		$this->assertHolds(verb: $verb, rules: $this->effectiveRules(item: $item, tree: $tree), uid: $identity);
+		$this->assertHolds(act: new CasePlanAct(verb: $verb, actor: $identity), rules: $this->effectiveRules(item: $item, tree: $tree));
 	}//end assertMayAct()
 
 	/**
@@ -156,7 +156,7 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 			return;
 		}
 
-		$this->assertHolds(verb: $verb, rules: ($settings['authorization'] ?? null), uid: $identity);
+		$this->assertHolds(act: new CasePlanAct(verb: $verb, actor: $identity), rules: ($settings['authorization'] ?? null));
 	}//end assertMayAdminister()
 
 	/**
@@ -228,9 +228,8 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	/**
 	 * The caller must satisfy at least one rule; anything indeterminate denies.
 	 *
-	 * @param string $verb The verb, for the message.
-	 * @param mixed $rules The rule list.
-	 * @param string $uid The acting identity.
+	 * @param CasePlanAct $act   The verb (for the message) and the acting identity.
+	 * @param mixed       $rules The rule list.
 	 *
 	 * @return void
 	 *
@@ -238,15 +237,15 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	private function assertHolds(string $verb, mixed $rules, string $uid): void {
-		foreach ($this->declaredOrRefused(verb: $verb, rules: $rules) as $rule) {
-			if ($this->ruleAdmits(verb: $verb, rule: $rule, uid: $uid) === true) {
+	private function assertHolds(CasePlanAct $act, mixed $rules): void {
+		foreach ($this->declaredOrRefused(verb: $act->verb, rules: $rules) as $rule) {
+			if ($this->ruleAdmits(act: $act, rule: $rule) === true) {
 				return;
 			}
 		}
 
 		throw new CaseAccessDeniedException(
-			message: sprintf("Verb '%s' denied: the caller holds none of the item's authorizations.", $verb)
+			message: sprintf("Verb '%s' denied: the caller holds none of the item's authorizations.", $act->verb)
 		);
 	}//end assertHolds()
 
@@ -280,9 +279,8 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	 * Whether one rule admits the caller. A role that does not resolve is
 	 * indeterminate and DENIES naming the role, never "no check applicable".
 	 *
-	 * @param string $verb The verb, for the message.
-	 * @param mixed $rule One rule.
-	 * @param string $uid The acting identity.
+	 * @param CasePlanAct $act  The verb (for the message) and the acting identity.
+	 * @param mixed       $rule One rule.
 	 *
 	 * @return boolean True only when the rule affirmatively admits.
 	 *
@@ -290,11 +288,12 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	private function ruleAdmits(string $verb, mixed $rule, string $uid): bool {
+	private function ruleAdmits(CasePlanAct $act, mixed $rule): bool {
 		if (is_string($rule) === false || trim($rule) === '') {
 			return false;
 		}
 
+		$uid = (string)$act->actor;
 		$rule = trim($rule);
 		if (str_starts_with($rule, 'user:') === true) {
 			return substr($rule, 5) === $uid;
@@ -302,7 +301,7 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 
 		if (str_starts_with($rule, 'role:') === true) {
 			$role = substr($rule, 5);
-			$this->assertRoleResolvable(verb: $verb, role: $role);
+			$this->assertRoleResolvable(verb: $act->verb, role: $role);
 
 			return $this->groups->isInGroup(uid: $uid, groupId: $role);
 		}
