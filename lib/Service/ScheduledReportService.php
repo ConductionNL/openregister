@@ -37,8 +37,10 @@ use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCA\OpenRegister\Notifications\Db\ScheduledReportMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Kernel\Contracts\ReportCaller;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportUpdate;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRunContent;
@@ -337,27 +339,6 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	/**
 	 * Update an existing scheduled report. Only the owner or an admin may update.
 	 *
-	 * @param int $id The scheduled report id.
-	 * @param array<string,mixed> $data Fields to update (same shape as create()).
-	 * @param string $callerUid The calling user's uid.
-	 * @param bool $callerIsAdmin Whether the caller is a Nextcloud administrator.
-	 *
-	 * @return ScheduledReport
-	 *
-	 * @throws DoesNotExistException When no row matches.
-	 * @throws RuntimeException When the caller does not own the row and is not an admin.
-	 * @throws InvalidArgumentException When validation fails.
-	 *
-	 * @spec openspec/specs/scheduled-report-jobs/spec.md
-	 */
-	public function update(int $id, array $data, string $callerUid, bool $callerIsAdmin): ScheduledReport {
-		$caller = new ReportCaller(uid: $callerUid, isAdmin: $callerIsAdmin);
-		return $this->applyUpdate(update: new ScheduledReportUpdate(id: $id, data: $data, caller: $caller));
-	}//end update()
-
-	/**
-	 * Update a scheduled report, as {@see update()} describes.
-	 *
 	 * @param ScheduledReportUpdate $update The report id, the fields to update and who asks.
 	 *
 	 * @return ScheduledReport
@@ -463,24 +444,6 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	/**
 	 * Delete a scheduled report. Only the owner or an admin may delete.
 	 *
-	 * @param int $id The scheduled report id.
-	 * @param string $callerUid The calling user's uid.
-	 * @param bool $callerIsAdmin Whether the caller is a Nextcloud administrator.
-	 *
-	 * @return void
-	 *
-	 * @throws DoesNotExistException When no row matches.
-	 * @throws RuntimeException When the caller does not own the row and is not an admin.
-	 *
-	 * @spec openspec/specs/scheduled-report-jobs/spec.md
-	 */
-	public function delete(int $id, string $callerUid, bool $callerIsAdmin): void {
-		$this->deleteAs(id: $id, caller: new ReportCaller(uid: $callerUid, isAdmin: $callerIsAdmin));
-	}//end delete()
-
-	/**
-	 * Delete a scheduled report, as {@see delete()} describes.
-	 *
 	 * @param int          $id     The scheduled report id.
 	 * @param ReportCaller $caller Who asks.
 	 *
@@ -499,23 +462,6 @@ class ScheduledReportService implements ScheduledReportsInterface {
 
 	/**
 	 * Assert the caller owns the report or is an admin.
-	 *
-	 * @param ScheduledReportInterface $report The report.
-	 * @param string $callerUid The calling user's uid.
-	 * @param bool $callerIsAdmin Whether the caller is an admin.
-	 *
-	 * @return void
-	 *
-	 * @throws RuntimeException When the assertion fails.
-	 *
-	 * @spec openspec/specs/scheduled-report-jobs/spec.md
-	 */
-	public function assertOwnerOrAdmin(ScheduledReportInterface $report, string $callerUid, bool $callerIsAdmin): void {
-		$this->assertMayAccess(report: $report, caller: new ReportCaller(uid: $callerUid, isAdmin: $callerIsAdmin));
-	}//end assertOwnerOrAdmin()
-
-	/**
-	 * Assert the caller owns the report or is an admin, as {@see assertOwnerOrAdmin()} describes.
 	 *
 	 * @param ScheduledReportInterface $report The report.
 	 * @param ReportCaller             $caller Who asks.
