@@ -42,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode
@@ -107,8 +108,7 @@ class ObjectReadNodeBehaviourTest extends TestCase {
 		$this->node = new ObjectReadNode(
 			sources: new ObjectNodeSources(objects: $this->objects, registers: $this->registers, schemas: $this->schemas),
 			userManager: $users,
-			l10n: $l10n,
-			urls: $this->createMock(IURLGenerator::class)
+			presentation: new FlowNodePresentation(l10n: $l10n, urls: $this->createMock(IURLGenerator::class))
 		);
 	}//end setUp()
 

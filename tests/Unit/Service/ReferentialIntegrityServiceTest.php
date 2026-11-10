@@ -1262,6 +1262,9 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		// Should complete without infinite recursion.
 		$analysis = $this->service->canDelete($objects[1]);
 		$this->assertInstanceOf(DeletionAnalysis::class, $analysis);
+		// The walk stops at the depth limit: uuid-12 lies beyond it.
+		$this->assertCount(10, $analysis->cascadeTargets);
+		$this->assertNotContains('uuid-12', array_column($analysis->cascadeTargets, 'objectUuid'));
 	}//end testCanDeleteDepthLimitingPreventsDeepRecursion()
 
 	/**

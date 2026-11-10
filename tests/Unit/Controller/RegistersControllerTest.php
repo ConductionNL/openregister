@@ -9,6 +9,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\RegistersController;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -655,6 +656,8 @@ class RegistersControllerTest extends TestCase {
 		$result = $this->controller->export(1);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=test-register_\d{4}-\d{2}-\d{2}_\d{6}\.json$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/json', $result->getHeaders()['Content-Type']);
 	}
 
 	public function testExportCsvMissingSchemaReturns400(): void {
@@ -1106,6 +1109,8 @@ class RegistersControllerTest extends TestCase {
 		$result = $this->controller->export(1);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=test-register_test-schema_\d{4}-\d{2}-\d{2}_\d{6}\.csv$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('text/csv', $result->getHeaders()['Content-Type']);
 	}
 
 	public function testExportExcelSuccess(): void {
@@ -1126,6 +1131,8 @@ class RegistersControllerTest extends TestCase {
 		$result = $this->controller->export(1);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=test-register_\d{4}-\d{2}-\d{2}_\d{6}\.xlsx$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $result->getHeaders()['Content-Type']);
 	}
 
 	public function testExportPdfWithSchemaSuccess(): void {
@@ -2105,7 +2112,7 @@ class RegistersControllerTest extends TestCase {
 	public function testRegisterObjectStatsFallsBackToMapperWithoutSchemaStats(): void {
 		$this->objectMapper->expects($this->once())
 			->method('getStatistics')
-			->with(registerId: 7, schemaId: null)
+			->with(new StatisticsScope(registerId: 7))
 			->willReturn(['total' => 42, 'size' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0]);
 
 		$result = $this->statistics()->objectTotals(7, null);

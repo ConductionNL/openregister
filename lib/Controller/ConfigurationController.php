@@ -37,6 +37,8 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
+use OCA\OpenRegister\Service\Configuration\GitLabProjectRef;
+use OCA\OpenRegister\Service\Configuration\RepositorySearchPage;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\NotificationServiceInterface;
 use OCA\OpenRegister\Service\Security\SafeFetchUrl;
@@ -812,7 +814,7 @@ class ConfigurationController extends Controller {
 	 */
 	private function searchGitLab(mixed $search, int $page): array {
 		$this->logger->debug(message: '[ConfigurationController] About to call GitLab search service', context: ['file' => __FILE__, 'line' => __LINE__]);
-		$results = $this->gitlabHandler->searchConfigurations(search: $search, page: $page);
+		$results = $this->gitlabHandler->searchPage(search: $search, page: new RepositorySearchPage(page: $page, perPage: 30));
 		$this->logger->debug(
 			message: '[ConfigurationController] GitLab search completed',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
@@ -1115,7 +1117,8 @@ class ConfigurationController extends Controller {
 				'project_id' => $projectId, 'ref' => $ref]
 		);
 
-		return new JSONResponse(data: ['files' => $this->gitlabHandler->listConfigurationFiles(projectId: $projectId, ref: $ref)], statusCode: 200);
+		$files = $this->gitlabHandler->listConfigurationFiles(project: new GitLabProjectRef(projectId: $projectId, ref: $ref));
+		return new JSONResponse(data: ['files' => $files], statusCode: 200);
 	}//end gitLabConfigurations()
 
 	/**
@@ -1191,7 +1194,7 @@ class ConfigurationController extends Controller {
 		}
 
 		$projectId  = $this->gitlabHandler->getProjectByPath(namespace: $meta['namespace'], project: $meta['project'])['id'];
-		$configData = $this->gitlabHandler->getFileContent(projectId: $projectId, path: $meta['path'], ref: $meta['ref']);
+		$configData = $this->gitlabHandler->fileContent(project: new GitLabProjectRef(projectId: $projectId, ref: $meta['ref']), path: $meta['path']);
 		$webBase    = str_replace('/api/v4', '', $this->gitlabHandler->getApiBase());
 
 		return [

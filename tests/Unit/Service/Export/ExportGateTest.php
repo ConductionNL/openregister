@@ -29,8 +29,10 @@ namespace Unit\Service\Export;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
 use OCA\OpenRegister\Service\Export\ExportGate;
+use OCA\OpenRegister\Service\Export\ExportRefusal;
 use OCA\OpenRegister\Service\Export\ExportRefusedException;
 use OCA\OpenRegister\Service\Export\ExportRightService;
+use OCA\OpenRegister\Service\Export\ExportScope;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -62,24 +64,19 @@ final class ExportGateTest extends TestCase {
 		$rights->method('refusalFor')->willReturn($refusal);
 
 		$recorder = $this->createMock(ExportAuditRecorder::class);
-		$recorder->method('recordRefused')->willReturnCallback(
-			function (
-				string $profile,
-				string $rule,
-				string $reason,
-				?int $register = null,
-				?int $schema = null,
-			): void {
+		$recorder->method('recordRefusal')->willReturnCallback(
+			function (ExportRefusal $refusal, ExportScope $scope): void {
 				if ($this->recorderThrows === true) {
 					throw new RuntimeException('the trail is unwritable');
 				}
 
 				$this->recorded[] = [
-					'profile' => $profile,
-					'rule' => $rule,
-					'reason' => $reason,
-					'register' => $register,
-					'schema' => $schema,
+					'profile' => $refusal->profile,
+					'rule' => $refusal->rule,
+					'reason' => $refusal->reason,
+					'register' => $scope->register,
+					'schema' => $scope->schema,
+					'actorId' => $scope->actorId,
 				];
 			}
 		);
@@ -160,6 +157,7 @@ final class ExportGateTest extends TestCase {
 		$this->assertSame('tmlo-batch', $this->recorded[0]['profile']);
 		$this->assertSame('export-right-missing', $this->recorded[0]['rule']);
 		$this->assertSame(3, $this->recorded[0]['register']);
+		$this->assertNull($this->recorded[0]['actorId'], 'The gate records the session user, never a stand-in principal.');
 		$this->assertSame(7, $this->recorded[0]['schema']);
 	}
 

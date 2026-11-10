@@ -99,24 +99,6 @@ class ViewShareResolver implements ViewShareResolverInterface {
 	 * because the view said so. Mixing the two would put `owner` on a row an
 	 * administrator does not own and cannot hand back.
 	 *
-	 * @param array<string, mixed> $view The view, as the entity serialises it.
-	 * @param string $userId The caller.
-	 * @param string[] $userGroups The caller's group ids.
-	 *
-	 * @return string|null One of owner, write, read, or null when the view grants nothing.
-	 *
-	 * @spec openspec/specs/saved-search-views/spec.md
-	 */
-	public function accessFor(array $view, string $userId, array $userGroups): ?string {
-		return $this->accessOf(view: $view, reach: new ViewerReach(userId: $userId, groups: $userGroups, isAdmin: false));
-	}//end accessFor()
-
-	/**
-	 * The access a view grants a reach: owner, write, read, or null.
-	 *
-	 * The reach's administrator flag is not read here, for the reason
-	 * accessFor() gives.
-	 *
 	 * @param array<string, mixed> $view  The view, as the entity serialises it.
 	 * @param ViewerReach          $reach The caller and their group ids.
 	 *
@@ -188,21 +170,6 @@ class ViewShareResolver implements ViewShareResolverInterface {
 
 		return $share['group'];
 	}//end targetKey()
-
-	/**
-	 * Whether this caller may change the shares, the owner, or delete the view.
-	 *
-	 * @param array<string, mixed> $view The view.
-	 * @param string $userId The caller.
-	 * @param bool $isAdmin Whether the caller is an administrator.
-	 *
-	 * @return bool True for the owner and for an administrator.
-	 *
-	 * @spec openspec/specs/saved-search-views/spec.md
-	 */
-	public function mayAdminister(array $view, string $userId, bool $isAdmin): bool {
-		return $this->mayAdministerAs(view: $view, reach: new ViewerReach(userId: $userId, groups: [], isAdmin: $isAdmin));
-	}//end mayAdminister()
 
 	/**
 	 * Whether this reach may change the shares, the owner, or delete the view.

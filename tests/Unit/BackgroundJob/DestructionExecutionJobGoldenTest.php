@@ -7,12 +7,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -180,10 +182,10 @@ class DestructionExecutionJobGoldenTest extends TestCase
                 return $object->getUuid() === 'held';
             }
         );
-        $service->method('generateDestructionCertificate')->willReturnCallback(
-            function (array $list, int $count, string $at): array {
-                $this->record('generateDestructionCertificate', [self::mask($list), $count, $at === '' ? '' : 'T']);
-                return ['certificate' => $count];
+        $service->method('certify')->willReturnCallback(
+            function (ExecutedDestruction $execution): array {
+                $this->record('generateDestructionCertificate', [self::mask($execution->destructionList), $execution->destroyedCount, $execution->executedAt === '' ? '' : 'T']);
+                return ['certificate' => $execution->destroyedCount];
             }
         );
         return $service;
@@ -277,8 +279,9 @@ class DestructionExecutionJobGoldenTest extends TestCase
     {
         $deleter = $this->createMock(DeleteObject::class);
         $deleter->method('deleteObject')->willReturnCallback(
-            function (...$args): bool {
-                $this->record('deleteObject', array_slice($args, 0, 6));
+            function (DeletionRequest $request, bool $_rbac = true, bool $_multitenancy = true): bool {
+                $args = [$request->register, $request->schema, $request->uuid, $request->options->originalObjectId, $_rbac, $_multitenancy];
+                $this->record('deleteObject', $args);
                 $this->assertTrue((new RetentionDestruction())->isRunning(), 'a destruction is not stopped by a lock or the archive');
                 if ($args[2] === 'undeletable') {
                     throw new RuntimeException('delete refused');

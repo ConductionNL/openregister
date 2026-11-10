@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\FlowTriggerMapper;
+use OCA\OpenRegister\Db\Flow\FlowTriggerSet;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -53,12 +54,14 @@ class FlowTriggerMapperIndexGoldenTest extends TestCase {
 	 */
 	public function testReplaceForDeletesThenInsertsEachTrigger(): void {
 		$written = (new FlowTriggerMapper($this->recordingDb()))->replaceFor(
-			'f-1',
-			[
-				['event' => 'object.created', 'register' => 'zaken', 'schema' => 'zaak'],
-				['event' => 'object.updated', 'register' => 7, 'schema' => 'besluit'],
-			],
-			false
+			new FlowTriggerSet(
+				'f-1',
+				[
+					['event' => 'object.created', 'register' => 'zaken', 'schema' => 'zaak'],
+					['event' => 'object.updated', 'register' => 7, 'schema' => 'besluit'],
+				],
+				false
+			)
 		);
 
 		$this->assertSame(2, $written);
@@ -77,7 +80,7 @@ class FlowTriggerMapperIndexGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testReplaceForWithoutTriggersOnlyDeletes(): void {
-		$written = (new FlowTriggerMapper($this->recordingDb()))->replaceFor('f-1', [], true);
+		$written = (new FlowTriggerMapper($this->recordingDb()))->replaceFor(new FlowTriggerSet('f-1', [], true));
 
 		$this->assertSame(0, $written);
 		$this->assertCount(1, $this->queries);

@@ -29,6 +29,7 @@ use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Serializer\RegisterExpansion;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\Files\Node;
 use OCP\IDBConnection;
@@ -273,7 +274,10 @@ class RegisterService implements RegisterServiceInterface {
 			$stats = $this->statsFor(register: $register);
 		}
 
-		return $this->registerSerializer->serialize($register, $_extend, $stats);
+		return $this->registerSerializer->serializeExpanded(
+			$register,
+			RegisterExpansion::fromExtend(extend: $_extend, schemaStats: $stats)
+		);
 	}//end serializeOne()
 
 	/**

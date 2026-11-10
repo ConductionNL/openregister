@@ -477,6 +477,7 @@ class ExportServiceTest extends TestCase {
 
 		// Should not throw.
 		$this->assertInstanceOf(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, $spreadsheet);
+		$this->assertSame([['id', 'title'], ['uuid-1', null]], $spreadsheet->getActiveSheet()->toArray());
 	}
 
 	public function testExportHandlesArrayValuesAsJson(): void {

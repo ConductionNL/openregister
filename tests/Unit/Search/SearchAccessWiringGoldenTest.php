@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Search;
 
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
@@ -113,8 +114,7 @@ class SearchAccessWiringGoldenTest extends TestCase {
 				$this->createMock(GeoFeatureCollectionBuilder::class),
 				$this->createMock(PageWidgetRegistryInterface::class)
 			),
-			$this->session($uid),
-			$this->groupManager()
+			new CallerContext($this->session($uid), $this->groupManager())
 		);
 	}//end maps()
 

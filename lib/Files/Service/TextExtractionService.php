@@ -513,7 +513,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 		$objectHandler = $this->newObjectHandler();
 		$sourceMeta = $objectHandler->getSourceMetadata($objectId);
-		$extractedData = $objectHandler->extractText(sourceId: $objectId, sourceMeta: $sourceMeta, force: $forceReExtract);
+		$extractedData = $objectHandler->extractText(sourceId: $objectId, sourceMeta: $sourceMeta);
 		$payload = $this->objectPayload(objectId: $objectId, extractedData: $extractedData);
 		$this->indexObjectPayload(text: new SourceText(payload: $payload, sourceTimestamp: $sourceTimestamp));
 	}//end extractObject()

@@ -40,6 +40,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Service\Rbac\LinkProtection;
+use OCA\OpenRegister\Service\Rbac\LinkInvitation;
+use OCA\OpenRegister\Service\Rbac\GrantTerms;
+use OCA\OpenRegister\Service\Rbac\GrantRequest;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -153,7 +157,7 @@ class ObjectShareLinkIntegrationTest extends TestCase {
 	public function testALiveTokenResolvesAPrivateObjectAnonymously(): void {
 		[$register, $schema, $object] = $this->privateObject('linked');
 
-		$link = $this->sharing()->createLink(object: $object, permissions: 1);
+		$link = $this->sharing()->createLink(object: $object, invitation: new LinkInvitation(recipient: null, permissions: 1, protection: new LinkProtection(password: null, expiration: null)));
 		$this->assertNotEmpty($link['token'], 'core issued no token');
 
 		// Anonymous: no session at all.
@@ -173,7 +177,7 @@ class ObjectShareLinkIntegrationTest extends TestCase {
 	public function testARevokedLinkStopsResolving(): void {
 		[$register, $schema, $object] = $this->privateObject('revocable');
 
-		$link = $this->sharing()->createLink(object: $object, permissions: 1);
+		$link = $this->sharing()->createLink(object: $object, invitation: new LinkInvitation(recipient: null, permissions: 1, protection: new LinkProtection(password: null, expiration: null)));
 		$this->userSession->setUser(null);
 		$this->assertNotNull($this->resolveToken($link['token']), 'granted first');
 
@@ -197,11 +201,7 @@ class ObjectShareLinkIntegrationTest extends TestCase {
 	public function testAnExpiredLinkStopsResolving(): void {
 		[$register, $schema, $object] = $this->privateObject('expiring');
 
-		$link = $this->sharing()->createLink(
-			object: $object,
-			permissions: 1,
-			expiration: (new \DateTime('+7 days'))->format('Y-m-d')
-		);
+		$link = $this->sharing()->createLink(object: $object, invitation: new LinkInvitation(recipient: null, permissions: 1, protection: new LinkProtection(password: null, expiration: (new \DateTime('+7 days'))->format('Y-m-d'))));
 
 		$this->userSession->setUser(null);
 		$this->assertNotNull($this->resolveToken($link['token']), 'valid while unexpired');
@@ -235,12 +235,7 @@ class ObjectShareLinkIntegrationTest extends TestCase {
 		$recipient = $this->userManager->createUser($recipientUid, 'Link-Test-Pass-123');
 
 		try {
-			$grant = $this->sharing()->grant(
-				object: $object,
-				type: 'user',
-				shareWith: $recipientUid,
-				permissions: 1
-			);
+			$grant = $this->sharing()->grantWithTerms(object: $object, request: new GrantRequest(type: 'user', shareWith: $recipientUid, terms: new GrantTerms(permissions: 1)));
 
 			$share = \OC::$server->get(IManager::class)->getShareById((string)$grant['id']);
 
@@ -275,7 +270,7 @@ class ObjectShareLinkIntegrationTest extends TestCase {
 	public function testALinkDoesNotMakeTheObjectListableForOthers(): void {
 		[$register, $schema, $object] = $this->privateObject('stillprivate');
 
-		$this->sharing()->createLink(object: $object, permissions: 1);
+		$this->sharing()->createLink(object: $object, invitation: new LinkInvitation(recipient: null, permissions: 1, protection: new LinkProtection(password: null, expiration: null)));
 
 		$otherUid = 'link-other-' . substr((string)Uuid::v4(), 0, 8);
 		$otherUser = $this->userManager->createUser($otherUid, 'Link-Test-Pass-123');
@@ -310,7 +305,7 @@ class ObjectShareLinkIntegrationTest extends TestCase {
 		[$register, $schema, $object] = $this->privateObject('bademail');
 
 		$this->expectException(\InvalidArgumentException::class);
-		$this->sharing()->inviteByEmail(object: $object, email: 'not-an-address');
+		$this->sharing()->inviteByEmail(object: $object, invitation: new LinkInvitation(recipient: 'not-an-address', permissions: 1, protection: new LinkProtection(password: null, expiration: null)));
 	}//end testAnEmailInvitationRequiresAValidAddress()
 
 	/**
@@ -336,12 +331,7 @@ class ObjectShareLinkIntegrationTest extends TestCase {
 			// A plain READ grant first — the control. Without it, a passing
 			// assertion below would not distinguish "the verb was carried" from
 			// "every grant reports every verb".
-			$this->sharing()->grant(
-				object: $object,
-				type: 'user',
-				shareWith: $recipientUid,
-				permissions: 1
-			);
+			$this->sharing()->grantWithTerms(object: $object, request: new GrantRequest(type: 'user', shareWith: $recipientUid, terms: new GrantTerms(permissions: 1)));
 			$resolver->forget();
 
 			$this->assertFalse(
@@ -351,12 +341,9 @@ class ObjectShareLinkIntegrationTest extends TestCase {
 
 			// Now one that does carry it.
 			[, , $withVerb] = $this->privateObject('verbgrant2');
-			$this->sharing()->grant(
+			$this->sharing()->grantWithTerms(
 				object: $withVerb,
-				type: 'user',
-				shareWith: $recipientUid,
-				permissions: 1,
-				verbs: ['use']
+				request: new GrantRequest(type: 'user', shareWith: $recipientUid, terms: new GrantTerms(permissions: 1, verbs: ['use']))
 			);
 			$resolver->forget();
 

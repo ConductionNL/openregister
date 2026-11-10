@@ -22,6 +22,10 @@ use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\User\ActivityQuery;
+use OCA\OpenRegister\Service\User\ApiTokenRequest;
+use OCA\OpenRegister\Service\User\AvatarUpload;
+use OCA\OpenRegister\Service\User\PasswordChange;
 
 /**
  * Unit tests for UserService profile action methods
@@ -85,7 +89,7 @@ class UserServiceProfileActionsTest extends TestCase {
 
 		$this->userManager->method('checkPassword')->willReturn($user);
 
-		$result = $this->service->changePassword($user, 'OldPass!', 'NewPass!');
+		$result = $this->service->applyPasswordChange($user, new PasswordChange('OldPass!', 'NewPass!'));
 
 		$this->assertTrue($result['success']);
 		$this->assertEquals('Password updated successfully', $result['message']);
@@ -98,7 +102,7 @@ class UserServiceProfileActionsTest extends TestCase {
 		$this->expectException(\RuntimeException::class);
 		$this->expectExceptionCode(409);
 
-		$this->service->changePassword($user, 'old', 'new');
+		$this->service->applyPasswordChange($user, new PasswordChange('old', 'new'));
 	}
 
 	public function testChangePasswordIncorrectCurrent(): void {
@@ -111,7 +115,7 @@ class UserServiceProfileActionsTest extends TestCase {
 		$this->expectException(\RuntimeException::class);
 		$this->expectExceptionCode(403);
 
-		$this->service->changePassword($user, 'wrong', 'new');
+		$this->service->applyPasswordChange($user, new PasswordChange('wrong', 'new'));
 	}
 
 	public function testChangePasswordPolicyViolation(): void {
@@ -125,7 +129,7 @@ class UserServiceProfileActionsTest extends TestCase {
 		$this->expectException(\RuntimeException::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->changePassword($user, 'old', 'abc');
+		$this->service->applyPasswordChange($user, new PasswordChange('old', 'abc'));
 	}
 
 	// ── uploadAvatar() ──
@@ -139,7 +143,7 @@ class UserServiceProfileActionsTest extends TestCase {
 		$avatar->expects($this->once())->method('set');
 		$this->avatarManager->method('getAvatar')->willReturn($avatar);
 
-		$result = $this->service->uploadAvatar($user, 'imagedata', 'image/jpeg', 1024);
+		$result = $this->service->setAvatar($user, new AvatarUpload('imagedata', 'image/jpeg', 1024));
 
 		$this->assertTrue($result['success']);
 		$this->assertStringContainsString('/avatar/jan/128', $result['avatarUrl']);
@@ -152,7 +156,7 @@ class UserServiceProfileActionsTest extends TestCase {
 		$this->expectException(\RuntimeException::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->uploadAvatar($user, 'data', 'image/bmp', 1024);
+		$this->service->setAvatar($user, new AvatarUpload('data', 'image/bmp', 1024));
 	}
 
 	public function testUploadAvatarTooLarge(): void {
@@ -162,7 +166,7 @@ class UserServiceProfileActionsTest extends TestCase {
 		$this->expectException(\RuntimeException::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->uploadAvatar($user, 'data', 'image/jpeg', 6000000);
+		$this->service->setAvatar($user, new AvatarUpload('data', 'image/jpeg', 6000000));
 	}
 
 	public function testUploadAvatarBackendUnsupported(): void {
@@ -172,7 +176,7 @@ class UserServiceProfileActionsTest extends TestCase {
 		$this->expectException(\RuntimeException::class);
 		$this->expectExceptionCode(409);
 
-		$this->service->uploadAvatar($user, 'data', 'image/jpeg', 1024);
+		$this->service->setAvatar($user, new AvatarUpload('data', 'image/jpeg', 1024));
 	}
 
 	// ── deleteAvatar() ──
@@ -259,7 +263,7 @@ class UserServiceProfileActionsTest extends TestCase {
 			'total' => 0,
 		]);
 
-		$result = $this->service->getUserActivity($user);
+		$result = $this->service->activity($user, new ActivityQuery());
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertEquals(0, $result['total']);
@@ -275,7 +279,7 @@ class UserServiceProfileActionsTest extends TestCase {
 		$this->secureRandom->method('generate')
 			->willReturnOnConsecutiveCalls('abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab', 'tokenid123456789');
 
-		$result = $this->service->createApiToken($user, 'CI Pipeline', '90d');
+		$result = $this->service->issueApiToken($user, new ApiTokenRequest('CI Pipeline', '90d'));
 
 		$this->assertEquals('CI Pipeline', $result['name']);
 		$this->assertNotEmpty($result['token']);
@@ -295,7 +299,7 @@ class UserServiceProfileActionsTest extends TestCase {
 		$this->expectException(\RuntimeException::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createApiToken($user, 'One more');
+		$this->service->issueApiToken($user, new ApiTokenRequest('One more'));
 	}
 
 	public function testListApiTokensMasked(): void {

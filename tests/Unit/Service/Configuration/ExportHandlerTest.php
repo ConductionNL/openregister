@@ -237,7 +237,7 @@ class ExportHandlerTest extends TestCase {
 			'@self' => ['register' => 1, 'schema' => 5],
 			'name' => 'Test Object',
 		]);
-		$this->objectEntityMapper->method('findAll')
+		$this->objectEntityMapper->method('findAllListed')
 			->willReturn([$mockObject]);
 
 		$result = $this->handler->exportConfig($register, true);

@@ -186,11 +186,6 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame(409, $result->getStatus());
 	}
 
-	public function testControllerConstructorSetsProperties(): void {
-		// If the controller is constructed without errors, the test passes.
-		$this->assertInstanceOf(ObjectsController::class, $this->controller);
-	}
-
 	public function testDestroyReturns422OnHookStoppedException(): void {
 		$this->setupAdminUser();
 
@@ -5719,6 +5714,8 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->export('1', '2', $this->objectService);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=test-reg_test-schema_\d{4}-\d{2}-\d{2}_\d{6}\.xlsx$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $result->getHeaders()['Content-Type']);
 	}
 
 	// =========================================================================
@@ -5765,6 +5762,8 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->export('1', '2', $this->objectService);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=register_schema_\d{4}-\d{2}-\d{2}_\d{6}\.csv$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('text/csv', $result->getHeaders()['Content-Type']);
 	}
 
 	// =========================================================================
@@ -5814,6 +5813,8 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->export('1', '2', $this->objectService);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=reg_sch_\d{4}-\d{2}-\d{2}_\d{6}\.csv$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('text/csv', $result->getHeaders()['Content-Type']);
 	}
 
 	// =========================================================================
@@ -6359,6 +6360,8 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=test-files\.zip$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/zip', $result->getHeaders()['Content-Type']);
 
 		// Clean up if file still exists
 		if (file_exists($tempZip)) {
@@ -6434,6 +6437,8 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=test-files\.zip$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/zip', $result->getHeaders()['Content-Type']);
 	}
 
 	/**
@@ -6877,6 +6882,8 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
 
 		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertMatchesRegularExpression('/filename=custom-name\.zip$/', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('application/zip', $result->getHeaders()['Content-Type']);
 
 		if (file_exists($tempZip)) {
 			unlink($tempZip);

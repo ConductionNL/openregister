@@ -24,6 +24,7 @@ use OCA\OpenRegister\Notifications\Db\NotificationHistory;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
+use OCA\OpenRegister\Notifications\Db\RecipientNotice;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -175,7 +176,7 @@ class NotificationClearingServiceTest extends TestCase {
 		$this->mapper->expects($this->never())->method('markReadForSubject');
 		$this->mapper->expects($this->once())
 			->method('archive')
-			->with($this->equalTo(42), $this->equalTo('alice'));
+			->with($this->equalTo(new RecipientNotice(42, 'alice')));
 
 		$row = $this->serviceAs('alice')->archive(id: 42);
 

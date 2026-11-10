@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
+use OCA\OpenRegister\Service\Object\TransitionGate;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -185,7 +186,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 		return new LifecycleValidationListener(
 			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), $this->resolver()), $this->userSession, $this->permission),
-			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guards, $server, $this->logger), new LifecycleConditionEvaluator($this->userSession, $groups, new LifecycleConditionReporting($l10n, $this->logger), $dialect), new ConditionTracer(dialect: $dialect)),
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->guards, $server, $this->logger)), new LifecycleConditionEvaluator($this->userSession, $groups, new LifecycleConditionReporting($l10n, $this->logger), $dialect), new ConditionTracer(dialect: $dialect)),
 			$this->ruleRuns
 		);
 	}//end validationListener()
@@ -1048,7 +1049,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 			$this->lifecycle(['transitions' => ['submit' => ['from' => 'draft', 'to' => 'sent', 'authorization' => ['admins'], 'requires' => 'tag']]])
 		);
 		$this->permission->expects($this->once())->method('isTransitionAuthorized')
-			->with(['admins'], 'alice', $schema)->willReturn(false);
+			->with(new TransitionGate(authorizationList: ['admins'], schema: $schema), 'alice')->willReturn(false);
 		$this->guards->expects($this->never())->method('get');
 		$event = $this->update(['status' => 'draft'], ['status' => 'sent']);
 
@@ -1081,7 +1082,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 			)
 		);
 		$this->permission->expects($this->once())->method('isTransitionAuthorized')
-			->with(['admins'], null, $this->anything())->willReturn(true);
+			->with($this->callback(static fn (TransitionGate $gate): bool => $gate->authorizationList === ['admins']), null)->willReturn(true);
 
 		foreach ([['draft', 'sent'], ['a', 'b'], ['c', 'd']] as [$from, $to]) {
 			$event = $this->update(['status' => $from], ['status' => $to]);
