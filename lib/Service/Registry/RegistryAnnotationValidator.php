@@ -150,35 +150,64 @@ final class RegistryAnnotationValidator implements RegistryAnnotationValidatorIn
 	private function validateOwned(array $annotation, array $properties): array {
 		$owned = $annotation['owned'] ?? null;
 		if (is_array($owned) === false || count($owned) === 0) {
-			return [
-				[
-					'code' => 'registry-owned-missing',
-					'message' => 'x-openregister-registry.owned must be a non-empty array of property names.',
-				],
-			];
+			return [self::ownedMissing()];
 		}
 
 		$errors = [];
 		foreach ($owned as $index => $property) {
 			if (is_string($property) === false || $property === '') {
-				$errors[] = [
-					'code' => 'registry-owned-malformed',
-					'message' => sprintf('x-openregister-registry.owned[%s] must be a non-empty string.', (string)$index),
-				];
+				$errors[] = self::ownedMalformed(index: (string)$index);
 				continue;
 			}
 
 			if (array_key_exists($property, $properties) === false) {
-				$errors[] = [
-					'code' => 'registry-owned-undeclared',
-					'message' => sprintf(
-						'x-openregister-registry.owned property "%s" is not declared in this schema\'s properties.',
-						$property
-					),
-				];
+				$errors[] = self::ownedUndeclared(property: $property);
 			}
 		}
 
 		return $errors;
 	}//end validateOwned()
+
+	/**
+	 * The finding for a missing or empty `owned` list.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private static function ownedMissing(): array {
+		return [
+			'code' => 'registry-owned-missing',
+			'message' => 'x-openregister-registry.owned must be a non-empty array of property names.',
+		];
+	}//end ownedMissing()
+
+	/**
+	 * The finding for an `owned` entry that is not a non-empty string.
+	 *
+	 * @param string $index The entry's index in the list.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private static function ownedMalformed(string $index): array {
+		return [
+			'code' => 'registry-owned-malformed',
+			'message' => sprintf('x-openregister-registry.owned[%s] must be a non-empty string.', $index),
+		];
+	}//end ownedMalformed()
+
+	/**
+	 * The finding for an `owned` property the schema does not declare.
+	 *
+	 * @param string $property The property name.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private static function ownedUndeclared(string $property): array {
+		return [
+			'code' => 'registry-owned-undeclared',
+			'message' => sprintf(
+				'x-openregister-registry.owned property "%s" is not declared in this schema\'s properties.',
+				$property
+			),
+		];
+	}//end ownedUndeclared()
 }//end class
