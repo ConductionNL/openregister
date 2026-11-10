@@ -231,7 +231,7 @@ class RegisterCalendar implements ICalendar {
 		try {
 			$objects = $this->sources->catalog->tables()->findAllInRegisterSchemaTable(
 				table: new RegisterSchema(register: $register, schema: $this->definition->schema),
-				listing: new ListQuery(limit: ($query->limit ?? ListQuery::UNBOUNDED), offset: $query->offset, filters: $filters)
+				listing: new ListQuery(limit: ($query->limit ?? ListQuery::UNBOUNDED), offset: $query->offset, filters: ($filters ?? []))
 			);
 
 			foreach ($objects as $object) {

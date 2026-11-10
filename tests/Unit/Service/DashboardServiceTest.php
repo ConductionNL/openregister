@@ -6,10 +6,12 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
@@ -225,7 +227,8 @@ class DashboardServiceTest extends TestCase {
 
 		$read = [];
 		$this->objectMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema) use (&$read): array {
+			function (RegisterSchema $table, ListQuery $listing) use (&$read): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				$read[] = $register->getId() . '/' . $schema->getId();
 				return [];
 			}

@@ -36,12 +36,14 @@ declare(strict_types=1);
 namespace Unit\Service\Aggregation;
 
 use Doctrine\DBAL\Platforms\SqlitePlatform;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -423,7 +425,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		// The PHP fallback must not be what answers: an empty fallback would
 		// turn a broken native query into a plausible "no rows".
 		$magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
 				$this->fail('the native SQL path must answer; the fallback was reached');
 			}
 		);

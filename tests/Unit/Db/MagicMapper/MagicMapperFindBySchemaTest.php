@@ -18,10 +18,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use PHPUnit\Framework\TestCase;
@@ -73,7 +75,8 @@ class MagicMapperFindBySchemaTest extends TestCase {
 			[['registerId' => 1, 'schemaId' => 7], ['registerId' => 1, 'schemaId' => 8], ['registerId' => 2, 'schemaId' => '7']]
 		);
 		$mapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema, ?int $limit = null, ?int $offset = null, ?array $filters = null): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
+				[$register, $schema, $limit, $offset, $filters] = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters)];
 				$this->calls[] = [$register->getId(), $schema->getId(), $limit, $offset, $filters];
 				return [new ObjectEntity()];
 			}
