@@ -13,6 +13,8 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowTriggerService;
 use PHPUnit\Framework\TestCase;
 
@@ -77,12 +79,13 @@ class FlowTriggerServiceTest extends TestCase {
 		);
 
 		$runner = new FlowRunService(
-			$mapper,
-			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowEngine::class),
-			$this->createMock(\OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class),
-			new \Psr\Log\NullLogger(),
-			$container
+			stores: new FlowRunStores(
+				mapper: $mapper,
+				stateMapper: $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class)
+			),
+			walk: new FlowRunWalkServices(engine: $this->createMock(\OCA\OpenRegister\Service\Flow\FlowEngine::class), registry: $this->createMock(\OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class)),
+			logger: new \Psr\Log\NullLogger(),
+			container: $container
 		);
 
 		$service = new FlowTriggerService($locator, $runner, new \Psr\Log\NullLogger());

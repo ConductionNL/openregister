@@ -32,6 +32,9 @@ use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunStreamStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -69,27 +72,25 @@ class FlowRunServiceAdvanceStreamTest extends TestCase {
 
 		if ($withStreams === false) {
 			return new FlowRunService(
-				$this->mapper,
-				$this->createMock(FlowStateMapper::class),
-				$this->engine,
-				$registry,
-				$this->createMock(LoggerInterface::class),
-				$container
+				stores: new FlowRunStores(
+					mapper: $this->mapper,
+					stateMapper: $this->createMock(FlowStateMapper::class)
+				),
+				walk: new FlowRunWalkServices(engine: $this->engine, registry: $registry),
+				logger: $this->createMock(LoggerInterface::class),
+				container: $container
 			);
 		}
 
 		return new FlowRunService(
-			$this->mapper,
-			$this->createMock(FlowStateMapper::class),
-			$this->engine,
-			$registry,
-			$this->createMock(LoggerInterface::class),
-			$container,
-			null,
-			null,
-			$this->createMock(FlowStreamMapper::class),
-			$this->createMock(FlowPlaceClaims::class),
-			$this->createMock(FlowRunCommit::class)
+			stores: new FlowRunStores(
+				mapper: $this->mapper,
+				stateMapper: $this->createMock(FlowStateMapper::class),
+				streams: new FlowRunStreamStores(streamMapper: $this->createMock(FlowStreamMapper::class), claims: $this->createMock(FlowPlaceClaims::class), commit: $this->createMock(FlowRunCommit::class))
+			),
+			walk: new FlowRunWalkServices(engine: $this->engine, registry: $registry),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $container
 		);
 	}//end service()
 

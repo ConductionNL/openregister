@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Service\WebhookRequestOptions;
 use OCA\OpenRegister\Service\WebhookDispatchServices;
@@ -2377,13 +2378,66 @@ class WebhookServiceTest extends TestCase {
 	 * A normal external HTTPS URL must pass the SSRF guard.
 	 */
 	public function testAssertSafeWebhookUriAllowsPublicHttps(): void {
-		// No exception expected.
-		$this->invokePrivateMethod(
-			'assertSafeWebhookUri',
+		// DNS is the class boundary: pin example.com to a public address.
+		$this->resolveHostTo('example.com', ['93.184.215.14']);
+
+		$this->assertWebhookUriAccepted(
 			['uri' => 'https://example.com/webhook']
 		);
-		$this->addToAssertionCount(1);
 	}//end testAssertSafeWebhookUriAllowsPublicHttps()
+
+	/**
+	 * Run the SSRF guard and assert it let the URL through (the refusal tests
+	 * flip host or allowPrivate and expect a RuntimeException).
+	 *
+	 * @param array<string, mixed> $args Named arguments for assertSafeWebhookUri.
+	 *
+	 * @return void
+	 */
+	private function assertWebhookUriAccepted(array $args): void {
+		$thrown = null;
+		try {
+			$this->invokePrivateMethod('assertSafeWebhookUri', $args);
+		} catch (\RuntimeException $e) {
+			$thrown = $e;
+		}
+
+		$this->assertNull($thrown, 'SSRF guard refused '.$args['uri'].': '.($thrown?->getMessage() ?? ''));
+	}//end assertWebhookUriAccepted()
+
+	/**
+	 * Refusal pair for testAssertSafeWebhookUriAllowsPublicHttps: the same
+	 * public-looking name refused once any of its records is private.
+	 *
+	 * @return void
+	 */
+	public function testAssertSafeWebhookUriRefusesAPublicNameResolvingPrivate(): void {
+		$this->resolveHostTo('example.com', ['93.184.215.14', '10.0.0.5']);
+
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessage('blocked IP range');
+
+		$this->invokePrivateMethod('assertSafeWebhookUri', ['uri' => 'https://example.com/webhook']);
+	}//end testAssertSafeWebhookUriRefusesAPublicNameResolvingPrivate()
+
+	/**
+	 * Replace DNS resolution in the service's address guard for one host.
+	 *
+	 * @param string        $host The host the guard is asked about.
+	 * @param array<string> $ips  The addresses it resolves to.
+	 *
+	 * @return void
+	 */
+	private function resolveHostTo(string $host, array $ips): void {
+		$guard = $this->getMockBuilder(OutboundAddressGuard::class)
+			->onlyMethods(['addressesOf'])
+			->getMock();
+		$guard->method('addressesOf')->with($host)->willReturn($ips);
+
+		$property = $this->reflection->getProperty('addressGuard');
+		$property->setAccessible(true);
+		$property->setValue($this->service, $guard);
+	}//end resolveHostTo()
 
 	/**
 	 * Response-body cap (MAX_RESPONSE_BODY_BYTES = 1 MB) for persistent storage.
@@ -2489,11 +2543,9 @@ class WebhookServiceTest extends TestCase {
 	 */
 	public function testAssertSafeWebhookUriAllowsPublicIpv6(): void {
 		// 2606:4700::1 is a real Cloudflare anycast address (public, not reserved).
-		$this->invokePrivateMethod(
-			'assertSafeWebhookUri',
+		$this->assertWebhookUriAccepted(
 			['uri' => 'https://[2606:4700::1]/webhook']
 		);
-		$this->addToAssertionCount(1);
 	}//end testAssertSafeWebhookUriAllowsPublicIpv6()
 
 	/**
@@ -2579,11 +2631,9 @@ class WebhookServiceTest extends TestCase {
 	 */
 	public function testAssertSafeWebhookUriAllowsPrivateWhenOptedIn(string $url): void {
 		// No exception expected when the per-hook flag is set.
-		$this->invokePrivateMethod(
-			'assertSafeWebhookUri',
+		$this->assertWebhookUriAccepted(
 			['uri' => $url, 'allowPrivate' => true]
 		);
-		$this->addToAssertionCount(1);
 	}//end testAssertSafeWebhookUriAllowsPrivateWhenOptedIn()
 
 	/**

@@ -79,14 +79,18 @@ class VocabularyControllerTest extends TestCase {
 		$this->options = $this->createMock(originalClassName: CodedOptionsBuilder::class);
 
 		$this->controller = new VocabularyController(
-			appName: 'openregister',
 			request: $request,
-			objectService: $this->objectService,
-			options: $this->options,
-			declarationResolver: new \OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver(
-				schemaMapper: $this->schemaMapper,
-				declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory(),
-				request: $request
+			services: new \OCA\OpenRegister\Controller\Support\VocabularyControllerServices(
+				objectService: $this->objectService,
+				options: $this->options,
+				declarationResolver: new \OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver(
+					tables: new \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables(
+						schemas: $this->schemaMapper,
+						declarations: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory(),
+						objects: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)
+					),
+					request: $request
+				)
 			)
 		);
 	}//end setUp()

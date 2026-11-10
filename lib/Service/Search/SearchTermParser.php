@@ -154,11 +154,11 @@ final class SearchTermParser implements SearchTermParserInterface {
 	 */
 	private function tokenize(string $term): array {
 		$tokens = [];
-		$length = mb_strlen($term);
+		$run = new TokenizeRun(term: $term, length: mb_strlen($term));
 		$index = 0;
 
-		while ($index < $length) {
-			[$token, $index] = $this->tokenAt(term: $term, index: $index, length: $length);
+		while ($index < $run->length) {
+			[$token, $index] = $this->tokenAt(run: $run, index: $index);
 			if ($token !== null) {
 				$tokens[] = $token;
 			}
@@ -170,59 +170,70 @@ final class SearchTermParser implements SearchTermParserInterface {
 	/**
 	 * Read the token starting at one offset, and where the next one may start.
 	 *
-	 * @param string $term   The raw search term.
-	 * @param int    $index  Offset to read at.
-	 * @param int    $length Length of the term.
+	 * @param TokenizeRun $run   The tokenize pass.
+	 * @param int         $index Offset to read at.
 	 *
 	 * @throws SearchTermSyntaxException When the term is malformed at this offset.
 	 *
 	 * @return array{0: array{type: string, value: string, position: int, leading: bool, trailing: bool}|null, 1: int}
 	 *     The token (null for whitespace) and the next offset.
 	 */
-	private function tokenAt(string $term, int $index, int $length): array {
-		$character = mb_substr($term, $index, 1);
+	private function tokenAt(TokenizeRun $run, int $index): array {
+		$character = mb_substr($run->term, $index, 1);
 
 		if (trim($character) === '') {
 			return [null, ($index + 1)];
 		}
 
 		if (isset(self::BRACKETS[$character]) === true) {
-			return [
-				$this->makeToken(type: self::BRACKETS[$character], value: $character, position: ($index + 1)),
-				($index + 1),
-			];
+			return [$this->markerToken(marker: $character, position: ($index + 1)), ($index + 1)];
 		}
 
 		if ($character === '"') {
-			$token = $this->readPhrase(term: $term, index: $index);
+			$token = $this->readPhrase(run: $run, index: $index);
 			// Skip past the closing quote; readPhrase() proved it exists.
-			return [$token, (mb_strpos($term, '"', ($index + 1)) + 1)];
+			return [$token, (mb_strpos($run->term, '"', ($index + 1)) + 1)];
 		}
 
-		$token = $this->readWord(term: $term, index: $index, length: $length);
-		return [$token, $this->wordEnd(term: $term, index: $index, length: $length)];
+		$token = $this->readWord(run: $run, index: $index);
+		return [$token, $this->wordEnd(run: $run, index: $index)];
 	}//end tokenAt()
 
 	/**
-	 * Build a token array, with neither wildcard flag set.
+	 * Build a term token, with neither wildcard flag set.
 	 *
 	 * A wildcarded word sets its flags on the returned array; see readWord().
 	 *
-	 * @param string $type     The token type.
-	 * @param string $value    The literal value.
-	 * @param int    $position The 1-based position.
+	 * @param string $value    The literal text.
+	 * @param int    $position 1-based position in the term.
 	 *
-	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool} The token.
+	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool}
 	 */
-	private function makeToken(string $type, string $value, int $position): array {
+	private function termToken(string $value, int $position): array {
 		return [
-			'type' => $type,
+			'type' => self::TOKEN_TERM,
 			'value' => $value,
 			'position' => $position,
 			'leading' => false,
 			'trailing' => false,
 		];
-	}//end makeToken()
+	}//end termToken()
+
+	/**
+	 * Build a bracket or keyword token: the marker is its value, and its type
+	 * is the bracket's token type or the keyword itself.
+	 *
+	 * @param string $marker   The bracket character or the keyword.
+	 * @param int    $position 1-based position in the term.
+	 *
+	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool}
+	 */
+	private function markerToken(string $marker, int $position): array {
+		$token = $this->termToken(value: $marker, position: $position);
+		$token['type'] = (self::BRACKETS[$marker] ?? $marker);
+
+		return $token;
+	}//end markerToken()
 
 	/**
 	 * Read a quoted phrase starting at the opening quote.
@@ -230,48 +241,47 @@ final class SearchTermParser implements SearchTermParserInterface {
 	 * A `*` inside quotes is a literal asterisk: the quotes are what the user
 	 * reaches for to say "this exact run of characters".
 	 *
-	 * @param string $term  The raw search term.
-	 * @param int    $index Offset of the opening quote.
+	 * @param TokenizeRun $run   The tokenize pass.
+	 * @param int         $index Offset of the opening quote.
 	 *
-	 * @throws SearchTermSyntaxException When the quote is never closed.
+	 * @throws SearchTermSyntaxException When the phrase is unterminated or empty.
 	 *
-	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool} The phrase token.
+	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool}
 	 */
-	private function readPhrase(string $term, int $index): array {
-		$closing = mb_strpos($term, '"', ($index + 1));
+	private function readPhrase(TokenizeRun $run, int $index): array {
+		$closing = mb_strpos($run->term, '"', ($index + 1));
 		if ($closing === false) {
 			throw new SearchTermSyntaxException(
 				reason: 'Unterminated quoted phrase opened',
 				position: ($index + 1),
-				term: $term
+				term: $run->term
 			);
 		}
 
-		$value = mb_substr($term, ($index + 1), ($closing - $index - 1));
+		$value = mb_substr($run->term, ($index + 1), ($closing - $index - 1));
 		if (trim($value) === '') {
 			throw new SearchTermSyntaxException(
 				reason: 'Empty quoted phrase',
 				position: ($index + 1),
-				term: $term
+				term: $run->term
 			);
 		}
 
-		return $this->makeToken(type: self::TOKEN_TERM, value: $value, position: ($index + 1));
+		return $this->termToken(value: $value, position: ($index + 1));
 	}//end readPhrase()
 
 	/**
 	 * The offset just past the word starting at $index.
 	 *
-	 * @param string $term   The raw search term.
-	 * @param int    $index  Offset of the first character.
-	 * @param int    $length Length of the term.
+	 * @param TokenizeRun $run   The tokenize pass.
+	 * @param int         $index Offset of the word's first character.
 	 *
-	 * @return int The offset just past the word.
+	 * @return int
 	 */
-	private function wordEnd(string $term, int $index, int $length): int {
+	private function wordEnd(TokenizeRun $run, int $index): int {
 		$end = $index;
-		while ($end < $length) {
-			$character = mb_substr($term, $end, 1);
+		while ($end < $run->length) {
+			$character = mb_substr($run->term, $end, 1);
 			if (trim($character) === '' || in_array($character, self::WORD_BREAKS, true) === true) {
 				break;
 			}
@@ -285,38 +295,29 @@ final class SearchTermParser implements SearchTermParserInterface {
 	/**
 	 * Read a bare word, which may be a keyword or a wildcarded term.
 	 *
-	 * @param string $term   The raw search term.
-	 * @param int    $index  Offset of the first character.
-	 * @param int    $length Length of the term.
+	 * @param TokenizeRun $run   The tokenize pass.
+	 * @param int         $index Offset of the word's first character.
 	 *
-	 * @throws SearchTermSyntaxException When the word is nothing but wildcards.
+	 * @throws SearchTermSyntaxException When the word is a lone wildcard.
 	 *
-	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool} The token.
+	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool}
 	 */
-	private function readWord(string $term, int $index, int $length): array {
-		$end = $this->wordEnd(term: $term, index: $index, length: $length);
-		$raw = mb_substr($term, $index, ($end - $index));
+	private function readWord(TokenizeRun $run, int $index): array {
+		$raw = mb_substr($run->term, $index, ($this->wordEnd(run: $run, index: $index) - $index));
 		$position = ($index + 1);
 
 		if (in_array($raw, self::KEYWORDS, true) === true) {
-			return $this->makeToken(type: $raw, value: $raw, position: $position);
+			return $this->markerToken(marker: $raw, position: $position);
 		}
 
-		$leading = str_starts_with($raw, '*');
-		$trailing = str_ends_with($raw, '*');
 		$value = trim($raw, '*');
-
 		if ($value === '') {
-			throw new SearchTermSyntaxException(
-				reason: 'A wildcard needs a term beside it',
-				position: $position,
-				term: $term
-			);
+			throw new SearchTermSyntaxException(reason: 'A wildcard needs a term beside it', position: $position, term: $run->term);
 		}
 
-		$token = $this->makeToken(type: self::TOKEN_TERM, value: $value, position: $position);
-		$token['leading'] = $leading;
-		$token['trailing'] = $trailing;
+		$token = $this->termToken(value: $value, position: $position);
+		$token['leading'] = str_starts_with($raw, '*');
+		$token['trailing'] = str_ends_with($raw, '*');
 
 		return $token;
 	}//end readWord()
@@ -435,7 +436,9 @@ final class SearchTermParser implements SearchTermParserInterface {
 
 		$cursor++;
 
-		return SearchTermNode::term(value: $token['value'], leadingWildcard: $token['leading'], trailingWildcard: $token['trailing']);
+		return SearchTermNode::literal(
+			literal: new SearchTermLiteral(value: $token['value'], leadingWildcard: $token['leading'], trailingWildcard: $token['trailing'])
+		);
 	}//end parsePrimary()
 
 	/**

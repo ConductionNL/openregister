@@ -31,8 +31,10 @@ use OCA\OpenRegister\Service\Object\BulkSaveReporting;
 use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -122,8 +124,9 @@ class SaveObjectsStoredStateGuardTest extends TestCase {
 
 		$result = ['invalid' => [], 'statistics' => ['invalid' => 0, 'errors' => 0]];
 		$rows = [['id' => self::UUID, 'title' => 'overwritten']];
-		$args = [$rows, $register, $schema, $flags + ['validation' => false], &$result];
-		$passed = (new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards'))->invokeArgs($this->handler(), $args);
+		$batch = new SafeguardBatchRun(objects: $rows, defaults: new BulkBatchDefaults($register, $schema), flags: $flags + ['validation' => false], result: $result);
+		$passed = (new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards'))->invokeArgs($this->handler(), [$batch]);
+		$result = $batch->result;
 		if ($passed !== []) {
 			return null;
 		}

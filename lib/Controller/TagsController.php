@@ -28,10 +28,11 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
+use OCA\OpenRegister\Controller\Support\TagsControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
-use OCA\OpenRegister\Service\FileServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -63,25 +64,21 @@ class TagsController extends Controller {
 	/**
 	 * TagsController constructor
 	 *
-	 * @param string $appName Application name
-	 * @param IRequest $request HTTP request object
+	 * @param IRequest                     $request       HTTP request object
 	 * @param ObjectHandlerAccessInterface $objectService Object service instance
-	 * @param FileServiceInterface $fileService File service instance for tag retrieval
-	 * @param TaggingHandlerInterface $taggingHandler Tagging handler for object-level tags
-	 * @param IUserSession $userSession Session for the @PublicPage anonymous-deny guard
+	 * @param TagsControllerServices       $services      File tag catalogue and object tagging handler
+	 * @param IUserSession                 $userSession   Session for the @PublicPage anonymous-deny guard
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly ObjectHandlerAccessInterface $objectService,
-		private readonly FileServiceInterface $fileService,
-		private readonly TaggingHandlerInterface $taggingHandler,
+		private readonly TagsControllerServices $services,
 		private readonly ?IUserSession $userSession = null,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -116,7 +113,7 @@ class TagsController extends Controller {
 			);
 		}
 
-		$tags = $this->fileService->getAllTags();
+		$tags = $this->services->fileService->getAllTags();
 
 		return new JSONResponse(data: $tags);
 	}//end getAllTags()
@@ -153,19 +150,30 @@ class TagsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse JSON response with the object's tags
+	 */
+	private function indexForObject(ObjectRef $ref): JSONResponse {
 		try {
-			$object = $this->selectObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
+			$object = $this->selectObject(route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id));
 			if ($object === null) {
 				return $this->objectNotFound();
 			}
 
-			return new JSONResponse(data: $this->taggingHandler->getObjectTags($object->getUuid()));
+			return new JSONResponse(data: $this->services->taggingHandler->getObjectTags($object->getUuid()));
 		} catch (DoesNotExistException $e) {
 			return $this->objectNotFound();
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}
-	}//end index()
+	}//end indexForObject()
 
 	/**
 	 * Add a tag to an object.
@@ -182,11 +190,22 @@ class TagsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
 	 */
 	public function add(string $register, string $schema, string $id): JSONResponse {
+		return $this->addForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end add()
+
+	/**
+	 * add() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse JSON response with the updated tags
+	 */
+	private function addForObject(ObjectRef $ref): JSONResponse {
 		return $this->changeTags(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
 			change: fn (ObjectEntity $object): JSONResponse => $this->addTag(object: $object)
 		);
-	}//end add()
+	}//end addForObject()
 
 	/**
 	 * Remove a tag from an object.
@@ -204,11 +223,23 @@ class TagsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
 	 */
 	public function remove(string $register, string $schema, string $id, string $tag): JSONResponse {
+		return $this->removeForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), tag: $tag);
+	}//end remove()
+
+	/**
+	 * remove() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 * @param string    $tag The tag name to remove
+	 *
+	 * @return JSONResponse JSON response with the updated tags
+	 */
+	private function removeForObject(ObjectRef $ref, string $tag): JSONResponse {
 		return $this->changeTags(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
 			change: fn (ObjectEntity $object): JSONResponse => $this->removeTag(object: $object, tag: $tag)
 		);
-	}//end remove()
+	}//end removeForObject()
 
 	/**
 	 * Select the object addressed by the route and load it through the read path.
@@ -270,8 +301,8 @@ class TagsController extends Controller {
 			);
 		}
 
-		$this->taggingHandler->addObjectTag($object->getUuid(), $data['tag']);
-		$tags = $this->taggingHandler->getObjectTags($object->getUuid());
+		$this->services->taggingHandler->addObjectTag($object->getUuid(), $data['tag']);
+		$tags = $this->services->taggingHandler->getObjectTags($object->getUuid());
 
 		return new JSONResponse(data: $tags, statusCode: 201);
 	}//end addTag()
@@ -285,8 +316,8 @@ class TagsController extends Controller {
 	 * @return JSONResponse The updated tags.
 	 */
 	private function removeTag(ObjectEntity $object, string $tag): JSONResponse {
-		$this->taggingHandler->removeObjectTag($object->getUuid(), $tag);
-		$tags = $this->taggingHandler->getObjectTags($object->getUuid());
+		$this->services->taggingHandler->removeObjectTag($object->getUuid(), $tag);
+		$tags = $this->services->taggingHandler->getObjectTags($object->getUuid());
 
 		return new JSONResponse(data: $tags);
 	}//end removeTag()

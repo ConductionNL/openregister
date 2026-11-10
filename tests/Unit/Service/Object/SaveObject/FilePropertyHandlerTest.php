@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest;
 use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -847,7 +848,7 @@ class FilePropertyHandlerTest extends TestCase {
 		];
 
 		// Should not throw.
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'avatar');
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'avatar', $fileConfig, null));
 		$this->assertTrue(true);
 	}
 
@@ -867,7 +868,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('invalid type');
 
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'avatar');
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'avatar', $fileConfig, null));
 	}
 
 	public function testValidateFileAgainstConfigRejectsOversizedFile(): void {
@@ -886,7 +887,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('exceeds maximum size');
 
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'avatar');
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'avatar', $fileConfig, null));
 	}
 
 	public function testValidateFileAgainstConfigWithArrayIndex(): void {
@@ -905,7 +906,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('avatar[2]');
 
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'avatar', 2);
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'avatar', $fileConfig, 2));
 	}
 
 	public function testValidateFileAgainstConfigPassesWithNoRestrictions(): void {
@@ -919,7 +920,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$fileConfig = ['type' => 'file'];
 
 		// Should not throw - no restrictions.
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'upload');
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'upload', $fileConfig, null));
 		$this->assertTrue(true);
 	}
 
@@ -936,7 +937,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('executable code');
 
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'upload');
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'upload', $fileConfig, null));
 	}
 
 	public function testValidateFileAgainstConfigAllowExecutablesFlag(): void {
@@ -953,7 +954,7 @@ class FilePropertyHandlerTest extends TestCase {
 		];
 
 		// Should not throw because allowExecutables is true.
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'upload');
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'upload', $fileConfig, null));
 		$this->assertTrue(true);
 	}
 
@@ -971,7 +972,7 @@ class FilePropertyHandlerTest extends TestCase {
 		];
 
 		// Empty allowedTypes means no restriction.
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'doc');
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'doc', $fileConfig, null));
 		$this->assertTrue(true);
 	}
 
@@ -989,7 +990,7 @@ class FilePropertyHandlerTest extends TestCase {
 		];
 
 		// maxSize of 0 means no restriction.
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'doc');
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'doc', $fileConfig, null));
 		$this->assertTrue(true);
 	}
 
@@ -1022,7 +1023,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage("invalid type 'image/png'");
 
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'attachment');
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'attachment', $fileConfig, null));
 	}
 
 	public function testValidateFileAgainstConfigAppliesEditorMaxSizeInMegabytes(): void {
@@ -1045,7 +1046,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('exceeds maximum size (1048576 bytes)');
 
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'attachment');
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'attachment', $fileConfig, null));
 	}
 
 	public function testValidateFileAgainstConfigEditorMaxSizeIsNotBytes(): void {
@@ -1065,7 +1066,7 @@ class FilePropertyHandlerTest extends TestCase {
 			],
 		];
 
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'attachment');
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'attachment', $fileConfig, null));
 		$this->assertTrue(true);
 	}
 
@@ -1091,7 +1092,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('exceeds maximum size (1000 bytes)');
 
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'attachment');
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'attachment', $fileConfig, null));
 	}
 
 	public function testValidateFileAgainstConfigEditorShapeStillRefusesExecutables(): void {
@@ -1113,7 +1114,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('executable code');
 
-		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'attachment');
+		$this->handler->validateFileAgainstConfig($fileData, new FileStoreRequest(new ObjectEntity(), 'attachment', $fileConfig, null));
 	}
 
 	// =========================================================================
@@ -2052,10 +2053,8 @@ class FilePropertyHandlerTest extends TestCase {
 			->willReturn($fileMock);
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
-			$dataUri,
-			'attachment',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'attachment', ['type' => 'file'], null),
+			$dataUri
 		);
 
 		$this->assertSame(77, $result);
@@ -2075,10 +2074,8 @@ class FilePropertyHandlerTest extends TestCase {
 			->willReturn($fileMock);
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
-			$base64,
-			'binary',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'binary', ['type' => 'file'], null),
+			$base64
 		);
 
 		$this->assertSame(88, $result);
@@ -2102,10 +2099,8 @@ class FilePropertyHandlerTest extends TestCase {
 		];
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
-			$fileObject,
-			'document',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+			$fileObject
 		);
 
 		$this->assertSame(42, $result);
@@ -2118,10 +2113,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectExceptionMessage('Unsupported file input type');
 
 		$this->handler->processSingleFileProperty(
-			$entity,
-			12345,
-			'document',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+			12345
 		);
 	}
 
@@ -2142,10 +2135,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectExceptionMessage('no downloadable URL');
 
 		$this->handler->processSingleFileProperty(
-			$entity,
-			$fileObject,
-			'document',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+			$fileObject
 		);
 	}
 
@@ -2163,10 +2154,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectExceptionMessage('no downloadable URL');
 
 		$this->handler->processSingleFileProperty(
-			$entity,
-			$fileObject,
-			'document',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+			$fileObject
 		);
 	}
 
@@ -2189,10 +2178,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectExceptionMessage('no downloadable URL');
 
 		$this->handler->processSingleFileProperty(
-			$entity,
-			$fileObject,
-			'document',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+			$fileObject
 		);
 	}
 
@@ -2218,11 +2205,8 @@ class FilePropertyHandlerTest extends TestCase {
 			->willReturn($fileMock);
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
-			$dataUri,
-			'images',
-			['type' => 'file'],
-			3
+			new FileStoreRequest($entity, 'images', ['type' => 'file'], 3),
+			$dataUri
 		);
 
 		$this->assertSame(99, $result);
@@ -2233,13 +2217,13 @@ class FilePropertyHandlerTest extends TestCase {
 	// =========================================================================
 
 	public function testGenerateFileNameWithoutIndex(): void {
-		$result = $this->invokePrivateMethod('generateFileName', ['avatar', 'png', null]);
+		$result = $this->invokePrivateMethod('generateFileName', [new FileStoreRequest(new ObjectEntity(), 'avatar', [], null), 'png']);
 
 		$this->assertMatchesRegularExpression('/^avatar_\d+_[a-f0-9]{8}\.png$/', $result);
 	}
 
 	public function testGenerateFileNameWithIndex(): void {
-		$result = $this->invokePrivateMethod('generateFileName', ['images', 'jpg', 2]);
+		$result = $this->invokePrivateMethod('generateFileName', [new FileStoreRequest(new ObjectEntity(), 'images', [], 2), 'jpg']);
 
 		$this->assertMatchesRegularExpression('/^images_2_\d+_[a-f0-9]{8}\.jpg$/', $result);
 	}
@@ -2415,15 +2399,12 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// Private method tests via reflection — detectExecutableMagicBytes
+	// Private method tests via reflection — content checks of blockExecutableFiles
 	// =========================================================================
 
 	public function testDetectExecutableMagicBytesSafeContent(): void {
 		// Regular text content should not trigger.
-		$this->invokePrivateMethod('detectExecutableMagicBytes', [
-			'This is perfectly safe text content.',
-			'File at test',
-		]);
+		$this->handler->blockExecutableFiles(['content' => 'This is perfectly safe text content.'], 'File at test');
 
 		$this->assertTrue(true);
 	}
@@ -2432,78 +2413,54 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Windows executable');
 
-		$this->invokePrivateMethod('detectExecutableMagicBytes', [
-			'MZ' . str_repeat("\x00", 100),
-			'File at test',
-		]);
+		$this->handler->blockExecutableFiles(['content' => 'MZ' . str_repeat("\x00", 100)], 'File at test');
 	}
 
 	public function testDetectExecutableMagicBytesElf(): void {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Linux/Unix executable');
 
-		$this->invokePrivateMethod('detectExecutableMagicBytes', [
-			"\x7FELF" . str_repeat("\x00", 100),
-			'File at test',
-		]);
+		$this->handler->blockExecutableFiles(['content' => "\x7FELF" . str_repeat("\x00", 100)], 'File at test');
 	}
 
 	public function testDetectExecutableMagicBytesPerlShebang(): void {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('script shebang');
 
-		$this->invokePrivateMethod('detectExecutableMagicBytes', [
-			"some header\n#!/usr/bin/perl\nuse strict;",
-			'File at test',
-		]);
+		$this->handler->blockExecutableFiles(['content' => "some header\n#!/usr/bin/perl\nuse strict;"], 'File at test');
 	}
 
 	public function testDetectExecutableMagicBytesRubyShebang(): void {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('script shebang');
 
-		$this->invokePrivateMethod('detectExecutableMagicBytes', [
-			"#!/usr/bin/ruby\nputs 'hello'",
-			'File at test',
-		]);
+		$this->handler->blockExecutableFiles(['content' => "#!/usr/bin/ruby\nputs 'hello'"], 'File at test');
 	}
 
 	public function testDetectExecutableMagicBytesNodeShebang(): void {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('env shebang');
 
-		$this->invokePrivateMethod('detectExecutableMagicBytes', [
-			"#!/usr/bin/env node\nconsole.log('hi');",
-			'File at test',
-		]);
+		$this->handler->blockExecutableFiles(['content' => "#!/usr/bin/env node\nconsole.log('hi');"], 'File at test');
 	}
 
 	public function testDetectExecutableMagicBytesEmbeddedPhpTag(): void {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('PHP code');
 
-		$this->invokePrivateMethod('detectExecutableMagicBytes', [
-			"normal text <?php system('ls'); ?>",
-			'File at test',
-		]);
+		$this->handler->blockExecutableFiles(['content' => "normal text <?php system('ls'); ?>"], 'File at test');
 	}
 
 	public function testDetectExecutableMagicBytesPhpShortEchoTag(): void {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('PHP code');
 
-		$this->invokePrivateMethod('detectExecutableMagicBytes', [
-			"normal text <?= 'injected' ?>",
-			'File at test',
-		]);
+		$this->handler->blockExecutableFiles(['content' => "normal text <?= 'injected' ?>"], 'File at test');
 	}
 
 	public function testDetectExecutableMagicBytesZipSignatureSkipped(): void {
 		// PK\x03\x04 is ZIP which has description = false, so it should be skipped.
-		$this->invokePrivateMethod('detectExecutableMagicBytes', [
-			"PK\x03\x04" . str_repeat("\x00", 100),
-			'File at test',
-		]);
+		$this->handler->blockExecutableFiles(['content' => "PK\x03\x04" . str_repeat("\x00", 100)], 'File at test');
 
 		$this->assertTrue(true);
 	}
@@ -2773,10 +2730,8 @@ class FilePropertyHandlerTest extends TestCase {
 			);
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
-			'http://93.184.216.34/reports/quarterly.pdf',
-			'document',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+			'http://93.184.216.34/reports/quarterly.pdf'
 		);
 
 		$this->assertSame(4242, $result);
@@ -2816,10 +2771,8 @@ class FilePropertyHandlerTest extends TestCase {
 			);
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
-			'http://93.184.216.34/download',
-			'image',
-			['type' => 'file']
+			new FileStoreRequest($entity, 'image', ['type' => 'file'], null),
+			'http://93.184.216.34/download'
 		);
 
 		$this->assertSame(88, $result);
@@ -2846,10 +2799,8 @@ class FilePropertyHandlerTest extends TestCase {
 
 		try {
 			$this->handler->processSingleFileProperty(
-				$entity,
-				'http://127.0.0.1/latest/meta-data/',
-				'document',
-				['type' => 'file']
+				new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+				'http://127.0.0.1/latest/meta-data/'
 			);
 			$this->fail('Expected a loopback URL to be refused.');
 		} catch (InvalidArgumentException $e) {
@@ -2883,10 +2834,8 @@ class FilePropertyHandlerTest extends TestCase {
 
 		try {
 			$this->handler->processSingleFileProperty(
-				$entity,
-				'http://93.184.216.34/gone.pdf',
-				'document',
-				['type' => 'file']
+				new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
+				'http://93.184.216.34/gone.pdf'
 			);
 			$this->fail('Expected an unreachable URL to throw.');
 		} catch (Exception $e) {
@@ -2914,14 +2863,12 @@ class FilePropertyHandlerTest extends TestCase {
 			->willReturn($fileMock);
 
 		$result = $this->handler->processSingleFileProperty(
-			$entity,
+			new FileStoreRequest($entity, 'document', ['type' => 'file'], null),
 			[
 				'id' => 'not-numeric',
 				'title' => 'notes.txt',
 				'downloadUrl' => 'http://93.184.216.34/files/notes.txt',
-			],
-			'document',
-			['type' => 'file']
+			]
 		);
 
 		$this->assertSame(1234, $result);
@@ -2944,10 +2891,8 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->expectExceptionMessage("has invalid type 'application/pdf'");
 
 		$this->handler->processSingleFileProperty(
-			$entity,
-			'http://93.184.216.34/reports/quarterly.pdf',
-			'image',
-			['type' => 'file', 'allowedTypes' => ['image/png']]
+			new FileStoreRequest($entity, 'image', ['type' => 'file', 'allowedTypes' => ['image/png']], null),
+			'http://93.184.216.34/reports/quarterly.pdf'
 		);
 	}
 }

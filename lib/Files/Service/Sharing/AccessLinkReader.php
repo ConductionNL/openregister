@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\Sharing;
 
+use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;

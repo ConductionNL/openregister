@@ -48,7 +48,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Delegation;
 
-use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -86,43 +85,10 @@ class DelegationService {
 	}//end __construct()
 
 	/**
-	 * Run `$operation` as `$actingAs`, on behalf of `$principal`.
+	 * Run `$operation` as the request's `actingAs`, on behalf of its `principal`.
 	 *
 	 * Acting as yourself short-circuits the store entirely — see
 	 * {@see DelegationResolver} for why that matters beyond speed.
-	 *
-	 * @param string        $principal The uid the work is being done by.
-	 * @param string        $actingAs  The uid whose rights the work should use.
-	 * @param callable      $operation The work.
-	 * @param array         $scope     What the work needs, for scope matching.
-	 * @param DateTime|null $now       The moment to judge liveness at; defaults to now.
-	 *
-	 * @return mixed Whatever the operation returns.
-	 *
-	 * @throws DelegationRefused When no live grant covers the delegation.
-	 *
-	 * @spec openspec/specs/delegation-grants/spec.md
-	 */
-	public function runAsDelegated(
-		string $principal,
-		string $actingAs,
-		callable $operation,
-		array $scope = [],
-		?DateTime $now = null,
-	) {
-		return $this->runDelegated(
-			request: new DelegationRequest(
-				principal: $principal,
-				actingAs: $actingAs,
-				scope: $scope,
-				now: ($now ?? new DateTime())
-			),
-			operation: $operation
-		);
-	}//end runAsDelegated()
-
-	/**
-	 * Resolve the request and run the work under the identity it permits.
 	 *
 	 * @param DelegationRequest $request   Who acts as whom, for what, when.
 	 * @param callable          $operation The work.
@@ -130,14 +96,11 @@ class DelegationService {
 	 * @return mixed Whatever the operation returns.
 	 *
 	 * @throws DelegationRefused When no live grant covers the delegation.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	private function runDelegated(DelegationRequest $request, callable $operation) {
-		$verdict = $this->verdictFor(
-			principal: $request->principal,
-			actingAs: $request->actingAs,
-			scope: $request->scope,
-			now: $request->now
-		);
+	public function runAsDelegated(DelegationRequest $request, callable $operation) {
+		$verdict = $this->verdictFor(request: $request);
 
 		if ($verdict->permitted === false) {
 			$this->refuse(request: $request, verdict: $verdict);
@@ -167,7 +130,7 @@ class DelegationService {
 		);
 
 		return $this->objectService->runAs(user: $user, operation: $operation);
-	}//end runDelegated()
+	}//end runAsDelegated()
 
 	/**
 	 * Log and throw a refused delegation.
@@ -252,26 +215,15 @@ class DelegationService {
 	 * first firing, which is exactly why the fire path re-resolves rather than
 	 * trusting that the definition was once valid.
 	 *
-	 * @param string        $principal The uid the work would be done by.
-	 * @param string        $actingAs  The uid whose rights it would use.
-	 * @param array         $scope     What the work needs.
-	 * @param DateTime|null $now       The moment to judge at; defaults to now.
+	 * @param DelegationRequest $request Who would do the work, whose rights it
+	 *                                   would use, what it needs and the moment
+	 *                                   to judge at.
 	 *
 	 * @return DelegationVerdict The verdict, carrying its reason.
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function verdictFor(
-		string $principal,
-		string $actingAs,
-		array $scope = [],
-		?DateTime $now = null,
-	): DelegationVerdict {
-		return $this->resolver->resolve(
-			principal: $principal,
-			actingAs: $actingAs,
-			now: ($now ?? new DateTime()),
-			scope: $scope
-		);
+	public function verdictFor(DelegationRequest $request): DelegationVerdict {
+		return $this->resolver->resolve(request: $request);
 	}//end verdictFor()
 }//end class

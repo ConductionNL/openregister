@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
-use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
+use OCA\OpenRegister\Service\Schemas\ExtendingFormValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 
@@ -100,7 +100,7 @@ final class PropertyDeclarationRefusals {
 
 		$keys = implode(', ', array_map(static fn (array $error): string => $error['key'], $errors));
 		throw new PropertyVocabularyException(
-			message: 'Invalid ' . ExtendingFormDeclaration::ANNOTATION . " declaration: '{$keys}'. "
+			message: 'Invalid ' . ExtendingFormValidatorInterface::ANNOTATION . " declaration: '{$keys}'. "
 			. 'Read /api/schemas/property-vocabulary for the keys a form may forward.',
 			errors: $errors
 		);
@@ -136,7 +136,7 @@ final class PropertyDeclarationRefusals {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function extendingFormErrors(Schema $schema): array {
-		$declarations = new ExtendingFormDeclaration();
+		$declarations = SchemaDeclarationValidators::extendingForm();
 		$found = $declarations->fromSchema(
 			configuration: ($schema->getConfiguration() ?? []),
 			properties: $schema->getProperties()

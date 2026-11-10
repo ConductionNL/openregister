@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Listener;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -97,7 +97,7 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper $flows The flow store.
+	 * @param FlowMapperInterface $flows The flow store.
 	 * @param LoggerInterface $logger Records what was imported, and what could not be.
 	 * @param ContainerInterface|null $container Resolves the organisation a declared flow
 	 *                                           belongs to. Nullable and LAST so adding it
@@ -106,7 +106,7 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 	 *                                           which is logged rather than silent.
 	 */
 	public function __construct(
-		private readonly FlowMapper $flows,
+		private readonly FlowMapperInterface $flows,
 		private readonly LoggerInterface $logger,
 		private readonly ?ContainerInterface $container = null,
 	) {
@@ -214,14 +214,16 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function upsert(array $declaration, string $schemaSlug): void {
-		$name = self::declaredName(declaration: $declaration);
-		$app = (string)($declaration['app'] ?? 'openregister');
-		$existing = $this->findDeclared(app: $app, name: $name, schemaSlug: $schemaSlug);
-		$flow = ($existing ?? $this->newFlow(app: $app, name: $name, schemaSlug: $schemaSlug));
+		$run = new DeclaredFlowRun();
+		$run->name = self::declaredName(declaration: $declaration);
+		$run->app = (string)($declaration['app'] ?? 'openregister');
+		$run->schemaSlug = $schemaSlug;
+		$existing = $this->findDeclared(run: $run);
+		$flow = ($existing ?? $this->newFlow(run: $run));
 		self::applyDeclaration(flow: $flow, declaration: $declaration);
 
 		if ($existing === null) {
-			$this->insertDeclared(flow: $flow, name: $name, schemaSlug: $schemaSlug);
+			$this->insertDeclared(flow: $flow, run: $run);
 			return;
 		}
 
@@ -253,17 +255,15 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 	/**
 	 * The stored flow this declaration shipped last time: same app, name and trigger schema.
 	 *
-	 * @param string $app The declaring app.
-	 * @param string $name The flow name.
-	 * @param string $schemaSlug The declaring schema's slug.
+	 * @param DeclaredFlowRun $run The declaring app, flow name and declaring schema's slug.
 	 *
 	 * @return Flow|null The flow, or null on a first import.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	private function findDeclared(string $app, string $name, string $schemaSlug): ?Flow {
-		foreach ($this->flows->findAllFlows(app: $app, limit: 500) as $candidate) {
-			if ($candidate->getName() === $name && (string)$candidate->getTriggerSchema() === $schemaSlug) {
+	private function findDeclared(DeclaredFlowRun $run): ?Flow {
+		foreach ($this->flows->findAllFlows(app: $run->app, limit: 500) as $candidate) {
+			if ($candidate->getName() === $run->name && (string)$candidate->getTriggerSchema() === $run->schemaSlug) {
 				return $candidate;
 			}
 		}
@@ -274,20 +274,18 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 	/**
 	 * A new flow for a first import: inert until adopted, and owned by a tenant.
 	 *
-	 * @param string $app The declaring app.
-	 * @param string $name The flow name.
-	 * @param string $schemaSlug The declaring schema's slug.
+	 * @param DeclaredFlowRun $run The declaring app, flow name and declaring schema's slug.
 	 *
 	 * @return Flow The new, not yet stored flow.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	private function newFlow(string $app, string $name, string $schemaSlug): Flow {
+	private function newFlow(DeclaredFlowRun $run): Flow {
 		$flow = new Flow();
 		$flow->setUuid($this->newUuid());
-		$flow->setApp($app);
-		$flow->setName($name);
-		$flow->setTriggerSchema($schemaSlug);
+		$flow->setApp($run->app);
+		$flow->setName($run->name);
+		$flow->setTriggerSchema($run->schemaSlug);
 		$flow->setCreated(new DateTime());
 
 		// Inert until adopted. See the class docblock.
@@ -333,19 +331,18 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 	/**
 	 * Store a first-imported flow, publish its version 1 and say so.
 	 *
-	 * @param Flow $flow The new flow.
-	 * @param string $name The flow name.
-	 * @param string $schemaSlug The declaring schema's slug.
+	 * @param Flow            $flow The new flow.
+	 * @param DeclaredFlowRun $run  The flow name and declaring schema's slug.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	private function insertDeclared(Flow $flow, string $name, string $schemaSlug): void {
+	private function insertDeclared(Flow $flow, DeclaredFlowRun $run): void {
 		$stored = $this->flows->insert($flow);
 		$this->publishVersionOne(flow: $stored);
 		$this->logger->info(
-			message: '[SchemaFlowImport] Imported declared flow "' . $name . '" for schema "' . $schemaSlug
+			message: '[SchemaFlowImport] Imported declared flow "' . $run->name . '" for schema "' . $run->schemaSlug
 				. '" (disabled until adopted).'
 		);
 	}//end insertDeclared()
@@ -377,7 +374,7 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 			$version = $this->container->get(FlowVersionServiceInterface::class)->publishShippedUpdate(flow: $flow);
 			$this->logPublishedUpdate(flow: $flow, version: $version);
 		} catch (Throwable $e) {
-			$this->warnUnpublished(kind: 'shippedUpdate', flow: $flow, error: $e);
+			$this->warnUnpublished(flow: $flow, wording: self::unpublishedWording(kind: 'shippedUpdate', error: $e));
 		}
 
 	}//end publishShippedUpdate()
@@ -404,21 +401,36 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 	/**
 	 * Warn that a flow could not be published, and what that leaves in place.
 	 *
-	 * @param string $kind A key of UNPUBLISHED.
-	 * @param Flow $flow The flow.
-	 * @param Throwable $error What went wrong.
+	 * @param Flow                       $flow    The flow.
+	 * @param array{0: string, 1: string} $wording The message up to the flow uuid, and after it,
+	 *                                            from {@see self::unpublishedWording()}.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
-	private function warnUnpublished(string $kind, Flow $flow, Throwable $error): void {
-		[$prefix, $consequence] = self::UNPUBLISHED[$kind];
+	private function warnUnpublished(Flow $flow, array $wording): void {
 		$this->logger->warning(
-			message: $prefix . $flow->getUuid() . '" could not be published: ' . $error->getMessage() . $consequence,
+			message: $wording[0] . $flow->getUuid() . $wording[1],
 			context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
 		);
 	}//end warnUnpublished()
+
+	/**
+	 * The unpublished warning around the flow uuid: what precedes it, and the
+	 * error plus what the failure leaves in place after it.
+	 *
+	 * @param string    $kind  A key of UNPUBLISHED.
+	 * @param Throwable $error What went wrong.
+	 *
+	 * @return array{0: string, 1: string} The message up to the flow uuid, and after it.
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
+	 */
+	private static function unpublishedWording(string $kind, Throwable $error): array {
+		[$prefix, $consequence] = self::UNPUBLISHED[$kind];
+		return [$prefix, '" could not be published: ' . $error->getMessage() . $consequence];
+	}//end unpublishedWording()
 
 	/**
 	 * Publish version 1 of a freshly imported flow.
@@ -452,7 +464,7 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 		try {
 			$this->container->get(FlowVersionServiceInterface::class)->publish(flow: $flow, publishedBy: null);
 		} catch (Throwable $e) {
-			$this->warnUnpublished(kind: 'versionOne', flow: $flow, error: $e);
+			$this->warnUnpublished(flow: $flow, wording: self::unpublishedWording(kind: 'versionOne', error: $e));
 		}
 
 	}//end publishVersionOne()

@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Calendar;
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
 use DateTimeZone;
+use OCA\OpenRegister\Service\Calendar\CalendarContents;
+use OCA\OpenRegister\Service\Calendar\CalendarYearSpan;
 use OCA\OpenRegister\Service\Calendar\IcalendarWriter;
 use PHPUnit\Framework\TestCase;
 
@@ -97,8 +99,7 @@ class IcalendarWriterTest extends TestCase {
 	public function testAZoneWithTransitionsGetsBothHalvesOfTheYear(): void {
 		$lines = $this->writer->timeZoneComponent(
 			timeZone: new DateTimeZone('Europe/Amsterdam'),
-			fromYear: 2026,
-			toYear: 2026
+			years: new CalendarYearSpan(fromYear: 2026, toYear: 2026)
 		);
 
 		$body = implode("\n", $lines);
@@ -115,8 +116,7 @@ class IcalendarWriterTest extends TestCase {
 	public function testAZoneWithNoTransitionsStillCarriesItsOffset(): void {
 		$lines = $this->writer->timeZoneComponent(
 			timeZone: new DateTimeZone('UTC'),
-			fromYear: 2026,
-			toYear: 2026
+			years: new CalendarYearSpan(fromYear: 2026, toYear: 2026)
 		);
 
 		$body = implode("\n", $lines);
@@ -127,13 +127,12 @@ class IcalendarWriterTest extends TestCase {
 	}
 
 	public function testTheCalendarIsWellFormedAndCrlfTerminated(): void {
-		$body = $this->writer->calendar(
+		$body = $this->writer->calendar(new CalendarContents(
 			calendarName: 'Zaken',
 			timeZone: new DateTimeZone('Europe/Amsterdam'),
 			componentLines: ['BEGIN:VEVENT', 'UID:one', 'END:VEVENT'],
-			fromYear: 2026,
-			toYear: 2026
-		);
+			years: new CalendarYearSpan(fromYear: 2026, toYear: 2026)
+		));
 
 		$this->assertStringStartsWith("BEGIN:VCALENDAR\r\n", $body);
 		$this->assertStringEndsWith("END:VCALENDAR\r\n", $body);

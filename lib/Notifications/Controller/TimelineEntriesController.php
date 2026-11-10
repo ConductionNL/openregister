@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Notifications\Controller\Support\TimelineEntriesControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -119,18 +120,16 @@ class TimelineEntriesController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                     $appName    App name.
 	 * @param IRequest                   $request    Request.
 	 * @param TimelineEntriesControllerServices $services The timeline entries controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		TimelineEntriesControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->objects = $services->domain->objects;
 		$this->entries = $services->domain->entries;
 		$this->writer = $services->domain->writer;
@@ -159,13 +158,24 @@ class TimelineEntriesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+		return $this->entriesAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	}//end index()
+
+	/**
+	 * The timeline of the object at a route path.
+	 *
+	 * @param array<string, string> $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function entriesAt(array $path): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
 		return $this->listOn(object: $object);
-	}//end index()
+	}//end entriesAt()
 
 	/**
 	 * The entries of a resolved object the caller may see, in the visibility they asked for.
@@ -229,13 +239,24 @@ class TimelineEntriesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+		return $this->createAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	}//end create()
+
+	/**
+	 * Write an entry on the object at a route path.
+	 *
+	 * @param array<string, string> $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function createAt(array $path): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		return $this->writeOn(object: $object, scope: ['register' => $register, 'schema' => $schema]);
-	}//end create()
+		return $this->writeOn(object: $object, scope: ['register' => $path['register'], 'schema' => $path['schema']]);
+	}//end createAt()
 
 	/**
 	 * Write the requested entry onto a resolved object and every related object.
@@ -307,13 +328,25 @@ class TimelineEntriesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function show(string $register, string $schema, string $id, string $entryId): JSONResponse {
-		$resolved = $this->resolveEntry(path: ['register' => $register, 'schema' => $schema, 'id' => $id], entryId: $entryId);
+		return $this->showAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id], entryId: $entryId);
+	}//end show()
+
+	/**
+	 * One entry of the object at a route path.
+	 *
+	 * @param array<string, string> $path    The register, schema and object id from the route.
+	 * @param string                $entryId The entry id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function showAt(array $path, string $entryId): JSONResponse {
+		$resolved = $this->resolveEntry(path: $path, entryId: $entryId);
 		if ($resolved instanceof JSONResponse) {
 			return $resolved;
 		}
 
 		return $this->shown(object: $resolved[0], entry: $resolved[1]);
-	}//end show()
+	}//end showAt()
 
 	/**
 	 * An entry the caller may read, with what its text points at.
@@ -353,13 +386,25 @@ class TimelineEntriesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function update(string $register, string $schema, string $id, string $entryId): JSONResponse {
-		$resolved = $this->resolveEntry(path: ['register' => $register, 'schema' => $schema, 'id' => $id], entryId: $entryId);
+		return $this->updateAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id], entryId: $entryId);
+	}//end update()
+
+	/**
+	 * Update one entry of the object at a route path.
+	 *
+	 * @param array<string, string> $path    The register, schema and object id from the route.
+	 * @param string                $entryId The entry id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function updateAt(array $path, string $entryId): JSONResponse {
+		$resolved = $this->resolveEntry(path: $path, entryId: $entryId);
 		if ($resolved instanceof JSONResponse) {
 			return $resolved;
 		}
 
 		return $this->updatedOn(object: $resolved[0], entry: $resolved[1]);
-	}//end update()
+	}//end updateAt()
 
 	/**
 	 * Apply the requested pin and follow-up change to an entry.
@@ -434,13 +479,25 @@ class TimelineEntriesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function source(string $register, string $schema, string $id, string $entryId): JSONResponse {
-		$resolved = $this->resolveEntry(path: ['register' => $register, 'schema' => $schema, 'id' => $id], entryId: $entryId);
+		return $this->sourceAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id], entryId: $entryId);
+	}//end source()
+
+	/**
+	 * The source of one entry of the object at a route path.
+	 *
+	 * @param array<string, string> $path    The register, schema and object id from the route.
+	 * @param string                $entryId The entry id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function sourceAt(array $path, string $entryId): JSONResponse {
+		$resolved = $this->resolveEntry(path: $path, entryId: $entryId);
 		if ($resolved instanceof JSONResponse) {
 			return $resolved;
 		}
 
 		return $this->sourceOf(object: $resolved[0], entry: $resolved[1]);
-	}//end source()
+	}//end sourceAt()
 
 	/**
 	 * The raw inbound message of an entry the caller may read.
@@ -653,11 +710,11 @@ class TimelineEntriesController extends Controller {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
 		}
 
-		$this->objects->setRegister($path['register']);
-		$this->objects->setSchema($path['schema']);
-		$this->objects->setObject($path['id']);
-
 		try {
+			// setObject() throws for an unknown object, or one the caller may not read.
+			$this->objects->setRegister($path['register']);
+			$this->objects->setSchema($path['schema']);
+			$this->objects->setObject($path['id']);
 			$object = $this->objects->getObject();
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);

@@ -47,8 +47,7 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetWorkRowKinds    $work    Writes the tasks, notes, read states and follows.
 	 * @param ExampleSetOwnRowKinds     $own     Writes the saved views, flows and case plans.
 	 * @param ExampleSetLinkRowKinds    $links   Writes the party links, email links, access links and grants.
-	 * @param ExampleSetAppRowKinds     $apps    Writes the Deck cards, appointments, Collectives pages and Talk conversations.
-	 * @param ExampleSetHistoryRowKinds $history Writes the exports, the archival setting, audit and timeline entries.
+	 * @param ExampleSetAppAndHistoryRowKinds $elsewhere Writes the rows in other apps and in the history.
 	 *
 	 * @return void
 	 */
@@ -56,8 +55,7 @@ class ExampleSetEngineKinds {
 		private readonly ExampleSetWorkRowKinds $work=new ExampleSetWorkRowKinds(),
 		private readonly ExampleSetOwnRowKinds $own=new ExampleSetOwnRowKinds(),
 		private readonly ExampleSetLinkRowKinds $links=new ExampleSetLinkRowKinds(),
-		private readonly ExampleSetAppRowKinds $apps=new ExampleSetAppRowKinds(),
-		private readonly ExampleSetHistoryRowKinds $history=new ExampleSetHistoryRowKinds(),
+		private readonly ExampleSetAppAndHistoryRowKinds $elsewhere=new ExampleSetAppAndHistoryRowKinds(),
 	) {
 	}//end __construct()
 
@@ -74,30 +72,49 @@ class ExampleSetEngineKinds {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
 	public function check(array $fragment, array $context, array $users, ExampleSetValues $values): array {
-		$refusals = $this->addressRefusals(fragment: $fragment);
+		$refusals         = $this->addressRefusals(fragment: $fragment);
 		$context['tasks'] = $values->tasksOf(fragment: $fragment, record: null);
-		foreach ($this->kinds() as $part => [$rows, $noun]) {
+		$write            = new ExampleSetFragmentWrite(fragment: $fragment, context: $context, values: $values);
+		return array_merge($refusals, $this->kindRefusals(write: $write, users: $users));
+	}//end check()
+
+	/**
+	 * Each kind's refusals of one fragment's rows, in the order of the kinds; one per row of a kind this
+	 * OpenRegister cannot write.
+	 *
+	 * @param ExampleSetFragmentWrite $write The fragment, the context placeholders draw on (with its `tasks`) and their
+	 *                                       filler.
+	 * @param array<int, string>      $users The account ids the set creates or adopts.
+	 *
+	 * @return array<int, string>
+	 */
+	private function kindRefusals(ExampleSetFragmentWrite $write, array $users): array {
+		$refusals = [];
+		foreach ($this->kinds() as $part => [$rows]) {
 			if ($rows === null) {
-				$refusals = array_merge($refusals, $this->absentRefusals(fragment: $fragment, part: $part, noun: $noun));
+				$refusals = array_merge($refusals, $this->absentRefusals(fragment: $write->fragment, part: $part));
 				continue;
 			}
 
-			$refusals = array_merge($refusals, $rows->checkFragment(fragment: $fragment, context: $context, users: $users, values: $values));
+			$refusals = array_merge(
+				$refusals,
+				$rows->checkFragment(fragment: $write->fragment, context: $write->context, users: $users, values: $write->values)
+			);
 		}
 
 		return $refusals;
-	}//end check()
+	}//end kindRefusals()
 
 	/**
 	 * One refusal per row of a part this OpenRegister has no writer for.
 	 *
 	 * @param array<string, mixed> $fragment The fragment.
 	 * @param string               $part     The part.
-	 * @param string               $noun     The word for one row.
 	 *
 	 * @return array<int, string>
 	 */
-	private function absentRefusals(array $fragment, string $part, string $noun): array {
+	private function absentRefusals(array $fragment, string $part): array {
+		$noun     = $this->kinds()[$part][1];
 		$refusals = [];
 		foreach (($fragment[$part] ?? []) as $entry) {
 			$refusals[] = $fragment['file'].': '.$noun.' "'.$entry['key'].'": this OpenRegister cannot write '.$part;
@@ -186,17 +203,27 @@ class ExampleSetEngineKinds {
 	/**
 	 * Write the tasks and views of one fragment that the record does not hold.
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<string, mixed> $report   The report; gains `tasks`, `views` and `dropped`.
-	 * @param array<string, mixed> $record   The record; gains the rows written.
-	 * @param ExampleSetValues     $values   Fills placeholders.
+	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
+	 * @param array<string, mixed>    $report The report; gains `tasks`, `views` and `dropped`.
+	 * @param array<string, mixed>    $record The record; gains the rows written.
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	public function install(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
+	public function install(ExampleSetFragmentWrite $write, array &$report, array &$record): bool {
+		return $this->installAfterChanges(write: $write, ledger: new RecordLedger(report: $report, record: $record));
+	}//end install()
+
+	/**
+	 * Write the rows of one fragment that the record does not hold, but for the parts installBeforeChanges() wrote.
+	 *
+	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
+	 * @param RecordLedger            $ledger The report and the record, held by reference.
+	 *
+	 * @return bool Whether the record changed and is to be written.
+	 */
+	private function installAfterChanges(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
 		$changed = false;
 		foreach ($this->kinds() as $part => [$rows]) {
 			// Written earlier, by installBeforeChanges(), so a change may quote one.
@@ -204,45 +231,55 @@ class ExampleSetEngineKinds {
 				continue;
 			}
 
-			if ($rows?->installFragment(fragment: $fragment, context: $context, report: $report, record: $record, values: $values) === true) {
+			if ($rows?->installFragment(write: $write, report: $ledger->report, record: $ledger->record) === true) {
 				$changed = true;
 			}
 
 			// The parts after the tasks may quote one (`{{task:key.uuid}}`).
 			if ($part === 'tasks') {
-				$context['tasks'] = $values->tasksOf(fragment: $fragment, record: $record);
+				$write = $write->withTasksOf(record: $ledger->record);
 			}
 		}
 
 		return $changed;
-	}//end install()
+	}//end installAfterChanges()
 
 	/**
 	 * Write the flows, access links and grants of one fragment that the record does not hold, before its changes, so
 	 * a change may quote one (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<string, mixed> $report   The report; gains `flows`, `accessLinks` and `grants`.
-	 * @param array<string, mixed> $record   The record; gains the rows written.
-	 * @param ExampleSetValues     $values   Fills placeholders.
+	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
+	 * @param array<string, mixed>    $report The report; gains `flows`, `accessLinks` and `grants`.
+	 * @param array<string, mixed>    $record The record; gains the rows written.
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-change-may-quote-an-access-link-of-its-fragment
 	 */
-	public function installBeforeChanges(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
+	public function installBeforeChanges(ExampleSetFragmentWrite $write, array &$report, array &$record): bool {
+		return $this->installQuoted(write: $write, ledger: new RecordLedger(report: $report, record: $record));
+	}//end installBeforeChanges()
+
+	/**
+	 * Write the flows, access links and grants of one fragment that the record does not hold.
+	 *
+	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
+	 * @param RecordLedger            $ledger The report and the record, held by reference.
+	 *
+	 * @return bool Whether the record changed and is to be written.
+	 */
+	private function installQuoted(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
 		$changed = false;
 		$kinds   = $this->kinds();
 		foreach (self::BEFORE_CHANGES as $part) {
-			if ($kinds[$part][0]?->installFragment(fragment: $fragment, context: $context, report: $report, record: $record, values: $values) === true) {
+			if ($kinds[$part][0]?->installFragment(write: $write, report: $ledger->report, record: $ledger->record) === true) {
 				$changed = true;
 			}
 		}
 
 		return $changed;
-	}//end installBeforeChanges()
+	}//end installQuoted()
 
 	/**
 	 * The access links a fragment declares, by key, for `{{accessLink:key.id|uuid|url}}`: as minted, or stand-ins
@@ -294,20 +331,33 @@ class ExampleSetEngineKinds {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-the-views-a-set-wrote
 	 */
 	public function delete(array &$record, array &$report, callable $written): void {
+		$this->deleteHeld(ledger: new RecordLedger(report: $report, record: $record), written: $written);
+	}//end delete()
+
+	/**
+	 * Delete the rows the record holds, newest first.
+	 *
+	 * @param RecordLedger $ledger  The record, which loses each row deleted, and the report, which gains counts and
+	 *                              failures; held by reference.
+	 * @param callable     $written Called after each deletion, so the record is kept.
+	 *
+	 * @return void
+	 */
+	private function deleteHeld(RecordLedger $ledger, callable $written): void {
 		foreach ($this->kinds() as $part => [$rows, $noun]) {
-			foreach (array_reverse(($record[$part] ?? []), true) as $name => $entry) {
+			foreach (array_reverse(($ledger->record[$part] ?? []), true) as $name => $entry) {
 				$failure = $this->failure(outcome: $rows?->revert(entry: $entry), part: $part);
 				if ($failure !== null) {
-					$report['failed'][] = $noun.' '.$name.$failure;
+					$ledger->report['failed'][] = $noun.' '.$name.$failure;
 					continue;
 				}
 
-				unset($record[$part][$name]);
-				$report['removed'][$part] = (($report['removed'][$part] ?? 0) + 1);
-				$written($record);
+				unset($ledger->record[$part][$name]);
+				$ledger->report['removed'][$part] = (($ledger->report['removed'][$part] ?? 0) + 1);
+				$written($ledger->record);
 			}
 		}
-	}//end delete()
+	}//end deleteHeld()
 
 	/**
 	 * What follows a row's name under `failed` when deleting it did not take it away, or null when it is gone.
@@ -336,8 +386,8 @@ class ExampleSetEngineKinds {
 	 * @return array<string, array{0: ExampleSetEngineRows|null, 1: string}>
 	 */
 	private function kinds(): array {
-		$writers = ($this->work->writers() + $this->own->writers() + $this->links->writers() + $this->apps->writers()
-			+ $this->history->writers());
+		$writers = ($this->work->writers() + $this->own->writers() + $this->links->writers()
+			+ $this->elsewhere->writers());
 		$kinds   = [];
 		foreach (ExampleSetFragmentShape::KEYED_ROWS as $part => $noun) {
 			$kinds[$part] = [$writers[$part], $noun];

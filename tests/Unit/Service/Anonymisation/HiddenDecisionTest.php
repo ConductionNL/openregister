@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Event\DecisionVisibilityRequestedEvent;
 use OCA\OpenRegister\Service\Decision\DecisionService;
+use OCA\OpenRegister\Service\Decision\DecisionVisibilityPlatform;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
@@ -104,8 +105,7 @@ class HiddenDecisionTest extends TestCase {
 			resolver: $resolver,
 			decisions: $decisions,
 			groupManager: $groups,
-			eventDispatcher: $dispatcher,
-			logger: $this->createMock(LoggerInterface::class)
+			platform: new DecisionVisibilityPlatform($dispatcher, $this->createMock(LoggerInterface::class))
 		);
 	}//end visibility()
 

@@ -32,6 +32,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Controller\Support\AuditObjectRef;
 use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
@@ -131,16 +132,14 @@ class AuditTrailController extends Controller {
 	/**
 	 * Constructor for AuditTrailController
 	 *
-	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param AuditTrailControllerServices $services The audit trail controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		AuditTrailControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->logService = $services->log->logService;
 		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
 		$this->auditHashService = $services->log->auditHashService;
@@ -413,8 +412,7 @@ class AuditTrailController extends Controller {
 
 		try {
 			$page = $this->auditPage->page(
-				filters: $this->pageFilters(),
-				search: ($params['search'] ?? $params['_search'] ?? null),
+				query: $this->auditPage->query(filters: $this->pageFilters(), search: ($params['search'] ?? $params['_search'] ?? null)),
 				limit: $limit,
 				cursor: $cursor
 			);
@@ -694,6 +692,19 @@ class AuditTrailController extends Controller {
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
 	public function objects(string $register, string $schema, string $id): JSONResponse {
+		return $this->objectLogs(object: new AuditObjectRef(register: $register, schema: $schema, id: $id));
+	}//end objects()
+
+	/**
+	 * The trail of one object: everything for an administrator, the readable part for anyone else signed in.
+	 *
+	 * @param AuditObjectRef $object The object the route names.
+	 *
+	 * @return JSONResponse The logs, or 401 without a session user.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	private function objectLogs(AuditObjectRef $object): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(
@@ -703,17 +714,11 @@ class AuditTrailController extends Controller {
 		}
 
 		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return $this->objectsForReader(object: new AuditObjectRef(register: $register, schema: $schema, id: $id));
+			return $this->objectsForReader(object: $object);
 		}
 
-		// Extract common parameters.
-		$params = $this->extractRequestParameters();
-
-		return $this->adminObjectLogs(
-			object: new AuditObjectRef(register: $register, schema: $schema, id: $id),
-			params: $params
-		);
-	}//end objects()
+		return $this->adminObjectLogs(object: $object, params: $this->extractRequestParameters());
+	}//end objectLogs()
 
 	/**
 	 * An administrator's read of one object's audit trail, read events included.
@@ -932,8 +937,7 @@ class AuditTrailController extends Controller {
 
 		try {
 			$outcome = $this->auditPage->export(
-				filters: $filters,
-				search: $search,
+				query: $this->auditPage->query(filters: $filters, search: $search),
 				format: $format,
 				includeChanges: $includeChanges,
 				actor: $this->userSession->getUser()?->getUID()

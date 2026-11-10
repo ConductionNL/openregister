@@ -85,7 +85,7 @@ class VocabularyControllerA24GoldenTest extends TestCase {
 		$this->objects = $this->createMock(ObjectOperationsInterface::class);
 		$this->options = $this->createMock(CodedOptionsBuilder::class);
 		$this->resolver = $this->createMock(VocabularyDeclarationResolver::class);
-		$this->controller = new VocabularyController('openregister', $request, $this->objects, $this->options, $this->resolver);
+		$this->controller = new VocabularyController($request, new \OCA\OpenRegister\Controller\Support\VocabularyControllerServices($this->objects, $this->options, $this->resolver));
 	}
 
 	private function languageFor(array $params, string $header): string {

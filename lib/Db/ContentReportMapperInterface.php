@@ -59,6 +59,20 @@ interface ContentReportMapperInterface {
 	public function findAll(?string $status = null, ?string $organisationId = null, ?int $limit = null): array;
 
 	/**
+	 * Every report filed against one object, newest first.
+	 *
+	 * Looked up by uuid rather than by row id on purpose: the object is gone by
+	 * the time this matters most, and its row id is gone with it.
+	 *
+	 * @param string $objectUuid The reported object's uuid.
+	 *
+	 * @return ContentReport[] The reports.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function findByObjectUuid(string $objectUuid): array;
+
+	/**
 	 * Find by uuid.
 	 *
 	 * @param string $uuid The report uuid.
@@ -68,6 +82,17 @@ interface ContentReportMapperInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function findByUuid(string $uuid): ?ContentReport;
+
+	/**
+	 * Insert a report, filling the uuid and the timestamps.
+	 *
+	 * @param ContentReport $entity The report to insert.
+	 *
+	 * @return ContentReport The persisted report.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function insert($entity): ContentReport;
 
 	/**
 	 * Update a report, moving its change time.

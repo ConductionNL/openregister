@@ -25,6 +25,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
 use OCA\OpenRegister\Service\Object\DraftExpiryInterface;
+use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
+use OCA\OpenRegister\Service\Object\DraftRemovalFrameInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -197,6 +199,7 @@ class DraftExpiryJobTest extends TestCase {
 			services: [
 				ITimeFactory::class => $this->clock(),
 				LoggerInterface::class => $logger,
+				DraftRemovalFrameInterface::class => new DraftRemovalFrame(),
 				DraftExpiryInterface::class => new DraftExpiry(objects: $objects, registers: $registers, schemas: $schemas, logger: $this->createMock(LoggerInterface::class)),
 			]
 		);
@@ -234,7 +237,7 @@ class DraftExpiryJobTest extends TestCase {
 
 		$job = $this->build(
 			class: $this->declaredJobClass(),
-			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiryInterface::class => $expiry]
+			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiryInterface::class => $expiry, DraftRemovalFrameInterface::class => new DraftRemovalFrame()]
 		);
 		$this->runJob(job: $job);
 	}//end testAZeroIsLogged()
@@ -251,7 +254,7 @@ class DraftExpiryJobTest extends TestCase {
 
 		$job = $this->build(
 			class: $this->declaredJobClass(),
-			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiryInterface::class => $expiry]
+			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiryInterface::class => $expiry, DraftRemovalFrameInterface::class => new DraftRemovalFrame()]
 		);
 
 		$this->expectException(RuntimeException::class);
@@ -275,7 +278,7 @@ class DraftExpiryJobTest extends TestCase {
 
 		$job = $this->build(
 			class: $this->declaredJobClass(),
-			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiryInterface::class => $expiry]
+			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiryInterface::class => $expiry, DraftRemovalFrameInterface::class => new DraftRemovalFrame()]
 		);
 		$this->runJob(job: $job);
 	}//end testARefusalIsLoggedWhereTheDefaultLevelShowsIt()

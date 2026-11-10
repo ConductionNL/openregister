@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\Support\AgentsControllerServices;
 use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -127,7 +128,6 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 	 * Initializes controller with required dependencies for agent operations.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param AgentsControllerServices $services The agents controller services.
 	 * @param string|null $userId Current user ID for RBAC checks
@@ -135,13 +135,12 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		AgentsControllerServices $services,
 		?string $userId,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		// Store dependencies for use in controller methods.
 		$this->agentMapper = $services->agentMapper;
@@ -169,17 +168,16 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 	 */
 	public function index(): JSONResponse {
 		try {
-			$organisationUuid = $this->organisationService->getActiveOrganisation()?->getUuid();
 			$params = $this->request->getParams();
 			$limit  = (int)($params['_limit'] ?? 50);
 			$offset = $this->pageOffset(params: $params, limit: $limit);
-			$agents = $this->findAgents(organisationUuid: $organisationUuid, limit: $limit, offset: $offset);
+			$agents = $this->findAgents(limit: $limit, offset: $offset);
 
 			return new JSONResponse(data: ['results' => $agents], statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
 			$context = ['line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()];
-			$response = $this->error(error: 'Failed to retrieve agents', statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
-			return $this->failure(message: 'Failed to get agents', context: $context, response: $response);
+			$this->logFailure(message: 'Failed to get agents', context: $context);
+			return $this->error(error: 'Failed to retrieve agents', statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 	}//end index()
 
@@ -205,13 +203,13 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 	 * With an active organisation the mapper filters by organisation and user
 	 * (multi-tenancy and RBAC); without one it lists global/legacy agents.
 	 *
-	 * @param string|null $organisationUuid The active organisation, if any
-	 * @param int         $limit            The page size
-	 * @param int         $offset           The offset
+	 * @param int $limit  The page size
+	 * @param int $offset The offset
 	 *
 	 * @return array<Agent> The agents
 	 */
-	private function findAgents(?string $organisationUuid, int $limit, int $offset): array {
+	private function findAgents(int $limit, int $offset): array {
+		$organisationUuid = $this->organisationService->getActiveOrganisation()?->getUuid();
 		if ($organisationUuid === null) {
 			return $this->agentMapper->findAll(limit: $limit, offset: $offset);
 		}
@@ -255,8 +253,8 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 			return new JSONResponse(data: $agent, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
 			$context = ['line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()];
-			$response = $this->error(error: 'Agent not found', statusCode: Http::STATUS_NOT_FOUND);
-			return $this->failure(message: 'Failed to get agent', context: $context, response: $response);
+			$this->logFailure(message: 'Failed to get agent', context: $context);
+			return $this->error(error: 'Agent not found', statusCode: Http::STATUS_NOT_FOUND);
 		}
 	}//end show()
 
@@ -283,8 +281,8 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 			return new JSONResponse(data: $agent, statusCode: Http::STATUS_CREATED);
 		} catch (Exception $e) {
 			$context = ['line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()];
-			$response = $this->error(error: 'Failed to create agent: '.$e->getMessage(), statusCode: Http::STATUS_BAD_REQUEST);
-			return $this->failure(message: 'Failed to create agent', context: $context, response: $response);
+			$this->logFailure(message: 'Failed to create agent', context: $context);
+			return $this->error(error: 'Failed to create agent: '.$e->getMessage(), statusCode: Http::STATUS_BAD_REQUEST);
 		}
 	}//end create()
 
@@ -335,8 +333,8 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 			return new JSONResponse(data: $updatedAgent, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
 			$context = ['line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()];
-			$response = $this->error(error: 'Failed to update agent: '.$e->getMessage(), statusCode: Http::STATUS_BAD_REQUEST);
-			return $this->failure(message: 'Failed to update agent', context: $context, response: $response);
+			$this->logFailure(message: 'Failed to update agent', context: $context);
+			return $this->error(error: 'Failed to update agent: '.$e->getMessage(), statusCode: Http::STATUS_BAD_REQUEST);
 		}
 	}//end update()
 
@@ -413,8 +411,8 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 			return $this->deleteAgent(agent: $agent, id: $id);
 		} catch (Exception $e) {
 			$context = ['line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()];
-			$response = $this->error(error: 'Failed to delete agent', statusCode: Http::STATUS_BAD_REQUEST);
-			return $this->failure(message: 'Failed to delete agent', context: $context, response: $response);
+			$this->logFailure(message: 'Failed to delete agent', context: $context);
+			return $this->error(error: 'Failed to delete agent', statusCode: Http::STATUS_BAD_REQUEST);
 		}
 	}//end destroy()
 
@@ -478,8 +476,8 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 			return new JSONResponse(data: $stats, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
 			$context = ['line' => __LINE__, 'error' => $e->getMessage()];
-			$response = $this->error(error: 'Failed to retrieve statistics', statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
-			return $this->failure(message: 'Failed to get agent statistics', context: $context, response: $response);
+			$this->logFailure(message: 'Failed to get agent statistics', context: $context);
+			return $this->error(error: 'Failed to retrieve statistics', statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 	}//end stats()
 
@@ -512,24 +510,22 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 			return new JSONResponse(data: ['results' => $tools], statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
 			$context = ['line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()];
-			$response = $this->error(error: 'Failed to retrieve tools', statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
-			return $this->failure(message: 'Failed to get available tools', context: $context, response: $response);
+			$this->logFailure(message: 'Failed to get available tools', context: $context);
+			return $this->error(error: 'Failed to retrieve tools', statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 	}//end tools()
 
 	/**
-	 * Log a failed action as an error and return its response.
+	 * Log a failed action as an error.
 	 *
-	 * @param string               $message  The log message, without the controller prefix
-	 * @param array<string, mixed> $context  The log context, without the file
-	 * @param JSONResponse         $response The response to return
+	 * @param string               $message The log message, without the controller prefix
+	 * @param array<string, mixed> $context The log context, without the file
 	 *
-	 * @return JSONResponse The given response
+	 * @return void
 	 */
-	private function failure(string $message, array $context, JSONResponse $response): JSONResponse {
+	private function logFailure(string $message, array $context): void {
 		$this->logger->error(message: '[AgentsController] '.$message, context: ['file' => __FILE__] + $context);
-		return $response;
-	}//end failure()
+	}//end logFailure()
 
 	/**
 	 * Log a successful change to one agent.

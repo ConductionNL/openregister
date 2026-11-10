@@ -137,7 +137,7 @@ class PropertyRbacHandlerAccessGoldenTest extends TestCase {
 				$log[] = ['warning', $message, json_encode($context['rule'] ?? null)];
 			}
 		);
-		$handler = new PropertyRbacHandler($session, $groups, $matcher, $logger, $this->createMock(StateFieldRuleResolver::class));
+		$handler = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groups), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($matcher, $this->createMock(StateFieldRuleResolver::class)), logger: $logger);
 
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getPropertyAuthorization')->willReturnCallback(fn (string $p) => self::authorizations()[$p]);

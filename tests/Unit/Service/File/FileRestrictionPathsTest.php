@@ -159,7 +159,6 @@ class FileRestrictionPathsTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		return FilesControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->fileService,
 			$objectService,

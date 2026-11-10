@@ -16,6 +16,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountTerms;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsInstall;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProfiles;
 
@@ -109,8 +111,7 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 		];
 		$record = $this->record->read(set: 'demo');
 
-		$report = ['users' => [], 'groups' => [], 'memberships' => [], 'dropped' => [], 'passwords' => []];
-		$people->install(plan: $plan, adopt: ['adopted.one'], password: 'pw', report: $report, record: $record);
+		$people->install(install: new ExampleSetAccountsInstall(plan: $plan, terms: new ExampleSetAccountTerms(set: (string) $plan['set'], adopt: ['adopted.one'], password: 'pw')), record: $record);
 
 		$this->assertSame(expected: ['sanne.bakker'], actual: array_keys($written));
 		$this->assertSame(expected: 'Vergunningverlener', actual: $written['sanne.bakker']['headline']);

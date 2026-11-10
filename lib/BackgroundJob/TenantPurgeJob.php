@@ -177,7 +177,7 @@ class TenantPurgeJob extends TimedJob {
 			return false;
 		}
 
-		return $this->purge(organisation: $organisation, orgUuid: $orgUuid, deprovisionedAt: $deprovisionedAt);
+		return $this->purge(organisation: $organisation, deprovisionedAt: $deprovisionedAt);
 	}//end purgeIfDue()
 
 	/**
@@ -214,15 +214,15 @@ class TenantPurgeJob extends TimedJob {
 	/**
 	 * Delete the organisation's usage records and the organisation itself.
 	 *
-	 * @param Organisation $organisation    The organisation to purge.
-	 * @param string       $orgUuid         Its uuid, the scope of every delete.
+	 * @param Organisation $organisation    The organisation to purge; its non-empty uuid scopes every delete.
 	 * @param DateTime     $deprovisionedAt When it was deprovisioned, for the log.
 	 *
 	 * @return bool True when both deletes succeeded.
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-purge-must-touch-only-the-organisation-it-purges
 	 */
-	private function purge(Organisation $organisation, string $orgUuid, DateTime $deprovisionedAt): bool {
+	private function purge(Organisation $organisation, DateTime $deprovisionedAt): bool {
+		$orgUuid = (string)$organisation->getUuid();
 		try {
 			// Delete this organisation's usage records, and only this one's.
 			$this->tenantUsageMapper->deleteByOrganisation(organisationUuid: $orgUuid);

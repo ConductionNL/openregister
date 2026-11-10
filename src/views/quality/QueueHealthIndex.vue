@@ -147,22 +147,18 @@ export default {
 		},
 	},
 
+	/**
+	 * Load the webhook list, per-webhook stats, and recent failures.
+	 * When no webhooks are configured, no per-webhook stats requests are
+	 * issued (the store short-circuits on an empty list).
+	 *
+	 * @spec exclude UI data-loading orchestration — delegates to fetchWebhookHealth which carries the @spec tag
+	 */
 	mounted() {
-		this.loadData()
+		qualityStore.fetchWebhookHealth()
 	},
 
 	methods: {
-		/**
-		 * Load the webhook list, per-webhook stats, and recent failures.
-		 * When no webhooks are configured, no per-webhook stats requests are
-		 * issued (the store short-circuits on an empty list).
-		 *
-		 * @spec exclude UI data-loading orchestration — delegates to fetchWebhookHealth which carries the @spec tag
-		 */
-		async loadData() {
-			await qualityStore.fetchWebhookHealth()
-		},
-
 		/**
 		 * Look up the cached per-webhook stats for a webhook id.
 		 *

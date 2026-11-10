@@ -30,6 +30,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientRes
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -336,8 +337,9 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 	 */
 	private function talkSender(): TalkSender {
 		$sender = $this->createMock(TalkSender::class);
-		$sender->method('postAsUser')->willReturnCallback(function (string $token, string $message, string $actorUid): string {
-			$this->record(call: 'talk.post', args: [$token, $message, $actorUid]);
+		$sender->method('postAsUser')->willReturnCallback(function (TalkMessage $talkMessage, string $actorUid): string {
+			$token = $talkMessage->token;
+			$this->record(call: 'talk.post', args: [$token, $talkMessage->message, $actorUid]);
 			if ($token === 'room-err') {
 				throw new TalkSendException('not a participant');
 			}

@@ -71,7 +71,6 @@ class TimelineAdminControllerTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
 		$this->controller = new TimelineAdminController(
-			'openregister',
 			$this->request,
 			new TimelineAdminControllerServices(
 				kinds: $this->kinds,

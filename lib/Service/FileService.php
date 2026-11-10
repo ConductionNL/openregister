@@ -640,22 +640,16 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @param ObjectEntity|string $objectEntity The object entity to create the folder for
 	 * @param IUser|null $currentUser The current user to share the folder with
-	 * @param int|string|null $registerId The register of the object to add the file to
 	 *
 	 * @throws Exception If folder creation fails
 	 * @throws NotPermittedException If folder creation is not permitted
 	 *
 	 * @return Node The created folder
 	 */
-	private function createObjectFolderById(
-		ObjectEntity|string $objectEntity,
-		?IUser $currentUser = null,
-		int|string|null $registerId = null,
-	): Node {
+	private function createObjectFolderById(ObjectEntity|string $objectEntity, ?IUser $currentUser=null): Node {
 		return $this->folderManagementHandler->createObjectFolderById(
 			objectEntity: $objectEntity,
-			currentUser: $currentUser,
-			registerId: $registerId
+			currentUser: $currentUser
 		);
 	}//end createObjectFolderById()
 

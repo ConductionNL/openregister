@@ -71,11 +71,7 @@ import {
 						</span>
 						<ManagedBadge :config="getManagingConfiguration(row)" />
 					</div>
-					<span
-						v-if="row.description"
-						class="textDescription textEllipsis"
-						>{{ row.description }}</span
-					>
+					<IndexRowDescription :text="row.description" />
 				</div>
 			</template>
 
@@ -84,14 +80,11 @@ import {
 				{{ Object.keys(row.properties || {}).length }}
 			</template>
 
-			<!-- Custom column: created date -->
-			<template #column-created="{ row }">
-				{{ listDateTime(row.created) }}
-			</template>
-
-			<!-- Custom column: updated date -->
-			<template #column-updated="{ row }">
-				{{ listDateTime(row.updated) }}
+			<!-- Custom columns: created and updated dates -->
+			<template
+				v-for="key in ['created', 'updated']"
+				#[`column-${key}`]="{ row }">
+				{{ listDateTime(row[key]) }}
 			</template>
 
 			<!-- Custom row actions for table view -->
@@ -108,18 +101,20 @@ import { NcAppContent } from '@nextcloud/vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ManagedBadge from '../../components/shared/ManagedBadge.vue'
+import IndexRowDescription from '../IndexRowDescription.vue'
+import {
+	headerListData,
+	headerListMethods,
+} from '../../composables/headerListControls.js'
 import {
 	isExternalConfiguration,
 	isLocalConfiguration,
 	managedRowClass,
 } from '../../composables/managedConfiguration.js'
-import { applyFilterChange, filterRows } from '../../services/listFilter.js'
+import { filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
 import { deleteAction, editAction } from '../../services/menuActions.js'
-import {
-	BUILTIN_ACTIONS_OFF,
-	timestampColumns,
-} from '../indexPageOptions.js'
+import { timestampColumns } from '../indexPageOptions.js'
 
 /**
  * The value a schema row is filtered on: the properties column shows a count.
@@ -138,6 +133,7 @@ function schemaFilterValue(schema, field) {
 export default {
 	name: 'SchemasIndex',
 	components: {
+		IndexRowDescription,
 		ActionMenu,
 		NcAppContent,
 		CnIndexPage,
@@ -147,14 +143,8 @@ export default {
 
 	data() {
 		return {
-			builtinActionsOff: BUILTIN_ACTIONS_OFF,
+			...headerListData(),
 			selectedSchemas: [],
-			isRefreshing: false,
-			// The header the list is sorted by; null keeps newest first.
-			sortKey: null,
-			sortOrder: 'asc',
-			// The header filters, as `{ paramKey: values[] }` (`title[like]`).
-			activeFilters: {},
 		}
 	},
 
@@ -277,6 +267,8 @@ export default {
 	},
 
 	methods: {
+		...headerListMethods(() => schemaStore),
+
 		/**
 		 * The row menu of a schema.
 		 *
@@ -314,35 +306,6 @@ export default {
 					},
 				),
 			]
-		},
-
-		/**
-		 * Sort by a clicked header. The list is loaded whole, so it is sorted
-		 * here, and paging goes back to page 1 so the top of the new order shows.
-		 *
-		 * @param {{key: string, order: string}} payload The header and direction.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md
-		 */
-		onSort(payload) {
-			this.sortKey = payload && payload.key ? payload.key : null
-			this.sortOrder = payload && payload.order === 'desc' ? 'desc' : 'asc'
-			schemaStore.setPagination(1, schemaStore.pagination.limit || 20)
-		},
-
-		/**
-		 * Apply a header filter. The list is loaded whole, so it is filtered
-		 * here, and paging goes back to page 1.
-		 *
-		 * @param {{key: string, values: Array}} payload The filter change.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
-		 */
-		onFilterChange(payload) {
-			this.activeFilters = applyFilterChange(this.activeFilters, payload)
-			schemaStore.setPagination(1, schemaStore.pagination.limit || 20)
 		},
 
 		/**
@@ -464,25 +427,9 @@ export default {
 <style lang="scss" scoped>
 @use '../../styles/common.scss' as *;
 @use '../../styles/views.scss' as *;
+@use '../managedRowAccents.scss' as *;
 
-/* Table row accents. Drawn with an inset box-shadow, never border-left: a
-   border adds layout width and shifts the row's cell content sideways, while
-   box-shadow paints inside the box. Matches .cn-table-row--selected.
-
-   Skipped on a selected row so the library's .cn-table-row--selected accent
-   wins. Scoping adds a [data-v-*] attribute, which would otherwise outweigh
-   the library's single-class rule and leave a selected row showing its
-   managed/local colour instead of the selection colour. */
-
-/* Managed schemas (external - green) */
-:deep(.viewTableRow--managed:not(.cn-table-row--selected)) {
-	box-shadow: inset 3px 0 0 0 var(--color-success);
-}
-
-/* Local configurations (orange) */
-:deep(.viewTableRow--local:not(.cn-table-row--selected)) {
-	box-shadow: inset 3px 0 0 0 var(--color-warning);
-}
+@include managed-row-accents;
 
 /* In-use schemas */
 :deep(.viewTableRow--in-use:not(.cn-table-row--selected)) {

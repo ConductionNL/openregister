@@ -50,23 +50,67 @@ final class ObservabilityManifest {
 	public const POLICIES = [self::POLICY_ADR006, self::POLICY_ALWAYS200];
 
 	/**
+	 * Calling app id.
+	 *
+	 * @var string
+	 */
+	public readonly string $appId;
+
+	/**
+	 * Parsed health checks.
+	 *
+	 * @var HealthCheckDescriptor[]
+	 */
+	public readonly array $checks;
+
+	/**
+	 * Parsed metrics.
+	 *
+	 * @var MetricDescriptor[]
+	 */
+	public readonly array $metrics;
+
+	/**
+	 * Status-code policy: adr006|always200.
+	 *
+	 * @var string
+	 */
+	public readonly string $statusCodePolicy;
+
+	/**
+	 * Emit CORS headers when true.
+	 *
+	 * @var bool
+	 */
+	public readonly bool $cors;
+
+	/**
+	 * Validation diagnostics (block fell back to defaults).
+	 *
+	 * @var string[]
+	 */
+	public readonly array $diagnostics;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appId Calling app id.
-	 * @param HealthCheckDescriptor[] $checks Parsed health checks.
-	 * @param MetricDescriptor[] $metrics Parsed metrics.
-	 * @param string $statusCodePolicy adr006|always200.
-	 * @param bool $cors Emit CORS headers when true.
+	 * @param ObservabilityProbes $probes Parsed health checks and metrics.
+	 * @param HealthResponsePolicy $response Status-code policy and CORS switch.
 	 * @param string[] $diagnostics Validation diagnostics (block fell back to defaults).
 	 */
 	public function __construct(
-		public readonly string $appId,
-		public readonly array $checks,
-		public readonly array $metrics,
-		public readonly string $statusCodePolicy = self::POLICY_ADR006,
-		public readonly bool $cors = false,
-		public readonly array $diagnostics = [],
+		string $appId,
+		ObservabilityProbes $probes,
+		HealthResponsePolicy $response = new HealthResponsePolicy(),
+		array $diagnostics = [],
 	) {
+		$this->appId            = $appId;
+		$this->checks           = $probes->checks;
+		$this->metrics          = $probes->metrics;
+		$this->statusCodePolicy = $response->statusCodePolicy;
+		$this->cors             = $response->cors;
+		$this->diagnostics      = $diagnostics;
 	}//end __construct()
 
 	/**
@@ -102,10 +146,8 @@ final class ObservabilityManifest {
 
 		return new self(
 			appId: $appId,
-			checks: $checks,
-			metrics: $metrics,
-			statusCodePolicy: $health['statusCodePolicy'],
-			cors: $health['cors'],
+			probes: new ObservabilityProbes(checks: $checks, metrics: $metrics),
+			response: new HealthResponsePolicy(statusCodePolicy: $health['statusCodePolicy'], cors: $health['cors']),
 			diagnostics: $diagnostics
 		);
 	}//end fromManifest()
@@ -223,11 +265,7 @@ final class ObservabilityManifest {
 	public static function defaults(string $appId, array $manifest): self {
 		return new self(
 			appId: $appId,
-			checks: self::defaultChecks(manifest: $manifest),
-			metrics: [],
-			statusCodePolicy: self::POLICY_ADR006,
-			cors: false,
-			diagnostics: []
+			probes: new ObservabilityProbes(checks: self::defaultChecks(manifest: $manifest), metrics: [])
 		);
 	}//end defaults()
 

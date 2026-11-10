@@ -88,9 +88,9 @@ class FileSearchReadScopeTest extends TestCase {
 					),
 					rules: new FileReadScopeRules(),
 					logger: new NullLogger()
-				)
-			),
-			logger: new NullLogger()
+				),
+				logger: new NullLogger()
+			)
 		);
 	}//end setUp()
 

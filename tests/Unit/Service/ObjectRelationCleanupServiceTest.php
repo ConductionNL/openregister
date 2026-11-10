@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Service\ObjectRelationCleanupLinks;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\TaskService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -119,10 +120,12 @@ class ObjectRelationCleanupServiceTest extends TestCase {
 		$this->service = new ObjectRelationCleanupService(
 			noteService: $this->noteService,
 			taskService: $this->taskService,
-			emailService: $this->emailService,
-			calendarEventService: $this->calendarEventService,
-			contactService: $this->contactService,
-			deckCardService: $this->deckCardService,
+			links: new ObjectRelationCleanupLinks(
+				emailService: $this->emailService,
+				calendarEventService: $this->calendarEventService,
+				contactService: $this->contactService,
+				deckCardService: $this->deckCardService
+			),
 			logger: $this->logger
 		);
 

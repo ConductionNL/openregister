@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -132,7 +133,7 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->matcher = new ConditionMatcher(
-			userSession: $this->userSession,
+			users: new ConditionUserResolvers(userSession: $this->userSession),
 			container: $container,
 			operatorEvaluator: new OperatorEvaluator(logger: new NullLogger()),
 			logger: $this->logger

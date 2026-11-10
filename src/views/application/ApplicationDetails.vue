@@ -116,18 +116,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 						</div>
 						<div class="detailRow">
 							<strong>{{ t('openregister', 'Status') }}:</strong>
-							<span
-								:class="
-									applicationStore.applicationItem.active
-										? 'status-active'
-										: 'status-inactive'
-								">
-								{{
-									applicationStore.applicationItem.active
-										? t('openregister', 'Active')
-										: t('openregister', 'Inactive')
-								}}
-							</span>
+							<ActiveStatus :active="applicationStore.applicationItem.active" />
 						</div>
 						<div
 							v-if="applicationStore.applicationItem.created"
@@ -219,10 +208,12 @@ import InformationOutline from 'vue-material-design-icons/InformationOutline.vue
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ActiveStatus from './ActiveStatus.vue'
 
 export default {
 	name: 'ApplicationDetails',
 	components: {
+		ActiveStatus,
 		NcAppContent,
 		NcButton,
 		NcActions,

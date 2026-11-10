@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ConfigDeploymentControllerServices;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftsInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistryInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayerInterface;
@@ -58,9 +58,9 @@ class ConfigurationDeploymentController extends Controller {
 	/**
 	 * The pending values.
 	 *
-	 * @var ConfigurationDraftService
+	 * @var ConfigurationDraftsInterface
 	 */
-	private readonly ConfigurationDraftService $drafts;
+	private readonly ConfigurationDraftsInterface $drafts;
 
 	/**
 	 * The diff.
