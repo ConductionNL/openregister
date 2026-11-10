@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowGraphDiff;
+use OCA\OpenRegister\Service\Flow\FlowGraphFinding;
 use OCA\OpenRegister\Service\Flow\FlowSemanticVersion;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;
@@ -68,10 +69,10 @@ class FlowSemanticVersionPublishBehaviourTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessage('This publish cannot be minor. Something a consumer could depend on was removed.');
 
-		$this->versions->reconcile(derived: FlowGraphDiff::MAJOR, requested: ' Minor ', removed: '');
+		$this->versions->reconcile(found: new FlowGraphFinding(verdict: FlowGraphDiff::MAJOR, removed: ''), requested: ' Minor ');
 	}//end testARefusalWithoutASummaryStillSaysWhy()
 	public function testAMinorRequestOnAMinorChangeStaysMinor(): void {
-		self::assertSame(FlowGraphDiff::MINOR, $this->versions->reconcile(derived: FlowGraphDiff::MINOR, requested: 'minor'));
+		self::assertSame(FlowGraphDiff::MINOR, $this->versions->reconcile(found: new FlowGraphFinding(verdict: FlowGraphDiff::MINOR), requested: 'minor'));
 		self::assertSame('1.5.0', $this->versions->forPublish(publishedGraph: $this->graph(['a']), candidateGraph: $this->graph(['a', 'c']), previousSemver: '1.4.0', requested: 'minor'));
 	}//end testAMinorRequestOnAMinorChangeStaysMinor()
 }//end class
