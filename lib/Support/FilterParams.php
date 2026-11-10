@@ -186,21 +186,20 @@ final class FilterParams {
 	 * a bare one was ignored, as it always was, and a bracket one still filters
 	 * on a column the rows do not have, so it still matches nothing.
 	 *
-	 * @param array<array-key, mixed> $bracket       The `filter[...]` map.
-	 * @param array<array-key, mixed> $params        Every request parameter.
-	 * @param string[]                $controlParams The action's control parameters.
-	 * @param array<array-key, mixed> $properties    The schema's declared properties.
+	 * @param AggregationFilterRequest $request    The bracket map, every request parameter and the action's control parameters.
+	 * @param array<array-key, mixed>  $properties The schema's declared properties.
 	 *
 	 * @return array{filter: array<array-key, mixed>, unknown: list<string>}
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
 	 */
-	public static function forAggregation(array $bracket, array $params, array $controlParams, array $properties): array {
-		$bare = self::bareFilters(candidates: self::filterCandidates(params: $params, controlParams: $controlParams), properties: $properties);
-		$unknown = array_merge($bare['unknown'], self::unknownBracketKeys(bracket: $bracket, properties: $properties));
+	public static function forAggregation(AggregationFilterRequest $request, array $properties): array {
+		$candidates = self::filterCandidates(params: $request->params, controlParams: $request->controlParams);
+		$bare       = self::bareFilters(candidates: $candidates, properties: $properties);
+		$unknown    = array_merge($bare['unknown'], self::unknownBracketKeys(bracket: $request->bracket, properties: $properties));
 
 		return [
-			'filter'  => array_replace($bare['filter'], $bracket),
+			'filter'  => array_replace($bare['filter'], $request->bracket),
 			'unknown' => array_values(array_unique($unknown)),
 		];
 	}//end forAggregation()
@@ -328,19 +327,17 @@ final class FilterParams {
 	 * It is a warning and not a refusal on purpose; turning it into an HTTP 400
 	 * is the follow-up once the logs show no caller depends on the old answer.
 	 *
-	 * @param LoggerInterface|null $logger   Where to write; null writes nothing.
-	 * @param string[]             $keys     The unknown keys.
-	 * @param string               $endpoint The route name, e.g. `objects#index`.
-	 * @param string               $register The register reference from the URL.
-	 * @param string               $schema   The schema reference from the URL.
+	 * @param LoggerInterface|null $logger  Where to write; null writes nothing.
+	 * @param UnknownFilterKeys    $unknown The unknown keys, the route name (e.g. `objects#index`) and the register and schema from the URL.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
 	 */
-	public static function warnUnknownKeys(?LoggerInterface $logger, array $keys, string $endpoint, string $register, string $schema): void {
-		$context = ['app' => 'openregister', 'endpoint' => $endpoint, 'register' => $register, 'schema' => $schema];
-		self::logUnknownKeys(logger: $logger, context: $context + ['keys' => array_values($keys)]);
+	public static function warnUnknownKeys(?LoggerInterface $logger, UnknownFilterKeys $unknown): void {
+		$table   = $unknown->table;
+		$context = ['app' => 'openregister', 'endpoint' => $unknown->endpoint, 'register' => (string)$table->register, 'schema' => (string)$table->schema];
+		self::logUnknownKeys(logger: $logger, context: $context + ['keys' => array_values($unknown->keys)]);
 	}//end warnUnknownKeys()
 
 	/**
