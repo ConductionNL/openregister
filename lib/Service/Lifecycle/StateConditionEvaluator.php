@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
+use OCA\OpenRegister\Service\Rules\ConditionJudgement;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
@@ -222,10 +223,12 @@ class StateConditionEvaluator implements StateConditionEvaluatorInterface {
 	 */
 	private function operandOf(array $failure): ?string {
 		$trace = $this->tracer->trace(
-			condition: $failure['condition'],
-			document: $failure['document'],
-			verdict: RuleVocabulary::VERDICT_REFUSED,
-			message: $failure['message']
+			judgement: new ConditionJudgement(
+				condition: $failure['condition'],
+				document: $failure['document'],
+				verdict: RuleVocabulary::VERDICT_REFUSED,
+				message: $failure['message']
+			)
 		);
 
 		return ($trace->getOperand() ?? $this->decidingReference(node: $failure['condition'], document: $failure['document']));

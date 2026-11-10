@@ -33,12 +33,15 @@ use OCA\OpenRegister\Controller\Support\RulesControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaRule;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Rules\RuleReplayRequest as ReplayAsk;
+use OCA\OpenRegister\Service\Rules\RuleReplaySelection;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue;
 use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
+use OCA\OpenRegister\Service\Rules\RuleInventoryOptions;
 use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
@@ -198,7 +201,7 @@ class RulesController extends Controller {
 		return new JSONResponse(
 			[
 				'schema' => (string)($entity->getSlug() ?? ''),
-				'rules' => $this->inventory->inventory(schema: $entity, idleDays: $window, scope: $scope),
+				'rules' => $this->inventory->inventory(schema: $entity, options: new RuleInventoryOptions(idleDays: $window, scope: $scope)),
 			]
 		);
 
@@ -358,13 +361,9 @@ class RulesController extends Controller {
 	 * @return array<string, mixed> The previewed job.
 	 */
 	private function askPreview(SchemaRule $rule, RuleReplayRequest $request): array {
-		return $this->replays->preview(
-			schema: $rule->schema,
-			ruleId: $rule->ruleId,
-			selection: $request->selection,
-			actorUid: $request->actorUid,
-			justification: $request->justification,
-			registerId: $request->registerId
+		return $this->replays->previewReplay(
+			request: new ReplayAsk(ruleId: $rule->ruleId, actorUid: $request->actorUid, justification: $request->justification),
+			selection: new RuleReplaySelection(schema: $rule->schema, registerId: $request->registerId, criteria: $request->selection)
 		);
 	}//end askPreview()
 

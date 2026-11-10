@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use OCA\OpenRegister\Db\CospendLink;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\CospendLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\Providers\CospendProvider;
 use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
@@ -188,7 +189,7 @@ class CospendProviderBehaviourTest extends TestCase {
 		$billWithoutId->setProjectId('trip');
 		$billWithoutId->setName('Unknown');
 
-		$rows = $this->provider(true, [$project, $bill, $billWithoutId])->list('r', 's', 'obj-1');
+		$rows = $this->provider(true, [$project, $bill, $billWithoutId])->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertSame(['trip', 'trip/42', 'trip'], array_column($rows, 'id'));
 		$this->assertSame([5, 6, 7], array_column($rows, 'entryId'));
@@ -212,7 +213,7 @@ class CospendProviderBehaviourTest extends TestCase {
 			],
 		];
 
-		$rows = $this->provider()->list('r', 's', 'obj-1');
+		$rows = $this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertSame(['trip', 'trip/42', 'trip/43', 'empty', 'empty/42', 'empty/43'], array_column($rows, 'id'));
 		$this->assertSame(
@@ -249,32 +250,32 @@ class CospendProviderBehaviourTest extends TestCase {
 		$this->services = [self::PROJECT_MAPPER => self::mapper('cospend_projects')];
 		$this->tables = ['cospend_projects' => [['id' => 'trip', 'name' => 'Trip']]];
 
-		$this->assertSame(['trip'], array_column($this->provider()->list('r', 's', 'obj-1'), 'id'));
+		$this->assertSame(['trip'], array_column($this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')), 'id'));
 
 		$this->cospendInstalled();
 		$this->tables['cospend_bills'] = new RuntimeException('no bills table');
-		$this->assertSame(['trip'], array_column($this->provider()->list('r', 's', 'obj-1'), 'id'));
+		$this->assertSame(['trip'], array_column($this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')), 'id'));
 	}//end testMarkedProjectsAreListedWithoutBillsWhenTheBillMapperOrItsTableIsMissing()
 
 	public function testNoProjectMapperNoMarkedProjectOrAFailingProjectQueryListsNothing(): void {
-		$this->assertSame([], $this->provider()->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 
 		$this->services = [self::PROJECT_MAPPER => 'not-an-object'];
-		$this->assertSame([], $this->provider()->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 
 		$this->cospendInstalled();
-		$this->assertSame([], $this->provider()->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 		$this->assertSame(['cospend_projects:%[or:obj-1]%'], $this->queries);
 
 		$this->tables['cospend_projects'] = new RuntimeException('no projects table');
-		$this->assertSame([], $this->provider()->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 	}//end testNoProjectMapperNoMarkedProjectOrAFailingProjectQueryListsNothing()
 
 	public function testWithoutTheCospendAppNothingIsListed(): void {
 		$this->cospendInstalled();
 		$this->tables = ['cospend_projects' => [['id' => 'trip', 'name' => 'Trip']]];
 
-		$this->assertSame([], $this->provider(false)->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider(false)->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 		$this->assertSame([], $this->queries);
 	}//end testWithoutTheCospendAppNothingIsListed()
 }//end class

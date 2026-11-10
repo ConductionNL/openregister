@@ -166,7 +166,7 @@ class ToolRegistrationListener implements IEventListener {
 			}
 
 			try {
-				$this->bridgeProviderDescriptors(event: $event, provider: $provider, appId: $appId);
+				$this->bridgeProviderDescriptors(event: $event, provider: $provider);
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					'[ToolRegistrationListener] Failed to bridge MCP provider',
@@ -180,12 +180,12 @@ class ToolRegistrationListener implements IEventListener {
 	 * Iterate a single provider's tool descriptors and register each as a bridge.
 	 *
 	 * @param ToolRegistrationEvent $event The tool registration event.
-	 * @param object $provider The MCP tool provider.
-	 * @param string $appId The provider's app identifier.
+	 * @param object $provider The MCP tool provider; its getAppId() names the app.
 	 *
 	 * @return void
 	 */
-	private function bridgeProviderDescriptors(ToolRegistrationEvent $event, object $provider, string $appId): void {
+	private function bridgeProviderDescriptors(ToolRegistrationEvent $event, object $provider): void {
+		$appId = $provider->getAppId();
 		foreach ($provider->getTools() as $descriptor) {
 			$mcpId = (string)($descriptor['id'] ?? '');
 			if ($mcpId === '' || preg_match('/^[a-z0-9_]+(\.[a-zA-Z0-9_]+)+$/', $mcpId) === 0) {

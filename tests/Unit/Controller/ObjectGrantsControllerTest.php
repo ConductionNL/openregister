@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Rbac\GrantRowsQuery;
 use OCA\OpenRegister\Controller\ObjectGrantsController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -122,7 +124,7 @@ class ObjectGrantsControllerTest extends TestCase {
 		$rows = ['object' => 'case-1', 'results' => [], 'denyEnforcement' => 'staging'];
 		$this->report->expects($this->once())
 			->method('rowsFor')
-			->with($this->isInstanceOf(ObjectEntity::class), 1, 7, ['user', 'group'])
+			->with($this->isInstanceOf(ObjectEntity::class), new GrantRowsQuery(new RegisterSchemaRef(1, 7), ['user', 'group']))
 			->willReturn($rows);
 
 		$response = $controller->index('dossiq', 'case', 'case-1', ' user, group ,');
@@ -140,7 +142,7 @@ class ObjectGrantsControllerTest extends TestCase {
 		$controller = $this->controllerFor(readable: true, mayRead: true);
 		$this->report->expects($this->once())
 			->method('rowsFor')
-			->with($this->anything(), $this->anything(), $this->anything(), [])
+			->with($this->anything(), $this->callback(static fn (GrantRowsQuery $query): bool => $query->principalTypes === []))
 			->willReturn(['object' => 'case-1', 'results' => [], 'denyEnforcement' => 'off']);
 
 		$this->assertSame(200, $controller->index('dossiq', 'case', 'case-1')->getStatus());

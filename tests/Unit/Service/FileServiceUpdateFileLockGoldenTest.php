@@ -31,9 +31,10 @@ use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
+use OCA\OpenRegister\Service\File\FileOverwrite;
 
 /**
- * Pins the allowed and refused outcomes of FileService::updateFile().
+ * Pins the allowed and refused outcomes of FileService::overwriteFile().
  */
 class FileServiceUpdateFileLockGoldenTest extends TestCase {
 
@@ -81,7 +82,7 @@ class FileServiceUpdateFileLockGoldenTest extends TestCase {
 		$this->updater->expects($this->never())->method('updateFile');
 
 		$this->expectExceptionMessage('locked');
-		$service->updateFile(filePath: 7, content: 'x');
+		$service->overwriteFile(overwrite: new FileOverwrite(filePath: 7, content: 'x'));
 	}//end testALockedFileIdIsRefused()
 
 	/**
@@ -94,9 +95,9 @@ class FileServiceUpdateFileLockGoldenTest extends TestCase {
 		$object = new ObjectEntity();
 		$file = $this->createMock(File::class);
 		$this->locks->expects($this->once())->method('assertCanModify')->with(7);
-		$this->updater->expects($this->once())->method('updateFile')->with(7, 'x', ['t'], $object)->willReturn($file);
+		$this->updater->expects($this->once())->method('updateFile')->with(new FileOverwrite(filePath: 7, content: 'x', tags: ['t'], object: $object))->willReturn($file);
 
-		$this->assertSame($file, $service->updateFile(filePath: 7, content: 'x', tags: ['t'], object: $object));
+		$this->assertSame($file, $service->overwriteFile(overwrite: new FileOverwrite(filePath: 7, content: 'x', tags: ['t'], object: $object)));
 	}//end testAnUnlockedFileIdIsWritten()
 
 	/**
@@ -108,8 +109,8 @@ class FileServiceUpdateFileLockGoldenTest extends TestCase {
 		$service = $this->service();
 		$file = $this->createMock(File::class);
 		$this->locks->expects($this->never())->method('assertCanModify');
-		$this->updater->expects($this->once())->method('updateFile')->with('a/b.txt', null, [], null)->willReturn($file);
+		$this->updater->expects($this->once())->method('updateFile')->with(new FileOverwrite(filePath: 'a/b.txt'))->willReturn($file);
 
-		$this->assertSame($file, $service->updateFile(filePath: 'a/b.txt'));
+		$this->assertSame($file, $service->overwriteFile(overwrite: new FileOverwrite(filePath: 'a/b.txt')));
 	}//end testAPathIsHandedOnWithoutALockCheck()
 }//end class

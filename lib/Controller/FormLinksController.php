@@ -384,7 +384,7 @@ class FormLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	private function onObject(ObjectRef $ref, callable $action): JSONResponse {
-		$object = $this->validateObject(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+		$object = $this->resolveLinkedObject(ref: new ObjectRef(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id));
 		if ($object === null) {
 			return $this->objectNotFound();
 		}

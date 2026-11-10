@@ -21,7 +21,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -49,12 +51,12 @@ class FilterNodeBehaviourTest extends TestCase {
 
 	public function testOnlyItemsMatchingTheConditionAreKeptWithTheirOrigin(): void {
 		$items = [
-			FlowItems::item(json: ['status' => 'synced', 'n' => 1], binary: ['f' => ['name' => 'a.pdf']]),
+			FlowItems::item(json: ['status' => 'synced', 'n' => 1], options: new FlowItemOptions(binary: ['f' => ['name' => 'a.pdf']])),
 			FlowItems::item(json: ['status' => 'failed', 'n' => 2]),
 			FlowItems::item(json: ['status' => 'synced', 'n' => 3]),
 		];
 
-		$kept = $this->node->execute($items, ['condition' => ['==' => [['var' => 'json.status'], 'synced']]], []);
+		$kept = $this->node->execute(new FlowNodeCall(items: $items, config: ['condition' => ['==' => [['var' => 'json.status'], 'synced']]], context: []));
 
 		self::assertSame([1, 3], array_map(static fn (array $item): int => $item[FlowItems::JSON]['n'], $kept));
 		self::assertSame(['f' => ['name' => 'a.pdf']], $kept[0][FlowItems::BINARY]);
@@ -65,8 +67,8 @@ class FilterNodeBehaviourTest extends TestCase {
 	public function testTheConditionSeesTheItemPositionAndTheRunContext(): void {
 		$items = [FlowItems::item(json: []), FlowItems::item(json: []), FlowItems::item(json: [])];
 
-		$last = $this->node->execute($items, ['condition' => ['==' => [['var' => 'itemIndex'], ['-' => [['var' => 'itemCount'], 1]]]]], []);
-		$byContext = $this->node->execute($items, ['condition' => ['==' => [['var' => 'context.mode'], 'live']]], ['mode' => 'test']);
+		$last = $this->node->execute(new FlowNodeCall(items: $items, config: ['condition' => ['==' => [['var' => 'itemIndex'], ['-' => [['var' => 'itemCount'], 1]]]]], context: []));
+		$byContext = $this->node->execute(new FlowNodeCall(items: $items, config: ['condition' => ['==' => [['var' => 'context.mode'], 'live']]], context: ['mode' => 'test']));
 
 		self::assertCount(1, $last);
 		self::assertSame([], $byContext);
