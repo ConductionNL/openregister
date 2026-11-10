@@ -993,8 +993,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		$within = $aggregation->isWithinWindow(
 			previous: $previous->getCreated(),
-			now: ($candidate->getCreated() ?? new DateTime()),
-			window: $window
+			now: ($candidate->getCreated() ?? new DateTime())
 		);
 		if ($within === false) {
 			return null;
