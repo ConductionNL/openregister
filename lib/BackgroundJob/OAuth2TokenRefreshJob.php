@@ -128,10 +128,8 @@ class OAuth2TokenRefreshJob extends TimedJob {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-daily-job-refreshes-active-token-sets-before-they-expire
 	 */
 	protected function run($argument): void {
-		try {
-			$credentials = $this->activeTokenSetCredentials();
-		} catch (Throwable $listFailure) {
-			$this->logger->warning('[OAuth2TokenRefreshJob] could not list credentials: ' . $listFailure->getMessage());
+		$credentials = $this->listedCredentials();
+		if ($credentials === null) {
 			return;
 		}
 
@@ -145,6 +143,20 @@ class OAuth2TokenRefreshJob extends TimedJob {
 
 		$this->logSwept(swept: count($credentials), tally: $tally);
 	}//end run()
+
+	/**
+	 * The credentials to sweep; null, logged, when they cannot be listed.
+	 *
+	 * @return array<string, array<string, mixed>>|null
+	 */
+	private function listedCredentials(): ?array {
+		try {
+			return $this->activeTokenSetCredentials();
+		} catch (Throwable $listFailure) {
+			$this->logger->warning('[OAuth2TokenRefreshJob] could not list credentials: ' . $listFailure->getMessage());
+			return null;
+		}
+	}//end listedCredentials()
 
 	/**
 	 * Sweep one credential, containing its failure.

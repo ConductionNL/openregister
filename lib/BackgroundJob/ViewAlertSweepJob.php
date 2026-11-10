@@ -140,24 +140,35 @@ class ViewAlertSweepJob extends TimedJob {
 	private function evaluate(View $view, DateTime $now): bool {
 		$check        = new ViewAlertCheck(view: $view, now: $now);
 		$check->alert = $this->dueAlert(check: $check);
-		if ($check->alert === null) {
+		if ($check->alert === null || $this->takeCount(check: $check) === false) {
 			return false;
 		}
 
+		if ($this->storeDecision(check: $check) === false) {
+			return false;
+		}
+
+		$this->platform->dispatcher->dispatchTyped(new ViewAlertCrossedEvent(view: $view, alert: $check->alert, count: $check->count));
+
+		return true;
+	}//end evaluate()
+
+	/**
+	 * Take the view's count as its owner onto the check.
+	 *
+	 * @param ViewAlertCheck $check The view being checked.
+	 *
+	 * @return bool Whether a count could be taken.
+	 */
+	private function takeCount(ViewAlertCheck $check): bool {
 		$count = $this->countAsOwner(check: $check);
 		if ($count === null) {
 			return false;
 		}
 
 		$check->count = $count;
-		if ($this->storeDecision(check: $check) === false) {
-			return false;
-		}
-
-		$this->platform->dispatcher->dispatchTyped(new ViewAlertCrossedEvent(view: $view, alert: $check->alert, count: $count));
-
 		return true;
-	}//end evaluate()
+	}//end takeCount()
 
 	/**
 	 * The view's alert when it is declared, readable and due at the pass clock.
