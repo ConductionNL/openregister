@@ -32,19 +32,19 @@ use PHPUnit\Framework\TestCase;
 class PrometheusRendererBehaviourTest extends TestCase {
 
 	public function testAPrefixStartingWithADigitGetsAppPrefix(): void {
-		$out = (new PrometheusRenderer())->render('2fa', [MetricSample::single('m', 'gauge', 'H', 1)]);
+		$out = (new PrometheusRenderer())->render('2fa', [new MetricSample('m', 'gauge', 'H', [['labels' => [], 'value' => 1]])]);
 
 		$this->assertSame("# HELP app_2fa_m H\n# TYPE app_2fa_m gauge\napp_2fa_m 1\n\n", $out);
 	}
 
 	public function testAnAppIdOfOnlyUnsafeCharactersBecomesApp(): void {
-		$out = (new PrometheusRenderer())->render('--', [MetricSample::single('m', 'gauge', 'H', 1)]);
+		$out = (new PrometheusRenderer())->render('--', [new MetricSample('m', 'gauge', 'H', [['labels' => [], 'value' => 1]])]);
 
 		$this->assertStringContainsString("\napp__m 1\n", $out);
 	}
 
 	public function testUnderscoresAreTrimmedFromThePrefix(): void {
-		$out = (new PrometheusRenderer())->render('_myapp_', [MetricSample::single('m', 'gauge', 'H', 1)]);
+		$out = (new PrometheusRenderer())->render('_myapp_', [new MetricSample('m', 'gauge', 'H', [['labels' => [], 'value' => 1]])]);
 
 		$this->assertStringContainsString("\nmyapp_m 1\n", $out);
 	}
@@ -59,13 +59,13 @@ class PrometheusRendererBehaviourTest extends TestCase {
 	}
 
 	public function testHelpBackslashAndNewlineAreEscaped(): void {
-		$out = (new PrometheusRenderer())->render('app', [MetricSample::single('m', 'gauge', "a\\b\nc", 1)]);
+		$out = (new PrometheusRenderer())->render('app', [new MetricSample('m', 'gauge', "a\\b\nc", [['labels' => [], 'value' => 1]])]);
 
 		$this->assertStringContainsString('# HELP app_m a\\\\b\\nc'."\n", $out);
 	}
 
 	public function testUnknownTypeRendersAsGauge(): void {
-		$out = (new PrometheusRenderer())->render('app', [MetricSample::single('m', 'histogram', 'H', 1)]);
+		$out = (new PrometheusRenderer())->render('app', [new MetricSample('m', 'histogram', 'H', [['labels' => [], 'value' => 1]])]);
 
 		$this->assertStringContainsString("# TYPE app_m gauge\n", $out);
 	}

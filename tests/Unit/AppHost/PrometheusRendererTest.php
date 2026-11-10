@@ -34,7 +34,7 @@ class PrometheusRendererTest extends TestCase {
 
 	public function testHelpTypeAndPrefix(): void {
 		$out = $this->renderer->render('procest', [
-			MetricSample::single('cases_total', 'gauge', 'Cases', 7),
+			new MetricSample('cases_total', 'gauge', 'Cases', [['labels' => [], 'value' => 7]]),
 		]);
 		$this->assertStringContainsString('# HELP procest_cases_total Cases', $out);
 		$this->assertStringContainsString('# TYPE procest_cases_total gauge', $out);
@@ -53,7 +53,7 @@ class PrometheusRendererTest extends TestCase {
 	}
 
 	public function testCounterType(): void {
-		$out = $this->renderer->render('app', [MetricSample::single('hits', 'counter', 'Hits', 1)]);
+		$out = $this->renderer->render('app', [new MetricSample('hits', 'counter', 'Hits', [['labels' => [], 'value' => 1]])]);
 		$this->assertStringContainsString('# TYPE app_hits counter', $out);
 	}
 
@@ -65,7 +65,7 @@ class PrometheusRendererTest extends TestCase {
 	}
 
 	public function testPrefixSanitisedToSafeChars(): void {
-		$out = $this->renderer->render('My-App.v2', [MetricSample::single('m', 'gauge', 'H', 1)]);
+		$out = $this->renderer->render('My-App.v2', [new MetricSample('m', 'gauge', 'H', [['labels' => [], 'value' => 1]])]);
 		// Lowercased, non [a-z0-9_] => _.
 		$this->assertStringContainsString('my_app_v2_m 1', $out);
 	}
