@@ -564,7 +564,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$run->files[$object['key']] = $this->heldFileIds(record: $run->record, name: $name);
 
 		$id = (string) $run->record['objects'][$name]['id'];
-		$run->objects[$object['key']] = ($this->objects->store->row(ref: new ObjectRef(register: $object['register'], schema: $object['schema'], id: $id)) ?? ['id' => $id]);
+		$ref = new ObjectRef(register: $object['register'], schema: $object['schema'], id: $id);
+		$run->objects[$object['key']] = ($this->objects->store->row(ref: $ref) ?? ['id' => $id]);
 	}//end recordCreated()
 
 	/**
@@ -649,7 +650,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		$this->recordReferences(run: $run, refreshed: new ExampleSetRecordedObject(name: $name, entry: $made['entry']));
 
-		return ($this->objects->store->row(ref: new ObjectRef(register: $object['register'], schema: $object['schema'], id: (string) $made['entry']['id'])) ?? $held->row);
+		$ref = new ObjectRef(register: $object['register'], schema: $object['schema'], id: (string) $made['entry']['id']);
+
+		return ($this->objects->store->row(ref: $ref) ?? $held->row);
 	}//end refreshReferences()
 
 	/**
@@ -1268,7 +1271,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 				continue;
 			}
 
-			$refusal = $this->setup->userPreferences->refusal(app: $fragment['app'], uid: $uid, key: $entry['key'], users: $run->users);
+			$refusal = $this->setup->userPreferences->refusal(
+				preference: new UserPreferenceKey(entry: ['user' => $uid, 'app' => $fragment['app'], 'key' => $entry['key']]),
+				users: $run->users
+			);
 			if ($refusal !== '') {
 				$refusals[] = $where.': '.$refusal;
 			}
@@ -1311,24 +1317,26 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$name  = $app.'/'.$uid.'/'.$entry['key'];
 		$run->report['userPreferences'][$name] = 'kept';
 		if (isset($run->record['userPreferences'][$name]) === true) {
-			$made = $this->setup->userPreferences->follow(
-				entry: $run->record['userPreferences'][$name],
-				value: $value,
-				refresh: $run->refresh() && $gaps === []
-			);
+			$held = $run->record['userPreferences'][$name];
+			$made = $this->setup->userPreferences->kept(entry: $held);
+			if ($run->refresh() === true && $gaps === []) {
+				$made = $this->setup->userPreferences->follow(entry: $held, value: $value);
+			}
+
 			$this->hold(run: $run, followed: new ExampleSetFollowedEntry(part: 'userPreferences', name: $name, made: $made));
 			return;
 		}
 
 		// Checked again against the record: only an account this set created or adopted.
-		$why = $this->setup->userPreferences->refusal(app: $app, uid: $uid, key: $entry['key'], users: array_keys($run->record['users']));
+		$preference = new UserPreferenceKey(entry: ['user' => $uid, 'app' => $app, 'key' => $entry['key']]);
+		$why        = $this->setup->userPreferences->refusal(preference: $preference, users: array_keys($run->record['users']));
 		if ($why === '' && $gaps !== []) {
 			$why = 'cannot resolve '.implode(', ', $gaps);
 		}
 
 		$made = ['error' => $why, 'entry' => null];
 		if ($why === '') {
-			$made = $this->setup->userPreferences->apply(uid: $uid, app: $app, key: $entry['key'], value: $value);
+			$made = $this->setup->userPreferences->apply(preference: $preference, value: $value);
 		}
 
 		if ($this->recordMade(run: $run, made: new ExampleSetMadeEntry(part: 'userPreferences', name: $name, made: $made)) === false) {
