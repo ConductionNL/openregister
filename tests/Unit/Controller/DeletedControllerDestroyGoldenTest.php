@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\Deletion\DestructionServices;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\DeletedControllerFactory;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -112,7 +113,7 @@ final class DeletedControllerDestroyGoldenTest extends TestCase {
 				$this->createMock(RetentionClockService::class),
 				new DestructionServices($this->scopes, $this->recorder),
 			),
-			new DeletedObjectAuthorizer($schemas, $session, $groups, $this->createMock(PermissionHandler::class)),
+			new DeletedObjectAuthorizer($schemas, new CallerContext($session, $groups), $this->createMock(PermissionHandler::class)),
 			$this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class)
 		);
 	}//end setUp()
