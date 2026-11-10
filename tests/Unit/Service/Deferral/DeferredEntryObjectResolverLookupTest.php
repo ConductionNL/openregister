@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Deferral;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -47,7 +48,7 @@ class DeferredEntryObjectResolverLookupTest extends TestCase {
 	private function resolver(array $answers): DeferredEntryObjectResolver {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->expects($this->exactly(count($answers)))->method('find')
-			->with('u-1', [], false, 'zaken', null, false, false, false)
+			->with(...FindCallShape::findArgs('u-1', [], false, 'zaken', null, false, false, false))
 			->willReturnOnConsecutiveCalls(...$answers);
 		return new DeferredEntryObjectResolver(objectService: $objects, logger: $this->createMock(LoggerInterface::class));
 	}//end resolver()

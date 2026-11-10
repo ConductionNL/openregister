@@ -25,6 +25,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use PHPUnit\Framework\Constraint\Callback;
+use PHPUnit\Framework\Constraint\Constraint;
+use PHPUnit\Framework\Constraint\IsAnything;
+use PHPUnit\Framework\Constraint\IsEqual;
 
 /**
  * Flat views of a find() / findSilent() call.
@@ -64,6 +68,88 @@ final class FindCallShape {
 	public static function findSilent(array $args): array {
 		return array_slice(self::find(args: $args), 0, 7);
 	}//end findSilent()
+
+	/**
+	 * The `with()` constraints for a find() call, given as the flat list.
+	 *
+	 * An omitted trailing value is not checked, as with `with()`; a value may be a constraint.
+	 *
+	 * @param mixed ...$flat Id, extend, files, register, schema, rbac, multitenancy, render, audit.
+	 *
+	 * @return array<int, Constraint> One constraint per find() parameter.
+	 */
+	public static function findArgs(mixed ...$flat): array {
+		$flat = ($flat + array_fill(0, 9, new IsAnything()));
+
+		return [
+			self::constraint(expected: $flat[0]),
+			new Callback(
+				fn (?ObjectFindOptions $options): bool => self::allMatch(
+					expected: [$flat[1], $flat[2], $flat[3], $flat[4], $flat[7], $flat[8]],
+					actual: self::flatOptions(options: $options)
+				)
+			),
+			self::constraint(expected: $flat[5]),
+			self::constraint(expected: $flat[6]),
+		];
+	}//end findArgs()
+
+	/**
+	 * The `with()` constraints for a findSilent() call, given as the flat list.
+	 *
+	 * @param mixed ...$flat Id, extend, files, register, schema, rbac, multitenancy.
+	 *
+	 * @return array<int, Constraint> One constraint per findSilent() parameter.
+	 */
+	public static function findSilentArgs(mixed ...$flat): array {
+		return self::findArgs(...array_slice($flat, 0, 7));
+	}//end findSilentArgs()
+
+	/**
+	 * Extend, files, register, schema, render and audit of the options.
+	 *
+	 * @param ObjectFindOptions|null $options The options passed.
+	 *
+	 * @return array The six values.
+	 */
+	private static function flatOptions(?ObjectFindOptions $options): array {
+		$options ??= new ObjectFindOptions();
+
+		return [$options->extend, $options->files, $options->register, $options->schema, $options->render, $options->audit];
+	}//end flatOptions()
+
+	/**
+	 * Whether every actual value meets its expected value or constraint.
+	 *
+	 * @param array $expected The expected values or constraints.
+	 * @param array $actual   The actual values.
+	 *
+	 * @return bool True when all match.
+	 */
+	private static function allMatch(array $expected, array $actual): bool {
+		foreach ($expected as $index => $value) {
+			if (self::constraint(expected: $value)->evaluate($actual[$index], '', true) !== true) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end allMatch()
+
+	/**
+	 * The value as a constraint.
+	 *
+	 * @param mixed $expected A value or a constraint.
+	 *
+	 * @return Constraint The constraint.
+	 */
+	private static function constraint(mixed $expected): Constraint {
+		if ($expected instanceof Constraint) {
+			return $expected;
+		}
+
+		return new IsEqual($expected);
+	}//end constraint()
 
 	/**
 	 * The options of the call, the defaults when it passed none.

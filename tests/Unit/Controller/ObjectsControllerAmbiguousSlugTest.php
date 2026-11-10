@@ -43,6 +43,7 @@ use OCA\OpenRegister\Notifications\Service\PresenceService;
 use OCA\OpenRegister\Notifications\Service\PresenceServiceInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IAppConfig;
@@ -242,7 +243,8 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 		$objectService->method('getSchema')->willReturn(4);
 		$calls = [];
 		$objectService->method('findSilent')->willReturnCallback(
-			function (string $id, ?array $extend, bool $files, $register, $schema, bool $rbac, bool $multi) use ($ambiguous, &$calls) {
+			function (...$args) use ($ambiguous, &$calls) {
+				[$id, $extend, $files, $register, $schema, $rbac, $multi] = FindCallShape::findSilent(args: $args);
 				$calls[] = [$rbac, $multi];
 				if ($rbac === false) {
 					throw $ambiguous;

@@ -35,6 +35,7 @@ use OCA\OpenRegister\Controller\Support\ObjectShareLinkControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\Node;
 use OCP\IRequest;
@@ -148,7 +149,7 @@ class ObjectShareLinkControllerA24GoldenTest extends TestCase {
 	public function testLiveLinkResolvesWithRbacOff(): void {
 		$this->expectThrottled(0);
 		$this->shares->method('getShareByToken')->with('tok')->willReturn($this->share());
-		$this->objects->expects($this->once())->method('find')->with(self::UUID, [], false, null, null, false, false)
+		$this->objects->expects($this->once())->method('find')->with(...FindCallShape::findArgs(self::UUID, [], false, null, null, false, false))
 			->willReturn(new ObjectEntity());
 
 		$response = $this->controller()->show('tok');

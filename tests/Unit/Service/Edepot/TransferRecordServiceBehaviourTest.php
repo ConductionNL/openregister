@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Edepot;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -119,7 +120,7 @@ class TransferRecordServiceBehaviourTest extends TestCase {
 	 */
 	public function testATransferListIsLoadedOrNull(): void {
 		$this->objects->expects($this->exactly(3))->method('find')
-			->with('u-1', [], false, 'edepot-transfers', 'edepotTransfer')
+			->with(...FindCallShape::findArgs('u-1', [], false, 'edepot-transfers', 'edepotTransfer'))
 			->willReturnOnConsecutiveCalls(
 				$this->entity(data: ['title' => 't'], uuid: 'u-1'),
 				null,

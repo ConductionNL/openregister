@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -420,7 +421,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('uuid-1', [], false, null, $entry['schema'], true, true)
+			->with(...FindCallShape::findArgs('uuid-1', [], false, null, $entry['schema'], true, true))
 			->willReturn($this->mockObject(['id' => 'uuid-1']));
 
 		$result = $provider->invokeTool('pipelinq.lead.get', ['id' => 'uuid-1']);

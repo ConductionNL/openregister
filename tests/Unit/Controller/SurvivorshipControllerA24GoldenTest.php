@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -135,15 +136,8 @@ class SurvivorshipControllerA24GoldenTest extends TestCase {
 	 */
 	private function findYields(mixed $result): void {
 		$this->objects->method('find')->willReturnCallback(
-			function (
-				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				$register = null,
-				$schema = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true
-			) use ($result) {
+			function (...$args) use ($result) {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy] = FindCallShape::find(args: $args);
 				$this->calls[] = 'find:' . $id;
 				$this->assertSame([[], false, null, null, true, true], [$_extend, $files, $register, $schema, $_rbac, $_multitenancy]);
 				if ($result instanceof \Throwable) {

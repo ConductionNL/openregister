@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\CaseTokenMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\CaseTokenIssuance;
 use OCA\OpenRegister\Service\CaseTokenService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -272,7 +273,8 @@ class CaseTokenServiceGoldenTest extends TestCase {
 			public array $findArgs = [];
 
 			public function find(mixed ...$args): ?object {
-				$this->findArgs = $args;
+				$flat           = FindCallShape::find(args: [$args['id'], ($args['options'] ?? null), $args['_rbac'], $args['_multitenancy']]);
+				$this->findArgs = array_combine(['id', '_extend', 'files', 'register', 'schema', '_rbac', '_multitenancy'], array_slice($flat, 0, 7));
 				return $this->found;
 			}//end find()
 

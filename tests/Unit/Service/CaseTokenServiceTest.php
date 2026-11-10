@@ -45,6 +45,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\CaseTokenMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\CaseTokenIssuance;
 use OCA\OpenRegister\Service\CaseTokenService;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
@@ -134,10 +135,7 @@ class CaseTokenServiceTest extends TestCase {
 
 			public function find(
 				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				$register = null,
-				$schema = null,
+				?ObjectFindOptions $options = null,
 				bool $_rbac = true,
 				bool $_multitenancy = true,
 			): ?object {
