@@ -93,7 +93,7 @@ class MappingServiceExecuteMappingGoldenTest extends TestCase {
 		]);
 
 		try {
-			$actual = ['output' => $this->service()->executeMapping($mapping, $input, $list)];
+			$actual = ['output' => ($list === true ? $this->service()->executeListMapping($mapping, $input) : $this->service()->executeMapping($mapping, $input))];
 		} catch (\Throwable $e) {
 			$actual = ['threw' => get_class($e), 'message' => $e->getMessage()];
 		}

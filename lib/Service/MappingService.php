@@ -227,9 +227,10 @@ class MappingService implements MappingServiceInterface {
 	/**
 	 * Maps (transforms) an array (input) to a different array (output).
 	 *
+	 * One item; {@see executeListMapping()} maps a list.
+	 *
 	 * @param Mapping $mapping The mapping object that forms the recipe for the mapping
 	 * @param array $input The array that need to be mapped (transformed) otherwise known as input
-	 * @param bool $list Whether we want a list instead of a single item
 	 *
 	 * @return array The result (output) of the mapping process
 	 *
@@ -237,13 +238,10 @@ class MappingService implements MappingServiceInterface {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function executeMapping(Mapping $mapping, array $input, bool $list = false): array {
-		if ($list === true) {
-			return $this->executeListMapping(mapping: $mapping, input: $input);
-		}
-
-		$dotArray = $this->startOutput(mapping: $mapping, input: $input);
-		foreach ($this->mappedValues(mapping: $mapping, input: $input) as $key => $value) {
+	public function executeMapping(Mapping $mapping, array $input): array {
+		$run      = new MappingRun(mapping: $mapping, input: $input);
+		$dotArray = $this->startOutput(run: $run);
+		foreach ($this->mappedValues(run: $run) as $key => $value) {
 			$dotArray->set($key, $value);
 		}
 
@@ -258,14 +256,13 @@ class MappingService implements MappingServiceInterface {
 	/**
 	 * The output a mapping starts from: empty, or for pass-through the input with dots in keys encoded.
 	 *
-	 * @param Mapping $mapping The mapping recipe.
-	 * @param array   $input   The input of the mapping.
+	 * @param MappingRun $run The mapping recipe and its input.
 	 *
 	 * @return Dot The output to build on.
 	 */
-	private function startOutput(Mapping $mapping, array $input): Dot {
-		if ($mapping->getPassThrough() === true) {
-			return new Dot($this->encodeArrayKeys(array: $input, rewrite: MappingKeyRewrite::encodeDots()));
+	private function startOutput(MappingRun $run): Dot {
+		if ($run->mapping->getPassThrough() === true) {
+			return new Dot($this->encodeArrayKeys(array: $run->input, rewrite: MappingKeyRewrite::encodeDots()));
 		}
 
 		return new Dot();
@@ -280,8 +277,10 @@ class MappingService implements MappingServiceInterface {
 	 * @return array The mapped items, keyed as in the list.
 	 *
 	 * @throws Exception When mapping an item fails
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	private function executeListMapping(Mapping $mapping, array $input): array {
+	public function executeListMapping(Mapping $mapping, array $input): array {
 		$listResult  = [];
 		$extraValues = [];
 
@@ -325,18 +324,17 @@ class MappingService implements MappingServiceInterface {
 	 * array value is used as it is; any other value is rendered as a Twig
 	 * template against the input.
 	 *
-	 * @param Mapping $mapping The mapping recipe.
-	 * @param array   $input   The input of the mapping.
+	 * @param MappingRun $run The mapping recipe and its input.
 	 *
 	 * @return array<int|string, mixed> Output key => value.
 	 *
 	 * @throws Exception When a template fails to render
 	 */
-	private function mappedValues(Mapping $mapping, array $input): array {
-		$dotInput = new Dot($this->encodeArrayKeys(array: $input, rewrite: MappingKeyRewrite::encodeDots()));
+	private function mappedValues(MappingRun $run): array {
+		$dotInput = new Dot($this->encodeArrayKeys(array: $run->input, rewrite: MappingKeyRewrite::encodeDots()));
 		$values   = [];
 
-		foreach ($mapping->getMapping() as $key => $value) {
+		foreach ($run->mapping->getMapping() as $key => $value) {
 			if ($dotInput->has($value) === true) {
 				$values[$key] = $dotInput->get($value);
 				continue;
@@ -344,7 +342,7 @@ class MappingService implements MappingServiceInterface {
 
 			$values[$key] = $value;
 			if (is_array($value) === false) {
-				$values[$key] = $this->renderRule(mapping: $mapping, key: $key, template: (string)$value, input: $input);
+				$values[$key] = $this->renderRule(run: $run, key: $key);
 			}
 		}
 
@@ -354,20 +352,19 @@ class MappingService implements MappingServiceInterface {
 	/**
 	 * Render one rule's value as a Twig template against the input.
 	 *
-	 * @param Mapping    $mapping  The mapping recipe, named in the error.
-	 * @param int|string $key      The output key, named in the error.
-	 * @param string     $template The rule's template.
-	 * @param array      $input    The input of the mapping.
+	 * @param MappingRun $run The mapping recipe (named in the error) and the input rendered against.
+	 * @param int|string $key The output key whose rule is the template, named in the error.
 	 *
 	 * @return string The rendered value, HTML entities decoded.
 	 *
 	 * @throws Exception When the template fails to render
 	 */
-	private function renderRule(Mapping $mapping, int|string $key, string $template, array $input): string {
+	private function renderRule(MappingRun $run, int|string $key): string {
+		$template = (string)$run->mapping->getMapping()[$key];
 		try {
-			return html_entity_decode($this->getCachedTemplate(templateString: $template)->render($input));
+			return html_entity_decode($this->getCachedTemplate(templateString: $template)->render($run->input));
 		} catch (Throwable $e) {
-			$mappingName = $mapping->getName() ?? 'Unknown';
+			$mappingName = $run->mapping->getName() ?? 'Unknown';
 			throw new Exception(
 				"Error for mapping: {$mappingName}, key: $key, value: $template and message: {$e->getMessage()}"
 			);
