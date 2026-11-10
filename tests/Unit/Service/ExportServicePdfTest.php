@@ -162,7 +162,7 @@ class ExportServicePdfTest extends TestCase {
 	 * The PDF is the office server's conversion of an ODT holding the rows.
 	 */
 	public function testRenderRowsToPdfConvertsAnOdtOfTheRows(): void {
-		$pdf = $this->service->renderRowsToPdf(title: 'Uitkeringen', columns: ['naam' => 'Naam'], rows: [['naam' => 'Łukasz Żółć']]);
+		$pdf = $this->service->renderTableToPdf(table: new RowsTable(title: 'Uitkeringen', columns: ['naam' => 'Naam'], rows: [['naam' => 'Łukasz Żółć']]));
 
 		$this->assertSame('%PDF-1.7 converted', $pdf);
 		$this->assertStringContainsString('Uitkeringen', $this->convertedOdtText());
@@ -190,7 +190,7 @@ class ExportServicePdfTest extends TestCase {
 
 		$this->assertFalse($service->isPdfAvailable());
 		$this->expectException(OfficeServerRequiredException::class);
-		$service->renderRowsToPdf(title: 'T', columns: ['a' => 'A'], rows: []);
+		$service->renderTableToPdf(table: new RowsTable(title: 'T', columns: ['a' => 'A'], rows: []));
 	}
 
 	/**
@@ -497,11 +497,8 @@ class ExportServicePdfTest extends TestCase {
 	 * A caller that fetched its own rows gets them rendered as a PDF (portaliq#765).
 	 */
 	public function testRenderRowsToPdfRendersRowsTheCallerFetched(): void {
-		$pdf = $this->service->renderRowsToPdf(
-			title: 'My statements',
-			columns: ['period' => 'Period', 'amount' => 'Amount'],
-			rows: [['period' => '2026-08', 'amount' => 12.5], ['period' => '2026-09', 'amount' => null]]
-		);
+		$pdf = $this->service->renderTableToPdf(table: new RowsTable(title: 'My statements', columns: ['period' => 'Period', 'amount' => 'Amount'], rows: [['period' => '2026-08', 'amount' => 12.5], ['period' => '2026-09', 'amount' => null]]
+		));
 
 		$this->assertStringStartsWith('%PDF-', $pdf);
 	}//end testRenderRowsToPdfRendersRowsTheCallerFetched()
@@ -514,7 +511,7 @@ class ExportServicePdfTest extends TestCase {
 
 		$this->expectException(ExportTooLargeException::class);
 
-		$this->service->renderRowsToPdf(title: 'Too long', columns: ['a' => 'A'], rows: $rows);
+		$this->service->renderTableToPdf(table: new RowsTable(title: 'Too long', columns: ['a' => 'A'], rows: $rows));
 	}//end testRenderRowsToPdfRefusesMoreRowsThanTheCap()
 
 	/**

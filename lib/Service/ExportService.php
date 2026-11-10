@@ -418,31 +418,13 @@ class ExportService implements ObjectExporterInterface {
 	}//end pdfFor()
 
 	/**
-	 * Render rows the caller already fetched as a PDF table
+	 * Render a table of rows the caller already read as a PDF
 	 *
 	 * For a caller whose read is not a Nextcloud user's search, such as a
-	 * portal resident's scoped collection (portaliq#765): exportToPdf() fetches
+	 * portal resident's scoped collection (portaliq#765): pdfFor() fetches
 	 * its own objects with the Nextcloud user's RBAC and only `@self.` filters,
 	 * so it cannot render that read. This renders what it is given, through the
 	 * same office conversion and under the same row cap, and reads nothing itself.
-	 *
-	 * @param string                           $title   The heading above the table.
-	 * @param array<int|string, string>        $columns Column keys to labels, or a list of keys that are their own labels.
-	 * @param array<int, array<string, mixed>> $rows    The rows, each keyed by column key.
-	 *
-	 * @return string The PDF bytes.
-	 *
-	 * @throws ExportTooLargeException When there are more rows than {@see self::MAX_PDF_EXPORT_ROWS}.
-	 * @throws OfficeServerRequiredException When no office server converts to PDF.
-	 *
-	 * @spec openspec/specs/export-pdf-format/spec.md
-	 */
-	public function renderRowsToPdf(string $title, array $columns, array $rows): string {
-		return $this->renderTableToPdf(table: new RowsTable(title: $title, columns: $columns, rows: $rows));
-	}//end renderRowsToPdf()
-
-	/**
-	 * Render a table of rows the caller already read as a PDF
 	 *
 	 * @param RowsTable $table The title, columns and rows.
 	 *
