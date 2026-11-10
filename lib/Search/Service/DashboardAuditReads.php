@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
@@ -76,11 +77,14 @@ class DashboardAuditReads {
 	 *
 	 * @psalm-return array{total: int, creates: int, updates: int, deletes: int, reads: int}
 	 *
-	 * @spec exclude Thin try/catch delegation to AuditTrailMapper::getDetailedStatistics with degraded-empty fallback.
+	 * @spec exclude Thin try/catch delegation to AuditTrailMapper::detailedStatistics with degraded-empty fallback.
 	 */
 	public function getAuditTrailStatistics(DashboardScope $scope, ?int $hours = 24): array {
 		try {
-			return $this->auditTrailMapper->getDetailedStatistics(registerId: $scope->registerId, schemaId: $scope->schemaId, hours: $hours);
+			$window = new AuditStatisticsScope(registerId: $scope->registerId, schemaId: $scope->schemaId);
+			$window->hours = $hours;
+
+			return $this->auditTrailMapper->detailedStatistics(scope: $window);
 		} catch (Exception $e) {
 			$this->logError(message: 'Failed to get audit trail statistics: ' . $e->getMessage());
 			return ['total' => 0, 'creates' => 0, 'updates' => 0, 'deletes' => 0, 'reads' => 0];
@@ -97,15 +101,14 @@ class DashboardAuditReads {
 	 *
 	 * @psalm-return array{actions: list<array{count: int, name: mixed}>}
 	 *
-	 * @spec exclude Thin try/catch delegation to AuditTrailMapper::getActionDistribution with degraded-empty fallback.
+	 * @spec exclude Thin try/catch delegation to AuditTrailMapper::actionDistribution with degraded-empty fallback.
 	 */
 	public function getAuditTrailActionDistribution(DashboardScope $scope, ?int $hours = 24): array {
 		try {
-			return $this->auditTrailMapper->getActionDistribution(
-				registerId: $scope->registerId,
-				schemaId: $scope->schemaId,
-				hours: $hours
-			);
+			$window = new AuditStatisticsScope(registerId: $scope->registerId, schemaId: $scope->schemaId);
+			$window->hours = $hours;
+
+			return $this->auditTrailMapper->actionDistribution(scope: $window);
 		} catch (Exception $e) {
 			$this->logError(message: 'Failed to get audit trail action distribution: ' . $e->getMessage());
 			return [
@@ -123,16 +126,15 @@ class DashboardAuditReads {
 	 *
 	 * @psalm-return array{objects: list<array{count: int, id: mixed, name: string}>}
 	 *
-	 * @spec exclude Thin try/catch delegation to AuditTrailMapper::getMostActiveObjects with degraded-empty fallback.
+	 * @spec exclude Thin try/catch delegation to AuditTrailMapper::mostActiveObjects with degraded-empty fallback.
 	 */
 	public function getMostActiveObjects(ActivityWindow $window): array {
 		try {
-			return $this->auditTrailMapper->getMostActiveObjects(
-				registerId: $window->scope->registerId,
-				schemaId: $window->scope->schemaId,
-				limit: $window->limit,
-				hours: $window->hours
-			);
+			$audit = new AuditStatisticsScope(registerId: $window->scope->registerId, schemaId: $window->scope->schemaId);
+			$audit->limit = $window->limit;
+			$audit->hours = $window->hours;
+
+			return $this->auditTrailMapper->mostActiveObjects(scope: $audit);
 		} catch (Exception $e) {
 			$this->logError(message: 'Failed to get most active objects: ' . $e->getMessage());
 			return [

@@ -288,26 +288,6 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 	}//end isTimelineIntegration()
 
 	/**
-	 * Record that someone moved a note across the counter.
-	 *
-	 * Making an internal note public is the act a supervisor will ask about,
-	 * so it is written on the object's own audit trail naming the note and
-	 * both values. Nothing is written when the value did not move.
-	 *
-	 * @param ObjectEntity $object The object the note hangs on.
-	 * @param integer      $noteId The note that moved.
-	 * @param string       $from   The value before.
-	 * @param string       $to     The value after.
-	 *
-	 * @return boolean True when an audit entry was written.
-	 *
-	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
-	 */
-	public function auditVisibilityChange(ObjectEntity $object, int $noteId, string $from, string $to): bool {
-		return $this->auditNoteMove(object: $object, move: new NoteVisibilityMove(noteId: $noteId, from: $from, to: $to));
-	}//end auditVisibilityChange()
-
-	/**
 	 * Record a note's move across the counter on the object's audit trail.
 	 *
 	 * Nothing is written when the normalised value did not move. A failed write

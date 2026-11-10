@@ -78,22 +78,6 @@ final class RegisterSerializer implements RegisterSerializerInterface {
 	}//end __construct()
 
 	/**
-	 * Serialize a single Register entity with optional extensions.
-	 *
-	 * @param Register $register The Register entity to serialize.
-	 * @param array $extend Extension keys to apply (`schemas`, `@self.stats`).
-	 * @param array<int,array{total:int}>|null $schemaStats Pre-computed per-schema object counts (id → ['total' => int]).
-	 *
-	 * @return array Serialized register payload, with extensions applied.
-	 *
-	 * @spec openspec/specs/register-service-extensions/spec.md
-	 *   (Requirement: schemas extension SHALL replace schema IDs with full schema objects)
-	 */
-	public function serialize(Register $register, array $extend = [], ?array $schemaStats = null): array {
-		return $this->serializeExpanded(register: $register, expansion: RegisterExpansion::fromExtend(extend: $extend, schemaStats: $schemaStats));
-	}//end serialize()
-
-	/**
 	 * Serialize a single Register entity with the expansion it asks for.
 	 *
 	 * @param Register          $register  The Register entity to serialize.
@@ -116,6 +100,9 @@ final class RegisterSerializer implements RegisterSerializerInterface {
 	/**
 	 * Serialize a collection of Register entities.
 	 *
+	 * Kept for RegisterService::findAllSerialized(), whose call an open change rewrites;
+	 * builds the extension and delegates to {@see self::serializePage()}.
+	 *
 	 * @param Register[] $registers Registers to serialize.
 	 * @param array $extend Extension keys to apply.
 	 * @param array<int,array<int,array{total:int}>>|null $schemaStatsByRegisterId Pre-computed per-register stats
@@ -127,22 +114,37 @@ final class RegisterSerializer implements RegisterSerializerInterface {
 	 * @spec openspec/specs/register-service-extensions/spec.md
 	 */
 	public function serializeMany(array $registers, array $extend = [], ?array $schemaStatsByRegisterId = null): array {
+		return $this->serializePage(registers: $registers, extension: new RegisterListExtension(extend: $extend, schemaStatsByRegisterId: $schemaStatsByRegisterId));
+	}//end serializeMany()
+
+	/**
+	 * Serialize a collection of Register entities.
+	 *
+	 * @param Register[]            $registers Registers to serialize.
+	 * @param RegisterListExtension $extension The extension keys and the per-register schema counts.
+	 *
+	 * @return array<int,array> Serialized payload for each register.
+	 *
+	 * @spec openspec/specs/register-service-extensions/spec.md
+	 */
+	public function serializePage(array $registers, RegisterListExtension $extension=new RegisterListExtension()): array {
 		// PERF (N+1): expandSchemas() resolves each schema id through
 		// findSchemaCached() → SchemaMapper::find(), i.e. ONE query per schema.
 		// With `_extend[]=schemas` over every register that is one query per
 		// register-schema pair (~1,200 on the dev instance) on a single page
 		// load. Warm the cache with one batched lookup up front; the per-id path
 		// below then only runs for ids the batch could not resolve.
-		$this->warmSchemaCache(registers: $registers, extend: $extend);
+		$this->warmSchemaCache(registers: $registers, extend: $extension->extend);
 
 		$out = [];
 		foreach ($registers as $register) {
-			$stats = ($schemaStatsByRegisterId[(int)$register->getId()] ?? null);
-			$out[] = $this->serialize(register: $register, extend: $extend, schemaStats: $stats);
+			$stats     = ($extension->schemaStatsByRegisterId[(int)$register->getId()] ?? null);
+			$expansion = RegisterExpansion::fromExtend(extend: $extension->extend, schemaStats: $stats);
+			$out[]     = $this->serializeExpanded(register: $register, expansion: $expansion);
 		}
 
 		return $out;
-	}//end serializeMany()
+	}//end serializePage()
 
 	/**
 	 * Expand a `schemas` ID array to schema objects, optionally annotating with stats.

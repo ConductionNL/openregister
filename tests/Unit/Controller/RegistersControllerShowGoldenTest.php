@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\RegistersController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -151,7 +152,8 @@ class RegistersControllerShowGoldenTest extends TestCase {
 		});
 
 		$objects = $this->createMock(MagicMapper::class);
-		$objects->method('getStatistics')->willReturnCallback(function (...$args) use ($case): array {
+		$objects->method('getStatistics')->willReturnCallback(function (StatisticsScope $scope) use ($case): array {
+			$args = [$scope->registerId, $scope->schemaId, $scope->exclude];
 			$this->calls[] = ['objectStatistics', array_slice($args, 0, 2)];
 			if (($case['statsFail'] ?? false) === true) {
 				throw new RuntimeException('count failed');

@@ -14,6 +14,7 @@
 namespace OCA\OpenRegister\Tests\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Files\Db\Chunk;
@@ -901,7 +902,7 @@ class MappersIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestObject($register, $schema);
 
-		$stats = $this->objectMapper->getStatistics($register->getId());
+		$stats = $this->objectMapper->getStatistics(new StatisticsScope(registerId: $register->getId()));
 		$this->assertSame(1, $stats['total'], 'a magic table created after the first call MUST be counted');
 	}
 
@@ -910,7 +911,7 @@ class MappersIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestObject($register, $schema);
 
-		$stats = $this->objectMapper->getStatistics($register->getId());
+		$stats = $this->objectMapper->getStatistics(new StatisticsScope(registerId: $register->getId()));
 		$this->assertArrayHasKey('total', $stats);
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
@@ -920,7 +921,7 @@ class MappersIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestObject($register, $schema);
 
-		$stats = $this->objectMapper->getStatistics(null, $schema->getId());
+		$stats = $this->objectMapper->getStatistics(new StatisticsScope(schemaId: $schema->getId()));
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
 
@@ -930,16 +931,15 @@ class MappersIntegrationTest extends TestCase {
 		$this->createTestObject($register, $schema);
 
 		$stats = $this->objectMapper->getStatistics(
-			[$register->getId()],
-			[$schema->getId()]
+			new StatisticsScope(registerId: [$register->getId()], schemaId: [$schema->getId()])
 		);
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
 
 	public function testMagicMapperStatisticsGetStatisticsWithExclude(): void {
-		$stats = $this->objectMapper->getStatistics(null, null, [
-			['register' => 999999, 'schema' => 999999],
-		]);
+		$stats = $this->objectMapper->getStatistics(
+			new StatisticsScope(exclude: [['register' => 999999, 'schema' => 999999]])
+		);
 		$this->assertIsArray($stats);
 	}
 

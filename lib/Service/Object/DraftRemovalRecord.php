@@ -37,8 +37,6 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -117,28 +115,13 @@ class DraftRemovalRecord {
 	 * delete. A failure to write does not bring the draft back, so it is
 	 * logged as an error with the same facts and never thrown.
 	 *
-	 * @param ObjectEntity  $draft    The removed draft, as read before the delete.
-	 * @param Register|null $register Its register, for the slug.
-	 * @param Schema|null   $schema   Its schema, for the slug.
-	 *
-	 * @return bool True when the entry was written.
-	 *
-	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-removing-a-draft-must-leave-one-audit-trail-entry-without-its-content
-	 */
-	public function write(ObjectEntity $draft, ?Register $register, ?Schema $schema): bool {
-		return $this->record(removed: new RemovedDraft(draft: $draft, register: $register, schema: $schema));
-	}//end write()
-
-	/**
-	 * Write the entry for one removed draft; a failure is logged with the same facts, never thrown.
-	 *
 	 * @param RemovedDraft $removed The removed draft, with its register and schema.
 	 *
 	 * @return bool True when the entry was written.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-removing-a-draft-must-leave-one-audit-trail-entry-without-its-content
 	 */
-	private function record(RemovedDraft $removed): bool {
+	public function write(RemovedDraft $removed): bool {
 		$draft = $removed->draft;
 		$facts = $this->facts(removed: $removed);
 
@@ -167,7 +150,7 @@ class DraftRemovalRecord {
 
 			return false;
 		}
-	}//end record()
+	}//end write()
 
 	/**
 	 * What the entry says beside its own columns (actor, moment, register, schema, object).

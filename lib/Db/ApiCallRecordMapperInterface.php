@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\ApiCall\ApiCallPeriod;
 use DateTime;
 
 /**
@@ -53,14 +54,11 @@ interface ApiCallRecordMapperInterface {
 	/**
 	 * The records whose last call falls in a period.
 	 *
-	 * @param DateTime $from The start of the period.
-	 * @param DateTime $to The end of the period.
-	 * @param string|null $apiVersion Narrow to one contract version, or null for all.
-	 * @param int $limit The most rows to return.
+	 * @param ApiCallPeriod $period The period, the optional contract version and the row cap.
 	 *
 	 * @return array<int, ApiCallRecord> The records, busiest first.
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
-	public function findInPeriod(DateTime $from, DateTime $to, ?string $apiVersion = null, int $limit = 500): array;
+	public function findInPeriod(ApiCallPeriod $period): array;
 }//end interface

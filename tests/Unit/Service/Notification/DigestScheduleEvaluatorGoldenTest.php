@@ -25,6 +25,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
+use OCA\OpenRegister\Notifications\Service\Notification\QueueWait;
 use OCP\IConfig;
 use OCP\IDateTimeZone;
 use PHPUnit\Framework\TestCase;
@@ -124,7 +125,7 @@ class DigestScheduleEvaluatorGoldenTest extends TestCase {
 
 				$due = '';
 				foreach (['-1 hour', '-25 hours', '-8 days', '+0 seconds', '+1 minute'] as $shift) {
-					$due .= (string) (int) $evaluator->isDue($digest, $now->modify($shift), $now);
+					$due .= (string) (int) $evaluator->isDue($digest, new QueueWait($now->modify($shift), $now));
 				}
 
 				$out['due'][$name][$instant] = $due;

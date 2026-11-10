@@ -193,7 +193,7 @@ class HarvestPipelineServiceTest extends TestCase {
 			}
 		);
 
-		$summary = $this->pipeline->run($source, $fetcher, 'exec-1');
+		$summary = $this->pipeline->run(new HarvestRun($source, $fetcher, 'exec-1'));
 
 		$this->assertSame(2, $summary['created']);
 		$this->assertSame(0, $summary['updated']);
@@ -219,7 +219,7 @@ class HarvestPipelineServiceTest extends TestCase {
 		// saveObject must NOT be called for an unchanged record.
 		$this->objectService->expects($this->never())->method('saveObject');
 
-		$summary = $this->pipeline->run($source, $fetcher, 'exec-2');
+		$summary = $this->pipeline->run(new HarvestRun($source, $fetcher, 'exec-2'));
 
 		$this->assertSame(1, $summary['unchanged']);
 		$this->assertSame(0, $summary['created']);
@@ -251,7 +251,7 @@ class HarvestPipelineServiceTest extends TestCase {
 		// Manual + both-changed → defer (conflict), no save.
 		$this->objectService->expects($this->never())->method('saveObject');
 
-		$summary = $this->pipeline->run($source, $fetcher, 'exec-3');
+		$summary = $this->pipeline->run(new HarvestRun($source, $fetcher, 'exec-3'));
 
 		$this->assertSame(1, $summary['conflicts']);
 		$this->assertSame(0, $summary['updated']);
@@ -280,7 +280,7 @@ class HarvestPipelineServiceTest extends TestCase {
 			}
 		);
 
-		$summary = $this->pipeline->run($source, $fetcher, 'exec-4');
+		$summary = $this->pipeline->run(new HarvestRun($source, $fetcher, 'exec-4'));
 
 		$this->assertSame(1, $summary['created']);
 		$this->assertSame(1, $summary['errors']);

@@ -174,7 +174,7 @@ class GrantConstraints {
 	 * @return array<int, mixed> The entries that reach, reindexed.
 	 */
 	private function reachingEntries(array $entries, ConstraintPoint $point): array {
-		return array_values(array_filter($entries, fn (mixed $entry): bool => $this->reachesIn(entry: $entry, point: $point)));
+		return array_values(array_filter($entries, fn (mixed $entry): bool => $this->reaches(entry: $entry, point: $point)));
 	}//end reachingEntries()
 
 	/**
@@ -196,27 +196,14 @@ class GrantConstraints {
 	 * grammar is additive, so a rule written before this existed keeps meaning
 	 * what it meant.
 	 *
-	 * @param mixed                 $entry The entry as written.
-	 * @param array<string, mixed>  $area  Where the question is asked.
-	 * @param DateTimeInterface     $now   The moment.
+	 * @param mixed           $entry The entry as written.
+	 * @param ConstraintPoint $point Where the question is asked, and the moment.
 	 *
 	 * @return bool True when the entry answers here and now.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function reaches(mixed $entry, array $area, DateTimeInterface $now): bool {
-		return $this->reachesIn(entry: $entry, point: new ConstraintPoint(area: $area, now: $now));
-	}//end reaches()
-
-	/**
-	 * Whether one entry still reaches the point's area at its moment.
-	 *
-	 * @param mixed           $entry The entry as written.
-	 * @param ConstraintPoint $point Where and when the question is asked.
-	 *
-	 * @return bool True when the entry answers here and now.
-	 */
-	private function reachesIn(mixed $entry, ConstraintPoint $point): bool {
+	public function reaches(mixed $entry, ConstraintPoint $point): bool {
 		if (is_array($entry) === false) {
 			return true;
 		}
@@ -226,7 +213,7 @@ class GrantConstraints {
 		}
 
 		return $this->covers(entry: $entry, area: $point->area);
-	}//end reachesIn()
+	}//end reaches()
 
 	/**
 	 * Whether an entry's end is still in the future.

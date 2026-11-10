@@ -29,6 +29,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
 
 /**
  * Behaviour of the search index rebuild job body.
@@ -55,21 +56,21 @@ class SearchIndexRebuildJobTest extends TestCase {
 	}
 
 	public function testRebuildsOneRegisterWithApplyWhenTheArgumentNamesIt(): void {
-		$this->index->expects($this->once())->method('rebuild')->with(12, true)
+		$this->index->expects($this->once())->method('rebuild')->with(12, new SearchIndexPass(apply: true, progress: null))
 			->willReturn(['state' => 'completed', 'failed' => 0]);
 
 		$this->runJob(['registerId' => '12', 'actor' => 'admin']);
 	}
 
 	public function testRebuildsEverythingWhenTheArgumentIsNotAnArray(): void {
-		$this->index->expects($this->once())->method('rebuild')->with(null, true)
+		$this->index->expects($this->once())->method('rebuild')->with(null, new SearchIndexPass(apply: true, progress: null))
 			->willReturn(['state' => 'completed']);
 
 		$this->runJob(null);
 	}
 
 	public function testRebuildsEverythingWhenTheArrayHasNoRegister(): void {
-		$this->index->expects($this->once())->method('rebuild')->with(null, true)
+		$this->index->expects($this->once())->method('rebuild')->with(null, new SearchIndexPass(apply: true, progress: null))
 			->willReturn([]);
 
 		$this->runJob(['actor' => 'admin']);

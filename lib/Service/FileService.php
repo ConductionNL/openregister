@@ -62,6 +62,7 @@ use OCA\OpenRegister\Service\File\FileRename;
 use OCA\OpenRegister\Service\File\FileTransfer;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\DocumentAnonymization;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\ShareLinkRequest;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
@@ -1442,9 +1443,8 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 		int|string|null $registerId = null,
 	): File {
 		return $this->createFileHandler->addFile(
-			objectEntity: $objectEntity,
-			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags),
-			registerId: $registerId
+			target: new FileTarget(object: $objectEntity, registerId: $registerId),
+			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags)
 		);
 	}//end addFile()
 
@@ -2103,7 +2103,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 
 		// Use CreateFileHandler to create the file in target object folder.
 		$newFile = $this->createFileHandler->addFile(
-			objectEntity: $transfer->target,
+			target: new FileTarget(object: $transfer->target),
 			upload: new FileUpload(fileName: $resolvedName, content: $content, share: false)
 		);
 

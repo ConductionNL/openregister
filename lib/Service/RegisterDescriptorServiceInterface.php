@@ -88,16 +88,15 @@ interface RegisterDescriptorServiceInterface {
 	 * return value differs per app and says what it processed, not what
 	 * changed; the counts compare what the instance holds.
 	 *
-	 * @param string $appId The app that ships the configuration.
-	 * @param string $slug  A register slug the configuration declares.
-	 * @param string $via   Who asked, recorded with every authorization block the decision replaces.
+	 * @param ShippedRegister $register The app that ships the configuration and a register slug it declares.
+	 * @param string          $via      Who asked, recorded with every authorization block the decision replaces.
 	 *
 	 * @return array<string, mixed> outcome, reason, path, via, version, counts{registers, schemas, authorizationReplaced}, replaced,
 	 *                              and, when the import recorded a job, importJobId and importAppId (the configuration id it ran under).
 	 *
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
-	public function reimport(string $appId, string $slug, string $via = self::VIA_OCC): array;
+	public function reimportShipped(ShippedRegister $register, string $via = self::VIA_OCC): array;
 
 	/**
 	 * Import the SAMPLE (mock) descriptor an app ships for one register slug.
