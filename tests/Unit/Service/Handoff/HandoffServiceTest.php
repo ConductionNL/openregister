@@ -47,6 +47,7 @@ use OCA\OpenRegister\Event\HandoffExecutedEvent;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Handoff\HandoffLedger;
 use OCA\OpenRegister\Service\Handoff\HandoffMappingEvaluator;
 use OCA\OpenRegister\Service\Handoff\HandoffObjectAccess;
@@ -782,8 +783,8 @@ class HandoffServiceTest extends TestCase {
 
 		$log = [];
 		$this->permissionHandler->method('checkPermission')->willReturnCallback(
-			static function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $rbac = true, ?ObjectEntity $object = null) use (&$log): bool {
-				$log[] = ['check', $action, (int)$schema->getId(), $objectOwner, $object?->getUuid()];
+			static function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions()) use (&$log): bool {
+				$log[] = ['check', $action, (int)$schema->getId(), $options->objectOwner, $options->object?->getUuid()];
 				return true;
 			}
 		);

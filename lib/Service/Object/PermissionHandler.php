@@ -1880,13 +1880,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 	/**
 	 * Check permission and throw exception if not granted
 	 *
-	 * @param Schema $schema Schema to check permissions for.
-	 * @param string $action Action to check permission for.
-	 * @param string|null $userId User ID to check permissions for.
-	 * @param string|null $objectOwner Object owner ID.
-	 * @param bool $_rbac Whether to enforce RBAC checks.
-	 * @param ObjectEntity|null $object Optional object entity for conditional authorization matching.
-	 * @param string|null $register The register written to, for a check that names no object.
+	 * @param Schema                 $schema  Schema to check permissions for.
+	 * @param string                 $action  Action to check permission for.
+	 * @param PermissionCheckOptions $options The caller, object owner, object and register of the check.
+	 * @param bool                   $_rbac   Whether to enforce RBAC checks.
 	 *
 	 * @return void
 	 *
@@ -1899,15 +1896,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 	public function checkPermission(
 		Schema $schema,
 		string $action,
-		?string $userId = null,
-		?string $objectOwner = null,
+		PermissionCheckOptions $options = new PermissionCheckOptions(),
 		bool $_rbac = true,
-		?ObjectEntity $object = null,
-		?string $register = null,
 	): void {
 		$ask = (new PermissionAsk(schema: $schema, action: $action))
-			->askedBy(userId: $userId, objectOwner: $objectOwner)
-			->about(object: $object, register: $register);
+			->askedBy(userId: $options->userId, objectOwner: $options->objectOwner)
+			->about(object: $options->object, register: $options->register);
 		if ($this->permits(ask: $ask, _rbac: $_rbac) === false) {
 			throw $this->notAuthorized(ask: $ask);
 		}

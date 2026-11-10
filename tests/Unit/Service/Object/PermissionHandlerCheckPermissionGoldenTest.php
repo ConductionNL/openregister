@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory;
 use OCP\IAppConfig;
@@ -153,11 +154,13 @@ class PermissionHandlerCheckPermissionGoldenTest extends TestCase {
 			$this->handler($case['session'])->checkPermission(
 				schema: $schema,
 				action: $case['action'],
-				userId: ($case['extra']['userId'] ?? null),
-				objectOwner: ($case['extra']['objectOwner'] ?? null),
-				_rbac: $case['rbac'],
-				object: $object,
-				register: ($case['extra']['register'] ?? null)
+				options: new PermissionCheckOptions(
+					userId: ($case['extra']['userId'] ?? null),
+					objectOwner: ($case['extra']['objectOwner'] ?? null),
+					object: $object,
+					register: ($case['extra']['register'] ?? null)
+				),
+				_rbac: $case['rbac']
 			);
 		} catch (NotAuthorizedException $e) {
 			return $e->getMessage();

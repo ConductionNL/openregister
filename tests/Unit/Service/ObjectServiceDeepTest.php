@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -515,7 +516,6 @@ class ObjectServiceDeepTest extends TestCase {
 				$this->identicalTo($schema),
 				$this->equalTo('create'),
 				$this->anything(),
-				$this->anything(),
 				$this->anything()
 			);
 
@@ -545,8 +545,7 @@ class ObjectServiceDeepTest extends TestCase {
 			->with(
 				$this->anything(),
 				$this->equalTo('update'),
-				$this->anything(),
-				$this->equalTo('admin'),
+				$this->callback(fn (PermissionCheckOptions $options): bool => $options->objectOwner === 'admin'),
 				$this->anything()
 			);
 
@@ -573,7 +572,6 @@ class ObjectServiceDeepTest extends TestCase {
 			->with(
 				$this->identicalTo($schema),
 				$this->equalTo('create'),
-				$this->anything(),
 				$this->anything(),
 				$this->anything()
 			);
