@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
@@ -360,8 +361,9 @@ class RulesServicesGoldenTest extends TestCase {
 
 	private function replay(int|Throwable $count): RuleReplayService {
 		$jobs = $this->createMock(BulkJobService::class);
-		$jobs->method('create')->willReturnCallback(
-			function (...$args): BulkJob {
+		$jobs->method('createFromRequest')->willReturnCallback(
+			function (BulkJobRequest $request): BulkJob {
+				$args = [$request->call, $request->selection, $request->actorUid, $request->justification];
 				$this->calls[] = ['create', $args];
 				$job = $this->createMock(BulkJob::class);
 				$job->method('jsonSerialize')->willReturn(['previewed' => $args[0]]);

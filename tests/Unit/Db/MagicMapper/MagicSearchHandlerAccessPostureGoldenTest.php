@@ -28,9 +28,11 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -322,7 +324,7 @@ final class MagicSearchHandlerAccessPostureGoldenTest extends TestCase {
 	public function testTheFilteredQueryPostureIsPinned(): void {
 		$recorded = $this->record(
 			static function (MagicSearchHandler $handler, array $query, Schema $schema): void {
-				$handler->buildFilteredQuery(query: $query, schema: $schema, tableName: 'openregister_table_1_5', registerId: (isset($query['register']) === true ? null : 3));
+				$handler->buildFilteredQuery(query: $query, table: new MagicReadTable(schema: $schema, registerId: (isset($query['register']) === true ? null : 3), tableName: 'openregister_table_1_5'));
 			}
 		);
 
@@ -359,7 +361,7 @@ final class MagicSearchHandlerAccessPostureGoldenTest extends TestCase {
 	public function testTheUnionConditionsPostureIsPinned(): void {
 		$recorded = $this->record(
 			function (MagicSearchHandler $handler, array $query, Schema $schema): void {
-				$conditions   = $handler->buildWhereConditionsSql(query: $query, schema: $schema, registerId: (isset($query['register']) === true ? null : 3), tableName: 'openregister_table_1_5');
+				$conditions   = $handler->buildWhereClause(request: new WhereClauseRequest(query: $query, table: new MagicReadTable(schema: $schema, registerId: (isset($query['register']) === true ? null : 3), tableName: 'openregister_table_1_5')));
 				$this->events = array_merge($this->events, $conditions);
 			}
 		);
@@ -378,14 +380,14 @@ final class MagicSearchHandlerAccessPostureGoldenTest extends TestCase {
 		foreach (['string false' => ['_rbac' => 'false'], 'garbage rbac' => ['_rbac' => ['x']], 'garbage mt' => ['_multitenancy' => 'nope']] as $name => $query) {
 			$this->events = [];
 			try {
-				$this->handler(answer: $answer)->buildFilteredQuery(query: $query, schema: $this->schema(public: false), tableName: 'openregister_table_1_5', registerId: 3);
+				$this->handler(answer: $answer)->buildFilteredQuery(query: $query, table: new MagicReadTable(schema: $this->schema(public: false), registerId: 3, tableName: 'openregister_table_1_5'));
 				$recorded['qb '.$name] = $this->events;
 			} catch (TypeError $error) {
 				$recorded['qb '.$name] = 'refused: TypeError';
 			}
 
 			$this->events = [];
-			$recorded['sql '.$name] = $this->handler(answer: $answer)->buildWhereConditionsSql(query: $query, schema: $this->schema(public: false), registerId: 3, tableName: 'openregister_table_1_5');
+			$recorded['sql '.$name] = $this->handler(answer: $answer)->buildWhereClause(request: new WhereClauseRequest(query: $query, table: new MagicReadTable(schema: $this->schema(public: false), registerId: 3, tableName: 'openregister_table_1_5')));
 			$recorded['sql '.$name.' events'] = $this->events;
 		}
 
