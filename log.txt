@@ -1548,3 +1548,4 @@
 2026-11-10T08:00:19Z integrator-20261110T055831-36ffe96f RESOLVED #8843 56ac33c9 -> b3daec81 use/map lines only
 2026-11-10T08:00:31Z precheck-20261110T063108-b0ef6a24 GREEN tree 5251336228 on dev b76de82d80 prs 1 front=skip: Tests: 54771, Assertions: 180857, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-10T08:01:25Z integrator-20261110T055831-36ffe96f CONFLICT-DEV #8531 de446574
+2026-11-10T08:01:45Z integrator-20261110T055831-36ffe96f CONFLICT-DEV #8617 79133840
