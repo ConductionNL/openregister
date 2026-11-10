@@ -775,6 +775,176 @@ async function jsonOrThrow(response) {
 	return data
 }
 
+// The UI category of each issue type the analysis reports.
+const ISSUE_CATEGORIES = {
+	type_mismatch: 'type',
+	missing_max_length: 'constraint',
+	max_length_too_small: 'constraint',
+	missing_format: 'format',
+	missing_pattern: 'pattern',
+	missing_minimum: 'constraint',
+	minimum_too_high: 'constraint',
+	missing_maximum: 'constraint',
+	maximum_too_low: 'constraint',
+	inconsistent_required: 'behavior',
+	missing_enum: 'enum',
+}
+
+/**
+ * The descriptions of the type, format and pattern issues.
+ *
+ * @return {object} The descriptions by issue type
+ */
+function shapeIssueDescriptions() {
+	return {
+		type_mismatch: t(
+			'openregister',
+			'Data type does not match observed values',
+		),
+
+		missing_format: t('openregister', 'Format constraint is missing'),
+
+		missing_pattern: t('openregister', 'Pattern constraint is missing'),
+	}
+}
+
+/**
+ * The descriptions of the maximum length issues.
+ *
+ * @return {object} The descriptions by issue type
+ */
+function lengthIssueDescriptions() {
+	return {
+		missing_max_length: t(
+			'openregister',
+			'Maximum length constraint is missing',
+		),
+
+		max_length_too_small: t(
+			'openregister',
+			'Maximum length is too restrictive',
+		),
+	}
+}
+
+/**
+ * The descriptions of the minimum and maximum value issues.
+ *
+ * @return {object} The descriptions by issue type
+ */
+function rangeIssueDescriptions() {
+	return {
+		missing_minimum: t('openregister', 'Minimum value constraint is missing'),
+
+		minimum_too_high: t('openregister', 'Minimum value is too restrictive'),
+
+		missing_maximum: t('openregister', 'Maximum value constraint is missing'),
+
+		maximum_too_low: t('openregister', 'Maximum value is too restrictive'),
+	}
+}
+
+/**
+ * The description of each issue type the analysis reports.
+ *
+ * @return {object} The descriptions by issue type
+ */
+function issueDescriptions() {
+	return {
+		...shapeIssueDescriptions(),
+		...lengthIssueDescriptions(),
+		...rangeIssueDescriptions(),
+		inconsistent_required: t('openregister', 'Required status is inconsistent'),
+		missing_enum: t('openregister', 'Enum constraint is missing'),
+	}
+}
+
+/**
+ * The date and time formats, as fresh select options.
+ *
+ * @return {Array<object>} The options
+ */
+function dateTimeFormatOptions() {
+	return [
+		{ label: 'Date (YYYY-MM-DD)', value: 'date', key: 'date' },
+		{
+			label: 'Date Time (ISO 8601)',
+			value: 'date-time',
+			key: 'date-time',
+		},
+		{ label: 'Time (HH:MM:SS)', value: 'time', key: 'time' },
+	]
+}
+
+/**
+ * The formats every property can pick, as fresh select options.
+ *
+ * @return {Array<object>} The options
+ */
+function commonFormatOptions() {
+	return [
+		{ label: 'None', value: '', key: 'none' },
+		...dateTimeFormatOptions(),
+		{ label: 'Email', value: 'email', key: 'email' },
+		{ label: 'URL', value: 'url', key: 'url' },
+		{ label: 'UUID', value: 'uuid', key: 'uuid' },
+		{ label: 'Hostname', value: 'hostname', key: 'hostname' },
+		{ label: 'Color (Hex)', value: 'color', key: 'color' },
+	]
+}
+
+/**
+ * The select option for a format the analysis detected.
+ *
+ * @param {string} detectedFormat The detected format
+ * @return {object} The option, its label capitalised
+ */
+function detectedFormatOption(detectedFormat) {
+	return {
+		label: detectedFormat.charAt(0).toUpperCase() + detectedFormat.slice(1),
+		value: detectedFormat,
+		key: detectedFormat,
+	}
+}
+
+/**
+ * The fields of a property's configuration the schema update sends.
+ *
+ * @param {object} config The property's configuration
+ * @return {object} The update
+ */
+function propertyUpdateOf(config) {
+	return {
+		type: config.type,
+		title: config.title,
+		description: config.description,
+		required: config.required,
+		facetable: config.facetable,
+	}
+}
+
+/**
+ * Send property updates to the current schema's update endpoint.
+ *
+ * @param {object} propertyUpdates The updates by property name
+ * @return {Promise<object>} The endpoint's answer
+ */
+async function postPropertyUpdates(propertyUpdates) {
+	const endpoint = `/index.php/apps/openregister/api/schemas/${schemaStore.schemaItem.id}/update-from-exploration`
+
+	const response = await fetch(endpoint, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			properties: propertyUpdates,
+		}),
+	})
+
+	return jsonOrThrow(response)
+}
+
 export default {
 	name: 'ExploreSchema',
 	components: {
@@ -897,22 +1067,7 @@ export default {
 		 */
 		formatOptions() {
 			return (suggestion) => {
-				const commonFormats = [
-					{ label: 'None', value: '', key: 'none' },
-					{ label: 'Date (YYYY-MM-DD)', value: 'date', key: 'date' },
-					{
-						label: 'Date Time (ISO 8601)',
-						value: 'date-time',
-						key: 'date-time',
-					},
-					{ label: 'Time (HH:MM:SS)', value: 'time', key: 'time' },
-					{ label: 'Email', value: 'email', key: 'email' },
-					{ label: 'URL', value: 'url', key: 'url' },
-					{ label: 'UUID', value: 'uuid', key: 'uuid' },
-					{ label: 'Hostname', value: 'hostname', key: 'hostname' },
-					{ label: 'Color (Hex)', value: 'color', key: 'color' },
-				]
-
+				const commonFormats = commonFormatOptions()
 				const detectedFormat = suggestion.detected_format
 				const hasDetectedFormat =
 					detectedFormat
@@ -920,13 +1075,7 @@ export default {
 
 				// Add detected format if not already in common formats
 				if (hasDetectedFormat) {
-					commonFormats.push({
-						label:
-							detectedFormat.charAt(0).toUpperCase()
-							+ detectedFormat.slice(1),
-						value: detectedFormat,
-						key: detectedFormat,
-					})
+					commonFormats.push(detectedFormatOption(detectedFormat))
 				}
 
 				return commonFormats
@@ -1231,48 +1380,8 @@ export default {
 			this.error = null
 
 			try {
-				// Build property updates for selected properties
-				const propertyUpdates = {}
-
-				this.selectedProperties.forEach((propertyName) => {
-					const config = this.selectedPropertiesConfig[propertyName]
-					propertyUpdates[propertyName] = {
-						type: config.type,
-						title: config.title,
-						description: config.description,
-						required: config.required,
-						facetable: config.facetable,
-					}
-				})
-
-				const endpoint = `/index.php/apps/openregister/api/schemas/${schemaStore.schemaItem.id}/update-from-exploration`
-
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						properties: propertyUpdates,
-					}),
-				})
-
-				const data = await jsonOrThrow(response)
-
-				this.success = true
-
-				// Update schema in store
-				if (data.schema) {
-					schemaStore.setSchemaItem(data.schema)
-				}
-
-				// Refresh schema list to reflect changes
-				schemaStore.refreshSchemaList()
-
-				// Auto-close modal after success
-				setTimeout(() => {
-					this.handleDialogClose()
-				}, 2000)
+				const data = await postPropertyUpdates(this.selectedPropertyUpdates())
+				this.applyUpdatedSchema(data)
 			} catch (error) {
 				console.error('Schema update failed:', error)
 				this.error =
@@ -1281,6 +1390,46 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The update the endpoint receives for each selected property.
+		 *
+		 * @spec exclude Modal action plumbing — request body of the schema update.
+		 * @return {object} The property updates by property name
+		 */
+		selectedPropertyUpdates() {
+			const propertyUpdates = {}
+			this.selectedProperties.forEach((propertyName) => {
+				propertyUpdates[propertyName] = propertyUpdateOf(
+					this.selectedPropertiesConfig[propertyName],
+				)
+			})
+			return propertyUpdates
+		},
+
+		/**
+		 * Show the saved schema, refresh the list and close the modal shortly after.
+		 *
+		 * @spec exclude Modal action plumbing — success handling of the schema update.
+		 * @param {object} data The endpoint's answer
+		 * @return {void}
+		 */
+		applyUpdatedSchema(data) {
+			this.success = true
+
+			// Update schema in store
+			if (data.schema) {
+				schemaStore.setSchemaItem(data.schema)
+			}
+
+			// Refresh schema list to reflect changes
+			schemaStore.refreshSchemaList()
+
+			// Auto-close modal after success
+			setTimeout(() => {
+				this.handleDialogClose()
+			}, 2000)
 		},
 
 		/**
@@ -1353,21 +1502,7 @@ export default {
 		 * @spec exclude UI display helper — maps an issue type to a UI category.
 		 */
 		getIssueType(issueType) {
-			// Map issue types to UI-friendly categories
-			const typeMap = {
-				type_mismatch: 'type',
-				missing_max_length: 'constraint',
-				max_length_too_small: 'constraint',
-				missing_format: 'format',
-				missing_pattern: 'pattern',
-				missing_minimum: 'constraint',
-				minimum_too_high: 'constraint',
-				missing_maximum: 'constraint',
-				maximum_too_low: 'constraint',
-				inconsistent_required: 'behavior',
-				missing_enum: 'enum',
-			}
-			return typeMap[issueType] || 'general'
+			return ISSUE_CATEGORIES[issueType] || 'general'
 		},
 
 		/**
@@ -1393,62 +1528,8 @@ export default {
 		 * @spec exclude UI display helper — maps an issue type to a translated description.
 		 */
 		getIssueDescription(issueType) {
-			// Get descriptions for different issue types
-			const descriptionMap = {
-				type_mismatch: this.t(
-					'openregister',
-					'Data type does not match observed values',
-				),
-
-				missing_max_length: this.t(
-					'openregister',
-					'Maximum length constraint is missing',
-				),
-
-				max_length_too_small: this.t(
-					'openregister',
-					'Maximum length is too restrictive',
-				),
-
-				missing_format: this.t(
-					'openregister',
-					'Format constraint is missing',
-				),
-
-				missing_pattern: this.t(
-					'openregister',
-					'Pattern constraint is missing',
-				),
-
-				missing_minimum: this.t(
-					'openregister',
-					'Minimum value constraint is missing',
-				),
-
-				minimum_too_high: this.t(
-					'openregister',
-					'Minimum value is too restrictive',
-				),
-
-				missing_maximum: this.t(
-					'openregister',
-					'Maximum value constraint is missing',
-				),
-
-				maximum_too_low: this.t(
-					'openregister',
-					'Maximum value is too restrictive',
-				),
-
-				inconsistent_required: this.t(
-					'openregister',
-					'Required status is inconsistent',
-				),
-
-				missing_enum: this.t('openregister', 'Enum constraint is missing'),
-			}
 			return (
-				descriptionMap[issueType]
+				issueDescriptions()[issueType]
 				|| this.t('openregister', 'Property can be improved')
 			)
 		},
