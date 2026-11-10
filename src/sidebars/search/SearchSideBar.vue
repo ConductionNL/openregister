@@ -663,6 +663,22 @@ function contentFacetCategory(facetableFields) {
 	}
 }
 
+/**
+ * How one facet is asked for: by the field's first facet type, terms by
+ * default, and a date histogram bucketed by month.
+ *
+ * @param {object|undefined} fieldInfo The facetable field
+ * @return {{type: string, interval?: string}} The facet request
+ */
+function facetRequest(fieldInfo) {
+	const facetType = fieldInfo?.facet_types?.[0] || 'terms'
+	const request = { type: facetType }
+	if (facetType === 'date_histogram') {
+		request.interval = 'month'
+	}
+	return request
+}
+
 export default {
 	name: 'SearchSideBar',
 	components: {
@@ -1491,23 +1507,14 @@ export default {
 					const field = fieldName.replace('@self.', '')
 					if (!config['@self']) config['@self'] = {}
 
-					const fieldInfo = this.facetableFields?.['@self']?.[field]
-					const facetType = fieldInfo?.facet_types?.[0] || 'terms'
-
-					config['@self'][field] = { type: facetType }
-					if (facetType === 'date_histogram') {
-						config['@self'][field].interval = 'month'
-					}
+					config['@self'][field] = facetRequest(
+						this.facetableFields?.['@self']?.[field],
+					)
 				} else {
 					// Object field facet
-					const fieldInfo =
-						this.facetableFields?.object_fields?.[fieldName]
-					const facetType = fieldInfo?.facet_types?.[0] || 'terms'
-
-					config[fieldName] = { type: facetType }
-					if (facetType === 'date_histogram') {
-						config[fieldName].interval = 'month'
-					}
+					config[fieldName] = facetRequest(
+						this.facetableFields?.object_fields?.[fieldName],
+					)
 				}
 			})
 
