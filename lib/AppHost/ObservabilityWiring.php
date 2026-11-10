@@ -26,7 +26,9 @@ use OCA\OpenRegister\AppHost\Observability\AppProviderResolver;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
 use OCA\OpenRegister\AppHost\Observability\LocalHealthChecks;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
+use OCA\OpenRegister\AppHost\Observability\MetricSources;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
+use OCA\OpenRegister\AppHost\Observability\MetricsRuntime;
 use OCA\OpenRegister\AppHost\Observability\PrometheusRenderer;
 use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
@@ -154,14 +156,18 @@ final class ObservabilityWiring {
 			\OCA\OpenRegister\AppHost\Observability\MetricsEngine::class,
 			function (ContainerInterface $container) {
 				return new MetricsEngine(
-					objectSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource::class),
-					tableSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource::class),
-					appConfigSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource::class),
-					providerSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource::class),
+					sources: new MetricSources(
+						object: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource::class),
+						table: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource::class),
+						appConfig: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource::class),
+						provider: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource::class)
+					),
 					renderer: $container->get(\OCA\OpenRegister\AppHost\Observability\PrometheusRenderer::class),
-					manifestLoader: $container->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
-					cacheFactory: $container->get('OCP\ICacheFactory'),
-					config: $container->get('OCP\IConfig'),
+					runtime: new MetricsRuntime(
+						manifestLoader: $container->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
+						cacheFactory: $container->get('OCP\ICacheFactory'),
+						config: $container->get('OCP\IConfig')
+					),
 					logger: $container->get('Psr\Log\LoggerInterface')
 				);
 			}
