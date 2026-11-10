@@ -197,20 +197,29 @@ class ProxySettings implements ProxySettingsInterface {
 			return [];
 		}
 
-		$exceptions = $this->exceptions();
+		return ['proxy' => self::proxyOption(proxy: $proxy, exceptions: $this->exceptions())];
+
+	}//end requestOptions()
+
+	/**
+	 * The `proxy` request option: the bare URL, or the map form when some hosts stay direct.
+	 *
+	 * @param string             $proxy      The proxy URL.
+	 * @param array<int, string> $exceptions The hosts that bypass it.
+	 *
+	 * @return string|array{http: string, https: string, no: array<int, string>} The option value.
+	 */
+	private static function proxyOption(string $proxy, array $exceptions): string|array {
 		if ($exceptions === []) {
-			return ['proxy' => $proxy];
+			return $proxy;
 		}
 
 		return [
-			'proxy' => [
-				'http' => $proxy,
-				'https' => $proxy,
-				'no' => $exceptions,
-			],
+			'http' => $proxy,
+			'https' => $proxy,
+			'no' => $exceptions,
 		];
-
-	}//end requestOptions()
+	}//end proxyOption()
 
 	/**
 	 * Whether an administered proxy is in force.
