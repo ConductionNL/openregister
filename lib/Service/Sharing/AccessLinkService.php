@@ -254,6 +254,27 @@ class AccessLinkService implements AccessLinkServiceInterface {
 	}//end enable()
 
 	/**
+	 * Switch a link off, or back on, without revoking it.
+	 *
+	 * Kept for callers in other apps that look this method up by name.
+	 *
+	 * @param int    $id       The link row id.
+	 * @param string $userId   The principal asking.
+	 * @param bool   $disabled True to switch the link off.
+	 *
+	 * @return array<string, mixed>|null The updated link, or null when there is none.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
+	 */
+	public function setDisabled(int $id, string $userId, bool $disabled): ?array {
+		if ($disabled === true) {
+			return $this->disable(id: $id, userId: $userId);
+		}
+
+		return $this->enable(id: $id, userId: $userId);
+	}//end setDisabled()
+
+	/**
 	 * Store a switched link and describe it to its owner, or null when there was none.
 	 *
 	 * @param AccessLink|null $link The caller's own link, already switched.

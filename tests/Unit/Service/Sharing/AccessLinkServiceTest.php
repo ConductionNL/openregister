@@ -349,6 +349,24 @@ class AccessLinkServiceTest extends TestCase {
 		$this->assertTrue($link->isLive());
 	}
 
+	public function testSetDisabledSwitchesALinkOffAndBackOn(): void {
+		$link = $this->liveLink();
+		$this->mapper->method('findById')->willReturn($link);
+
+		$this->assertNull($this->service->setDisabled(id: 1, userId: 'somebody-else', disabled: true));
+		$this->assertTrue($link->isLive());
+
+		$off = $this->service->setDisabled(id: 1, userId: 'owner', disabled: true);
+		$this->assertIsArray($off);
+		$this->assertTrue($off['disabled']);
+		$this->assertFalse($link->isLive());
+
+		$on = $this->service->setDisabled(id: 1, userId: 'owner', disabled: false);
+		$this->assertIsArray($on);
+		$this->assertFalse($on['disabled']);
+		$this->assertTrue($link->isLive());
+	}
+
 	// ---- Task 3.2: every use is audited, as the link. ----------------------
 
 	public function testFourUsesOfOneLinkWriteFourEntriesNamingTheLink(): void {
