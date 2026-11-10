@@ -23,6 +23,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Mcp\Db\ConversationScope;
+use OCA\OpenRegister\Mcp\Db\AgentAudience;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Db\AgentMapperPlatform;
@@ -124,7 +128,14 @@ class McpMapperListingGoldenTest extends TestCase {
 			$session,
 			$groups
 		);
-		$outcome = $this->call(mapper: $mapper, method: 'findByOrganisation', args: $args);
+		$outcome = $this->call(
+			mapper: $mapper,
+			method: 'findByOrganisation',
+			args: [
+				new AgentAudience(organisationUuid: $args['organisationUuid'], userId: ($args['userId'] ?? null)),
+				new ListQuery(limit: ($args['limit'] ?? 50), offset: ($args['offset'] ?? 0)),
+			]
+		);
 		return $outcome;
 	}//end agent()
 
@@ -133,8 +144,33 @@ class McpMapperListingGoldenTest extends TestCase {
 			db: $this->reset(rows: $rows),
 			eventDispatcher: $this->createMock(IEventDispatcher::class)
 		);
-		return $this->call(mapper: $mapper, method: $method, args: $args);
+		return $this->call(mapper: $mapper, method: $method, args: self::conversationArgs(method: $method, args: $args));
 	}//end conversation()
+
+	/**
+	 * The value objects a conversation lookup takes, built from the fields a case names.
+	 *
+	 * @param string               $method The lookup.
+	 * @param array<string, mixed> $args   The case's fields.
+	 *
+	 * @return array<int, object>
+	 */
+	private static function conversationArgs(string $method, array $args): array {
+		if ($method === 'findTitlesByUserAgent') {
+			return [new TitleClaim(baseTitle: rtrim($args['titlePattern'], '%'), userId: $args['userId'], agentId: $args['agentId'])];
+		}
+
+		$scope = new ConversationScope(
+			userId: $args['userId'],
+			organisation: ($args['organisation'] ?? null),
+			includeDeleted: ($args['includeDeleted'] ?? false)
+		);
+		if (str_starts_with($method, 'count') === true) {
+			return [$scope];
+		}
+
+		return [$scope, new ListQuery(limit: ($args['limit'] ?? 50), offset: ($args['offset'] ?? 0))];
+	}//end conversationArgs()
 
 	private function call(object $mapper, string $method, array $args): array {
 		$outcome = [];

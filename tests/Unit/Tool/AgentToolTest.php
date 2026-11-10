@@ -2,6 +2,7 @@
 
 namespace Unit\Tool;
 
+use OCA\OpenRegister\Db\ListQuery;
 use BadMethodCallException;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
@@ -129,7 +130,7 @@ class AgentToolTest extends TestCase {
 	public function testListAgentsWithPagination(): void {
 		$this->agentMapper->expects($this->once())
 			->method('findAll')
-			->with(10, 5)
+			->with(new ListQuery(limit: 10, offset: 5))
 			->willReturn([]);
 		$this->agentMapper->method('count')->willReturn(0);
 

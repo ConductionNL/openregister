@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Mcp\Db;
 
 use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
 use OCA\OpenRegister\Event\ConversationCreatedEvent;
 use OCA\OpenRegister\Event\ConversationDeletedEvent;
 use OCA\OpenRegister\Event\ConversationUpdatedEvent;
@@ -234,79 +236,57 @@ class ConversationMapper extends QBMapper implements ConversationMapperInterface
 	}//end findByUuid()
 
 	/**
-	 * Find all conversations for a user
+	 * Find one page of a user's conversations, newest first.
 	 *
-	 * @param string $userId User ID
-	 * @param string|null $organisation Optional organisation UUID filter
-	 * @param bool $includeDeleted Whether to include soft-deleted conversations
-	 * @param int $limit Maximum number of results
-	 * @param int $offset Offset for pagination
+	 * @param ConversationScope $scope The owning user, optionally the organisation, and whether
+	 *                                 soft-deleted conversations are included.
+	 * @param ListQuery         $page  The limit and offset.
 	 *
 	 * @return Conversation[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Conversation>
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
 	 */
-	public function findByUser(
-		string $userId,
-		?string $organisation = null,
-		bool $includeDeleted = false,
-		int $limit = 50,
-		int $offset = 0,
-	): array {
+	public function findByUser(ConversationScope $scope, ListQuery $page): array {
 		$qb = $this->db->getQueryBuilder();
-		$this->inOrganisation(qb: $this->owned(qb: $qb->select('*'), userId: $userId), organisation: $organisation);
-		$this->liveUnless(qb: $qb, includeDeleted: $includeDeleted)->orderBy('updated', 'DESC')->setMaxResults($limit)->setFirstResult($offset);
+		$this->inOrganisation(qb: $this->owned(qb: $qb->select('*'), userId: $scope->userId), organisation: $scope->organisation);
+		$this->liveUnless(qb: $qb, includeDeleted: $scope->includeDeleted)->orderBy('updated', 'DESC')->setMaxResults($page->limitOrNull())->setFirstResult($page->offset ?? 0);
 		return $this->findEntities(query: $qb);
 	}//end findByUser()
 
 	/**
-	 * Find all soft-deleted conversations for a user (archive)
+	 * Find one page of a user's soft-deleted conversations (archive)
 	 *
-	 * @param string $userId User ID
-	 * @param null|string $organisation Optional organisation filter
-	 * @param int $limit Maximum number of results
-	 * @param int $offset Offset for pagination
+	 * @param ConversationScope $scope The owning user and, optionally, the organisation.
+	 * @param ListQuery         $page  The limit and offset.
 	 *
 	 * @return Conversation[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Conversation>
 	 */
-	public function findDeletedByUser(
-		string $userId,
-		?string $organisation = null,
-		int $limit = 50,
-		int $offset = 0,
-	): array {
+	public function findDeletedByUser(ConversationScope $scope, ListQuery $page): array {
 		$qb = $this->db->getQueryBuilder();
-		$this->owned(qb: $qb->select('*'), userId: $userId)->andWhere($qb->expr()->isNotNull('deleted_at'));
-		$this->inOrganisation(qb: $qb, organisation: $organisation)->orderBy('deleted_at', 'DESC')->setMaxResults($limit)->setFirstResult($offset);
+		$this->owned(qb: $qb->select('*'), userId: $scope->userId)->andWhere($qb->expr()->isNotNull('deleted_at'));
+		$this->inOrganisation(qb: $qb, organisation: $scope->organisation)->orderBy('deleted_at', 'DESC')->setMaxResults($page->limitOrNull())->setFirstResult($page->offset ?? 0);
 		return $this->findEntities(query: $qb);
 	}//end findDeletedByUser()
 
 	/**
-	 * Find conversations by user and agent with matching title pattern
+	 * Find the live conversation titles of a user-agent pair that start with a wanted title
 	 *
-	 * Used to check for duplicate conversation names and generate unique titles.
+	 * Used to check for duplicate conversation names and generate unique titles: the
+	 * wanted title itself and its numbered variants all match.
 	 *
-	 * @param string $userId User ID
-	 * @param int $agentId Agent ID
-	 * @param string $titlePattern Title pattern to match (e.g., "New Conversation%")
+	 * @param TitleClaim $claim The wanted title and the user-agent pair.
 	 *
 	 * @return array Array of matching conversation titles
 	 *
 	 * @psalm-return list<mixed>
 	 */
-	public function findTitlesByUserAgent(
-		string $userId,
-		int $agentId,
-		string $titlePattern,
-	): array {
+	public function findTitlesByUserAgent(TitleClaim $claim): array {
 		$qb = $this->db->getQueryBuilder();
-		$this->owned(qb: $qb->select('title'), userId: $userId)
-			->andWhere($qb->expr()->eq('agent_id', $qb->createNamedParameter($agentId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->like('title', $qb->createNamedParameter($titlePattern, IQueryBuilder::PARAM_STR)));
+		$this->owned(qb: $qb->select('title'), userId: $claim->userId)
+			->andWhere($qb->expr()->eq('agent_id', $qb->createNamedParameter($claim->agentId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->like('title', $qb->createNamedParameter($claim->baseTitle . '%', IQueryBuilder::PARAM_STR)));
 		return $this->titlesOf(qb: $this->liveUnless(qb: $qb, includeDeleted: false));
 	}//end findTitlesByUserAgent()
 
@@ -337,39 +317,28 @@ class ConversationMapper extends QBMapper implements ConversationMapperInterface
 	/**
 	 * Count conversations for a user
 	 *
-	 * @param string $userId User ID
-	 * @param string|null $organisation Optional organisation UUID filter
-	 * @param bool $includeDeleted Whether to include soft-deleted conversations
+	 * @param ConversationScope $scope The owning user, optionally the organisation, and whether
+	 *                                 soft-deleted conversations are included.
 	 *
 	 * @return int Total count
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
 	 */
-	public function countByUser(
-		string $userId,
-		?string $organisation = null,
-		bool $includeDeleted = false,
-	): int {
+	public function countByUser(ConversationScope $scope): int {
 		$qb = $this->db->getQueryBuilder();
-		$this->inOrganisation(qb: $this->owned(qb: $qb->select($qb->func()->count('*', 'count')), userId: $userId), organisation: $organisation);
-		return $this->countOf(qb: $this->liveUnless(qb: $qb, includeDeleted: $includeDeleted));
+		$this->inOrganisation(qb: $this->owned(qb: $qb->select($qb->func()->count('*', 'count')), userId: $scope->userId), organisation: $scope->organisation);
+		return $this->countOf(qb: $this->liveUnless(qb: $qb, includeDeleted: $scope->includeDeleted));
 	}//end countByUser()
 
 	/**
 	 * Count soft-deleted conversations for a user (archived)
 	 *
-	 * @param string $userId User ID
-	 * @param string|null $organisation Optional organisation filter
+	 * @param ConversationScope $scope The owning user and, optionally, the organisation.
 	 *
 	 * @return int Count of archived conversations
 	 */
-	public function countDeletedByUser(
-		string $userId,
-		?string $organisation = null,
-	): int {
+	public function countDeletedByUser(ConversationScope $scope): int {
 		$qb = $this->db->getQueryBuilder();
-		$this->owned(qb: $qb->select($qb->func()->count('*', 'count')), userId: $userId)->andWhere($qb->expr()->isNotNull('deleted_at'));
-		return $this->countOf(qb: $this->inOrganisation(qb: $qb, organisation: $organisation));
+		$this->owned(qb: $qb->select($qb->func()->count('*', 'count')), userId: $scope->userId)->andWhere($qb->expr()->isNotNull('deleted_at'));
+		return $this->countOf(qb: $this->inOrganisation(qb: $qb, organisation: $scope->organisation));
 	}//end countDeletedByUser()
 
 	/**
@@ -481,20 +450,15 @@ class ConversationMapper extends QBMapper implements ConversationMapperInterface
 	 * - User must be the owner of the conversation
 	 * - Conversation must belong to the user's current organisation (if provided)
 	 *
-	 * @param Conversation $conversation Conversation entity
-	 * @param string $userId User ID
-	 * @param string|null $organisationUuid Current organisation UUID (optional)
+	 * @param Conversation      $conversation Conversation entity
+	 * @param ConversationScope $scope        The user and, optionally, their current organisation.
 	 *
 	 * @return bool True if user can access
 	 */
-	public function canUserAccessConversation(
-		Entity $conversation,
-		string $userId,
-		?string $organisationUuid = null,
-	): bool {
+	public function canUserAccessConversation(Entity $conversation, ConversationScope $scope): bool {
 		// The owner only, and, when an organisation is given, only inside it.
-		return $conversation->getUserId() === $userId
-			&& ($organisationUuid === null || $conversation->getOrganisation() === $organisationUuid);
+		return $conversation->getUserId() === $scope->userId
+			&& ($scope->organisation === null || $conversation->getOrganisation() === $scope->organisation);
 	}//end canUserAccessConversation()
 
 	/**

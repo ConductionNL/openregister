@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Mcp\Db\ConversationScope;
+use OCA\OpenRegister\Db\ListQuery;
 use Exception;
 use OCA\OpenRegister\Controller\ConversationController;
 use OCA\OpenRegister\Db\FeedbackMapper;
@@ -91,9 +93,9 @@ class ConversationControllerIndexCreateGoldenTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['_limit' => '4', 'offset' => '8', '_offset' => '1']);
 		$this->conversationMapper->expects($this->never())->method('findDeletedByUser');
 		$this->conversationMapper->expects($this->once())->method('findByUser')
-			->with('alice', 'org-a', false, 4, 8)->willReturn([]);
+			->with(new ConversationScope(userId: 'alice', organisation: 'org-a'), new ListQuery(limit: 4, offset: 8))->willReturn([]);
 		$this->conversationMapper->expects($this->once())->method('countByUser')
-			->with('alice', 'org-a', false)->willReturn(3);
+			->with(new ConversationScope(userId: 'alice', organisation: 'org-a'))->willReturn(3);
 
 		$response = $this->controller->index();
 
@@ -105,9 +107,9 @@ class ConversationControllerIndexCreateGoldenTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['_deleted' => 'true', 'limit' => '2']);
 		$this->conversationMapper->expects($this->never())->method('findByUser');
 		$this->conversationMapper->expects($this->once())->method('findDeletedByUser')
-			->with('alice', null, 2, 0)->willReturn([]);
+			->with(new ConversationScope(userId: 'alice'), new ListQuery(limit: 2, offset: 0))->willReturn([]);
 		$this->conversationMapper->expects($this->once())->method('countDeletedByUser')
-			->with('alice', null)->willReturn(1);
+			->with(new ConversationScope(userId: 'alice'))->willReturn(1);
 
 		$response = $this->controller->index();
 

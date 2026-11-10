@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp\Tool;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -135,7 +136,7 @@ class AgentTool extends AbstractTool implements ToolInterface {
 			);
 
 			// Get agents via mapper (RBAC is enforced in mapper).
-			$agents = $this->agentMapper->findAll(limit: $limit, offset: $offset);
+			$agents = $this->agentMapper->findAll(query: new ListQuery(limit: $limit, offset: $offset));
 			$total = $this->agentMapper->count();
 
 			// Convert to array.

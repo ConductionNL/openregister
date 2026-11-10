@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Controller\Support\ChatStreamControllerServices;
 use OCA\OpenRegister\Controller\Support\ChatStreamTurn;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
@@ -637,7 +638,7 @@ class ChatStreamController extends Controller {
 		try {
 			// Cheap cap — we only need the first match. Twenty rows is
 			// enough headroom for any realistic instance.
-			$agents = $this->agentMapper->findAll(limit: 20);
+			$agents = $this->agentMapper->findAll(query: new ListQuery(limit: 20));
 			foreach ($agents as $agent) {
 				if ($this->agentMapper->canUserAccessAgent(agent: $agent, userId: $userId) === true) {
 					return (string)$agent->getUuid();

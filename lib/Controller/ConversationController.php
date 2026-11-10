@@ -25,6 +25,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Mcp\Db\ConversationScope;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
@@ -204,13 +205,12 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 * @return array{results: array, total: int}
 	 */
 	private function listDeletedConversations(?string $organisationUuid, array $page): array {
+		$scope         = new ConversationScope(userId: $this->userId, organisation: $organisationUuid);
 		$conversations = $this->conversationMapper->findDeletedByUser(
-			userId: $this->userId,
-			organisation: $organisationUuid,
-			limit: $page['limit'],
-			offset: $page['offset']
+			scope: $scope,
+			page: new ListQuery(limit: $page['limit'], offset: $page['offset'])
 		);
-		$total         = $this->conversationMapper->countDeletedByUser(userId: $this->userId, organisation: $organisationUuid);
+		$total         = $this->conversationMapper->countDeletedByUser(scope: $scope);
 		return ['results' => $this->serialized(conversations: $conversations), 'total' => $total];
 	}//end listDeletedConversations()
 
@@ -223,14 +223,12 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 * @return array{results: array, total: int}
 	 */
 	private function listActiveConversations(?string $organisationUuid, array $page): array {
+		$scope         = new ConversationScope(userId: $this->userId, organisation: $organisationUuid);
 		$conversations = $this->conversationMapper->findByUser(
-			userId: $this->userId,
-			organisation: $organisationUuid,
-			includeDeleted: false,
-			limit: $page['limit'],
-			offset: $page['offset']
+			scope: $scope,
+			page: new ListQuery(limit: $page['limit'], offset: $page['offset'])
 		);
-		$total         = $this->conversationMapper->countByUser(userId: $this->userId, organisation: $organisationUuid, includeDeleted: false);
+		$total         = $this->conversationMapper->countByUser(scope: $scope);
 
 		return ['results' => $this->serialized(conversations: $conversations), 'total' => $total];
 	}//end listActiveConversations()
@@ -758,8 +756,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 		$organisation = $this->organisationService->getActiveOrganisation();
 		$mayRead = $this->conversationMapper->canUserAccessConversation(
 			conversation: $conversation,
-			userId: $this->userId,
-			organisationUuid: $organisation?->getUuid()
+			scope: new ConversationScope(userId: $this->userId, organisation: $organisation?->getUuid())
 		);
 		if ($mayRead === false) {
 			return $this->accessDenied(message: 'You do not have access to this conversation');

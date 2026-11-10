@@ -22,6 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
+use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Mcp\Db\ConversationScope;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -93,95 +96,62 @@ interface ConversationMapperInterface {
 	public function findByUuid(string $uuid): Entity;
 
 	/**
-	 * Find all conversations for a user
+	 * Find one page of a user's conversations, newest first.
 	 *
-	 * @param string $userId User ID
-	 * @param string|null $organisation Optional organisation UUID filter
-	 * @param bool $includeDeleted Whether to include soft-deleted conversations
-	 * @param int $limit Maximum number of results
-	 * @param int $offset Offset for pagination
-	 *
-	 * @return \OCA\OpenRegister\Mcp\Db\Conversation[]
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Conversation>
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
-	 */
-	public function findByUser(
-		string $userId,
-		?string $organisation = null,
-		bool $includeDeleted = false,
-		int $limit = 50,
-		int $offset = 0,
-	): array;
-
-	/**
-	 * Find all soft-deleted conversations for a user (archive)
-	 *
-	 * @param string $userId User ID
-	 * @param null|string $organisation Optional organisation filter
-	 * @param int $limit Maximum number of results
-	 * @param int $offset Offset for pagination
+	 * @param ConversationScope $scope The owning user, optionally the organisation, and whether
+	 *                                 soft-deleted conversations are included.
+	 * @param ListQuery         $page  The limit and offset.
 	 *
 	 * @return \OCA\OpenRegister\Mcp\Db\Conversation[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Conversation>
 	 */
-	public function findDeletedByUser(
-		string $userId,
-		?string $organisation = null,
-		int $limit = 50,
-		int $offset = 0,
-	): array;
+	public function findByUser(ConversationScope $scope, ListQuery $page): array;
 
 	/**
-	 * Find conversations by user and agent with matching title pattern
+	 * Find one page of a user's soft-deleted conversations (archive)
 	 *
-	 * Used to check for duplicate conversation names and generate unique titles.
+	 * @param ConversationScope $scope The owning user and, optionally, the organisation.
+	 * @param ListQuery         $page  The limit and offset.
 	 *
-	 * @param string $userId User ID
-	 * @param int $agentId Agent ID
-	 * @param string $titlePattern Title pattern to match (e.g., "New \OCA\OpenRegister\Mcp\Db\Conversation%")
+	 * @return \OCA\OpenRegister\Mcp\Db\Conversation[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Conversation>
+	 */
+	public function findDeletedByUser(ConversationScope $scope, ListQuery $page): array;
+
+	/**
+	 * Find the live conversation titles of a user-agent pair that start with a wanted title
+	 *
+	 * Used to check for duplicate conversation names and generate unique titles: the
+	 * wanted title itself and its numbered variants all match.
+	 *
+	 * @param TitleClaim $claim The wanted title and the user-agent pair.
 	 *
 	 * @return array Array of matching conversation titles
 	 *
 	 * @psalm-return list<mixed>
 	 */
-	public function findTitlesByUserAgent(
-		string $userId,
-		int $agentId,
-		string $titlePattern,
-	): array;
+	public function findTitlesByUserAgent(TitleClaim $claim): array;
 
 	/**
 	 * Count conversations for a user
 	 *
-	 * @param string $userId User ID
-	 * @param string|null $organisation Optional organisation UUID filter
-	 * @param bool $includeDeleted Whether to include soft-deleted conversations
+	 * @param ConversationScope $scope The owning user, optionally the organisation, and whether
+	 *                                 soft-deleted conversations are included.
 	 *
 	 * @return int Total count
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Include deleted toggle is intentional
 	 */
-	public function countByUser(
-		string $userId,
-		?string $organisation = null,
-		bool $includeDeleted = false,
-	): int;
+	public function countByUser(ConversationScope $scope): int;
 
 	/**
 	 * Count soft-deleted conversations for a user (archived)
 	 *
-	 * @param string $userId User ID
-	 * @param string|null $organisation Optional organisation filter
+	 * @param ConversationScope $scope The owning user and, optionally, the organisation.
 	 *
 	 * @return int Count of archived conversations
 	 */
-	public function countDeletedByUser(
-		string $userId,
-		?string $organisation = null,
-	): int;
+	public function countDeletedByUser(ConversationScope $scope): int;
 
 	/**
 	 * Soft delete a conversation
@@ -217,16 +187,11 @@ interface ConversationMapperInterface {
 	 * - Conversation must belong to the user's current organisation (if provided)
 	 *
 	 * @param \OCA\OpenRegister\Mcp\Db\Conversation $conversation Conversation entity
-	 * @param string $userId User ID
-	 * @param string|null $organisationUuid Current organisation UUID (optional)
+	 * @param ConversationScope $scope The user and, optionally, their current organisation.
 	 *
 	 * @return bool True if user can access
 	 */
-	public function canUserAccessConversation(
-		Entity $conversation,
-		string $userId,
-		?string $organisationUuid = null,
-	): bool;
+	public function canUserAccessConversation(Entity $conversation, ConversationScope $scope): bool;
 
 	/**
 	 * Check if user can modify a conversation

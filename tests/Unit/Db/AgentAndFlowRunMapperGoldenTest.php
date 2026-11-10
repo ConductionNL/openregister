@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\ListQuery;
 use DateTime;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Db\AgentMapperPlatform;
@@ -142,8 +143,28 @@ class AgentAndFlowRunMapperGoldenTest extends TestCase {
 
 		$platform = new AgentMapperPlatform($db, $this->createMock(IEventDispatcher::class));
 		$mapper = $this->build(class: AgentMapper::class, given: ['platform' => $platform, 'userSession' => $session, 'groupManager' => $groups]);
+		if ($method === 'findAll') {
+			$args = [self::agentQuery(args: $args)];
+		}
+
 		return $this->call(mapper: $mapper, call: [$method, $args]);
 	}//end agent()
+
+	/**
+	 * The ListQuery findAll() takes, from the limit, offset, filters and order a case names.
+	 *
+	 * @param array<string, mixed> $args The case's arguments.
+	 *
+	 * @return ListQuery
+	 */
+	private static function agentQuery(array $args): ListQuery {
+		return new ListQuery(
+			limit: ($args['limit'] ?? ListQuery::UNBOUNDED),
+			offset: ($args['offset'] ?? null),
+			filters: ($args['filters'] ?? []),
+			sort: ($args['order'] ?? [])
+		);
+	}//end agentQuery()
 
 	private function flowRun(string $method, array $args, array $rows): array {
 		$mapper = $this->build(class: FlowRunMapper::class, given: ['db' => $this->reset(rows: $rows)]);

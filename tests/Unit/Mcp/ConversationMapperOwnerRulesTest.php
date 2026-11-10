@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Mcp\Db\ConversationScope;
 use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -58,15 +59,15 @@ class ConversationMapperOwnerRulesTest extends TestCase
 
     public function testAnotherUserMayNotRead(): void
     {
-        $this->assertFalse($this->mapper->canUserAccessConversation(conversation: $this->conversation('alice'), userId: 'bob'));
+        $this->assertFalse($this->mapper->canUserAccessConversation(conversation: $this->conversation('alice'), scope: new ConversationScope(userId: 'bob')));
     }//end testAnotherUserMayNotRead()
 
     public function testTheOwnerReadsOnlyInsideTheConversationsOrganisation(): void
     {
         $conversation = $this->conversation('alice', 'org-a');
 
-        $this->assertTrue($this->mapper->canUserAccessConversation(conversation: $conversation, userId: 'alice', organisationUuid: 'org-a'));
-        $this->assertFalse($this->mapper->canUserAccessConversation(conversation: $conversation, userId: 'alice', organisationUuid: 'org-b'));
-        $this->assertTrue($this->mapper->canUserAccessConversation(conversation: $conversation, userId: 'alice'));
+        $this->assertTrue($this->mapper->canUserAccessConversation(conversation: $conversation, scope: new ConversationScope(userId: 'alice', organisation: 'org-a')));
+        $this->assertFalse($this->mapper->canUserAccessConversation(conversation: $conversation, scope: new ConversationScope(userId: 'alice', organisation: 'org-b')));
+        $this->assertTrue($this->mapper->canUserAccessConversation(conversation: $conversation, scope: new ConversationScope(userId: 'alice')));
     }//end testTheOwnerReadsOnlyInsideTheConversationsOrganisation()
 }//end class

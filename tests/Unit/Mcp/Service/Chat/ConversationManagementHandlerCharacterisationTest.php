@@ -157,7 +157,7 @@ class ConversationManagementHandlerCharacterisationTest extends TestCase
     public function testUniqueTitleReturnsBaseWhenNoMatches(): void
     {
         $this->conversationMapper->expects($this->once())->method('findTitlesByUserAgent')
-            ->with('u1', 3, 'Title%')->willReturn([]);
+            ->with(new TitleClaim('Title', 'u1', 3))->willReturn([]);
         $this->assertSame('Title', $this->handler([])->ensureUniqueTitle(new TitleClaim('Title', 'u1', 3)));
     }
 

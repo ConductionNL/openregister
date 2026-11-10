@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Mcp\Db\AgentAudience;
+use OCA\OpenRegister\Db\ListQuery;
 use Exception;
 use OCA\OpenRegister\Controller\Support\AgentsControllerServices;
 use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
@@ -211,14 +213,12 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 	private function findAgents(int $limit, int $offset): array {
 		$organisationUuid = $this->organisationService->getActiveOrganisation()?->getUuid();
 		if ($organisationUuid === null) {
-			return $this->agentMapper->findAll(limit: $limit, offset: $offset);
+			return $this->agentMapper->findAll(query: new ListQuery(limit: $limit, offset: $offset));
 		}
 
 		return $this->agentMapper->findByOrganisation(
-			organisationUuid: $organisationUuid,
-			userId: $this->userId,
-			limit: $limit,
-			offset: $offset
+			audience: new AgentAudience(organisationUuid: $organisationUuid, userId: $this->userId),
+			page: new ListQuery(limit: $limit, offset: $offset)
 		);
 	}//end findAgents()
 

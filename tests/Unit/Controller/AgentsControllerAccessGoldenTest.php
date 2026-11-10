@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Mcp\Db\AgentAudience;
+use OCA\OpenRegister\Db\ListQuery;
 use Exception;
 use OCA\OpenRegister\Controller\AgentsController;
 use OCA\OpenRegister\Db\Organisation;
@@ -88,7 +90,7 @@ class AgentsControllerAccessGoldenTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['_limit' => '5', '_page' => '3', '_offset' => '99']);
 		$this->agentMapper->expects($this->never())->method('findAll');
 		$this->agentMapper->expects($this->once())->method('findByOrganisation')
-			->with('org-a', 'alice', 5, 10)
+			->with(new AgentAudience(organisationUuid: 'org-a', userId: 'alice'), new ListQuery(limit: 5, offset: 10))
 			->willReturn(['a']);
 
 		$response = $this->controller('alice')->index();
@@ -101,7 +103,7 @@ class AgentsControllerAccessGoldenTest extends TestCase {
 		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
 		$this->request->method('getParams')->willReturn(['_offset' => '4']);
 		$this->agentMapper->expects($this->never())->method('findByOrganisation');
-		$this->agentMapper->expects($this->once())->method('findAll')->with(50, 4)->willReturn([]);
+		$this->agentMapper->expects($this->once())->method('findAll')->with(new ListQuery(limit: 50, offset: 4))->willReturn([]);
 
 		$response = $this->controller('alice')->index();
 

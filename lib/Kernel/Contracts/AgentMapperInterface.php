@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
+use OCA\OpenRegister\Mcp\Db\AgentAudience;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -66,10 +68,8 @@ interface AgentMapperInterface {
 	 * - Private agents owned by the user
 	 * - Private agents where user is invited
 	 *
-	 * @param string $organisationUuid Organisation UUID
-	 * @param string|null $userId User ID for access filtering (null = no filtering)
-	 * @param int $limit Maximum number of results
-	 * @param int $offset Offset for pagination
+	 * @param AgentAudience $audience The organisation and, for access filtering, the user (null = no filtering)
+	 * @param ListQuery     $page     The limit and offset.
 	 *
 	 * @return (\OCA\OpenRegister\Mcp\Db\Agent|OCA\OpenRegister\Mcp\Db\Agent)[]
 	 *
@@ -77,7 +77,7 @@ interface AgentMapperInterface {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Agent>
 	 */
-	public function findByOrganisation(string $organisationUuid, ?string $userId = null, int $limit = 50, int $offset = 0): array;
+	public function findByOrganisation(AgentAudience $audience, ListQuery $page): array;
 
 	/**
 	 * Check if user can access an agent
@@ -109,10 +109,7 @@ interface AgentMapperInterface {
 	/**
 	 * Find all agents with optional filters
 	 *
-	 * @param int|null $limit Maximum number of results
-	 * @param int|null $offset Offset for pagination
-	 * @param array|null $filters Filter criteria
-	 * @param array|null $order Order by criteria
+	 * @param ListQuery $query The limit (ListQuery::unbounded() for none), offset, filter criteria and order.
 	 *
 	 * @return \OCA\OpenRegister\Mcp\Db\Agent[]
 	 *
@@ -120,7 +117,7 @@ interface AgentMapperInterface {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Agent>
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $order = []): array;
+	public function findAll(ListQuery $query): array;
 
 	/**
 	 * Insert a new agent

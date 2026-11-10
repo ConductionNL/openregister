@@ -22,6 +22,7 @@
 
 namespace OCA\OpenRegister\Mcp\Db;
 
+use OCA\OpenRegister\Db\ListQuery;
 use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Event\AgentCreatedEvent;
@@ -176,10 +177,8 @@ class AgentMapper extends QBMapper implements AgentMapperInterface {
 	 * - Private agents owned by the user
 	 * - Private agents where user is invited
 	 *
-	 * @param string $organisationUuid Organisation UUID
-	 * @param string|null $userId User ID for access filtering (null = no filtering)
-	 * @param int $limit Maximum number of results
-	 * @param int $offset Offset for pagination
+	 * @param AgentAudience $audience The organisation and, for access filtering, the user (null = no filtering)
+	 * @param ListQuery     $page     The limit and offset.
 	 *
 	 * @return (Agent|OCA\OpenRegister\Mcp\Db\Agent)[]
 	 *
@@ -187,11 +186,14 @@ class AgentMapper extends QBMapper implements AgentMapperInterface {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Agent>
 	 */
-	public function findByOrganisation(string $organisationUuid, ?string $userId = null, int $limit = 50, int $offset = 0): array {
+	public function findByOrganisation(AgentAudience $audience, ListQuery $page): array {
 		$this->verifyRbacPermission(action: 'read', entityType: 'agent');
-		$query = $this->organisationPage(organisationUuid: $organisationUuid, page: new QueryPage(limit: $limit, offset: $offset));
+		$query = $this->organisationPage(
+			organisationUuid: $audience->organisationUuid,
+			page: new QueryPage(limit: $page->limitOrNull(), offset: $page->offset)
+		);
 		// Without a user every agent in the organisation is returned; with one, only those it may access.
-		return $this->filterByUserAccess(agents: $this->findEntities(query: $query), userId: $userId);
+		return $this->filterByUserAccess(agents: $this->findEntities(query: $query), userId: $audience->userId);
 	}//end findByOrganisation()
 
 	/**
@@ -289,10 +291,7 @@ class AgentMapper extends QBMapper implements AgentMapperInterface {
 	/**
 	 * Find all agents with optional filters
 	 *
-	 * @param int|null $limit Maximum number of results
-	 * @param int|null $offset Offset for pagination
-	 * @param array|null $filters Filter criteria
-	 * @param array|null $order Order by criteria
+	 * @param ListQuery $query The limit (ListQuery::unbounded() for none), offset, filter criteria and order.
 	 *
 	 * @return Agent[]
 	 *
@@ -300,10 +299,10 @@ class AgentMapper extends QBMapper implements AgentMapperInterface {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Agent>
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $order = []): array {
+	public function findAll(ListQuery $query): array {
 		$this->verifyRbacPermission(action: 'read', entityType: 'agent');
-		$qb = $this->filteredQuery(filters: $filters, order: $order);
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		$qb = $this->filteredQuery(filters: $query->filters, order: $query->sort);
+		(new QueryPage(limit: $query->limitOrNull(), offset: $query->offset))->applyTo(qb: $qb);
 		return $this->findInOrganisation(qb: $qb);
 	}//end findAll()
 
