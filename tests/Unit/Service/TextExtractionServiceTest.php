@@ -2944,9 +2944,7 @@ class TextExtractionServiceTest extends TestCase {
 			1, ['mimetype' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'path' => '/empty.xlsx'],
 		]);
 
-		// "Sheet: Empty\n\n" — after trim this is "Sheet: Empty" which is not empty,
-		// so it returns the text. Let's just verify it's a string.
-		$this->assertIsString($result);
+		$this->assertNull($result);
 	}
 
 	// ────────────────────────────────────────────────────────
