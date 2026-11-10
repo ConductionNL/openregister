@@ -82,8 +82,9 @@ final class FileUploadGuard {
 	 * @throws Exception If the type is not accepted or the file is too large.
 	 */
 	public function assertAccepted(array $fileData, array $fileConfig, string $errorPrefix): void {
-		$this->assertAllowedType(fileData: $fileData, fileConfig: $fileConfig, errorPrefix: $errorPrefix);
-		$this->assertWithinMaxSize(fileData: $fileData, fileConfig: $fileConfig, errorPrefix: $errorPrefix);
+		$check = new UploadCheck(fileData: $fileData, errorPrefix: $errorPrefix, fileConfig: $fileConfig);
+		$this->assertAllowedType(check: $check);
+		$this->assertWithinMaxSize(check: $check);
 	}//end assertAccepted()
 
 	/**
@@ -100,6 +101,21 @@ final class FileUploadGuard {
 	 * @throws Exception If executable content is detected.
 	 */
 	public function blockExecutableContent(string $content, string $errorPrefix, string $fileName): void {
+		$this->blockExecutable(upload: new UploadedContent(content: $content, errorPrefix: $errorPrefix, fileName: $fileName));
+	}//end blockExecutableContent()
+
+	/**
+	 * Refuse content with an executable signature, a script shebang or an embedded PHP tag.
+	 *
+	 * @param UploadedContent $upload The content, its error prefix and its filename.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If executable content is detected.
+	 */
+	private function blockExecutable(UploadedContent $upload): void {
+		$content     = $upload->content;
+		$errorPrefix = $upload->errorPrefix;
 		// Offset-0 executable signatures — universal, every file property.
 		$this->blockExecutableSignature(content: $content, errorPrefix: $errorPrefix);
 
@@ -111,12 +127,12 @@ final class FileUploadGuard {
 		}
 
 		// Embedded PHP tags — text-ish payloads only, see openregister#2776.
-		if ($this->executableDetector->containsEmbeddedPhpTag(content: $content, fileName: $fileName) === true) {
+		if ($this->executableDetector->containsEmbeddedPhpTag(content: $content, fileName: $upload->fileName) === true) {
 			throw new Exception(
 				"$errorPrefix contains PHP code. PHP files are blocked for security reasons."
 			);
 		}
-	}//end blockExecutableContent()
+	}//end blockExecutable()
 
 	/**
 	 * The executable MIME types blocked.
@@ -148,19 +164,18 @@ final class FileUploadGuard {
 	 *
 	 * Two configuration shapes are in use, see {@see FilePropertyRules::allowedTypes()}.
 	 *
-	 * @param array<string, mixed> $fileData    The parsed file data.
-	 * @param array<string, mixed> $fileConfig  The file property configuration.
-	 * @param string               $errorPrefix The error message prefix.
+	 * @param UploadCheck $check The parsed file data, the file property configuration and the error prefix.
 	 *
 	 * @return void
 	 *
 	 * @throws Exception If the type is not accepted.
 	 */
-	private function assertAllowedType(array $fileData, array $fileConfig, string $errorPrefix): void {
-		$allowedTypes = (new FilePropertyRules())->allowedTypes(fileConfig: $fileConfig);
-		if (empty($allowedTypes) === false && in_array($fileData['mimeType'], $allowedTypes, true) === false) {
+	private function assertAllowedType(UploadCheck $check): void {
+		$errorPrefix  = $check->errorPrefix;
+		$allowedTypes = (new FilePropertyRules())->allowedTypes(fileConfig: $check->fileConfig);
+		if (empty($allowedTypes) === false && in_array($check->fileData['mimeType'], $allowedTypes, true) === false) {
 			$allowedStr = implode(', ', $allowedTypes);
-			$mimeType = $fileData['mimeType'];
+			$mimeType = $check->fileData['mimeType'];
 			throw new Exception(
 				"$errorPrefix has invalid type '$mimeType'. Allowed types: $allowedStr"
 			);
@@ -172,18 +187,17 @@ final class FileUploadGuard {
 	 *
 	 * The editor's megabyte limit is converted, see {@see FilePropertyRules::maxSizeBytes()}.
 	 *
-	 * @param array<string, mixed> $fileData    The parsed file data.
-	 * @param array<string, mixed> $fileConfig  The file property configuration.
-	 * @param string               $errorPrefix The error message prefix.
+	 * @param UploadCheck $check The parsed file data, the file property configuration and the error prefix.
 	 *
 	 * @return void
 	 *
 	 * @throws Exception If the file is too large.
 	 */
-	private function assertWithinMaxSize(array $fileData, array $fileConfig, string $errorPrefix): void {
-		$maxSize = (new FilePropertyRules())->maxSizeBytes(fileConfig: $fileConfig);
-		if ($maxSize > 0 && $fileData['size'] > $maxSize) {
-			$fileSize = $fileData['size'];
+	private function assertWithinMaxSize(UploadCheck $check): void {
+		$errorPrefix = $check->errorPrefix;
+		$maxSize     = (new FilePropertyRules())->maxSizeBytes(fileConfig: $check->fileConfig);
+		if ($maxSize > 0 && $check->fileData['size'] > $maxSize) {
+			$fileSize = $check->fileData['size'];
 			throw new Exception(
 				"$errorPrefix exceeds maximum size ($maxSize bytes). File size: $fileSize bytes"
 			);
@@ -230,7 +244,22 @@ final class FileUploadGuard {
 	 * @throws Exception If the MIME type is executable.
 	 */
 	public function blockMimeTypeIn(array $fileData, string $errorPrefix, array $mimeTypes): void {
-		$mimeType = $fileData['mimeType'] ?? null;
+		$this->refuseMimeType(check: new UploadCheck(fileData: $fileData, errorPrefix: $errorPrefix), mimeTypes: $mimeTypes);
+	}//end blockMimeTypeIn()
+
+	/**
+	 * Refuse a file whose MIME type is one of the given MIME types, and log it.
+	 *
+	 * @param UploadCheck        $check     The file data and the error prefix.
+	 * @param array<int, string> $mimeTypes The executable MIME types.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the MIME type is executable.
+	 */
+	private function refuseMimeType(UploadCheck $check, array $mimeTypes): void {
+		$errorPrefix = $check->errorPrefix;
+		$mimeType    = $check->fileData['mimeType'] ?? null;
 		if ($mimeType === null || in_array($mimeType, $mimeTypes, true) === false) {
 			return;
 		}
@@ -239,7 +268,7 @@ final class FileUploadGuard {
 		throw new Exception(
 			"$errorPrefix has executable MIME type '$mimeType'. " . 'Executable files are blocked for security reasons.'
 		);
-	}//end blockExecutableMimeType()
+	}//end refuseMimeType()
 
 	/**
 	 * Refuse content that starts with an executable signature.

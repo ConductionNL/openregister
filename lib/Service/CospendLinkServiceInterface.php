@@ -75,8 +75,7 @@ interface CospendLinkServiceInterface {
 	 * Create a new NC Cospend project and link it to an OR object.
 	 *
 	 * @param LinkTarget $target The object to link to.
-	 * @param string $name New project name.
-	 * @param string $currency Project currency name.
+	 * @param CospendProjectDraft $draft The project name and currency as given.
 	 *
 	 * @return CospendLink The persisted link row.
 	 *
@@ -85,7 +84,7 @@ interface CospendLinkServiceInterface {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link contract is owned by the integration-cospend capability.
 	 */
-	public function createAndLinkProject(LinkTarget $target, string $name, string $currency): CospendLink;
+	public function createAndLinkProject(LinkTarget $target, CospendProjectDraft $draft): CospendLink;
 
 	/**
 	 * Unlink a project / bill from an object.

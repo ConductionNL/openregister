@@ -92,7 +92,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 		// The REAL compiler on purpose: it is a pure function of the schema,
 		// and the gate's contract includes what the compiler derives.
 		$this->listener = new ApprovalChainGateListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $logger),
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())),
 			new ApprovalChainSequences($this->sequenceMapper, $this->sequenceService, new ApprovalChainAnnotationInstaller(logger: $logger)),
 			$this->userSession,
 			$logger

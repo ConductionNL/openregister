@@ -30,13 +30,17 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\PreferencesController;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\PreferencesControllerServices;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Golden allowed/refused outcomes of PreferencesController.
@@ -55,7 +59,17 @@ class PreferencesControllerA24GoldenTest extends TestCase {
 		parent::setUp();
 		$this->config = $this->createMock(IConfig::class);
 		$this->userSession = $this->createMock(IUserSession::class);
-		$this->controller = new PreferencesController($this->createMock(IRequest::class), $this->config, $this->userSession);
+		$this->controller = new PreferencesController(
+			$this->createMock(IRequest::class),
+			new PreferencesControllerServices(
+				config: $this->config,
+				session: new ControllerSession(
+					userSession: $this->userSession,
+					groupManager: $this->createMock(IGroupManager::class),
+					logger: $this->createMock(LoggerInterface::class)
+				)
+			)
+		);
 	}
 
 	private function signedIn(): void {

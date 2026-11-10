@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use PHPUnit\Framework\TestCase;
@@ -105,9 +106,7 @@ final class ReferencedByServiceTest extends TestCase {
 		);
 
 		return new ReferencedByService(
-			magicMapper: $magicMapper,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
 			logger: new NullLogger()
 		);
 	}

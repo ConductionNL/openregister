@@ -54,9 +54,11 @@ final class EntityRelationsControllerFactory {
 			new \OCA\OpenRegister\Controller\Support\EntityRelationsControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\EntityRelationsMappers(
 					entityRelationMapper: $entityRelationMapper,
-					magicMapper: $magicMapper,
-					schemaMapper: $schemaMapper,
-					registerMapper: $registerMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+						registers: $registerMapper,
+						schemas: $schemaMapper,
+						tables: $magicMapper,
+					),
 				),
 				links: new \OCA\OpenRegister\Controller\Support\EntityRelationsLinks(
 					emailLinkMapper: $emailLinkMapper,

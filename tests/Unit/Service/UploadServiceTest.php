@@ -21,12 +21,16 @@ class UploadServiceTest extends TestCase {
 		$result = $this->service->getUploadedJson(['random_key' => 'value']);
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['error' => 'Missing one of these keys in your POST body: file, url or json.'], $result->getData());
 	}
 
 	public function testGetUploadedJsonReturnsErrorWhenEmptyData(): void {
 		$result = $this->service->getUploadedJson([]);
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['error' => 'Missing one of these keys in your POST body: file, url or json.'], $result->getData());
 	}
 
 	// ── getUploadedJson: internal parameters removed ──
@@ -75,6 +79,8 @@ class UploadServiceTest extends TestCase {
 		$result = $this->service->getUploadedJson($data);
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['error' => 'Failed to decode JSON input.'], $result->getData());
 	}
 
 	// ── getUploadedJson: file upload throws ──
@@ -94,5 +100,7 @@ class UploadServiceTest extends TestCase {
 		$result = $this->service->getUploadedJson($data);
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['error' => 'Failed to decode JSON input.'], $result->getData());
 	}
 }

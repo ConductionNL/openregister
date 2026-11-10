@@ -183,6 +183,7 @@ class SchemaImportDialectGoldenTest extends TestCase {
 		$this->assertSame([], $snapshot->directPropertiesOf('Widget')['pNone']['ranges']);
 		$this->assertCount(2, $snapshot->searchClasses('', 2));
 		$this->assertSame(['schema:Thing'], array_column($snapshot->searchClasses('generic'), 'iri'));
+		$this->assertSame(['schema:Widget'], array_column($snapshot->searchClasses(' WIDG '), 'iri'));
 
 		// Parsed once: the file is no longer read after the first access.
 		unlink($file);

@@ -41,8 +41,7 @@ namespace OCA\OpenRegister\Service\Vocabulary;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use Throwable;
 
@@ -93,14 +92,12 @@ class ConceptRepository implements ConceptRepositoryInterface {
 	/**
 	 * Constructor.
 	 *
+	 * @param SchemaCatalogInterface     $catalog Resolves the vocabulary register and its conceptScheme and concept schemas.
 	 * @param MagicObjectSearchInterface $objects Reads objects out of a register/schema table.
-	 * @param RegisterMapperInterface $registers Resolves the vocabulary register.
-	 * @param SchemaMapperInterface $schemas Resolves the conceptScheme and concept schemas.
 	 */
 	public function __construct(
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly MagicObjectSearchInterface $objects,
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
 	) {
 
 	}//end __construct()
@@ -122,17 +119,17 @@ class ConceptRepository implements ConceptRepositoryInterface {
 		$this->resolutionAttempted = true;
 
 		try {
-			$register = $this->registers->find(
+			$register = $this->catalog->registers()->find(
 				id: VocabularyImportService::REGISTER,
 				_rbac: false,
 				_multitenancy: false
 			);
-			$scheme = $this->schemas->find(
+			$scheme = $this->catalog->schemas()->find(
 				id: VocabularyImportService::SCHEMA_SCHEME,
 				_rbac: false,
 				_multitenancy: false
 			);
-			$concept = $this->schemas->find(
+			$concept = $this->catalog->schemas()->find(
 				id: VocabularyImportService::SCHEMA_CONCEPT,
 				_rbac: false,
 				_multitenancy: false
@@ -147,29 +144,29 @@ class ConceptRepository implements ConceptRepositoryInterface {
 	}//end ids()
 
 	/**
-	 * Run one read against the vocabulary register, whose ids the caller has resolved.
+	 * The `@self` scope of a read against the vocabulary register, whose ids the caller has resolved.
 	 *
-	 * @param integer $schemaId The schema to read from.
-	 * @param array<string,mixed> $filters Object-field filters.
-	 * @param integer $limit The row cap.
+	 * @param integer             $schemaId The schema to read from.
 	 * @param array<string,mixed> $metadata Extra `@self` metadata filters.
+	 *
+	 * @return array<string,mixed> The metadata filters, scoped to the register and schema.
+	 */
+	private function scope(int $schemaId, array $metadata): array {
+		return array_merge($metadata, ['register' => (int)($this->ids()[0] ?? 0), 'schema' => $schemaId]);
+	}//end scope()
+
+	/**
+	 * Run one search query against the object layer.
+	 *
+	 * @param array<string,mixed> $query The search query: object-field filters, the `@self` scope and the row cap.
 	 *
 	 * @return array<int,ObjectEntity> The matching entities.
 	 */
-	private function read(int $schemaId, array $filters, int $limit, array $metadata = []): array {
-		$registerId = (int)($this->ids()[0] ?? 0);
+	private function search(array $query): array {
 		// Vocabularies are public reference data and this read runs inside a
 		// write guard, so it is deliberately not RBAC-scoped: a value the
 		// caller may not LIST is still a value the scheme refuses to accept,
 		// and hiding it would turn a refusal into a silent acceptance.
-		$query = array_merge(
-			$filters,
-			[
-				'@self' => array_merge($metadata, ['register' => $registerId, 'schema' => $schemaId]),
-				'_limit' => $limit,
-			]
-		);
-
 		try {
 			$results = $this->objects->searchObjects(
 				query: $query,
@@ -185,7 +182,7 @@ class ConceptRepository implements ConceptRepositoryInterface {
 		}
 
 		return $results;
-	}//end read()
+	}//end search()
 
 	/**
 	 * The scheme object identified by its durable uri, or null.
@@ -262,7 +259,9 @@ class ConceptRepository implements ConceptRepositoryInterface {
 			return null;
 		}
 
-		$results = $this->read(schemaId: $ids[1], filters: $filters, limit: 1, metadata: $metadata);
+		$results = $this->search(
+			query: array_merge($filters, ['@self' => $this->scope(schemaId: $ids[1], metadata: $metadata), '_limit' => 1])
+		);
 
 		$entity = ($results[0] ?? null);
 		if ($entity instanceof ObjectEntity === false) {
@@ -339,10 +338,8 @@ class ConceptRepository implements ConceptRepositoryInterface {
 			$filters['inScheme'] = $schemeRef;
 		}
 
-		$results = $this->read(
-			schemaId: $ids[2],
-			filters: $filters,
-			limit: self::MAX_SCHEME_CONCEPTS
+		$results = $this->search(
+			query: array_merge($filters, ['@self' => $this->scope(schemaId: $ids[2], metadata: []), '_limit' => self::MAX_SCHEME_CONCEPTS])
 		);
 
 		$byUri = [];
@@ -377,17 +374,16 @@ class ConceptRepository implements ConceptRepositoryInterface {
 	 * dependency change's `store` key; resolving both here means no caller has
 	 * to branch on it.
 	 *
-	 * @param string $value The stored value.
-	 * @param string $schemeUri The scheme's uri.
-	 * @param string $store Either `uri` or `notation`.
+	 * @param string                   $value       The stored value.
+	 * @param CodedPropertyDeclaration $declaration The declaration naming the scheme and the storage form (`uri` or `notation`).
 	 *
 	 * @return array<string,mixed>|null The concept, or null when the scheme does not hold it.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function resolve(string $value, string $schemeUri, string $store = 'uri'): ?array {
-		$concepts = $this->conceptsOf(schemeUri: $schemeUri);
-		if ($store === 'uri') {
+	public function resolve(string $value, CodedPropertyDeclaration $declaration): ?array {
+		$concepts = $this->conceptsOf(schemeUri: $declaration->scheme);
+		if ($declaration->store === 'uri') {
 			return ($concepts[$value] ?? null);
 		}
 

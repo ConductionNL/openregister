@@ -118,16 +118,26 @@ class FlowConcurrency {
 			return [];
 		}
 
-		$indexed = array_values($items);
-		$bound = $this->boundedLimit(limit: $limit);
-		$results = [];
+		$promises = $this->promisesFor(items: array_values($items), work: $work);
 
-		$promises = $this->promisesFor(items: $indexed, work: $work);
+		return $this->settled(promises: $promises, concurrency: $this->boundedLimit(limit: $limit));
+	}//end map()
+
+	/**
+	 * Wait for every promise, at most `$concurrency` in flight, and report each outcome in input order.
+	 *
+	 * @param \Generator $promises    The promises, keyed by input position.
+	 * @param integer    $concurrency How many may be in flight at once.
+	 *
+	 * @return array<int, array{ok: bool, value: mixed, error: Throwable|null}> One result per input, in input order.
+	 */
+	private function settled(\Generator $promises, int $concurrency): array {
+		$results = [];
 
 		(new EachPromise(
 			$promises,
 			[
-				'concurrency' => $bound,
+				'concurrency' => $concurrency,
 				'fulfilled' => static function ($value, $index) use (&$results): void {
 					$results[$index] = ['ok' => true, 'value' => $value, 'error' => null];
 				},
@@ -144,7 +154,7 @@ class FlowConcurrency {
 		ksort($results);
 
 		return array_values($results);
-	}//end map()
+	}//end settled()
 
 	/**
 	 * One promise per item, created lazily as `EachPromise` pulls them.

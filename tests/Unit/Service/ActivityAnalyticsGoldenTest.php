@@ -14,10 +14,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\ActivityFilter;
+use OCA\OpenRegister\Service\ActivityEntriesOptions;
 use DateTime;
 use OCA\OpenRegister\Db\AnalyticsSeries;
 use OCA\OpenRegister\Db\AnalyticsSeriesMapper;
 use OCA\OpenRegister\Service\ActivityFilterService;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Service\AnalyticsSeriesService;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCP\App\IAppManager;
@@ -77,13 +80,18 @@ class ActivityAnalyticsGoldenTest extends TestCase {
 		];
 		foreach ($activity as $name => [$args, $over]) {
 			$w = $over + ['installed' => true, 'throws' => false, 'distinct' => null];
-			$service = new ActivityFilterService($this->database($w), $this->appManager($w['installed']), $this->logger());
+			$service = new ActivityFilterService($this->database($w), new LinkServiceRuntime($this->appManager($w['installed']), $this->createMock(IUserSession::class), $this->logger()));
 			$method = match ($w['distinct']) {
 				'type' => 'getActivityTypes',
 				'affecteduser' => 'getActivityActors',
 				default => 'getActivityEntries',
 			};
-			$actual['activity ' . $name] = $this->outcome(fn () => $service->$method(...$args));
+			$call = fn () => $service->$method(...$args);
+			if ($method === 'getActivityEntries') {
+				$call = fn () => $service->getActivityEntries(...self::entriesArgs(...$args));
+			}
+
+			$actual['activity ' . $name] = $this->outcome($call);
 		}
 
 		$series = [
@@ -121,6 +129,19 @@ class ActivityAnalyticsGoldenTest extends TestCase {
 
 		$this->assertSame(array_keys($expected), array_keys($actual));
 	}//end testActivityAndAnalyticsMatchGolden()
+
+	private static function entriesArgs(
+		string $objectUuid,
+		?string $type = null,
+		?string $actor = null,
+		?int $after = null,
+		int $limit = 100,
+		?int $cursor = null,
+		?string $visibility = null
+	): array {
+		$filter = (new ActivityFilter(objectUuid: $objectUuid, type: $type, actor: $actor, after: $after))->withCursor(cursor: $cursor);
+		return [$filter, new ActivityEntriesOptions(limit: $limit, visibility: $visibility)];
+	}
 
 	private function record(string $call): void {
 		$this->calls[] = $call;

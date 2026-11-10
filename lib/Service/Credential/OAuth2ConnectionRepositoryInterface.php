@@ -42,9 +42,8 @@ interface OAuth2ConnectionRepositoryInterface {
 	 * broker time; the other order would leave a credential that looks disconnected
 	 * and still holds a live token.
 	 *
-	 * @param string $credentialId The credential UUID.
-	 * @param array<string, mixed> $data The credential's property bag.
-	 * @param string $lastError A secret-free reason the upstream revoke failed, or an empty string.
+	 * @param OAuth2ConnectionRecord $connection The credential UUID and its property bag.
+	 * @param string                 $lastError  A secret-free reason the upstream revoke failed, or an empty string.
 	 *
 	 * @return void
 	 *
@@ -52,7 +51,7 @@ interface OAuth2ConnectionRepositoryInterface {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
 	 */
-	public function disable(string $credentialId, array $data, string $lastError): void;
+	public function disable(OAuth2ConnectionRecord $connection, string $lastError): void;
 
 	/**
 	 * Delete a credential outright: its stored secret, then the object.

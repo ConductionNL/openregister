@@ -6,6 +6,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCA\OpenRegister\Controller\WebhooksController;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
@@ -849,8 +850,7 @@ class WebhooksControllerTest extends TestCase {
 			->method('findByWebhook')
 			->with(
 				$this->equalTo(1),
-				$this->equalTo(25),
-				$this->equalTo(10)
+				$this->equalTo(new ListQuery(25, 10))
 			)
 			->willReturn([$logEntity]);
 

@@ -97,9 +97,7 @@ class DestructionCertificateContentTest extends TestCase {
 
 		$this->retentionService = new RetentionService(
 			new RetentionStores(
-				$objectMapper,
-				$this->createMock(SchemaMapper::class),
-				$this->createMock(RegisterMapper::class),
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $objectMapper),
 				$this->createMock(AuditTrailMapper::class)
 			),
 			new RetentionRules(
