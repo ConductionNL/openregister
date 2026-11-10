@@ -49,6 +49,8 @@ use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -1359,14 +1361,7 @@ class ObjectServiceTest extends TestCase {
 		$this->queryHandler
 			->expects($this->once())
 			->method('searchObjects')
-			->with(
-				query: $query,
-				_rbac: true,
-				_multitenancy: true,
-				ids: null,
-				uses: null,
-				views: null
-			)
+			->with($query, true, true, $this->equalTo(new SearchOptions()))
 			->willReturn([]);
 
 		$result = $this->service->searchObjects(query: $query);
@@ -1442,7 +1437,7 @@ class ObjectServiceTest extends TestCase {
 		$this->objectEntityMapper->expects($this->never())->method('countSearchObjects');
 		$this->queryHandler->expects($this->once())
 			->method('countSearchObjects')
-			->with(['@self' => ['schema' => 'a-slug']], false, false, ['a'], 'u-1')
+			->with(['@self' => ['schema' => 'a-slug']], false, false, $this->equalTo(new ObjectSelection(ids: ['a'], uses: 'u-1')))
 			->willReturn(15);
 
 		$result = $this->service->countSearchObjects(
