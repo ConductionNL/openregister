@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
@@ -308,7 +309,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 	 * @return AggregationQuery The query.
 	 */
 	private function countByLevel(): AggregationQuery {
-		return AggregationQuery::create(metric: 'count', groupBy: ['field' => 'level']);
+		return AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'level']));
 	}//end countByLevel()
 
 	/**

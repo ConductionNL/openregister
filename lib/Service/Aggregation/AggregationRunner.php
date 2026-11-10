@@ -850,10 +850,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 			metric: $query->metric,
 			field: $query->field,
 			filter: $this->placeholders->resolveArray($query->filter),
-			groupBy: $query->groupBy,
-			dateBucket: $query->dateBucket,
-			metrics: $query->metrics,
-			cumulative: $query->cumulative
+			layout: $query->layout()
 		);
 	}//end resolveAdhocQuery()
 

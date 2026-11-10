@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Search\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use PHPUnit\Framework\TestCase;
 
@@ -74,7 +75,7 @@ final class AggregationQueryRulesGoldenTest extends TestCase {
 	public function testRefused(array $input, string $message): void {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage($message);
-		AggregationQuery::create(...$input);
+		self::createFrom(args: $input);
 	}//end testRefused()
 
 	/**
@@ -88,7 +89,12 @@ final class AggregationQueryRulesGoldenTest extends TestCase {
 			['metric' => 'count', 'field' => null, 'filter' => [], 'groupBy' => null, 'dateBucket' => null, 'metrics' => null, 'cumulative' => false],
 			AggregationQuery::create(metric: 'count')->toArray()
 		);
-		$query = AggregationQuery::create(metric: 'sum', field: 'p', filter: ['b' => ['z' => 1, 'a' => 2], 'a' => 1], dateBucket: $bucket, cumulative: true);
+		$query = AggregationQuery::create(
+			metric: 'sum',
+			field: 'p',
+			filter: ['b' => ['z' => 1, 'a' => 2], 'a' => 1],
+			layout: new AggregationLayout(dateBucket: $bucket, cumulative: true)
+		);
 		$this->assertSame(
 			['metric' => 'sum', 'field' => 'p', 'filter' => ['a' => 1, 'b' => ['a' => 2, 'z' => 1]], 'groupBy' => null, 'dateBucket' => $bucket, 'metrics' => null, 'cumulative' => true],
 			$query->toArray()
@@ -105,13 +111,14 @@ final class AggregationQueryRulesGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testGroupByShapes(): void {
-		$this->assertSame(['a', 'b'], AggregationQuery::create(metric: 'count', groupBy: ['a', 'b'])->getGroupByFields());
-		$this->assertSame(['a', 'b'], AggregationQuery::create(metric: 'count', groupBy: ['fields' => ['x' => 'a', 'y' => 'b']])->getGroupByFields());
-		$single = AggregationQuery::create(metric: 'count', groupBy: ['field' => 'a']);
+		$this->assertSame(['a', 'b'], AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['a', 'b']))->getGroupByFields());
+		$keyed = AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['fields' => ['x' => 'a', 'y' => 'b']]));
+		$this->assertSame(['a', 'b'], $keyed->getGroupByFields());
+		$single = AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'a']));
 		$this->assertSame(['a'], $single->getGroupByFields());
 		$this->assertSame('a', $single->getGroupByField());
 		$this->assertFalse($single->isMultiFieldGroupBy());
-		$this->assertTrue(AggregationQuery::create(metric: 'count', groupBy: ['a', 'b'])->isMultiFieldGroupBy());
+		$this->assertTrue(AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['a', 'b']))->isMultiFieldGroupBy());
 		$this->assertSame([], AggregationQuery::normaliseGroupByFields(groupBy: 'a'));
 		$this->assertSame([], AggregationQuery::normaliseGroupByFields(groupBy: ['x' => 1]));
 		$this->assertSame(['a', 'a'], AggregationQuery::normaliseGroupByFields(groupBy: ['a', 'a']));
@@ -127,20 +134,41 @@ final class AggregationQueryRulesGoldenTest extends TestCase {
 		$this->assertSame([['metric' => 'count', 'field' => null]], AggregationQuery::create(metric: 'count')->getMetrics());
 		$query = AggregationQuery::create(
 			metric: 'count',
-			metrics: [
+			layout: new AggregationLayout(
+				metrics: [
 				['metric' => 'count', 'field' => '', 'condition' => [], 'as' => ''],
 				['metric' => 'sum', 'field' => 'p', 'condition' => ['s' => 1], 'as' => 'total'],
 			]
+			)
 		);
 		$this->assertSame(
 			[['metric' => 'count', 'field' => null], ['metric' => 'sum', 'field' => 'p', 'condition' => ['s' => 1], 'as' => 'total']],
 			$query->getMetrics()
 		);
 		$this->assertTrue($query->isMultiMetric());
-		$this->assertFalse(AggregationQuery::create(metric: 'count', metrics: [['metric' => 'count']])->isMultiMetric());
+		$this->assertFalse(AggregationQuery::create(metric: 'count', layout: new AggregationLayout(metrics: [['metric' => 'count']]))->isMultiMetric());
 		$this->assertSame('count', AggregationQuery::metricResponseKey(metric: 'count', field: 'x'));
 		$this->assertSame('sum', AggregationQuery::metricResponseKey(metric: 'sum', field: ''));
 		$this->assertSame('sum', AggregationQuery::metricResponseKey(metric: 'sum', field: null));
 		$this->assertSame('sum_p', AggregationQuery::metricResponseKey(metric: 'sum', field: 'p'));
 	}//end testMetrics()
+
+	/**
+	 * Call AggregationQuery::create() with a flat argument map, moving the layout keys
+	 * (groupBy, dateBucket, metrics, cumulative) into one AggregationLayout.
+	 *
+	 * @param array<string, mixed> $args The flat create() arguments.
+	 *
+	 * @return AggregationQuery
+	 */
+	private static function createFrom(array $args): AggregationQuery {
+		$layoutKeys = ['groupBy' => null, 'dateBucket' => null, 'metrics' => null, 'cumulative' => null];
+		$layout     = array_intersect_key($args, $layoutKeys);
+		$direct     = array_diff_key($args, $layoutKeys);
+		if ($layout !== []) {
+			$direct['layout'] = new AggregationLayout(...$layout);
+		}
+
+		return AggregationQuery::create(...$direct);
+	}//end createFrom()
 }//end class

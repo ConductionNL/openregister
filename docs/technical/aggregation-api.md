@@ -144,6 +144,7 @@ same native-or-fallback dispatch the REST/GraphQL surfaces use.
 
 ```php
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 
 // 1. DI-resolve the runner (constructor inject it in your service).
@@ -162,7 +163,9 @@ $query = AggregationQuery::create(
         'status' => ['notIn' => ['cancelled', 'draft']],
         'createdAt' => ['gte' => '$startOfMonth'],   // placeholders are resolved
     ],
-    groupBy: ['field' => 'costCenter'],  // optional — omit for a single scalar
+    layout: new AggregationLayout(       // optional — omit for a single scalar
+        groupBy: ['field' => 'costCenter'],  // also: dateBucket, metrics, cumulative
+    ),
 );
 
 $result = $this->aggregationRunner->runAdhocByRef(

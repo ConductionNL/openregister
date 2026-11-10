@@ -50,6 +50,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\LanguageService;
@@ -120,15 +121,17 @@ class AggregationRunnerCumulativeTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessage('cumulative MUST only be combined with a dateBucket');
 
-		AggregationQuery::create(metric: 'count', cumulative: true);
+		AggregationQuery::create(metric: 'count', layout: new AggregationLayout(cumulative: true));
 
 	}//end testCumulativeRequiresDateBucket()
 
 	public function testCumulativeWithDateBucketIsAccepted(): void {
 		$query = AggregationQuery::create(
 			metric: 'count',
-			dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day'],
-			cumulative: true
+			layout: new AggregationLayout(
+				dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day'],
+				cumulative: true
+			)
 		);
 
 		$this->assertTrue($query->isCumulative());
@@ -439,13 +442,15 @@ class AggregationRunnerCumulativeTest extends TestCase {
 	private function dayBucketQuery(bool $cumulative = false): AggregationQuery {
 		return AggregationQuery::create(
 			metric: 'count',
-			dateBucket: [
+			layout: new AggregationLayout(
+				dateBucket: [
 				'field' => 'created',
 				'start' => '2026-05-01T00:00:00Z',
 				'end' => '2026-05-22T00:00:00Z',
 				'gap' => 'day',
 			],
-			cumulative: $cumulative
+				cumulative: $cumulative
+			)
 		);
 
 	}//end dayBucketQuery()
