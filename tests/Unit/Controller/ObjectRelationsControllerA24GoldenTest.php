@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Relation\Derivation;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
@@ -374,8 +375,11 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 		$created = $this->object(uuid: 'child');
 		$this->objects->expects($this->once())->method('saveObject')->with(['t' => 1, 'zaaktype' => 'z'], [], 'r', 's')->willReturn($created);
 		$this->relations->expects($this->never())->method('recordSplit');
-		$this->relations->expects($this->once())->method('recordDerivation')
-			->with($this->isInstanceOf(ObjectEntity::class), $created, new ProvenanceLink('e1', 'deelzaak'), ['zaaktype' => 'z'])
+		$this->relations->expects($this->once())->method('recordDerived')
+			->with($this->callback(fn (Derivation $derivation): bool => $derivation->parent instanceof ObjectEntity
+				&& $derivation->child === $created
+				&& $derivation->link == new ProvenanceLink('e1', 'deelzaak')
+				&& $derivation->inherited === ['zaaktype' => 'z']))
 			->willReturn($this->row(uuid: 'prov'));
 
 		$response = $controller->derive('r', 's', 'a');
@@ -396,7 +400,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 		$this->relations->method('applyInheritance')->willReturn(['data' => ['t' => 1], 'inherited' => []]);
 		$created = $this->object(uuid: 'child');
 		$this->objects->method('saveObject')->willReturn($created);
-		$this->relations->expects($this->never())->method('recordDerivation');
+		$this->relations->expects($this->never())->method('recordDerived');
 		$this->relations->expects($this->once())->method('recordSplit')
 			->with($this->isInstanceOf(ObjectEntity::class), $created, new ProvenanceLink(null, 'split-from'))
 			->willReturn($this->row(uuid: 'prov'));

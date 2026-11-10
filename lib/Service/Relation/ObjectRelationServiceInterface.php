@@ -208,6 +208,17 @@ interface ObjectRelationServiceInterface {
 	): ObjectRelation;
 
 	/**
+	 * Record a child created under a parent, with what it inherited.
+	 *
+	 * @param Derivation $derivation The parent, the child, the link naming it and what the child inherited.
+	 *
+	 * @return ObjectRelation The row.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function recordDerived(Derivation $derivation): ObjectRelation;
+
+	/**
 	 * Record that one object was created out of another.
 	 *
 	 * The entry is the whole point. Zammad splits a ticket and keeps no

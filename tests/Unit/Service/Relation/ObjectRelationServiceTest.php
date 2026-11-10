@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Db\ObjectRelationMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Relation\Derivation;
 use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationStores;
@@ -163,12 +164,7 @@ class ObjectRelationServiceTest extends TestCase {
 			$applied['inherited']['classification']
 		);
 
-		$row = $this->service->recordDerivation(
-			parent: $parent,
-			child: $this->object('uuid-child'),
-			link: new ProvenanceLink(relationType: 'deelzaak'),
-			inherited: $applied['inherited']
-		);
+		$row = $this->service->recordDerived(derivation: new Derivation(parent: $parent, child: $this->object('uuid-child'), link: new ProvenanceLink(relationType: 'deelzaak'), inherited: $applied['inherited']));
 
 		$this->assertSame(ObjectRelation::ORIGIN_DERIVE, $row->getOrigin());
 		$this->assertSame('vertrouwelijk', $row->getInherited()['confidentiality']['value']);
@@ -185,12 +181,7 @@ class ObjectRelationServiceTest extends TestCase {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function testADerivationKeepsTheEntryItCameOutOf(): void {
-		$row = $this->service->recordDerivation(
-			parent: $this->object('uuid-parent'),
-			child: $this->object('uuid-child'),
-			link: new ProvenanceLink(entry: 'entry-9', relationType: 'deelzaak'),
-			inherited: ['classification' => ['property' => 'classificatie', 'value' => 'intern']]
-		);
+		$row = $this->service->recordDerived(derivation: new Derivation(parent: $this->object('uuid-parent'), child: $this->object('uuid-child'), link: new ProvenanceLink(entry: 'entry-9', relationType: 'deelzaak'), inherited: ['classification' => ['property' => 'classificatie', 'value' => 'intern']]));
 
 		$this->assertSame('entry-9', $row->getSourceEntry());
 		$this->assertSame(ObjectRelation::ORIGIN_DERIVE, $row->getOrigin());
@@ -203,10 +194,7 @@ class ObjectRelationServiceTest extends TestCase {
 	 * and neither reads as "took a null".
 	 */
 	public function testADerivationThatInheritedNothingRecordsNothing(): void {
-		$row = $this->service->recordDerivation(
-			parent: $this->object('uuid-parent'),
-			child: $this->object('uuid-child')
-		);
+		$row = $this->service->recordDerived(derivation: new Derivation(parent: $this->object('uuid-parent'), child: $this->object('uuid-child')));
 
 		$this->assertNull($row->getInherited());
 		$this->assertNull($row->getSourceEntry());
