@@ -56,10 +56,16 @@ use Throwable;
 class TaskInboxService implements TaskInboxServiceInterface {
 
 	/**
+	 * The ONE overdue derivation: a pure function of a task and a clock, so it is built here, not injected.
+	 *
+	 * @var TaskTemporalProjection
+	 */
+	private readonly TaskTemporalProjection $temporal;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param TaskMapper $tasks The datastore queries.
-	 * @param TaskTemporalProjection $temporal The ONE overdue derivation.
 	 * @param LoggerInterface $logger Failure reporting.
 	 * @param MagicMapperInterface|null $objects Resolves subject objects for
 	 *                                           row context. Nullable so the
@@ -90,14 +96,13 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
-		private readonly TaskTemporalProjection $temporal,
 		private readonly LoggerInterface $logger,
 		private readonly ?MagicMapperInterface $objects = null,
 		private readonly ?PortalTaskDeliveryMapper $deliveries = null,
 		private readonly ?TaskSubjectLocator $locator = null,
 		private readonly ?TaskBlockerMapperInterface $blockers = null,
 	) {
-
+		$this->temporal = new TaskTemporalProjection();
 	}//end __construct()
 
 	/**
