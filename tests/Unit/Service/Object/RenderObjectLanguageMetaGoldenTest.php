@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
@@ -197,7 +198,8 @@ class RenderObjectLanguageMetaGoldenTest extends TestCase {
 		$approved = new Translation();
 		$approved->setStatus('approved');
 		$this->mapper->method('findOne')->willReturnCallback(
-			static function (string $uuid, string $property, string $language) use ($approved): ?Translation {
+			static function (TranslationSlot $slot) use ($approved): ?Translation {
+				[$uuid, $property, $language] = [$slot->objectUuid, $slot->property, $slot->language];
 				TestCase::assertSame(['u-1', 'en'], [$uuid, $language]);
 				return match ($property) {
 					'body' => $approved,
