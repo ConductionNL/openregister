@@ -151,17 +151,24 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	private readonly LoggerInterface $logger;
 
 	/**
+	 * Validates and builds each migrated task. Stateless and dependency-free,
+	 * so the step owns its instance instead of taking it from the container.
+	 *
+	 * @var TaskBuilder
+	 */
+	private readonly TaskBuilder $builder;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param RepairPlatform $platform Database connection, app config and logger.
-	 * @param TaskBuilder $builder Validates and builds each migrated task.
-	 * @param ApprovalTaskStores $stores Task, candidate, audit and sequence stores.
+	 * @param RepairPlatform     $platform Database connection, app config and logger.
+	 * @param ApprovalTaskStores $stores   Task, candidate, audit and sequence stores.
 	 */
 	public function __construct(
 		RepairPlatform $platform,
-		private readonly TaskBuilder $builder,
 		ApprovalTaskStores $stores,
 	) {
+		$this->builder = new TaskBuilder();
 		$this->db = $platform->db;
 		$this->tasks = $stores->tasks;
 		$this->candidates = $stores->candidates;
