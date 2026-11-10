@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Quality;
 
+use OCA\OpenRegister\Service\Quality\UniqueHintCandidate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Service\ObjectService;
@@ -95,7 +96,7 @@ class UniqueHintCheckerAccessGoldenTest extends TestCase {
 	public function testAVisibleHolderIsNamedAndTheReadsAreScopedThenUnscoped(): void {
 		[$checker, $warnings] = $this->checker(['a', 'b'], ['a', 'b', 'hidden']);
 
-		$checker->check($this->configuration(), new UniqueHintScope(4, 'person'), ['bsn' => 123], 'b');
+		$checker->check($this->configuration(), new UniqueHintCandidate(new UniqueHintScope(4, 'person'), ['bsn' => 123], 'b'));
 
 		$this->assertSame(
 			[['property' => 'bsn', 'matches' => ['a'], 'visible' => true]],
@@ -113,7 +114,7 @@ class UniqueHintCheckerAccessGoldenTest extends TestCase {
 	public function testAHiddenHolderIsReportedWithoutItsUuid(): void {
 		[$checker, $warnings] = $this->checker([], ['hidden']);
 
-		$checker->check($this->configuration(), new UniqueHintScope(4, 'person'), ['bsn' => '123']);
+		$checker->check($this->configuration(), new UniqueHintCandidate(new UniqueHintScope(4, 'person'), ['bsn' => '123'], null));
 
 		$this->assertSame(
 			[['property' => 'bsn', 'matches' => [], 'visible' => false]],
@@ -130,8 +131,8 @@ class UniqueHintCheckerAccessGoldenTest extends TestCase {
 	public function testSelfAndEmptyValuesWarnNothing(): void {
 		[$checker, $warnings] = $this->checker(['self'], ['self']);
 
-		$checker->check($this->configuration(), new UniqueHintScope(4, 'person'), ['bsn' => '123'], 'self');
-		$checker->check($this->configuration(), new UniqueHintScope(4, 'person'), ['bsn' => '']);
+		$checker->check($this->configuration(), new UniqueHintCandidate(new UniqueHintScope(4, 'person'), ['bsn' => '123'], 'self'));
+		$checker->check($this->configuration(), new UniqueHintCandidate(new UniqueHintScope(4, 'person'), ['bsn' => ''], null));
 
 		$this->assertSame([], $warnings->drain());
 		$this->assertCount(2, $this->reads);
