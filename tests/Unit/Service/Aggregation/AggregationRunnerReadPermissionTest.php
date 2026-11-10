@@ -48,6 +48,10 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -458,16 +462,24 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$translationHandler = $this->createMock(TranslationHandler::class);
 
 		return new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
-			placeholders: new PlaceholderResolver($userSession),
-			db: $db,
-			cache: $cache,
-			permissionHandler: $permissionHandler,
-			userSession: $userSession,
-			organisationService: $organisationService,
-			organizationHandler: $orgHandler,
-			translationHandler: $translationHandler,
-			languageService: $this->createMock(LanguageService::class),
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
+				db: $db,
+				cache: $cache
+			),
+			access: new AggregationAccess(
+				permissionHandler: $permissionHandler,
+				organizationHandler: $orgHandler
+			),
+			caller: new AggregationCaller(
+				userSession: $userSession,
+				organisationService: $organisationService,
+				placeholders: new PlaceholderResolver($userSession)
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $translationHandler,
+				languageService: $this->createMock(LanguageService::class)
+			)
 		);
 	}//end runner()
 

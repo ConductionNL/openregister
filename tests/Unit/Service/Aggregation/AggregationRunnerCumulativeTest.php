@@ -52,6 +52,10 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -356,16 +360,24 @@ class AggregationRunnerCumulativeTest extends TestCase {
 		$mysqlDb->method('prepare')->willReturn($stmt);
 
 		$mysqlRunner = new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
-			placeholders: $this->placeholderResolver,
-			db: $mysqlDb,
-			cache: $this->cache,
-			permissionHandler: $this->permissionHandler,
-			userSession: $this->userSession,
-			organisationService: $this->organisationService,
-			organizationHandler: $this->orgHandlerScopedTo('__no_active_org__'),
-			translationHandler: $this->createMock(TranslationHandler::class),
-			languageService: $this->createMock(LanguageService::class),
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
+				db: $mysqlDb,
+				cache: $this->cache
+			),
+			access: new AggregationAccess(
+				permissionHandler: $this->permissionHandler,
+				organizationHandler: $this->orgHandlerScopedTo('__no_active_org__')
+			),
+			caller: new AggregationCaller(
+				userSession: $this->userSession,
+				organisationService: $this->organisationService,
+				placeholders: $this->placeholderResolver
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $this->createMock(TranslationHandler::class),
+				languageService: $this->createMock(LanguageService::class)
+			)
 		);
 		$mysqlResult = $mysqlRunner->runAdhoc(
 			register: $this->makeRegister(),
@@ -512,16 +524,24 @@ class AggregationRunnerCumulativeTest extends TestCase {
 
 	private function makeRunner(): AggregationRunner {
 		return new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
-			placeholders: $this->placeholderResolver,
-			db: $this->db,
-			cache: $this->cache,
-			permissionHandler: $this->permissionHandler,
-			userSession: $this->userSession,
-			organisationService: $this->organisationService,
-			organizationHandler: $this->orgHandlerScopedTo('__no_active_org__'),
-			translationHandler: $this->createMock(TranslationHandler::class),
-			languageService: $this->createMock(LanguageService::class),
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
+				db: $this->db,
+				cache: $this->cache
+			),
+			access: new AggregationAccess(
+				permissionHandler: $this->permissionHandler,
+				organizationHandler: $this->orgHandlerScopedTo('__no_active_org__')
+			),
+			caller: new AggregationCaller(
+				userSession: $this->userSession,
+				organisationService: $this->organisationService,
+				placeholders: $this->placeholderResolver
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $this->createMock(TranslationHandler::class),
+				languageService: $this->createMock(LanguageService::class)
+			)
 		);
 
 	}//end makeRunner()

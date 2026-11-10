@@ -50,7 +50,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
-use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
@@ -182,54 +181,128 @@ class AggregationRunner implements AggregationRunnerInterface {
 	private ?array $operatorChecks = null;
 
 	/**
+	 * Resolves dynamic placeholders inside filters.
+	 *
+	 * @var PlaceholderResolverInterface
+	 */
+	private readonly PlaceholderResolverInterface $placeholders;
+
+	/**
+	 * Database connection for the Postgres-native fast path.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * 60s aggregation result cache.
+	 *
+	 * @var AggregationCacheInterface
+	 */
+	private readonly AggregationCacheInterface $cache;
+
+	/**
+	 * RBAC verdict on the schema's `list` action.
+	 *
+	 * @var PermissionHandlerInterface
+	 */
+	private readonly PermissionHandlerInterface $permissionHandler;
+
+	/**
+	 * Active session, for the RBAC + cache-key user scope.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Active-organisation lookup for the cache key.
+	 *
+	 * @var OrganisationServiceInterface
+	 */
+	private readonly OrganisationServiceInterface $organisationService;
+
+	/**
+	 * Owns the organisation-boundary decision the native SQL renders.
+	 *
+	 * @var OrganisationScopeResolverInterface
+	 */
+	private readonly OrganisationScopeResolverInterface $organizationHandler;
+
+	/**
+	 * Resolves translatable group keys to the negotiated language.
+	 *
+	 * @var TranslationHandler
+	 */
+	private readonly TranslationHandler $translationHandler;
+
+	/**
+	 * Request-scoped language negotiation (Accept-Language / _lang).
+	 *
+	 * @var LanguageService
+	 */
+	private readonly LanguageService $languageService;
+
+	/**
+	 * Optional logger for diagnostics.
+	 *
+	 * @var LoggerInterface|null
+	 */
+	private readonly ?LoggerInterface $logger;
+
+	/**
+	 * Computes aggregations against an external DBAL register; null disables that path.
+	 *
+	 * @var DbalObjectSourceProvider|null
+	 */
+	private readonly ?DbalObjectSourceProvider $dbalSourceProvider;
+
+	/**
+	 * Withholds an aggregation over a property the caller may not read; absent, a governed property is withheld.
+	 *
+	 * @var PropertyRbacHandler|null
+	 */
+	private readonly ?PropertyRbacHandler $propertyRbac;
+
+	/**
+	 * The request's trusted-code state for explicit-reveal properties; absent, only a system operation may reveal.
+	 *
+	 * @var ExplicitReveal|null
+	 */
+	private readonly ?ExplicitReveal $explicitReveal;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SchemaCatalogInterface $catalog The register and schema loaders and the magic-table mapper (PHP fallback path).
-	 * @param PlaceholderResolverInterface $placeholders Resolves dynamic placeholders inside filters.
-	 * @param IDBConnection $db Database connection for the Postgres-native fast path.
-	 * @param AggregationCacheInterface $cache 60s aggregation result cache.
-	 * @param PermissionHandlerInterface $permissionHandler RBAC verdict on the schema's `list` action.
-	 * @param IUserSession $userSession Active session, for the RBAC + cache-key user scope.
-	 * @param OrganisationServiceInterface $organisationService Active-organisation lookup for the cache key.
-	 * @param OrganisationScopeResolverInterface $organizationHandler Owns the organisation-boundary decision the native SQL renders.
-	 * @param TranslationHandler $translationHandler Resolves translatable group keys to the negotiated language.
-	 * @param LanguageService $languageService Request-scoped language negotiation (Accept-Language / _lang).
-	 * @param LoggerInterface|null $logger Optional logger for diagnostics.
-	 * @param DbalObjectSourceProvider|null $dbalSourceProvider Provider that computes aggregations live against an
-	 *                                                          external DBAL virtual register; null disables the
-	 *                                                          DBAL path.
-	 * @param PropertyRbacHandler|null $propertyRbac Withholds an aggregation over a property the caller may
-	 *                                               not read. Nullable and last so no construction site
-	 *                                               shifts; absent, a governed property is withheld.
-	 * @param ExplicitReveal|null $explicitReveal The request's trusted-code state for explicit-reveal properties;
-	 *                                            absent, only a system operation may aggregate over one.
+	 * @param AggregationSources      $sources      The schema catalogue, native SQL connection, result cache and DBAL provider.
+	 * @param AggregationAccess       $access       Schema RBAC, the organisation boundary, property RBAC and explicit reveal.
+	 * @param AggregationCaller       $caller       The session, the active organisation and the placeholder resolver.
+	 * @param AggregationPresentation $presentation Group-key translation, language negotiation and the logger.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
 	 */
 	public function __construct(
-		SchemaCatalogInterface $catalog,
-		private readonly PlaceholderResolverInterface $placeholders,
-		private readonly IDBConnection $db,
-		private readonly AggregationCacheInterface $cache,
-		private readonly PermissionHandlerInterface $permissionHandler,
-		private readonly IUserSession $userSession,
-		private readonly OrganisationServiceInterface $organisationService,
-		private readonly OrganisationScopeResolverInterface $organizationHandler,
-		private readonly TranslationHandler $translationHandler,
-		private readonly LanguageService $languageService,
-		private readonly ?LoggerInterface $logger = null,
-		private readonly ?DbalObjectSourceProvider $dbalSourceProvider = null,
-		// LAST AND NULLABLE so every existing construction keeps working. The
-		// container always supplies it; null happens only in a hand-built test,
-		// and then a GOVERNED property's aggregate is withheld, which is the
-		// safe direction.
-		private readonly ?PropertyRbacHandler $propertyRbac = null,
-		private readonly ?ExplicitReveal $explicitReveal = null,
+		AggregationSources $sources,
+		AggregationAccess $access,
+		AggregationCaller $caller,
+		AggregationPresentation $presentation,
 	) {
+		$catalog = $sources->catalog;
+		$this->placeholders = $caller->placeholders;
+		$this->db = $sources->db;
+		$this->cache = $sources->cache;
+		$this->permissionHandler = $access->permissionHandler;
+		$this->userSession = $caller->userSession;
+		$this->organisationService = $caller->organisationService;
+		$this->organizationHandler = $access->organizationHandler;
+		$this->translationHandler = $presentation->translationHandler;
+		$this->languageService = $presentation->languageService;
+		$this->logger = $presentation->logger;
+		$this->dbalSourceProvider = $sources->dbalSourceProvider;
+		$this->propertyRbac = $access->propertyRbac;
+		$this->explicitReveal = $access->explicitReveal;
 		$this->magicMapper    = $catalog->tables();
 		$this->registerMapper = $catalog->registers();
 		$this->schemaMapper   = $catalog->schemas();

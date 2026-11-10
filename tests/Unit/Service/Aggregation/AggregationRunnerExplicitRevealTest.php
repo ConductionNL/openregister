@@ -34,6 +34,10 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\LanguageService;
@@ -142,18 +146,26 @@ class AggregationRunnerExplicitRevealTest extends TestCase {
 		$schemaMapper->method('findInIds')->willReturn($this->schema());
 
 		return new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
-			placeholders: new PlaceholderResolver($session),
-			db: $this->createMock(originalClassName: IDBConnection::class),
-			cache: $this->createMock(originalClassName: AggregationCache::class),
-			permissionHandler: $permissions,
-			userSession: $session,
-			organisationService: $this->createMock(originalClassName: OrganisationService::class),
-			organizationHandler: $this->createMock(originalClassName: MagicOrganizationHandler::class),
-			translationHandler: $this->createMock(originalClassName: TranslationHandler::class),
-			languageService: $this->createMock(originalClassName: LanguageService::class),
-			propertyRbac: $propertyRbac,
-			explicitReveal: new ExplicitReveal(),
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
+				db: $this->createMock(originalClassName: IDBConnection::class),
+				cache: $this->createMock(originalClassName: AggregationCache::class)
+			),
+			access: new AggregationAccess(
+				permissionHandler: $permissions,
+				organizationHandler: $this->createMock(originalClassName: MagicOrganizationHandler::class),
+				propertyRbac: $propertyRbac,
+				explicitReveal: new ExplicitReveal()
+			),
+			caller: new AggregationCaller(
+				userSession: $session,
+				organisationService: $this->createMock(originalClassName: OrganisationService::class),
+				placeholders: new PlaceholderResolver($session)
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $this->createMock(originalClassName: TranslationHandler::class),
+				languageService: $this->createMock(originalClassName: LanguageService::class)
+			)
 		);
 	}//end runner()
 

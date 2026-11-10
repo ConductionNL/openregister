@@ -36,6 +36,10 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\Aggregation\ResultGrouping;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -189,16 +193,24 @@ class AggregationRunnerTranslatableKeysGoldenTest extends TestCase {
 
 		$session = $this->createMock(IUserSession::class);
 		return new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
-			placeholders: new PlaceholderResolver($session),
-			db: $this->createMock(IDBConnection::class),
-			cache: $this->createMock(AggregationCache::class),
-			permissionHandler: $this->createMock(PermissionHandler::class),
-			userSession: $session,
-			organisationService: $this->createMock(OrganisationService::class),
-			organizationHandler: $this->createMock(MagicOrganizationHandler::class),
-			translationHandler: $translations,
-			languageService: $languages
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
+				db: $this->createMock(IDBConnection::class),
+				cache: $this->createMock(AggregationCache::class)
+			),
+			access: new AggregationAccess(
+				permissionHandler: $this->createMock(PermissionHandler::class),
+				organizationHandler: $this->createMock(MagicOrganizationHandler::class)
+			),
+			caller: new AggregationCaller(
+				userSession: $session,
+				organisationService: $this->createMock(OrganisationService::class),
+				placeholders: new PlaceholderResolver($session)
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $translations,
+				languageService: $languages
+			)
 		);
 	}//end runner()
 }//end class
