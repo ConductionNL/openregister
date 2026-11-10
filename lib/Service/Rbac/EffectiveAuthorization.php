@@ -95,7 +95,7 @@ class EffectiveAuthorization {
 					return $this->expandRoles(authorization: $registerAuth, register: $register);
 				}
 			}
-		} catch (\Exception $e) {
+		} catch (\Throwable $e) {
 			// An unreadable register means no register authorization to fall back to.
 		}
 
