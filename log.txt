@@ -1797,3 +1797,4 @@
 2026-11-10T09:56:45Z session-20261110T082314-5dda28c3 wavev-11 V11 done: PRs #8993 #9006 #9022 #9036 #9046 #9055 #9068; MEASURE U11 main+v11 gt2 213 gt4 0 gt6 0 (target 219/7/0), +open u11 gt2 194; DONE
 2026-11-10T09:56:46Z precheck-20261110T063123-21b4f66e GREEN tree 4bf6c055a7 on dev 60b7dd3615 prs 1 front=skip: Tests: 54807, Assertions: 181035, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-10T09:57:12Z precheck-20261110T063040-46909641 GREEN tree c3cc52357f on dev 60b7dd3615 prs 1 front=skip: Tests: 54804, Assertions: 181038, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
+2026-11-10T10:00:50Z integrator-20261110T063231-6925b57a GREEN tree 71acb5fe72 on dev 60b7dd3615 prs 1 front=skip: Tests: 54804, Assertions: 181031, Errors: 6, Failures: 11, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
