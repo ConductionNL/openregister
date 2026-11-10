@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Operations;
 
 use OCA\OpenRegister\Db\JobRunMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 
 /**
@@ -35,8 +36,7 @@ interface OperationsJobsServiceInterface {
 	 * The run history, filtered by job, outcome and period.
 	 *
 	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
-	 * @param int          $limit  How many rows to return.
-	 * @param int          $offset Where to start.
+	 * @param ListQuery    $page   How many rows to return, and where to start.
 	 *
 	 * @return array<string, mixed> The rows, and how many there are.
 	 *
@@ -44,8 +44,7 @@ interface OperationsJobsServiceInterface {
 	 */
 	public function runs(
 		JobRunFilter $filter = new JobRunFilter(),
-		int $limit = JobRunMapperInterface::DEFAULT_LIMIT,
-		int $offset = 0,
+		ListQuery $page = new ListQuery(limit: JobRunMapperInterface::DEFAULT_LIMIT, offset: 0),
 	): array;
 
 	/**

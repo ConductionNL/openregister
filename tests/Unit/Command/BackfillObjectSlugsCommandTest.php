@@ -95,7 +95,7 @@ class BackfillObjectSlugsCommandTest extends TestCase {
 			writer: new ObjectSlugBackfillWriter(
 				magicMapper: $this->magicMapper,
 				db: $this->createMock(IDBConnection::class),
-				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), auditTrail: $this->auditTrail, logger: $logger),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->auditTrail, logger: $logger)),
 				logger: $logger
 			),
 			logger: $logger

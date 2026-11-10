@@ -23,10 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
-use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\IterateNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
 
 /**
  * The steps that reshape run data, the rule step among them.
@@ -45,16 +41,12 @@ final readonly class ReshapingFlowNodes {
 	/**
 	 * Bundle the nodes.
 	 *
-	 * @param FlowStateNodeInterface $flowState The built-in "Flow state" node.
-	 * @param MapNodeInterface $map The built-in "Map" node.
-	 * @param IterateNodeInterface $iterate The built-in "Repeat until done" node.
-	 * @param DecisionTableNodeInterface $decisionTable The built-in "Evaluate a decision table" node.
+	 * @param DataMappingFlowNodes $dataMapping The steps that keep run state and map data from one shape to another.
+	 * @param EvaluationFlowNodes  $evaluation  The steps that repeat until done or evaluate a decision table, deciding and moving on in one firing.
 	 */
 	public function __construct(
-		private FlowStateNodeInterface $flowState,
-		private MapNodeInterface $map,
-		private IterateNodeInterface $iterate,
-		private DecisionTableNodeInterface $decisionTable,
+		private DataMappingFlowNodes $dataMapping,
+		private EvaluationFlowNodes $evaluation,
 	) {
 	}//end __construct()
 
@@ -65,10 +57,8 @@ final readonly class ReshapingFlowNodes {
 	 */
 	public function nodes(): array {
 		return [
-			$this->flowState,
-			$this->map,
-			$this->iterate,
-			$this->decisionTable,
+			...$this->dataMapping->nodes(),
+			...$this->evaluation->nodes(),
 		];
 
 	}//end nodes()

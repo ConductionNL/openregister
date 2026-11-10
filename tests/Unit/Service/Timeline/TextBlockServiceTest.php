@@ -27,6 +27,7 @@ namespace Unit\Service\Timeline;
 
 use OCA\OpenRegister\Notifications\Db\TextBlock;
 use OCA\OpenRegister\Notifications\Db\TextBlockMapper;
+use OCA\OpenRegister\Notifications\Db\TextBlockScope;
 use OCA\OpenRegister\Notifications\Service\Timeline\TextBlockService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
 use OCP\IGroupManager;
@@ -152,7 +153,7 @@ class TextBlockServiceTest extends TestCase {
 	public function testAnAnonymousCallerSeesOnlyTheUnscopedBlocks(): void {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->blocks->expects($this->once())->method('findInScope')
-			->with('zaken', 'zaak', [])
+			->with(new TextBlockScope('zaken', 'zaak', []))
 			->willReturn([]);
 
 		$this->service->listBlocks('zaken', 'zaak');
@@ -161,7 +162,7 @@ class TextBlockServiceTest extends TestCase {
 	public function testTheListIsScopedToTheCallersOwnGroups(): void {
 		$this->signIn(['kcc', 'balie']);
 		$this->blocks->expects($this->once())->method('findInScope')
-			->with('zaken', 'zaak', ['kcc', 'balie'])
+			->with(new TextBlockScope('zaken', 'zaak', ['kcc', 'balie']))
 			->willReturn([]);
 
 		$this->service->listBlocks('zaken', 'zaak');

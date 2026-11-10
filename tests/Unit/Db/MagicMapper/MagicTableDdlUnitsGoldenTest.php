@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkUpsertSql;
@@ -265,9 +267,8 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 		$magicMapper->method('checkTableExistsInDatabase')->willReturn(false);
 		$magicMapper->method('createTableForRegisterSchema')->willThrowException(new Exception('boom'));
 		$handler = new MagicTableHandler(
-			db: $this->createMock(IDBConnection::class),
+			sql: new MagicTableSql(db: $this->createMock(IDBConnection::class), config: $this->createMock(IConfig::class), logger: $this->createMock(LoggerInterface::class)),
 			appConfig: $this->createMock(IAppConfig::class),
-			logger: $this->createMock(LoggerInterface::class),
 			magicMapper: $magicMapper
 		);
 
@@ -294,9 +295,8 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 		$magicMapper->expects($this->once())->method('invalidateTableCache')->with('5_12');
 		$magicMapper->expects($this->once())->method('createTableForRegisterSchema')->willReturn(true);
 		$handler = new MagicTableHandler(
-			db: $this->createMock(IDBConnection::class),
+			sql: new MagicTableSql(db: $this->createMock(IDBConnection::class), config: $this->createMock(IConfig::class), logger: $this->createMock(LoggerInterface::class)),
 			appConfig: $this->createMock(IAppConfig::class),
-			logger: $this->createMock(LoggerInterface::class),
 			magicMapper: $magicMapper
 		);
 
@@ -343,9 +343,8 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 	 */
 	private function handler(IAppConfig $appConfig, IDBConnection $db): MagicTableHandler {
 		return new MagicTableHandler(
-			db: $db,
+			sql: new MagicTableSql(db: $db, config: $this->createMock(IConfig::class), logger: $this->createMock(LoggerInterface::class)),
 			appConfig: $appConfig,
-			logger: $this->createMock(LoggerInterface::class),
 			magicMapper: $this->magicMapper()
 		);
 	}//end handler()

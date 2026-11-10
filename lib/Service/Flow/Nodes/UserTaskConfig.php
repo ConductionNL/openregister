@@ -51,6 +51,17 @@ use UnexpectedValueException;
 final class UserTaskConfig {
 
 	/**
+	 * The config keys whose value must come from a published vocabulary, with that vocabulary.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private const VOCABULARIES = [
+		'performerType' => Task::PERFORMER_TYPES,
+		'priority' => Task::PRIORITIES,
+		'routingStrategy' => Task::ROUTING_STRATEGIES,
+	];
+
+	/**
 	 * The item key the outcome lands under when the flow does not choose.
 	 *
 	 * `task`, not `signal`: a flow holding both wait nodes must not have them
@@ -119,9 +130,9 @@ final class UserTaskConfig {
 			);
 		}
 
-		$this->refuseOutsideVocabulary(config: $config, key: 'performerType', vocabulary: Task::PERFORMER_TYPES);
-		$this->refuseOutsideVocabulary(config: $config, key: 'priority', vocabulary: Task::PRIORITIES);
-		$this->refuseOutsideVocabulary(config: $config, key: 'routingStrategy', vocabulary: Task::ROUTING_STRATEGIES);
+		foreach (array_keys(self::VOCABULARIES) as $key) {
+			$this->refuseOutsideVocabulary(config: $config, key: $key);
+		}
 
 		if (array_key_exists('outcomes', $config) === true && $this->common->listOf(value: $config['outcomes']) === []) {
 			throw new UnexpectedValueException(
@@ -354,14 +365,14 @@ final class UserTaskConfig {
 	 * Refuse a set value outside a published vocabulary, naming both.
 	 *
 	 * @param array<string, mixed> $config The step configuration.
-	 * @param string $key The config key.
-	 * @param array<int, string> $vocabulary The accepted values.
+	 * @param string $key The config key, one of {@see self::VOCABULARIES}.
 	 *
 	 * @return void
 	 *
 	 * @throws UnexpectedValueException When the value is set and not in the vocabulary.
 	 */
-	private function refuseOutsideVocabulary(array $config, string $key, array $vocabulary): void {
+	private function refuseOutsideVocabulary(array $config, string $key): void {
+		$vocabulary = self::VOCABULARIES[$key];
 		$value = trim((string)($config[$key] ?? ''));
 		if ($value === '' || in_array($value, $vocabulary, true) === true) {
 			return;

@@ -46,7 +46,6 @@ use OCA\OpenRegister\Db\SchemaRunEntryMapperInterface;
 use OCA\OpenRegister\Db\SchemaRunMapperInterface;
 use OCA\OpenRegister\Service\Object\ObjectValidatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use Psr\Log\LoggerInterface;
 
 /**
  * Population revalidation orchestrator.
@@ -70,53 +69,56 @@ class SchemaRevalidationService implements SchemaRevalidatorInterface {
 	private const MAX_ERRORS_PER_OBJECT = 25;
 
 	/**
+	 * Run persistence.
+	 *
+	 * @var SchemaRunMapperInterface
+	 */
+	private readonly SchemaRunMapperInterface $runMapper;
+
+	/**
+	 * Per-object run entries.
+	 *
+	 * @var SchemaRunEntryMapperInterface
+	 */
+	private readonly SchemaRunEntryMapperInterface $runEntryMapper;
+
+	/**
+	 * Schema lookup.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Object read/save pipeline.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SchemaRunMapperInterface $runMapper Run persistence.
-	 * @param SchemaRunEntryMapperInterface $runEntryMapper Per-object run entries.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
-	 * @param ObjectOperationsInterface $objectService Object read/save pipeline.
+	 * @param SchemaPopulationRuns     $runs           The run ledger, the schema lookup and the object population.
 	 * @param ObjectValidatorInterface $validateObject Single write-path validator.
-	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly SchemaRunMapperInterface $runMapper,
-		private readonly SchemaRunEntryMapperInterface $runEntryMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ObjectOperationsInterface $objectService,
+		SchemaPopulationRuns $runs,
 		private readonly ObjectValidatorInterface $validateObject,
-		private readonly LoggerInterface $logger,
 	) {
-
+		$this->runMapper      = $runs->runMapper;
+		$this->runEntryMapper = $runs->runEntryMapper;
+		$this->schemaMapper   = $runs->schemaMapper;
+		$this->objectService  = $runs->objectService;
 	}//end __construct()
 
 	/**
-	 * Start a revalidation run.
+	 * Start a revalidation run for a revalidation request.
 	 *
 	 * Creates the run record, refusing a second concurrent run on the same
 	 * schema ({@see SchemaRunPopulation::assertNoActiveRun()} throws the
 	 * SchemaRunConcurrencyException), and returns it ready for the background
 	 * job to process.
-	 *
-	 * @param int $schemaId The schema id.
-	 * @param int $registerId The register the objects live in.
-	 * @param array<string, mixed>|null $proposedDefinition Optional proposed definition (dry-run).
-	 * @param string|null $startedBy The starting user.
-	 *
-	 * @return SchemaRun The created run.
-	 *
-	 * @spec openspec/specs/schema-migration/spec.md
-	 */
-	public function start(int $schemaId, int $registerId, ?array $proposedDefinition = null, ?string $startedBy = null): SchemaRun {
-		$request = new RevalidationRequest(schemaId: $schemaId, registerId: $registerId, proposedDefinition: $proposedDefinition);
-
-		return $this->startRevalidation(request: $request, startedBy: $startedBy);
-	}//end start()
-
-	/**
-	 * Start a revalidation run for a revalidation request.
-	 *
-	 * Refuses a second concurrent run on the same schema, as start() does.
 	 *
 	 * @param RevalidationRequest $request   The schema, register and optional proposed definition.
 	 * @param string|null         $startedBy The starting user.

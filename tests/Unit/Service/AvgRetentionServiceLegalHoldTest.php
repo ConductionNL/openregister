@@ -119,7 +119,7 @@ class AvgRetentionServiceLegalHoldTest extends TestCase {
 				return $schema;
 			}
 		);
-		$guard = new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
+		$guard = new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class)));
 
 		return new AvgRetentionService(
 			$db,
