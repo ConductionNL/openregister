@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ShippedRegister;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
@@ -101,9 +102,8 @@ class ExampleSetRegisters {
 	 */
 	public function import(string $slug): array {
 		return $this->recordedImport(
-			import: fn (RegisterDescriptorService $descriptors): array => $descriptors->reimport(
-				appId: self::APP,
-				slug: $slug,
+			import: fn (RegisterDescriptorService $descriptors): array => $descriptors->reimportShipped(
+				register: new ShippedRegister(appId: self::APP, slug: $slug),
 				via: 'example set install'
 			)
 		);
@@ -141,7 +141,7 @@ class ExampleSetRegisters {
 	 */
 	public function isBehind(string $slug, bool $mock): bool {
 		try {
-			return $this->container->get(RegisterDescriptorService::class)->isBehind(appId: self::APP, slug: $slug, mock: $mock);
+			return $this->container->get(RegisterDescriptorService::class)->isShippedBehind(register: new ShippedRegister(appId: self::APP, slug: $slug), mock: $mock);
 		} catch (Throwable) {
 			return false;
 		}
