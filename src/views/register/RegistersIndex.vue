@@ -213,6 +213,74 @@ function warmupSuccessText(data) {
 }
 
 /**
+ * The toast after a warmup, from the endpoint's answer.
+ *
+ * @param {object|null} data The warmup response body
+ * @return {string} The translated message
+ */
+function warmupResultText(data) {
+	if (data && data.success) {
+		return warmupSuccessText(data)
+	}
+	return t('openregister', 'Names cache warmup completed')
+}
+
+/**
+ * Ask the server to rebuild the names cache.
+ *
+ * @return {Promise<object>} The axios response
+ */
+function postNamesWarmup() {
+	const baseUrl = window.location.origin
+	// Was `/api/names/warmup`, which was #[PublicPage] — anyone could make
+	// the server rebuild the entire name cache. That route is gone
+	// (SEC-CTRL-2); this is the admin-only equivalent, which is what a
+	// maintenance action on an admin screen should have been calling.
+	const apiUrl = `${baseUrl}/index.php/apps/openregister/api/settings/cache/warmup-names`
+	return axios.post(
+		apiUrl,
+		{},
+		{
+			headers: {
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
+			},
+		},
+	)
+}
+
+/**
+ * The URL of a register's OpenAPI specification.
+ *
+ * @param {object} register The register row
+ * @return {string} The absolute URL
+ */
+function registerOasUrl(register) {
+	const baseUrl = window.location.origin
+	return `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
+}
+
+/**
+ * Let the browser save data as a pretty-printed JSON file.
+ *
+ * @param {object} data The data to save
+ * @param {string} filename The file name to offer
+ * @return {void}
+ */
+function saveJsonFile(data, filename) {
+	const blob = new Blob([JSON.stringify(data, null, 2)], {
+		type: 'application/json',
+	})
+	const downloadLink = document.createElement('a')
+	downloadLink.href = URL.createObjectURL(blob)
+	downloadLink.download = filename
+	document.body.appendChild(downloadLink)
+	downloadLink.click()
+	document.body.removeChild(downloadLink)
+	URL.revokeObjectURL(downloadLink.href)
+}
+
+/**
  * The reason a request failed: the server's message, else the error's own.
  *
  * @param {object} error The axios error
@@ -623,20 +691,12 @@ export default {
 		 * @spec exclude list-view row-action; fetches and downloads the register OAS as JSON (oas-validation contract)
 		 */
 		async downloadOas(register) {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
 			try {
-				const response = await axios.get(apiUrl)
-				const blob = new Blob([JSON.stringify(response.data, null, 2)], {
-					type: 'application/json',
-				})
-				const downloadLink = document.createElement('a')
-				downloadLink.href = URL.createObjectURL(blob)
-				downloadLink.download = `${register.title.toLowerCase()}-api-specification.json`
-				document.body.appendChild(downloadLink)
-				downloadLink.click()
-				document.body.removeChild(downloadLink)
-				URL.revokeObjectURL(downloadLink.href)
+				const response = await axios.get(registerOasUrl(register))
+				saveJsonFile(
+					response.data,
+					`${register.title.toLowerCase()}-api-specification.json`,
+				)
 			} catch (error) {
 				showError(t('openregister', 'Failed to download API specification'))
 				console.error('Error downloading OAS:', error)
@@ -648,10 +708,8 @@ export default {
 		 * @spec exclude list-view row-action; opens the register OAS in the Redoc viewer (oas-validation contract)
 		 */
 		viewOasDoc(register) {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
 			window.open(
-				`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`,
+				`https://redocly.github.io/redoc/?url=${encodeURIComponent(registerOasUrl(register))}`,
 				'_blank',
 			)
 		},
@@ -672,32 +730,10 @@ export default {
 		 * @spec exclude list-view action; POSTs to the names-cache warmup endpoint and reports results via toast
 		 */
 		async warmupNamesCache() {
-			const baseUrl = window.location.origin
-			// Was `/api/names/warmup`, which was #[PublicPage] — anyone could make
-			// the server rebuild the entire name cache. That route is gone
-			// (SEC-CTRL-2); this is the admin-only equivalent, which is what a
-			// maintenance action on an admin screen should have been calling.
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/settings/cache/warmup-names`
-
 			try {
 				showSuccess(t('openregister', 'Starting names cache warmup...'))
-
-				const response = await axios.post(
-					apiUrl,
-					{},
-					{
-						headers: {
-							'Content-Type': 'application/json',
-							Accept: 'application/json',
-						},
-					},
-				)
-
-				if (response.data && response.data.success) {
-					showSuccess(warmupSuccessText(response.data))
-				} else {
-					showSuccess(t('openregister', 'Names cache warmup completed'))
-				}
+				const response = await postNamesWarmup()
+				showSuccess(warmupResultText(response.data))
 			} catch (error) {
 				console.error('Error warming up names cache:', error)
 				showError(
