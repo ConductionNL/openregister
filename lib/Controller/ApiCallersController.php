@@ -242,7 +242,7 @@ class ApiCallersController extends Controller {
 				),
 			]
 		);
-	}//end index()
+	}//end callerRecord()
 
 	/**
 	 * The version declaration as it stands.
@@ -366,7 +366,7 @@ class ApiCallersController extends Controller {
 		}
 
 		return new JSONResponse(data: ['versions' => array_values($declared), 'stored' => true]);
-	}//end writeDeclaration()
+	}//end storeDeclaration()
 
 	/**
 	 * Why a declaration could not be served, if it could not.

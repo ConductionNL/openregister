@@ -48,7 +48,6 @@ use OCA\OpenRegister\Controller\Support\ApiSurfaceControllerServices;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesServiceInterface;
 use OCA\OpenRegister\Service\ApiVersion\ApiContractServiceInterface;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -225,35 +224,56 @@ class ApiSurfaceController extends Controller {
 	public function contract(string $version): JSONResponse {
 		$declared = $this->catalogue->get(identifier: $version);
 		if ($declared === null) {
-			return new JSONResponse(
-				data: [
-					'error' => 'No API version "' . $version . '" is declared on this instance.',
-					'servedVersions' => $this->catalogue->servedIdentifiers(),
-				],
-				statusCode: Http::STATUS_NOT_FOUND,
-			);
+			return $this->undeclared(version: $version);
 		}
 
 		if ($declared->isServed() === false) {
-			return $this->withdrawn(declared: $declared);
+			return $this->withdrawn(versionId: $declared->id, successor: $declared->successor);
 		}
 
-		return $this->description(declared: $declared);
+		try {
+			$document = $this->contracts->documentFor(
+				version: $declared,
+				registerId: $this->registerFilter(),
+			);
+		} catch (Throwable $e) {
+			return $this->generationFailed(versionId: $declared->id, exception: $e);
+		}
+
+		return new JSONResponse(data: $document);
 
 	}//end contract()
 
 	/**
+	 * The answer for a version this instance does not declare.
+	 *
+	 * @param string $version The version asked for
+	 *
+	 * @return JSONResponse 404 naming the versions that are served
+	 */
+	private function undeclared(string $version): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'No API version "' . $version . '" is declared on this instance.',
+				'servedVersions' => $this->catalogue->servedIdentifiers(),
+			],
+			statusCode: Http::STATUS_NOT_FOUND,
+		);
+	}//end undeclared()
+
+	/**
 	 * The answer for a declared version that is no longer served: gone, naming its successor.
 	 *
-	 * @param ApiVersion $declared The withdrawn version
+	 * @param string      $versionId The withdrawn version
+	 * @param string|null $successor The version to use instead
 	 *
 	 * @return JSONResponse 410 with the successor and the versions still served
 	 */
-	private function withdrawn(ApiVersion $declared): JSONResponse {
+	private function withdrawn(string $versionId, ?string $successor): JSONResponse {
 		return new JSONResponse(
 			data: [
-				'error' => 'API version ' . $declared->id . ' has been withdrawn. Use version ' . (string)$declared->successor . '.',
-				'successorVersion' => $declared->successor,
+				'error' => 'API version ' . $versionId . ' has been withdrawn. Use version ' . (string)$successor . '.',
+				'successorVersion' => $successor,
 				'servedVersions' => $this->catalogue->servedIdentifiers(),
 			],
 			statusCode: Http::STATUS_GONE,
@@ -261,32 +281,24 @@ class ApiSurfaceController extends Controller {
 	}//end withdrawn()
 
 	/**
-	 * Generate the description of a served version, narrowed to the requested register.
+	 * The answer when a served version's description could not be generated; the failure is logged.
 	 *
-	 * @param ApiVersion $declared The served version
+	 * @param string    $versionId The version
+	 * @param Throwable $exception Why generation failed
 	 *
-	 * @return JSONResponse The description, or a 500 when it could not be generated
+	 * @return JSONResponse 500
 	 */
-	private function description(ApiVersion $declared): JSONResponse {
-		try {
-			$document = $this->contracts->documentFor(
-				version: $declared,
-				registerId: $this->registerFilter(),
-			);
-		} catch (Throwable $e) {
-			$this->session->logger->error(
-				'OpenRegister: could not generate the description for API version ' . $declared->id . '.',
-				['exception' => $e]
-			);
+	private function generationFailed(string $versionId, Throwable $exception): JSONResponse {
+		$this->session->logger->error(
+			'OpenRegister: could not generate the description for API version ' . $versionId . '.',
+			['exception' => $exception]
+		);
 
-			return new JSONResponse(
-				data: ['error' => 'The description for API version ' . $declared->id . ' could not be generated.'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR,
-			);
-		}
-
-		return new JSONResponse(data: $document);
-	}//end contract()
+		return new JSONResponse(
+			data: ['error' => 'The description for API version ' . $versionId . ' could not be generated.'],
+			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR,
+		);
+	}//end generationFailed()
 
 	/**
 	 * The optional `register` query parameter, narrowing the description.
