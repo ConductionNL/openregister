@@ -29,6 +29,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * PHPUnit runs under the CLI SAPI, which is exactly the situation WOO-578 has
@@ -46,13 +49,19 @@ class MagicRbacHandlerAnonymousScopeTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		$this->handler = new MagicRbacHandler(
-			$userSession,
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(ContainerInterface::class),
-			$this->createMock(LoggerInterface::class)
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $this->createMock(IGroupManager::class),
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->createMock(ConditionMatcher::class),
+				container: $this->createMock(ContainerInterface::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end setUp()
 

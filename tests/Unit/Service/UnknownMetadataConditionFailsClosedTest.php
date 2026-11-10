@@ -53,6 +53,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Unknown metadata in a stored rule: deny denies, allow does not grant, logged once.
@@ -220,15 +223,21 @@ class UnknownMetadataConditionFailsClosedTest extends TestCase {
 	 */
 	private function rbacHandler(): MagicRbacHandler {
 		return new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->matcher,
-			$this->createMock(ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher())),
-			new DenyEnforcementMode($this->enforcingConfig(), new NullLogger())
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class),
+				denyEnforcementMode: new DenyEnforcementMode($this->enforcingConfig(), new NullLogger())
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->matcher,
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher()))
 		);
 	}//end rbacHandler()
 

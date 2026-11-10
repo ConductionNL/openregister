@@ -35,6 +35,9 @@ use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * A rule key reaches SQL only as a known column; any other key admits no row.
@@ -108,15 +111,21 @@ class RuleKeysFailClosedTest extends TestCase {
 		);
 
 		return new MagicRbacHandler(
-			$session,
-			$groups,
-			$this->createMock(IUserManager::class),
-			$config,
-			$matcher,
-			($container ?? $this->createMock(ContainerInterface::class)),
-			new NullLogger(),
-			new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher())),
-			new DenyEnforcementMode($config, new NullLogger())
+			identity: new MagicMapperIdentity(
+				userSession: $session,
+				groupManager: $groups,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $config,
+				denyEnforcementMode: new DenyEnforcementMode($config, new NullLogger())
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $matcher,
+				container: ($container ?? $this->createMock(ContainerInterface::class)),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher()))
 		);
 	}//end handler()
 
