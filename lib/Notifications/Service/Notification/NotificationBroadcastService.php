@@ -90,12 +90,7 @@ class NotificationBroadcastService {
 	 */
 	public function sendBroadcast(OutgoingBroadcast $outgoing): NotificationBroadcast {
 		$this->assertSendable(outgoing: $outgoing);
-		$broadcast = $this->broadcasts->record(
-			uuid: $this->newUuid(),
-			sender: $outgoing->sender,
-			message: $outgoing->message,
-			window: $outgoing->window
-		);
+		$broadcast = $this->broadcasts->record(uuid: $this->newUuid(), outgoing: $outgoing);
 		$this->logSent(outgoing: $outgoing);
 
 		return $broadcast;
