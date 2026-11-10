@@ -339,7 +339,7 @@ class ObjectOwnershipController extends Controller {
 	 * @return array The stored authorization block.
 	 */
 	private function storeOwnerGroup(ObjectEntity $object, ?string $group): array {
-		return $this->services->ownership->setOwnerGroup(record: $this->record(object: $object), group: $group);
+		return $this->services->ownership->setOwnerGroupFor(record: $this->record(object: $object), group: $group);
 	}//end storeOwnerGroup()
 
 	/**

@@ -364,7 +364,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 		$this->requestCarries(['ownerGroup' => 'redactie']);
 
 		$this->ownership->expects($this->once())
-			->method('setOwnerGroup')
+			->method('setOwnerGroupFor')
 			->willReturn(['scope' => 'private', 'ownerGroup' => 'redactie']);
 
 		$response = $this->controller->setOwnerGroup('zaken', 'zaak', 'uuid-1');
@@ -378,7 +378,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 		$this->requestCarries([]);
 
 		$this->ownership->expects($this->once())
-			->method('setOwnerGroup')
+			->method('setOwnerGroupFor')
 			->willReturn(['scope' => 'private']);
 
 		$response = $this->controller->setOwnerGroup('zaken', 'zaak', 'uuid-1');
@@ -391,7 +391,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 		$this->resolvesToRecord('alice');
 		$this->requestCarries(['ownerGroup' => ['redactie']]);
 
-		$this->ownership->expects($this->never())->method('setOwnerGroup');
+		$this->ownership->expects($this->never())->method('setOwnerGroupFor');
 
 		$response = $this->controller->setOwnerGroup('zaken', 'zaak', 'uuid-1');
 
@@ -402,7 +402,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 		$this->resolvesToRecord('alice');
 		$this->requestCarries(['ownerGroup' => 'redactie']);
 
-		$this->ownership->method('setOwnerGroup')->willThrowException(
+		$this->ownership->method('setOwnerGroupFor')->willThrowException(
 			new NotAuthorizedException('Only the owner or an administrator may change who owns this record')
 		);
 

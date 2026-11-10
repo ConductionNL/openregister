@@ -816,7 +816,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 				['scope' => 'private', 'ownerGroup' => 'redactie']
 			);
 
-		$block = $this->service->setOwnerGroup(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $object), group: 'redactie');
+		$block = $this->service->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $object), group: 'redactie');
 
 		$this->assertSame('redactie', $block['ownerGroup']);
 	}//end testTheOwnerNamesTheOwningGroupWithoutLosingTheScope()
@@ -832,7 +832,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->authorizationWriter->expects($this->never())->method('writeAuthorizationBlock');
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->service->setOwnerGroup(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), group: 'redactie');
+		$this->service->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), group: 'redactie');
 	}//end testAStrangerCannotNameTheOwningGroup()
 
 	/**
@@ -850,7 +850,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->authorizationWriter->expects($this->never())->method('writeAuthorizationBlock');
 
 		$this->expectException(\InvalidArgumentException::class);
-		$this->service->setOwnerGroup(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), group: 'nobody');
+		$this->service->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), group: 'nobody');
 	}//end testAnUnknownOwningGroupIsRefused()
 
 	/**
@@ -918,4 +918,26 @@ class ObjectOwnershipServiceTest extends TestCase {
 			$outcome
 		);
 	}//end testAnUnchangedOutcomeHasItsFullShape()
+
+	/**
+	 * Other apps call setOwnerGroup(register, schema, object, group) by class
+	 * name, positionally and by name, and the register and schema reach the writer.
+	 *
+	 * @return void
+	 */
+	public function testTheRegisterSchemaOwnerGroupAnswersPositionallyAndByName(): void {
+		$this->signIn('alice', []);
+		$this->groupManager->method('groupExists')->willReturn(true);
+		$register = new Register();
+		$schema   = new Schema();
+
+		$this->authorizationWriter
+			->expects($this->exactly(2))
+			->method('writeAuthorizationBlock')
+			->with($this->identicalTo($register), $this->identicalTo($schema), 'uuid-1', $this->anything());
+
+		$this->assertSame('redactie', $this->service->setOwnerGroup($register, $schema, $this->record('uuid-1', 'alice'), 'redactie')['ownerGroup']);
+		$named = $this->service->setOwnerGroup(register: $register, schema: $schema, object: $this->record('uuid-1', 'alice'), group: null);
+		$this->assertArrayNotHasKey('ownerGroup', $named);
+	}//end testTheRegisterSchemaOwnerGroupAnswersPositionallyAndByName()
 }//end class

@@ -346,6 +346,29 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	}//end reassignFound()
 
 	/**
+	 * Name the group that owns one record, or take the owning group away.
+	 *
+	 * Kept for the apps that call it by class name; setOwnerGroupFor takes the record.
+	 *
+	 * @param Register     $register The record's register.
+	 * @param Schema       $schema   The record's schema.
+	 * @param ObjectEntity $object   The record.
+	 * @param string|null  $group    The group id, or null to remove the owning group.
+	 *
+	 * @throws NotAuthorizedException When the caller is neither owner nor administrator.
+	 * @throws InvalidArgumentException When no such group exists.
+	 *
+	 * @return array The stored authorization block.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	public function setOwnerGroup(Register $register, Schema $schema, ObjectEntity $object, ?string $group): array {
+		$record = new OwnedRecord(register: $register, schema: $schema, object: $object);
+
+		return $this->setOwnerGroupFor(record: $record, group: $group);
+	}//end setOwnerGroup()
+
+	/**
 	 * Name the group that owns one record, or take the owning group away, and audit it.
 	 *
 	 * Owner or administrator, through the same resolver the read side uses, so
@@ -362,7 +385,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 *
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
-	public function setOwnerGroup(OwnedRecord $record, ?string $group): array {
+	public function setOwnerGroupFor(OwnedRecord $record, ?string $group): array {
 		$object = $record->object;
 		$this->requireMayNameOwnerGroup(object: $object, group: $group);
 
@@ -391,7 +414,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		);
 
 		return $block;
-	}//end setOwnerGroup()
+	}//end setOwnerGroupFor()
 
 	/**
 	 * Refuse an owning group that does not exist; null or '' clears and passes.

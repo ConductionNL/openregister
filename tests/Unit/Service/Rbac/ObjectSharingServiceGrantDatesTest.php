@@ -165,4 +165,19 @@ class ObjectSharingServiceGrantDatesTest extends TestCase {
 
 		$this->assertSame(expected: 3, actual: (new ShareTimeWriter($db))->stamp(shareId: 41, moment: new DateTime('2026-10-06 10:00 UTC')));
 	}//end testTheShareTimeIsWrittenOnTheShareAndItsRecipientRows()
+
+	/**
+	 * Other apps call grant(object, type, shareWith, permissions) by class name,
+	 * positionally and by name.
+	 *
+	 * @return void
+	 */
+	public function testTheCorePermissionGrantAnswersPositionallyAndByName(): void {
+		$this->share->expects($this->exactly(2))->method('setShareType')->with(IShare::TYPE_USER);
+		$this->share->expects($this->exactly(2))->method('setSharedWith')->with('tvisser');
+		$this->share->expects($this->exactly(2))->method('setPermissions')->with(1);
+
+		$this->assertSame('ocinternal:41', $this->sharing->grant($this->record, 'user', 'tvisser', 1)['id']);
+		$this->assertSame('ocinternal:41', $this->sharing->grant(object: $this->record, type: 'user', shareWith: 'tvisser')['id']);
+	}//end testTheCorePermissionGrantAnswersPositionallyAndByName()
 }//end class

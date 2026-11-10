@@ -23,6 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 
 /**
@@ -56,6 +59,25 @@ interface ObjectOwnershipServiceInterface {
 	/**
 	 * Name the group that owns one record, or take the owning group away.
 	 *
+	 * Kept for the apps that call it by class name; setOwnerGroupFor takes the record.
+	 *
+	 * @param Register     $register The record's register.
+	 * @param Schema       $schema   The record's schema.
+	 * @param ObjectEntity $object   The record.
+	 * @param string|null  $group    The group id, or null to remove the owning group.
+	 *
+	 * @throws NotAuthorizedException When the caller is neither owner nor administrator.
+	 * @throws InvalidArgumentException When no such group exists.
+	 *
+	 * @return array The stored authorization block.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	public function setOwnerGroup(Register $register, Schema $schema, ObjectEntity $object, ?string $group): array;
+
+	/**
+	 * Name the group that owns one record, or take the owning group away.
+	 *
 	 * Owner or administrator, through the same resolver the read side uses, so
 	 * "who may name the owning group" and "who is admitted unconditionally"
 	 * cannot drift apart.
@@ -70,7 +92,7 @@ interface ObjectOwnershipServiceInterface {
 	 *
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
-	public function setOwnerGroup(OwnedRecord $record, ?string $group): array;
+	public function setOwnerGroupFor(OwnedRecord $record, ?string $group): array;
 
 	/**
 	 * Assign one record to a named owner.

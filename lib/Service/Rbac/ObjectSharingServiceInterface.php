@@ -66,6 +66,25 @@ interface ObjectSharingServiceInterface {
 	public function listGrants(ObjectEntity $object): array;
 
 	/**
+	 * Grant one principal access to one object with core permissions only.
+	 *
+	 * Kept for the apps that call it by class name; grantWithTerms takes the request.
+	 *
+	 * @param ObjectEntity $object      The object to share.
+	 * @param string       $type        One of the GRANTABLE_TYPES keys.
+	 * @param string       $shareWith   The principal to grant.
+	 * @param integer      $permissions Core permission bitmask.
+	 *
+	 * @throws NotAuthorizedException When the caller is neither owner nor admin.
+	 * @throws InvalidArgumentException On an unsupported type or unresolvable folder.
+	 *
+	 * @return array<string, mixed> The created grant.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 */
+	public function grant(ObjectEntity $object, string $type, string $shareWith, int $permissions = 1): array;
+
+	/**
 	 * Grant one principal access to one object, on declared terms.
 	 *
 	 * The grant is a real Nextcloud share on the object's folder, so core owns

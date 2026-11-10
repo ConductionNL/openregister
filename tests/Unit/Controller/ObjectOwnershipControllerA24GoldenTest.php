@@ -184,7 +184,7 @@ class ObjectOwnershipControllerA24GoldenTest extends TestCase {
 
 	public function testSetOwnerGroupOutcomes(): void {
 		$this->params = ['ownerGroup' => 7];
-		$this->ownership->expects($this->exactly(5))->method('setOwnerGroup')->willReturnOnConsecutiveCalls(
+		$this->ownership->expects($this->exactly(5))->method('setOwnerGroupFor')->willReturnOnConsecutiveCalls(
 			['ownerGroup' => 'staff'],
 			['other' => true],
 			$this->throwException(new NotAuthorizedException('Not yours')),

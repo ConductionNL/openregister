@@ -331,14 +331,14 @@ class GrantManageSpecialRightTest extends TestCase {
 			['ownerGroup' => ['old' => null, 'new' => 'supervisors']]
 		);
 
-		$this->ownership->setOwnerGroup(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record), group: 'supervisors');
+		$this->ownership->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record), group: 'supervisors');
 	}//end testANewOwningGroupLeavesAnAuditRowWithBothSides()
 
 	public function testAHolderNamesTheOwningGroup(): void {
 		$this->signIn('service-account', [self::SERVICE_GROUP]);
 		$this->authorizationWriter->expects($this->once())->method('writeAuthorizationBlock');
 
-		$block = $this->ownership->setOwnerGroup(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record), group: 'supervisors');
+		$block = $this->ownership->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record), group: 'supervisors');
 
 		$this->assertSame('supervisors', $block['ownerGroup']);
 	}//end testAHolderNamesTheOwningGroup()
@@ -408,7 +408,7 @@ class GrantManageSpecialRightTest extends TestCase {
 		$this->authorizationWriter->expects($this->never())->method('writeAuthorizationBlock');
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->ownership->setOwnerGroup(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record), group: self::SERVICE_GROUP);
+		$this->ownership->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record), group: self::SERVICE_GROUP);
 	}//end testAHolderMayNotNameItsOwnGroupAsTheOwner()
 
 	public function testTheRightOpensNeitherTheScopeNorALinkNorAnInvitation(): void {
@@ -486,6 +486,6 @@ class GrantManageSpecialRightTest extends TestCase {
 
 		$this->expectException(NotAuthorizedException::class);
 		$this->expectExceptionMessage('Only the owner or an administrator may change who owns this record');
-		$this->ownership->setOwnerGroup(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record), group: 'supervisors');
+		$this->ownership->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record), group: 'supervisors');
 	}//end testSomebodyWhoIsNeitherIsStillRefusedTheOwningGroup()
 }//end class

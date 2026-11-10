@@ -399,7 +399,7 @@ final class ObjectOwnershipServiceGoldenTest extends TestCase {
 			);
 			$this->grantAuditor->expects($this->once())->method('recordOwnerGroup')->with($object, $audit[0], $audit[1]);
 
-			$result = $service->setOwnerGroup(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $object), group: $group);
+			$result = $service->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $object), group: $group);
 			$this->assertSame($expected, $result, $label);
 			$this->assertSame(['rec', $expected], $written, $label);
 			$this->assertSame($expected, $object->getAuthorization(), $label);
@@ -420,7 +420,7 @@ final class ObjectOwnershipServiceGoldenTest extends TestCase {
 		$this->grantAuditor->expects($this->never())->method('recordOwnerGroup');
 		$this->assertSame(
 			[InvalidArgumentException::class, 'No such group: ghosts'],
-			$this->refusal(fn () => $service->setOwnerGroup(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('rec', 'alice')), group: 'ghosts'))
+			$this->refusal(fn () => $service->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('rec', 'alice')), group: 'ghosts'))
 		);
 
 		// A stranger, even for a clear.
@@ -431,7 +431,7 @@ final class ObjectOwnershipServiceGoldenTest extends TestCase {
 		foreach (['team', null, ''] as $group) {
 			$this->assertSame(
 				[NotAuthorizedException::class, 'Only the owner or an administrator may change who owns this record'],
-				$this->refusal(fn () => $service->setOwnerGroup(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('rec', 'alice')), group: $group))
+				$this->refusal(fn () => $service->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('rec', 'alice')), group: $group))
 			);
 		}
 	}//end testOwnerGroupRefusals()
