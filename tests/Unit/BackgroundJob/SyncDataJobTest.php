@@ -17,10 +17,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\Support\SyncDataServices;
 use OCA\OpenRegister\BackgroundJob\SyncDataJob;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
+use OCA\OpenRegister\Service\Sync\HarvestRun;
 use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
 use OCA\OpenRegister\Service\Sync\SyncScheduleInterface;
@@ -28,7 +30,6 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\BackgroundJob\Support\SyncDataServices;
 
 /**
  * Pins which due sources the hourly sync harvests and what status each ends with.
@@ -125,7 +126,7 @@ class SyncDataJobTest extends TestCase {
 		$this->fetchers->method('get')->willReturn($fetcher);
 		$this->sources->expects($this->exactly(2))->method('update');
 		$this->pipeline->expects($this->once())->method('run')
-			->with($this->source, $fetcher, $this->isType('string'), 'tok-9')
+			->with($this->callback(fn (HarvestRun $h): bool => $h->source === $this->source && $h->fetcher === $fetcher && is_string($h->executionId) && $h->since === 'tok-9'))
 			->willReturn(['status' => 'partial']);
 		$this->runJob();
 		$this->assertSame('partial', $this->source->getLastSyncStatus());

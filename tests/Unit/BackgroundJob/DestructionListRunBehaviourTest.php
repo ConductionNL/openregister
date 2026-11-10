@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use Exception;
 use OCA\OpenRegister\BackgroundJob\DestructionListRun;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -28,6 +29,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
@@ -208,8 +210,8 @@ class DestructionListRunBehaviourTest extends TestCase {
 		$retention->method('hasActiveLegalHold')->willReturnCallback(
 			fn (ObjectEntity $object): bool => in_array($object->getUuid(), $this->held, true)
 		);
-		$retention->method('generateDestructionCertificate')->willReturnCallback(
-			fn (array $list, int $count, string $at): array => ['certificateFor' => $list['status'], 'count' => $count, 'at' => $at]
+		$retention->method('certify')->willReturnCallback(
+			fn (ExecutedDestruction $execution): array => ['certificateFor' => $execution->destructionList['status'], 'count' => $execution->destroyedCount, 'at' => $execution->executedAt]
 		);
 
 		$settingsReader = $this->createMock(ArchivalSettingsReaderInterface::class);
@@ -225,7 +227,8 @@ class DestructionListRunBehaviourTest extends TestCase {
 
 		$delete = $this->createMock(DeleteObject::class);
 		$delete->method('deleteObject')->willReturnCallback(
-			function ($register, $schema, string $uuid, $original, bool $rbac, bool $multitenancy): bool {
+			function (DeletionRequest $request, bool $rbac, bool $multitenancy): bool {
+				[$register, $schema, $uuid, $original] = [$request->register, $request->schema, $request->uuid, $request->options->originalObjectId];
 				if (in_array($uuid, $this->undeletable, true) === true) {
 					throw new RuntimeException('locked '.$uuid);
 				}

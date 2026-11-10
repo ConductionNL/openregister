@@ -58,10 +58,8 @@ interface QualityStatisticsServiceInterface {
 	/**
 	 * List objects of a register/schema ascending by quality score.
 	 *
-	 * @param int|string $register Register id, uuid or slug.
-	 * @param int|string $schema Schema id, uuid or slug.
-	 * @param string|null $qualityStatus Optional status filter (`good`/`fair`/`poor`).
-	 * @param QualityListingWindow $window Sort field and order, page size and offset.
+	 * @param QualityListingRequest $request The register and schema (id, uuid or slug), the optional status filter
+	 *                                       (`good`/`fair`/`poor`) and the window: sort field and order, page size and offset.
 	 *
 	 * @return array{
 	 *   items: array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}>,
@@ -72,10 +70,5 @@ interface QualityStatisticsServiceInterface {
 	 *
 	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
 	 */
-	public function lowestQuality(
-		$register,
-		$schema,
-		?string $qualityStatus = null,
-		QualityListingWindow $window = new QualityListingWindow(),
-	): array;
+	public function lowestQuality(QualityListingRequest $request): array;
 }//end interface

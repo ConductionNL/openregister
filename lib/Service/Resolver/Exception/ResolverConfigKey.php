@@ -54,4 +54,24 @@ final class ResolverConfigKey {
 		$this->appId     = $appId;
 		$this->configKey = $configKey;
 	}//end __construct()
+
+	/**
+	 * The message for a configured value that does not resolve in the caller's tenant.
+	 *
+	 * @param string $kind          What the value should have named (`Register`, `Schema`).
+	 * @param string $resolvedValue The configured value.
+	 *
+	 * @return string The message.
+	 *
+	 * @spec openspec/specs/register-resolver-service/spec.md
+	 */
+	public function notInTenant(string $kind, string $resolvedValue): string {
+		return sprintf(
+			'%s "%s" (from config key "%s" on app "%s") not found in caller tenant.',
+			$kind,
+			$resolvedValue,
+			$this->configKey,
+			$this->appId
+		);
+	}//end notInTenant()
 }//end class

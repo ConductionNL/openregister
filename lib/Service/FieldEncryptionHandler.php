@@ -235,28 +235,6 @@ class FieldEncryptionHandler implements FieldEncryptionHandlerInterface {
 	 * that must fail loud instead (the migration command, single-object
 	 * integrity checks).
 	 *
-	 * @param array $data The rendered object data.
-	 * @param Schema $schema The object's schema.
-	 * @param bool $throwOnFailure When true, rethrow decryption failures instead
-	 *                             of substituting an error marker.
-	 *
-	 * @return array The data with flagged properties decrypted where possible.
-	 *
-	 * @throws FieldDecryptionException When `$throwOnFailure` is true and decryption fails.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag selects fail-loud vs
-	 *                                              fail-marked disposition, matching the
-	 *                                              established _rbac/_multitenancy flag idiom.
-	 *
-	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
-	 */
-	public function decryptProperties(array $data, Schema $schema, bool $throwOnFailure = false): array {
-		return $this->decryptInScope(data: $data, scope: new FieldDecryptionScope(schema: $schema, throwOnFailure: $throwOnFailure));
-	}//end decryptProperties()
-
-	/**
-	 * Decrypt the encryption-flagged properties of one object's data, in a decryption scope.
-	 *
 	 * @param array                $data  The object data, possibly holding ciphertext.
 	 * @param FieldDecryptionScope $scope The object's schema and whether a failure is rethrown.
 	 *

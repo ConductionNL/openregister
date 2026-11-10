@@ -35,6 +35,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
+use OCA\OpenRegister\Service\Object\DeletionOptions;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -254,13 +256,7 @@ class DeleteObjectScopedTest extends TestCase {
 		$this->expectException(DoesNotExistException::class);
 
 		$this->handler->deleteObject(
-			register: $wrongRegister,
-			schema: $wrongSchema,
-			uuid: 'abc-123',
-			originalObjectId: null,
-			_rbac: true,
-			_multitenancy: true,
-			scoped: true
+			new DeletionRequest(register: $wrongRegister, schema: $wrongSchema, uuid: 'abc-123', options: new DeletionOptions(scoped: true)), _rbac: true, _multitenancy: true
 		);
 
 	}//end testScopedDeleteRefusesCrossScopeUuid()
@@ -324,13 +320,7 @@ class DeleteObjectScopedTest extends TestCase {
 			->willReturn(['auditTrailsEnabled' => false]);
 
 		$result = $this->handler->deleteObject(
-			register: $register,
-			schema: $schema,
-			uuid: 'abc-123',
-			originalObjectId: null,
-			_rbac: true,
-			_multitenancy: true,
-			scoped: true
+			new DeletionRequest(register: $register, schema: $schema, uuid: 'abc-123', options: new DeletionOptions(scoped: true)), _rbac: true, _multitenancy: true
 		);
 
 		$this->assertTrue($result);
@@ -414,13 +404,7 @@ class DeleteObjectScopedTest extends TestCase {
 			->willReturn(['auditTrailsEnabled' => false]);
 
 		$result = $this->handler->deleteObject(
-			register: $registerB,
-			schema: $schemaY,
-			uuid: 'dup-uuid',
-			originalObjectId: null,
-			_rbac: true,
-			_multitenancy: true,
-			scoped: true
+			new DeletionRequest(register: $registerB, schema: $schemaY, uuid: 'dup-uuid', options: new DeletionOptions(scoped: true)), _rbac: true, _multitenancy: true
 		);
 
 		$this->assertTrue($result);
@@ -474,13 +458,7 @@ class DeleteObjectScopedTest extends TestCase {
 			->willReturn(['auditTrailsEnabled' => false]);
 
 		$result = $this->handler->deleteObject(
-			register: $register,
-			schema: $schema,
-			uuid: 'legacy-uuid',
-			originalObjectId: null,
-			_rbac: true,
-			_multitenancy: true,
-			scoped: false
+			new DeletionRequest(register: $register, schema: $schema, uuid: 'legacy-uuid'), _rbac: true, _multitenancy: true
 		);
 
 		$this->assertTrue($result);

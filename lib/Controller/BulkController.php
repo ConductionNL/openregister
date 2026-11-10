@@ -48,6 +48,7 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
 use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
@@ -289,9 +290,8 @@ class BulkController extends Controller {
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	private function resolveRegisterSchemaIds(string $register, string $schema): array {
-		$resolved = $this->resolveRegisterAndSchema(
-			register: $register,
-			schema: $schema,
+		$resolved = $this->resolveRegisterSchemaRef(
+			ref: new RegisterSchemaRef(register: $register, schema: $schema),
 			objectService: $this->objectService
 		);
 

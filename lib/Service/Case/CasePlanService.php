@@ -115,13 +115,7 @@ class CasePlanService implements CasePlanServiceInterface {
 	 * the plan's root authorization: nobody may create a plan they could not
 	 * administer.
 	 *
-	 * @param string $objectUuid The anchoring object.
-	 * @param int|null $registerId Its register.
-	 * @param int|null $schemaId Its schema.
-	 * @param array<string, mixed> $definition The definition (`settings`, `items`).
-	 * @param string|null $uid The creating identity.
-	 * @param string|null $flowUuid Definition provenance, when any.
-	 * @param int|null $flowVersion Definition provenance, when any.
+	 * @param CasePlanCreation $creation The anchor, the definition, the creating identity and the provenance.
 	 *
 	 * @return array<string, mixed> The plan as {@see getPlan()} returns it.
 	 *
@@ -130,20 +124,10 @@ class CasePlanService implements CasePlanServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
-	public function createPlan(
-		string $objectUuid,
-		?int $registerId,
-		?int $schemaId,
-		array $definition,
-		?string $uid,
-		?string $flowUuid = null,
-		?int $flowVersion = null,
-	): array {
-		$anchor = new CaseAnchor(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId);
-		$provenance = new CasePlanProvenance(flowUuid: $flowUuid, flowVersion: $flowVersion);
-		$this->createAdministered(creation: new CasePlanCreation(anchor: $anchor, definition: $definition, actor: $uid, provenance: $provenance));
+	public function createPlan(CasePlanCreation $creation): array {
+		$this->createAdministered(creation: $creation);
 
-		return $this->getPlan(objectUuid: $objectUuid, uid: $uid);
+		return $this->getPlan(objectUuid: $creation->anchor->objectUuid, uid: $creation->actor);
 	}//end createPlan()
 
 	/**
@@ -159,7 +143,8 @@ class CasePlanService implements CasePlanServiceInterface {
 	 */
 	private function createAdministered(CasePlanCreation $creation): void {
 		$normalised = $this->mechanics->definitions->validate(definition: $creation->definition);
-		$this->anchorAccess->authorization->assertMayAdminister(verb: 'create-plan', settings: $normalised['settings'], uid: $creation->actor);
+		$act = new CasePlanAct(verb: 'create-plan', actor: $creation->actor);
+		$this->anchorAccess->authorization->assertMayAdminister(act: $act, settings: $normalised['settings']);
 		$this->insertNormalised(creation: $creation, normalised: $normalised);
 	}//end createAdministered()
 
@@ -262,10 +247,7 @@ class CasePlanService implements CasePlanServiceInterface {
 	 * A user-driven transition of one item (terminate a stage, reach a
 	 * milestone by hand, complete a work item).
 	 *
-	 * @param string $itemUuid The item.
-	 * @param string $to The target state.
-	 * @param string|null $uid The acting identity.
-	 * @param string|null $reason Free text.
+	 * @param CaseItemTransition $transition The item, the target state, the acting identity and the reason.
 	 *
 	 * @return CaseItem The item as persisted.
 	 *
@@ -274,10 +256,10 @@ class CasePlanService implements CasePlanServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
-	public function transition(string $itemUuid, string $to, ?string $uid, ?string $reason = null): CaseItem {
-		$item = $this->store->items->findByUuid(uuid: $itemUuid);
-		$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $uid, reason: $reason);
-		$this->moveByHand(move: new CaseItemMove(item: $item, to: $to, tree: $this->treeFor(item: $item)), why: $why);
+	public function transition(CaseItemTransition $transition): CaseItem {
+		$item = $this->store->items->findByUuid(uuid: $transition->itemUuid);
+		$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $transition->actor, reason: $transition->reason);
+		$this->moveByHand(move: new CaseItemMove(item: $item, to: $transition->to, tree: $this->treeFor(item: $item)), why: $why);
 
 		return $this->store->items->findByUuid(uuid: (string)$item->getUuid());
 	}//end transition()
@@ -341,9 +323,7 @@ class CasePlanService implements CasePlanServiceInterface {
 	 * cannot declare its own. Creating one modifies no flow definition and
 	 * creates no definition version: it is a row.
 	 *
-	 * @param string $objectUuid The anchoring object.
-	 * @param array<string, mixed> $data The item (`key`, `type`, `name`, `parent` uuid, criteria, candidates, deadlines).
-	 * @param string|null $uid The acting identity.
+	 * @param CaseAdHocRequest $request The anchoring object, the item and the acting identity.
 	 *
 	 * @return CaseItem The item after attachment and evaluation.
 	 *
@@ -352,10 +332,10 @@ class CasePlanService implements CasePlanServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	public function attachAdHoc(string $objectUuid, array $data, ?string $uid): CaseItem {
-		$tree = new CasePlanTree(items: $this->rowsOf(objectUuid: $objectUuid, missing: 'Object %s has no case plan to attach to.'));
-		$inserted = $this->attach(attachment: new CaseAdHocAttachment(tree: $tree, data: $data, actor: $uid));
-		$this->mechanics->cascade->evaluate(objectUuid: $objectUuid, actor: $uid);
+	public function attachAdHoc(CaseAdHocRequest $request): CaseItem {
+		$tree = new CasePlanTree(items: $this->rowsOf(objectUuid: $request->objectUuid, missing: 'Object %s has no case plan to attach to.'));
+		$inserted = $this->attach(attachment: new CaseAdHocAttachment(tree: $tree, data: $request->data, actor: $request->actor));
+		$this->mechanics->cascade->evaluate(objectUuid: $request->objectUuid, actor: $request->actor);
 
 		return $this->store->items->findByUuid(uuid: (string)$inserted->getUuid());
 	}//end attachAdHoc()
@@ -417,11 +397,8 @@ class CasePlanService implements CasePlanServiceInterface {
 	 * "Which cases are stuck where": items by type and state, paged, with the
 	 * total computed in the datastore. Administrators only: it spans cases.
 	 *
-	 * @param string|null $type The plan-item type filter.
-	 * @param string|null $state The state filter.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
-	 * @param string|null $uid The reading identity.
+	 * @param ListQuery   $query The page, and the `type` and `state` filters (either null for any).
+	 * @param string|null $uid   The reading identity.
 	 *
 	 * @return array<string, mixed> results, total, limit, offset.
 	 *
@@ -429,10 +406,10 @@ class CasePlanService implements CasePlanServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
-	public function findStuck(?string $type, ?string $state, int $limit, int $offset, ?string $uid): array {
+	public function findStuck(ListQuery $query, ?string $uid): array {
 		$this->assertListsAcrossCases(uid: $uid);
 
-		return $this->stuckPage(query: new ListQuery(limit: $limit, offset: $offset, filters: ['type' => $type, 'state' => $state]));
+		return $this->stuckPage(query: $query);
 	}//end findStuck()
 
 	/**
@@ -462,7 +439,7 @@ class CasePlanService implements CasePlanServiceInterface {
 		$type = ($query->filters['type'] ?? null);
 		$state = ($query->filters['state'] ?? null);
 		$offset = (int)$query->offset;
-		$rows = $this->store->items->findByTypeAndState(type: $type, state: $state, limit: $query->limit, offset: $offset);
+		$rows = $this->store->items->findByTypeAndState(query: $query);
 
 		return [
 			'results' => array_map(static fn (CaseItem $row): array => $row->jsonSerialize(), $rows),
@@ -495,9 +472,7 @@ class CasePlanService implements CasePlanServiceInterface {
 	 * end-state set (naming the set) and while a required root item is open;
 	 * otherwise mirrored onto the object through the ordinary write path.
 	 *
-	 * @param string $objectUuid The anchoring object.
-	 * @param string $result The result.
-	 * @param string|null $uid The acting identity.
+	 * @param CaseCompletion $completion The anchoring object, the result and the acting identity.
 	 *
 	 * @return array<string, mixed> The plan, plus `result`.
 	 *
@@ -506,8 +481,8 @@ class CasePlanService implements CasePlanServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
-	public function completeCase(string $objectUuid, string $result, ?string $uid): array {
-		return $this->finish(completion: new CaseCompletion(objectUuid: $objectUuid, result: $result, actor: $uid));
+	public function completeCase(CaseCompletion $completion): array {
+		return $this->finish(completion: $completion);
 	}//end completeCase()
 
 	/**
@@ -525,7 +500,8 @@ class CasePlanService implements CasePlanServiceInterface {
 		$rows = $this->rowsOf(objectUuid: $completion->objectUuid);
 		$tree = new CasePlanTree(items: $rows);
 		$settings = $tree->settings();
-		$this->anchorAccess->authorization->assertMayAdminister(verb: 'complete-case', settings: $settings, uid: $completion->actor);
+		$act = new CasePlanAct(verb: 'complete-case', actor: $completion->actor);
+		$this->anchorAccess->authorization->assertMayAdminister(act: $act, settings: $settings);
 		$this->assertAllowedResult(result: $completion->result, settings: $settings);
 		$this->assertFinished(tree: $tree);
 
@@ -551,7 +527,8 @@ class CasePlanService implements CasePlanServiceInterface {
 	 */
 	public function deletePlan(string $objectUuid, ?string $uid): int {
 		$rows = $this->rowsOf(objectUuid: $objectUuid);
-		$this->anchorAccess->authorization->assertMayAdminister(verb: 'delete-plan', settings: (new CasePlanTree(items: $rows))->settings(), uid: $uid);
+		$act = new CasePlanAct(verb: 'delete-plan', actor: $uid);
+		$this->anchorAccess->authorization->assertMayAdminister(act: $act, settings: (new CasePlanTree(items: $rows))->settings());
 
 		return $this->store->items->deleteByObject(objectUuid: $objectUuid);
 	}//end deletePlan()
@@ -609,16 +586,14 @@ class CasePlanService implements CasePlanServiceInterface {
 	 * An object changed: evaluate its plan, if it has a live one, with the
 	 * event in hand so object on-parts can fire.
 	 *
-	 * @param string $objectUuid The object.
-	 * @param string $event The catalog event id.
-	 * @param array<string, mixed> $payload The object's data after the change.
+	 * @param CasePlanTrigger $trigger The object, the catalog event id and the object's data after the change.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
 	 */
-	public function onObjectEvent(string $objectUuid, string $event, array $payload): void {
-		$this->evaluateWhileOpen(trigger: new CasePlanTrigger(objectUuid: $objectUuid, event: $event, payload: $payload));
+	public function onObjectEvent(CasePlanTrigger $trigger): void {
+		$this->evaluateWhileOpen(trigger: $trigger);
 	}//end onObjectEvent()
 
 	/**
@@ -824,7 +799,7 @@ class CasePlanService implements CasePlanServiceInterface {
 	private function authorizeOrRecord(CasePlanAct $act, CaseItemMove $move): void {
 		$uid = $act->actor;
 		try {
-			$this->anchorAccess->authorization->assertMayAct(verb: $act->verb, item: $move->item, tree: $move->tree, uid: $uid);
+			$this->anchorAccess->authorization->assertMayAct(act: $act, item: $move->item, tree: $move->tree);
 		} catch (CaseAccessDeniedException $denial) {
 			$refusal = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $uid, reason: $denial->getMessage());
 			$this->mechanics->machine->recordRefusal(attempt: new CasePlanMove(item: $move->item, to: $move->to, why: $refusal, tree: null));
@@ -849,7 +824,8 @@ class CasePlanService implements CasePlanServiceInterface {
 	private function authorizeAttach(?CaseItem $parent, CaseAdHocAttachment $attachment): void {
 		$tree = $attachment->tree;
 		if ($parent === null) {
-			$this->anchorAccess->authorization->assertMayAct(verb: 'attach', item: null, tree: $tree, uid: $attachment->actor);
+			$act = new CasePlanAct(verb: 'attach', actor: $attachment->actor);
+			$this->anchorAccess->authorization->assertMayAct(act: $act, item: null, tree: $tree);
 			return;
 		}
 

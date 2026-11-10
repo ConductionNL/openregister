@@ -155,21 +155,17 @@ class SharePrincipalDeriver implements SharePrincipalDeriverInterface {
 	 * a verb (the flow trigger endpoint refusing a `read`-only recipient) has to
 	 * read the rich list, which is what this answers.
 	 *
-	 * @param mixed $sharedWith The raw `sharedWith` value.
-	 * @param string $userId The acting user id.
-	 * @param string[] $userGroups The acting user's group ids.
-	 * @param array<string|null> $permissions Permissions that satisfy the check.
-	 *        null is a MEANINGFUL member, not sloppiness: a share entry that
+	 * @param ShareGrantee   $grantee The acting user id and the acting user's group ids.
+	 * @param ShareListCheck $check   The raw `sharedWith` value and the permissions that satisfy the check.
+	 *        null is a MEANINGFUL permission, not sloppiness: a share entry that
 	 *        carries no explicit permission has `permission => null`, and both
 	 *        callers pass `['use', null]` to mean "an unqualified share counts
-	 *        as 'use'". Narrowing this to string[] would silently stop matching
-	 *        those entries.
+	 *        as 'use'". Narrowing the permissions to string[] would silently
+	 *        stop matching those entries.
 	 *
 	 * @return bool True when a matching principal holds one of the permissions.
 	 */
-	public function grants(mixed $sharedWith, string $userId, array $userGroups, array $permissions): bool {
-		$grantee = new ShareGrantee(userId: $userId, groups: $userGroups);
-
-		return $grantee->holdsAnyOf(entries: $this->validEntries(sharedWith: $sharedWith), permissions: $permissions);
+	public function grants(ShareGrantee $grantee, ShareListCheck $check): bool {
+		return $grantee->holdsAnyOf(entries: $this->validEntries(sharedWith: $check->sharedWith), permissions: $check->permissions);
 	}//end grants()
 }//end class

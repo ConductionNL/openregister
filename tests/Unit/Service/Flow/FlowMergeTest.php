@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunStart;
@@ -62,7 +63,9 @@ class FlowMergeTest extends TestCase {
 	private function walk(array $flow, array $items, FlowStepDispatcher $d): array {
 		return $this->engine->run(
 			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new MergeSubject(), dispatcher: $d)),
-			items: $items
+			origin: new FlowRunOrigin(
+				items: $items
+			)
 		);
 	}
 

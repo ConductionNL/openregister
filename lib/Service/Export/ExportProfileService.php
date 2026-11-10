@@ -166,21 +166,17 @@ class ExportProfileService implements ExportProfileServiceInterface {
 	/**
 	 * Refuse a caller who is neither the owner nor an administrator.
 	 *
-	 * @param ExportProfile $profile       The profile.
-	 * @param string        $callerUid     The caller.
-	 * @param bool          $callerIsAdmin Whether the caller is an administrator.
+	 * @param ExportProfile       $profile The profile.
+	 * @param ExportProfileCaller $caller  The caller's uid, and whether they are an administrator.
 	 *
 	 * @return void
 	 *
 	 * @throws ExportRefusedException When the caller may not touch the profile.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The administrator bypass is
-	 *     a property of the caller, not a second code path.
 	 */
-	public function assertOwnerOrAdmin(ExportProfile $profile, string $callerUid, bool $callerIsAdmin): void {
-		if ($callerIsAdmin === true || $profile->getOwner() === $callerUid) {
+	public function assertOwnerOrAdmin(ExportProfile $profile, ExportProfileCaller $caller): void {
+		if ($caller->isAdmin === true || $profile->getOwner() === $caller->uid) {
 			return;
 		}
 
@@ -222,12 +218,10 @@ class ExportProfileService implements ExportProfileServiceInterface {
 		}
 
 		$objects = $this->steps->exportService->fetchExportObjects(
-			register: $register,
-			schema: $schema,
-			filters: $profile->getFiltersArray()
+			request: new ExportRequest(register: $register, schema: $schema, filters: $profile->getFiltersArray())
 		);
 
-		$written = $this->steps->writer->write(profile: $profile, objects: $objects, schema: $schema);
+		$written = $this->steps->writer->write(projection: new ProfileProjection(profile: $profile, schema: $schema), objects: $objects);
 
 		$this->recorder->recordCompleted(
 			profile: ($profile->getName() ?? ''),

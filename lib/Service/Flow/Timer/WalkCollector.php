@@ -88,15 +88,17 @@ class WalkCollector {
 	/**
 	 * Record one examined day.
 	 *
-	 * @param DateTimeInterface $day     Any instant on the day.
-	 * @param bool              $counted Whether it counted against the budget.
-	 * @param string|null       $rule    The rule that made it non-working, when one did.
+	 * A day counted against the budget is of the kind `working`; any other kind
+	 * is the rule, or the weekend, that skipped it ({@see self::kindOf()}).
+	 *
+	 * @param DateTimeInterface $day  Any instant on the day.
+	 * @param string            $kind `working`, the rule's name, or `weekend`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
 	 */
-	public function examine(DateTimeInterface $day, bool $counted, ?string $rule = null): void {
+	public function examine(DateTimeInterface $day, string $kind): void {
 		$this->examined++;
 
 		if (count($this->rows) >= self::MAX_ROWS) {
@@ -105,8 +107,8 @@ class WalkCollector {
 
 		$this->rows[] = [
 			'date' => $day->format('Y-m-d'),
-			'kind' => self::kindOf(counted: $counted, rule: $rule),
-			'counted' => $counted,
+			'kind' => $kind,
+			'counted' => $kind === self::WORKING,
 		];
 	}//end examine()
 
@@ -118,7 +120,7 @@ class WalkCollector {
 	 *
 	 * @return string `working`, the rule's name, or `weekend`.
 	 */
-	private static function kindOf(bool $counted, ?string $rule): string {
+	public static function kindOf(bool $counted, ?string $rule): string {
 		if ($counted === true) {
 			return self::WORKING;
 		}

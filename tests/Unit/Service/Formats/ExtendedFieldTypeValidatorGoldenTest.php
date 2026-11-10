@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Formats;
 
+use OCA\OpenRegister\Formats\RecurrenceWindow;
+use OCA\OpenRegister\Formats\FormattedProperty;
 use DateTimeImmutable;
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -131,7 +133,7 @@ class ExtendedFieldTypeValidatorGoldenTest extends TestCase {
 	 */
 	#[DataProvider('recordedColors')]
 	public function testColorMatchesRecording(mixed $value, ?string $format, ?string $expected): void {
-		$this->assertSame($expected, (new ExtendedFieldTypeValidator())->validateColor($value, $format, 'tint'));
+		$this->assertSame($expected, (new ExtendedFieldTypeValidator())->validateColorProperty($value, new FormattedProperty('tint', $format)));
 	}//end testColorMatchesRecording()
 
 	/**
@@ -158,7 +160,7 @@ class ExtendedFieldTypeValidatorGoldenTest extends TestCase {
 	 */
 	#[DataProvider('recordedOccurrences')]
 	public function testOccurrencesMatchRecording(string $rrule, int $count, string $expected): void {
-		$actual = (new ExtendedFieldTypeValidator())->materialiseOccurrences($rrule, $count, new DateTimeImmutable(self::START));
+		$actual = (new ExtendedFieldTypeValidator())->occurrencesIn(new RecurrenceWindow($rrule, $count, new DateTimeImmutable(self::START)));
 
 		$this->assertSame($expected, json_encode($actual));
 	}//end testOccurrencesMatchRecording()
@@ -169,7 +171,7 @@ class ExtendedFieldTypeValidatorGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testCountAboveMaximumIsClamped(): void {
-		$actual = (new ExtendedFieldTypeValidator())->materialiseOccurrences('FREQ=DAILY', 250, new DateTimeImmutable(self::START));
+		$actual = (new ExtendedFieldTypeValidator())->occurrencesIn(new RecurrenceWindow('FREQ=DAILY', 250, new DateTimeImmutable(self::START)));
 
 		$this->assertCount(ExtendedFieldTypeValidator::MAX_OCCURRENCES, $actual);
 		$this->assertSame('2024-01-01T09:30:00+00:00', $actual[0]);
@@ -182,6 +184,6 @@ class ExtendedFieldTypeValidatorGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testMissingStartStillYieldsRequestedCount(): void {
-		$this->assertCount(2, (new ExtendedFieldTypeValidator())->materialiseOccurrences('FREQ=DAILY', 2));
+		$this->assertCount(2, (new ExtendedFieldTypeValidator())->occurrencesIn(new RecurrenceWindow('FREQ=DAILY', 2)));
 	}//end testMissingStartStillYieldsRequestedCount()
 }//end class

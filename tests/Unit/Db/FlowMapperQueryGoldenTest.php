@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Db\Flow\TriggerLookup;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -235,7 +237,7 @@ class FlowMapperQueryGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testACountScopesLikeTheListingAndReadsTheTotal(): void {
-		$count = $this->mapper()->countFlows(app: 'hydra', applicationSlug: '', organisation: 'org-1');
+		$count = $this->mapper()->countFlows(new FlowSelection(app: 'hydra', applicationSlug: '', organisation: 'org-1'));
 
 		$this->assertSame(7, $count);
 		$this->assertSame(
@@ -254,7 +256,7 @@ class FlowMapperQueryGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testABareTriggerReadFiltersOnTriggerAndEnabled(): void {
-		$this->mapper()->findByTrigger(trigger: 'object.created', register: '', schema: null, organisation: '');
+		$this->mapper()->findByTrigger(new TriggerLookup(trigger: 'object.created', register: '', schema: null, organisation: ''));
 
 		$this->assertSame(
 			[
@@ -272,7 +274,7 @@ class FlowMapperQueryGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testAScopedTriggerReadKeepsUnrestrictedFlows(): void {
-		$this->mapper()->findByTrigger(trigger: 'object.created', register: 'reg', schema: 'sch', organisation: 'org-1');
+		$this->mapper()->findByTrigger(new TriggerLookup(trigger: 'object.created', register: 'reg', schema: 'sch', organisation: 'org-1'));
 
 		$this->assertSame(
 			[

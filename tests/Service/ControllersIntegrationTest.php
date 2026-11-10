@@ -49,6 +49,8 @@ use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Search\Service\VectorizationService;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
@@ -56,7 +58,6 @@ use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUser;
 use OCP\IUserSession;
 use OCA\OpenRegister\Tests\Support\ResolvesControllersFromContainer;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -91,11 +92,11 @@ class ControllersIntegrationTest extends TestCase {
 	private IRequest&MockObject $request;
 
 	/**
-	 * Mock user session for admin/user simulation
+	 * The real user session; each test signs in the account it needs
 	 *
-	 * @var IUserSession&MockObject
+	 * @var IUserSession
 	 */
-	private IUserSession&MockObject $userSession;
+	private IUserSession $userSession;
 
 	/**
 	 * Real register mapper from DI
@@ -215,15 +216,17 @@ class ControllersIntegrationTest extends TestCase {
 		$this->schemaMapper = \OC::$server->get(SchemaMapper::class);
 		$this->objectMapper = \OC::$server->get(MagicMapper::class);
 
-		// THE DOUBLES THIS FILE ACTUALLY CONTROLS, AND NOTHING ELSE.
-		// The request carries each test's payload; the session decides who is
-		// asking. Every other collaborator comes from the container, so a
-		// controller that gains a dependency needs no change here.
+		// THE ONLY DOUBLE THIS FILE CONTROLS: the request carries each test's
+		// payload. The session is the real one, because the controllers read it
+		// through shared support objects (ControllerSession, the *Services
+		// bundles) that the container builds once; a per-test session double
+		// never reaches them. Every other collaborator comes from the container,
+		// so a controller that gains a dependency needs no change here.
 		$this->request = $this->createMock(IRequest::class);
-		$this->userSession = $this->createMock(IUserSession::class);
+		$this->userSession = \OC::$server->get(IUserSession::class);
+		$this->userSession->setUser(null);
 
 		$this->overrideContainerService(id: IRequest::class, instance: $this->request);
-		$this->overrideContainerService(id: IUserSession::class, instance: $this->userSession);
 
 		$this->registersController = $this->resolveController(class: RegistersController::class);
 		$this->schemasController = $this->resolveController(class: SchemasController::class);
@@ -303,6 +306,7 @@ class ControllersIntegrationTest extends TestCase {
 
 		// Put the container back: an override left behind would hand this
 		// test's doubles to every later test file.
+		$this->userSession->setUser(null);
 		$this->restoreContainerOverrides();
 
 		parent::tearDown();
@@ -346,9 +350,29 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	private function setupAdminUser(): void {
-		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn('admin');
-		$this->userSession->method('getUser')->willReturn($user);
+		$admins = \OC::$server->get(IGroupManager::class)->get('admin')?->getUsers() ?? [];
+		if ($admins === []) {
+			$this->markTestSkipped('The instance has no administrator account.');
+		}
+
+		$this->userSession->setUser(reset($admins));
+	}
+
+	/**
+	 * Insert a view owned by the signed-in user and register it for cleanup
+	 *
+	 * @return string The view's uuid
+	 */
+	private function insertOwnedView(): string {
+		$view = new View();
+		$view->setUuid((string)Uuid::v4());
+		$view->setName('ctrlint-owned-' . uniqid());
+		$view->setOwner($this->userSession->getUser()->getUID());
+		$view->setQuery(['registers' => []]);
+		$view = \OC::$server->get(ViewMapper::class)->insert($view);
+		$this->createdViewIds[] = $view->getUuid();
+
+		return $view->getUuid();
 	}
 
 	// =====================================================================
@@ -971,7 +995,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testViewsIndexUnauthenticated(): void {
-		// No user set on userSession mock -> getUser returns null.
+		// No user signed in: setUp clears the session.
 		$this->request->method('getParams')->willReturn([]);
 
 		$response = $this->viewsController->index();
@@ -1147,15 +1171,18 @@ class ControllersIntegrationTest extends TestCase {
 	/**
 	 * Test ViewsController::update returns 400 when name missing
 	 *
+	 * The view is looked up before the body is checked, so it must exist.
+	 *
 	 * @return void
 	 */
 	public function testViewsUpdateMissingName(): void {
 		$this->setupAdminUser();
+		$viewId = $this->insertOwnedView();
 		$this->request->method('getParams')->willReturn([
 			'query' => ['registers' => []],
 		]);
 
-		$response = $this->viewsController->update('some-id');
+		$response = $this->viewsController->update($viewId);
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertEquals(400, $response->getStatus());
@@ -1164,15 +1191,18 @@ class ControllersIntegrationTest extends TestCase {
 	/**
 	 * Test ViewsController::update returns 400 when query missing
 	 *
+	 * The view is looked up before the body is checked, so it must exist.
+	 *
 	 * @return void
 	 */
 	public function testViewsUpdateMissingQuery(): void {
 		$this->setupAdminUser();
+		$viewId = $this->insertOwnedView();
 		$this->request->method('getParams')->willReturn([
 			'name' => 'test-view',
 		]);
 
-		$response = $this->viewsController->update('some-id');
+		$response = $this->viewsController->update($viewId);
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertEquals(400, $response->getStatus());

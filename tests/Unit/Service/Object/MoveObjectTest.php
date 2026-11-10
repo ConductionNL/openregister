@@ -294,7 +294,19 @@ final class MoveObjectTest extends TestCase {
 		$object = $this->object();
 		$object->$setter($state);
 
-		self::assertNotNull(actual: $this->service()->keptReason(object: $object));
+		$reason = $this->service()->keptReason(object: $object);
+
+		self::assertNotNull(actual: $reason);
+		// The migration path gives the same reason a move refuses with.
+		$outcome = $this->service()->move(
+			object: $object,
+			sourceRegister: $this->register(1),
+			sourceSchema: $this->schema(10),
+			targetRegister: $this->register(2),
+			targetSchema: $this->schema(20),
+			actor: 'anna',
+		);
+		self::assertSame(expected: [$reason], actual: $outcome['errors']);
 	}
 
 	/**

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ShippedRegister;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -141,7 +142,7 @@ class ExampleSetRegistersBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnImportRecordsItsJob(): void {
-		$this->descriptors->expects($this->once())->method('reimport')->with('openregister', 'cases', 'example set install')
+		$this->descriptors->expects($this->once())->method('reimportShipped')->with(new ShippedRegister('openregister', 'cases'), 'example set install')
 			->willReturn(['outcome' => 'imported', 'importJobId' => 'job-1', 'importAppId' => 'alpha']);
 
 		$this->assertSame(['error' => '', 'jobs' => [['appId' => 'alpha', 'jobId' => 'job-1']]], $this->subject->import(slug: 'cases'));
@@ -166,7 +167,7 @@ class ExampleSetRegistersBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailedImportReportsWhy(): void {
-		$this->descriptors->method('reimport')->willReturnOnConsecutiveCalls(
+		$this->descriptors->method('reimportShipped')->willReturnOnConsecutiveCalls(
 			['outcome' => 'failed', 'reason' => 'schema conflict', 'importJobId' => 'job-3'],
 			['outcome' => 'failed'],
 			$this->throwException(new RuntimeException('descriptor unreadable'))
@@ -183,7 +184,7 @@ class ExampleSetRegistersBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testIsBehindAsksTheDescriptorService(): void {
-		$this->descriptors->expects($this->exactly(2))->method('isBehind')->with('openregister', 'cases', true)
+		$this->descriptors->expects($this->exactly(2))->method('isShippedBehind')->with(new ShippedRegister('openregister', 'cases'), true)
 			->willReturnOnConsecutiveCalls(true, $this->throwException(new RuntimeException('x')));
 
 		$this->assertTrue($this->subject->isBehind(slug: 'cases', mock: true));
