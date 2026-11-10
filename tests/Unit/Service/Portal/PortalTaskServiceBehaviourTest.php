@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
@@ -141,7 +142,8 @@ class PortalTaskServiceBehaviourTest extends TestCase {
 		$this->mapper->expects($this->exactly(2))
 			->method('findOpenExternalForParty')
 			->willReturnCallback(
-				function (string $partyReference, int $limit, int $offset): array {
+				function (string $partyReference, ListQuery $page): array {
+					[$limit, $offset] = [$page->limit, $page->offset];
 					$this->assertSame('party:bsn-1', $partyReference);
 					$this->assertContains($limit, [1, 500]);
 					$this->assertSame(0, $offset);

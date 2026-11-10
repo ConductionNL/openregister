@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
@@ -369,7 +370,7 @@ class PortalTaskServiceTest extends TestCase {
 		$foreign = $this->task();
 		$foreign->setUuid('t-9');
 		$foreign->setAssignee('party:bsn-2');
-		$this->mapper->expects($this->once())->method('findOpenExternalForParty')->with('party:bsn-1', 25, 0)->willReturn([$mine, $foreign]);
+		$this->mapper->expects($this->once())->method('findOpenExternalForParty')->with('party:bsn-1', $this->equalTo(new ListQuery(limit: 25, offset: 0)))->willReturn([$mine, $foreign]);
 		$this->mapper->expects($this->once())->method('countOpenExternalForParty')->with('party:bsn-1')->willReturn(1);
 
 		$page = $this->service->listForSubject(subject: new PortalSubject(subjectRef: 'bsn-1'));
