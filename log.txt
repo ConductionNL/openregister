@@ -1775,3 +1775,4 @@
 2026-11-10T09:48:24Z integrator-20261110T083641-bf44b7c8 RED tree 3a100f8de0 prs 25 front=skip: Tests: 54813, Assertions: 181055, Errors: 7, Failures: 15, Warnings: 3, Deprecations: 4, P; first failures: Unit\Service\Credential\OAuth2ConnectServiceGoldenTest::testAFirstConnectPostsTheExactTokenRequestAndMintsTheC;Unit\Service\Credential\OAuth2InstanceClientMintGoldenTest::testTheClientSecretIsMintedForTheFlowsOwner with d;Unit\Service\Credential\OAuth2InstanceClientMintGoldenTest::testTheClientSecretIsMintedForTheFlowsOwner with d
 2026-11-10T09:48:31Z precheck-20261110T063045-17ba94e0 GREEN tree cb826bec50 on dev 60b7dd3615 prs 1 front=skip: Tests: 54804, Assertions: 181028, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-10T09:48:39Z integrator-20261110T083641-bf44b7c8 CONFLICT-DEV #8531 de446574
+2026-11-10T09:48:50Z integrator-20261110T083641-bf44b7c8 CONFLICT-DEV #8617 79133840
