@@ -593,9 +593,8 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	/**
 	 * List recent events on a named calendar — picker step 2.
 	 *
-	 * @param string $calendarUri Calendar URI.
-	 * @param int|null $limit Max rows (default 100).
-	 * @param DateTimeInterface|null $after Only include events with dtstart >= $after.
+	 * @param string               $calendarUri Calendar URI.
+	 * @param CalendarPickerWindow $window      The earliest start and the row cap.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
@@ -603,10 +602,10 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function getEventsForCalendar(string $calendarUri, ?int $limit = 100, ?DateTimeInterface $after = null): array {
-		$results = $this->pickerRows(scan: $this->pickerScan(calendarUri: $calendarUri, after: $after));
+	public function getEventsForCalendar(string $calendarUri, CalendarPickerWindow $window): array {
+		$results = $this->pickerRows(scan: $this->pickerScan(calendarUri: $calendarUri, after: $window->after));
 
-		return $this->limitRows(rows: $this->sortedByStart(rows: $results), limit: $limit ?? 0);
+		return $this->limitRows(rows: $this->sortedByStart(rows: $results), limit: $window->limit ?? 0);
 	}//end getEventsForCalendar()
 
 	/**

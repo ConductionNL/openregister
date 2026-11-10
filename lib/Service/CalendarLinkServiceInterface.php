@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use DateTimeInterface;
 use Exception;
 use OCA\OpenRegister\Db\CalendarLink;
 
@@ -135,9 +134,8 @@ interface CalendarLinkServiceInterface {
 	/**
 	 * List recent events on a named calendar — picker step 2.
 	 *
-	 * @param string $calendarUri Calendar URI.
-	 * @param int|null $limit Max rows (default 100).
-	 * @param DateTimeInterface|null $after Only include events with dtstart >= $after.
+	 * @param string               $calendarUri Calendar URI.
+	 * @param CalendarPickerWindow $window      The earliest start and the row cap.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
@@ -145,5 +143,5 @@ interface CalendarLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function getEventsForCalendar(string $calendarUri, ?int $limit = 100, ?DateTimeInterface $after = null): array;
+	public function getEventsForCalendar(string $calendarUri, CalendarPickerWindow $window): array;
 }//end interface
