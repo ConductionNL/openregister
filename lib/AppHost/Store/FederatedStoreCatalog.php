@@ -411,7 +411,6 @@ class FederatedStoreCatalog {
 		return $installed;
 	}//end installedEntries()
 
-
 	/**
 	 * Name one installed component for the report.
 	 *
