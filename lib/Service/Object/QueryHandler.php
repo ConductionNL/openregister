@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Search\HistoryPredicate;
 use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Search\SynonymCaps;
 use OCP\AppFramework\IAppContainer;
 
 /**
@@ -746,8 +747,7 @@ class QueryHandler implements QueryHandlerInterface {
 
 		return $dictionary->expand(
 			term: $term,
-			perGroupCap: $this->dictionary->perGroupCap(),
-			perQueryCap: $this->dictionary->perQueryCap()
+			caps: new SynonymCaps(perGroup: $this->dictionary->perGroupCap(), perQuery: $this->dictionary->perQueryCap())
 		);
 	}//end expandSearchTerm()
 
