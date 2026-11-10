@@ -33,13 +33,6 @@ namespace OCA\OpenRegister\Dto;
 class DeletionAnalysis {
 
 	/**
-	 * Whether the object may be deleted without violating RESTRICT constraints.
-	 *
-	 * @var boolean
-	 */
-	public readonly bool $deletable;
-
-	/**
 	 * Dependent objects that will be cascade-deleted alongside the root.
 	 *
 	 * @var array
@@ -61,20 +54,6 @@ class DeletionAnalysis {
 	public readonly array $defaultTargets;
 
 	/**
-	 * Dependent objects that block deletion (onDelete = RESTRICT).
-	 *
-	 * @var array
-	 */
-	public readonly array $blockers;
-
-	/**
-	 * The full dependency chain path for each blocker or cascade target.
-	 *
-	 * @var array
-	 */
-	public readonly array $chainPaths;
-
-	/**
 	 * Construct a new DeletionAnalysis value object.
 	 *
 	 * @param bool                 $deletable  Whether the object may be deleted without violating RESTRICT constraints.
@@ -83,19 +62,16 @@ class DeletionAnalysis {
 	 * @param array                $chainPaths The full dependency chain path for each blocker or cascade target.
 	 */
 	public function __construct(
-		bool $deletable,
+		public readonly bool $deletable,
 		?DeletionEffects $effects = null,
-		array $blockers = [],
-		array $chainPaths = [],
+		public readonly array $blockers = [],
+		public readonly array $chainPaths = [],
 	) {
 		$effects ??= new DeletionEffects();
 
-		$this->deletable      = $deletable;
 		$this->cascadeTargets = $effects->cascadeTargets;
 		$this->nullifyTargets = $effects->nullifyTargets;
 		$this->defaultTargets = $effects->defaultTargets;
-		$this->blockers       = $blockers;
-		$this->chainPaths     = $chainPaths;
 	}//end __construct()
 
 	/**
