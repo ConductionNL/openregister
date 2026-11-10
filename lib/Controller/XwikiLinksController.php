@@ -128,7 +128,7 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		$action = LinkedSourceActions::linkByTexts(request: $this->request, params: ['pageReference'], link: $this->linkPage(...));
+		$action = (new LinkedSourceActions(request: $this->request))->linkByTexts(params: ['pageReference'], link: $this->linkPage(...));
 
 		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end link()
@@ -150,7 +150,7 @@ class XwikiLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
-		$action = LinkedSourceActions::linkByTexts(request: $this->request, params: ['space', 'title'], link: $this->createPage(...));
+		$action = (new LinkedSourceActions(request: $this->request))->linkByTexts(params: ['space', 'title'], link: $this->createPage(...));
 
 		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end createAndLink()

@@ -132,7 +132,7 @@ class TimeTrackerLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		$action = LinkedSourceActions::linkByTexts(request: $this->request, params: ['entryType', 'id'], link: $this->linkEntry(...));
+		$action = (new LinkedSourceActions(request: $this->request))->linkByTexts(params: ['entryType', 'id'], link: $this->linkEntry(...));
 
 		return $this->onWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end link()

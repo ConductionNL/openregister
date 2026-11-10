@@ -149,8 +149,7 @@ class PollLinksController extends Controller {
 		return $this->whenPollsInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
 				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
-				action: LinkedSourceActions::linkById(
-					request: $this->request,
+				action: (new LinkedSourceActions(request: $this->request))->linkById(
 					param: 'pollId',
 					link: fn (ObjectEntity $object, int $pollId) => $this->pollLinkService->linkPoll($this->linkTargetOf(object: $object), $pollId)
 				)
