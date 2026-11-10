@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters
 
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;
 use OCP\App\IAppManager;
@@ -89,7 +90,7 @@ class CalendarProviderTest extends TestCase {
 			$this->buildLogger(),
 		);
 
-		$result = $provider->list('r', 's', 'obj-1');
+		$result = $provider->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 		$this->assertCount(1, $result);
 		$this->assertSame('both', $result[0]['source']);
 	}
@@ -113,7 +114,7 @@ class CalendarProviderTest extends TestCase {
 			$this->buildLogger(),
 		);
 
-		$provider->delete('r', 's', 'obj-1', '7/event.ics');
+		$provider->delete(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), '7/event.ics');
 	}
 
 	public function testDeleteLegacyShapeOfAnotherObjectIsRefused(): void {
@@ -132,7 +133,7 @@ class CalendarProviderTest extends TestCase {
 		);
 
 		$this->expectExceptionCode(404);
-		$provider->delete('r', 's', 'obj-1', '7/event.ics');
+		$provider->delete(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), '7/event.ics');
 	}
 
 	public function testDeleteBareUidUsesLinkService(): void {
@@ -154,7 +155,7 @@ class CalendarProviderTest extends TestCase {
 			$this->buildLogger(),
 		);
 
-		$provider->delete('r', 's', 'obj-1', 'ev-uid');
+		$provider->delete(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), 'ev-uid');
 	}
 
 	public function testHealthReportsUnavailableWhenNotInstalled(): void {

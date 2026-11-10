@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Tests\Support\BuildsReaderHistory;
 use OCP\IL10N;
@@ -54,7 +55,7 @@ final class AuditTrailProviderReaderPathTest extends TestCase {
 	public function testAReaderGetsTheEntryWithoutTheHiddenPropertyOrTheSession(): void {
 		$rows = $this->provider(
 			$this->readerHistory(rows: [$this->readerEntry(objectUuid: self::$readableUuid)])
-		)->list('5', '7', self::$readableUuid);
+		)->list(new ObjectRef(register: '5', schema: '7', id: self::$readableUuid));
 
 		self::assertCount(1, $rows);
 		self::assertSame(['old' => 'Oud', 'new' => 'Nieuw'], $rows[0]['changed']['titel']);
@@ -75,7 +76,7 @@ final class AuditTrailProviderReaderPathTest extends TestCase {
 				rows: [$this->readerEntry(objectUuid: self::$readableUuid)],
 				world: ['groups' => ['redactie']]
 			)
-		)->list('5', '7', self::$readableUuid);
+		)->list(new ObjectRef(register: '5', schema: '7', id: self::$readableUuid));
 
 		self::assertSame(['old' => 'klokkenluider', 'new' => 'geheim'], $rows[0]['changed']['interneAantekening']);
 		self::assertArrayNotHasKey('session', $rows[0]);
@@ -89,7 +90,7 @@ final class AuditTrailProviderReaderPathTest extends TestCase {
 					range(1, 30)
 				)
 			)
-		)->list('5', '7', self::$readableUuid);
+		)->list(new ObjectRef(register: '5', schema: '7', id: self::$readableUuid));
 
 		self::assertCount(30, $rows);
 		self::assertSame(range(0, 29), array_keys($rows));
@@ -101,7 +102,7 @@ final class AuditTrailProviderReaderPathTest extends TestCase {
 				rows: [$this->readerEntry(objectUuid: self::$readableUuid)],
 				world: ['readable' => false]
 			)
-		)->list('5', '7', self::$readableUuid);
+		)->list(new ObjectRef(register: '5', schema: '7', id: self::$readableUuid));
 
 		self::assertSame([], $rows);
 	}//end testACallerWhoMayNotReadTheObjectGetsNoEntries()
@@ -112,7 +113,7 @@ final class AuditTrailProviderReaderPathTest extends TestCase {
 				rows: [$this->readerEntry(objectUuid: self::$readableUuid)],
 				world: ['purposeRefused' => true]
 			)
-		)->list('5', '7', self::$readableUuid);
+		)->list(new ObjectRef(register: '5', schema: '7', id: self::$readableUuid));
 
 		self::assertSame([], $rows);
 	}//end testARefusedPurposeGivesNoEntries()
@@ -123,6 +124,6 @@ final class AuditTrailProviderReaderPathTest extends TestCase {
 			->with('reg-slug', 'schema-slug', 'obj-1', $this->callback(static fn (array $params): bool => $params['limit'] === PHP_INT_MAX))
 			->willReturn(['results' => [5 => ['uuid' => 'a']], 'total' => 1]);
 
-		self::assertSame([['uuid' => 'a']], $this->provider($history)->list('reg-slug', 'schema-slug', 'obj-1'));
+		self::assertSame([['uuid' => 'a']], $this->provider($history)->list(new ObjectRef(register: 'reg-slug', schema: 'schema-slug', id: 'obj-1')));
 	}//end testTheObjectIsAskedForByThePathItWasListedUnder()
 }//end class

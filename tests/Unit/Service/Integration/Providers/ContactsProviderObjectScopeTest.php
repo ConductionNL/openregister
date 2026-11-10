@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Db\ContactLink;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\Integration\Providers\ContactsProvider;
@@ -48,7 +49,7 @@ class ContactsProviderObjectScopeTest extends TestCase {
 			->with(42, 'applicant', 'abc-123')
 			->willReturn($link);
 
-		$this->assertSame('applicant', $this->provider->update('reg', 'sch', 'abc-123', '42', ['role' => 'applicant'])['role']);
+		$this->assertSame('applicant', $this->provider->update(new ObjectRef(register: 'reg', schema: 'sch', id: 'abc-123'), '42', ['role' => 'applicant'])['role']);
 	}
 
 	public function testDeletePassesTheObjectTheLinkMustBelongTo(): void {
@@ -56,7 +57,7 @@ class ContactsProviderObjectScopeTest extends TestCase {
 			->method('unlinkContact')
 			->with(42, 'abc-123');
 
-		$this->provider->delete('reg', 'sch', 'abc-123', '42');
+		$this->provider->delete(new ObjectRef(register: 'reg', schema: 'sch', id: 'abc-123'), '42');
 	}
 
 	public function testALinkOfAnotherObjectIsNotFound(): void {
@@ -64,6 +65,6 @@ class ContactsProviderObjectScopeTest extends TestCase {
 			->willThrowException(new \Exception('Contact link not found', 404));
 
 		$this->expectExceptionCode(404);
-		$this->provider->delete('reg', 'sch', 'abc-123', '77');
+		$this->provider->delete(new ObjectRef(register: 'reg', schema: 'sch', id: 'abc-123'), '77');
 	}
 }

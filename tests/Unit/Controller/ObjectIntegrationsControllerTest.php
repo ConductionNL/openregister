@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain;
@@ -91,7 +92,7 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 		return true;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		$this->listCalled = compact('register', 'schema', 'objectId', 'filters');
 		if ($this->listThrowsNotImplemented === true) {
 			throw new NotImplementedException('list not supported');
@@ -102,12 +103,12 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 		return [['id' => 'a'], ['id' => 'b']];
 	}//end list()
 
-	public function get(string $register, string $schema, string $objectId, string $entityId): array {
+	public function get(ObjectRef $ref, string $entityId): array {
 		$this->getCalled = compact('register', 'schema', 'objectId', 'entityId');
 		return ['id' => $entityId, 'name' => 'thing'];
 	}//end get()
 
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
+	public function create(ObjectRef $ref, array $payload): array {
 		$this->createCalled = compact('register', 'schema', 'objectId', 'payload');
 		if ($this->createThrowsUnavailable === true) {
 			throw new ProviderUnavailableException(
@@ -118,11 +119,11 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 		return ['id' => 'new-id'];
 	}//end create()
 
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+	public function delete(ObjectRef $ref, string $entityId): void {
 		$this->deleteCalled = compact('register', 'schema', 'objectId', 'entityId');
 	}//end delete()
 
-	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
+	public function update(ObjectRef $ref, string $entityId, array $payload): array {
 		$this->updateCalled = compact('register', 'schema', 'objectId', 'entityId', 'payload');
 		return ['id' => $entityId];
 	}//end update()
@@ -424,7 +425,7 @@ class ObjectIntegrationsControllerTest extends TestCase {
 
 	public function testAnItemOfAnotherObjectAnswers404(): void {
 		$provider = new class('stub') extends _ControllerStubProvider {
-			public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+			public function delete(ObjectRef $ref, string $entityId): void {
 				throw new \Exception('Note not found', 404);
 			}
 		};

@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
 use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
@@ -123,7 +124,7 @@ final class CompanyLookupGoldenTest extends TestCase {
 
 	#[DataProvider('kvkListCases')]
 	public function testKvkListAsks(array $filters, array $query): void {
-		$this->kvk()->list('', '', '', $filters);
+		$this->kvk()->list(new ObjectRef(register: '', schema: '', id: ''), $filters);
 
 		$this->assertSame([['GET zoeken', $this->options($query)]], $this->calls);
 	}//end testKvkListAsks()
@@ -142,7 +143,7 @@ final class CompanyLookupGoldenTest extends TestCase {
 
 	#[DataProvider('openCorporatesListCases')]
 	public function testOpenCorporatesListAsks(array $filters, array $query): void {
-		$this->openCorporates()->list('', '', '', $filters);
+		$this->openCorporates()->list(new ObjectRef(register: '', schema: '', id: ''), $filters);
 
 		$this->assertSame([['GET companies/search', $this->options($query)]], $this->calls);
 	}//end testOpenCorporatesListAsks()
@@ -159,7 +160,7 @@ final class CompanyLookupGoldenTest extends TestCase {
 
 	#[DataProvider('kvkRowCases')]
 	public function testKvkRows(array $answer, array $rows): void {
-		$this->assertSame($rows, $this->kvk($answer)->list('', '', '', []));
+		$this->assertSame($rows, $this->kvk($answer)->list(new ObjectRef(register: '', schema: '', id: ''), []));
 	}//end testKvkRows()
 
 	public static function openCorporatesRowCases(): array {
@@ -176,7 +177,7 @@ final class CompanyLookupGoldenTest extends TestCase {
 
 	#[DataProvider('openCorporatesRowCases')]
 	public function testOpenCorporatesRows(array $answer, array $rows): void {
-		$this->assertSame($rows, $this->openCorporates($answer)->list('', '', '', []));
+		$this->assertSame($rows, $this->openCorporates($answer)->list(new ObjectRef(register: '', schema: '', id: ''), []));
 	}//end testOpenCorporatesRows()
 
 	public function testKvkLookupAsksByNumber(): void {

@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Mcp\BuiltIn;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Mcp\BuiltIn\IntegrationsToolProvider;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -73,17 +74,17 @@ class _McpStubProvider extends AbstractIntegrationProvider {
 		return $this->enabled;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		$this->listCalled = compact('register', 'schema', 'objectId', 'filters');
 		return [['id' => 'a'], ['id' => 'b']];
 	}//end list()
 
-	public function get(string $register, string $schema, string $objectId, string $entityId): array {
+	public function get(ObjectRef $ref, string $entityId): array {
 		$this->getCalled = compact('register', 'schema', 'objectId', 'entityId');
 		return ['id' => $entityId, 'name' => 'thing'];
 	}//end get()
 
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
+	public function create(ObjectRef $ref, array $payload): array {
 		$this->createCalled = compact('register', 'schema', 'objectId', 'payload');
 		return ['id' => 'new-id'];
 	}//end create()
