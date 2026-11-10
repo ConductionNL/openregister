@@ -174,7 +174,10 @@ class ImportHandlerAppConfigurationStepsGoldenTest extends TestCase {
 			'forced' => [$run('zaakapp', '1.0.0', true, 'h1'), []],
 			'nothing stored' => [$run('zaakapp', '1.0.0', false, 'h1'), []],
 			'empty stored hash, empty definition hash' => [$run('zaakapp', '1.0.0', false, ''), ['imported_config_zaakapp_hash' => '']],
-			'different hash' => [$run('zaakapp', '1.0.0', false, 'h2'), ['imported_config_zaakapp_hash' => 'h1', 'imported_config_zaakapp_version' => '0.9.0']],
+			'different hash' => [
+				$run('zaakapp', '1.0.0', false, 'h2'),
+				['imported_config_zaakapp_hash' => 'h1', 'imported_config_zaakapp_version' => '0.9.0'],
+			],
 			'unchanged' => [$run('zaakapp', '1.0.0', false, 'h1'), ['imported_config_zaakapp_hash' => 'h1', 'imported_config_zaakapp_version' => '0.9.0']],
 		];
 		$out = [];
