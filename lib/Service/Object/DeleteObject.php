@@ -406,11 +406,13 @@ class DeleteObject {
 			}
 
 			// The cascade context is folded into the audit trail's initial INSERT by the mapper.
-			$this->auditTrailMapper->createAuditTrail(
-				old: $objectEntity,
-				new: null,
-				action: $auditAction,
-				cascadeContext: $cascadeContext
+			$this->auditTrailMapper->recordChange(
+				change: new AuditedChange(
+					old: $objectEntity,
+					new: null,
+					action: $auditAction,
+					cascadeContext: $cascadeContext
+				)
 			);
 		}
 

@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\FreezeTerms;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -475,7 +476,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		// flip (openregister ADR-003). Both directions are recorded: an object
 		// that shows no archive marker today is a different thing from one that
 		// was never archived, and only the trail can tell them apart.
-		$this->recording->auditTrail->createAuditTrail(old: $before, new: $saved, action: $transition->action);
+		$this->recording->auditTrail->recordChange(change: new AuditedChange(old: $before, new: $saved, action: $transition->action));
 
 		$this->recording->logger->info(
 			message: '[ArchiveHandler] ' . $transition->action,

@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\TransferAuditLog;
 use OCA\OpenRegister\Service\Edepot\TransferFailure;
 use OCA\OpenRegister\Service\Edepot\TransferSettings;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCP\IAppConfig;
 use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
@@ -105,7 +106,7 @@ final class TransferAuditLogRecordingTest extends TestCase {
 	public function testATransferredObjectIsAuditedAndLogged(): void {
 		$object = new ObjectEntity();
 		$object->setUuid('obj-7');
-		$this->audit->expects($this->once())->method('createAuditTrail')->with($object, $object, 'archival.transferred');
+		$this->audit->expects($this->once())->method('recordChange')->with(AuditChangeCalls::matching([$object, $object, 'archival.transferred']));
 		$this->logger->expects($this->never())->method('warning');
 		$this->logger->expects($this->once())->method('info')->with(
 			'[EdepotTransferService] Audit: archival.transferred',
@@ -128,7 +129,7 @@ final class TransferAuditLogRecordingTest extends TestCase {
 	public function testAFailingAuditWriteIsWarnedAndTheTransferStillLogged(): void {
 		$object = new ObjectEntity();
 		$object->setUuid('obj-7');
-		$this->audit->method('createAuditTrail')->willThrowException(new RuntimeException('db down'));
+		$this->audit->method('recordChange')->willThrowException(new RuntimeException('db down'));
 		$this->logger->expects($this->once())->method('warning')->with(
 			'[EdepotTransferService] Failed to create audit trail for transfer',
 			['uuid' => 'obj-7', 'error' => 'db down']

@@ -114,7 +114,7 @@ final class ObjectOwnershipServiceGoldenTest extends TestCase {
 		$this->userManager->method('userExists')->willReturnCallback(
 			static fn (string $uid) => in_array($uid, $knownUsers, true)
 		);
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 
 		$notices      = &$this->notices;
 		$this->notificationManager->method('createNotification')->willReturnCallback(

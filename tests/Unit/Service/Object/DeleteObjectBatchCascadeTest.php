@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -265,7 +266,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		// Parent: one single-row insert; the per-row INSERT+UPDATE pair is gone.
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('createAuditTrail')
+			->method('recordChange')
 			->willReturn(new AuditTrail());
 
 		$result = $this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'parent-uuid'));
@@ -589,8 +590,8 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('createAuditTrail')
-			->with($entity, null, 'referential_integrity.cascade_delete', $cascadeContext)
+			->method('recordChange')
+			->with(AuditChangeCalls::matching([$entity, null, 'referential_integrity.cascade_delete', $cascadeContext]))
 			->willReturn(new AuditTrail());
 
 		$this->auditTrailMapper

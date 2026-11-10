@@ -44,6 +44,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RunObjectLock;
 use OCA\OpenRegister\Db\RunObjectLockMapperInterface;
@@ -270,7 +271,7 @@ class RunLockRegistry implements RunLockReleaseInterface {
 				break: true
 			);
 
-			$this->recording->auditTrail->createAuditTrail(old: $objectBefore, new: $objectAfter, action: 'unlock');
+			$this->recording->auditTrail->recordChange(change: new AuditedChange(old: $objectBefore, new: $objectAfter, action: 'unlock'));
 
 			$this->recording->logger->info(
 				message: '[RunLockRegistry] Released a run lock',

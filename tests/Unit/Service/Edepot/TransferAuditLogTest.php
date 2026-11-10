@@ -51,7 +51,7 @@ class TransferAuditLogTest extends TestCase {
 	 */
 	private function failingAuditLog(): TransferAuditLog {
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('createAuditTrail')->willThrowException(new \RuntimeException('audit down'));
+		$audit->method('recordChange')->willThrowException(new \RuntimeException('audit down'));
 
 		$notifications = $this->createMock(INotificationManager::class);
 		$notifications->method('createNotification')->willThrowException(new \RuntimeException('no notifications'));

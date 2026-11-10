@@ -29,6 +29,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
@@ -2952,7 +2953,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		$this->noteClientCauseAttempt(call: $call, object: $savedEntity);
-		$log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity, action: $action);
+		$log = $this->auditTrailMapper->recordChange(change: new AuditedChange(old: null, new: $savedEntity, action: $action));
 
 		$savedEntity->setLastLog($log->jsonSerialize());
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:AUDIT');
@@ -4290,7 +4291,7 @@ class SaveObject implements SaveObjectInterface {
 		);
 
 		if ($run->silent === false && $this->isAuditTrailsEnabled() === true) {
-			$log = $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
+			$log = $this->auditTrailMapper->recordChange(change: new AuditedChange(old: $run->oldObject, new: $updatedEntity));
 			$updatedEntity->setLastLog($log->jsonSerialize());
 		}
 	}//end recordObjectUpdate()
@@ -4400,7 +4401,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrail(old: $change->old, new: $change->new, action: $change->action);
+			$this->auditTrailMapper->recordChange(change: new AuditedChange(old: $change->old, new: $change->new, action: $change->action));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'[SaveObject] audit trail for external ' . $change->action . ' on uuid ' . ((string)$change->new->getUuid()) . ' could not be recorded: ' . $e->getMessage(),

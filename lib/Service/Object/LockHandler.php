@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -164,7 +165,7 @@ class LockHandler {
 		// lock without reading objects; the payload on the object stays the sole
 		// authority for the write guard.
 		$this->stores->runLocks?->record(object: $objectAfter, step: new LockRunStep($request->runUuid, $request->nodeId));
-		$this->stores->auditTrailMapper->createAuditTrail(old: $context['object'], new: $objectAfter, action: 'lock');
+		$this->stores->auditTrailMapper->recordChange(change: new AuditedChange(old: $context['object'], new: $objectAfter, action: 'lock'));
 		$this->logLocked(after: $objectAfter, request: $request);
 
 		// `held` is read back off the entity rather than assumed from the fact that
@@ -548,7 +549,7 @@ class LockHandler {
 	 * @return void
 	 */
 	private function recordUnlock(ObjectEntity $before, ObjectEntity $after): void {
-		$this->stores->auditTrailMapper->createAuditTrail(old: $before, new: $after, action: 'unlock');
+		$this->stores->auditTrailMapper->recordChange(change: new AuditedChange(old: $before, new: $after, action: 'unlock'));
 		$this->logger->info(message: '[LockHandler] Object unlocked successfully', context: $this->logContext(fields: ['uuid' => $after->getUuid()]));
 	}//end recordUnlock()
 

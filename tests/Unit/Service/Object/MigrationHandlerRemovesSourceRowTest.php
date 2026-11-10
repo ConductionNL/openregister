@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\Errors\ValidationError;
@@ -336,7 +337,7 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 				return new AuditTrail();
 			}
 		));
-		$audit->method('createAuditTrail')->willReturnCallback(
+		$audit->method('recordChange')->willReturnCallback(AuditChangeCalls::positional(
 			function (ObjectEntity $old, ObjectEntity $new, string $action): AuditTrail {
 				if ($this->auditFails === true) {
 					throw new Exception('audit down');
@@ -345,7 +346,7 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 				$this->auditEntries[] = [$action, [$old->getObject(), $new->getObject()]];
 				return new AuditTrail();
 			}
-		);
+		));
 		return $audit;
 	}//end audit()
 

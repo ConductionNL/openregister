@@ -55,6 +55,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
@@ -539,10 +540,12 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		);
 		$object->setOwner($handover->newOwner);
 
-		$this->writers->auditTrailMapper->createAuditTrail(
-			old: $before,
-			new: $object,
-			action: self::AUDIT_ACTION
+		$this->writers->auditTrailMapper->recordChange(
+			change: new AuditedChange(
+				old: $before,
+				new: $object,
+				action: self::AUDIT_ACTION
+			)
 		);
 
 		$this->notifyPreviousOwner(record: $record, newOwner: $handover->newOwner);
