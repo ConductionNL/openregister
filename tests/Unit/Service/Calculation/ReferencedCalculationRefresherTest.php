@@ -22,7 +22,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
-use OCA\OpenRegister\Service\Calculation\ReferencedCalculationStores;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -123,11 +122,7 @@ class ReferencedCalculationRefresherTest extends TestCase {
 		$container->method('get')->willReturn(value: $service);
 
 		return new ReferencedCalculationRefresher(
-			new ReferencedCalculationStores(
-				$registers,
-				$schemas,
-				$rows
-			),
+			new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $rows),
 			$container,
 			new NullLogger()
 		);
