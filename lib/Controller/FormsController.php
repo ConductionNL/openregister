@@ -284,7 +284,7 @@ class FormsController extends Controller {
 				throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
 			}
 
-			$draft = $this->submitter->saveDraft(new FormSubmission(writes: [$write], payload: $this->payload(), submitter: $submitter));
+			$draft = $this->submitter->saveDraftWith(new FormSubmission(writes: [$write], payload: $this->payload(), submitter: $submitter));
 		} catch (FormSubmitRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
 		}
@@ -355,7 +355,7 @@ class FormsController extends Controller {
 	}//end signInRequired()
 
 	/**
-	 * One destination or a journey's writes, through FormSubmitService::submit().
+	 * One destination or a journey's writes, through FormSubmitService::submitWith().
 	 *
 	 * @param array{id: string, writes: array<int, array<string, mixed>>, audience: string} $form    The form.
 	 * @param IUser|null                                                                         $subject The subject.
@@ -367,9 +367,10 @@ class FormsController extends Controller {
 	 * @throws FormSubmitRefusedException On any refusal.
 	 */
 	private function submitForm(array $form, ?IUser $subject, ?string $key, ?string $draftId = null): array {
-		$submitter = new FormSubmitter(subject: $subject, scope: $form['id'], draftId: $draftId);
+		$submitter  = new FormSubmitter(subject: $subject, scope: $form['id'], draftId: $draftId);
+		$submission = new FormSubmission(writes: $this->writesOf(form: $form), payload: $this->payload(), submitter: $submitter);
 
-		return $this->submitter->submit(new FormSubmission(writes: $this->writesOf(form: $form), payload: $this->payload(), submitter: $submitter), $key);
+		return $this->submitter->submitWith($submission, $key);
 	}//end submitForm()
 
 	/**

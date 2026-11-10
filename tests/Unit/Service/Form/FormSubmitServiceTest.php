@@ -447,7 +447,7 @@ class FormSubmitServiceTest extends TestCase {
 	 * Spec scenario: the response carries the listener-computed fields, and only marked ones.
 	 */
 	public function testTheResponseCarriesTheListenerComputedFields(): void {
-		$answer = $this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => ['fields' => [['field' => 'onderwerp', 'property' => 'title']], 'fixed' => ['caseType' => 'ct-1']]])], payload: ['onderwerp' => 'Kapvergunning', 'sneaky' => 'dropped'], submitter: new FormSubmitter()));
+		$answer = $this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => ['fields' => [['field' => 'onderwerp', 'property' => 'title']], 'fixed' => ['caseType' => 'ct-1']]])], payload: ['onderwerp' => 'Kapvergunning', 'sneaky' => 'dropped'], submitter: new FormSubmitter()));
 
 		$this->assertSame('2026-0412', $answer['reference']);
 		$this->assertSame('uuid-case-1', $answer['id']);
@@ -463,13 +463,13 @@ class FormSubmitServiceTest extends TestCase {
 	 * An anonymous submit saves under RBAC with no owner; a signed-in subject saves as that user.
 	 */
 	public function testTheSubjectDecidesRbacAndOwnership(): void {
-		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter()));
+		$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter()));
 		$this->assertTrue($this->saves[0]['rbac']);
 		$this->assertTrue($this->saves[0]['unowned']);
 		$this->assertNull($this->saves[0]['user']);
 
 		$user = $this->createMock(IUser::class);
-		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(subject: $user)));
+		$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(subject: $user)));
 		$this->assertTrue($this->saves[1]['rbac']);
 		$this->assertFalse($this->saves[1]['unowned']);
 		$this->assertSame($user, $this->saves[1]['user']);
@@ -479,7 +479,7 @@ class FormSubmitServiceTest extends TestCase {
 	 * Without a mapping the payload is the object, minus control and metadata keys.
 	 */
 	public function testWithoutAMappingThePayloadIsTheObject(): void {
-		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b', '_rbac' => false, '@self' => ['owner' => 'x']], submitter: new FormSubmitter()));
+		$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b', '_rbac' => false, '@self' => ['owner' => 'x']], submitter: new FormSubmitter()));
 
 		$this->assertSame(['title' => 'a', 'caseType' => 'b'], $this->saves[0]['object']);
 	}//end testWithoutAMappingThePayloadIsTheObject()
@@ -491,7 +491,7 @@ class FormSubmitServiceTest extends TestCase {
 		$this->assertFalse($this->schemaBySlug['case']->getHardValidation());
 
 		try {
-			$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a'], submitter: new FormSubmitter()));
+			$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a'], submitter: new FormSubmitter()));
 			$this->fail('A payload missing a required property was accepted.');
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(422, $refused->getStatus());
@@ -506,13 +506,13 @@ class FormSubmitServiceTest extends TestCase {
 	 * Spec scenario: a repeated idempotency key repeats the answer and creates nothing.
 	 */
 	public function testARepeatedIdempotencyKeyRepeatsTheAnswer(): void {
-		$first = $this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1');
-		$second = $this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1');
+		$first = $this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1');
+		$second = $this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1');
 
 		$this->assertSame($first, $second);
 		$this->assertCount(1, $this->saves);
 
-		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k2');
+		$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k2');
 		$this->assertCount(2, $this->saves);
 	}//end testARepeatedIdempotencyKeyRepeatsTheAnswer()
 
@@ -527,11 +527,11 @@ class FormSubmitServiceTest extends TestCase {
 		$bob->method('getUID')->willReturn('bob');
 		$payload = ['title' => 'a', 'caseType' => 'b'];
 
-		$first = $this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(subject: $alice, scope: 'form-1')), idempotencyKey: 'k1');
+		$first = $this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(subject: $alice, scope: 'form-1')), idempotencyKey: 'k1');
 
 		foreach ([[$bob, $payload], [null, $payload], [$alice, ['title' => 'other', 'caseType' => 'b']]] as [$subject, $body]) {
 			try {
-				$this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $body, submitter: new FormSubmitter(subject: $subject, scope: 'form-1')), idempotencyKey: 'k1');
+				$this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $body, submitter: new FormSubmitter(subject: $subject, scope: 'form-1')), idempotencyKey: 'k1');
 				$this->fail('The key handed over the first answer.');
 			} catch (FormSubmitRefusedException $refused) {
 				$this->assertSame(409, $refused->getStatus());
@@ -540,7 +540,7 @@ class FormSubmitServiceTest extends TestCase {
 		}
 
 		$this->assertCount(1, $this->saves);
-		$this->assertSame($first, $this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(subject: $alice, scope: 'form-1')), idempotencyKey: 'k1'));
+		$this->assertSame($first, $this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(subject: $alice, scope: 'form-1')), idempotencyKey: 'k1'));
 	}//end testAnIdempotencyKeyDoesNotHandTheAnswerToSomebodyElse()
 
 	/**
@@ -553,18 +553,18 @@ class FormSubmitServiceTest extends TestCase {
 		// While the first submit is writing, the same request arrives again.
 		$this->duringSave = function () use ($destination, $payload, &$status): void {
 			try {
-				$this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1');
+				$this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1');
 			} catch (FormSubmitRefusedException $refused) {
 				$status = $refused->getStatus();
 			}
 		};
 
-		$first = $this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1');
+		$first = $this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1');
 
 		$this->assertSame(409, $status);
 		$this->assertCount(1, $this->saves);
 		$this->assertSame([], $this->locks->held);
-		$this->assertSame($first, $this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1'));
+		$this->assertSame($first, $this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1'));
 	}//end testTwoConcurrentSubmitsWithOneKeyCreateOneObject()
 
 	/**
@@ -572,14 +572,14 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	public function testARefusedSubmitReleasesItsKey(): void {
 		try {
-			$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a'], submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1');
+			$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a'], submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1');
 			$this->fail('An incomplete submit was accepted.');
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(422, $refused->getStatus());
 		}
 
 		$this->assertSame([], $this->locks->held);
-		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1');
+		$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(scope: 'form-1')), idempotencyKey: 'k1');
 		$this->assertCount(1, $this->saves);
 	}//end testARefusedSubmitReleasesItsKey()
 
@@ -588,7 +588,7 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	public function testEveryWriteIsValidatedBeforeTheFirst(): void {
 		try {
-			$this->service->submit(submission: new FormSubmission(writes: $this->organisationThenContact(), payload: ['naam' => 'Bakkerij De Korst'], submitter: new FormSubmitter()));
+			$this->service->submitWith(submission: new FormSubmission(writes: $this->organisationThenContact(), payload: ['naam' => 'Bakkerij De Korst'], submitter: new FormSubmitter()));
 			$this->fail('An invalid second write was accepted.');
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(422, $refused->getStatus());
@@ -603,7 +603,7 @@ class FormSubmitServiceTest extends TestCase {
 	 * A later write references an earlier write's id.
 	 */
 	public function testALaterWriteReferencesAnEarlierWritesId(): void {
-		$answer = $this->service->submit(submission: new FormSubmission(writes: $this->organisationThenContact(), payload: ['naam' => 'De Korst', 'mail' => 'info@dekorst.nl'], submitter: new FormSubmitter()));
+		$answer = $this->service->submitWith(submission: new FormSubmission(writes: $this->organisationThenContact(), payload: ['naam' => 'De Korst', 'mail' => 'info@dekorst.nl'], submitter: new FormSubmitter()));
 
 		$this->assertSame('uuid-organisation-1', $this->saves[1]['object']['organisation']);
 		$this->assertSame(['organisation', 'contact'], array_column($answer['objects'], 'as'));
@@ -620,7 +620,7 @@ class FormSubmitServiceTest extends TestCase {
 		);
 
 		try {
-			$this->service->submit(submission: new FormSubmission(writes: $this->organisationThenContact(), payload: ['naam' => 'De Korst', 'mail' => 'info@dekorst.nl'], submitter: new FormSubmitter()));
+			$this->service->submitWith(submission: new FormSubmission(writes: $this->organisationThenContact(), payload: ['naam' => 'De Korst', 'mail' => 'info@dekorst.nl'], submitter: new FormSubmitter()));
 			$this->fail('A refused second write was reported as success.');
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(422, $refused->getStatus());
@@ -638,7 +638,7 @@ class FormSubmitServiceTest extends TestCase {
 		$this->refuseSave['contact'] = new RuntimeException('SQLSTATE[HY000] [2002] Connection refused');
 
 		try {
-			$this->service->submit(submission: new FormSubmission(writes: $this->organisationThenContact(), payload: ['naam' => 'De Korst', 'mail' => 'info@dekorst.nl'], submitter: new FormSubmitter()));
+			$this->service->submitWith(submission: new FormSubmission(writes: $this->organisationThenContact(), payload: ['naam' => 'De Korst', 'mail' => 'info@dekorst.nl'], submitter: new FormSubmitter()));
 			$this->fail('An outage was reported as success.');
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(503, $refused->getStatus());
@@ -657,7 +657,7 @@ class FormSubmitServiceTest extends TestCase {
 		$this->expectException(FormSubmitRefusedException::class);
 		$this->expectExceptionCode(0);
 		try {
-			$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter()));
+			$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter()));
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(403, $refused->getStatus());
 			throw $refused;
@@ -669,7 +669,7 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	public function testAnUnknownDestinationIsA404(): void {
 		try {
-			$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'nope'], ['mapping' => null])], payload: [], submitter: new FormSubmitter()));
+			$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'nope'], ['mapping' => null])], payload: [], submitter: new FormSubmitter()));
 			$this->fail('An unknown destination was accepted.');
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(404, $refused->getStatus());
@@ -694,14 +694,14 @@ class FormSubmitServiceTest extends TestCase {
 		// Refused first: the token survives.
 		$this->refuseSave['case'] = new CustomValidationException(message: 'x', errors: ['title' => 'nope']);
 		try {
-			$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => $mapping])], payload: ['onderwerp' => 'a', 'bewijs' => ['uploadToken' => $token]], submitter: new FormSubmitter(scope: 'form-1')));
+			$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => $mapping])], payload: ['onderwerp' => 'a', 'bewijs' => ['uploadToken' => $token]], submitter: new FormSubmitter(scope: 'form-1')));
 			$this->fail('Refused save accepted.');
 		} catch (FormSubmitRefusedException) {
 			$this->assertSame('a.pdf', $this->uploads->materialise(formId: 'form-1', token: $token)['name']);
 		}
 
 		unset($this->refuseSave['case']);
-		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => $mapping])], payload: ['onderwerp' => 'a', 'bewijs' => ['uploadToken' => $token]], submitter: new FormSubmitter(scope: 'form-1')));
+		$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => $mapping])], payload: ['onderwerp' => 'a', 'bewijs' => ['uploadToken' => $token]], submitter: new FormSubmitter(scope: 'form-1')));
 
 		$files = $this->saves[1]['files'];
 		$this->assertSame('a.pdf', $files['bijlage']['name']);
@@ -731,14 +731,14 @@ class FormSubmitServiceTest extends TestCase {
 		$destination = ['register' => 'dossiq', 'schema' => 'case'];
 
 		try {
-			$this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => $mapping])], payload: ['onderwerp' => 'a'], submitter: new FormSubmitter(scope: 'form-1')));
+			$this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => $mapping])], payload: ['onderwerp' => 'a'], submitter: new FormSubmitter(scope: 'form-1')));
 			$this->fail('A required file property without an upload was accepted.');
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(422, $refused->getStatus());
 			$this->assertContains('bijlage', array_map(static fn (array $finding): string => (string)($finding['property'] ?? ''), $refused->getFindings()));
 		}
 
-		$this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => $mapping])], payload: ['onderwerp' => 'a', 'bewijs' => ['uploadToken' => $token]], submitter: new FormSubmitter(scope: 'form-1')));
+		$this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => $mapping])], payload: ['onderwerp' => 'a', 'bewijs' => ['uploadToken' => $token]], submitter: new FormSubmitter(scope: 'form-1')));
 		$this->assertSame('a.pdf', $this->saves[0]['files']['bijlage']['name']);
 	}//end testARequiredFilePropertyIsSatisfiedByAnUploadToken()
 
@@ -752,7 +752,7 @@ class FormSubmitServiceTest extends TestCase {
 		$token = $this->uploads->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file'], file: ['name' => 'a', 'type' => 'text/plain', 'tmp_name' => $path, 'error' => 0, 'size' => 1])['token'];
 
 		$this->expectException(FormSubmitRefusedException::class);
-		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => ['fields' => [['field' => 'x', 'property' => 'description']], 'fixed' => ['title' => 't', 'caseType' => 'c']]])], payload: ['x' => ['uploadToken' => $token]], submitter: new FormSubmitter(scope: 'form-1')));
+		$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => ['fields' => [['field' => 'x', 'property' => 'description']], 'fixed' => ['title' => 't', 'caseType' => 'c']]])], payload: ['x' => ['uploadToken' => $token]], submitter: new FormSubmitter(scope: 'form-1')));
 	}//end testATokenForAnotherPropertyIsRefused()
 
 	/**
@@ -783,7 +783,7 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	public function testADraftWithoutRequiredDataIsSaved(): void {
 		$user = $this->user(uid: 'alice');
-		$draft = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'Half af'], submitter: new FormSubmitter(subject: $user)));
+		$draft = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'Half af'], submitter: new FormSubmitter(subject: $user)));
 
 		$this->assertSame('draft', $draft['status']);
 		$this->assertSame('draft', $this->saves[0]['object']['@self']['status']);
@@ -806,13 +806,13 @@ class FormSubmitServiceTest extends TestCase {
 	 * Somebody else's draft is not found, even by its id: the same 404 as an unknown one.
 	 */
 	public function testSomebodyElsesDraftIsA404(): void {
-		$draft = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'Van Alice'], submitter: new FormSubmitter(subject: $this->user(uid: 'alice'))));
+		$draft = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'Van Alice'], submitter: new FormSubmitter(subject: $this->user(uid: 'alice'))));
 
 		$this->assertTrue($this->service->isOwnerOfDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], submitter: new FormSubmitter(subject: $this->user(uid: 'alice'), draftId: $draft['id'])));
 		$this->assertFalse($this->service->isOwnerOfDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], submitter: new FormSubmitter(subject: $this->user(uid: 'bob'), draftId: $draft['id'])));
 
 		$this->expectException(FormSubmitRefusedException::class);
-		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['caseType' => 'x'], submitter: new FormSubmitter(subject: $this->user(uid: 'bob'), draftId: $draft['id'])));
+		$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['caseType' => 'x'], submitter: new FormSubmitter(subject: $this->user(uid: 'bob'), draftId: $draft['id'])));
 	}//end testSomebodyElsesDraftIsA404()
 
 	/**
@@ -820,7 +820,7 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	public function testATypeInvalidDraftIsRefused(): void {
 		try {
-			$this->service->saveDraft(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => ['not', 'a', 'string']], submitter: new FormSubmitter(subject: $this->user(uid: 'alice'))));
+			$this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => ['not', 'a', 'string']], submitter: new FormSubmitter(subject: $this->user(uid: 'alice'))));
 			$this->fail('A type-invalid draft was saved.');
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(422, $refused->getStatus());
@@ -836,7 +836,7 @@ class FormSubmitServiceTest extends TestCase {
 	public function testAnAnonymousDraftIs401(): void {
 		$this->expectException(FormSubmitRefusedException::class);
 		try {
-			$this->service->saveDraft(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(subject: null)));
+			$this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(subject: null)));
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(401, $refused->getStatus());
 			throw $refused;
@@ -848,9 +848,9 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	public function testLeavingDraftRunsFullValidationAndStampsReceipt(): void {
 		$user = $this->user(uid: 'alice');
-		$draft = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'Kapvergunning'], submitter: new FormSubmitter(subject: $user)));
+		$draft = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'Kapvergunning'], submitter: new FormSubmitter(subject: $user)));
 
-		$answer = $this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['caseType' => 'ct-1'], submitter: new FormSubmitter(subject: $user, draftId: $draft['id'])));
+		$answer = $this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['caseType' => 'ct-1'], submitter: new FormSubmitter(subject: $user, draftId: $draft['id'])));
 
 		$promotion = $this->saves[1];
 		$this->assertSame($draft['id'], $promotion['uuid']);
@@ -870,10 +870,10 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	public function testAnIncompleteDraftCannotLeaveDraft(): void {
 		$user = $this->user(uid: 'alice');
-		$draft = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'Half af'], submitter: new FormSubmitter(subject: $user)));
+		$draft = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'Half af'], submitter: new FormSubmitter(subject: $user)));
 
 		try {
-			$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(subject: $user, draftId: $draft['id'])));
+			$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: [], submitter: new FormSubmitter(subject: $user, draftId: $draft['id'])));
 			$this->fail('An incomplete draft left draft.');
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(422, $refused->getStatus());
@@ -889,11 +889,11 @@ class FormSubmitServiceTest extends TestCase {
 	 * A draft id that is not a draft, or not found under the subject's RBAC, is a 404.
 	 */
 	public function testAnUnknownDraftIsA404(): void {
-		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter()));
+		$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter()));
 
 		foreach (['uuid-case-1', 'nope'] as $id) {
 			try {
-				$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(subject: $this->user(uid: 'alice'), draftId: $id)));
+				$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(subject: $this->user(uid: 'alice'), draftId: $id)));
 				$this->fail('Draft ' . $id . ' was accepted.');
 			} catch (FormSubmitRefusedException $refused) {
 				$this->assertSame(404, $refused->getStatus());
@@ -910,7 +910,7 @@ class FormSubmitServiceTest extends TestCase {
 		$destination = ['register' => 'dossiq', 'schema' => 'case'];
 		$owner = DraftOwner::portalSubject(subjectRef: 'subject-1');
 
-		$draft = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Half af'], submitter: new FormSubmitter(subject: null, owner: $owner)));
+		$draft = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Half af'], submitter: new FormSubmitter(subject: null, owner: $owner)));
 
 		$this->assertSame('draft', $draft['status']);
 		$this->assertSame('portal:subject-1', $this->saves[0]['owner']);
@@ -922,21 +922,62 @@ class FormSubmitServiceTest extends TestCase {
 		$read = $this->service->readDraft(destination: $destination, submitter: new FormSubmitter(subject: null, draftId: $draft['id'], owner: $owner));
 		$this->assertSame(['id' => $draft['id'], 'status' => 'draft', 'data' => ['title' => 'Half af'], 'updatedAt' => '2026-10-10T14:03:11+02:00'], $read);
 
-		$found = $this->service->findDraft(destination: $destination, submitter: new FormSubmitter(subject: null, owner: $owner), match: ['title' => 'Half af']);
+		$found = $this->service->findDraftFor(destination: $destination, submitter: new FormSubmitter(subject: null, owner: $owner), match: ['title' => 'Half af']);
 		$this->assertSame($draft['id'], $found['id'] ?? null);
 		$this->assertSame('portal:subject-1', $this->searches[0]['query']['@self']['owner']);
-		$this->assertNull($this->service->findDraft(destination: $destination, submitter: new FormSubmitter(subject: null, owner: $owner), match: ['title' => 'Anders']));
+		$this->assertNull($this->service->findDraftFor(destination: $destination, submitter: new FormSubmitter(subject: null, owner: $owner), match: ['title' => 'Anders']));
 
-		$this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['description' => 'Meer'], submitter: new FormSubmitter(subject: null, draftId: $draft['id'], owner: $owner)));
+		$this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['description' => 'Meer'], submitter: new FormSubmitter(subject: null, draftId: $draft['id'], owner: $owner)));
 		$this->assertFalse($this->saves[1]['rbac'], 'Updating an own scoped draft is authorised by the owner check, not by a user RBAC no subject has.');
 		$this->assertSame(['title' => 'Half af', 'description' => 'Meer'], $this->service->readDraft(destination: $destination, submitter: new FormSubmitter(subject: null, draftId: $draft['id'], owner: $owner))['data']);
 
-		$answer = $this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['caseType' => 'ct-1'], submitter: new FormSubmitter(subject: null, draftId: $draft['id'], owner: $owner)));
+		$answer = $this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['caseType' => 'ct-1'], submitter: new FormSubmitter(subject: null, draftId: $draft['id'], owner: $owner)));
 		$this->assertSame('active', $this->saves[2]['object']['@self']['status']);
 		$this->assertSame($draft['id'], $this->saves[2]['uuid']);
 		$this->assertSame('2026-0412', $answer['reference']);
 		$this->assertFalse($this->stored[$draft['id']]->isDraft());
 	}//end testAPortalSubjectSavesReadsFindsAndSendsItsOwnDraft()
+
+	/**
+	 * The loose-value signatures portaliq, dossiq and pipelinq call by name still save, find and send a draft.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public function testTheLooseValueSignaturesAnswerByName(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$owner = DraftOwner::portalSubject(subjectRef: 'subject-1');
+
+		$draft = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Half af'], subject: null, draftId: null, scope: 'form-1', owner: $owner);
+		$this->assertSame('portal:subject-1', $this->stored[$draft['id']]->getOwner());
+
+		$found = $this->service->findDraft(destination: $destination, subject: null, owner: $owner, match: ['title' => 'Half af']);
+		$this->assertSame($draft['id'], $found['id'] ?? null);
+
+		$answer = $this->service->submit(destination: $destination, mapping: null, payload: ['caseType' => 'ct-1'], subject: null, scope: 'form-1', draftId: $draft['id'], owner: $owner);
+		$this->assertSame($draft['id'], $this->saves[1]['uuid']);
+		$this->assertSame('2026-0412', $answer['reference']);
+
+		$this->service->submitAll(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], subject: null, idempotencyKey: null, scope: 'web-form:1');
+		$this->assertSame(['title' => 'a', 'caseType' => 'b'], $this->saves[2]['object']);
+	}//end testTheLooseValueSignaturesAnswerByName()
+
+	/**
+	 * The loose-value signatures also answer positionally, in their old parameter order.
+	 */
+	public function testTheLooseValueSignaturesAnswerPositionally(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$owner = DraftOwner::portalSubject(subjectRef: 'subject-2');
+
+		$draft = $this->service->saveDraft($destination, null, ['title' => 'Half af'], null, null, '', $owner);
+		$this->assertSame($draft['id'], $this->service->findDraft($destination, null, $owner, [])['id'] ?? null);
+		$this->assertNull($this->service->findDraft($destination, null, DraftOwner::portalSubject(subjectRef: 'someone-else')));
+
+		$answer = $this->service->submit($destination, null, ['caseType' => 'ct-1'], null, null, '', $draft['id'], $owner);
+		$this->assertSame('2026-0412', $answer['reference']);
+
+		$this->service->submitAll([array_merge($destination, ['mapping' => null])], ['title' => 'a', 'caseType' => 'b']);
+		$this->assertSame(['title' => 'a', 'caseType' => 'b'], $this->saves[2]['object']);
+	}//end testTheLooseValueSignaturesAnswerPositionally()
 
 	/**
 	 * Spec scenario: a scope-owned draft starts where the public may not create.
@@ -951,14 +992,14 @@ class FormSubmitServiceTest extends TestCase {
 		$destination = ['register' => 'dossiq', 'schema' => 'case'];
 		$owner = DraftOwner::portalSubject(subjectRef: 'subject-1');
 
-		$draft = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Half af'], submitter: new FormSubmitter(subject: null, owner: $owner)));
+		$draft = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Half af'], submitter: new FormSubmitter(subject: null, owner: $owner)));
 
 		$this->assertSame('draft', $draft['status']);
 		$this->assertSame('portal:subject-1', $this->stored[$draft['id']]->getOwner());
 		$this->assertFalse($this->saves[0]['rbac']);
 		$this->assertSame('draft', $this->saves[0]['object']['@self']['status'], 'The owner assertion authorises a draft, never an object that skips draft.');
 
-		$answer = $this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['caseType' => 'ct-1'], submitter: new FormSubmitter(subject: null, draftId: $draft['id'], owner: $owner)));
+		$answer = $this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['caseType' => 'ct-1'], submitter: new FormSubmitter(subject: null, draftId: $draft['id'], owner: $owner)));
 		$this->assertSame($draft['id'], $answer['id']);
 		$this->assertFalse($this->stored[$draft['id']]->isDraft());
 	}//end testAScopeOwnedDraftStartsWhereThePublicMayNotCreate()
@@ -976,9 +1017,9 @@ class FormSubmitServiceTest extends TestCase {
 		$this->publicCreateRefused = true;
 		$destination = ['register' => 'dossiq', 'schema' => 'case'];
 		$calls = [
-			'anonymous submit' => [403, fn () => $this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter()))],
-			'fresh submit naming an owner' => [403, fn () => $this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(owner: DraftOwner::portalSubject(subjectRef: 'subject-1'))))],
-			'draft of nobody' => [401, fn () => $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'a'], submitter: new FormSubmitter(subject: null)))],
+			'anonymous submit' => [403, fn () => $this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter()))],
+			'fresh submit naming an owner' => [403, fn () => $this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b'], submitter: new FormSubmitter(owner: DraftOwner::portalSubject(subjectRef: 'subject-1'))))],
+			'draft of nobody' => [401, fn () => $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'a'], submitter: new FormSubmitter(subject: null)))],
 		];
 
 		foreach ($calls as $what => [$status, $call]) {
@@ -1004,7 +1045,7 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	public function testAnyoneElseGets404OnAPortalDraft(): void {
 		$destination = ['register' => 'dossiq', 'schema' => 'case'];
-		$draft = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Van subject 1'], submitter: new FormSubmitter(subject: null, owner: DraftOwner::portalSubject(subjectRef: 'subject-1'))));
+		$draft = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Van subject 1'], submitter: new FormSubmitter(subject: null, owner: DraftOwner::portalSubject(subjectRef: 'subject-1'))));
 		$others = [
 			'another subject' => [null, DraftOwner::portalSubject(subjectRef: 'subject-2')],
 			'a signed-in user' => [$this->user(uid: 'alice'), null],
@@ -1014,11 +1055,11 @@ class FormSubmitServiceTest extends TestCase {
 
 		foreach ($others as $who => [$subject, $owner]) {
 			$this->assertFalse($this->service->isOwnerOfDraft(destination: $destination, submitter: new FormSubmitter(subject: $subject, draftId: $draft['id'], owner: $owner)), $who);
-			$this->assertNull($this->service->findDraft(destination: $destination, submitter: new FormSubmitter(subject: $subject, owner: $owner)), $who);
+			$this->assertNull($this->service->findDraftFor(destination: $destination, submitter: new FormSubmitter(subject: $subject, owner: $owner)), $who);
 			$calls = [
 				'read' => fn () => $this->service->readDraft(destination: $destination, submitter: new FormSubmitter(subject: $subject, draftId: $draft['id'], owner: $owner)),
-				'save' => fn () => $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Overschreven'], submitter: new FormSubmitter(subject: $subject, draftId: $draft['id'], owner: $owner))),
-				'send' => fn () => $this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['caseType' => 'x'], submitter: new FormSubmitter(subject: $subject, draftId: $draft['id'], owner: $owner))),
+				'save' => fn () => $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Overschreven'], submitter: new FormSubmitter(subject: $subject, draftId: $draft['id'], owner: $owner))),
+				'send' => fn () => $this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['caseType' => 'x'], submitter: new FormSubmitter(subject: $subject, draftId: $draft['id'], owner: $owner))),
 			];
 			foreach ($calls as $action => $call) {
 				try {
@@ -1043,11 +1084,11 @@ class FormSubmitServiceTest extends TestCase {
 	public function testAUsersDraftReadsBackThroughTheSubject(): void {
 		$destination = ['register' => 'dossiq', 'schema' => 'case'];
 		$alice = $this->user(uid: 'alice');
-		$draft = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Van Alice'], submitter: new FormSubmitter(subject: $alice)));
+		$draft = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Van Alice'], submitter: new FormSubmitter(subject: $alice)));
 
 		$this->assertNull($this->saves[0]['owner'], 'A user draft is owned through the session user, as before.');
 		$this->assertSame('Van Alice', $this->service->readDraft(destination: $destination, submitter: new FormSubmitter(subject: $alice, draftId: $draft['id']))['data']['title']);
-		$this->assertSame($draft['id'], $this->service->findDraft(destination: $destination, submitter: new FormSubmitter(subject: $alice))['id'] ?? null);
+		$this->assertSame($draft['id'], $this->service->findDraftFor(destination: $destination, submitter: new FormSubmitter(subject: $alice))['id'] ?? null);
 	}//end testAUsersDraftReadsBackThroughTheSubject()
 
 	/**
@@ -1062,9 +1103,9 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	public function testAPayloadIdNeverPicksTheUuidOfADraftSave(): void {
 		$destination = ['register' => 'dossiq', 'schema' => 'case'];
-		$victim = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Van subject 1'], submitter: new FormSubmitter(subject: null, owner: DraftOwner::portalSubject(subjectRef: 'subject-1'))));
+		$victim = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Van subject 1'], submitter: new FormSubmitter(subject: null, owner: DraftOwner::portalSubject(subjectRef: 'subject-1'))));
 
-		$attacker = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Overschreven', 'id' => $victim['id'], 'uuid' => $victim['id']], submitter: new FormSubmitter(subject: null, owner: DraftOwner::portalSubject(subjectRef: 'subject-2'))));
+		$attacker = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Overschreven', 'id' => $victim['id'], 'uuid' => $victim['id']], submitter: new FormSubmitter(subject: null, owner: DraftOwner::portalSubject(subjectRef: 'subject-2'))));
 
 		$this->assertNotSame($victim['id'], $attacker['id'], 'The second save made its own object.');
 		$this->assertNull($this->saves[1]['uuid']);
@@ -1085,8 +1126,8 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	public function testAPayloadIdNeverPicksTheUuidOfASubmit(): void {
 		$destination = ['register' => 'dossiq', 'schema' => 'case'];
-		$this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b', 'id' => 'uuid-existing'], submitter: new FormSubmitter(subject: null)));
-		$this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => [
+		$this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'a', 'caseType' => 'b', 'id' => 'uuid-existing'], submitter: new FormSubmitter(subject: null)));
+		$this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => [
 				'fields' => [['field' => 'mail', 'property' => 'id'], ['field' => 'onderwerp', 'property' => 'title']],
 				'fixed' => ['caseType' => 'b', '@self' => ['id' => 'uuid-existing', 'owner' => 'x']],
 			]])], payload: ['mail' => 'uuid-existing', 'onderwerp' => 'a'], submitter: new FormSubmitter(subject: null)));
@@ -1114,13 +1155,13 @@ class FormSubmitServiceTest extends TestCase {
 	public function testALostRaceToLeaveDraftAnnouncesNothing(): void {
 		$destination = ['register' => 'dossiq', 'schema' => 'case'];
 		$alice = $this->user(uid: 'alice');
-		$draft = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Kapvergunning'], submitter: new FormSubmitter(subject: $alice)));
+		$draft = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Kapvergunning'], submitter: new FormSubmitter(subject: $alice)));
 		$this->duringSave = function () use ($draft): void {
 			$this->stored[$draft['id']]->setStatus('active');
 		};
 
 		try {
-			$this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['caseType' => 'ct-1'], submitter: new FormSubmitter(subject: $alice, draftId: $draft['id'])));
+			$this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['caseType' => 'ct-1'], submitter: new FormSubmitter(subject: $alice, draftId: $draft['id'])));
 			$this->fail('The second send of one draft was accepted.');
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(404, $refused->getStatus());
@@ -1141,11 +1182,11 @@ class FormSubmitServiceTest extends TestCase {
 	public function testASaveThatDidNotUseThePromotionAnnouncesNothing(): void {
 		$destination = ['register' => 'dossiq', 'schema' => 'case'];
 		$alice = $this->user(uid: 'alice');
-		$draft = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Kapvergunning'], submitter: new FormSubmitter(subject: $alice)));
+		$draft = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Kapvergunning'], submitter: new FormSubmitter(subject: $alice)));
 		$this->saveSkipsStatusPolicy = true;
 
 		try {
-			$this->service->submit(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['caseType' => 'ct-1'], submitter: new FormSubmitter(subject: $alice, draftId: $draft['id'])));
+			$this->service->submitWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['caseType' => 'ct-1'], submitter: new FormSubmitter(subject: $alice, draftId: $draft['id'])));
 			$this->fail('A save that did not leave draft was announced.');
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(404, $refused->getStatus());
@@ -1178,14 +1219,14 @@ class FormSubmitServiceTest extends TestCase {
 		// Refused first: the token survives for the retry.
 		$this->refuseSave['case'] = new CustomValidationException(message: 'x', errors: ['title' => 'nope']);
 		try {
-			$this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(subject: $alice, scope: 'form-1')));
+			$this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(subject: $alice, scope: 'form-1')));
 			$this->fail('Refused draft save accepted.');
 		} catch (FormSubmitRefusedException) {
 			$this->assertSame('a.pdf', $this->uploads->materialise(formId: 'form-1', token: $token)['name']);
 		}
 
 		unset($this->refuseSave['case']);
-		$this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(subject: $alice, scope: 'form-1')));
+		$this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: $payload, submitter: new FormSubmitter(subject: $alice, scope: 'form-1')));
 		$this->assertSame('a.pdf', $this->saves[1]['files']['bijlage']['name']);
 
 		try {
@@ -1227,8 +1268,8 @@ class FormSubmitServiceTest extends TestCase {
 		$destination = ['register' => 'dossiq', 'schema' => 'case'];
 		$alice = $this->user(uid: 'alice');
 
-		$first = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Half af', 'bijlage' => ['uploadToken' => $token]], submitter: new FormSubmitter(subject: $alice, scope: 'form-1')));
-		$second = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Iets verder', 'bijlage' => ['uploadToken' => $token]], submitter: new FormSubmitter(subject: $alice, scope: 'form-1', draftId: $first['id'])));
+		$first = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Half af', 'bijlage' => ['uploadToken' => $token]], submitter: new FormSubmitter(subject: $alice, scope: 'form-1')));
+		$second = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Iets verder', 'bijlage' => ['uploadToken' => $token]], submitter: new FormSubmitter(subject: $alice, scope: 'form-1', draftId: $first['id'])));
 
 		$this->assertSame($first['id'], $second['id']);
 		$this->assertNull($this->saves[1]['files'] ?? null, 'The file stays as the draft holds it; nothing is attached twice.');
@@ -1246,11 +1287,11 @@ class FormSubmitServiceTest extends TestCase {
 		$alice = $this->user(uid: 'alice');
 		$bob = $this->user(uid: 'bob');
 
-		$this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Van alice', 'bijlage' => ['uploadToken' => $token]], submitter: new FormSubmitter(subject: $alice, scope: 'form-1')));
-		$mine = $this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Van bob'], submitter: new FormSubmitter(subject: $bob, scope: 'form-1')));
+		$this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Van alice', 'bijlage' => ['uploadToken' => $token]], submitter: new FormSubmitter(subject: $alice, scope: 'form-1')));
+		$mine = $this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Van bob'], submitter: new FormSubmitter(subject: $bob, scope: 'form-1')));
 
 		$this->expectException(FormSubmitRefusedException::class);
-		$this->service->saveDraft(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Van bob', 'bijlage' => ['uploadToken' => $token]], submitter: new FormSubmitter(subject: $bob, scope: 'form-1', draftId: $mine['id'])));
+		$this->service->saveDraftWith(submission: new FormSubmission(writes: [array_merge($destination, ['mapping' => null])], payload: ['title' => 'Van bob', 'bijlage' => ['uploadToken' => $token]], submitter: new FormSubmitter(subject: $bob, scope: 'form-1', draftId: $mine['id'])));
 	}//end testATokenAnotherDraftClaimedIsStillRefused()
 
 	/**
@@ -1274,7 +1315,7 @@ class FormSubmitServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->submit(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: [
+		$this->service->submitWith(submission: new FormSubmission(writes: [array_merge(['register' => 'dossiq', 'schema' => 'case'], ['mapping' => null])], payload: [
 				'title' => 'a',
 				'caseType' => 'b',
 				'parties' => [['id' => 'victim-1', 'name' => 'x', 'address' => ['id' => 'victim-3']], ['@self' => ['id' => 'victim-2'], 'name' => 'y']],

@@ -68,7 +68,7 @@ interface FormSubmitServiceInterface {
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
 	 */
-	public function saveDraft(FormSubmission $submission): array;
+	public function saveDraftWith(FormSubmission $submission): array;
 
 	/**
 	 * Submit one payload into one or several destinations, all or none.
@@ -92,5 +92,5 @@ interface FormSubmitServiceInterface {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-writing-several-objects-must-commit-all-or-none
 	 */
-	public function submit(FormSubmission $submission, ?string $idempotencyKey = null): array;
+	public function submitWith(FormSubmission $submission, ?string $idempotencyKey = null): array;
 }//end interface

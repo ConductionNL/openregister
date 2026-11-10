@@ -52,6 +52,7 @@ use OCA\OpenRegister\Service\Object\DraftFinder;
 use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
+use OCP\IUser;
 use Throwable;
 
 /**
@@ -166,9 +167,79 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-writing-several-objects-must-commit-all-or-none
 	 */
-	public function submit(FormSubmission $submission, ?string $idempotencyKey = null): array {
+	public function submitWith(FormSubmission $submission, ?string $idempotencyKey = null): array {
 		return $this->submitKeyed(submission: $submission, key: trim((string)$idempotencyKey));
+	}//end submitWith()
+
+	/**
+	 * Submit one payload into one destination, by the loose values other apps pass.
+	 *
+	 * @param array{register?: mixed, schema?: mixed} $destination    The destination pair.
+	 * @param array<string, mixed>|null               $mapping        The form's mapping; null takes the payload as the object.
+	 * @param array<string, mixed>                    $payload        What the submitter filled in.
+	 * @param IUser|null                              $subject        The signed-in subject; null for anonymous.
+	 * @param string|null                             $idempotencyKey The Idempotency-Key, when sent.
+	 * @param string                                  $scope          The form id the key and upload tokens belong to.
+	 * @param string|null                             $draftId        The draft to leave draft, or null.
+	 * @param DraftOwner|null                         $owner          The draft's asserted owner; null takes the subject.
+	 *
+	 * @return array<string, mixed> The answer: reference, id, receivedAt, confirmation, objects.
+	 *
+	 * @throws FormSubmitRefusedException As submitWith().
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The public signature portaliq and dossiq call by name.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
+	 */
+	public function submit(
+		array $destination,
+		?array $mapping,
+		array $payload,
+		?IUser $subject=null,
+		?string $idempotencyKey=null,
+		string $scope='',
+		?string $draftId=null,
+		?DraftOwner $owner=null,
+	): array {
+		$submitter  = new FormSubmitter(subject: $subject, scope: $scope, draftId: $draftId, owner: $owner);
+		$submission = new FormSubmission(writes: [array_merge($destination, ['mapping' => $mapping])], payload: $payload, submitter: $submitter);
+
+		return $this->submitWith(submission: $submission, idempotencyKey: $idempotencyKey);
 	}//end submit()
+
+	/**
+	 * Submit one payload into several destinations, all or none, by the loose values other apps pass.
+	 *
+	 * @param array<int, array<string, mixed>> $writes         The writes, in order: `{ register, schema, mapping?, as? }`.
+	 * @param array<string, mixed>             $payload        What the submitter filled in.
+	 * @param IUser|null                       $subject        The signed-in subject; null for anonymous.
+	 * @param string|null                      $idempotencyKey The Idempotency-Key, when sent.
+	 * @param string                           $scope          The form id the key and upload tokens belong to.
+	 * @param string|null                      $draftId        The draft to leave draft, or null.
+	 * @param DraftOwner|null                  $owner          The draft's asserted owner; null takes the subject.
+	 *
+	 * @return array<string, mixed> The answer: reference, id, receivedAt, confirmation, objects.
+	 *
+	 * @throws FormSubmitRefusedException As submitWith().
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The public signature pipelinq calls by name.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-writing-several-objects-must-commit-all-or-none
+	 */
+	public function submitAll(
+		array $writes,
+		array $payload,
+		?IUser $subject=null,
+		?string $idempotencyKey=null,
+		string $scope='',
+		?string $draftId=null,
+		?DraftOwner $owner=null,
+	): array {
+		$submitter  = new FormSubmitter(subject: $subject, scope: $scope, draftId: $draftId, owner: $owner);
+		$submission = new FormSubmission(writes: $writes, payload: $payload, submitter: $submitter);
+
+		return $this->submitWith(submission: $submission, idempotencyKey: $idempotencyKey);
+	}//end submitAll()
 
 	/**
 	 * Save the subject's draft of a destination: the destination object itself, in status `draft`.
@@ -183,7 +254,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
 	 */
-	public function saveDraft(FormSubmission $submission): array {
+	public function saveDraftWith(FormSubmission $submission): array {
 		$owner = DraftOwner::resolve(subject: $submission->subject, owner: $submission->owner);
 		if ($owner === null) {
 			throw new FormSubmitRefusedException(message: $this->platform->l10n->t('Please sign in to save this form and carry on later.'), status: 401);
@@ -203,6 +274,40 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		$this->keeping->uploads->claimPlanned(plans: $plans, draftId: $uuid);
 
 		return ['id' => $uuid, 'status' => ObjectEntity::STATUS_DRAFT];
+	}//end saveDraftWith()
+
+	/**
+	 * Save the subject's draft of one destination, by the loose values other apps pass.
+	 *
+	 * @param array{register?: mixed, schema?: mixed} $destination The destination pair.
+	 * @param array<string, mixed>|null               $mapping     The form's mapping; null takes the payload as the object.
+	 * @param array<string, mixed>                    $payload     What the subject filled in so far.
+	 * @param IUser|null                              $subject     The signed-in subject.
+	 * @param string|null                             $draftId     The draft to update; null starts one.
+	 * @param string                                  $scope       The form id the upload tokens belong to.
+	 * @param DraftOwner|null                         $owner       The draft's asserted owner; null takes the subject.
+	 *
+	 * @return array{id: string, status: string} The draft.
+	 *
+	 * @throws FormSubmitRefusedException As saveDraftWith().
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The public signature portaliq calls by name.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	public function saveDraft(
+		array $destination,
+		?array $mapping,
+		array $payload,
+		?IUser $subject,
+		?string $draftId=null,
+		string $scope='',
+		?DraftOwner $owner=null,
+	): array {
+		$submitter = new FormSubmitter(subject: $subject, scope: $scope, draftId: $draftId, owner: $owner);
+		$writes    = [array_merge($destination, ['mapping' => $mapping])];
+
+		return $this->saveDraftWith(submission: new FormSubmission(writes: $writes, payload: $payload, submitter: $submitter));
 	}//end saveDraft()
 
 	/**
@@ -464,7 +569,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
-	public function findDraft(array $destination, FormSubmitter $submitter, array $match = []): ?array {
+	public function findDraftFor(array $destination, FormSubmitter $submitter, array $match = []): ?array {
 		$owner = DraftOwner::resolve(subject: $submitter->subject, owner: $submitter->owner);
 		$pair  = $this->destinationOrNull(destination: $destination);
 		if ($owner === null || $pair === null) {
@@ -472,6 +577,22 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		}
 
 		return $this->answerOf(draft: $this->drafts->newest(register: $pair[0], schema: $pair[1], owner: $owner, match: $match));
+	}//end findDraftFor()
+
+	/**
+	 * The newest draft of a destination owned by the subject or the asserted owner, by the loose values other apps pass.
+	 *
+	 * @param array{register?: mixed, schema?: mixed} $destination The destination pair.
+	 * @param IUser|null                              $subject     The signed-in subject.
+	 * @param DraftOwner|null                         $owner       The asserted owner; null takes the subject.
+	 * @param array<string, mixed>                    $match       Values the draft's data must hold.
+	 *
+	 * @return array{id: string, status: string, data: array<string, mixed>, updatedAt: string}|null The draft, or null.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public function findDraft(array $destination, ?IUser $subject, ?DraftOwner $owner=null, array $match=[]): ?array {
+		return $this->findDraftFor(destination: $destination, submitter: new FormSubmitter(subject: $subject, owner: $owner), match: $match);
 	}//end findDraft()
 
 	/**

@@ -166,7 +166,7 @@ class FormsControllerTest extends TestCase {
 		$this->headers = ['Idempotency-Key' => 'k1'];
 		$this->resolver->method('resolve')->with('form-1')->willReturn($this->form());
 		$answer = ['reference' => '2026-0412', 'id' => 'u', 'receivedAt' => null, 'confirmation' => [], 'objects' => []];
-		$this->submitter->expects($this->once())->method('submit')
+		$this->submitter->expects($this->once())->method('submitWith')
 			->with(new FormSubmission(writes: [['register' => 'dossiq', 'schema' => 'case', 'mapping' => null]], payload: ['onderwerp' => 'Kapvergunning'], submitter: new FormSubmitter(subject: null, scope: 'form-1')), 'k1')
 			->willReturn($answer);
 
@@ -183,7 +183,7 @@ class FormsControllerTest extends TestCase {
 		$writes = [['as' => 'org', 'register' => 'crm', 'schema' => 'organisation'], ['as' => 'contact', 'register' => 'crm', 'schema' => 'contact']];
 		$this->params = ['formId' => 'form-2', 'naam' => 'De Korst'];
 		$this->resolver->method('resolve')->willReturn(['id' => 'form-2', 'writes' => $writes, 'audience' => 'public']);
-		$this->submitter->expects($this->once())->method('submit')->with(new FormSubmission(writes: $writes, payload: ['naam' => 'De Korst'], submitter: new FormSubmitter(subject: null, scope: 'form-2')), null)
+		$this->submitter->expects($this->once())->method('submitWith')->with(new FormSubmission(writes: $writes, payload: ['naam' => 'De Korst'], submitter: new FormSubmitter(subject: null, scope: 'form-2')), null)
 			->willReturn(['reference' => 'r', 'id' => 'i', 'receivedAt' => null, 'confirmation' => [], 'objects' => []]);
 
 		$this->assertSame(201, $this->controller->submit(formId: 'form-2')->getStatus());
@@ -196,7 +196,7 @@ class FormsControllerTest extends TestCase {
 		$this->params = ['formId' => 'form-1'];
 		$this->resolver->method('resolve')->willReturn($this->form());
 		$findings = [['property' => 'caseType', 'code' => 'required', 'message' => 'm']];
-		$this->submitter->method('submit')->willThrowException(new FormSubmitRefusedException(message: 'Not accepted', status: 422, findings: $findings));
+		$this->submitter->method('submitWith')->willThrowException(new FormSubmitRefusedException(message: 'Not accepted', status: 422, findings: $findings));
 
 		$response = $this->controller->submit(formId: 'form-1');
 
@@ -210,7 +210,7 @@ class FormsControllerTest extends TestCase {
 	public function testAnUnknownFormIsA404AndAnAttempt(): void {
 		$this->resolver->method('resolve')->willThrowException(new FormSubmitRefusedException(message: 'This form does not exist.', status: 404));
 		$this->throttler->expects($this->once())->method('registerAttempt')->with(ThrottledSurfaces::FORM_SUBMIT, '192.0.2.7');
-		$this->submitter->expects($this->never())->method('submit');
+		$this->submitter->expects($this->never())->method('submitWith');
 
 		$this->assertSame(404, $this->controller->submit(formId: 'nope')->getStatus());
 	}//end testAnUnknownFormIsA404AndAnAttempt()
@@ -220,7 +220,7 @@ class FormsControllerTest extends TestCase {
 	 */
 	public function testAFilledHoneypotStoresNothing(): void {
 		$this->params = ['formId' => 'form-1', '_hp' => 'http://spam.example'];
-		$this->submitter->expects($this->never())->method('submit');
+		$this->submitter->expects($this->never())->method('submitWith');
 		$this->resolver->expects($this->never())->method('resolve');
 
 		$response = $this->controller->submit(formId: 'form-1');
@@ -235,7 +235,7 @@ class FormsControllerTest extends TestCase {
 	public function testTheAudienceIsHonoured(): void {
 		$this->params = ['formId' => 'form-1'];
 		$this->resolver->method('resolve')->willReturn($this->form(audience: 'authenticated'));
-		$this->submitter->expects($this->once())->method('submit')->willReturn(['reference' => 'r', 'id' => 'i', 'receivedAt' => null, 'confirmation' => [], 'objects' => []]);
+		$this->submitter->expects($this->once())->method('submitWith')->willReturn(['reference' => 'r', 'id' => 'i', 'receivedAt' => null, 'confirmation' => [], 'objects' => []]);
 
 		$this->assertSame(401, $this->controller->submit(formId: 'form-1')->getStatus());
 
@@ -355,10 +355,10 @@ class FormsControllerTest extends TestCase {
 		$submitter = new FormSubmitter(subject: $user, scope: 'form-1', draftId: 'd-1');
 		$writes = [['register' => 'dossiq', 'schema' => 'case', 'mapping' => null]];
 		$this->submitter->method('isOwnerOfDraft')->with(['register' => 'dossiq', 'schema' => 'case'], $submitter)->willReturn(true);
-		$this->submitter->expects($this->once())->method('saveDraft')
+		$this->submitter->expects($this->once())->method('saveDraftWith')
 			->with(new FormSubmission(writes: $writes, payload: ['onderwerp' => 'Half af'], submitter: $submitter))
 			->willReturn(['id' => 'd-1', 'status' => 'draft']);
-		$this->submitter->expects($this->once())->method('submit')
+		$this->submitter->expects($this->once())->method('submitWith')
 			->with(new FormSubmission(writes: $writes, payload: ['onderwerp' => 'Half af'], submitter: $submitter), null)
 			->willReturn(['reference' => 'r', 'id' => 'd-1', 'receivedAt' => 'now', 'confirmation' => [], 'objects' => []]);
 
@@ -398,15 +398,15 @@ class FormsControllerTest extends TestCase {
 				return true;
 			}
 		);
-		$this->submitter->method('saveDraft')->willReturnCallback($record('saveDraft', ['id' => 'd-1', 'status' => 'draft']));
-		$this->submitter->method('submit')->willReturnCallback(
-			$record('submit', ['reference' => 'r', 'id' => 'd-1', 'receivedAt' => 'now', 'confirmation' => [], 'objects' => []])
+		$this->submitter->method('saveDraftWith')->willReturnCallback($record('saveDraftWith', ['id' => 'd-1', 'status' => 'draft']));
+		$this->submitter->method('submitWith')->willReturnCallback(
+			$record('submitWith', ['reference' => 'r', 'id' => 'd-1', 'receivedAt' => 'now', 'confirmation' => [], 'objects' => []])
 		);
 
 		$this->assertSame(200, $this->controller->draft(formId: 'form-1')->getStatus());
 		$this->assertSame(201, $this->controller->submit(formId: 'form-1')->getStatus());
 
-		$this->assertSame(['isOwnerOfDraft', 'saveDraft', 'submit'], array_keys($calls));
+		$this->assertSame(['isOwnerOfDraft', 'saveDraftWith', 'submitWith'], array_keys($calls));
 		foreach ($calls as $method => $arguments) {
 			foreach ($arguments as $argument) {
 				$this->assertNotInstanceOf(DraftOwner::class, $argument, $method . ' was handed an owner assertion from a request.');
@@ -418,7 +418,7 @@ class FormsControllerTest extends TestCase {
 			$this->assertNotContains('portal:subject-1', $arguments, $method);
 		}
 
-		$this->assertSame(['onderwerp' => 'Half af'], $calls['saveDraft'][0]->payload, 'Metadata and control keys stay out of the payload.');
+		$this->assertSame(['onderwerp' => 'Half af'], $calls['saveDraftWith'][0]->payload, 'Metadata and control keys stay out of the payload.');
 	}//end testARequestCannotNameADraftsOwner()
 
 	/**
@@ -452,7 +452,7 @@ class FormsControllerTest extends TestCase {
 		$this->resolver->method('resolve')->willReturn($this->form());
 		$this->params = ['formId' => 'form-1', '_draft' => 'not-mine'];
 		$this->submitter->method('isOwnerOfDraft')->willReturn(false);
-		$this->submitter->expects($this->never())->method('saveDraft');
+		$this->submitter->expects($this->never())->method('saveDraftWith');
 
 		$this->assertSame(404, $this->controller->draft(formId: 'form-1')->getStatus());
 	}//end testSomebodyElsesDraftIdIsA404()
