@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
+use OCA\OpenRegister\Service\Export\ExportProfileCaller;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportProfileValidator;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
@@ -248,11 +249,11 @@ final class ExportProfileServiceTest extends TestCase {
 	public function testSomebodyElsesProfileIsRefused(): void {
 		$this->expectException(ExportRefusedException::class);
 
-		$this->service()->assertOwnerOrAdmin($this->profile(), 'andere-gebruiker', false);
+		$this->service()->assertOwnerOrAdmin($this->profile(), new ExportProfileCaller('andere-gebruiker', false));
 	}//end testSomebodyElsesProfileIsRefused()
 
 	public function testAnAdministratorMayTouchAnyProfile(): void {
-		$this->service()->assertOwnerOrAdmin($this->profile(), 'andere-gebruiker', true);
+		$this->service()->assertOwnerOrAdmin($this->profile(), new ExportProfileCaller('andere-gebruiker', true));
 
 		self::assertTrue(true);
 	}//end testAnAdministratorMayTouchAnyProfile()

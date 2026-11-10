@@ -65,7 +65,9 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\ProvenanceOptions;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
+use OCA\OpenRegister\Service\Rbac\StagedDenial;
 use OCA\OpenRegister\Service\Rbac\RoleBlockExpander;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
@@ -1273,7 +1275,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		// `staging`. The denial is real, and it is recorded, and it changes
 		// nothing. Returning null here rather than skipping the resolution above
 		// is the whole difference between a dry run and a disabled feature.
-		$mode->record(denial: $denial, action: $action, userId: $this->callerId(userId: $userId), context: $context);
+		$mode->record(staged: new StagedDenial(denial: $denial, action: $action, userId: $this->callerId(userId: $userId), context: $context));
 
 		return null;
 	}//end enforcedDenialFor()
@@ -1394,7 +1396,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$resolver = new ProvenanceResolver(denyResolver: $this->denyResolver(), principals: $principals);
 		$enforced = $this->denyEnforcementMode()->enforces();
 
-		return $resolver->forActions(actions: $request->actions, blocks: $blocks, denials: $denials, enforced: $enforced);
+		return $resolver->forActions(actions: $request->actions, options: new ProvenanceOptions(blocks: $blocks, denials: $denials, enforced: $enforced));
 	}//end provenance()
 
 	/**

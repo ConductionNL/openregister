@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -93,9 +94,7 @@ class MultiTenancyRbacDenialTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(IEventDispatcher::class),
 			$this->createMock(ContainerInterface::class),
-			$this->organisationMapper,
-			$this->userSession,
-			$this->groupManager,
+			new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
 			$this->createMock(IAppConfig::class),
 			$this->createMock(LoggerInterface::class)
 		);
@@ -193,9 +192,7 @@ class MultiTenancyRbacDenialTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(IEventDispatcher::class),
 			$this->createMock(ContainerInterface::class),
-			$organisationMapper,
-			$userSession,
-			$groupManager,
+			new TenancyServices($organisationMapper, $userSession, $groupManager),
 			$this->createMock(IAppConfig::class),
 			$this->createMock(LoggerInterface::class)
 		);
@@ -304,9 +301,7 @@ class MultiTenancyRbacDenialTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(IEventDispatcher::class),
 			$this->createMock(ContainerInterface::class),
-			$this->organisationMapper,
-			$this->userSession,
-			$this->groupManager,
+			new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
 			$this->createMock(IAppConfig::class),
 			$this->createMock(LoggerInterface::class)
 		);

@@ -91,25 +91,24 @@ final class AggregationJoinAnnotationValidator {
 	/**
 	 * Validate the `join` clause of one aggregation spec.
 	 *
-	 * @param string $name Aggregation name (for error messages).
-	 * @param array<string, mixed> $spec The raw aggregation spec.
-	 * @param array<int, mixed> $propKeys Declared host-schema property names.
+	 * @param AggregationSpecEntry $entry    The aggregation name (for error messages) and its raw spec.
+	 * @param array<int, mixed>    $propKeys Declared host-schema property names.
 	 *
 	 * @return array<int, array{code: string, message: string}> Error list (empty = valid).
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	public function validate(string $name, array $spec, array $propKeys): array {
-		$join = ($spec['join'] ?? null);
+	public function validate(AggregationSpecEntry $entry, array $propKeys): array {
+		$join = ($entry->spec['join'] ?? null);
 		if ($join === null) {
 			return [];
 		}
 
 		if (is_array($join) === false || array_is_list($join) === true) {
-			return [$this->failed(key: 'malformed', args: [$name])];
+			return [$this->failed(key: 'malformed', args: [$entry->name])];
 		}
 
-		return $this->clauseErrors(clause: new JoinClause(name: $name, join: $join, spec: $spec, propKeys: $propKeys));
+		return $this->clauseErrors(clause: new JoinClause(name: $entry->name, join: $join, spec: $entry->spec, propKeys: $propKeys));
 	}//end validate()
 
 	/**

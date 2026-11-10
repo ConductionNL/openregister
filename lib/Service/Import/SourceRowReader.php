@@ -6,7 +6,7 @@
  * Parsing only: no mapping, no validation, no decision, no write. The
  * decisive steps a previewed import takes are the ones the import path
  * already owns — {@see \OCA\OpenRegister\Service\MigrationPack\MappingEngine}
- * maps a row, {@see \OCA\OpenRegister\Service\ImportService::transformCsvRowToObject()}
+ * maps a row, {@see \OCA\OpenRegister\Service\ImportService::transformCsvRow()}
  * turns it into an object, {@see \OCA\OpenRegister\Service\ObjectService::saveObjects()}
  * writes it. This class only gets the bytes into the shape all three already
  * take, so CSV, Excel and JSON reach them by one road.

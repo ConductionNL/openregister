@@ -49,11 +49,11 @@ namespace OCA\OpenRegister\Repair;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
+use OCA\OpenRegister\Repair\Support\ApprovalTaskStores;
+use OCA\OpenRegister\Repair\Support\RepairPlatform;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -73,14 +73,12 @@ class SeedTaskFixtures implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig $appConfig Holds the opt-in flag.
-	 * @param TaskFixtureMappers $mappers The task table, the candidate index rows and the append-only audit.
-	 * @param LoggerInterface $logger Failure reporting.
+	 * @param RepairPlatform     $platform The app config holding the opt-in flag, and failure reporting.
+	 * @param ApprovalTaskStores $mappers  The task table, the candidate index rows and the append-only audit.
 	 */
 	public function __construct(
-		private readonly IAppConfig $appConfig,
-		private readonly TaskFixtureMappers $mappers,
-		private readonly LoggerInterface $logger,
+		private readonly RepairPlatform $platform,
+		private readonly ApprovalTaskStores $mappers,
 	) {
 
 	}//end __construct()
@@ -106,7 +104,7 @@ class SeedTaskFixtures implements IRepairStep {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function run(IOutput $output): void {
-		if ($this->appConfig->getValueBool('openregister', self::FLAG, false) === false) {
+		if ($this->platform->config->getValueBool('openregister', self::FLAG, false) === false) {
 			$output->info('Task fixtures: skipped (openregister/' . self::FLAG . ' is not enabled).');
 			return;
 		}
@@ -122,7 +120,7 @@ class SeedTaskFixtures implements IRepairStep {
 				// the repair-step defect this fleet already paid for once, so
 				// the skip is visible in the repair log AND the app log.
 				$output->warning(sprintf('Task fixture %s failed: %s', (string)($fixture['uuid'] ?? '?'), $failure->getMessage()));
-				$this->logger->warning(
+				$this->platform->logger->warning(
 					'[SeedTaskFixtures] Fixture failed: ' . $failure->getMessage(),
 					['uuid' => ($fixture['uuid'] ?? null)]
 				);

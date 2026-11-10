@@ -493,7 +493,7 @@ class UserControllerTest extends TestCase {
 			'currentPassword' => 'OldPass1234!',
 			'newPassword' => 'NewSecure2026!',
 		]);
-		$this->userService->method('changePassword')->willReturn([
+		$this->userService->method('applyPasswordChange')->willReturn([
 			'success' => true,
 			'message' => 'Password updated successfully',
 		]);
@@ -515,7 +515,7 @@ class UserControllerTest extends TestCase {
 			'currentPassword' => 'wrong',
 			'newPassword' => 'NewSecure2026!',
 		]);
-		$this->userService->method('changePassword')
+		$this->userService->method('applyPasswordChange')
 			->willThrowException(new \RuntimeException('Current password is incorrect', 403));
 
 		$result = $this->controller->changePassword();
@@ -613,7 +613,7 @@ class UserControllerTest extends TestCase {
 				['_from', null, null],
 				['_to', null, null],
 			]);
-		$this->userService->method('getUserActivity')->willReturn([
+		$this->userService->method('activity')->willReturn([
 			'results' => [['id' => 1, 'type' => 'create']],
 			'total' => 1,
 		]);
@@ -653,7 +653,7 @@ class UserControllerTest extends TestCase {
 		$this->userService->method('getCurrentUser')->willReturn($user);
 		$this->securityService->method('sanitizeInput')->willReturnArgument(0);
 		$this->request->method('getParams')->willReturn(['name' => 'CI Pipeline']);
-		$this->userService->method('createApiToken')->willReturn([
+		$this->userService->method('issueApiToken')->willReturn([
 			'id' => 'abc',
 			'name' => 'CI Pipeline',
 			'token' => 'full-token-value',

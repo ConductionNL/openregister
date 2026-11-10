@@ -23,6 +23,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\User\ActivityQuery;
+use OCA\OpenRegister\Service\User\ApiTokenRequest;
+use OCA\OpenRegister\Service\User\AvatarUpload;
+use OCA\OpenRegister\Service\User\PasswordChange;
 use OCP\IUser;
 use RuntimeException;
 
@@ -65,41 +69,38 @@ interface UserServiceInterface {
 	public function updateUserProperties(IUser $user, array $data): array;
 
 	/**
-	 * Change password for the current user
+	 * Change the user's password after verifying the current one.
 	 *
 	 * Validates the current password, checks backend capability,
 	 * and sets the new password.
 	 *
-	 * @param IUser $user The user changing their password
-	 * @param string $currentPassword The current password for verification
-	 * @param string $newPassword The new password to set
+	 * @param IUser          $user   The user changing their password.
+	 * @param PasswordChange $change The current password and the new one.
 	 *
 	 * @return array Result array with success status
 	 *
 	 * @throws InvalidArgumentException If inputs are invalid
 	 * @throws RuntimeException If password change fails
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+	 * @spec openspec/specs/profile-actions/spec.md
 	 */
-	public function changePassword(IUser $user, string $currentPassword, string $newPassword): array;
+	public function applyPasswordChange(IUser $user, PasswordChange $change): array;
 
 	/**
-	 * Upload a new avatar for the user
+	 * Store an uploaded image as the user's avatar.
 	 *
 	 * Validates file type and size, then sets via IAvatarManager.
 	 *
-	 * @param IUser $user The user uploading an avatar
-	 * @param string $data The raw image data
-	 * @param string $mimeType The MIME type of the uploaded file
-	 * @param int $size The file size in bytes
+	 * @param IUser        $user   The user uploading an avatar.
+	 * @param AvatarUpload $upload The image, its MIME type and its size.
 	 *
 	 * @return array Result array with success status and avatar URL
 	 *
 	 * @throws RuntimeException If upload fails
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+	 * @spec openspec/specs/profile-actions/spec.md
 	 */
-	public function uploadAvatar(IUser $user, string $data, string $mimeType, int $size): array;
+	public function setAvatar(IUser $user, AvatarUpload $upload): array;
 
 	/**
 	 * Delete the user's avatar
@@ -162,46 +163,35 @@ interface UserServiceInterface {
 	public function setNotificationPreferences(IUser $user, array $prefs): array;
 
 	/**
-	 * Get activity history for the current user
+	 * Get one page of a user's activity.
 	 *
 	 * Queries audit trail entries where the user is the actor.
 	 *
-	 * @param IUser $user The user to get activity for
-	 * @param int $limit Maximum results to return
-	 * @param int $offset Results to skip
-	 * @param string|null $type Optional action type filter
-	 * @param string|null $from Optional start date (Y-m-d)
-	 * @param string|null $to Optional end date (Y-m-d)
+	 * @param IUser         $user  The user to get activity for.
+	 * @param ActivityQuery $query The page, the type filter and the period.
 	 *
 	 * @return array Activity results with total count
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+	 * @spec openspec/specs/profile-actions/spec.md
 	 */
-	public function getUserActivity(
-		IUser $user,
-		int $limit = 25,
-		int $offset = 0,
-		?string $type = null,
-		?string $from = null,
-		?string $to = null,
-	): array;
+	public function activity(IUser $user, ActivityQuery $query): array;
 
 	/**
-	 * Create a new API token for the user
+	 * Mint a personal API token.
 	 *
 	 * Generates a cryptographically secure token and stores it in IConfig.
 	 *
-	 * @param IUser $user The user creating a token
-	 * @param string $name The token name
-	 * @param string|null $expiresIn Optional expiration (e.g., "90d")
+	 * @param IUser           $user    The user creating a token.
+	 * @param ApiTokenRequest $request The token name and its optional lifetime.
 	 *
 	 * @return array The created token data (full value shown only once)
 	 *
 	 * @throws RuntimeException If maximum tokens reached
+	 * @throws InvalidArgumentException If the lifetime is malformed
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+	 * @spec openspec/specs/profile-actions/spec.md
 	 */
-	public function createApiToken(IUser $user, string $name, ?string $expiresIn = null): array;
+	public function issueApiToken(IUser $user, ApiTokenRequest $request): array;
 
 	/**
 	 * List API tokens for the user (masked values)

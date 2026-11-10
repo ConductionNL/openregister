@@ -196,10 +196,8 @@ class SaveObjectCoverageTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->objectEntityMapper,
-						unifiedObjectMapper: $this->unifiedObjectMapper,
-						schemaMapper: $this->schemaMapper,
-						registerMapper: $this->registerMapper
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->auditTrailMapper,
@@ -389,9 +387,9 @@ class SaveObjectCoverageTest extends TestCase {
 		$schema->testProperties = null;
 
 		// Should not throw, just return.
-		$this->invokePrivate('validateReferences', [$schema, ['field' => 'value'], '1', null]);
+		$this->unifiedObjectMapper->expects($this->never())->method('find');
 
-		$this->assertTrue(true);
+		$this->invokePrivate('validateReferences', [$schema, ['field' => 'value'], '1', null]);
 	}
 
 	/**
@@ -405,9 +403,9 @@ class SaveObjectCoverageTest extends TestCase {
 			'name' => ['type' => 'string'],
 		];
 
-		$this->invokePrivate('validateReferences', [$schema, ['name' => 'Test'], '1', null]);
+		$this->unifiedObjectMapper->expects($this->never())->method('find');
 
-		$this->assertTrue(true);
+		$this->invokePrivate('validateReferences', [$schema, ['name' => 'Test'], '1', null]);
 	}
 
 	/**
@@ -425,10 +423,10 @@ class SaveObjectCoverageTest extends TestCase {
 			],
 		];
 
+		$this->unifiedObjectMapper->expects($this->never())->method('find');
+
 		$this->invokePrivate('validateReferences', [$schema, ['ref_field' => null], '1', null]);
 		$this->invokePrivate('validateReferences', [$schema, ['ref_field' => ''], '1', null]);
-
-		$this->assertTrue(true);
 	}
 
 	/**
@@ -451,9 +449,9 @@ class SaveObjectCoverageTest extends TestCase {
 		$data = ['ref_field' => $uuid];
 
 		// Should not call any mapper because value is unchanged.
-		$this->invokePrivate('validateReferences', [$schema, $data, '1', $oldData]);
+		$this->unifiedObjectMapper->expects($this->never())->method('find');
 
-		$this->assertTrue(true);
+		$this->invokePrivate('validateReferences', [$schema, $data, '1', $oldData]);
 	}
 
 	/**
@@ -471,9 +469,9 @@ class SaveObjectCoverageTest extends TestCase {
 			],
 		];
 
-		$this->invokePrivate('validateReferences', [$schema, ['ref_field' => 'some-uuid'], '1', null]);
+		$this->unifiedObjectMapper->expects($this->never())->method('find');
 
-		$this->assertTrue(true);
+		$this->invokePrivate('validateReferences', [$schema, ['ref_field' => 'some-uuid'], '1', null]);
 	}
 
 	/**
@@ -497,13 +495,11 @@ class SaveObjectCoverageTest extends TestCase {
 			->willReturn([$targetSchema]);
 
 		// find should find the referenced objects
-		$this->unifiedObjectMapper->method('find')
+		$this->unifiedObjectMapper->expects($this->once())->method('find')
 			->willReturn($this->createObjectEntity(10, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'));
 
 		$data = ['refs' => ['aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', '']];
 		$this->invokePrivate('validateReferences', [$schema, $data, '1', null]);
-
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -579,14 +575,14 @@ class SaveObjectCoverageTest extends TestCase {
 			->willThrowException(new DoesNotExistException('not found'));
 
 		// Should not throw, just log warning and return.
+		$this->unifiedObjectMapper->expects($this->never())->method('find');
+
 		$this->invokePrivate('validateReferenceExists', [
 			'myProp',
 			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 			'nonexistent-schema',
 			'1',
 		]);
-
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -1432,36 +1428,6 @@ class SaveObjectCoverageTest extends TestCase {
 	// =========================================================================
 
 	/**
-	 * Test setSelfMetadata sets depublished date.
-	 *
-	 * @return void
-	 */
-	public function testSetSelfMetadataWithDepublishedDate(): void {
-		// Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$selfData = ['depublished' => '2025-12-31'];
-
-		$this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
-
-		$this->assertTrue(true);
-	}
-
-	/**
-	 * Test setSelfMetadata ignores invalid depublished date.
-	 *
-	 * @return void
-	 */
-	public function testSetSelfMetadataWithInvalidDepublishedDate(): void {
-		// Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$selfData = ['depublished' => 'not-a-date-format!!!'];
-
-		$this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
-
-		$this->assertTrue(true);
-	}
-
-	/**
 	 * Test setSelfMetadata ignores owner from client @self input.
 	 *
 	 * SECURITY (wave-7 CRITICAL C2): owner must NOT be settable via client @self —
@@ -1524,33 +1490,4 @@ class SaveObjectCoverageTest extends TestCase {
 		$this->assertSame('org-uuid', $entity->getOrganisation());
 	}
 
-	/**
-	 * Test setSelfMetadata sets published to null when empty.
-	 *
-	 * @return void
-	 */
-	public function testSetSelfMetadataWithEmptyPublished(): void {
-		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$selfData = ['published' => ''];
-
-		$this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
-
-		$this->assertTrue(true);
-	}
-
-	/**
-	 * Test setSelfMetadata does not crash when depublished is not in selfData.
-	 *
-	 * @return void
-	 */
-	public function testSetSelfMetadataNoDepublishedInSelfData(): void {
-		// Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$selfData = [];
-
-		$this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
-
-		$this->assertTrue(true);
-	}
 }

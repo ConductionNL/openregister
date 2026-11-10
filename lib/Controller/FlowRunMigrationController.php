@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
+use OCA\OpenRegister\Service\Flow\VersionRunsMigration;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -267,14 +268,16 @@ class FlowRunMigrationController extends Controller {
 
 		return new JSONResponse(
 			$this->migrations->migrateRunsOfVersion(
-				flowId: $flow,
-				sourceVersion: (int)$this->request->getParam('sourceVersion', 0),
-				target: new FlowRunMigrationTarget(
-					targetVersion: (int)$this->request->getParam('targetVersion', 0),
-					reason: $reason,
-					actor: $actor->getUID(),
-					mapping: $nodeMapping
-				),
+				request: new VersionRunsMigration(
+					flowId: $flow,
+					sourceVersion: (int)$this->request->getParam('sourceVersion', 0),
+					target: new FlowRunMigrationTarget(
+						targetVersion: (int)$this->request->getParam('targetVersion', 0),
+						reason: $reason,
+						actor: $actor->getUID(),
+						mapping: $nodeMapping
+					),
+				)
 			)
 		);
 	}//end migrateRuns()

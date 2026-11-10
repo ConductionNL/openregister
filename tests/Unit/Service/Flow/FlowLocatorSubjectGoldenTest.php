@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden test: how FlowLocator::resolveSubject() loads a run's subject.
+ * Golden test: how FlowLocator::resolveObject() loads a run's subject.
  *
  * The load runs with RBAC and multitenancy OFF (a trigger has no acting
  * user), so what it forwards and what it refuses is pinned here on the code as
@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\FlowVersionMapper;
@@ -38,7 +39,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 
 /**
- * What resolveSubject() forwards to the object store, and what it answers.
+ * What resolveObject() forwards to the object store, and what it answers.
  */
 final class FlowLocatorSubjectGoldenTest extends TestCase {
 
@@ -88,7 +89,7 @@ final class FlowLocatorSubjectGoldenTest extends TestCase {
 	public function testTheSubjectIsLoadedWithTheGuardsOffAndReturned(): void {
 		$object = new ObjectEntity();
 
-		$this->assertSame($object, $this->locator($object)->resolveSubject('obj-1', 'reg-a', 'schema-b'));
+		$this->assertSame($object, $this->locator($object)->resolveObject(ref: new ObjectRef(register: 'reg-a', schema: 'schema-b', id: 'obj-1')));
 		$this->assertSame(
 			[['id' => 'obj-1', 'register' => 'reg-a', 'schema' => 'schema-b', '_rbac' => false, '_multitenancy' => false]],
 			$this->finds
@@ -103,9 +104,9 @@ final class FlowLocatorSubjectGoldenTest extends TestCase {
 	public function testAnEmptyPartLoadsNothing(): void {
 		$locator = $this->locator(new ObjectEntity());
 
-		$this->assertNull($locator->resolveSubject('', 'reg-a', 'schema-b'));
-		$this->assertNull($locator->resolveSubject('obj-1', '', 'schema-b'));
-		$this->assertNull($locator->resolveSubject('obj-1', 'reg-a', ''));
+		$this->assertNull($locator->resolveObject(ref: new ObjectRef(register: 'reg-a', schema: 'schema-b', id: '')));
+		$this->assertNull($locator->resolveObject(ref: new ObjectRef(register: '', schema: 'schema-b', id: 'obj-1')));
+		$this->assertNull($locator->resolveObject(ref: new ObjectRef(register: 'reg-a', schema: '', id: 'obj-1')));
 		$this->assertSame([], $this->finds);
 	}//end testAnEmptyPartLoadsNothing()
 
@@ -115,8 +116,8 @@ final class FlowLocatorSubjectGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailedOrEmptyLoadIsNull(): void {
-		$this->assertNull($this->locator(new RuntimeException('gone'))->resolveSubject('obj-1', 'reg-a', 'schema-b'));
-		$this->assertNull($this->locator(null)->resolveSubject('obj-2', 'reg-a', 'schema-b'));
+		$this->assertNull($this->locator(new RuntimeException('gone'))->resolveObject(ref: new ObjectRef(register: 'reg-a', schema: 'schema-b', id: 'obj-1')));
+		$this->assertNull($this->locator(null)->resolveObject(ref: new ObjectRef(register: 'reg-a', schema: 'schema-b', id: 'obj-2')));
 		$this->assertCount(2, $this->finds);
 	}//end testAFailedOrEmptyLoadIsNull()
 }//end class

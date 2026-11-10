@@ -81,11 +81,8 @@ class UpsertOnKeyHandler implements UpsertOnKeyHandlerInterface {
 	/**
 	 * Create or update the record the key names, or refuse.
 	 *
-	 * @param string                      $constraintName The `_upsertOn` value: a refuse constraint's name.
-	 * @param array<string, mixed>        $object         The request body, control keys stripped.
-	 * @param Register                    $register       The register.
-	 * @param Schema                      $schema         The schema.
-	 * @param callable(?string): ObjectEntity $save       Saves the body; null creates, a uuid updates that record.
+	 * @param UpsertOnKeyRequest              $request The key's name, the body (control keys stripped) and where it goes.
+	 * @param callable(?string): ObjectEntity $save    Saves the body; null creates, a uuid updates that record.
 	 *
 	 * @return array{created: bool, object: ObjectEntity} Whether a record was created, and the saved record.
 	 *
@@ -93,9 +90,7 @@ class UpsertOnKeyHandler implements UpsertOnKeyHandlerInterface {
 	 *
 	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
 	 */
-	public function upsert(string $constraintName, array $object, Register $register, Schema $schema, callable $save): array {
-		$request = new UpsertOnKeyRequest(constraintName: $constraintName, object: $object, register: $register, schema: $schema);
-
+	public function upsert(UpsertOnKeyRequest $request, callable $save): array {
 		return $this->upsertLocked(request: $request, save: $save);
 	}//end upsert()
 
