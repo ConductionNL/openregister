@@ -134,7 +134,13 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 			// seeded from its payload). Only resolve one when the run names it.
 			$subject = null;
 			if (trim((string)$run->getSubjectUuid()) !== '') {
-				$subject = $this->resolvers->resolveObject(ref: new ObjectRef(register: (string)$run->getSubjectRegister(), schema: (string)$run->getSubjectSchema(), id: (string)$run->getSubjectUuid()));
+				$subject = $this->resolvers->resolveObject(
+					ref: new ObjectRef(
+						register: (string)$run->getSubjectRegister(),
+						schema: (string)$run->getSubjectSchema(),
+						id: (string)$run->getSubjectUuid()
+					)
+				);
 
 				if ($subject === null) {
 					$run->setStatus(FlowRun::STATUS_FAILED);
@@ -217,7 +223,13 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 
 		$subject = null;
 		if (trim((string)$run->getSubjectUuid()) !== '') {
-			$subject = $this->resolvers->resolveObject(ref: new ObjectRef(register: (string)$run->getSubjectRegister(), schema: (string)$run->getSubjectSchema(), id: (string)$run->getSubjectUuid()));
+			$subject = $this->resolvers->resolveObject(
+				ref: new ObjectRef(
+					register: (string)$run->getSubjectRegister(),
+					schema: (string)$run->getSubjectSchema(),
+					id: (string)$run->getSubjectUuid()
+				)
+			);
 
 			if ($subject === null) {
 				$run->setStatus(FlowRun::STATUS_FAILED);

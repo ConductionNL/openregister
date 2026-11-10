@@ -213,7 +213,13 @@ class FlowTriggerService implements FlowTriggerServiceInterface {
 		$object = null;
 		$uuid = trim((string)($subject['uuid'] ?? ''));
 		if ($uuid !== '') {
-			$object = $this->resolvers->resolveObject(ref: new ObjectRef(register: (string)($subject['register'] ?? ''), schema: (string)($subject['schema'] ?? ''), id: $uuid));
+			$object = $this->resolvers->resolveObject(
+				ref: new ObjectRef(
+					register: (string)($subject['register'] ?? ''),
+					schema: (string)($subject['schema'] ?? ''),
+					id: $uuid
+				)
+			);
 
 			if ($object === null) {
 				return;
