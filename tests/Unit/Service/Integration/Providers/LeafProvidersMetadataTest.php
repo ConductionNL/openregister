@@ -38,6 +38,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers (assertSame, assertNull, ...) take positional args by convention; mirroring BuiltinProvidersMetadataTest in this repo.
 
 use OCA\OpenRegister\Exception\NotImplementedException;
+use OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription;
+use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\ContactService;
@@ -189,12 +191,11 @@ class LeafProvidersMetadataTest extends TestCase {
 			);
 		}
 
-		// BookmarksProvider — (mapper, appManager, l10n).
+		// BookmarksProvider — (description, mapper).
 		if ($class === BookmarksProvider::class) {
 			return new $class(
+				description: new AppProviderDescription(appManager: $appManager, l10n: $l10n),
 				bookmarkLinkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\BookmarkLinkMapper::class),
-				appManager: $appManager,
-				l10n: $l10n,
 			);
 		}
 
@@ -397,11 +398,7 @@ class LeafProvidersMetadataTest extends TestCase {
 	}//end testCalendarProviderHealthReportsUnavailableWhenAppMissing()
 
 	public function testContactsProviderMetadata(): void {
-		$provider = new ContactsProvider(
-			contactService: $this->createMock(ContactService::class),
-			appManager: $this->buildAppManager(['contacts']),
-			l10n: $this->buildL10n(),
-		);
+		$provider = new ContactsProvider(description: new AppProviderDescription(appManager: $this->buildAppManager(['contacts']), l10n: $this->buildL10n()), contactService: $this->createMock(ContactService::class));
 
 		$this->assertSame('contacts', $provider->getId());
 		$this->assertSame('Contacts', $provider->getLabel());
@@ -417,21 +414,13 @@ class LeafProvidersMetadataTest extends TestCase {
 			['results' => [['id' => 1]], 'total' => 1]
 		);
 
-		$provider = new ContactsProvider(
-			contactService: $service,
-			appManager: $this->buildAppManager(['contacts']),
-			l10n: $this->buildL10n(),
-		);
+		$provider = new ContactsProvider(description: new AppProviderDescription(appManager: $this->buildAppManager(['contacts']), l10n: $this->buildL10n()), contactService: $service);
 
 		$this->assertSame([['id' => 1]], $provider->list('r', 's', 'obj'));
 	}//end testContactsProviderListReturnsResultsArray()
 
 	public function testContactsProviderCreateThrowsNotImplemented(): void {
-		$provider = new ContactsProvider(
-			contactService: $this->createMock(ContactService::class),
-			appManager: $this->buildAppManager(['contacts']),
-			l10n: $this->buildL10n(),
-		);
+		$provider = new ContactsProvider(description: new AppProviderDescription(appManager: $this->buildAppManager(['contacts']), l10n: $this->buildL10n()), contactService: $this->createMock(ContactService::class));
 
 		$this->expectException(NotImplementedException::class);
 		$provider->create('r', 's', 'obj', []);
@@ -441,11 +430,7 @@ class LeafProvidersMetadataTest extends TestCase {
 		$service = $this->createMock(DeckLinkService::class);
 		$service->method('isDeckAvailable')->willReturn(true);
 
-		$provider = new DeckProvider(
-			deckLinkService: $service,
-			appManager: $this->buildAppManager(['deck']),
-			l10n: $this->buildL10n(),
-		);
+		$provider = new DeckProvider(description: new AppProviderDescription(appManager: $this->buildAppManager(['deck']), l10n: $this->buildL10n()), deckLinkService: $service);
 
 		$this->assertSame('deck', $provider->getId());
 		$this->assertSame('Cards', $provider->getLabel());
@@ -485,11 +470,7 @@ class LeafProvidersMetadataTest extends TestCase {
 	 * @return void
 	 */
 	public function testOpenProjectProviderMetadata(): void {
-		$provider = new OpenProjectProvider(
-			router: $this->createMock(ExternalIntegrationRouter::class),
-			appManager: $this->buildAppManager(['openconnector']),
-			l10n: $this->buildL10n(),
-		);
+		$provider = new OpenProjectProvider(routing: new ConnectorRouting(router: $this->createMock(ExternalIntegrationRouter::class), appManager: $this->buildAppManager(['openconnector']), l10n: $this->buildL10n()));
 
 		$this->assertSame('openproject', $provider->getId());
 		$this->assertSame('Projects', $provider->getLabel());
@@ -521,11 +502,7 @@ class LeafProvidersMetadataTest extends TestCase {
 	 * @return void
 	 */
 	public function testOpenProjectProviderMetadataOnARenamedInstance(): void {
-		$provider = new OpenProjectProvider(
-			router: $this->createMock(ExternalIntegrationRouter::class),
-			appManager: $this->buildAppManager(['integriq']),
-			l10n: $this->buildL10n(),
-		);
+		$provider = new OpenProjectProvider(routing: new ConnectorRouting(router: $this->createMock(ExternalIntegrationRouter::class), appManager: $this->buildAppManager(['integriq']), l10n: $this->buildL10n()));
 
 		$this->assertSame('integriq', $provider->getRequiredApp());
 		$this->assertTrue($provider->isEnabled());
@@ -537,11 +514,7 @@ class LeafProvidersMetadataTest extends TestCase {
 	 * @return void
 	 */
 	public function testOpenProjectProviderIsDisabledWithoutAnyConnector(): void {
-		$provider = new OpenProjectProvider(
-			router: $this->createMock(ExternalIntegrationRouter::class),
-			appManager: $this->buildAppManager(['openregister']),
-			l10n: $this->buildL10n(),
-		);
+		$provider = new OpenProjectProvider(routing: new ConnectorRouting(router: $this->createMock(ExternalIntegrationRouter::class), appManager: $this->buildAppManager(['openregister']), l10n: $this->buildL10n()));
 
 		$this->assertFalse($provider->isEnabled());
 	}//end testOpenProjectProviderIsDisabledWithoutAnyConnector()
@@ -552,11 +525,7 @@ class LeafProvidersMetadataTest extends TestCase {
 			->method('call')
 			->willReturn(['_embedded' => ['elements' => [['id' => 42, 'subject' => 'Wp']]]]);
 
-		$provider = new OpenProjectProvider(
-			router: $router,
-			appManager: $this->buildAppManager(['openconnector']),
-			l10n: $this->buildL10n(),
-		);
+		$provider = new OpenProjectProvider(routing: new ConnectorRouting(router: $router, appManager: $this->buildAppManager(['openconnector']), l10n: $this->buildL10n()));
 
 		$rows = $provider->list('r', 's', 'obj');
 		$this->assertCount(1, $rows);
@@ -671,8 +640,6 @@ class LeafProvidersMetadataTest extends TestCase {
 	 */
 	public function testSharesProviderMetadata(): void {
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager([]),
 			l10n: $this->buildL10n(),
 		);
 
@@ -697,8 +664,6 @@ class LeafProvidersMetadataTest extends TestCase {
 		$mockContainer->method('has')->willReturn(false);
 
 		$provider = new SharesProvider(
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager([]),
 			l10n: $this->buildL10n(),
 			container: $mockContainer,
 		);

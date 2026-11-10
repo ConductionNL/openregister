@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetFieldRules;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRowShape;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFieldRules
@@ -66,9 +67,9 @@ class ExampleSetFieldRulesTest extends TestCase {
 		$rules = new ExampleSetFieldRules();
 		$this->assertSame(
 			'field "b", "d" is not a widget field a set may write',
-			$rules->unknownRefusal(data: ['a' => 1, 'b' => 2, 'c' => 3, 'd' => 4], fields: ['a', 'c'], row: 'a widget')
+			$rules->unknownRefusal(data: ['a' => 1, 'b' => 2, 'c' => 3, 'd' => 4], shape: new ExampleSetRowShape(row: 'a widget', fields: ['a', 'c']))
 		);
-		$this->assertSame('', $rules->unknownRefusal(data: ['a' => 1], fields: ['a', 'c'], row: 'a widget'));
+		$this->assertSame('', $rules->unknownRefusal(data: ['a' => 1], shape: new ExampleSetRowShape(row: 'a widget', fields: ['a', 'c'])));
 	}//end testUnknownRefusal()
 
 	/**
@@ -79,11 +80,11 @@ class ExampleSetFieldRulesTest extends TestCase {
 	public function testMissingRefusal(): void {
 		$rules    = new ExampleSetFieldRules();
 		$required = ['name' => 'a name', 'owner' => 'an owner'];
-		$this->assertSame('a widget needs a name (name)', $rules->missingRefusal(data: [], required: $required, row: 'a widget'));
-		$this->assertSame('a widget needs a name (name)', $rules->missingRefusal(data: ['name' => 3], required: $required, row: 'a widget'));
-		$blank = $rules->missingRefusal(data: ['name' => 'n', 'owner' => ' '], required: $required, row: 'a widget');
+		$this->assertSame('a widget needs a name (name)', $rules->missingRefusal(data: [], shape: new ExampleSetRowShape(row: 'a widget', required: $required)));
+		$this->assertSame('a widget needs a name (name)', $rules->missingRefusal(data: ['name' => 3], shape: new ExampleSetRowShape(row: 'a widget', required: $required)));
+		$blank = $rules->missingRefusal(data: ['name' => 'n', 'owner' => ' '], shape: new ExampleSetRowShape(row: 'a widget', required: $required));
 		$this->assertSame('a widget needs an owner (owner)', $blank);
-		$this->assertSame('', $rules->missingRefusal(data: ['name' => 'n', 'owner' => 'o'], required: $required, row: 'a widget'));
+		$this->assertSame('', $rules->missingRefusal(data: ['name' => 'n', 'owner' => 'o'], shape: new ExampleSetRowShape(row: 'a widget', required: $required)));
 	}//end testMissingRefusal()
 
 	/**

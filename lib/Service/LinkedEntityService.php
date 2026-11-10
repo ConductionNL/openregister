@@ -485,20 +485,22 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 			'schemaId' => $schemaId,
 			'schemaIcon' => $schema->getIcon(),
 			'register' => $registerId,
-			'url' => $this->deepLink(registerId: $registerId, schemaId: $schemaId, uuid: $object->getUuid()),
+			'url' => $this->deepLink(object: $object, schemaId: $schemaId),
 		];
 	}//end objectResult()
 
 	/**
 	 * The owning app's detail route for an object, or null when none is registered.
 	 *
-	 * @param int         $registerId The object's register id
-	 * @param int         $schemaId   The object's schema id
-	 * @param string|null $uuid       The object's uuid
+	 * @param ObjectEntity $object   The object, carrying its register id and uuid
+	 * @param int          $schemaId The object's schema id
 	 *
 	 * @return string|null
 	 */
-	private function deepLink(int $registerId, int $schemaId, ?string $uuid): ?string {
+	private function deepLink(ObjectEntity $object, int $schemaId): ?string {
+		$registerId = (int)$object->getRegister();
+		$uuid = $object->getUuid();
+
 		return $this->deepLinkRegistry->resolveUrl(
 			registerId: $registerId,
 			schemaId: $schemaId,

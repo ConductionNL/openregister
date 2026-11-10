@@ -22,6 +22,7 @@ use OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob;
 use OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJobServices;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarBatch;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
@@ -126,7 +127,7 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 		$armed->setUuid('t-armed');
 		$armed->setAnchorAt(new DateTime('2026-01-05T09:00:00+00:00'));
 		$this->timers->method('findByStatePaged')->willReturnCallback(
-			static fn (string $state, int $afterId, int $limit): array => ($state === FlowTimer::STATE_ARMED && $afterId === 0 && $limit === 500) ? [$armed] : []
+			static fn (string $state, IdCursor $cursor): array => ($state === FlowTimer::STATE_ARMED && $cursor->afterId === 0 && $cursor->limit === 500) ? [$armed] : []
 		);
 		$this->service->expects($this->once())->method('supersede')->with(
 			't-armed',

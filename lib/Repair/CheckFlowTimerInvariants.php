@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Migration\IOutput;
@@ -129,7 +130,7 @@ class CheckFlowTimerInvariants implements IRepairStep {
 			$afterId = 0;
 			$more = true;
 			while ($more === true) {
-				$page = $this->timers->findByStatePaged(state: $state, afterId: $afterId, limit: self::PAGE);
+				$page = $this->timers->findByStatePaged(state: $state, cursor: new IdCursor(afterId: $afterId, limit: self::PAGE));
 				foreach ($page as $timer) {
 					$afterId = (int)$timer->getId();
 					$this->inspect(timer: $timer, counts: $counts);

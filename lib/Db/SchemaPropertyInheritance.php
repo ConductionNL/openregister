@@ -141,8 +141,7 @@ final class SchemaPropertyInheritance {
 		foreach ($childProperties as $propertyName => $childProperty) {
 			$merged[$propertyName] = $this->mergeNamedProperty(
 				propertyName: $propertyName,
-				parentProperty: ($merged[$propertyName] ?? null),
-				childProperty: $childProperty
+				pair: [($merged[$propertyName] ?? null), $childProperty]
 			);
 		}
 
@@ -155,22 +154,22 @@ final class SchemaPropertyInheritance {
 	 * A property that is not an array on either side is replaced, provided
 	 * the child does not empty what the parent constrained.
 	 *
-	 * @param int|string $propertyName   The property's name.
-	 * @param mixed      $parentProperty The parent's definition, or null.
-	 * @param mixed      $childProperty  The child's definition.
+	 * @param int|string $propertyName The property's name.
+	 * @param array      $pair         The parent's definition (or null) and the child's definition.
 	 *
 	 * @return mixed The merged definition.
 	 *
 	 * @throws Exception When the child relaxes or removes a parent constraint.
 	 */
-	private function mergeNamedProperty(int|string $propertyName, mixed $parentProperty, mixed $childProperty): mixed {
+	private function mergeNamedProperty(int|string $propertyName, array $pair): mixed {
+		[$parentProperty, $childProperty] = $pair;
 		if ($parentProperty === null) {
 			return $childProperty;
 		}
 
 		$atProperty = $this->atPath(path: (string) $propertyName);
 		if (is_array($parentProperty) === false || is_array($childProperty) === false) {
-			$atProperty->assertNotRemoved(pair: [$parentProperty, $childProperty]);
+			$atProperty->assertNotRemoved(pair: $pair);
 			return $childProperty;
 		}
 
@@ -228,38 +227,47 @@ final class SchemaPropertyInheritance {
 			return $childValue;
 		}
 
-		$bothArrays = is_array($parentValue) === true && is_array($childValue) === true;
-		if (in_array($key, ['properties', 'items'], true) === true && $bothArrays === true) {
+		if (in_array($key, ['properties', 'items'], true) === true && self::bothArrays(pair: $pair) === true) {
 			return $this->atPath(path: "{$this->path}.{$key}")->mergeNested(parentValue: $parentValue, childValue: $childValue);
 		}
 
-		return $this->mergeConstraintOrObject(key: $key, pair: $pair, bothArrays: $bothArrays);
+		return $this->mergeConstraintOrObject(key: $key, pair: $pair);
 	}//end mergeValue()
 
 	/**
 	 * Merge a value that is not metadata nor a nested schema: a validation keyword, a scalar or an object.
 	 *
-	 * @param int|string $key        The keyword.
-	 * @param array      $pair       The parent's and the child's value.
-	 * @param bool       $bothArrays Whether both values are arrays.
+	 * @param int|string $key  The keyword.
+	 * @param array      $pair The parent's and the child's value.
 	 *
 	 * @return mixed The merged value.
 	 *
 	 * @throws Exception When the child relaxes a parent constraint.
 	 */
-	private function mergeConstraintOrObject(int|string $key, array $pair, bool $bothArrays): mixed {
+	private function mergeConstraintOrObject(int|string $key, array $pair): mixed {
 		[$parentValue, $childValue] = $pair;
 		if (in_array($key, self::VALIDATION_FIELDS) === true) {
 			$this->assertNotRelaxed(constraint: (string) $key, pair: $pair);
 			return $childValue;
 		}
 
-		if ($bothArrays === false) {
+		if (self::bothArrays(pair: $pair) === false) {
 			return $childValue;
 		}
 
 		return $this->atPath(path: "{$this->path}.{$key}")->mergeProperty(parentProperty: $parentValue, childProperty: $childValue);
 	}//end mergeConstraintOrObject()
+
+	/**
+	 * Whether the parent's and the child's value are both arrays.
+	 *
+	 * @param array $pair The parent's and the child's value.
+	 *
+	 * @return bool
+	 */
+	private static function bothArrays(array $pair): bool {
+		return is_array($pair[0]) === true && is_array($pair[1]) === true;
+	}//end bothArrays()
 
 	/**
 	 * Merge nested property definitions (properties or items), keyed by name.
@@ -276,8 +284,7 @@ final class SchemaPropertyInheritance {
 		foreach ($childValue as $nestedKey => $nestedChild) {
 			$merged[$nestedKey] = $this->mergeNestedEntry(
 				nestedKey: $nestedKey,
-				nestedParent: ($parentValue[$nestedKey] ?? null),
-				nestedChild: $nestedChild
+				pair: [($parentValue[$nestedKey] ?? null), $nestedChild]
 			);
 		}
 
@@ -287,13 +294,13 @@ final class SchemaPropertyInheritance {
 	/**
 	 * One nested entry: the child's when the parent has none (or null), else merged over the parent's.
 	 *
-	 * @param int|string $nestedKey    The nested key.
-	 * @param mixed      $nestedParent The parent's entry, or null.
-	 * @param mixed      $nestedChild  The child's entry.
+	 * @param int|string $nestedKey The nested key.
+	 * @param array      $pair      The parent's entry (or null) and the child's entry.
 	 *
 	 * @return mixed The merged entry.
 	 */
-	private function mergeNestedEntry(int|string $nestedKey, mixed $nestedParent, mixed $nestedChild): mixed {
+	private function mergeNestedEntry(int|string $nestedKey, array $pair): mixed {
+		[$nestedParent, $nestedChild] = $pair;
 		if ($nestedParent === null) {
 			return $nestedChild;
 		}

@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -255,7 +256,7 @@ class SchemasDestroySafetyTest extends TestCase {
 		$this->objectMapper
 			->expects($this->once())
 			->method('getStatistics')
-			->with($this->equalTo(null), $this->equalTo(42))
+			->with($this->equalTo(new StatisticsScope(schemaId: 42)))
 			->willReturn(['total' => 5]);
 
 		// No disposition flag is set → guard MUST fire.

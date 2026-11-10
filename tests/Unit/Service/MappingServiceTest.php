@@ -4,6 +4,7 @@ namespace Unit\Service;
 
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Service\MappingKeyRewrite;
 use OCA\OpenRegister\Service\MappingService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -52,7 +53,7 @@ class MappingServiceTest extends TestCase {
 
 	public function testEncodeArrayKeysSimple(): void {
 		$input = ['key.with.dots' => 'value'];
-		$result = $this->service->encodeArrayKeys($input, '.', '&#46;');
+		$result = $this->service->encodeArrayKeys($input, new MappingKeyRewrite('.', '&#46;'));
 
 		$this->assertArrayHasKey('key&#46;with&#46;dots', $result);
 		$this->assertSame('value', $result['key&#46;with&#46;dots']);
@@ -60,21 +61,21 @@ class MappingServiceTest extends TestCase {
 
 	public function testEncodeArrayKeysNested(): void {
 		$input = ['parent.key' => ['child.key' => 'value']];
-		$result = $this->service->encodeArrayKeys($input, '.', '&#46;');
+		$result = $this->service->encodeArrayKeys($input, new MappingKeyRewrite('.', '&#46;'));
 
 		$this->assertArrayHasKey('parent&#46;key', $result);
 		$this->assertArrayHasKey('child&#46;key', $result['parent&#46;key']);
 	}
 
 	public function testEncodeArrayKeysEmptyArray(): void {
-		$result = $this->service->encodeArrayKeys([], '.', '&#46;');
+		$result = $this->service->encodeArrayKeys([], new MappingKeyRewrite('.', '&#46;'));
 
 		$this->assertSame([], $result);
 	}
 
 	public function testEncodeArrayKeysNoMatchingCharacters(): void {
 		$input = ['simple_key' => 'value'];
-		$result = $this->service->encodeArrayKeys($input, '.', '&#46;');
+		$result = $this->service->encodeArrayKeys($input, new MappingKeyRewrite('.', '&#46;'));
 
 		$this->assertArrayHasKey('simple_key', $result);
 	}
@@ -666,7 +667,7 @@ class MappingServiceTest extends TestCase {
 				],
 			],
 		];
-		$result = $this->service->encodeArrayKeys($input, '.', '&#46;');
+		$result = $this->service->encodeArrayKeys($input, new MappingKeyRewrite('.', '&#46;'));
 
 		$this->assertArrayHasKey('level&#46;1', $result);
 		$this->assertArrayHasKey('level&#46;2', $result['level&#46;1']);

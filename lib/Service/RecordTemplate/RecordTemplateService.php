@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\RecordTemplate;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
@@ -104,7 +105,8 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function listFor(ViewerReach $reach, ?string $register=null, ?string $schema=null): array {
-		$candidates = $this->store->mapper->findCandidates(userId: $reach->userId, register: $register, schema: $schema);
+		$scope      = ListQuery::unbounded(filters: ['register' => $register, 'schema' => $schema]);
+		$candidates = $this->store->mapper->findCandidates(userId: $reach->userId, query: $scope);
 
 		return array_values(array_filter($candidates, fn (RecordTemplate $template): bool => $this->resolveUse(template: $template, reach: $reach)));
 	}//end listFor()
@@ -211,7 +213,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @return bool True when they may use it.
 	 */
 	private function resolveUse(RecordTemplate $template, ViewerReach $reach): bool {
-		$access = $this->shares->accessFor(view: $template->jsonSerialize(), userId: $reach->userId, userGroups: $reach->groups);
+		$access = $this->shares->accessOf(view: $template->jsonSerialize(), reach: $reach);
 		if ($access === null && $reach->isAdmin === true) {
 			$access = ViewShareResolver::ACCESS_WRITE;
 		}
@@ -237,7 +239,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 */
 	private function administered(string $uuid, ViewerReach $reach): RecordTemplate {
 		$template = $this->get(uuid: $uuid, reach: $reach);
-		if ($this->shares->mayAdminister(view: $template->jsonSerialize(), userId: $reach->userId, isAdmin: $reach->isAdmin) === false) {
+		if ($this->shares->mayAdministerAs(view: $template->jsonSerialize(), reach: $reach) === false) {
 			throw new RecordTemplateRefused(status: 403, message: 'Only the owner or an administrator may change this record template.');
 		}
 

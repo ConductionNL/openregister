@@ -26,6 +26,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 
 /**
  * Golden test for ImportService::importFromJson().
@@ -264,8 +265,8 @@ class ImportServiceImportFromJsonGoldenTest extends TestCase {
 			$this->record(method: 'importHandler.importSchema', args: func_get_args());
 			return $this->schema(id: 30 + strlen((string)($data['slug'] ?? '')), slug: (string)($data['slug'] ?? 'none'));
 		});
-		$importHandler->method('importRegister')->willReturnCallback(function () {
-			$this->record(method: 'importHandler.importRegister', args: func_get_args());
+		$importHandler->method('importRegister')->willReturnCallback(function (array $data, SchemaImportOptions $options) {
+			$this->record(method: 'importHandler.importRegister', args: [$data, $options->owner, $options->appId, $options->version, $options->force]);
 			$register = new Register();
 			$register->setId(40);
 			$register->setSlug('reg');

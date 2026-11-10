@@ -58,8 +58,8 @@ class CaseItemTimerListenerGoldenTest extends TestCase {
 	private function dispatch(Event $event, ?string $itemUuid = null): array {
 		$timers = $this->createMock(CasePlanItemTimers::class);
 		$timers->method('onEntered')->willReturnCallback(
-			function (CaseItem $item, ?string $actor): int {
-				$this->calls[] = 'onEntered:' . $item->getState() . ':' . var_export($actor, true);
+			function (CaseItem $item, \OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct $act): int {
+				$this->calls[] = 'onEntered:' . $item->getState() . ':' . var_export($act->actor, true);
 				return 1;
 			}
 		);
