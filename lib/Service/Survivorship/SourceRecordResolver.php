@@ -101,30 +101,64 @@ class SourceRecordResolver implements SourceRecordResolverInterface {
 	 */
 	public function resolveSources(array $masterData, string $masterUuid, array $config, string $masterRegister = ''): array {
 		$reverseFk = $this->reverseFkConfig(config: $config);
-		if ($reverseFk !== null) {
-			$sourceRegister = $reverseFk['sourceRegister'];
-			if ($sourceRegister === '') {
-				$sourceRegister = $masterRegister;
-			}
-
-			return $this->resolveReverseFk(
-				query: new ReverseFkQuery(
-					masterUuid: $masterUuid,
-					sourceSchema: $reverseFk['sourceSchema'],
-					referenceField: $reverseFk['referenceField'],
-					sourceRegister: $sourceRegister
-				)
-			);
+		if ($reverseFk === null) {
+			return $this->embeddedSources(data: $masterData, config: $config);
 		}
 
-		// Embedded mode (default): read the master payload's sourceLinkField.
+		$reverseFk = $this->withSourceRegister(reverseFk: $reverseFk, masterRegister: $masterRegister);
+		return $this->resolveReverseFk(query: $this->reverseFkQuery(reverseFk: $reverseFk, masterUuid: $masterUuid));
+	}//end resolveSources()
+
+	/**
+	 * Embedded mode (default): the records the master payload's sourceLinkField names; none when the config names no field.
+	 *
+	 * @param array<string, mixed> $data   Master object payload.
+	 * @param array<string, mixed> $config Survivorship/merge config.
+	 *
+	 * @return array<int, array<string, mixed>> Resolved source-record payloads.
+	 */
+	private function embeddedSources(array $data, array $config): array {
 		$sourceLinkField = (string)($config['sourceLinkField'] ?? '');
 		if ($sourceLinkField === '') {
 			return [];
 		}
 
-		return $this->resolveEmbedded(data: $masterData, sourceLinkField: $sourceLinkField);
-	}//end resolveSources()
+		return $this->resolveEmbedded(data: $data, sourceLinkField: $sourceLinkField);
+	}//end embeddedSources()
+
+	/**
+	 * The reverse-FK config with the master's register as the source register when the annotation omits one
+	 * (the magic-table query needs a register + schema).
+	 *
+	 * @param array{sourceSchema: string, referenceField: string, sourceRegister: string} $reverseFk      The reverse-FK config.
+	 * @param string                                                                       $masterRegister Master's register ref.
+	 *
+	 * @return array{sourceSchema: string, referenceField: string, sourceRegister: string}
+	 */
+	private function withSourceRegister(array $reverseFk, string $masterRegister): array {
+		if ($reverseFk['sourceRegister'] === '') {
+			$reverseFk['sourceRegister'] = $masterRegister;
+		}
+
+		return $reverseFk;
+	}//end withSourceRegister()
+
+	/**
+	 * The reverse-FK query for one master.
+	 *
+	 * @param array{sourceSchema: string, referenceField: string, sourceRegister: string} $reverseFk  The reverse-FK config.
+	 * @param string                                                                       $masterUuid Master object uuid.
+	 *
+	 * @return ReverseFkQuery The query.
+	 */
+	private function reverseFkQuery(array $reverseFk, string $masterUuid): ReverseFkQuery {
+		return new ReverseFkQuery(
+			masterUuid: $masterUuid,
+			sourceSchema: $reverseFk['sourceSchema'],
+			referenceField: $reverseFk['referenceField'],
+			sourceRegister: $reverseFk['sourceRegister']
+		);
+	}//end reverseFkQuery()
 
 	/**
 	 * Whether the config selects reverse-FK resolution.

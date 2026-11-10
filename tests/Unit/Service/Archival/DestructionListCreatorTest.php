@@ -93,7 +93,7 @@ class DestructionListCreatorTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$retention = new RetentionService(
-			new RetentionStores($objectMapper, $schemaMapper, $registerMapper, $this->createMock(AuditTrailMapper::class)),
+			new RetentionStores(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper), $this->createMock(AuditTrailMapper::class)),
 			new RetentionRules(
 				$settings,
 				$this->createMock(RetentionRowScanner::class),

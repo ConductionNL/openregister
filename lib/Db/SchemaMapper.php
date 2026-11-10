@@ -975,16 +975,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		bool $_multitenancy = true,
 	): array {
 		$this->readTrace()->record(method: 'findAll');
-
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from('openregister_schemas')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
-
-		$this->applyColumnFilters(qb: $qb, filters: $filters);
-
+		$qb = $this->listedQuery(query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filters ?? [])));
 		if (empty($searchConditions) === false) {
 			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
 			$this->bindSearchParams(qb: $qb, params: $searchParams);
@@ -992,9 +983,27 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		$this->filterByOrganisation(qb: $qb, multitenancy: $_multitenancy);
 
-		// Just return the entities; do not attach stats here.
 		return $this->findEntities(query: $qb);
 	}//end findAll()
+
+	/**
+	 * The schema list query for one page of column-filtered rows.
+	 *
+	 * @param ListQuery $query The limit (unbounded for every row), the offset and the column filters.
+	 *
+	 * @return IQueryBuilder The query, before search conditions and the organisation filter.
+	 */
+	private function listedQuery(ListQuery $query): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->setMaxResults($query->limitOrNull())
+			->setFirstResult($query->offset);
+
+		$this->applyColumnFilters(qb: $qb, filters: $query->filters);
+
+		return $qb;
+	}//end listedQuery()
 
 	/**
 	 * Bind the named parameters of the search conditions.

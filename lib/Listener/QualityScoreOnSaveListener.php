@@ -33,13 +33,12 @@ namespace OCA\OpenRegister\Listener;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -60,18 +59,16 @@ class QualityScoreOnSaveListener implements IEventListener {
 	/**
 	 * Wire collaborators used to look up and score the schema's quality rules.
 	 *
-	 * @param SchemaMapperInterface  $schemaMapper Schema lookup mapper.
 	 * @param QualityScorerInterface $scorer       Pure data-quality scorer.
-	 * @param LoggerInterface        $logger       PSR logger for warnings.
+	 * @param EventSchemaLookup $lookup Resolves the object's schema and logs a failure.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-2
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly QualityScorerInterface $scorer,
-		private readonly LoggerInterface $logger,
+		private readonly EventSchemaLookup $lookup,
 	) {
 	}//end __construct()
 
@@ -137,7 +134,7 @@ class QualityScoreOnSaveListener implements IEventListener {
 		try {
 			return $this->scorer->score(object: ($object->getObject() ?? []), rules: $rules, now: new DateTimeImmutable());
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->lookup->logger->warning(
 				sprintf('Quality scoring failed on %s: %s', (string)$object->getUuid(), $e->getMessage())
 			);
 			return null;
@@ -292,7 +289,7 @@ class QualityScoreOnSaveListener implements IEventListener {
 		}
 
 		try {
-			return $this->schemaMapper->find($ref, _multitenancy: false);
+			return $this->lookup->catalog->schemas()->find($ref, _multitenancy: false);
 		} catch (Throwable $e) {
 			return null;
 		}

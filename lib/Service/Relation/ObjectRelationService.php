@@ -130,10 +130,25 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function applyInheritance(ObjectEntity $parent, array $childData, array $inherits): array {
-		$parentData = $parent->getObject();
+		return $this->inherit(inheritance: new ParentInheritance(parent: $parent, childData: $childData, inherits: $inherits));
+	}//end applyInheritance()
+
+	/**
+	 * What a child takes from its parent at creation, as {@see applyInheritance()} describes.
+	 *
+	 * @param ParentInheritance $inheritance The parent, the child's data so far and the roles inherited.
+	 *
+	 * @return array{data: array<string, mixed>, inherited: array<string, mixed>}
+	 *         The child's data with the inherited values applied, and the record.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function inherit(ParentInheritance $inheritance): array {
+		$parentData = $inheritance->parent->getObject();
+		$childData = $inheritance->childData;
 		$record = [];
 
-		foreach ($inherits as $role => $property) {
+		foreach ($inheritance->inherits as $role => $property) {
 			// A value the child already carries is the child's own. Inheritance
 			// fills a gap; it does not overrule what somebody typed.
 			if ($this->fields->hasValue(data: $parentData, property: $property) === false
@@ -147,7 +162,7 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 		}
 
 		return ['data' => $childData, 'inherited' => $record];
-	}//end applyInheritance()
+	}//end inherit()
 
 	/**
 	 * Record a child created under a parent, with what it inherited.

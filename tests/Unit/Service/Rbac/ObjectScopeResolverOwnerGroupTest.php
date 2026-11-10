@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\GrantedRows;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -186,8 +187,7 @@ class ObjectScopeResolverOwnerGroupTest extends TestCase {
 			'ownerGroup',
 			$this->resolver->notPrivateOrGrantedSql(
 				notPrivateSql: $this->resolver->notPrivateSql(columnName: '_authorization', defaultPrivate: true, isPostgres: false),
-				uuidColumn: '_uuid',
-				quotedUuids: ["'uuid-1'"]
+				granted: new GrantedRows(uuidColumn: '_uuid', quotedUuids: ["'uuid-1'"])
 			)
 		);
 	}//end testTheReachableRowPredicateIsUnchanged()

@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\Object\SaveObject\RelationScan;
 use OCA\OpenRegister\Service\Object\CascadeTarget;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -562,8 +563,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->relationCascadeHandler->updateObjectRelations(
 			$object,
-			['title' => 'No relations test'],
-			$this->testSchema
+			new RelationScan(data: ['title' => 'No relations test'], schema: $this->testSchema)
 		);
 		$this->assertInstanceOf(ObjectEntity::class, $result);
 	}
@@ -580,8 +580,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 
 		$result = $this->relationCascadeHandler->updateObjectRelations(
 			$object,
-			['relatedItem' => $uuid],
-			$this->testSchema
+			new RelationScan(data: ['relatedItem' => $uuid], schema: $this->testSchema)
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);

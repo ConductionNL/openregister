@@ -49,7 +49,7 @@ class SubFlowNodeFailedChildBehaviourTest extends TestCase {
 		$runs->method('queue')->willReturn($queued);
 		$runs->method('execute')->willReturn($finished);
 
-		return new SubFlowNode($resolvers, $runs, $l10n, $this->createMock(IURLGenerator::class));
+		return new SubFlowNode(new \OCA\OpenRegister\Service\Flow\FlowExecution($resolvers, $runs, new \Psr\Log\NullLogger()), new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class)));
 	}//end node()
 
 	public function testTheChildsErrorIsNamed(): void {
