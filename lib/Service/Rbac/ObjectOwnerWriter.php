@@ -77,18 +77,24 @@ class ObjectOwnerWriter {
 	 *
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
-	public function writeOwner(
-		Register $register,
-		Schema $schema,
-		string $objectUuid,
-		string $owner,
-	): void {
+	public function writeOwner(Register $register, Schema $schema, string $objectUuid, string $owner): void {
 		$table = $this->mapper->getTableNameForRegisterSchema($register, $schema);
+		$this->writeOwnerTo(table: $table, assignment: new OwnerAssignment(objectUuid: $objectUuid, owner: $owner));
+	}//end writeOwner()
 
+	/**
+	 * Write the owner of one object into its magic table.
+	 *
+	 * @param string          $table      The magic table the object is stored in.
+	 * @param OwnerAssignment $assignment The object and its new owner.
+	 *
+	 * @return void
+	 */
+	private function writeOwnerTo(string $table, OwnerAssignment $assignment): void {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($table)
-			->set('_owner', $qb->createNamedParameter($owner))
-			->where($qb->expr()->eq('_uuid', $qb->createNamedParameter($objectUuid)));
+			->set('_owner', $qb->createNamedParameter($assignment->owner))
+			->where($qb->expr()->eq('_uuid', $qb->createNamedParameter($assignment->objectUuid)));
 		$qb->executeStatement();
 
 		$this->logger->info(
@@ -96,10 +102,10 @@ class ObjectOwnerWriter {
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'uuid' => $objectUuid,
-				'owner' => $owner,
+				'uuid' => $assignment->objectUuid,
+				'owner' => $assignment->owner,
 			]
 		);
-	}//end writeOwner()
+	}//end writeOwnerTo()
 
 }//end class

@@ -112,7 +112,7 @@ class GeoSpatialEvaluatorTest extends TestCase {
 
 	public function testHaversineKnownDistance(): void {
 		// Amsterdam → Utrecht is roughly 35-40 km in real geography.
-		$d = $this->evaluator->haversineMeters(4.9041, 52.3676, 5.1214, 52.0907);
+		$d = $this->evaluator->haversineMeters(new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(4.9041, 52.3676), new \OCA\OpenRegister\Search\Service\Geo\GeoPoint(5.1214, 52.0907));
 		$this->assertGreaterThan(30000, $d);
 		$this->assertLessThan(45000, $d);
 	}//end testHaversineKnownDistance()

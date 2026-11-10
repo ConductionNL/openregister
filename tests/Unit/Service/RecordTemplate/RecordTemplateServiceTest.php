@@ -327,8 +327,7 @@ class RecordTemplateServiceTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('groupExists')->willReturnCallback(static fn (string $gid): bool => $gid === 'kcc');
 		$viewers = new ViewerReachResolver(
-			userSession: $this->createMock(IUserSession::class),
-			groupManager: $groups,
+			caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->createMock(IUserSession::class), $groups),
 			logger: new NullLogger()
 		);
 

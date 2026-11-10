@@ -93,20 +93,6 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	private ?string $lastTenantUuid = null;
 
 	/**
-	 * Register lookup mapper.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Schema lookup mapper.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
 	 * Wire the resolver against the canonical OR mappers + IAppConfig.
 	 *
 	 * @param IAppConfig $appConfig The app config store.
@@ -116,12 +102,10 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		RegisterSchemaMappers $mappers,
+		private readonly RegisterSchemaMappers $mappers,
 		private readonly OrganisationServiceInterface $organisationService,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->registerMapper = $mappers->registerMapper;
-		$this->schemaMapper = $mappers->schemaMapper;
 	}//end __construct()
 
 	/**
@@ -301,12 +285,12 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	private function findRegister(ConfigLookup $lookup, string $slugOrUuid): Register {
 		try {
 			if ($lookup->organisationUuid !== null) {
-				$register = $this->registerMapper->find(id: $slugOrUuid, _multitenancy: false);
+				$register = $this->mappers->registerMapper->find(id: $slugOrUuid, _multitenancy: false);
 				if ($this->ownedElsewhere(owner: $register->getOrganisation(), organisationUuid: $lookup->organisationUuid) === true) {
 					throw new RegisterNotFoundException(appId: $lookup->appId, configKey: $lookup->configKey, resolvedValue: $slugOrUuid);
 				}
 			} else {
-				$register = $this->registerMapper->find(id: $slugOrUuid);
+				$register = $this->mappers->registerMapper->find(id: $slugOrUuid);
 			}
 		} catch (DoesNotExistException|MultipleObjectsReturnedException $e) {
 			throw new RegisterNotFoundException(appId: $lookup->appId, configKey: $lookup->configKey, resolvedValue: $slugOrUuid, previous: $e);
@@ -395,12 +379,12 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	private function findSchema(ConfigLookup $lookup, string $slugOrUuid): Schema {
 		try {
 			if ($lookup->organisationUuid !== null) {
-				$schema = $this->schemaMapper->find(id: $slugOrUuid, _multitenancy: false);
+				$schema = $this->mappers->schemaMapper->find(id: $slugOrUuid, _multitenancy: false);
 				if ($this->ownedElsewhere(owner: $schema->getOrganisation(), organisationUuid: $lookup->organisationUuid) === true) {
 					throw new SchemaNotFoundException(appId: $lookup->appId, configKey: $lookup->configKey, resolvedValue: $slugOrUuid);
 				}
 			} else {
-				$schema = $this->schemaMapper->find(id: $slugOrUuid);
+				$schema = $this->mappers->schemaMapper->find(id: $slugOrUuid);
 			}
 		} catch (DoesNotExistException|MultipleObjectsReturnedException $e) {
 			throw new SchemaNotFoundException(appId: $lookup->appId, configKey: $lookup->configKey, resolvedValue: $slugOrUuid, previous: $e);

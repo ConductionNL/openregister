@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\TimeTrackerLinksController;
+use OCA\OpenRegister\Controller\Support\TimeTrackerLinksControllerServices;
 use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -52,7 +53,7 @@ class TimeTrackerLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase
 	protected function setUp(): void {
 		parent::setUp();
 		$this->service    = $this->createMock(TimeTrackerLinkServiceInterface::class);
-		$this->controller = new TimeTrackerLinksController('openregister', $this->request, $this->service, $this->objectService);
+		$this->controller = new TimeTrackerLinksController($this->request, new TimeTrackerLinksControllerServices($this->service, $this->objectService));
 	}
 
 	private function link(): TimeTrackerLink {

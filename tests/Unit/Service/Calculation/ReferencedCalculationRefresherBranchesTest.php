@@ -27,7 +27,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
-use OCA\OpenRegister\Service\Calculation\ReferencedCalculationStores;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -78,7 +77,7 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 		$container->method('get')->with(ObjectOperationsInterface::class)->willReturn($this->objects);
 
 		return new ReferencedCalculationRefresher(
-			new ReferencedCalculationStores($this->registers, $this->schemas, $this->rows),
+			new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registers, schemas: $this->schemas, tables: $this->rows),
 			$container,
 			$this->logger
 		);

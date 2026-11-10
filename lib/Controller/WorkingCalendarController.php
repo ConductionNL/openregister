@@ -34,7 +34,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
+use OCA\OpenRegister\Controller\Support\WorkingCalendarControllerServices;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
@@ -71,22 +73,42 @@ class WorkingCalendarController extends Controller {
 	public const MAX_YEAR = 2200;
 
 	/**
+	 * Resolves the caller.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Answers whether they are an administrator.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Builds and validates the definition.
+	 *
+	 * @var WorkingCalendarDefinitionsInterface
+	 */
+	private readonly WorkingCalendarDefinitionsInterface $calendars;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest $request The current request.
-	 * @param IUserSession $userSession Resolves the caller.
-	 * @param IGroupManager $groupManager Answers whether they are an administrator.
-	 * @param WorkingCalendarDefinitionsInterface $calendars Builds and validates the definition.
+	 * @param IRequest                          $request  The current request.
+	 * @param WorkingCalendarControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly WorkingCalendarDefinitionsInterface $calendars,
+		WorkingCalendarControllerServices $services,
 	) {
-		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
+		$this->calendars = $services->calendars;
 	}//end __construct()
 
 	/**

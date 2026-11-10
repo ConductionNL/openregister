@@ -29,11 +29,10 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroup;
-use OCP\IGroupManager;
 use OCP\IUser;
-use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
 
 /**
  * `kind: expression` resolver for the candidate pool.
@@ -50,16 +49,13 @@ class TaskPoolRecipientResolver implements RecipientResolverInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IGroupManager $groupManager Resolves group membership.
-	 * @param IUserManager $userManager Confirms a candidate user exists.
-	 * @param LoggerInterface $logger Names groups that could not be resolved.
+	 * @param PrincipalDirectory $principals Resolves group membership and confirms a candidate user exists.
+	 * @param LoggerInterface    $logger     Names groups that could not be resolved.
 	 */
 	public function __construct(
-		private readonly IGroupManager $groupManager,
-		private readonly IUserManager $userManager,
+		private readonly PrincipalDirectory $principals,
 		private readonly LoggerInterface $logger,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -130,7 +126,7 @@ class TaskPoolRecipientResolver implements RecipientResolverInterface {
 	 */
 	private function findGroup(string $groupId): ?IGroup {
 		try {
-			$group = $this->groupManager->get($groupId);
+			$group = $this->principals->groupManager->get($groupId);
 		} catch (Throwable $failure) {
 			$this->logger->warning(sprintf(self::GROUP_LOG.'could not be resolved; nobody is notified for it: %s', $groupId, $failure->getMessage()));
 			return null;
@@ -155,7 +151,7 @@ class TaskPoolRecipientResolver implements RecipientResolverInterface {
 	private function existingUsers(array $uids): array {
 		$existing = [];
 		foreach ($uids as $uid) {
-			if (is_string($uid) === true && trim($uid) !== '' && $this->userManager->userExists($uid) === true) {
+			if (is_string($uid) === true && trim($uid) !== '' && $this->principals->userManager->userExists($uid) === true) {
 				$existing[] = $uid;
 			}
 		}

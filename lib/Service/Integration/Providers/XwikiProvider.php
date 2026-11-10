@@ -45,6 +45,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Db\XwikiLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
@@ -82,11 +83,30 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'integriq';
 
 	/**
+	 * External-call router.
+	 *
+	 * @var ExternalIntegrationRouterInterface
+	 */
+	private ExternalIntegrationRouterInterface $router;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ExternalIntegrationRouterInterface $router External-call router.
-	 * @param IAppManager $appManager NC app manager (isEnabled check).
-	 * @param IL10N $l10n Localisation.
+	 * @param ConnectorRouting $routing The router, app manager (isEnabled check) and localisation.
 	 * @param XwikiLinkMapperInterface|null $xwikiLinkMapper Tier-2 local link table
 	 *                                              (nullable so the Tier-1
 	 *                                              external-only wiring + the
@@ -96,11 +116,12 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private ExternalIntegrationRouterInterface $router,
-		private IAppManager $appManager,
-		private IL10N $l10n,
+		ConnectorRouting $routing,
 		private ?XwikiLinkMapperInterface $xwikiLinkMapper = null,
 	) {
+		$this->router     = $routing->router;
+		$this->appManager = $routing->appManager;
+		$this->l10n       = $routing->l10n;
 	}//end __construct()
 
 	/**
@@ -185,14 +206,26 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		if ($this->xwikiLinkMapper !== null && $objectId !== '') {
-			$scope = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: []);
+		return $this->linkedOrSourced(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), filters: $filters);
+	}//end list()
+
+	/**
+	 * The object's pages: the link table when there is one, else the external source.
+	 *
+	 * @param ObjectRef           $ref     The owning object.
+	 * @param array<string,mixed> $filters Caller filters, passed to the source.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function linkedOrSourced(ObjectRef $ref, array $filters): array {
+		if ($this->xwikiLinkMapper !== null && $ref->id !== '') {
+			$scope = $this->contextQuery(ref: $ref, filters: []);
 			return $this->listLinkedPages(mapper: $this->xwikiLinkMapper, scope: $scope);
 		}
 
-		$query = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $filters);
+		$query = $this->contextQuery(ref: $ref, filters: $filters);
 		return $this->listFromSource(query: $query);
-	}//end list()
+	}//end linkedOrSourced()
 
 	/**
 	 * List the locally-linked xWiki pages for an object, enriching each

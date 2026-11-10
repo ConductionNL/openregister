@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Command;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -49,19 +50,37 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class DedupeRegistersCommand extends Command {
 	/**
+	 * Register lookup/mutation mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Magic table resolver for object counts.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
 	 * Wire the mappers used by the command.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register lookup/mutation mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicMapperInterface $magicMapper Magic table resolver for object counts.
+	 * @param SchemaCatalogInterface $catalog Register, schema and magic table mappers.
 	 *
 	 * @return void
 	 */
-	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $magicMapper,
-	) {
+	public function __construct(SchemaCatalogInterface $catalog) {
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper = $catalog->schemas();
+		$this->magicMapper = $catalog->tables();
 		parent::__construct();
 	}//end __construct()
 

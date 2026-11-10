@@ -18,7 +18,7 @@ final class SettingsControllerFactory {
 	/**
 	 * The constructor arguments of SettingsController.
 	 *
-	 * @param mixed $appName Constructor argument.
+	 * @param mixed $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param IAppConfig $config Constructor argument.
 	 * @param IDBConnection $db Constructor argument.
@@ -40,7 +40,6 @@ final class SettingsControllerFactory {
 		?\OCP\IL10N $l10n = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\SettingsControllerServices(
 				store: new \OCA\OpenRegister\Controller\Support\SettingsStore(

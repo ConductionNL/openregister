@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
+use OCA\OpenRegister\Service\Rbac\MatrixShape;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -137,7 +138,7 @@ final class DepartmentMatrixValidatorGoldenTest extends TestCase {
 		}
 
 		foreach (['row' => 'row', 'array' => ['group' => '', 'actions' => ['nope'], 'where' => ['department' => 1, 'ghost' => []]]] as $label => $row) {
-			$out['findingsForRow:'.$label] = $validator->findingsForRow($row, self::PROPERTIES, 'department');
+			$out['findingsForRow:'.$label] = $validator->findingsForRow($row, new MatrixShape(self::PROPERTIES, 'department'));
 		}
 
 		$out['withDeclaredActions'] = $validator->withDeclaredActions([])->validate(

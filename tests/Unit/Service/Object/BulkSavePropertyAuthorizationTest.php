@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -138,7 +139,11 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
 		$method->setAccessible(true);
 
-		return $method->invokeArgs($this->handler, [$rows, new BulkBatchDefaults($this->register, $this->schema), ['rbac' => true, 'validation' => false], &$result]);
+		$batch  = new SafeguardBatchRun(objects: $rows, defaults: new BulkBatchDefaults($this->register, $this->schema), flags: ['rbac' => true, 'validation' => false], result: $result);
+		$passed = $method->invokeArgs($this->handler, [$batch]);
+		$result = $batch->result;
+
+		return $passed;
 	}//end safeguard()
 
 	public function testAnExplicitWriteOfAProtectedPropertyIsRefused(): void {

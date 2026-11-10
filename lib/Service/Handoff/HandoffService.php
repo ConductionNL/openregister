@@ -253,14 +253,9 @@ class HandoffService implements HandoffServiceInterface {
 		bool $deferred = false,
 		?string $correlationId = null,
 	): array {
-		return $this->run(
-			request: new HandoffRequest(
-				source: new HandoffSourceRef(register: $register, schema: $schema, id: $id),
-				handoffId: $handoffId,
-				deferred: $deferred,
-				correlationId: ($correlationId ?? Uuid::v4()->toRfc4122())
-			)
-		);
+		$source = new HandoffSourceRef(register: $register, schema: $schema, id: $id);
+		$correlationId = ($correlationId ?? Uuid::v4()->toRfc4122());
+		return $this->run(request: new HandoffRequest(source: $source, handoffId: $handoffId, deferred: $deferred, correlationId: $correlationId));
 	}//end execute()
 
 	/**
@@ -706,9 +701,7 @@ class HandoffService implements HandoffServiceInterface {
 		}
 
 		return HandoffContractBindingValidator::isCompleteBinding(
-			kindUri: $kindUri,
-			binding: $binding,
-			properties: ($schema->getProperties() ?? [])
+			kind: new HandoffKindBinding(kindUri: $kindUri, fieldMap: ($binding[$kindUri] ?? null), properties: ($schema->getProperties() ?? []))
 		);
 	}//end hasCompleteBinding()
 

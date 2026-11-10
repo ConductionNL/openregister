@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Rbac\ConstraintPoint;
 use OCA\OpenRegister\Service\Rbac\GrantConstraints;
 use PHPUnit\Framework\TestCase;
 
@@ -85,7 +86,7 @@ class GrantConstraintsShapeTest extends TestCase {
 	 * @return void
 	 */
 	public function testPassThroughAndRoleHolders(): void {
-		$applied = (new GrantConstraints())->apply(
+		$applied = (new GrantConstraints())->applyAt(
 			authorization: [
 				'public'  => [['group' => 'g', 'until' => '2020-01-01T00:00:00+00:00']],
 				'scope'   => 'private',
@@ -97,8 +98,7 @@ class GrantConstraintsShapeTest extends TestCase {
 					'legacy' => 'staff',
 				],
 			],
-			area: [],
-			now: $this->now()
+			point: new ConstraintPoint(area: [], now: $this->now())
 		);
 
 		$this->assertSame([['group' => 'g', 'until' => '2020-01-01T00:00:00+00:00']], $applied['public']);

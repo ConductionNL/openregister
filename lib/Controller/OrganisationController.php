@@ -29,6 +29,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
@@ -42,6 +43,7 @@ use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
+use OCA\OpenRegister\Service\Rbac\SpecialRightChange;
 use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -144,16 +146,14 @@ class OrganisationController extends Controller {
 	/**
 	 * OrganisationController constructor
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
 	 * @param OrganisationControllerServices $services The organisation controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		OrganisationControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->usageService = $services->domain->usageService;
 		$this->lifecycleAuditor = $services->auditing->lifecycleAuditor;
 		$this->grantAuditor = $services->domain->grantAuditor;
@@ -776,8 +776,7 @@ class OrganisationController extends Controller {
 			if ($grantManageAfter !== $grantManageBefore) {
 				$this->grantAuditor?->recordSpecialRight(
 					organisationUuid: $uuid,
-					before: $grantManageBefore,
-					after: $grantManageAfter
+					change: new SpecialRightChange(before: $grantManageBefore, after: $grantManageAfter)
 				);
 			}
 

@@ -34,15 +34,13 @@ interface LifecycleTransitionResolverInterface {
 	 * The (action, spec) pair this change is, or null when none allows it.
 	 *
 	 * @param array<string, mixed> $transitions The annotation's transition map.
-	 * @param string $uuid The object's uuid, for the declared-action lookup.
-	 * @param string $oldValue The lifecycle value being moved away from.
-	 * @param string $newValue The lifecycle value being moved to.
+	 * @param StateMove $move The object, the state it leaves and the state it enters.
 	 *
 	 * @return array{0: string, 1: array<string, mixed>}|null
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function resolve(array $transitions, string $uuid, string $oldValue, string $newValue): ?array;
+	public function resolve(array $transitions, StateMove $move): ?array;
 
 	/**
 	 * Whether the write of this object in flight sets declared state (a seed or example-set refresh).

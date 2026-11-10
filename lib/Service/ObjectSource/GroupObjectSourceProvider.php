@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -45,20 +46,35 @@ use Throwable;
 class GroupObjectSourceProvider implements ObjectSourceProvider {
 
 	use CountsThroughFindAll;
+
+	/**
+	 * The acting-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param IGroupManager $groupManager Nextcloud group directory (search/get/admin).
-	 * @param IUserSession $userSession Acting-user session for read-scoping.
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param IGroupManager      $groupManager Nextcloud group directory (search/get/admin).
+	 * @param LinkSessionRuntime $session      The acting-user session and the logger for read failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IGroupManager $groupManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		LinkSessionRuntime $session,
 	) {
+		$this->userSession = $session->userSession;
+		$this->logger = $session->logger;
 	}//end __construct()
 
 	/**
@@ -104,6 +120,18 @@ class GroupObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.2
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+		return $this->findGroup(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	}//end find()
+
+	/**
+	 * Read one object for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param string               $id      The object id.
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
+	 */
+	private function findGroup(SourcedObjectBinding $binding, string $id): ?ObjectEntity {
 		try {
 			$group = $this->groupManager->get($id);
 		} catch (Throwable $e) {
@@ -115,8 +143,8 @@ class GroupObjectSourceProvider implements ObjectSourceProvider {
 			return null;
 		}
 
-		return $this->toObjectEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), group: $group);
-	}//end find()
+		return $this->toObjectEntity(binding: $binding, group: $group);
+	}//end findGroup()
 
 	/**
 	 * {@inheritDoc}
@@ -136,14 +164,25 @@ class GroupObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.2
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
+		return $this->listGroups(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
+	}//end findAll()
+
+	/**
+	 * Read one page of objects for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param array<string, mixed> $query   Query (filters/search/limit/offset).
+	 *
+	 * @return ObjectEntity[] The matching virtual objects.
+	 */
+	private function listGroups(SourcedObjectBinding $binding, array $query): array {
 		$objects = [];
 		foreach ($this->readGroups(query: $query) as $group) {
 			$objects[] = $this->toObjectEntity(binding: $binding, group: $group);
 		}
 
 		return $objects;
-	}//end findAll()
+	}//end listGroups()
 
 	/**
 	 * Read the groups visible to the acting user, failing closed to an empty list.

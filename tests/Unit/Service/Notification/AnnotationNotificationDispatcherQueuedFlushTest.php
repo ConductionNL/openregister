@@ -26,6 +26,17 @@ use OCA\OpenRegister\Notifications\Db\NotificationHistory;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCP\Activity\IEvent;
@@ -292,18 +303,41 @@ class AnnotationNotificationDispatcherQueuedFlushTest extends TestCase {
 		);
 
 		return new AnnotationNotificationDispatcher(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			notificationManager: $this->createMock(INotificationManager::class),
-			logger: $this->createMock(LoggerInterface::class),
-			groupManager: $this->createMock(IGroupManager::class),
-			userManager: $this->createMock(IUserManager::class),
-			mailer: $this->createMock(IMailer::class),
-			activityManager: $activity,
-			httpClient: $this->createMock(IClientService::class),
-			serverContainer: $this->createMock(IServerContainer::class),
-			historyMapper: $history,
-			ncSender: $ncSender,
-			emailSender: $emailSender
+			channels: new ChannelSet(
+				ncSender: $ncSender,
+				emailSender: $emailSender,
+				talkSender: new TalkSender(
+					httpClient: $this->createMock(IClientService::class),
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				activityManager: $activity
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold()
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->createMock(IClientService::class),
+				serverContainer: $this->createMock(IServerContainer::class)
+			),
+			ledger: new DeliveryLedger(
+				logger: $this->createMock(LoggerInterface::class),
+				historyMapper: $history
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->createMock(IUserManager::class),
+					groupManager: $this->createMock(IGroupManager::class),
+					logger: $this->createMock(LoggerInterface::class),
+					serverContainer: $this->createMock(IServerContainer::class)
+				)
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: $this->createMock(LoggerInterface::class)
+				)
+			)
 		);
 	}//end dispatcher()
 }//end class

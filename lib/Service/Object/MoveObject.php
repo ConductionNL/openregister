@@ -49,7 +49,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
-use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\ValidationResult;
 use Throwable;
 
@@ -82,19 +81,25 @@ class MoveObject implements MoveObjectInterface {
 	public const GENERATED = 'x-openregister-generated';
 
 	/**
+	 * The object store, from the recording aggregate.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objects;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface     $objects   The object store.
+	 * @param ObjectChangeRecording    $recording The object store, the audit trail and the log a move
+	 *                                            reports to, and the dispatcher that asks the guards of
+	 *                                            values other records hold.
 	 * @param ObjectValidatorInterface $validator Validation against a schema.
-	 * @param MoveReporting            $reporting The audit trail and the log a move reports to.
-	 * @param IEventDispatcher         $events    Asks the guards of values other records hold.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objects,
+		private readonly ObjectChangeRecording $recording,
 		private readonly ObjectValidatorInterface $validator,
-		private readonly MoveReporting $reporting,
-		private readonly IEventDispatcher $events,
 	) {
+		$this->objects = $recording->objects;
 	}//end __construct()
 
 	/**
@@ -306,7 +311,7 @@ class MoveObject implements MoveObjectInterface {
 	 */
 	private function heldReason(ObjectEntity $object): ?string {
 		$event = new ObjectLeavingEvent(object: $object);
-		$this->events->dispatchTyped($event);
+		$this->recording->events->dispatchTyped($event);
 		if ($event->isPropagationStopped() === false) {
 			return null;
 		}
@@ -346,7 +351,7 @@ class MoveObject implements MoveObjectInterface {
 		$object = $move->object;
 		$before = $move->before();
 		try {
-			$sourceSlug = $this->assignTargetSlug(object: $object, targetRegister: $move->target->register, targetSchema: $move->target->schema);
+			$sourceSlug = $this->assignTargetSlug(move: $move);
 			$object->setRegister((string)$move->target->register->getId());
 			$object->setSchema((string)$move->target->schema->getId());
 			// The old entity is given: the target table has no row to read it from.
@@ -360,7 +365,7 @@ class MoveObject implements MoveObjectInterface {
 			// Put the entity back the way it was in memory, so a caller that
 			// keeps using it is not holding an object that claims to live
 			// somewhere it does not.
-			$this->putBack(object: $object, register: $move->source->register, schema: $move->source->schema, slug: ($sourceSlug ?? $object->getSlug()));
+			$this->putBack(move: $move, slug: ($sourceSlug ?? $object->getSlug()));
 
 			return $e->getMessage();
 		}//end try
@@ -395,7 +400,7 @@ class MoveObject implements MoveObjectInterface {
 			// NOT fatal, and NOT silent. The object is readable at its new
 			// address; the old row is a duplicate that reads the same object,
 			// and somebody has to know it is there.
-			$this->reporting->logger->error(
+			$this->recording->logger->error(
 				message: '[MoveObject] object ' . (string)$move->object->getUuid() . ' was written at its new address but its old row '
 					. 'could not be removed, so it is readable at both: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'from' => $move->source->ids(), 'to' => $move->target->ids()]
@@ -412,15 +417,14 @@ class MoveObject implements MoveObjectInterface {
 	 * The slug was decided in the source; the target may already have a live
 	 * holder of it, so it is checked there as a save would.
 	 *
-	 * @param ObjectEntity $object         The object being moved.
-	 * @param Register     $targetRegister Where it is going.
-	 * @param Schema       $targetSchema   Where it is going.
+	 * @param ObjectMove $move The move: the object and where it is going.
 	 *
 	 * @return string|null The slug it had in the source.
 	 */
-	private function assignTargetSlug(ObjectEntity $object, Register $targetRegister, Schema $targetSchema): ?string {
+	private function assignTargetSlug(ObjectMove $move): ?string {
+		$object = $move->object;
 		$sourceSlug = $object->getSlug();
-		$object->setSlug($this->objects->slugForMove(entity: $object, register: $targetRegister, schema: $targetSchema));
+		$object->setSlug($this->objects->slugForMove(entity: $object, register: $move->target->register, schema: $move->target->schema));
 
 		return $sourceSlug;
 	}//end assignTargetSlug()
@@ -428,17 +432,15 @@ class MoveObject implements MoveObjectInterface {
 	/**
 	 * Put an object whose move failed back at its source address, in memory.
 	 *
-	 * @param ObjectEntity $object   The object.
-	 * @param Register     $register Its source register.
-	 * @param Schema       $schema   Its source schema.
-	 * @param string|null  $slug     Its source slug.
+	 * @param ObjectMove  $move The move: the object and its source address.
+	 * @param string|null $slug Its source slug.
 	 *
 	 * @return void
 	 */
-	private function putBack(ObjectEntity $object, Register $register, Schema $schema, ?string $slug): void {
-		$object->setRegister((string)$register->getId());
-		$object->setSchema((string)$schema->getId());
-		$object->setSlug($slug);
+	private function putBack(ObjectMove $move, ?string $slug): void {
+		$move->object->setRegister((string)$move->source->register->getId());
+		$move->object->setSchema((string)$move->source->schema->getId());
+		$move->object->setSlug($slug);
 	}//end putBack()
 
 	/**
@@ -547,7 +549,7 @@ class MoveObject implements MoveObjectInterface {
 		}
 
 		try {
-			$this->reporting->audit->createAuditTrailEntry(
+			$this->recording->auditTrail->createAuditTrailEntry(
 				object: $object,
 				action: self::ACTION,
 				context: [
@@ -561,7 +563,7 @@ class MoveObject implements MoveObjectInterface {
 			// The move happened. Failing it now would leave the object moved
 			// and the caller told it was not, which is the one state nobody
 			// can act on.
-			$this->reporting->logger->warning(
+			$this->recording->logger->warning(
 				message: '[MoveObject] the move of ' . (string)$object->getUuid()
 					. ' could not be recorded: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]

@@ -45,6 +45,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshStores;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshSteps;
+use OCA\OpenRegister\Event\CredentialRelinkRequiredEvent;
 
 /**
  * Golden outcomes of the OAuth2 token refresh.
@@ -353,18 +354,16 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 		$this->assertSame('release', end($this->events));
 	}
 
-	public function testPersistMergesExtraMetadataAndWritesPastAccessControl(): void {
+	public function testPersistMirrorsAnActiveStatusAndWritesPastAccessControl(): void {
 		$this->service()->persist(
-			credentialId: 'cred-1',
-			scope: 'personal',
-			set: \OCA\OpenRegister\Service\Credential\OAuth2TokenSet::fromStoredJson(stored: $this->stored(expiresAt: '2030-01-01T00:00:00+00:00')),
-			extraMetadata: ['status' => 'relinked', 'extra' => 1]
+			address: new \OCA\OpenRegister\Service\Credential\TokenSetAddress(credentialId: 'cred-1', scope: 'personal'),
+			set: \OCA\OpenRegister\Service\Credential\OAuth2TokenSet::fromStoredJson(stored: $this->stored(expiresAt: '2030-01-01T00:00:00+00:00'))
 		);
 
 		$this->assertSame(['find', 'put', 'find', 'save'], $this->events);
 		$save = $this->saves[0];
-		$this->assertSame('relinked', $save['status']);
-		$this->assertSame(1, $save['extra']);
+		$this->assertSame('active', $save['status']);
+		$this->assertSame('', $save['lastError']);
 		$this->assertSame('2030-01-01T00:00:00+00:00', $save['expiresAt']);
 		$this->assertSame(['register' => 'credential-broker', 'schema' => 'brokeredcredential', 'uuid' => 'cred-1', '_rbac' => false, '_multitenancy' => false], $save['@args']);
 	}
@@ -554,9 +553,14 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 		$http->method('newClient')->willReturn($client);
 
 		$notifier = $this->createMock(CredentialRelinkNotifier::class);
-		$notifier->method('announce')->willReturnCallback(function (string $credentialId, string $provider, string $owner, string $reason): void {
+		$notifier->method('announce')->willReturnCallback(function (CredentialRelinkRequiredEvent $event): void {
 			$this->events[] = 'announce';
-			$this->announcements[] = compact('credentialId', 'provider', 'owner', 'reason');
+			$this->announcements[] = [
+				'credentialId' => $event->getCredentialId(),
+				'provider' => $event->getProvider(),
+				'owner' => $event->getOwner(),
+				'reason' => $event->getReason(),
+			];
 		});
 
 		return $this->build(store: $store, objects: $objects, lock: $lock, clients: $clients, http: $http, notifier: $notifier);
