@@ -39,6 +39,7 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Service\Task\TaskAnswer;
+use OCA\OpenRegister\Service\Task\TaskImport;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
 use OCA\OpenRegister\Service\Task\TaskCommit;
@@ -315,7 +316,7 @@ class TaskServiceTest extends TestCase {
 		$this->setUpAuditRecorder(audited: $audited);
 		$at = new DateTime('2026-10-05T14:20:00+00:00');
 
-		$created = $this->service()->import(data: ['title' => 'Hoorzitting inplannen'], actor: 'rita', createdAt: $at);
+		$created = $this->service()->importTask(import: new TaskImport(data: ['title' => 'Hoorzitting inplannen'], actor: 'rita', createdAt: $at));
 
 		$this->assertSame(expected: $at, actual: $created->getCreated());
 		$this->assertCount(expectedCount: 1, haystack: $audited);

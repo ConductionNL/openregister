@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\TaskImport;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskState;
 use Psr\Container\ContainerInterface;
@@ -265,7 +266,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	private function import(ExampleSetRow $row, array $fields): Task {
 		$data = $row->data;
 		$actor = $this->actor(app: $row->app, data: $data);
-		$task = $this->service()->import(data: $fields, actor: $actor, createdAt: ExampleSetTaskDates::moment(value: ($data['createdAt'] ?? null)));
+		$task = $this->service()->importTask(import: new TaskImport(data: $fields, actor: $actor, createdAt: ExampleSetTaskDates::moment(value: ($data['createdAt'] ?? null))));
 		$this->complete(task: $task, data: $data);
 		$this->waitAndClaim(task: $task, data: $data);
 

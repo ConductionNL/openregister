@@ -129,6 +129,7 @@ use OCA\OpenRegister\Search\Service\ViewEdit;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\TaskImport;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskState;
@@ -550,7 +551,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	 */
 	private function taskService(): TaskService {
 		$service = $this->createMock(TaskService::class);
-		$service->method('import')->willReturnCallback(function (array $data, ?string $actor, ?callable $blocker = null, ?\DateTime $at = null): Task {
+		$service->method('importTask')->willReturnCallback(function (TaskImport $import): Task {
+			[$data, $actor, $at] = [$import->data, $import->actor, $import->createdAt];
 			foreach ($this->engineTasks as $held) {
 				if ($held->getTaskKey() === (string) $data['key']) {
 					// The task key is unique in the engine (or_tasks_key_uniq).
