@@ -31,6 +31,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\ScopeChange;
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\Rbac\OwnedRecord;
+use OCA\OpenRegister\Service\Rbac\LinkProtection;
+use OCA\OpenRegister\Service\Rbac\LinkInvitation;
+use OCA\OpenRegister\Service\Rbac\GrantTerms;
+use OCA\OpenRegister\Service\Rbac\GrantRequest;
 use OCA\OpenRegister\Service\Rbac\ObjectLookup;
 use OCA\OpenRegister\Service\Rbac\OwnershipGuards;
 use OCA\OpenRegister\Service\Rbac\OwnershipWriters;
@@ -148,7 +155,7 @@ class GrantManageSpecialRightTest extends TestCase {
 		$folders->method('getObjectFolder')->willReturn($folder);
 
 		$this->trail = $this->createMock(AuditTrailMapper::class);
-		$auditor = new GrantChangeAuditor($this->trail, $this->createMock(SettingsChangeAuditor::class), new NullLogger());
+		$auditor = new GrantChangeAuditor(new \OCA\OpenRegister\Service\Object\AuditRecording($this->trail, new NullLogger()), $this->createMock(SettingsChangeAuditor::class));
 
 		$this->sharing = new ObjectSharingService(
 			shares: new \OCA\OpenRegister\Service\Rbac\ObjectShareSurface(folders: $folders, shareManager: $this->shareManager),
@@ -252,7 +259,7 @@ class GrantManageSpecialRightTest extends TestCase {
 		$this->shareManager->expects($this->once())->method('deleteShare')->with($share);
 		$this->shareManager->method('getSharesBy')->willReturn([]);
 
-		$grant = $this->sharing->grant($this->record, 'user', 'reviewer', 1);
+		$grant = $this->sharing->grantWithTerms(object: $this->record, request: new GrantRequest(type: 'user', shareWith: 'reviewer', terms: new GrantTerms(permissions: 1)));
 		$this->assertSame('ocinternal:9', $grant['id']);
 		$this->assertSame([], $this->sharing->listGrants($this->record));
 		$this->sharing->revoke($this->record, 'ocinternal:9');
@@ -272,7 +279,7 @@ class GrantManageSpecialRightTest extends TestCase {
 			}
 		);
 
-		$this->sharing->grant($this->record, 'user', 'reviewer', 1);
+		$this->sharing->grantWithTerms(object: $this->record, request: new GrantRequest(type: 'user', shareWith: 'reviewer', terms: new GrantTerms(permissions: 1)));
 		$this->sharing->revoke($this->record, 'ocinternal:9');
 
 		$this->assertSame('record-1', $rows[0][0]);
@@ -298,8 +305,8 @@ class GrantManageSpecialRightTest extends TestCase {
 			}
 		);
 
-		$this->sharing->createLink($this->record, 1);
-		$this->sharing->inviteByEmail($this->record, 'guest@example.nl', 1);
+		$this->sharing->createLink(object: $this->record, invitation: new LinkInvitation(recipient: null, permissions: 1, protection: new LinkProtection(password: null, expiration: null)));
+		$this->sharing->inviteByEmail(object: $this->record, invitation: new LinkInvitation(recipient: 'guest@example.nl', permissions: 1, protection: new LinkProtection(password: null, expiration: null)));
 
 		$this->assertSame(GrantChangeAuditor::ACTION_GRANTED, $rows[0][0]);
 		$this->assertSame('link', $rows[0][1]['type']);
@@ -313,7 +320,7 @@ class GrantManageSpecialRightTest extends TestCase {
 		$this->trail->expects($this->never())->method('createAuditTrailEntry');
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->sharing->grant($this->record, 'user', 'service-account', 1);
+		$this->sharing->grantWithTerms(object: $this->record, request: new GrantRequest(type: 'user', shareWith: 'service-account', terms: new GrantTerms(permissions: 1)));
 	}//end testARefusedGrantLeavesNoAuditRow()
 
 	public function testANewOwningGroupLeavesAnAuditRowWithBothSides(): void {
@@ -324,14 +331,14 @@ class GrantManageSpecialRightTest extends TestCase {
 			['ownerGroup' => ['old' => null, 'new' => 'supervisors']]
 		);
 
-		$this->ownership->setOwnerGroup(new Register(), new Schema(), $this->record, 'supervisors');
+		$this->ownership->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record), group: 'supervisors');
 	}//end testANewOwningGroupLeavesAnAuditRowWithBothSides()
 
 	public function testAHolderNamesTheOwningGroup(): void {
 		$this->signIn('service-account', [self::SERVICE_GROUP]);
 		$this->authorizationWriter->expects($this->once())->method('writeAuthorizationBlock');
 
-		$block = $this->ownership->setOwnerGroup(new Register(), new Schema(), $this->record, 'supervisors');
+		$block = $this->ownership->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record), group: 'supervisors');
 
 		$this->assertSame('supervisors', $block['ownerGroup']);
 	}//end testAHolderNamesTheOwningGroup()
@@ -342,7 +349,7 @@ class GrantManageSpecialRightTest extends TestCase {
 		$this->record = $this->record(schema: '13');
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->sharing->grant($this->record, 'user', 'reviewer', 1);
+		$this->sharing->grantWithTerms(object: $this->record, request: new GrantRequest(type: 'user', shareWith: 'reviewer', terms: new GrantTerms(permissions: 1)));
 	}//end testTheRightDoesNotReachARecordOfASchemaItDoesNotName()
 
 	public function testANonHolderIsRefusedWithAForbiddenStatus(): void {
@@ -379,7 +386,7 @@ class GrantManageSpecialRightTest extends TestCase {
 
 		$this->expectException(NotAuthorizedException::class);
 		$this->expectExceptionMessage('does not let its holder grant access to itself');
-		$this->sharing->grant($this->record, $type, $grantee, 1);
+		$this->sharing->grantWithTerms(object: $this->record, request: new GrantRequest(type: $type, shareWith: $grantee, terms: new GrantTerms(permissions: 1)));
 	}//end testAHolderMayNotGrantToItself()
 
 	/**
@@ -401,7 +408,7 @@ class GrantManageSpecialRightTest extends TestCase {
 		$this->authorizationWriter->expects($this->never())->method('writeAuthorizationBlock');
 
 		$this->expectException(NotAuthorizedException::class);
-		$this->ownership->setOwnerGroup(new Register(), new Schema(), $this->record, self::SERVICE_GROUP);
+		$this->ownership->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record), group: self::SERVICE_GROUP);
 	}//end testAHolderMayNotNameItsOwnGroupAsTheOwner()
 
 	public function testTheRightOpensNeitherTheScopeNorALinkNorAnInvitation(): void {
@@ -411,9 +418,9 @@ class GrantManageSpecialRightTest extends TestCase {
 		$refused = 0;
 
 		foreach ([
-			fn () => $this->sharing->setScope(new Register(), new Schema(), $this->record, 'organisation'),
-			fn () => $this->sharing->createLink($this->record),
-			fn () => $this->sharing->inviteByEmail($this->record, 'someone@example.org'),
+			fn () => $this->sharing->setScope(table: new RegisterSchema(register: new Register(), schema: new Schema()), change: new ScopeChange(object: $this->record, scope: 'organisation')),
+			fn () => $this->sharing->createLink(object: $this->record, invitation: new LinkInvitation(recipient: null, permissions: 1, protection: new LinkProtection(password: null, expiration: null))),
+			fn () => $this->sharing->inviteByEmail(object: $this->record, invitation: new LinkInvitation(recipient: 'someone@example.org', permissions: 1, protection: new LinkProtection(password: null, expiration: null))),
 		] as $attempt) {
 			try {
 				$attempt();
@@ -467,11 +474,11 @@ class GrantManageSpecialRightTest extends TestCase {
 		$this->groupManager->method('getUserGroupIds')->willReturnOnConsecutiveCalls(['staff'], ['admin']);
 
 		// The owner (uid `handler`, no special group).
-		$this->sharing->grant($this->record, 'user', 'handler', 1);
+		$this->sharing->grantWithTerms(object: $this->record, request: new GrantRequest(type: 'user', shareWith: 'handler', terms: new GrantTerms(permissions: 1)));
 
 		// An administrator who is not the owner.
 		$this->record->setOwner('somebody-else');
-		$this->sharing->grant($this->record, 'group', 'admin', 1);
+		$this->sharing->grantWithTerms(object: $this->record, request: new GrantRequest(type: 'group', shareWith: 'admin', terms: new GrantTerms(permissions: 1)));
 	}//end testTheOwnerAndAnAdministratorManageGrantsAsBefore()
 
 	public function testSomebodyWhoIsNeitherIsStillRefusedTheOwningGroup(): void {
@@ -479,6 +486,6 @@ class GrantManageSpecialRightTest extends TestCase {
 
 		$this->expectException(NotAuthorizedException::class);
 		$this->expectExceptionMessage('Only the owner or an administrator may change who owns this record');
-		$this->ownership->setOwnerGroup(new Register(), new Schema(), $this->record, 'supervisors');
+		$this->ownership->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record), group: 'supervisors');
 	}//end testSomebodyWhoIsNeitherIsStillRefusedTheOwningGroup()
 }//end class

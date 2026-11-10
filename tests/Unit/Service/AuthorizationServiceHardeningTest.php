@@ -140,12 +140,10 @@ class AuthorizationServiceHardeningTest extends TestCase {
 		$request->method('passesCSRFCheck')->willReturnCallback(fn (): bool => $this->passesCsrf);
 
 		return new AuthorizationService(
-			userManager: $users,
-			userSession: $session,
+			directory: new \OCA\OpenRegister\Service\UserDirectory(session: $session, users: $users, groups: $groups),
 			consumerMapper: $mapper,
 			cacheFactory: $cacheFactory,
-			groupManager: $groups,
-			request: $request,
+			request: $request
 		);
 	}//end service()
 

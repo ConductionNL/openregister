@@ -103,15 +103,31 @@ class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 		int $limit = self::DEFAULT_LIMIT,
 		int $offset = 0,
 	): array {
+		$selection = new RuleRunSelection(ruleId: $ruleId, filter: new RuleRunFilter(verdict: $verdict, since: $since, until: $until));
+		return $this->findRuns(selection: $selection, page: new ListQuery(limit: $limit, offset: $offset));
+
+	}//end findByRule()
+
+	/**
+	 * One rule's runs, newest first, narrowed by the selection's filter.
+	 *
+	 * @param RuleRunSelection $selection The rule and its filter.
+	 * @param ListQuery        $page      The limit (capped at MAX_LIMIT) and offset; other fields are ignored.
+	 *
+	 * @return array<int, RuleRun> The rows.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function findRuns(RuleRunSelection $selection, ListQuery $page): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from($this->getTableName())
-			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($ruleId)));
-		$this->newestFirstPage(qb: $qb, page: self::clampedPage(limit: $limit, offset: $offset));
-		(new RuleRunFilter(verdict: $verdict, since: $since, until: $until))->applyTo(qb: $qb);
+			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($selection->ruleId)));
+		$this->newestFirstPage(qb: $qb, page: self::clampedPage(limit: $page->limit, offset: $page->offset ?? 0));
+		$selection->filter->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 
-	}//end findByRule()
+	}//end findRuns()
 
 	/**
 	 * The most recent runs across every rule.
@@ -161,14 +177,29 @@ class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 		?DateTime $since = null,
 		?DateTime $until = null,
 	): int {
+		$filter = new RuleRunFilter(verdict: $verdict, since: $since, until: $until);
+		return $this->countRuns(selection: new RuleRunSelection(ruleId: $ruleId, filter: $filter));
+
+	}//end countByRule()
+
+	/**
+	 * How many runs one rule has in the log, under the selection's filter.
+	 *
+	 * @param RuleRunSelection $selection The rule and its filter.
+	 *
+	 * @return int The number of matching rows.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function countRuns(RuleRunSelection $selection): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectAlias($qb->createFunction('COUNT(*)'), 'run_count')->from($this->getTableName())
-			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($ruleId)));
-		(new RuleRunFilter(verdict: $verdict, since: $since, until: $until))->applyTo(qb: $qb);
+			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($selection->ruleId)));
+		$selection->filter->applyTo(qb: $qb);
 
 		return $this->fetchRunCount(qb: $qb);
 
-	}//end countByRule()
+	}//end countRuns()
 
 	/**
 	 * Run a count query and read its `run_count` column; no row counts as zero.

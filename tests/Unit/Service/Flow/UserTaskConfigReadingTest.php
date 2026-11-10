@@ -176,7 +176,7 @@ final class UserTaskConfigReadingTest extends TestCase {
 			$registry = $this->registry($types);
 		}
 
-		return new UserTaskPerformers(config: $this->config(), principals: $registry);
+		return new UserTaskPerformers(config: $this->config(), hooks: new \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks(principals: $registry));
 	}//end performers()
 
 	/**

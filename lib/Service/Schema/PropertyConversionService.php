@@ -169,7 +169,12 @@ class PropertyConversionService implements PropertyConversionServiceInterface {
 
 		$tally = ['convertible' => 0, 'rejected' => 0, 'samples' => []];
 		foreach ($values as $value) {
-			$tally = $this->previewValue(tally: $tally, value: $value, to: $to);
+			if ($this->survives(value: $value, to: $to) === true) {
+				$tally['convertible']++;
+				continue;
+			}
+
+			$tally = $this->rejected(tally: $tally, sample: ['value' => $this->readable(value: $value), 'reason' => sprintf('Not a valid %s.', $to)]);
 		}
 
 		return ['supported' => true, 'total' => count($values)] + $tally + ['reason' => null];
@@ -195,27 +200,21 @@ class PropertyConversionService implements PropertyConversionServiceInterface {
 	}//end refusedPreview()
 
 	/**
-	 * Count one value of a preview, sampling it when it does not convert.
+	 * Count one value of a preview that does not convert, sampling it while there is room.
 	 *
-	 * @param array{convertible:int,rejected:int,samples:array<int,array{value:string,reason:string}>} $tally The counts so far.
-	 * @param mixed  $value The stored value.
-	 * @param string $to    The requested type.
+	 * @param array{convertible:int,rejected:int,samples:array<int,array{value:string,reason:string}>} $tally  The counts so far.
+	 * @param array{value:string,reason:string}                                                        $sample The rejected value and why.
 	 *
 	 * @return array{convertible:int,rejected:int,samples:array<int,array{value:string,reason:string}>} The counts.
 	 */
-	private function previewValue(array $tally, mixed $value, string $to): array {
-		if ($this->survives(value: $value, to: $to) === true) {
-			$tally['convertible']++;
-			return $tally;
-		}
-
+	private function rejected(array $tally, array $sample): array {
 		$tally['rejected']++;
 		if (count($tally['samples']) < self::SAMPLE_SIZE) {
-			$tally['samples'][] = ['value' => $this->readable(value: $value), 'reason' => sprintf('Not a valid %s.', $to)];
+			$tally['samples'][] = $sample;
 		}
 
 		return $tally;
-	}//end previewValue()
+	}//end rejected()
 
 	/**
 	 * Whether one value survives the conversion.

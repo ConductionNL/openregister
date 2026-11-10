@@ -97,11 +97,12 @@ class RelationHandlerDeepTest extends TestCase {
 		}
 
 		// The method will cap at 200 and then batch load.
-		$this->objectMapper->method('findAll')->willReturn([]);
+		// 300 ids are capped at 200, loaded in four batches of 50.
+		$this->objectMapper->expects($this->exactly(4))->method('findAll')->willReturn([]);
 
 		$result = $this->handler->bulkLoadRelationshipsBatched($ids);
 		// Should still work (returns empty because mock returns []).
-		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 
 	}//end testBulkLoadRelationshipsBatchedCap()
 
@@ -138,7 +139,7 @@ class RelationHandlerDeepTest extends TestCase {
 
 		// Should not throw — continues past failed batch.
 		$result = $this->handler->bulkLoadRelationshipsBatched(['uuid-1']);
-		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 
 	}//end testBulkLoadRelationshipsBatchedBatchException()
 

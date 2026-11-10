@@ -94,9 +94,12 @@ class ObjectReadStateControllerTest extends TestCase {
 
 		return new ObjectReadStateController(
 			request: $this->request,
-			objectService: $objectService,
-			services: new ObjectReadStateControllerServices(readState: $this->readState, clearing: $this->clearing),
-			logger: $this->createMock(originalClassName: LoggerInterface::class)
+			services: new ObjectReadStateControllerServices(
+				readState: $this->readState,
+				clearing: $this->clearing,
+				objectService: $objectService,
+				logger: $this->createMock(originalClassName: LoggerInterface::class)
+			)
 		);
 
 	}//end controller()
