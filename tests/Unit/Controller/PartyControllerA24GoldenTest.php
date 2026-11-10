@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
@@ -245,7 +246,8 @@ final class PartyControllerA24GoldenTest extends TestCase {
 		$this->objectIs($object);
 		$schema = new Schema();
 		$this->objects->method('getCurrentSchemaEntity')->willReturn($schema);
-		$this->permissions->expects($this->exactly(4))->method('checkPermission')->with($schema, 'update', null, 'marleen', true, $object);
+		$asked = new PermissionCheckOptions(objectOwner: 'marleen', object: $object);
+		$this->permissions->expects($this->exactly(4))->method('checkPermission')->with($schema, 'update', $asked, true);
 		$this->params = ['partyUuid' => ' party-b ', 'role' => '  ', 'kind' => 'person'];
 		$this->roles->expects($this->once())->method('addParty')->with('case-1', 3, '7', $this->params)->willReturn($this->link());
 		$this->roles->expects($this->once())->method('replacePrimaryParty')->with($object, 'party-b', null)->willReturn($this->link());
