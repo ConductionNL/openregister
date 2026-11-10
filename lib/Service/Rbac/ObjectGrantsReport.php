@@ -220,7 +220,7 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 	private function ruleRows(array $holders, GrantRowSet $rows): void {
 		foreach ($holders as $holder) {
 			foreach (($holder['rules'] ?? []) as $rule) {
-				$fit = $this->sources->rules->fitOf(entry: $rule['rule'], role: $rule['role'], envelope: $rows->envelope);
+				$fit = $this->sources->rules->fitOf(rule: new HeldRule(entry: $rule['rule'], role: $rule['role']), envelope: $rows->envelope);
 				if ($fit === null) {
 					continue;
 				}
@@ -250,7 +250,7 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 	 */
 	private function withoutDenied(GrantRowSet $rows, array $denied): void {
 		foreach ($denied as $deny) {
-			$fit = $this->sources->rules->fitOf(entry: $deny['rule'], role: $deny['role'], envelope: $rows->envelope);
+			$fit = $this->sources->rules->fitOf(rule: new HeldRule(entry: $deny['rule'], role: $deny['role']), envelope: $rows->envelope);
 			if ($fit === null || $fit['relative'] === true) {
 				continue;
 			}
