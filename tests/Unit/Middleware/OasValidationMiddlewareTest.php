@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Middleware;
 use OCA\OpenRegister\Middleware\OasValidationFailureException;
 use OCA\OpenRegister\Middleware\OasValidationMiddleware;
 use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
+use OCA\OpenRegister\Service\Oas\ProblemDescription;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -98,7 +99,7 @@ class OasValidationMiddlewareTest extends TestCase {
 		$errors = [['pointer' => '/title', 'message' => 'required']];
 		$problems = $this->createMock(ProblemDetailsBuilderInterface::class);
 		$problems->expects($this->once())->method('validationFailed')
-			->with($errors, 'Request body failed OAS schema validation', '/api/objects/1')
+			->with($errors, new ProblemDescription(detail: 'Request body failed OAS schema validation', instance: '/api/objects/1'))
 			->willReturn(['title' => 'Validation failed']);
 
 		$middleware = new OasValidationMiddleware(

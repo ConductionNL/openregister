@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
+use OCA\OpenRegister\Service\Oas\ProblemDescription;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
@@ -117,7 +118,7 @@ final class MiddlewareShapeGoldenTest extends TestCase {
 		$request->method('getRequestUri')->willReturn('/api/x');
 		$problems = $this->createMock(ProblemDetailsBuilder::class);
 		$problems->method('validationFailed')->willReturnCallback(
-			fn (array $errors, string $detail = '', string $instance = ''): array => ['errors' => $errors, 'detail' => $detail, 'instance' => $instance]
+			fn (array $errors, ProblemDescription $description = new ProblemDescription()): array => ['errors' => $errors, 'detail' => $description->detail, 'instance' => $description->instance]
 		);
 		return new OasValidationMiddleware($request, $validator, $problems, $logger);
 	}

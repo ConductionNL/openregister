@@ -1804,33 +1804,14 @@ class OasService implements OasServiceInterface {
 			$candidate = $this->claimOperationId(seen: $seen, operationId: $original);
 			if ($candidate !== $original) {
 				$operation['operationId'] = $candidate;
-				$this->reportRenamedOperationId(path: 'paths.' . $pathName . '.' . $method, original: $original, renamed: $candidate);
+				$message = 'Duplicate operationId "' . $original . '" auto-renamed to "' . $candidate . '".';
+				$path    = 'paths.' . $pathName . '.' . $method . '.operationId';
+				$this->report->addAutoCorrection(issue: new OasIssue(path: $path, message: $message, code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID));
 			}
 		}
 
 		unset($operation);
 	}//end dedupeOperationIds()
-
-	/**
-	 * Record the auto-rename of a duplicate operationId.
-	 *
-	 * @param string $path     The operation's path in the document.
-	 * @param string $original The duplicate operationId.
-	 * @param string $renamed  The operationId it was renamed to.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/oas-generation/spec.md
-	 */
-	private function reportRenamedOperationId(string $path, string $original, string $renamed): void {
-		$this->report->addAutoCorrection(
-			issue: new OasIssue(
-				path: $path . '.operationId',
-				message: 'Duplicate operationId "' . $original . '" auto-renamed to "' . $renamed . '".',
-				code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID
-			)
-		);
-	}//end reportRenamedOperationId()
 
 	/**
 	 * Take an operationId: the id itself when free, otherwise the first free `_2`, `_3`, ... form.

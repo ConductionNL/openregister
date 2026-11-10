@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware;
 
 use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
+use OCA\OpenRegister\Service\Oas\ProblemDescription;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Middleware;
@@ -143,8 +144,7 @@ class OasValidationMiddleware extends Middleware {
 
 		$problem = $this->problems->validationFailed(
 			errors: $exception->getErrors(),
-			detail: 'Request body failed OAS schema validation',
-			instance: (string)$this->request->getRequestUri()
+			description: new ProblemDescription(detail: 'Request body failed OAS schema validation', instance: (string)$this->request->getRequestUri())
 		);
 		$response = new JSONResponse(data: $problem, statusCode: 422);
 		$response->addHeader('Content-Type', ProblemDetailsBuilderInterface::CONTENT_TYPE);
