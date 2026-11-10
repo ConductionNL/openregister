@@ -78,6 +78,9 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
+use OCA\OpenRegister\Db\MagicMapper\MagicIdentifierFind;
+use OCA\OpenRegister\Db\MagicMapper\MagicPaginatedSearch;
+use OCA\OpenRegister\Db\MagicMapper\MagicSearchRequest;
 use OCA\OpenRegister\Db\MagicMapper\LinkedEntityRef;
 use OCA\OpenRegister\Db\MagicMapper\FolderRecord;
 use OCA\OpenRegister\Db\MagicMapper\MagicUpsertBatch;
@@ -4047,6 +4050,30 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		bool $_multitenancy = true,
 		bool $includeDeleted = false,
 	): ObjectEntity {
+		$find = new MagicIdentifierFind(identifier: $identifier, includeDeleted: $includeDeleted);
+		$table = new RegisterSchema(register: $register, schema: $schema);
+		return $this->findInTable(table: $table, find: $find, _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end findInRegisterSchemaTable()
+
+	/**
+	 * Find an object in a register+schema table by identifier, under the same access filters as the list path (see findInRegisterSchemaTable()).
+	 *
+	 * @param RegisterSchema      $table         The register and schema whose table to search.
+	 * @param MagicIdentifierFind $find          The identifier and whether deleted objects count.
+	 * @param bool                $_rbac         Whether to apply RBAC checks.
+	 * @param bool                $_multitenancy Whether to apply multitenancy filtering.
+	 *
+	 * @return ObjectEntity The found object.
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function findInTable(RegisterSchema $table, MagicIdentifierFind $find, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity {
+		$register       = $table->register;
+		$schema         = $table->schema;
+		$identifier     = $find->identifier;
+		$includeDeleted = $find->includeDeleted;
+
 		$this->ensureTableWhenMagicEnabled(register: $register, schema: $schema);
 
 		$lookup = (new MagicObjectLookup(register: $register, schema: $schema))->lookingFor(
@@ -4094,7 +4121,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}
 
 		return $this->fetchSingleObject(qb: $qb, lookup: $lookup);
-	}//end findInRegisterSchemaTable()
+	}//end findInTable()
 
 	/**
 	 * Create the register+schema table when it is missing and magic mapping is enabled for the schema.
@@ -4777,6 +4804,26 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		bool $_multitenancy = true,
 		?int $registerIdScope = null,
 	): array {
+		$find = new MagicIdentifierFind(identifier: $identifier, includeDeleted: $includeDeleted, registerIdScope: $registerIdScope);
+		return $this->findAcross(find: $find, _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end findAcrossAllMagicTables()
+
+	/**
+	 * Find an object by identifier across the magic tables (see findAcrossAllMagicTables()).
+	 *
+	 * @param MagicIdentifierFind $find          The identifier, whether deleted objects count and the register to narrow to.
+	 * @param bool                $_rbac         Whether to apply RBAC checks.
+	 * @param bool                $_multitenancy Whether to apply multitenancy filtering.
+	 *
+	 * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
+	 * @throws DoesNotExistException If the object is in no magic table.
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function findAcross(MagicIdentifierFind $find, bool $_rbac=true, bool $_multitenancy=true): array {
+		$identifier      = $find->identifier;
+		$includeDeleted  = $find->includeDeleted;
+		$registerIdScope = $find->registerIdScope;
+
 		$this->logger->debug(
 			message: '[MagicMapper] findAcrossAllMagicTables: Starting search',
 			context: [
@@ -4806,7 +4853,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// Not found in any magic table.
 		throw new DoesNotExistException("Object with identifier '$identifier' not found in any magic table");
-	}//end findAcrossAllMagicTables()
+	}//end findAcross()
 
 	/**
 	 * The live (non-orphaned) magic tables, keyed by unprefixed table name, narrowed to one register when named.
@@ -8355,14 +8402,35 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): ObjectEntity {
-		if ($register !== null && $schema !== null) {
+		$find  = new MagicIdentifierFind(identifier: $identifier, includeDeleted: $includeDeleted, registerIdScope: $register?->getId());
+		$table = $this->registerSchemaOrNull(register: $register, schema: $schema);
+		return $this->findObject(find: $find, table: $table, _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end find()
+
+	/**
+	 * Find an object by identifier: in its register+schema table when given, else across the magic tables (see find()).
+	 *
+	 * @param MagicIdentifierFind $find          The identifier, whether deleted objects count and, without a table, the register to narrow to.
+	 * @param RegisterSchema|null $table         The register and schema whose table to search, or null to scan.
+	 * @param bool                $_rbac         Whether to apply RBAC checks (default: true).
+	 * @param bool                $_multitenancy Whether to apply multitenancy filtering (default: true).
+	 *
+	 * @return ObjectEntity The found object.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function findObject(MagicIdentifierFind $find, ?RegisterSchema $table=null, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity {
+		if ($table !== null) {
 			$entity = $this->findInRegisterSchemaTable(
-				identifier: $identifier,
-				register: $register,
-				schema: $schema,
+				identifier: $find->identifier,
+				register: $table->register,
+				schema: $table->schema,
 				_rbac: $_rbac,
 				_multitenancy: $_multitenancy,
-				includeDeleted: $includeDeleted
+				includeDeleted: $find->includeDeleted
 			);
 			$entity->setSource('orm');
 			return $entity;
@@ -8371,21 +8439,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// A register WITHOUT a schema still bounds the search: only that
 		// register's magic tables can hold the object. Passing it turns an
 		// instance-wide union into a handful of branches.
-		$scopeRegisterId = null;
-		if ($register !== null && $register->getId() !== null) {
-			$scopeRegisterId = (int)$register->getId();
-		}
-
 		$result = $this->findAcrossAllMagicTables(
-			identifier: $identifier,
-			includeDeleted: $includeDeleted,
+			identifier: $find->identifier,
+			includeDeleted: $find->includeDeleted,
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
-			registerIdScope: $scopeRegisterId
+			registerIdScope: $find->registerIdScope
 		);
 		$result['object']->setSource('orm');
 		return $result['object'];
-	}//end find()
+	}//end findObject()
 
 	/**
 	 * Find an object across all storage sources (all magic tables).
@@ -9902,6 +9965,24 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		?array $ids = null,
 		?string $uses = null,
 	): array|int {
+		return $this->searchBy(search: new MagicSearchRequest(query: $query, ids: $ids, uses: $uses), _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end searchObjects()
+
+	/**
+	 * Search objects of the register(s) and schema(s) the query names (see searchObjects()).
+	 *
+	 * @param MagicSearchRequest $search        The search parameters and the ids and relation to narrow to.
+	 * @param bool               $_rbac         Whether to apply RBAC checks.
+	 * @param bool               $_multitenancy Whether to apply multitenancy filtering.
+	 *
+	 * @return array|int The objects.
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function searchBy(MagicSearchRequest $search, bool $_rbac=true, bool $_multitenancy=true): array|int {
+		$query = $search->query;
+		$ids   = $search->ids;
+		$uses  = $search->uses;
+
 		$query = $this->narrowedToIds(query: $query, ids: $ids);
 		if ($this->selectsNothing(query: $query, ids: $ids) === true) {
 			return [];
@@ -9968,7 +10049,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 		return [];
-	}//end searchObjects()
+	}//end searchBy()
 
 	/**
 	 * The query narrowed to the given ids, within any `_ids` it already carries.
@@ -10059,6 +10140,24 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		?array $ids = null,
 		?string $uses = null,
 	): int {
+		return $this->countBy(search: new MagicSearchRequest(query: $query, ids: $ids, uses: $uses), _rbac: $_rbac, _multitenancy: $_multitenancy);
+	}//end countSearchObjects()
+
+	/**
+	 * Count the objects a search matches (see countSearchObjects()).
+	 *
+	 * @param MagicSearchRequest $search        The search parameters and the ids and relation to narrow to.
+	 * @param bool               $_rbac         Whether to apply RBAC checks.
+	 * @param bool               $_multitenancy Whether to apply multitenancy filtering.
+	 *
+	 * @return int The count.
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function countBy(MagicSearchRequest $search, bool $_rbac=true, bool $_multitenancy=true): int {
+		$query = $search->query;
+		$ids   = $search->ids;
+		$uses  = $search->uses;
+
 		$query = $this->narrowedToIds(query: $query, ids: $ids);
 		if ($this->selectsNothing(query: $query, ids: $ids) === true) {
 			return 0;
@@ -10110,7 +10209,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}//end if
 
 		return 0;
-	}//end countSearchObjects()
+	}//end countBy()
 
 	/**
 	 * Count all objects with optional filtering.
@@ -10253,6 +10352,27 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		?array $ids = null,
 		?string $uses = null,
 	): array {
+		$search = new MagicPaginatedSearch(searchQuery: $searchQuery, countQuery: $countQuery, ids: $ids, uses: $uses);
+		return $this->searchPaginatedBy(search: $search, _rbac: $_rbac, _multitenancy: $_multitenancy, _activeOrgUuid: $_activeOrgUuid);
+	}//end searchObjectsPaginated()
+
+	/**
+	 * Paginated search that loads register/schema once and performs both search and count (see searchObjectsPaginated()).
+	 *
+	 * @param MagicPaginatedSearch $search         The page query, the count query and the ids and relation to narrow to.
+	 * @param bool                 $_rbac          Whether to apply RBAC checks.
+	 * @param bool                 $_multitenancy  Whether to apply multitenancy filtering.
+	 * @param string|null          $_activeOrgUuid Active organization UUID.
+	 *
+	 * @return array<string, mixed>
+	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 */
+	public function searchPaginatedBy(MagicPaginatedSearch $search, bool $_rbac=true, bool $_multitenancy=true, ?string $_activeOrgUuid=null): array {
+		$searchQuery = $search->searchQuery;
+		$countQuery  = $search->countQuery;
+		$ids         = $search->ids;
+		$uses        = $search->uses;
+
 		$searchQuery = $this->narrowedToIds(query: $searchQuery, ids: $ids);
 		if ($this->selectsNothing(query: $searchQuery, ids: $ids) === true) {
 			return ['results' => [], 'total' => 0, 'registers' => [], 'schemas' => []];
@@ -10272,7 +10392,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		return ($this->searchMultiSchema(request: $request, scope: $scope)
 			?? $this->searchSingleSchema(request: $request, scope: $scope)
 			?? $this->searchUnresolvedScope(request: $request, scope: $scope));
-	}//end searchObjectsPaginated()
+	}//end searchPaginatedBy()
 
 	/**
 	 * A search that resolved no register and schema: given ids or `uses` narrow
