@@ -144,6 +144,7 @@ use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Notifications\Service\PresenceBeat;
 use OCA\OpenRegister\Notifications\Service\PresenceLookup;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * Objects controller for OpenRegister
@@ -5779,10 +5780,12 @@ class ObjectsController extends Controller {
 	 */
 	private function csvExport(ObjectExport $export): DataDownloadResponse {
 		$content = $this->services->transfer->exportService->exportToCsv(
-			register: $export->register,
-			schema: $export->schema,
-			filters: $export->filters,
-			currentUser: $this->userSession->getUser()
+			request: new ObjectExportRequest(
+				register: $export->register,
+				schema: $export->schema,
+				filters: $export->filters,
+				currentUser: $this->userSession->getUser(),
+			),
 		);
 
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'csv', rowCount: $this->countCsvExportRows(csv: $content)));
@@ -5801,9 +5804,7 @@ class ObjectsController extends Controller {
 	 */
 	private function jsonExport(ObjectExport $export): DataDownloadResponse {
 		$content = $this->services->transfer->exportService->exportToJson(
-			register: $export->register,
-			schema: $export->schema,
-			filters: $export->filters
+			request: new ObjectExportRequest(register: $export->register, schema: $export->schema, filters: $export->filters),
 		);
 
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'json', rowCount: $this->countJsonExportRows(json: $content)));
@@ -5823,10 +5824,12 @@ class ObjectsController extends Controller {
 	private function pdfExport(ObjectExport $export): DataDownloadResponse|JSONResponse {
 		try {
 			$content = $this->services->transfer->exportService->exportToPdf(
-				register: $export->register,
-				schema: $export->schema,
-				filters: $export->filters,
-				currentUser: $this->userSession->getUser()
+				request: new ObjectExportRequest(
+					register: $export->register,
+					schema: $export->schema,
+					filters: $export->filters,
+					currentUser: $this->userSession->getUser(),
+				),
 			);
 		} catch (ExportTooLargeException $e) {
 			return self::exportTooLargeResponse(exception: $e);
@@ -5850,9 +5853,7 @@ class ObjectsController extends Controller {
 	 */
 	private function recordPdfExport(ObjectExport $export): void {
 		$rowCount = $this->services->transfer->exportService->countExportRows(
-			register: $export->register,
-			schema: $export->schema,
-			filters: $export->filters
+			request: new ObjectExportRequest(register: $export->register, schema: $export->schema, filters: $export->filters),
 		);
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'pdf', rowCount: $rowCount));
 	}//end recordPdfExport()
@@ -5889,10 +5890,12 @@ class ObjectsController extends Controller {
 	 */
 	private function excelExport(ObjectExport $export): DataDownloadResponse {
 		$spreadsheet = $this->services->transfer->exportService->exportToExcel(
-			register: $export->register,
-			schema: $export->schema,
-			filters: $export->filters,
-			currentUser: $this->userSession->getUser()
+			request: new ObjectExportRequest(
+				register: $export->register,
+				schema: $export->schema,
+				filters: $export->filters,
+				currentUser: $this->userSession->getUser(),
+			),
 		);
 
 		// Create Excel writer and get content.

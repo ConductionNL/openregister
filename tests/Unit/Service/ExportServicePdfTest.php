@@ -48,6 +48,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * @uses \OCA\OpenRegister\Service\Export\Odt\OdtWriter
@@ -179,7 +180,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->assertFalse($this->service->isPdfAvailable());
 
 		$this->expectException(OfficeServerRequiredException::class);
-		$this->service->exportToPdf(null, new Schema());
+		$this->service->exportToPdf(request: new ObjectExportRequest(schema: new Schema()));
 	}
 
 	/**
@@ -236,7 +237,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([$object]);
 
-		$pdf = $this->service->exportToPdf(null, $schema);
+		$pdf = $this->service->exportToPdf(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertIsString($pdf);
 		$this->assertStringStartsWith('%PDF', $pdf);
@@ -252,7 +253,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$pdf = $this->service->exportToPdf(null, $schema);
+		$pdf = $this->service->exportToPdf(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertStringStartsWith('%PDF', $pdf);
 	}
@@ -281,7 +282,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$pdf = $this->service->exportToPdf($register, null);
+		$pdf = $this->service->exportToPdf(request: new ObjectExportRequest(register: $register));
 
 		$this->assertStringStartsWith('%PDF', $pdf);
 	}
@@ -353,7 +354,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->expectException(ExportTooLargeException::class);
 
 		try {
-			$this->service->exportToPdf(null, $schema);
+			$this->service->exportToPdf(request: new ObjectExportRequest(schema: $schema));
 		} catch (ExportTooLargeException $e) {
 			$this->assertSame($overCap, $e->getRowCount());
 			$this->assertSame(ExportService::MAX_PDF_EXPORT_ROWS, $e->getMaxRows());
@@ -392,7 +393,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->objectService->method('searchObjects')->willReturn($objects);
 
 		$this->expectException(ExportTooLargeException::class);
-		$this->service->exportToPdf($register, null);
+		$this->service->exportToPdf(request: new ObjectExportRequest(register: $register));
 	}
 
 	// --- buildPdfSection: column selection / RBAC parity + truncation ---
