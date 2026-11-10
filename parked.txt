@@ -90,3 +90,4 @@ openregister#6973 e37838719e0c24186d8f9279aca58947cbccca7a coordinator-park: sup
 openregister#7653 f5eed6aa20a735c44fbce31a7996577ba2bfaf2a coordinator-park: superseded, change already on main (close by hand)
 openregister#7701 aadd9d4314943a5e837ca2a3bdb3eff28b6f6f86 coordinator-park: superseded, change already on main (close by hand)
 openregister#7721 06e0791341aa34d93d80a3ec397f39724d6b90a2 coordinator-park: superseded, change already on main (close by hand)
+openregister#8344 f19afee9abe50006d461f53978a94468dc165e06 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\SystemOperationContextBoundaryTest::testTheCallSiteSetIsPinned
