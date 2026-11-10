@@ -35,6 +35,9 @@ use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * Golden outcomes for a fanned-out sub-flow step.
@@ -74,9 +77,9 @@ class SubFlowNodeFanOutGoldenTest extends TestCase {
 		$resolvers = $this->createMock(FlowLocator::class);
 		$resolvers->method('resolveFlow')->willReturn(['id' => 'child', 'edges' => []]);
 		$this->runs = $this->createMock(FlowRunServiceInterface::class);
-		$this->runs->method('queue')->willReturnCallback(
-			function (...$args): FlowRun {
-				$this->queued[] = $args;
+		$this->runs->method('queueRun')->willReturnCallback(
+			function (string $flowId, FlowRunQueueOptions $options): FlowRun {
+				$this->queued[] = [$flowId, $options->subject, $options->trigger, $options->context, $options->user];
 				$run = new FlowRun();
 				$run->setStatus(FlowRun::STATUS_QUEUED);
 				return $run;
@@ -107,9 +110,9 @@ class SubFlowNodeFanOutGoldenTest extends TestCase {
 	 */
 	public function testAWaitedFanOutRunsOneChildPerItem(): void {
 		$seeds = [];
-		$this->runs->method('execute')->willReturnCallback(
-			static function (...$args) use (&$seeds): FlowRun {
-				$seed    = $args['seedItems'] ?? $args[3];
+		$this->runs->method('executePass')->willReturnCallback(
+			static function (FlowRunPass $pass, FlowRunOrigin $origin) use (&$seeds): FlowRun {
+				$seed    = $origin->items;
 				$seeds[] = $seed;
 				$n       = $seed[0]['json']['n'];
 				$run     = new FlowRun();
@@ -144,7 +147,7 @@ class SubFlowNodeFanOutGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFireAndForgetFanOutQueuesOneChildPerItem(): void {
-		$this->runs->expects($this->never())->method('execute');
+		$this->runs->expects($this->never())->method('executePass');
 
 		$out = $this->node->execute(new FlowNodeCall(items: $this->items(), config: ['flowId' => 'child', 'fanOut' => true, 'wait' => false], context: []));
 

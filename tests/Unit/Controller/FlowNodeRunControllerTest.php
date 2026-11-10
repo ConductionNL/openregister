@@ -37,6 +37,8 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
 
 class FlowNodeRunControllerTest extends TestCase {
 
@@ -185,7 +187,7 @@ class FlowNodeRunControllerTest extends TestCase {
 	 * does not exist — no oracle for "exists but not invokable" vs "no such
 	 * node". Mutation check: remove the `instanceof IFlowDirectlyInvokable`
 	 * check in `resolveInvokableStep()` and this reddens (200/201 instead of
-	 * 404, and `runner->queue()` gets called).
+	 * 404, and `runner->queueRun()` gets called).
 	 */
 	public function testANodeThatHasNotOptedInIsRefused(): void {
 		$this->flows->method('find')->willReturn(new Flow());
@@ -194,7 +196,7 @@ class FlowNodeRunControllerTest extends TestCase {
 		);
 		$this->nodes->method('get')->with('dossiq.internal-only')->willReturn($this->notInvokableNode());
 
-		$this->runner->expects($this->never())->method('queue');
+		$this->runner->expects($this->never())->method('queueRun');
 
 		$response = $this->controller->run(id: 'f1', nodeId: 'n1');
 
@@ -237,7 +239,7 @@ class FlowNodeRunControllerTest extends TestCase {
 		$this->params(['subject' => ['uuid' => 'obj-1', 'register' => 'cases', 'schema' => 'case']]);
 		$this->objects->method('find')->willReturn(null);
 
-		$this->runner->expects($this->never())->method('queue');
+		$this->runner->expects($this->never())->method('queueRun');
 
 		$response = $this->controller->run(id: 'f1', nodeId: 'n1');
 
@@ -264,7 +266,7 @@ class FlowNodeRunControllerTest extends TestCase {
 		$this->schemas->method('find')->willReturn(new Schema());
 		$this->permissions->method('hasPermission')->willReturn(false);
 
-		$this->runner->expects($this->never())->method('queue');
+		$this->runner->expects($this->never())->method('queueRun');
 
 		$response = $this->controller->run(id: 'f1', nodeId: 'n1');
 
@@ -315,16 +317,16 @@ class FlowNodeRunControllerTest extends TestCase {
 
 		$queued = new FlowRun();
 		$queued->setStatus(FlowRun::STATUS_QUEUED);
-		$this->runner->expects($this->once())->method('queue')
-			->with('f1', ['uuid' => 'obj-1', 'register' => 'cases', 'schema' => 'case'], FlowRunService::TRIGGER_DIRECT_NODE, ['nodeId' => 'n1'], 'alice')
+		$this->runner->expects($this->once())->method('queueRun')
+			->with('f1', $this->equalTo(new FlowRunQueueOptions(subject: ['uuid' => 'obj-1', 'register' => 'cases', 'schema' => 'case'], trigger: FlowRunService::TRIGGER_DIRECT_NODE, context: ['nodeId' => 'n1'], user: 'alice')))
 			->willReturn($queued);
 
 		$this->subjects->method('resolveFlow')->willReturn(['id' => 'f1', 'nodes' => []]);
 
 		$done = new FlowRun();
 		$done->setStatus(FlowRun::STATUS_COMPLETED);
-		$this->runner->expects($this->once())->method('executeNode')
-			->with($queued, ['id' => 'f1', 'nodes' => []], $object, ['templateSlug' => 'welcome'])
+		$this->runner->expects($this->once())->method('runNode')
+			->with(new FlowRunPass(run: $queued, flow: ['id' => 'f1', 'nodes' => []], subject: $object), ['templateSlug' => 'welcome'])
 			->willReturn($done);
 
 		$response = $this->controller->run(id: 'f1', nodeId: 'n1');

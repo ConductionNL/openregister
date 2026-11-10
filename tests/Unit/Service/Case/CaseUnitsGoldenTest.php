@@ -86,6 +86,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 use Stringable;
 use Throwable;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
 use OCA\OpenRegister\Service\Case\CaseCompletion;
@@ -905,9 +906,9 @@ class CaseUnitsGoldenTest extends TestCase {
 	private function realisationScenario(): array {
 		$queued = [];
 		$runs = $this->createMock(FlowRunServiceInterface::class);
-		$runs->method('queue')->willReturnCallback(
-			static function (...$args) use (&$queued): \OCA\OpenRegister\Db\FlowRun {
-				$queued[] = $args;
+		$runs->method('queueRun')->willReturnCallback(
+			static function (string $flowId, FlowRunQueueOptions $options) use (&$queued): \OCA\OpenRegister\Db\FlowRun {
+				$queued[] = [$flowId, $options->subject, $options->trigger, $options->context, $options->user];
 				$run = new \OCA\OpenRegister\Db\FlowRun();
 				$run->setUuid('run-' . count($queued));
 
