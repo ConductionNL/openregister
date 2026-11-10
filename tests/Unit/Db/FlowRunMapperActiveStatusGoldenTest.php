@@ -162,4 +162,23 @@ final class FlowRunMapperActiveStatusGoldenTest extends TestCase {
 			array_values($this->params)
 		);
 	}//end testUntouchedSince()
+
+	/**
+	 * pruneBefore() deletes only terminal runs untouched since the moment.
+	 *
+	 * @return void
+	 */
+	public function testPruneBefore(): void {
+		$before = new DateTime('2026-01-02T03:04:05+00:00');
+
+		$this->assertSame(1, $this->mapper->pruneBefore($before));
+		$this->assertSame(
+			'delete(openregister_flow_runs) where(in(status, :p0)) andWhere(lt(updated, :p1)) executeStatement()',
+			$this->sql()
+		);
+		$this->assertSame(
+			[[FlowRun::TERMINAL, IQueryBuilder::PARAM_STR_ARRAY], [$before, IQueryBuilder::PARAM_DATETIME_MUTABLE]],
+			array_values($this->params)
+		);
+	}//end testPruneBefore()
 }//end class
