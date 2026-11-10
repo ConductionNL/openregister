@@ -1533,41 +1533,85 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @throws Exception
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex single object cascading with relation handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple configuration and validation paths
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cascadeSingleObject(NestedObjectTarget $target, array $object): string|null {
+		if ($this->isCascadableSingleObject(target: $target, object: $object) === false) {
+			return null;
+		}
+
+		$object = self::withParentReference(target: $target, object: $object);
+		$object = self::withoutNestedIdentity(definition: $target->definition, object: $object);
+		$savedObject = $this->saveNestedObject(target: $target, object: $object);
+
+		return $this->recordCreatedSubObject(savedObject: $savedObject);
+	}//end cascadeSingleObject()
+
+	/**
+	 * Whether a nested object can be cascaded: the property names a schema, the
+	 * object carries data, and the parent has a uuid to be referenced by.
+	 *
+	 * @param NestedObjectTarget $target The parent object and the property definition.
+	 * @param array              $object The object to cascade.
+	 *
+	 * @return bool True when the object is to be created.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeSingleObject(NestedObjectTarget $target, array $object): ?string {
-		$objectEntity = $target->parent;
-		$definition   = $target->definition;
+	private function isCascadableSingleObject(NestedObjectTarget $target, array $object): bool {
 		// Validate that we have the necessary configuration.
-		if (isset($definition['$ref']) === false) {
-			return null;
+		if (isset($target->definition['$ref']) === false) {
+			return false;
 		}
 
 		// Skip if object is empty or doesn't contain actual data.
 		if (empty($object) === true || CascadeItem::hasOnlyEmptyId(object: $object) === true) {
-			return null;
+			return false;
 		}
 
-		$objectId = $objectEntity->getUuid();
-		if (empty($objectId) === true) {
-			return null;
+		return empty($target->parent->getUuid()) === false;
+	}//end isCascadableSingleObject()
+
+	/**
+	 * Point the nested object back at its parent, when the property declares an inverse relation.
+	 *
+	 * Only set inversedBy if it's configured (for relation-based cascading).
+	 *
+	 * @param NestedObjectTarget $target The parent object and the property definition.
+	 * @param array              $object The object to cascade.
+	 *
+	 * @return array The object, with the parent reference when inversedBy is set.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function withParentReference(NestedObjectTarget $target, array $object): array {
+		$inversedBy = $target->definition['inversedBy'] ?? null;
+		if ($inversedBy === null) {
+			return $object;
 		}
 
-		// Only set inversedBy if it's configured (for relation-based cascading).
-		if (($definition['inversedBy'] ?? null) !== null) {
-			$object[$definition['inversedBy']] = CascadeItem::withParentReference(
-				current: $object[$definition['inversedBy']] ?? null,
-				parentId: $objectId
-			);
-		}
+		$object[$inversedBy] = CascadeItem::withParentReference(
+			current: $object[$inversedBy] ?? null,
+			parentId: $target->parent->getUuid()
+		);
 
-		$register = CascadeItem::register(definition: $definition, parentRegister: $objectEntity->getRegister());
+		return $object;
+	}//end withParentReference()
 
-		// A nested inline object is always created. The save would take its `id` or
-		// `@self.id` as the row to write onto, looked up past the read filters.
+	/**
+	 * Strip every identity a nested inline object carries, so it is always created.
+	 *
+	 * The save would take its `id` or `@self.id` as the row to write onto, looked
+	 * up past the read filters. Without an inverse relation the whole `@self` goes.
+	 *
+	 * @param array $definition The property definition.
+	 * @param array $object     The object to cascade.
+	 *
+	 * @return array The object without `id`, `@self.id` and `@self.uuid`.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function withoutNestedIdentity(array $definition, array $object): array {
 		unset($object['id']);
 		if (is_array($object['@self'] ?? null) === true) {
 			unset($object['@self']['id'], $object['@self']['uuid']);
@@ -1577,23 +1621,29 @@ class SaveObject implements SaveObjectInterface {
 			unset($object['@self']);
 		}
 
-		// Resolve schema reference to actual schema ID.
-		$schemaId = $this->resolveSchemaReference(reference: $definition['$ref']);
-		if ($schemaId === null) {
-			throw new Exception("Invalid schema reference: {$definition['$ref']}");
-		}
+		return $object;
+	}//end withoutNestedIdentity()
 
-		$cascadeRegister = null;
-		if (is_int($register) === true || is_string($register) === true) {
-			$cascadeRegister = (string)$register;
-		}
-
-		$this->assertMayCascadeCreate(schema: $this->getCachedSchema(schemaId: $schemaId), register: $cascadeRegister);
-
-		// Use silent mode for cascaded sub-objects to improve performance.
-		// This skips audit trail creation for each sub-object, reducing database writes.
-		// The parent object's audit trail still captures the overall operation.
-		$savedObject = $this->saveObject(
+	/**
+	 * Save a nested object in its register and schema, once the caller may create it there.
+	 *
+	 * Use silent mode for cascaded sub-objects to improve performance.
+	 * This skips audit trail creation for each sub-object, reducing database writes.
+	 * The parent object's audit trail still captures the overall operation.
+	 *
+	 * @param NestedObjectTarget $target The parent object and the property definition.
+	 * @param array              $object The prepared nested object.
+	 *
+	 * @return ObjectEntity The saved sub-object.
+	 *
+	 * @throws Exception When the schema reference does not resolve, or the caller may not create the object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function saveNestedObject(NestedObjectTarget $target, array $object): ObjectEntity {
+		$register = CascadeItem::register(definition: $target->definition, parentRegister: $target->parent->getRegister());
+		$schemaId = $this->authorizedCascadeSchemaId(definition: $target->definition, register: $register);
+		return $this->saveObject(
 			register: $register,
 			schema: $schemaId,
 			data: $object,
@@ -1603,16 +1653,69 @@ class SaveObject implements SaveObjectInterface {
 			persist: true,
 			silent: true
 		);
-		$savedUuid = $savedObject->getUuid();
+	}//end saveNestedObject()
 
-		// Track the created sub-object for inclusion in @self.objects.
-		// This allows the parent response to include the full sub-object data.
+	/**
+	 * Resolve the property's schema reference and check the caller may create in it.
+	 *
+	 * @param array $definition The property definition.
+	 * @param mixed $register   The register the nested object is saved in.
+	 *
+	 * @return string The resolved schema id.
+	 *
+	 * @throws Exception When the schema reference does not resolve.
+	 * @throws NotAuthorizedException When the caller may not create the nested object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function authorizedCascadeSchemaId(array $definition, mixed $register): string {
+		// Resolve schema reference to actual schema ID.
+		$schemaId = $this->resolveSchemaReference(reference: $definition['$ref']);
+		if ($schemaId === null) {
+			throw new Exception("Invalid schema reference: {$definition['$ref']}");
+		}
+
+		$this->assertMayCascadeCreate(schema: $this->getCachedSchema(schemaId: $schemaId), register: self::cascadeRegisterId(register: $register));
+
+		return $schemaId;
+	}//end authorizedCascadeSchemaId()
+
+	/**
+	 * The register id the create-rights check takes: a scalar register as a string, anything else null.
+	 *
+	 * @param mixed $register The resolved register.
+	 *
+	 * @return string|null The register id.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function cascadeRegisterId(mixed $register): string|null {
+		if (is_int($register) === true || is_string($register) === true) {
+			return (string)$register;
+		}
+
+		return null;
+	}//end cascadeRegisterId()
+
+	/**
+	 * Track a created sub-object for inclusion in @self.objects.
+	 *
+	 * This allows the parent response to include the full sub-object data.
+	 *
+	 * @param ObjectEntity $savedObject The saved sub-object.
+	 *
+	 * @return string|null Its uuid.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function recordCreatedSubObject(ObjectEntity $savedObject): string|null {
+		$savedUuid = $savedObject->getUuid();
 		if ($savedUuid !== null) {
 			$this->createdSubObjects[$savedUuid] = $savedObject->jsonSerialize();
 		}
 
 		return $savedUuid;
-	}//end cascadeSingleObject()
+	}//end recordCreatedSubObject()
 
 	/**
 	 * Deletes orphaned related objects that are no longer referenced by the parent.
