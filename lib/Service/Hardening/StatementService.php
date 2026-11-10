@@ -40,8 +40,6 @@ namespace OCA\OpenRegister\Service\Hardening;
 
 use DateTime;
 use InvalidArgumentException;
-use OCP\IAppConfig;
-use OCP\IConfig;
 use Throwable;
 
 /**
@@ -69,15 +67,14 @@ class StatementService implements StatementServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig           $appConfig Stores the published statement.
-	 * @param IConfig              $config    Stores one user's acceptance.
-	 * @param HardeningAuditWriter $audit     Records the publication and the acceptance.
+	 * @param PlatformConfiguration $platform The app configuration stores the published statement, the
+	 *                                        system configuration one user's acceptance.
+	 * @param HardeningAuditWriter  $audit    Records the publication and the acceptance.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IAppConfig $appConfig,
-		private readonly IConfig $config,
+		private readonly PlatformConfiguration $platform,
 		private readonly HardeningAuditWriter $audit,
 	) {
 
@@ -92,7 +89,7 @@ class StatementService implements StatementServiceInterface {
 	 */
 	public function published(): ?array {
 		try {
-			$raw = $this->appConfig->getValueString(HardeningPolicy::APP_ID, self::STATEMENT_KEY, '');
+			$raw = $this->platform->appConfig->getValueString(HardeningPolicy::APP_ID, self::STATEMENT_KEY, '');
 		} catch (Throwable) {
 			return null;
 		}
@@ -158,7 +155,7 @@ class StatementService implements StatementServiceInterface {
 			'publishedBy' => $userId,
 		];
 
-		$this->appConfig->setValueString(
+		$this->platform->appConfig->setValueString(
 			HardeningPolicy::APP_ID,
 			self::STATEMENT_KEY,
 			(string)json_encode($statement)
@@ -179,7 +176,7 @@ class StatementService implements StatementServiceInterface {
 	 */
 	public function withdraw(): void {
 		$before = ($this->published()['version'] ?? '');
-		$this->appConfig->setValueString(HardeningPolicy::APP_ID, self::STATEMENT_KEY, '');
+		$this->platform->appConfig->setValueString(HardeningPolicy::APP_ID, self::STATEMENT_KEY, '');
 		$this->audit->accepted(fact: 'statement.withdrawn', before: $before, after: '');
 
 	}//end withdraw()
@@ -199,7 +196,7 @@ class StatementService implements StatementServiceInterface {
 		}
 
 		try {
-			$raw = $this->config->getUserValue($userId, HardeningPolicy::APP_ID, self::ACCEPTANCE_KEY, '');
+			$raw = $this->platform->config->getUserValue($userId, HardeningPolicy::APP_ID, self::ACCEPTANCE_KEY, '');
 		} catch (Throwable) {
 			return null;
 		}
@@ -292,7 +289,7 @@ class StatementService implements StatementServiceInterface {
 			'acceptedAt' => (new DateTime())->format('c'),
 		];
 
-		$this->config->setUserValue(
+		$this->platform->config->setUserValue(
 			$userId,
 			HardeningPolicy::APP_ID,
 			self::ACCEPTANCE_KEY,

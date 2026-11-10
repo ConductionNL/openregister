@@ -35,7 +35,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Hardening;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Hardening\HardeningAuditWriter;
+use OCA\OpenRegister\Service\Hardening\PlatformConfiguration;
 use OCA\OpenRegister\Service\Hardening\StatementService;
+use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -82,8 +84,11 @@ class StatementServiceTest extends TestCase {
 		$this->audit = $this->createMock(HardeningAuditWriter::class);
 
 		$this->service = new StatementService(
-			appConfig: $appConfig,
-			config: $config,
+			platform: new PlatformConfiguration(
+				config: $config,
+				appConfig: $appConfig,
+				appManager: $this->createMock(IAppManager::class)
+			),
 			audit: $this->audit
 		);
 	}
