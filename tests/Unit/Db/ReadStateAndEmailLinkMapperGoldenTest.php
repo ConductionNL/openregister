@@ -30,6 +30,7 @@ use DateTimeInterface;
 use DateTimeZone;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MailMessageKey;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
@@ -117,6 +118,7 @@ final class ReadStateAndEmailLinkMapperGoldenTest extends TestCase {
 		}
 
 		foreach (self::uuidCases() as $name => [$args, $rows]) {
+			$args = ['userId' => $args['userId'], 'query' => new ListQuery(limit: ($args['limit'] ?? ObjectReadStateMapper::SEEN_SET_LIMIT), filters: array_diff_key($args, ['userId' => 1, 'limit' => 1]))];
 			$actual['uuidsForUser / ' . $name] = $this->outcome(mapper: $this->readStateMapper(rows: $rows, failInsert: false), method: 'uuidsForUser', args: $args);
 		}
 
