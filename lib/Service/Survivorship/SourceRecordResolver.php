@@ -54,6 +54,14 @@ use Throwable;
 class SourceRecordResolver implements SourceRecordResolverInterface {
 
 	/**
+	 * The warning for a reverse-FK source link that cannot be resolved.
+	 *
+	 * @var string
+	 */
+	private const INCOMPLETE_SOURCE_LINK = 'x-openregister source resolution: reverseFk sourceLink is missing sourceSchema or referenceField; '
+		.'falling back to embedded mode.';
+
+	/**
 	 * Cross-request cache of source-schema reference (slug/uuid) => numeric
 	 * schema id. Populated only from successful resolutions (a mid-save slug
 	 * lookup that throws never poisons it). Lets the reverse-FK query pass a
@@ -279,21 +287,28 @@ class SourceRecordResolver implements SourceRecordResolverInterface {
 			return null;
 		}
 
-		$sourceSchema   = (string)($sourceLink['sourceSchema'] ?? '');
-		$referenceField = (string)($sourceLink['referenceField'] ?? '');
-		if ($sourceSchema === '' || $referenceField === '') {
-			$this->logger->warning(
-				'x-openregister source resolution: reverseFk sourceLink is missing sourceSchema or referenceField; falling back to embedded mode.'
-			);
+		$fkConfig = self::fkConfigOf(sourceLink: $sourceLink);
+		if ($fkConfig['sourceSchema'] === '' || $fkConfig['referenceField'] === '') {
+			$this->logger->warning(message: self::INCOMPLETE_SOURCE_LINK);
 			return null;
 		}
 
-		return [
-			'sourceSchema' => $sourceSchema,
-			'referenceField' => $referenceField,
-			'sourceRegister' => (string)($sourceLink['sourceRegister'] ?? ''),
-		];
+		return $fkConfig + ['sourceRegister' => (string)($sourceLink['sourceRegister'] ?? '')];
 	}//end reverseFkConfig()
+
+	/**
+	 * The two required reverse-FK fields of a `sourceLink` block, as text.
+	 *
+	 * @param array<string, mixed> $sourceLink The block.
+	 *
+	 * @return array{sourceSchema: string, referenceField: string}
+	 */
+	private static function fkConfigOf(array $sourceLink): array {
+		return [
+			'sourceSchema' => (string)($sourceLink['sourceSchema'] ?? ''),
+			'referenceField' => (string)($sourceLink['referenceField'] ?? ''),
+		];
+	}//end fkConfigOf()
 
 	/**
 	 * The config's `sourceLink` block when it selects reverse-FK mode.
