@@ -118,6 +118,20 @@ class SchemaAttribution {
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function signature(array $definition): array {
+		return [
+			'properties' => self::propertyNames(definition: $definition),
+			'required' => self::requiredFields(definition: $definition),
+		];
+	}//end signature()
+
+	/**
+	 * The definition's property names, lower-cased, unique and sorted.
+	 *
+	 * @param array<string, mixed> $definition A schema definition or a serialised entity.
+	 *
+	 * @return string[] The names.
+	 */
+	private static function propertyNames(array $definition): array {
 		$properties = ($definition['properties'] ?? []);
 		$names      = [];
 		if (is_array($properties) === true) {
@@ -126,9 +140,17 @@ class SchemaAttribution {
 			}
 		}
 
-		$names = array_values(array_unique($names));
-		sort($names);
+		return self::sortedUnique(values: $names);
+	}//end propertyNames()
 
+	/**
+	 * The definition's scalar required fields, lower-cased, unique and sorted.
+	 *
+	 * @param array<string, mixed> $definition A schema definition or a serialised entity.
+	 *
+	 * @return string[] The fields.
+	 */
+	private static function requiredFields(array $definition): array {
 		$required = ($definition['required'] ?? []);
 		$fields   = [];
 		if (is_array($required) === true) {
@@ -139,11 +161,22 @@ class SchemaAttribution {
 			}
 		}
 
-		$fields = array_values(array_unique($fields));
-		sort($fields);
+		return self::sortedUnique(values: $fields);
+	}//end requiredFields()
 
-		return ['properties' => $names, 'required' => $fields];
-	}//end signature()
+	/**
+	 * The values without duplicates, sorted.
+	 *
+	 * @param string[] $values The values.
+	 *
+	 * @return string[] The unique values in order.
+	 */
+	private static function sortedUnique(array $values): array {
+		$unique = array_values(array_unique($values));
+		sort($unique);
+
+		return $unique;
+	}//end sortedUnique()
 
 	/**
 	 * Decide which referencing register owns the current entity content.
