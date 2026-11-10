@@ -45,6 +45,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshStores;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshSteps;
+use OCA\OpenRegister\Event\CredentialRelinkRequiredEvent;
 
 /**
  * Golden outcomes of the OAuth2 token refresh.
@@ -552,9 +553,14 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 		$http->method('newClient')->willReturn($client);
 
 		$notifier = $this->createMock(CredentialRelinkNotifier::class);
-		$notifier->method('announce')->willReturnCallback(function (string $credentialId, string $provider, string $owner, string $reason): void {
+		$notifier->method('announce')->willReturnCallback(function (CredentialRelinkRequiredEvent $event): void {
 			$this->events[] = 'announce';
-			$this->announcements[] = compact('credentialId', 'provider', 'owner', 'reason');
+			$this->announcements[] = [
+				'credentialId' => $event->getCredentialId(),
+				'provider' => $event->getProvider(),
+				'owner' => $event->getOwner(),
+				'reason' => $event->getReason(),
+			];
 		});
 
 		return $this->build(store: $store, objects: $objects, lock: $lock, clients: $clients, http: $http, notifier: $notifier);

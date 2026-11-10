@@ -179,7 +179,7 @@ class CredentialSupportGoldenTest extends TestCase {
 		$manager->expects($this->once())->method('notify')->with($notification);
 
 		(new CredentialRelinkNotifier(eventDispatcher: $dispatcher, notifications: $manager, logger: $this->createMock(LoggerInterface::class)))
-			->announce(credentialId: 'cred-1', provider: 'mastodon', owner: 'alice', reason: 'invalid_grant');
+			->announce(event: new CredentialRelinkRequiredEvent(credentialId: 'cred-1', provider: 'mastodon', owner: 'alice', reason: 'invalid_grant'));
 
 		$this->assertCount(1, $events);
 		$this->assertInstanceOf(CredentialRelinkRequiredEvent::class, $events[0]);
@@ -201,7 +201,7 @@ class CredentialSupportGoldenTest extends TestCase {
 		$manager->expects($this->never())->method('createNotification');
 
 		(new CredentialRelinkNotifier(eventDispatcher: $dispatcher, notifications: $manager, logger: $this->createMock(LoggerInterface::class)))
-			->announce(credentialId: 'cred-1', provider: 'mastodon', owner: '', reason: 'invalid_grant');
+			->announce(event: new CredentialRelinkRequiredEvent(credentialId: 'cred-1', provider: 'mastodon', owner: '', reason: 'invalid_grant'));
 	}
 
 	public function testRelinkFailuresAreSwallowedAndTheOwnerStillTold(): void {
@@ -213,7 +213,7 @@ class CredentialSupportGoldenTest extends TestCase {
 		$logger->expects($this->exactly(2))->method('warning');
 
 		(new CredentialRelinkNotifier(eventDispatcher: $dispatcher, notifications: $manager, logger: $logger))
-			->announce(credentialId: 'cred-1', provider: 'mastodon', owner: 'alice', reason: 'invalid_grant');
+			->announce(event: new CredentialRelinkRequiredEvent(credentialId: 'cred-1', provider: 'mastodon', owner: 'alice', reason: 'invalid_grant'));
 	}
 
 	/**
