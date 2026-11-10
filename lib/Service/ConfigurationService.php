@@ -56,6 +56,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
 
 /**
  * Class ConfigurationService
@@ -941,7 +942,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @spec exclude Facade plumbing: thin delegation to GitHubHandler::searchConfigurations, no standalone behavioral contract.
 	 */
 	public function searchGitHub(string $search = '', int $page = 1, int $perPage = 30): array {
-		return $this->githubHandler->searchConfigurations(search: $search, page: $page, perPage: $perPage);
+		return $this->githubHandler->searchConfigurations(search: $search, page: new RepositorySearchPage(page: $page, perPage: $perPage));
 	}//end searchGitHub()
 
 	/**
