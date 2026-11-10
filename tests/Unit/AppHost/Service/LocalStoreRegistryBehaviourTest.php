@@ -32,6 +32,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use stdClass;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Unusable object service, non-array search answers, failed writes.
@@ -149,7 +150,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 		$objects->method('searchObjectsBySlug')->willReturn([['slug' => 'demo', 'id' => 'uuid-1']]);
 		$objects->expects($this->once())
 			->method('saveObject')
-			->with(['slug' => 'demo'], [], 'store', 'item', 'uuid-1')
+			->with(['slug' => 'demo'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'store' && $options->target->schema == 'item' && $options->uuid == 'uuid-1'))
 			->willThrowException(new RuntimeException('disk full'));
 
 		$logger = $this->createMock(LoggerInterface::class);
@@ -175,7 +176,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 		$objects->method('searchObjectsBySlug')->willReturn([]);
 		$objects->expects($this->once())
 			->method('saveObject')
-			->with(['slug' => 'demo'], [], 'store', 'item', null);
+			->with(['slug' => 'demo'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'store' && $options->target->schema == 'item' && $options->uuid === null));
 
 		$registry = new LocalStoreRegistry($this->container($objects, $objects), $this->createMock(LoggerInterface::class));
 

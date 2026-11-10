@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Tests for GenericStoreService.
@@ -278,10 +279,7 @@ class GenericStoreServiceTest extends TestCase {
 			->method('saveObject')
 			->with(
 				['slug' => 'woo-intake', 'title' => 'Woo-intake', 'version' => '1.0.0'],
-				[],
-				'pipelinq',
-				'commercial-template',
-				null
+				$this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'pipelinq' && $options->target->schema == 'commercial-template' && $options->uuid === null)
 			);
 
 		$result = $this->localService(objects: $objects)->publish(
@@ -311,10 +309,7 @@ class GenericStoreServiceTest extends TestCase {
 			->method('saveObject')
 			->with(
 				['slug' => 'woo-intake', 'title' => 'Woo-intake', 'version' => '1.1.0'],
-				[],
-				'pipelinq',
-				'commercial-template',
-				'0f3c2a8e-4b1d-4c55-9a7e-2d6b9e1f0a11'
+				$this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'pipelinq' && $options->target->schema == 'commercial-template' && $options->uuid == '0f3c2a8e-4b1d-4c55-9a7e-2d6b9e1f0a11')
 			);
 
 		$result = $this->localService(objects: $objects)->publish(

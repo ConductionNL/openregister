@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Every case read is RBAC- and tenant-scoped; a listed row without uuid, or one the caller
@@ -117,10 +118,7 @@ final class CaseObjectAccessorTest extends TestCase {
 		$this->dsar->method('getDsarProcessingActivityUuid')->willReturn('pa-9');
 		$this->objects->expects($this->once())->method('saveObject')->with(
 			$case,
-			[],
-			CaseObjectAccessorInterface::REGISTER_SLUG,
-			CaseObjectAccessorInterface::SCHEMA_SLUG,
-			'case-1',
+			$this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == CaseObjectAccessorInterface::REGISTER_SLUG && $options->target->schema == CaseObjectAccessorInterface::SCHEMA_SLUG && $options->uuid == 'case-1'),
 			true,
 			true
 		)->willReturn($saved);

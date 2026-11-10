@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenRegister\Service\WriteCause;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * findAll() config shaping and the updateFromArray() PATCH guard, as they are.
@@ -171,7 +172,7 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 		);
 		$saved = new ObjectEntity();
 		$service->expects($this->once())->method('saveObject')
-			->with(['a' => 1, 'b' => 3, 'c' => 4, 'id' => '7'], [], 1, 10)
+			->with(['a' => 1, 'b' => 3, 'c' => 4, 'id' => '7'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 1 && $options->target->schema == 10))
 			->willReturn($saved);
 
 		$adapter = new ObjectServiceMapperAdapter($service, 1, 10);
@@ -209,7 +210,7 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 		$service->expects($this->never())->method('find');
 		$saved = new ObjectEntity();
 		$service->expects($this->once())->method('saveObject')
-			->with(['b' => 3, 'id' => '5'], [], 2, 20)
+			->with(['b' => 3, 'id' => '5'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 2 && $options->target->schema == 20))
 			->willReturn($saved);
 
 		$adapter = new ObjectServiceMapperAdapter($service, 2, 20);

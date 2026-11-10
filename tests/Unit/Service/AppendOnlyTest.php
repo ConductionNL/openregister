@@ -499,8 +499,7 @@ class AppendOnlyTest extends TestCase {
 		$this->saveHandler->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($savedEntity): ObjectEntity {
-					$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
+				function (mixed ...$args) use ($savedEntity): ObjectEntity {
 					$this->assertSame('3f2c6a3e-1111-4222-8333-444455556666', ($args[3] ?? null));
 					$this->assertTrue(($args[11] ?? false), 'an append-only insert must be insert-only down to the mapper');
 					return $savedEntity;
@@ -641,8 +640,7 @@ class AppendOnlyTest extends TestCase {
 		$this->saveHandler->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($savedEntity, &$failIfExists): ObjectEntity {
-					$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
+				function (mixed ...$args) use ($savedEntity, &$failIfExists): ObjectEntity {
 					$failIfExists = ($args[11] ?? null);
 					return $savedEntity;
 				}

@@ -52,6 +52,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Task\TaskFormSubjectWriter
@@ -149,7 +150,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 			->willReturn(['title' => 'New']);
 		$this->objects->expects($this->once())->method('find')->with('obj-1')->willReturn(self::subject());
 		$this->objects->expects($this->once())->method('saveObject')
-			->with(['title' => 'New', 'keep' => 1, 'id' => 'obj-1'], [], '5', '6', 'obj-1', true, true, false, true, null, $this->user)
+			->with(['title' => 'New', 'keep' => 1, 'id' => 'obj-1'], $this->callback(fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == '5' && $options->target->schema == '6' && $options->uuid == 'obj-1' && $options->policy->silent === false && $options->policy->validation === true && $options->uploadedFiles === null && $options->actor->currentUser == $this->user), true, true)
 			->willReturn(self::subject());
 		$this->runContext->expects($this->once())->method('push')->with(new FlowRunFrame('run-1', 'task-form', 0));
 		$this->runContext->expects($this->once())->method('pop');

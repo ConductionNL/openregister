@@ -61,6 +61,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -91,10 +92,7 @@ class CalendarCharacterisationTest extends TestCase {
 							&& count($data[AppointmentAttendeeService::RESPONSES_PROPERTY]) === 1;
 					}
 				),
-				[],
-				'7',
-				'9',
-				'object-uuid'
+				$this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == '7' && $options->target->schema == '9' && $options->uuid == 'object-uuid')
 			)
 			->willReturn($this->attendeeObject());
 

@@ -292,24 +292,22 @@ class DedupCreatePolicyTest extends TestCase {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testTheOverrideHasAParameterOnEverySaveHopNotOnlyTheBody(): void {
-		foreach (
-			[
-				\OCA\OpenRegister\Service\ObjectService::class,
-				\OCA\OpenRegister\Service\Object\SaveObject::class,
-			] as $class
-		) {
-			$method = new \ReflectionMethod($class, 'saveObject');
-			$names = array_map(
-				static fn (\ReflectionParameter $parameter): string => $parameter->getName(),
-				$method->getParameters()
-			);
+		$this->assertTrue(
+			property_exists(\OCA\OpenRegister\Service\Object\SavePolicy::class, 'dedupOverride'),
+			'ObjectService::saveObject() must carry the override in its save policy: the controller strips it from the body.'
+		);
 
-			$this->assertContains(
-				'_dedupOverride',
-				$names,
-				$class . '::saveObject() must carry the override as a parameter: the controller strips it from the body.'
-			);
-		}
+		$method = new \ReflectionMethod(\OCA\OpenRegister\Service\Object\SaveObject::class, 'saveObject');
+		$names = array_map(
+			static fn (\ReflectionParameter $parameter): string => $parameter->getName(),
+			$method->getParameters()
+		);
+
+		$this->assertContains(
+			'_dedupOverride',
+			$names,
+			'SaveObject::saveObject() must carry the override as a parameter: the controller strips it from the body.'
+		);
 	}//end testTheOverrideHasAParameterOnEverySaveHopNotOnlyTheBody()
 
 	/**

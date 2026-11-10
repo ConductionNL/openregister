@@ -30,6 +30,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Edepot\TransferRecordService
@@ -93,7 +94,7 @@ class TransferRecordServiceBehaviourTest extends TestCase {
 	 */
 	public function testANewTransferListIsSavedWithoutAUuid(): void {
 		$this->objects->expects($this->once())->method('saveObject')
-			->with(['title' => 'Overdracht 2026'], [], 'edepot-transfers', 'edepotTransfer', null)
+			->with(['title' => 'Overdracht 2026'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'edepot-transfers' && $options->target->schema == 'edepotTransfer' && $options->uuid === null))
 			->willReturn($this->entity(data: ['title' => 'Overdracht 2026'], uuid: 'u-new'));
 
 		$this->assertSame(['id' => 'u-new', 'title' => 'Overdracht 2026', 'uuid' => 'u-new'], $this->service()->saveTransferList(transferList: ['title' => 'Overdracht 2026']));
@@ -106,7 +107,7 @@ class TransferRecordServiceBehaviourTest extends TestCase {
 	 */
 	public function testAKnownTransferListIsSavedUnderItsUuid(): void {
 		$this->objects->expects($this->once())->method('saveObject')
-			->with(['uuid' => 'u-1', 'title' => 't', '@self' => ['uuid' => 'u-1']], [], 'edepot-transfers', 'edepotTransfer', 'u-1')
+			->with(['uuid' => 'u-1', 'title' => 't', '@self' => ['uuid' => 'u-1']], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'edepot-transfers' && $options->target->schema == 'edepotTransfer' && $options->uuid == 'u-1'))
 			->willReturn($this->entity(data: ['title' => 't'], uuid: 'u-1'));
 
 		$this->assertSame(['id' => 'u-1', 'title' => 't', 'uuid' => 'u-1'], $this->service()->saveTransferList(transferList: ['uuid' => 'u-1', 'title' => 't']));

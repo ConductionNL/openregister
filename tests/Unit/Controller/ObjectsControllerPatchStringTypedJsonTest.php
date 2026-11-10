@@ -51,6 +51,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Unit tests for the string-typed JSON restore on both PATCH doors.
@@ -155,7 +156,8 @@ class ObjectsControllerPatchStringTypedJsonTest extends TestCase {
 			// `object` is saveObject()'s first parameter; the controller calls
 			// it with named arguments, which PHP binds onto the mock's own
 			// signature, so position 0 is still the payload.
-			static function (mixed ...$arguments) use (&$captured, $saved): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured, $saved): ObjectEntity {
+				$arguments = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$captured = $arguments[0];
 
 				return $saved;

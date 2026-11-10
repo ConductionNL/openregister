@@ -78,7 +78,7 @@ class MasterRecomputeServiceTest extends TestCase {
 		$objects->method('find')->with('m-1', [], false, null, null, true, true)->willReturn($master);
 		$saved = null;
 		$objects->expects($this->once())->method('saveObject')
-			->with($this->identicalTo($master), [], '3', '7', 'm-1')
+			->with($this->identicalTo($master), $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == '3' && $options->target->schema == '7' && $options->uuid == 'm-1'))
 			->willReturnCallback(
 				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saved): ObjectEntity {
 					$saved = $object->getObject();

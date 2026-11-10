@@ -191,7 +191,7 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 		$this->registers->method('find')->willReturn($this->register);
 		$this->schemas->method('find')->with('2', self::anything(), false, false)->willReturn($this->schema);
 		$this->objects->expects(self::once())->method('saveObject')
-			->with(['title' => 'a'], self::anything(), $this->register, $this->schema)
+			->with(['title' => 'a'], $this->callback(fn (ObjectSaveOptions $options): bool => $options->target->register == $this->register && $options->target->schema == $this->schema))
 			->willReturnCallback(static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$entity = new ObjectEntity();
 				$entity->setUuid('u-1');

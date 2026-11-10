@@ -53,6 +53,14 @@ use RuntimeException;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 final class TransitionEngineDelegatedAccessGoldenTest extends TestCase {
+	/**
+	 * The saveObject() arguments a double records, flattened from ObjectSaveOptions in their former order.
+	 */
+	private const SAVE_ARGUMENTS = [
+		'object', 'extend', 'register', 'schema', 'uuid', '_rbac', '_multitenancy', 'silent', '_validation',
+		'uploadedFiles', 'currentUser', 'failIfExists', '_unowned', '_dedupOverride', '_owner',
+	];
+
 
 	private const PARENT = '00000000-0000-0000-0000-000000000000';
 
@@ -270,7 +278,7 @@ final class TransitionEngineDelegatedAccessGoldenTest extends TestCase {
 		$objects->method('saveObject')->willReturnCallback(
 			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
-				$call = $this->named('saveObject', $args);
+				$call = array_combine(self::SAVE_ARGUMENTS, $args);
 				$this->saves[] = $call;
 
 				return $this->caseObject((array)$call['object']);

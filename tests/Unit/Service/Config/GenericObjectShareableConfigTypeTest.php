@@ -15,6 +15,7 @@ use OCA\OpenRegister\Service\Config\Types\ShareableTypeIdentity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 class GenericObjectShareableConfigTypeTest extends TestCase {
 
@@ -81,7 +82,7 @@ class GenericObjectShareableConfigTypeTest extends TestCase {
 		$saved = new ObjectEntity();
 		$saved->setUuid('new');
 		$this->objects->expects($this->once())->method('saveObject')
-			->with($this->isType('array'), [], 'procest', 'casetype')
+			->with($this->isType('array'), $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'procest' && $options->target->schema == 'casetype'))
 			->willReturn($saved);
 
 		$result = $this->type->deserialise(['objects' => [['name' => 'Imported']]]);

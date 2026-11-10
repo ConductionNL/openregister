@@ -41,6 +41,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * `POST /api/objects/{register}/{schema}?_upsertOn=<constraint>` through the real controller.
@@ -148,7 +149,8 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 	private function savesEcho(): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
 			// Positional, in ObjectService::saveObject()'s own order: object, extend, register, schema, uuid.
-			function (array $object, $extend = [], $register = null, $schema = null, ?string $uuid = null): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$uuid = $options->uuid;
 				$this->savedUuids[] = $uuid;
 				$this->savedObjects[] = $object;
 				$entity = new ObjectEntity();

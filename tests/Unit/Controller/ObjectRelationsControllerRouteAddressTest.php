@@ -46,6 +46,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectRelationsController
@@ -227,7 +228,7 @@ class ObjectRelationsControllerRouteAddressTest extends TestCase {
 	public function testADeriveSavesIntoTheRouteRegisterAndSchema(): void {
 		$controller = $this->controller(params: ['object' => ['t' => 1]], readable: ['r/s/a']);
 		$this->relations->method('applyInheritance')->willReturn(['data' => ['t' => 1], 'inherited' => []]);
-		$this->objects->expects($this->once())->method('saveObject')->with(['t' => 1], [], 'r', 's')
+		$this->objects->expects($this->once())->method('saveObject')->with(['t' => 1], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'r' && $options->target->schema == 's'))
 			->willThrowException(new \Exception('refused'));
 
 		$response = $controller->derive('r', 's', 'a');

@@ -67,6 +67,14 @@ use ReflectionMethod;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 final class HandoffServiceHelpersGoldenTest extends TestCase {
+	/**
+	 * The saveObject() arguments a double records, flattened from ObjectSaveOptions in their former order.
+	 */
+	private const SAVE_ARGUMENTS = [
+		'object', 'extend', 'register', 'schema', 'uuid', '_rbac', '_multitenancy', 'silent', '_validation',
+		'uploadedFiles', 'currentUser', 'failIfExists', '_unowned', '_dedupOverride', '_owner',
+	];
+
 
 	private const CASE_URI = 'https://openregister.app/ns#Case';
 
@@ -256,7 +264,7 @@ final class HandoffServiceHelpersGoldenTest extends TestCase {
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($target, $source, $sourceSaveFails): ObjectEntity {
 				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
-				$call = $this->named(class: ObjectService::class, method: 'saveObject', args: $args);
+				$call = array_slice(array_combine(self::SAVE_ARGUMENTS, $args), 0, 6);
 				$this->saves[] = $call;
 				if ($call['uuid'] === 'src-uuid') {
 					if ($sourceSaveFails === true && count($this->saves) === 2) {

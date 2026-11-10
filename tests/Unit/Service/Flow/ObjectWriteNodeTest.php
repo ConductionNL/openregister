@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 
 /**
  * Unit coverage for the `openregister.object-write` node.
@@ -323,18 +324,11 @@ class ObjectWriteNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testACreateAsksTheSaveToRefuseATakenIdentifierOnlyUnderOnConflictFail(): void {
-		$position = null;
-		foreach ((new \ReflectionMethod(ObjectService::class, 'saveObject'))->getParameters() as $parameter) {
-			if ($parameter->getName() === 'failIfExists') {
-				$position = $parameter->getPosition();
-			}
-		}
-
-		$this->assertNotNull($position, 'saveObject() takes failIfExists');
+		$this->assertTrue(property_exists(SavePolicy::class, 'failIfExists'), 'saveObject() takes failIfExists');
 		$flags = [];
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$flags, $position): ObjectEntity {
-				$flags[] = (func_get_args()[$position] ?? null);
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$flags): ObjectEntity {
+				$flags[] = $options->policy->failIfExists;
 				return $this->entity('uuid-' . count($flags), []);
 			}
 		);
