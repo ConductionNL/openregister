@@ -103,6 +103,7 @@ use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsFactory;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsInterface;
+use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
@@ -2344,7 +2345,7 @@ class ObjectsController extends Controller {
 		$query = ($params['q'] ?? null);
 		if ($query !== null && trim((string)$query) !== '') {
 			$bagOnly = filter_var(($params['bagOnly'] ?? false), FILTER_VALIDATE_BOOLEAN);
-			$suggestions = $this->geo->pdokGeocoder->geocodeFree(query: (string)$query, maxItems: 5, bagOnly: $bagOnly);
+			$suggestions = $this->geo->pdokGeocoder->geocodeFree(query: (string)$query, options: new GeocodeOptions(maxItems: 5, bagOnly: $bagOnly));
 			return new JSONResponse(data: ['available' => $available, 'suggestions' => $suggestions]);
 		}
 
