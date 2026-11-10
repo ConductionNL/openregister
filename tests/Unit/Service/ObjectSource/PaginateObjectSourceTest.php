@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -103,7 +104,7 @@ class PaginateObjectSourceTest extends TestCase {
 			 *
 			 * @return ObjectEntity|null Always null (unused here).
 			 */
-			public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+			public function find(SourcedTable $source, string $id): ?ObjectEntity {
 				return null;
 			}//end find()
 
@@ -119,7 +120,7 @@ class PaginateObjectSourceTest extends TestCase {
 			 *
 			 * @return ObjectEntity[] The page of objects.
 			 */
-			public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+			public function findAll(SourcedTable $source, array $query = []): array {
 				$limit = (int)($query['limit'] ?? $this->totalRows);
 				$offset = (int)($query['offset'] ?? 0);
 
@@ -145,7 +146,7 @@ class PaginateObjectSourceTest extends TestCase {
 			 *
 			 * @return int The (possibly overridden) total.
 			 */
-			public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
+			public function count(SourcedTable $source, array $query = []): int {
 				if ($this->countThrows === true) {
 					throw new \RuntimeException('count not supported');
 				}
@@ -420,7 +421,7 @@ class PaginateObjectSourceTest extends TestCase {
 			 *
 			 * @return ObjectEntity|null Always null.
 			 */
-			public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+			public function find(SourcedTable $source, string $id): ?ObjectEntity {
 				$this->touched = true;
 
 				return null;
@@ -436,7 +437,7 @@ class PaginateObjectSourceTest extends TestCase {
 			 *
 			 * @return array Always empty.
 			 */
-			public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+			public function findAll(SourcedTable $source, array $query = []): array {
 				$this->touched = true;
 
 				return [];
@@ -452,7 +453,7 @@ class PaginateObjectSourceTest extends TestCase {
 			 *
 			 * @return int Always zero.
 			 */
-			public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
+			public function count(SourcedTable $source, array $query = []): int {
 				$this->touched = true;
 
 				return 0;
