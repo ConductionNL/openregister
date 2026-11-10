@@ -24,7 +24,9 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientResolverInterface;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
+use OCA\OpenRegister\Service\Notification\MailingRequest;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferenceOrigin;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCP\Activity\IManager as IActivityManager;
@@ -1189,9 +1191,15 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	public function testAnEmailRuleIsSentThroughTheReferencedAddressNotifier(): void {
 		$calls = [];
 		$notifier = $this->createMock(ReferencedAddressNotifier::class);
-		$notifier->method('notify')->willReturnCallback(
-			function (ObjectEntity $object, array $data, array $recipientsSpec, string $subject, string $body, string $category) use (&$calls): array {
-				$calls[] = ['uuid' => $object->getUuid(), 'recipients' => $recipientsSpec, 'subject' => $subject, 'body' => $body, 'category' => $category];
+		$notifier->method('mail')->willReturnCallback(
+			function (ReferenceOrigin $origin, MailingRequest $request) use (&$calls): array {
+				$calls[] = [
+					'uuid' => $origin->object->getUuid(),
+					'recipients' => $request->recipients,
+					'subject' => $request->subject,
+					'body' => $request->body,
+					'category' => $request->category,
+				];
 				return [['field' => 'supplierRef.contactEmail', 'outcome' => EmailSender::OUTCOME_DISPATCHED]];
 			}
 		);
@@ -1227,7 +1235,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	 */
 	public function testAnEmailEntryWithoutTheEmailChannelIsNotSent(): void {
 		$notifier = $this->createMock(ReferencedAddressNotifier::class);
-		$notifier->expects($this->never())->method('notify');
+		$notifier->expects($this->never())->method('mail');
 		$this->serverServices[ReferencedAddressNotifierInterface::class] = $notifier;
 
 		$schema = $this->schemaWithNotification(

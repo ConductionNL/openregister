@@ -59,6 +59,8 @@ use OCP\IUserManager;
 use OCP\Mail\IMailer;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Notification\MailingRequest;
+use OCA\OpenRegister\Service\Notification\ReferenceOrigin;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 
 /**
@@ -2237,14 +2239,14 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return 0;
 		}
 
-		$outcomes = $this->integrations->serverContainer->get(ReferencedAddressNotifierInterface::class)->notify(
-			object: $firing->object,
-			data: $firing->data,
-			recipientsSpec: $firing->recipientsSpec(),
-			subject: $firing->broadcastSubject,
-			body: $firing->addressBody,
-			category: $firing->category,
-			schema: $firing->schema
+		$outcomes = $this->integrations->serverContainer->get(ReferencedAddressNotifierInterface::class)->mail(
+			origin: new ReferenceOrigin(object: $firing->object, data: $firing->data, schema: $firing->schema),
+			request: new MailingRequest(
+				recipients: $firing->recipientsSpec(),
+				subject: $firing->broadcastSubject,
+				body: $firing->addressBody,
+				category: $firing->category
+			)
 		);
 
 		$reached = 0;
