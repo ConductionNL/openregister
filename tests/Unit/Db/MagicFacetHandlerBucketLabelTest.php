@@ -42,6 +42,9 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
+use Psr\Container\ContainerInterface;
+use RuntimeException;
 
 /**
  * Locks the single name lookup behind a terms facet's UUID buckets.
@@ -92,10 +95,16 @@ class MagicFacetHandlerBucketLabelTest extends TestCase {
 		$queryBuilder->method('executeQuery')->willReturn($result);
 		$db->method('getQueryBuilder')->willReturn($queryBuilder);
 
+		$services  = [ObjectNameCacheInterface::class => $cacheHandler];
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('has')->willReturnCallback(fn (string $id): bool => isset($services[$id]));
+		$container->method('get')->willReturnCallback(
+			fn (string $id): object => $services[$id] ?? throw new RuntimeException('Not in this test container: ' . $id)
+		);
 		$handler = new MagicFacetHandler(
 			db: $db,
 			logger: $this->createMock(LoggerInterface::class),
-			cacheHandler: $cacheHandler
+			container: $container
 		);
 
 		$schema = $this->createMock(Schema::class);
@@ -226,10 +235,16 @@ class MagicFacetHandlerBucketLabelTest extends TestCase {
 			}
 		);
 
+		$services  = [ObjectNameCacheInterface::class => $cacheHandler];
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('has')->willReturnCallback(fn (string $id): bool => isset($services[$id]));
+		$container->method('get')->willReturnCallback(
+			fn (string $id): object => $services[$id] ?? throw new RuntimeException('Not in this test container: ' . $id)
+		);
 		$handler = new MagicFacetHandler(
 			db: $db,
 			logger: $this->createMock(LoggerInterface::class),
-			cacheHandler: $cacheHandler
+			container: $container
 		);
 
 		$tableConfigs = [];
