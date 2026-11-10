@@ -166,7 +166,7 @@ class LinkedEntityServiceTest extends TestCase {
 		$this->registry->method('listIds')->willReturn(['mail']);
 
 		$this->expectException(Exception::class);
-		$this->service->removeLink(objectUuid: 'u', type: 'invalid', entityId: 'e');
+		$this->service->removeLink(objectUuid: 'u', link: new EntityLink(type: 'invalid', entityId: 'e'));
 	}//end testRemoveLinkThrowsForUnknownType()
 
 	/**

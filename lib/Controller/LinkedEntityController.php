@@ -191,7 +191,10 @@ class LinkedEntityController extends Controller {
 	 */
 	private function removeLink(LinkRemoval $removal): JSONResponse {
 		try {
-			$result = $this->linkedEntityService->removeLink($removal->objectUuid, $removal->type, $removal->entityId);
+			$result = $this->linkedEntityService->removeLink(
+				$removal->objectUuid,
+				new EntityLink(type: $removal->type, entityId: $removal->entityId)
+			);
 
 			return new JSONResponse(['_' . $removal->type => $result]);
 		} catch (NotAuthorizedException $e) {
