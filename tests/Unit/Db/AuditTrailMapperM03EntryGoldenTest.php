@@ -5,8 +5,8 @@
  *
  * Pins the rows createHardeningChangeEntry(), createPurposeRefusalEntry(),
  * createPartyQueryRefusalEntry() and createSlugBackfillEntry() write into the
- * migrated table, with and without a session user, and what countForObject()
- * and tombstoneForObject() count and leave behind for every action scope:
+ * migrated table, with and without a session user, and what countObjectTrail()
+ * and tombstoneObjectTrail() count and leave behind for every action scope:
  * allowed rows and refused (excluded) rows alike. Generated uuids and
  * timestamps are left out: they differ on every run.
  *
@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ActionScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\DB\IResult;
@@ -190,9 +191,9 @@ final class AuditTrailMapperM03EntryGoldenTest extends TestCase {
 		$mapper = $this->mapper(db: $db, uid: null);
 
 		$this->log[] = 'count';
-		$count = $mapper->countForObject('o-1', $only, $exclude);
+		$count = $mapper->countObjectTrail('o-1', new ActionScope($only, $exclude));
 		$this->log[] = 'tombstone';
-		$tombstoned = $mapper->tombstoneForObject('o-1', $only, $exclude);
+		$tombstoned = $mapper->tombstoneObjectTrail('o-1', new ActionScope($only, $exclude));
 
 		return ['count' => $count, 'tombstoned' => $tombstoned, 'log' => $this->log];
 	}//end scopeOutcome()
