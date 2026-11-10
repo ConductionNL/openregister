@@ -167,6 +167,20 @@ function groupOptions(ids) {
 }
 
 /**
+ * The groups offered when the Nextcloud groups cannot be read.
+ *
+ * @return {Array<object>} The options
+ */
+function fallbackGroups() {
+	return [
+		{ id: 'users', displayname: 'All Users' },
+		{ id: 'editors', displayname: 'Editors' },
+		{ id: 'managers', displayname: 'Managers' },
+		{ id: 'viewers', displayname: 'Viewers' },
+	]
+}
+
+/**
  * Why a draft save failed: the API's error, the request's message, or the
  * default.
  *
@@ -289,11 +303,7 @@ export default {
 			this.loadingGroups = true
 			try {
 				const groups = await fetchGroupIds()
-				if (groups) {
-					this.userGroups = groupOptions(groups)
-				} else {
-					this.setFallbackGroups()
-				}
+				this.userGroups = groups ? groupOptions(groups) : fallbackGroups()
 			} catch (error) {
 				console.error('Error loading user groups:', error)
 				this.setFallbackGroups()
@@ -306,12 +316,7 @@ export default {
 		 * @spec exclude form-state fallback group defaults
 		 */
 		setFallbackGroups() {
-			this.userGroups = [
-				{ id: 'users', displayname: 'All Users' },
-				{ id: 'editors', displayname: 'Editors' },
-				{ id: 'managers', displayname: 'Managers' },
-				{ id: 'viewers', displayname: 'Viewers' },
-			]
+			this.userGroups = fallbackGroups()
 		},
 
 		/**
