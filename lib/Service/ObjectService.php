@@ -58,6 +58,7 @@ use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Object\DraftCaller;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
@@ -3031,8 +3032,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $kept = (new DraftCallerRule())->keptFromCaller(
             object: $stored,
             schema: $this->currentSchema,
-            userId: $user?->getUID(),
-            isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
+            caller: new DraftCaller(
+                userId: $user?->getUID(),
+                isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
+            )
         );
         if ($kept === true) {
             throw new NotAuthorizedException(message: 'Only the person who started this draft can change it.');
@@ -4509,8 +4512,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         return (new DraftCallerRule())->keptFromCaller(
             object: $object,
             schema: $schema,
-            userId: $user?->getUID(),
-            isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
+            caller: new DraftCaller(
+                userId: $user?->getUID(),
+                isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
+            )
         );
     }//end draftKeptFromCaller()
 
