@@ -1063,21 +1063,29 @@ class SchemaService implements SchemaExplorationInterface {
 		$existPropNames = array_keys($existingProperties);
 
 		foreach ($discoveredProperties as $propertyName => $analysis) {
-			// Skip properties already in the schema, and internal/metadata properties.
-			if (in_array($propertyName, $existPropNames) === true
-				|| $this->isInternalProperty(propertyName: $propertyName) === true
-			) {
-				continue;
+			if ($this->isNewSchemaProperty(propertyName: $propertyName, existPropNames: $existPropNames) === true) {
+				$suggestions[] = $this->refineSuggestion(
+					suggestion: $this->baseSuggestion(propertyName: $propertyName, analysis: $analysis),
+					analysis: $analysis
+				);
 			}
-
-			$suggestions[] = $this->refineSuggestion(
-				suggestion: $this->baseSuggestion(propertyName: $propertyName, analysis: $analysis),
-				analysis: $analysis
-			);
 		}
 
 		return $this->sortByConfidence(suggestions: $suggestions);
 	}//end generateSuggestions()
+
+	/**
+	 * Whether a discovered property is worth suggesting: not already in the schema, and not internal or metadata.
+	 *
+	 * @param int|string $propertyName   The discovered property.
+	 * @param array      $existPropNames The schema's property names.
+	 *
+	 * @return bool
+	 */
+	private function isNewSchemaProperty(int|string $propertyName, array $existPropNames): bool {
+		return in_array($propertyName, $existPropNames) === false
+			&& $this->isInternalProperty(propertyName: $propertyName) === false;
+	}//end isNewSchemaProperty()
 
 	/**
 	 * The suggestion for one discovered property: confidence from usage, recommended type and
@@ -1112,6 +1120,24 @@ class SchemaService implements SchemaExplorationInterface {
 	 */
 	private function suggestionHead(int|string $propertyName, array $analysis): array {
 		$usagePercentage = $analysis['usage_percentage'] ?? 0;
+
+		return [
+			'property_name' => $propertyName,
+			'confidence' => self::confidenceFor(usagePercentage: $usagePercentage),
+			'usage_percentage' => $usagePercentage,
+			'usage_count' => $analysis['usage_count'],
+			'recommended_type' => $this->recommendPropertyType(analysis: $analysis),
+		];
+	}//end suggestionHead()
+
+	/**
+	 * How confident a suggestion is, by how many sampled objects carry the property.
+	 *
+	 * @param int|float $usagePercentage The share of objects carrying it.
+	 *
+	 * @return string high, medium or low.
+	 */
+	private static function confidenceFor(int|float $usagePercentage): string {
 		$confidence = 'low';
 		if ($usagePercentage >= 80) {
 			$confidence = 'high';
@@ -1119,14 +1145,8 @@ class SchemaService implements SchemaExplorationInterface {
 			$confidence = 'medium';
 		}
 
-		return [
-			'property_name' => $propertyName,
-			'confidence' => $confidence,
-			'usage_percentage' => $usagePercentage,
-			'usage_count' => $analysis['usage_count'],
-			'recommended_type' => $this->recommendPropertyType(analysis: $analysis),
-		];
-	}//end suggestionHead()
+		return $confidence;
+	}//end confidenceFor()
 
 	/**
 	 * What the analysis observed: examples, lengths, format, patterns, numeric range and the
@@ -1137,31 +1157,64 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @return array The fields.
 	 */
 	private function observedFields(array $analysis): array {
+		return [
+			'examples' => array_slice($analysis['examples'], 0, 3),
+			'max_length' => self::observedMaxLength(analysis: $analysis),
+			'min_length' => self::observedMinLength(analysis: $analysis),
+			'detected_format' => $analysis['detected_format'] ?? null,
+			'string_patterns' => $analysis['string_patterns'] ?? [],
+			'numeric_range' => $analysis['numeric_range'] ?? null,
+			'type_variations' => self::typeVariations(analysis: $analysis),
+		];
+	}//end observedFields()
+
+	/**
+	 * The longest value seen, or null when none had a length.
+	 *
+	 * @param array $analysis The property analysis.
+	 *
+	 * @return mixed
+	 */
+	private static function observedMaxLength(array $analysis): mixed {
 		$maxLengthValue = null;
 		if ($analysis['max_length'] > 0) {
 			$maxLengthValue = $analysis['max_length'];
 		}
 
+		return $maxLengthValue;
+	}//end observedMaxLength()
+
+	/**
+	 * The shortest value seen, or null when none had a length.
+	 *
+	 * @param array $analysis The property analysis.
+	 *
+	 * @return mixed
+	 */
+	private static function observedMinLength(array $analysis): mixed {
 		$minLengthValue = null;
 		if (isset($analysis['min_length']) === true && $analysis['min_length'] < PHP_INT_MAX) {
 			$minLengthValue = $analysis['min_length'];
 		}
 
+		return $minLengthValue;
+	}//end observedMinLength()
+
+	/**
+	 * The types seen, when there was more than one.
+	 *
+	 * @param array $analysis The property analysis.
+	 *
+	 * @return array|null
+	 */
+	private static function typeVariations(array $analysis): ?array {
 		$typeVariations = null;
 		if (count($analysis['types']) > 1) {
 			$typeVariations = $analysis['types'];
 		}
 
-		return [
-			'examples' => array_slice($analysis['examples'], 0, 3),
-			'max_length' => $maxLengthValue,
-			'min_length' => $minLengthValue,
-			'detected_format' => $analysis['detected_format'] ?? null,
-			'string_patterns' => $analysis['string_patterns'] ?? [],
-			'numeric_range' => $analysis['numeric_range'] ?? null,
-			'type_variations' => $typeVariations,
-		];
-	}//end observedFields()
+		return $typeVariations;
+	}//end typeVariations()
 
 	/**
 	 * Sort suggestions by confidence, then by usage percentage descending.
@@ -1207,6 +1260,18 @@ class SchemaService implements SchemaExplorationInterface {
 			$suggestion['description'] = 'Enum-like property with predefined values';
 		}
 
+		return $this->withStructure(suggestion: $suggestion, analysis: $analysis);
+	}//end refineSuggestion()
+
+	/**
+	 * A suggestion typed as an object or array when the values had that structure.
+	 *
+	 * @param array $suggestion The suggestion.
+	 * @param array $analysis   The property analysis.
+	 *
+	 * @return array
+	 */
+	private function withStructure(array $suggestion, array $analysis): array {
 		if (empty($analysis['object_structure']) === false && $analysis['object_structure']['type'] === 'object') {
 			$suggestion['type'] = 'object';
 			$suggestion['properties'] = $this->generateNestedProperties(objectStructure: $analysis['object_structure']);
@@ -1218,7 +1283,7 @@ class SchemaService implements SchemaExplorationInterface {
 		}
 
 		return $suggestion;
-	}//end refineSuggestion()
+	}//end withStructure()
 
 	/**
 	 * Analyze existing schema properties for potential improvements
