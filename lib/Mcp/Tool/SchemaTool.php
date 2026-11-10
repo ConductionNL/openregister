@@ -152,25 +152,21 @@ class SchemaTool extends AbstractTool {
 	/**
 	 * List schemas
 	 *
-	 * @param int $limit Result limit
-	 * @param int $offset Result offset
-	 * @param string|null $register Register filter
+	 * @param ListSchemasQuery $query The page and the optional register filter
 	 *
 	 * @return (mixed|string|true)[] Result with list of schemas
 	 *
 	 * @psalm-return array{success: true, message: string, data: mixed}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable filter parameter
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function listSchemas(int $limit = 100, int $offset = 0, ?string $register = null): array {
+	public function listSchemas(ListSchemasQuery $query): array {
 		$filters = [];
-		if ($register !== null) {
-			$filters['register'] = $register;
+		if ($query->register !== null) {
+			$filters['register'] = $query->register;
 		}
 
-		return $this->listFiltered(filters: $filters, page: ['limit' => $limit, 'offset' => $offset]);
+		return $this->listFiltered(filters: $filters, page: ['limit' => $query->limit, 'offset' => $query->offset]);
 	}//end listSchemas()
 
 	/**
@@ -271,10 +267,7 @@ class SchemaTool extends AbstractTool {
 	/**
 	 * Create a new schema
 	 *
-	 * @param string $title Schema title
-	 * @param array $properties Schema properties
-	 * @param string $description Schema description
-	 * @param array|null $required Required properties
+	 * @param CreateSchemaCommand $command The schema's title and properties, optional description and required list
 	 *
 	 * @return (mixed|string|true)[] Result with created schema
 	 *
@@ -284,10 +277,10 @@ class SchemaTool extends AbstractTool {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function createSchema(string $title, array $properties, string $description = '', ?array $required = null): array {
+	public function createSchema(CreateSchemaCommand $command): array {
 		return $this->insertSchema(
-			data: ['title' => $title, 'description' => $description, 'properties' => $properties],
-			required: $required
+			data: ['title' => $command->title, 'description' => $command->description, 'properties' => $command->properties],
+			required: $command->required
 		);
 	}//end createSchema()
 
@@ -314,13 +307,10 @@ class SchemaTool extends AbstractTool {
 	/**
 	 * Update an existing schema
 	 *
-	 * @param string $id Schema ID
-	 * @param string|null $title Schema title
-	 * @param string|null $description Schema description
-	 * @param array|null $properties Schema properties
-	 *
 	 * The required list is not an update_schema parameter: the function
 	 * definition never declares it, so the model cannot send it.
+	 *
+	 * @param UpdateSchemaCommand $command The schema's id and the fields to change; null keeps one
 	 *
 	 * @return (mixed|string|true)[] Result with updated schema
 	 *
@@ -328,19 +318,12 @@ class SchemaTool extends AbstractTool {
 	 *
 	 * @psalm-return array{success: true, message: string, data: mixed}
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for partial updates
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function updateSchema(
-		string $id,
-		?string $title = null,
-		?string $description = null,
-		?array $properties = null,
-	): array {
+	public function updateSchema(UpdateSchemaCommand $command): array {
 		return $this->applyUpdate(
-			schema: $this->schemaMapper->find(id: $id),
-			changes: ['title' => $title, 'description' => $description, 'properties' => $properties, 'required' => null]
+			schema: $this->schemaMapper->find(id: $command->id),
+			changes: ['title' => $command->title, 'description' => $command->description, 'properties' => $command->properties, 'required' => null]
 		);
 	}//end updateSchema()
 

@@ -315,9 +315,7 @@ class ObjectsTool extends AbstractTool {
 	/**
 	 * Create a new object
 	 *
-	 * @param string $register Register identifier
-	 * @param string $schema Schema identifier
-	 * @param array $data Object data
+	 * @param CreateObjectCommand $command The register and schema identifiers and the object data
 	 *
 	 * @return (mixed|string|true)[] Result with created object
 	 *
@@ -327,8 +325,8 @@ class ObjectsTool extends AbstractTool {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function createObject(string $register, string $schema, array $data): array {
-		return $this->saveNew(scope: ['register' => $register, 'schema' => $schema], data: $data);
+	public function createObject(CreateObjectCommand $command): array {
+		return $this->saveNew(scope: ['register' => $command->register, 'schema' => $command->schema], data: $command->data);
 	}//end createObject()
 
 	/**

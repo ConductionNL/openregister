@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Mcp\Tool\SchemaTool;
+use OCA\OpenRegister\Mcp\Tool\UpdateSchemaCommand;
 use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\IRequest;
 use OCP\IUser;
@@ -113,7 +114,7 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 			);
 
 		$tool = new SchemaTool(new ToolCallTrail($this->userSession, $this->createMock(LoggerInterface::class)), $this->schemaMapper, $this->versioning(logger: $logger));
-		$result = $tool->updateSchema(id: '12', properties: ['title' => ['type' => 'string']]);
+		$result = $tool->updateSchema(new UpdateSchemaCommand(id: '12', properties: ['title' => ['type' => 'string']]));
 
 		$this->assertSame('2.0.0', $result['data']['version']);
 	}//end testAnAgentBreakingChangeIsLoggedNotRefused()
@@ -148,7 +149,7 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 			->willReturn(new SchemaChangelog());
 
 		$tool = new SchemaTool(new ToolCallTrail($this->userSession, $this->createMock(LoggerInterface::class)), $this->schemaMapper, $this->versioning());
-		$result = $tool->updateSchema(id: '12', properties: ['title' => ['type' => 'string']]);
+		$result = $tool->updateSchema(new UpdateSchemaCommand(id: '12', properties: ['title' => ['type' => 'string']]));
 
 		$this->assertSame('2.0.0', $result['data']['version']);
 	}//end testTheSchemaToolRecordsABreakingChange()
@@ -162,7 +163,7 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 		$this->changelogMapper->expects($this->never())->method('createFromArray');
 
 		$tool = new SchemaTool(new ToolCallTrail($this->userSession, $this->createMock(LoggerInterface::class)), $this->schemaMapper, $this->versioning());
-		$result = $tool->updateSchema(id: '12', title: 'Case, renamed');
+		$result = $tool->updateSchema(new UpdateSchemaCommand(id: '12', title: 'Case, renamed'));
 
 		$this->assertSame('1.0.0', $result['data']['version']);
 	}//end testATitleEditThroughTheToolRecordsNothing()

@@ -201,9 +201,7 @@ class RegisterTool extends AbstractTool {
 	/**
 	 * Create a new register
 	 *
-	 * @param string $title Register title
-	 * @param string $description Register description
-	 * @param string|null $slug Register slug
+	 * @param CreateRegisterCommand $command The register's title, optional description and slug
 	 *
 	 * @return (mixed|string|true)[] Result with created register
 	 *
@@ -213,8 +211,8 @@ class RegisterTool extends AbstractTool {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function createRegister(string $title, string $description = '', ?string $slug = null): array {
-		return $this->createFrom(data: ['title' => $title, 'description' => $description], slug: $slug);
+	public function createRegister(CreateRegisterCommand $command): array {
+		return $this->createFrom(data: ['title' => $command->title, 'description' => $command->description], slug: $command->slug);
 	}//end createRegister()
 
 	/**
@@ -258,9 +256,7 @@ class RegisterTool extends AbstractTool {
 	/**
 	 * Update an existing register
 	 *
-	 * @param string $id Register ID
-	 * @param string|null $title Register title
-	 * @param string|null $description Register description
+	 * @param UpdateRegisterCommand $command The register's id and the fields to change; null keeps one
 	 *
 	 * @return (mixed|string|true)[] Result with updated register
 	 *
@@ -270,16 +266,15 @@ class RegisterTool extends AbstractTool {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function updateRegister(string $id, ?string $title = null, ?string $description = null): array {
-		return $this->updateFrom(
-			id: $id,
-			data: array_filter(
-				['title' => $title, 'description' => $description],
-				static function ($value): bool {
-					return $value !== null;
-				}
-			)
+	public function updateRegister(UpdateRegisterCommand $command): array {
+		$data = array_filter(
+			['title' => $command->title, 'description' => $command->description],
+			static function ($value): bool {
+				return $value !== null;
+			}
 		);
+
+		return $this->updateFrom(id: $command->id, data: $data);
 	}//end updateRegister()
 
 	/**

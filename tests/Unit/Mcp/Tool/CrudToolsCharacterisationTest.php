@@ -21,6 +21,12 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Tool\AgentTool;
+use OCA\OpenRegister\Mcp\Tool\UpdateSchemaCommand;
+use OCA\OpenRegister\Mcp\Tool\UpdateRegisterCommand;
+use OCA\OpenRegister\Mcp\Tool\ListSchemasQuery;
+use OCA\OpenRegister\Mcp\Tool\CreateSchemaCommand;
+use OCA\OpenRegister\Mcp\Tool\CreateRegisterCommand;
+use OCA\OpenRegister\Mcp\Tool\CreateObjectCommand;
 use OCA\OpenRegister\Mcp\Tool\UpdateApplicationCommand;
 use OCA\OpenRegister\Mcp\Tool\UpdateAgentCommand;
 use OCA\OpenRegister\Mcp\Tool\CreateApplicationCommand;
@@ -256,8 +262,8 @@ class CrudToolsCharacterisationTest extends TestCase
         );
         $tool = new SchemaTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper);
 
-        $result = $tool->createSchema('T', ['p' => []], 'D', ['p']);
-        $tool->createSchema('T', ['p' => []]);
+        $result = $tool->createSchema(new CreateSchemaCommand('T', ['p' => []], 'D', ['p']));
+        $tool->createSchema(new CreateSchemaCommand('T', ['p' => []]));
 
         $this->assertSame(['title' => 'T', 'description' => 'D', 'properties' => ['p' => []], 'required' => ['p']], $given[0]);
         $this->assertSame(['title' => 'T', 'description' => '', 'properties' => ['p' => []]], $given[1]);
@@ -290,8 +296,8 @@ class CrudToolsCharacterisationTest extends TestCase
         );
         $tool = new SchemaTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper);
 
-        $result = $tool->listSchemas(5, 10, 'reg-1');
-        $tool->listSchemas();
+        $result = $tool->listSchemas(new ListSchemasQuery(5, 10, 'reg-1'));
+        $tool->listSchemas(new ListSchemasQuery());
 
         $this->assertSame([5, 10, ['register' => 'reg-1']], $calls[0]);
         $this->assertSame([100, 0, []], $calls[1]);
@@ -350,7 +356,7 @@ class CrudToolsCharacterisationTest extends TestCase
     public function testUpdateSchemaWithBreakingChangeBumpsAndRecords(): void
     {
         $log    = [];
-        $result = $this->schemaTool($log, true, true)->updateSchema('7', 'New', null, ['b' => []]);
+        $result = $this->schemaTool($log, true, true)->updateSchema(new UpdateSchemaCommand('7', 'New', null, ['b' => []]));
 
         $this->assertSame(
             [
@@ -367,7 +373,7 @@ class CrudToolsCharacterisationTest extends TestCase
     public function testUpdateSchemaWithoutChangesStillRecordsTheEmptyChangeSet(): void
     {
         $log = [];
-        $this->schemaTool($log, true, false)->updateSchema('7', null, 'D', ['b' => []]);
+        $this->schemaTool($log, true, false)->updateSchema(new UpdateSchemaCommand('7', null, 'D', ['b' => []]));
 
         $this->assertSame(
             [
@@ -382,8 +388,8 @@ class CrudToolsCharacterisationTest extends TestCase
     public function testUpdateSchemaWithoutDefinitionChangeOrVersioningDoesNotClassify(): void
     {
         $log = [];
-        $this->schemaTool($log, true, true)->updateSchema('7', 'T', 'D');
-        $this->schemaTool($log, false, true)->updateSchema('7', null, null, ['c' => []]);
+        $this->schemaTool($log, true, true)->updateSchema(new UpdateSchemaCommand('7', 'T', 'D'));
+        $this->schemaTool($log, false, true)->updateSchema(new UpdateSchemaCommand('7', null, null, ['c' => []]));
 
         $this->assertSame(
             [
@@ -432,10 +438,10 @@ class CrudToolsCharacterisationTest extends TestCase
         $calls = [];
         $tool  = $this->registerTool($calls);
 
-        $created = $tool->createRegister('R', 'RD', 'r');
-        $tool->createRegister('R');
-        $updated = $tool->updateRegister('3', null, 'RD');
-        $tool->updateRegister('3', 'R', null);
+        $created = $tool->createRegister(new CreateRegisterCommand('R', 'RD', 'r'));
+        $tool->createRegister(new CreateRegisterCommand('R'));
+        $updated = $tool->updateRegister(new UpdateRegisterCommand('3', null, 'RD'));
+        $tool->updateRegister(new UpdateRegisterCommand('3', 'R', null));
 
         $this->assertSame(
             [
@@ -457,7 +463,7 @@ class CrudToolsCharacterisationTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('No update data provided');
 
-        $this->registerTool($calls)->updateRegister('3');
+        $this->registerTool($calls)->updateRegister(new UpdateRegisterCommand('3'));
     }
 
     /**
@@ -529,7 +535,7 @@ class CrudToolsCharacterisationTest extends TestCase
     public function testCreateObjectStampsTheScopeAndCastsTheIds(): void
     {
         $calls  = [];
-        $result = $this->objectsTool($calls, [])->createObject('2', '5', ['name' => 'x', '@self' => ['owner' => 'bob']]);
+        $result = $this->objectsTool($calls, [])->createObject(new CreateObjectCommand('2', '5', ['name' => 'x', '@self' => ['owner' => 'bob']]));
 
         $this->assertSame(
             [['saveObject', ['name' => 'x', '@self' => ['register' => '2', 'schema' => '5']], 2, 5]],
