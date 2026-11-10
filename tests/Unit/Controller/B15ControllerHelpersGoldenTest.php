@@ -159,7 +159,7 @@ final class B15ControllerHelpersGoldenTest extends TestCase {
 			$permissions->method('hasPermission')->willReturn($situation === 'allowed');
 			$personLinks = $this->createMock(PersonLinkService::class);
 			$personLinks->method('listForObject')->willReturn([]);
-			$personLinks->method('link')->willReturn(new ContactLink());
+			$personLinks->method('linkPerson')->willReturn(new ContactLink());
 			$request = $this->createMock(IRequest::class);
 			$request->method('getParams')->willReturn(['userId' => 'bob']);
 			$controller = ContactsControllerFactory::create(

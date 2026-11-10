@@ -188,7 +188,7 @@ final class ObjectScopedRoutesGoldenTest extends TestCase {
 		$people   = $this->createMock(PersonLinkService::class);
 		$failure  = $this->failure(situation: $situation);
 		if ($failure !== null) {
-			foreach (['listForObject', 'link', 'update', 'unlink'] as $method) {
+			foreach (['listForObject', 'linkPerson', 'changeLink', 'removeLinks'] as $method) {
 				$people->method($method)->willThrowException($failure);
 			}
 
