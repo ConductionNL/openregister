@@ -65,6 +65,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionNamedType;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Db\SubscriptionKey;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Controller\NotificationBroadcastController
@@ -285,17 +286,19 @@ class A26NotificationControllersGoldenTest extends TestCase {
 		$entity->method('jsonSerialize')->willReturn(['id' => 1]);
 		$mapper = $this->createMock(NotificationSubscriptionMapper::class);
 		$mapper->method('findByUser')->willReturnCallback(fn (string $userId): array => $this->log(call: 'mapper::findByUser', args: [$userId], result: [$entity]));
-		$mapper->method('subscribe')->willReturnCallback(
-			function (string $userId, ?int $registerId, ?int $schemaId) use ($entity): NotificationSubscription {
-				$this->log(call: 'mapper::subscribe', args: [$userId, $registerId, $schemaId], result: null);
-				if ($registerId === null && $schemaId === null) {
+		$mapper->method('subscribeTo')->willReturnCallback(
+			function (SubscriptionKey $key) use ($entity): NotificationSubscription {
+				$this->log(call: 'mapper::subscribe', args: [$key->userId, $key->registerId, $key->schemaId], result: null);
+				if ($key->registerId === null && $key->schemaId === null) {
 					throw new InvalidArgumentException('needs a scope');
 				}
 
 				return $entity;
 			}
 		);
-		$mapper->method('unsubscribe')->willReturnCallback(fn (string $userId, ?int $registerId, ?int $schemaId): bool => $this->log(call: 'mapper::unsubscribe', args: [$userId, $registerId, $schemaId], result: true));
+		$mapper->method('unsubscribeFrom')->willReturnCallback(
+			fn (SubscriptionKey $key): bool => $this->log(call: 'mapper::unsubscribe', args: [$key->userId, $key->registerId, $key->schemaId], result: true)
+		);
 		$register = new Register();
 		$schema = new Schema();
 		$registers = $this->recording(

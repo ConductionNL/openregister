@@ -110,7 +110,7 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
 	public function validate(FlowRun $run, FlowRunMigration $migration): array {
-		return $this->validator->validate(run: $run, targetVersion: $migration->targetVersion, mapping: $migration->mapping());
+		return $this->validator->validate(run: $run, migration: $migration);
 	}//end validate()
 
 	/**

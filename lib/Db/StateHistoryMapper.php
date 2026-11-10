@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Db\StateHistory\TrackedProperty;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -78,18 +79,17 @@ class StateHistoryMapper extends QBMapper implements StateHistoryMapperInterface
 	 * Idempotent: with no open interval it updates nothing, which is the
 	 * correct answer for the first transition an object ever makes.
 	 *
-	 * @param string            $objectUuid The object.
-	 * @param string            $property   The declared lifecycle property.
-	 * @param DateTimeInterface $leftAt     The moment it left.
+	 * @param TrackedProperty   $tracked The object and its declared lifecycle property.
+	 * @param DateTimeInterface $leftAt  The moment it left.
 	 *
 	 * @return int Rows closed.
 	 */
-	public function closeOpenInterval(string $objectUuid, string $property, DateTimeInterface $leftAt): int {
+	public function closeOpenInterval(TrackedProperty $tracked, DateTimeInterface $leftAt): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
 			->set('left_at', $qb->createNamedParameter($leftAt, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('property', $qb->createNamedParameter($property)))
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($tracked->objectUuid)))
+			->andWhere($qb->expr()->eq('property', $qb->createNamedParameter($tracked->property)))
 			->andWhere($qb->expr()->isNull('left_at'));
 
 		return (int)$qb->executeStatement();

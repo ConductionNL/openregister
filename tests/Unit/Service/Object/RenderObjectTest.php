@@ -186,6 +186,20 @@ class RenderObjectTest extends TestCase {
 	}
 
 	/**
+	 * Expect that no inverse batch is loaded: no batch query and no preload log line.
+	 *
+	 * @return void
+	 */
+	private function expectNoInverseBatchLoad(): void {
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+		$this->logger->method('debug')->willReturnCallback(
+			function (string $message): void {
+				$this->assertStringNotContainsString('INVERSE_PRELOAD', $message);
+			}
+		);
+	}
+
+	/**
 	 * A wildcard pass over the data at the given depth, as handleWildcardExtends() receives it.
 	 *
 	 * @param array $data  The data to extend.
@@ -462,6 +476,7 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame(['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'name' => 'Test'], $result->getObject());
 	}
 
 	// =========================================================================
@@ -652,6 +667,8 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// The related object does not exist, so the reference stays as it is.
+		$this->assertSame('bbbbbbbb-cccc-dddd-eeee-ffffffffffff', $result->getObject()['relatedField']);
 	}
 
 	// =========================================================================
@@ -1398,6 +1415,9 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// _schema is the shorthand for @self.schema, which adds the @self block.
+		$this->assertArrayHasKey('@self', $result->getObject());
+		$this->assertSame('Test', $result->getObject()['name']);
 	}
 
 	public function testRenderEntityNormalizesRegisterShorthand(): void {
@@ -1416,6 +1436,8 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// _register is the shorthand for @self.register.
+		$this->assertArrayHasKey('register', $result->getObject()['@self']);
 	}
 
 	// =========================================================================
@@ -1439,6 +1461,9 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// Nothing resolves the reference, so extending all leaves it as it is.
+		$this->assertSame('bbbbbbbb-cccc-dddd-eeee-ffffffffffff', $result->getObject()['related']);
+		$this->assertSame('Test', $result->getObject()['name']);
 	}
 
 	// =========================================================================
@@ -1517,6 +1542,7 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame('bbbbbbbb-cccc-dddd-eeee-ffffffffffff', $result->getObject()['related']);
 	}
 
 	// =========================================================================
@@ -2656,6 +2682,7 @@ class RenderObjectTest extends TestCase {
 		// Should not crash even without UUID.
 		$result = $this->handler->renderEntity($entity);
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame(['id' => null, 'name' => 'No UUID entity'], $result->getObject());
 	}
 
 	// =========================================================================
@@ -2890,25 +2917,24 @@ class RenderObjectTest extends TestCase {
 
 	public function testPreloadInverseRelationshipsEmptyEntities(): void {
 		// Should return early without error.
-		$this->invokePrivate('preloadInverseRelationships', [[], ['all']]);
+		$this->expectNoInverseBatchLoad();
 
-		// No crash = success.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [[], ['all']]);
 	}
 
 	public function testPreloadInverseRelationshipsEmptyExtend(): void {
 		$entity = $this->createBasicEntity(1, 'uuid-1', []);
 
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], []]);
+		$this->expectNoInverseBatchLoad();
 
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [[$entity], []]);
 	}
 
 	public function testPreloadInverseRelationshipsNonObjectEntity(): void {
 		// Non-ObjectEntity should be skipped.
-		$this->invokePrivate('preloadInverseRelationships', [['not-an-entity'], ['all']]);
+		$this->expectNoInverseBatchLoad();
 
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [['not-an-entity'], ['all']]);
 	}
 
 	// =========================================================================
@@ -2922,6 +2948,8 @@ class RenderObjectTest extends TestCase {
 
 		$result = $this->handler->renderEntity($entity);
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// Empty data still gets the entity's id.
+		$this->assertSame(['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'], $result->getObject());
 	}
 
 	public function testRenderEntityFilterWithNonExistentKey(): void {
@@ -3299,6 +3327,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 0), &$extend]);
 
 		$this->assertIsArray($result['items']);
+		$this->assertSame([['name' => 'a'], ['name' => 'b']], $result['items']);
 	}
 
 	// =========================================================================
@@ -3362,6 +3391,7 @@ class RenderObjectTest extends TestCase {
 
 		// Should filter out null results (non-id arrays return null).
 		$this->assertIsArray($result['items']);
+		$this->assertSame([], $result['items']);
 	}
 
 	public function testHandleExtendDotWithUuidStringNotInCache(): void {
@@ -3484,6 +3514,7 @@ class RenderObjectTest extends TestCase {
 
 		// null and @-prefixed values should be filtered.
 		$this->assertIsArray($result['items']);
+		$this->assertSame(['12345678-1234-1234-1234-123456789012'], $result['items']);
 	}
 
 	public function testHandleExtendDotCircularReferenceInArray(): void {
@@ -3563,6 +3594,8 @@ class RenderObjectTest extends TestCase {
 
 		// With string override, the result should be set at custom.path.
 		$this->assertIsArray($result);
+		$this->assertSame('12345678-1234-1234-1234-123456789012', $result['ref']);
+		$this->assertSame('Override', $result['custom']['path']['name']);
 	}
 
 	public function testHandleExtendDotWithArrayStringOverride(): void {
@@ -3588,6 +3621,8 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertIsArray($result);
+		$this->assertSame(['12345678-1234-1234-1234-123456789012'], $result['items']);
+		$this->assertSame('Item', $result['overridden']['items'][0]['name']);
 	}
 
 	// =========================================================================
@@ -3674,6 +3709,8 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('extendObject', [$run]);
 
 		$this->assertIsArray($result);
+		$this->assertSame('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $result['id']);
+		$this->assertSame($uuid, $result['ref']);
 	}
 
 	// =========================================================================
@@ -3729,6 +3766,9 @@ class RenderObjectTest extends TestCase {
 
 		// Should not crash; id and originId should not be in _extend.
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// id and originId are the entity itself, so they are never replaced by an extended object.
+		$this->assertSame('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $result->getObject()['id']);
+		$this->assertSame('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $result->getObject()['originId']);
 	}
 
 	// =========================================================================
@@ -3749,6 +3789,7 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame(['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'name' => 'Test'], $result->getObject());
 	}
 
 	// =========================================================================
@@ -4047,6 +4088,8 @@ class RenderObjectTest extends TestCase {
 		// This should not throw even if something goes wrong inside.
 		$result = $this->handler->renderEntity($entity);
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// The file id resolves to no file, so the property renders as null.
+		$this->assertNull($result->getObject()['logo']);
 	}
 
 	public function testHydrateMetadataFromFilePropertiesNoSchema(): void {
@@ -4059,6 +4102,8 @@ class RenderObjectTest extends TestCase {
 		// No schema found means hydrateMetadata returns entity unchanged.
 		$result = $this->invokePrivate('hydrateMetadataFromFileProperties', [$entity]);
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($entity, $result);
+		$this->assertSame(['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'], $result->getObject());
 	}
 
 	public function testHydrateMetadataDeepNestedPath(): void {
@@ -4112,6 +4157,8 @@ class RenderObjectTest extends TestCase {
 
 		$result = $this->handler->renderEntity($entity);
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($entity, $result);
+		$this->assertSame('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $result->getObject()['id']);
 	}
 
 	// =========================================================================
@@ -4246,10 +4293,9 @@ class RenderObjectTest extends TestCase {
 		$this->schemaMapper->method('find')
 			->willReturn($schema);
 
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['all']]);
+		$this->expectNoInverseBatchLoad();
 
-		// No crash = success; no inversed properties means early return.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['all']]);
 	}
 
 	public function testPreloadInverseRelationshipsNoSchemaFound(): void {
@@ -4259,10 +4305,9 @@ class RenderObjectTest extends TestCase {
 		$this->schemaMapper->method('find')
 			->willThrowException(new Exception('Not found'));
 
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['all']]);
+		$this->expectNoInverseBatchLoad();
 
-		// No crash = success.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['all']]);
 	}
 
 	public function testPreloadInverseRelationshipsNoExtendMatch(): void {
@@ -4281,10 +4326,9 @@ class RenderObjectTest extends TestCase {
 			->willReturn($schema);
 
 		// Extend doesn't include 'children' or 'all'.
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['name']]);
+		$this->expectNoInverseBatchLoad();
 
-		// No crash = success.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['name']]);
 	}
 
 	public function testPreloadInverseRelationshipsNoEntityUuids(): void {
@@ -4308,10 +4352,9 @@ class RenderObjectTest extends TestCase {
 		$this->schemaMapper->method('find')
 			->willReturn($schema);
 
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['children']]);
+		$this->expectNoInverseBatchLoad();
 
-		// No crash = success; entities without UUIDs are skipped.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['children']]);
 	}
 
 	// =========================================================================
@@ -4324,10 +4367,13 @@ class RenderObjectTest extends TestCase {
 		// Missing $ref and inversedBy.
 		$propConfig = ['type' => 'array', 'items' => ['type' => 'object']];
 
-		$this->invokePrivate('preloadSingleInverseProperty', [$this->inverseBatch([], ['uuid-1'], 'children'), $propConfig]);
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+		$batch = $this->inverseBatch([], ['uuid-1'], 'children');
 
-		// No crash = success.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadSingleInverseProperty', [$batch, $propConfig]);
+
+		$this->assertSame('', $batch->targetSchemaId);
+		$this->assertSame([], $batch->inversedByFields);
 	}
 
 	public function testPreloadSingleInversePropertyEmptySchemaId(): void {
@@ -4338,10 +4384,13 @@ class RenderObjectTest extends TestCase {
 			'items' => ['type' => 'object', 'inversedBy' => 'parent', '$ref' => ''],
 		];
 
-		$this->invokePrivate('preloadSingleInverseProperty', [$this->inverseBatch([], ['uuid-1'], 'children'), $propConfig]);
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+		$batch = $this->inverseBatch([], ['uuid-1'], 'children');
 
-		// Empty schema ID causes early return.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadSingleInverseProperty', [$batch, $propConfig]);
+
+		$this->assertSame('', $batch->targetSchemaId);
+		$this->assertSame([], $batch->inversedByFields);
 	}
 
 	public function testPreloadSingleInversePropertyTargetSchemaNotFound(): void {
@@ -4355,10 +4404,13 @@ class RenderObjectTest extends TestCase {
 		$this->schemaMapper->method('find')
 			->willThrowException(new Exception('Not found'));
 
-		$this->invokePrivate('preloadSingleInverseProperty', [$this->inverseBatch([], ['uuid-1'], 'children'), $propConfig]);
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+		$batch = $this->inverseBatch([], ['uuid-1'], 'children');
 
-		// Schema not found causes early return.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadSingleInverseProperty', [$batch, $propConfig]);
+
+		$this->assertSame('', $batch->targetSchemaId);
+		$this->assertSame([], $batch->inversedByFields);
 	}
 
 	// =========================================================================
@@ -4652,6 +4704,8 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($uuid, $result->getObject()['refA']);
+		$this->assertSame('some-value', $result->getObject()['refB']);
 	}
 
 	// =========================================================================
@@ -4845,10 +4899,13 @@ class RenderObjectTest extends TestCase {
 		$this->schemaMapper->method('findAll')
 			->willReturn([]);
 
-		$this->invokePrivate('preloadSingleInverseProperty', [$this->inverseBatch([], ['uuid-1'], 'children'), $propConfig]);
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+		$batch = $this->inverseBatch([], ['uuid-1'], 'children');
 
-		// resolveSchemaReference returns 'nonexistent-slug', getSchema returns null.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadSingleInverseProperty', [$batch, $propConfig]);
+
+		$this->assertSame('', $batch->targetSchemaId);
+		$this->assertSame([], $batch->inversedByFields);
 	}
 
 	// =========================================================================
@@ -4910,6 +4967,7 @@ class RenderObjectTest extends TestCase {
 
 		$this->assertIsArray($result);
 		$this->assertIsArray($result['parent']['child']);
+		$this->assertSame('Nested', $result['parent']['child'][0]['name']);
 	}
 
 	public function testHandleExtendDotDeepNestedRef(): void {
@@ -6221,6 +6279,8 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateMetadataFromFileProperties', [$entity]);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($entity, $result);
+		$this->assertSame(['downloadUrl' => 'http://example.com/img.png'], $result->getObject()['avatar']);
 	}
 
 	// =========================================================================

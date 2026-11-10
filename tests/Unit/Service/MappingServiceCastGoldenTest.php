@@ -86,6 +86,7 @@ class MappingServiceCastGoldenTest extends TestCase {
 	public function testCastMatchesGolden(string $cast): void {
 		$service = $this->service();
 		$handleCast = new \ReflectionMethod(MappingService::class, 'handleCast');
+		$parseCast = new \ReflectionMethod(MappingService::class, 'parseCast');
 
 		$actual = [];
 		foreach (self::values() as $label => $value) {
@@ -101,7 +102,7 @@ class MappingServiceCastGoldenTest extends TestCase {
 				return true;
 			});
 			try {
-				$handleCast->invoke($service, $dot, 'f', $cast);
+				$handleCast->invoke($service, $parseCast->invoke($service, $cast) + ['key' => 'f', 'dotArray' => $dot]);
 				$outcome = ['document' => $dot->all(), 'hasKey' => $dot->has('f')];
 			} catch (\Throwable $e) {
 				$outcome = ['threw' => get_class($e), 'message' => $e->getMessage()];

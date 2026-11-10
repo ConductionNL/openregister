@@ -290,7 +290,7 @@ class CacheHandlerNameWarmupGoldenTest extends TestCase {
 			$record('acrossMagic', $uuids, $rest);
 			return self::answer($setup['acrossMagic'] ?? []);
 		});
-		$mapper->method('findAll')->willReturnCallback(fn () => self::answer($setup['findAll'] ?? []));
+		$mapper->method('findAllListed')->willReturnCallback(fn () => self::answer($setup['findAll'] ?? []));
 		$mapper->method('filterReadableUuids')->willReturn($setup['readable'] ?? []);
 
 		$container = $this->createMock(IAppContainer::class);

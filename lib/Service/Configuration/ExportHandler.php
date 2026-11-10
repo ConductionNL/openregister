@@ -28,7 +28,9 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -378,7 +380,8 @@ class ExportHandler {
 	 */
 	private function exportRegisterObjects(Register $register): array {
 		$objects = [];
-		foreach ($this->objectEntityMapper->findAll(filters: ['register' => $register->getId()]) as $object) {
+		$listing = new MagicListRequest(table: null, query: ListQuery::unbounded(filters: ['register' => $register->getId()]));
+		foreach ($this->objectEntityMapper->findAllListed(request: $listing) as $object) {
 			$object = $object->jsonSerialize();
 			$registerId = (int)$object['@self']['register'];
 			$schemaId = (int)$object['@self']['schema'];

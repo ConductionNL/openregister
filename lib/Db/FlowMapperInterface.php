@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Db\Flow\TriggerLookup;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -73,34 +75,21 @@ interface FlowMapperInterface {
 	/**
 	 * Count flows matching the same scoping as findAllFlows().
 	 *
-	 * @param string|null $app             Restrict to one owning app id.
-	 * @param string|null $applicationSlug Restrict to one OpenBuild virtual-app slug.
-	 * @param string|null $organisation    Restrict to one organisation uuid.
+	 * @param FlowSelection $selection Which flows: owning app id, OpenBuild virtual-app slug and organisation uuid.
 	 *
 	 * @return integer The number of matching flows.
 	 */
-	public function countFlows(
-		?string $app = null,
-		?string $applicationSlug = null,
-		?string $organisation = null,
-	): int;
+	public function countFlows(FlowSelection $selection=new FlowSelection()): int;
 
 	/**
 	 * The enabled flows wired to one trigger.
 	 *
-	 * @param string      $trigger      The catalog trigger id.
-	 * @param string|null $register     The subject's register slug, when object-scoped.
-	 * @param string|null $schema       The subject's schema slug, when object-scoped.
-	 * @param string|null $organisation Restrict to one organisation uuid.
+	 * @param TriggerLookup $lookup The catalog trigger id, the subject's register and schema slugs when
+	 *                              object-scoped, and the organisation uuid to restrict to.
 	 *
 	 * @return array<int, Flow> The candidate flows.
 	 */
-	public function findByTrigger(
-		string $trigger,
-		?string $register = null,
-		?string $schema = null,
-		?string $organisation = null,
-	): array;
+	public function findByTrigger(TriggerLookup $lookup): array;
 
 	/**
 	 * The enabled flows that run on a cron schedule.

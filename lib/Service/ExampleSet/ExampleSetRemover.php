@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use Closure;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Removes an installed example set.
@@ -223,7 +224,7 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 		}
 
 		$entry = $held->entry;
-		return $this->objects->store->deleteRecorded(register: $entry['register'], schema: $entry['schema'], id: $entry['id']);
+		return $this->objects->store->deleteRecorded(ref: new ObjectRef(register: $entry['register'], schema: $entry['schema'], id: $entry['id']));
 	}//end deleteObject()
 
 	/**
