@@ -34,10 +34,8 @@ interface ObjectGrantsReportInterface {
 	/**
 	 * The grant rows of one object.
 	 *
-	 * @param ObjectEntity $object         The object, already resolved and gated.
-	 * @param mixed        $registerRef    The register as the request named it.
-	 * @param mixed        $schemaRef      The schema as the request named it.
-	 * @param string[]     $principalTypes Keep only these principal types; empty keeps all.
+	 * @param ObjectEntity   $object The object, already resolved and gated.
+	 * @param GrantRowsQuery $query  The register and schema as the request named them, and the principal types to keep.
 	 *
 	 * @return array{object: string|null, results: array<int, array<string, mixed>>, denyEnforcement: string}
 	 *         The rows.
@@ -46,5 +44,5 @@ interface ObjectGrantsReportInterface {
 	 *
 	 * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
 	 */
-	public function rowsFor(ObjectEntity $object, mixed $registerRef, mixed $schemaRef, array $principalTypes = []): array;
+	public function rowsFor(ObjectEntity $object, GrantRowsQuery $query): array;
 }//end interface
