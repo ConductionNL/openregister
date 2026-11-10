@@ -41,6 +41,8 @@ use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Sharing\ShareGrantee;
+use OCA\OpenRegister\Service\Sharing\ShareListCheck;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\CredentialControllerFactory;
 use OCP\IGroupManager;
@@ -425,9 +427,9 @@ class CredentialControllerCharacterisationTest extends TestCase {
 		);
 		$seen = [];
 		$this->shares->method('grants')->willReturnCallback(
-			function (...$args) use (&$seen): bool {
-				$seen[] = $args;
-				return $args[0] !== null;
+			function (ShareGrantee $grantee, ShareListCheck $check) use (&$seen): bool {
+				$seen[] = [$check->sharedWith, $grantee->userId, $grantee->groups, $check->permissions];
+				return $check->sharedWith !== null;
 			}
 		);
 

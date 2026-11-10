@@ -15,6 +15,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 
 class EmailServiceTest extends TestCase {
@@ -70,7 +71,7 @@ class EmailServiceTest extends TestCase {
 		$this->emailLinkMapper->method('findByObjectUuid')->with('abc-123', 10, 0)->willReturn([$link]);
 		$this->emailLinkMapper->method('countByObjectUuid')->with('abc-123')->willReturn(1);
 
-		$result = $this->service->getEmailsForObject('abc-123', 10, 0);
+		$result = $this->service->getEmailsForObject('abc-123', new ListQuery(limit: 10, offset: 0));
 
 		$this->assertSame(1, $result['total']);
 		$this->assertCount(1, $result['results']);

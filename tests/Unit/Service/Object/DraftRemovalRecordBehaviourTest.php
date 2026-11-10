@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RemovedDraft;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -76,7 +77,9 @@ class DraftRemovalRecordBehaviourTest extends TestCase {
 			null
 		)->willReturn(new AuditTrail());
 
-		$this->assertTrue((new DraftRemovalRecord($audit, $this->createMock(LoggerInterface::class)))->write($draft, $register, $schema));
+		$this->assertTrue((new DraftRemovalRecord($audit, $this->createMock(LoggerInterface::class)))->write(
+			new RemovedDraft(draft: $draft, register: $register, schema: $schema)
+		));
 	}//end testOutsideAJobTheEntryCarriesTheFactsOnly()
 
 	/**
@@ -99,13 +102,13 @@ class DraftRemovalRecordBehaviourTest extends TestCase {
 		$answer = DraftRemovalRecord::asJob(
 			'outer',
 			function () use ($record, $draft): string {
-				$record->write($draft, null, null);
-				DraftRemovalRecord::asJob('inner', fn (): bool => $record->write($draft, null, null));
-				$record->write($draft, null, null);
+				$record->write(new RemovedDraft(draft: $draft, register: null, schema: null));
+				DraftRemovalRecord::asJob('inner', fn (): bool => $record->write(new RemovedDraft(draft: $draft, register: null, schema: null)));
+				$record->write(new RemovedDraft(draft: $draft, register: null, schema: null));
 				return 'done';
 			}
 		);
-		$record->write($draft, null, null);
+		$record->write(new RemovedDraft(draft: $draft, register: null, schema: null));
 
 		$this->assertSame('done', $answer);
 		$this->assertSame(
@@ -142,7 +145,7 @@ class DraftRemovalRecordBehaviourTest extends TestCase {
 			$this->assertSame('boom', $e->getMessage());
 		}
 
-		$record->write($this->draft(), null, null);
+		$record->write(new RemovedDraft(draft: $this->draft(), register: null, schema: null));
 
 		$this->assertSame([null], $jobs);
 	}//end testAThrowingJobEndsItsScope()
@@ -163,6 +166,6 @@ class DraftRemovalRecordBehaviourTest extends TestCase {
 			['status' => 'draft', 'permanent' => true, 'job' => null, 'register' => null, 'schema' => null, 'owner' => 'erin', 'uuid' => 'd-1', 'exception' => 'db down']
 		);
 
-		$this->assertFalse((new DraftRemovalRecord($audit, $logger))->write($draft, null, null));
+		$this->assertFalse((new DraftRemovalRecord($audit, $logger))->write(new RemovedDraft(draft: $draft, register: null, schema: null)));
 	}//end testAFailedEntryIsLoggedAndReported()
 }//end class

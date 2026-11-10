@@ -64,26 +64,9 @@ class NotificationSubscriptionMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Subscribe a user to (register, schema). Idempotent: returns the
-	 * existing row when a duplicate is attempted (DB unique index
-	 * protects against races).
-	 *
-	 * At least one of registerId / schemaId MUST be set.
-	 *
-	 * @param string $userId User UID.
-	 * @param ?int $registerId Register id, or null for schema-only.
-	 * @param ?int $schemaId Schema id, or null for register-wide.
-	 *
-	 * @return NotificationSubscription
-	 *
-	 * @throws \InvalidArgumentException When both ids are null.
-	 */
-	public function subscribe(string $userId, ?int $registerId, ?int $schemaId): NotificationSubscription {
-		return $this->subscribeTo(key: new SubscriptionKey(userId: $userId, registerId: $registerId, schemaId: $schemaId));
-	}//end subscribe()
-
-	/**
-	 * Subscribe a user to (register, schema), idempotently; see subscribe().
+	 * Subscribe a user to (register, schema). Idempotent: returns the existing
+	 * row when a duplicate is attempted (the DB unique index protects against
+	 * races). At least one of registerId / schemaId MUST be set.
 	 *
 	 * @param SubscriptionKey $key The user and the register and/or schema.
 	 *
@@ -122,19 +105,6 @@ class NotificationSubscriptionMapper extends QBMapper {
 		}
 
 	}//end subscribeTo()
-
-	/**
-	 * Unsubscribe a (userId, registerId, schemaId) tuple.
-	 *
-	 * @param string $userId User UID.
-	 * @param ?int $registerId Register id.
-	 * @param ?int $schemaId Schema id.
-	 *
-	 * @return bool True when a row was deleted.
-	 */
-	public function unsubscribe(string $userId, ?int $registerId, ?int $schemaId): bool {
-		return $this->unsubscribeFrom(key: new SubscriptionKey(userId: $userId, registerId: $registerId, schemaId: $schemaId));
-	}//end unsubscribe()
 
 	/**
 	 * Unsubscribe one (user, register, schema) subscription.

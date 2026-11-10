@@ -44,6 +44,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
+use OCA\OpenRegister\Db\Flow\FlowTriggerSet;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -104,9 +105,7 @@ class FlowTriggerIndex implements FlowTriggerIndexInterface {
 			// stale rows from a previous save — deleting the flow's last
 			// trigger node has to actually unsubscribe it.
 			return $this->mapper->replaceFor(
-				flowUuid: $uuid,
-				triggers: $this->canonical(triggers: $triggers),
-				enabled: ($flow->getEnabled() === true)
+				set: new FlowTriggerSet(flowUuid: $uuid, triggers: $this->canonical(triggers: $triggers), enabled: ($flow->getEnabled() === true))
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

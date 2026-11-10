@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\RetentionClock;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -174,8 +175,8 @@ class ArchivalNominationServiceTest extends TestCase {
 		$captured = null;
 		$this->retentionService->method('calculateArchiveActionDate')
 			->willReturnCallback(
-				static function ($object, $schema, string $retentionPeriod) use (&$captured): string {
-					$captured = $retentionPeriod;
+				static function (RetentionClock $clock) use (&$captured): string {
+					$captured = $clock->retentionPeriod;
 					return '2036-03-01';
 				}
 			);
@@ -447,8 +448,8 @@ class ArchivalNominationServiceTest extends TestCase {
 		$captured = null;
 		$this->retentionService->method('calculateArchiveActionDate')
 			->willReturnCallback(
-				static function ($object, $schema, string $retentionPeriod) use (&$captured): string {
-					$captured = $retentionPeriod;
+				static function (RetentionClock $clock) use (&$captured): string {
+					$captured = $clock->retentionPeriod;
 					return '2046-03-01';
 				}
 			);

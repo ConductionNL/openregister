@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowEngineServices;
 use OCA\OpenRegister\Service\Flow\FlowItems;
@@ -88,7 +89,9 @@ class FlowEngineBranchPruningTest extends TestCase {
 	private function walk(FlowEngine $engine, PruningDispatcher $dispatcher, array $context, array $flow): array {
 		return $engine->run(
 			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new PruningSubject(), dispatcher: $dispatcher))->withContext(context: $context),
-			items: [FlowItems::item(json: ['n' => 42])]
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => 42])]
+			)
 		);
 	}//end walk()
 

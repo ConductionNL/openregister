@@ -3046,7 +3046,7 @@ class SaveObjectTest extends TestCase {
 		$schemaObject->properties = [];
 		$schema = $this->createSchemaWithSchemaObject($schemaObject);
 
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(false);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$data = ['name' => 'Test'];
 		$result = $this->invokePrivateMethod('processFilePropertiesWithRollback', [$entity, &$data, $register, $schema]);
@@ -3063,7 +3063,7 @@ class SaveObjectTest extends TestCase {
 		$schemaObject->properties = [];
 		$schema = $this->createSchemaWithSchemaObject($schemaObject);
 
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(true);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(true);
 		$this->filePropertyHandler->method('handleFileProperty')
 			->willThrowException(new Exception('File upload failed'));
 

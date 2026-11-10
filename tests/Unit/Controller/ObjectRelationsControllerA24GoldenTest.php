@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\Relation\GraphExportOptions;
 use OCA\OpenRegister\Controller\ObjectRelationsController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
@@ -416,7 +417,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 	public function testTheGraphIsAnsweredOrRefusedForItsPurpose(): void {
 		$controller = $this->controller(params: ['depth' => '0'], readable: ['a']);
 		$graph = ['root' => 'a', 'nodes' => [], 'edges' => []];
-		$this->graphs->expects($this->once())->method('graph')->with('a', 1, 'nl')->willReturn($graph);
+		$this->graphs->expects($this->once())->method('graph')->with('a', new GraphExportOptions(1, 'nl'))->willReturn($graph);
 		$this->assertSame([200, $graph], $this->outcome($controller->graph('r', 's', 'a')));
 
 		$refused = $this->controller(params: [], readable: ['a']);
@@ -441,7 +442,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 
 		$allowed = $this->controller(params: ['depth' => '2'], readable: ['a']);
 		$this->exportGate->expects($this->once())->method('refusalFor')->with($this->isInstanceOf(Schema::class), 'relation-graph', 1)->willReturn(null);
-		$this->graphs->method('graph')->with('a', 2, 'nl')->willReturn(['root' => 'a', 'nodes' => [], 'edges' => []]);
+		$this->graphs->method('graph')->with('a', new GraphExportOptions(2, 'nl'))->willReturn(['root' => 'a', 'nodes' => [], 'edges' => []]);
 		$this->graphs->method('rowsOf')->willReturn([['from', 'to'], ['a', 'b "c"']]);
 		$response = $allowed->exportGraph('r', 's', 'a');
 

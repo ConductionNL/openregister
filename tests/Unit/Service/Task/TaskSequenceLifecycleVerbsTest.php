@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskSequenceDecisionGuard;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTables;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -127,7 +128,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 	public function testEnableMovesAnAvailablePositionToEnabled(): void {
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_AVAILABLE));
 
-		$enabled = $this->service()->enable(uuid: 't-7', source: 'task-sequence:seq-1', reason: 'position 1 approved');
+		$enabled = $this->service()->enable(uuid: 't-7', trigger: new TaskTrigger(source: 'task-sequence:seq-1', reason: 'position 1 approved'));
 
 		self::assertSame(Task::STATE_ENABLED, $enabled->getState());
 		self::assertSame('enable', $enabled->getLastAction());
@@ -137,7 +138,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($this->task(Task::STATE_ENABLED));
 		$this->tasks->expects(self::never())->method('updateIfOpen');
 
-		$enabled = $this->service()->enable(uuid: 't-7', source: 's', reason: 'again');
+		$enabled = $this->service()->enable(uuid: 't-7', trigger: new TaskTrigger(source: 's', reason: 'again'));
 
 		self::assertSame(Task::STATE_ENABLED, $enabled->getState());
 	}//end testEnableIsIdempotentOnAnEnabledTask()
@@ -147,7 +148,7 @@ class TaskSequenceLifecycleVerbsTest extends TestCase {
 
 		$this->expectException(TaskConflictException::class);
 		$this->expectExceptionMessage("terminal state 'terminated'");
-		$this->service()->enable(uuid: 't-7', source: 's', reason: 'r');
+		$this->service()->enable(uuid: 't-7', trigger: new TaskTrigger(source: 's', reason: 'r'));
 	}//end testEnableRefusesATerminalTaskNamingItsState()
 
 	public function testDecidingAnAlreadyTerminalTaskIsRefusedNamingTheState(): void {

@@ -28,6 +28,7 @@ namespace Unit\Service\Deletion;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ActionScope;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
@@ -83,7 +84,7 @@ final class DestructionScopeServiceTest extends TestCase {
 
 	public function testAnInstanceDeclaringNoScopeDestroysWhatItDestroysToday(): void {
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->expects(self::never())->method('tombstoneForObject');
+		$mapper->expects(self::never())->method('tombstoneObjectTrail');
 
 		$notes = $this->createMock(NoteService::class);
 		$notes->expects(self::never())->method('deleteNotesForObject');
@@ -98,7 +99,7 @@ final class DestructionScopeServiceTest extends TestCase {
 
 	public function testAScopeNobodyCanHonourRefusesBeforeTouchingAnything(): void {
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->expects(self::never())->method('tombstoneForObject');
+		$mapper->expects(self::never())->method('tombstoneObjectTrail');
 
 		$service = new DestructionScopeService(new \OCA\OpenRegister\Service\Edepot\AuditRecording($mapper, new NullLogger()), new DestructionScopeReader(), new DestructionCompanions());
 
@@ -122,13 +123,12 @@ final class DestructionScopeServiceTest extends TestCase {
 
 		// And every audit-touching member excludes it from the same one list.
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('countForObject')->willReturn(7);
+		$mapper->method('countObjectTrail')->willReturn(7);
 		$mapper->expects(self::exactly(2))
-			->method('tombstoneForObject')
+			->method('tombstoneObjectTrail')
 			->with(
 				self::equalTo('zaak-100'),
-				self::anything(),
-				self::equalTo(DestructionScope::EVIDENCE_ACTIONS)
+				self::callback(static fn (ActionScope $scope): bool => $scope->excludeActions === DestructionScope::EVIDENCE_ACTIONS)
 			)
 			->willReturn(7);
 

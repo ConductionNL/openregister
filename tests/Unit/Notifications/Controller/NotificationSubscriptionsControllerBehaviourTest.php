@@ -42,6 +42,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Db\SubscriptionKey;
 
 #[CoversClass(NotificationSubscriptionsController::class)]
 #[UsesClass(Register::class)]
@@ -118,7 +119,7 @@ class NotificationSubscriptionsControllerBehaviourTest extends TestCase {
 	public function testCreateWithUnreachableRegisterIs404(): void {
 		$this->registers->expects($this->once())->method('find')->with(404)->willThrowException(new RuntimeException('gone'));
 		$this->schemas->expects($this->never())->method('find');
-		$this->mapper->expects($this->never())->method('subscribe');
+		$this->mapper->expects($this->never())->method('subscribeTo');
 		$response = $this->controller(['registerId' => '404', 'schemaId' => '2'])->create();
 		$this->assertSame(404, $response->getStatus());
 		$this->assertSame(['error' => 'Register not found or not accessible'], $response->getData());
@@ -127,7 +128,7 @@ class NotificationSubscriptionsControllerBehaviourTest extends TestCase {
 	public function testCreateWithUnreachableSchemaIs404(): void {
 		$this->registers->method('find')->willReturn(new Register());
 		$this->schemas->expects($this->once())->method('find')->with(404)->willThrowException(new RuntimeException('gone'));
-		$this->mapper->expects($this->never())->method('subscribe');
+		$this->mapper->expects($this->never())->method('subscribeTo');
 		$response = $this->controller(['registerId' => 1, 'schemaId' => '404'])->create();
 		$this->assertSame(404, $response->getStatus());
 		$this->assertSame(['error' => 'Schema not found or not accessible'], $response->getData());
@@ -136,7 +137,7 @@ class NotificationSubscriptionsControllerBehaviourTest extends TestCase {
 	public function testCreateSubscribesAndAnswers201(): void {
 		$this->registers->expects($this->once())->method('find')->with(1)->willReturn(new Register());
 		$this->schemas->expects($this->once())->method('find')->with(2)->willReturn(new Schema());
-		$this->mapper->expects($this->once())->method('subscribe')->with('alice', 1, 2)->willReturn(self::subscription(1, 2));
+		$this->mapper->expects($this->once())->method('subscribeTo')->with(new SubscriptionKey(userId: 'alice', registerId: 1, schemaId: 2))->willReturn(self::subscription(1, 2));
 		$response = $this->controller(['registerId' => '1', 'schemaId' => 2])->create();
 		$this->assertSame(201, $response->getStatus());
 		$this->assertSame(1, $response->getData()['registerId']);
@@ -146,7 +147,7 @@ class NotificationSubscriptionsControllerBehaviourTest extends TestCase {
 	public function testCreateIgnoresNonNumericAndEmptyIdsAndSkipsLookups(): void {
 		$this->registers->expects($this->never())->method('find');
 		$this->schemas->expects($this->never())->method('find');
-		$this->mapper->expects($this->once())->method('subscribe')->with('alice', null, null)
+		$this->mapper->expects($this->once())->method('subscribeTo')->with(new SubscriptionKey(userId: 'alice', registerId: null, schemaId: null))
 			->willThrowException(new InvalidArgumentException('needs a scope'));
 		$response = $this->controller(['registerId' => 'abc', 'schemaId' => ''])->create();
 		$this->assertSame(422, $response->getStatus());
@@ -154,7 +155,7 @@ class NotificationSubscriptionsControllerBehaviourTest extends TestCase {
 	}
 
 	public function testDestroyUnsubscribesWithCoercedIds(): void {
-		$this->mapper->expects($this->once())->method('unsubscribe')->with('alice', null, 7)->willReturn(false);
+		$this->mapper->expects($this->once())->method('unsubscribeFrom')->with(new SubscriptionKey(userId: 'alice', registerId: null, schemaId: 7))->willReturn(false);
 		$response = $this->controller(['registerId' => '', 'schemaId' => '7'])->destroy();
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame(['deleted' => false], $response->getData());

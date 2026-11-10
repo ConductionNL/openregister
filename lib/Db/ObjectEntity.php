@@ -2277,46 +2277,50 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * it when a state declared the freeze, and is null when a person did.
 	 *
 	 * @param IUserSession $userSession Current user session.
-	 * @param string|null $reason Why the object was frozen.
-	 * @param string|null $state The lifecycle state that declared the freeze.
-	 * @param string|null $actor Explicit actor, for a freeze declared by a
-	 *                           lifecycle transition running without a session.
+	 * @param string|null  $reason      Why the object was frozen.
 	 *
-	 * @throws Exception If no user is logged in and no actor was named.
+	 * @throws Exception If no user is logged in.
 	 *
 	 * @return static Returns the entity.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function freeze(
-		IUserSession $userSession,
-		?string $reason = null,
-		?string $state = null,
-		?string $actor = null,
-	): static {
-		$userId = $actor;
-		if ($userId === null) {
-			$currentUser = $userSession->getUser();
-			if ($currentUser === null) {
-				throw new Exception('No user logged in');
-			}
+	public function freeze(IUserSession $userSession, ?string $reason = null): static {
+		return $this->freezeWith(userSession: $userSession, terms: new FreezeTerms(reason: $reason));
+	}//end freeze()
 
-			$userId = $currentUser->getUID();
+	/**
+	 * Freeze the object on the given terms: the reason and, when a lifecycle
+	 * state declared the freeze, that state.
+	 *
+	 * @param IUserSession $userSession Current user session.
+	 * @param FreezeTerms  $terms       Why the object was frozen, and the state that declared it.
+	 *
+	 * @throws Exception If no user is logged in.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function freezeWith(IUserSession $userSession, FreezeTerms $terms): static {
+		$currentUser = $userSession->getUser();
+		if ($currentUser === null) {
+			throw new Exception('No user logged in');
 		}
 
 		$now = new DateTime();
 
 		$this->setFrozen(
 			[
-				'by' => $userId,
+				'by' => $currentUser->getUID(),
 				'at' => $now->format('c'),
-				'reason' => $reason,
-				'state' => $state,
+				'reason' => $terms->reason,
+				'state' => $terms->state,
 			]
 		);
 
 		return $this;
-	}//end freeze()
+	}//end freezeWith()
 
 	/**
 	 * Unfreeze the object.
