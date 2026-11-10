@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use Psr\Log\LoggerInterface;
@@ -133,11 +134,7 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 			// seeded from its payload). Only resolve one when the run names it.
 			$subject = null;
 			if (trim((string)$run->getSubjectUuid()) !== '') {
-				$subject = $this->resolvers->resolveSubject(
-					(string)$run->getSubjectUuid(),
-					(string)$run->getSubjectRegister(),
-					(string)$run->getSubjectSchema()
-				);
+				$subject = $this->resolvers->resolveObject(ref: new ObjectRef(register: (string)$run->getSubjectRegister(), schema: (string)$run->getSubjectSchema(), id: (string)$run->getSubjectUuid()));
 
 				if ($subject === null) {
 					$run->setStatus(FlowRun::STATUS_FAILED);
@@ -220,11 +217,7 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 
 		$subject = null;
 		if (trim((string)$run->getSubjectUuid()) !== '') {
-			$subject = $this->resolvers->resolveSubject(
-				(string)$run->getSubjectUuid(),
-				(string)$run->getSubjectRegister(),
-				(string)$run->getSubjectSchema()
-			);
+			$subject = $this->resolvers->resolveObject(ref: new ObjectRef(register: (string)$run->getSubjectRegister(), schema: (string)$run->getSubjectSchema(), id: (string)$run->getSubjectUuid()));
 
 			if ($subject === null) {
 				$run->setStatus(FlowRun::STATUS_FAILED);

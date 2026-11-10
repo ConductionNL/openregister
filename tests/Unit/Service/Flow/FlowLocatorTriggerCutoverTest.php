@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
@@ -146,7 +147,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		$this->assertSame(
 			['published-1'],
-			$locator->flowsForTrigger('object.created', 'dossiq', 'case'),
+			$locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'dossiq', schema: 'case')),
 			'an enabled-but-unpublished flow must not be offered to the queue; its published sibling must be'
 		);
 	}//end testAnUnpublishedFlowIsFilteredFromTheColumnFallback()
@@ -174,7 +175,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		$this->assertSame(
 			['legacy-1'],
-			$locator->flowsForTrigger('object.created', 'dossiq', 'case'),
+			$locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'dossiq', schema: 'case')),
 			'an unreadable version table must not silence the engine'
 		);
 	}//end testAnUnreadableVersionTableFailsOpen()
@@ -194,7 +195,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		$this->assertSame(
 			['legacy-1'],
-			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
+			$this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding')),
 			'an unconverted flow stopped firing — the column fallback did not apply'
 		);
 
@@ -213,7 +214,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		$this->assertSame(
 			['converted-1'],
-			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding')
+			$this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding'))
 		);
 
 	}//end testAConvertedFlowFiresFromTheIndex()
@@ -238,7 +239,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		$this->assertSame(
 			[],
-			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
+			$this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding')),
 			'a converted flow fired from a trigger column its nodes no longer declare'
 		);
 
@@ -257,7 +258,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		$this->assertSame(
 			['both-1'],
-			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
+			$this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding')),
 			'one flow was started twice by a single event'
 		);
 
@@ -281,7 +282,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		$this->assertSame(
 			['legacy-1'],
-			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
+			$this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding')),
 			'an unreadable index silenced the engine instead of falling back'
 		);
 
@@ -301,7 +302,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		$this->logger->expects($this->atLeastOnce())->method('warning');
 
-		$this->assertSame([], $this->locator->flowsForTrigger('object.created', 'hydra', 'finding'));
+		$this->assertSame([], $this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding')));
 
 	}//end testAStaleIndexRowIsReported()
 
@@ -322,7 +323,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		$this->logger->expects($this->atLeastOnce())->method('warning');
 
-		$this->assertSame([], $this->locator->flowsForTrigger('object.created', 'hydra', 'finding'));
+		$this->assertSame([], $this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding')));
 
 	}//end testAnOwnerlessFlowFromTheIndexIsRefusedNotDispatched()
 
