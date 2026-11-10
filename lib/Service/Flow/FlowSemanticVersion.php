@@ -63,6 +63,21 @@ class FlowSemanticVersion implements FlowSemanticVersionInterface {
 	 */
 	public const FIRST = '1.0.0';
 
+	/**
+	 * The preview of a flow's first publish: nothing removed, version FIRST.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const FIRST_PREVIEW = [
+		'verdict'      => FlowGraphDiff::MINOR,
+		'next'         => self::FIRST,
+		'removed'      => '',
+		'removedNodes' => [],
+		'removedEdges' => [],
+		'removedKeys'  => [],
+		'first'        => true,
+	];
+
 	// The provenance values (SOURCE_DERIVED, SOURCE_BACKFILL) are declared on FlowSemanticVersionInterface.
 
 	/**
@@ -275,15 +290,7 @@ class FlowSemanticVersion implements FlowSemanticVersionInterface {
 			// Nothing to have broken. The first publish is not "minor over
 			// nothing", it is the first publish, and saying so is the
 			// difference between a number and an explanation.
-			return [
-				'verdict'      => FlowGraphDiff::MINOR,
-				'next'         => self::FIRST,
-				'removed'      => '',
-				'removedNodes' => [],
-				'removedEdges' => [],
-				'removedKeys'  => [],
-				'first'        => true,
-			];
+			return self::FIRST_PREVIEW;
 		}
 
 		$comparison = $this->diff->compare(published: $revision->published, candidate: $revision->candidate);
