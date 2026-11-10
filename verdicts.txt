@@ -1272,3 +1272,4 @@
 8447 eaa5fd65938555b0945123441d1371d3faa84665 APPROVE integrator: main merge on top of 80ca883f585f913f870723b7ccd2f21c19a04513, conflicts only in use lines or map entries of lib/Listener/LifecycleEditReader.php,tests/Unit/Listener/LifecycleEditReaderBehaviourTest.php,
 8453 888b6c6f518ed69aff68ebd9112467de4b02517b APPROVE integrator: main merge on top of 3230e417553d27e759a253808cbe9e1cc9641203, conflicts only in use lines or map entries of lib/Service/Object/SaveObject.php,
 8424 b5f57a363c7d7f5f966b36a80c79e708ee3a10ae APPROVE integrator: main merge on top of 77494941e50d497bd417386e62b1e48cd4a1db10, conflicts only in use lines or map entries of lib/Controller/OperationsConsoleController.php,
+8470 75a31c8476c8371307f90e5b5bd7f77d41d9d417 APPROVE integrator: main merge on top of 873070aee8d86487285a1cb0b95541b28ab69fba, conflicts only in use lines or map entries of lib/Db/MagicMapper.php,
