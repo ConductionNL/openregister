@@ -392,47 +392,83 @@ export default {
 						`/apps/openregister/api/register-descriptors/${row.appId}/${row.slug}/import`,
 					),
 				)
-				const replaced = Array.isArray(response?.data?.replaced)
-					? response.data.replaced
-					: []
-				const count =
-					response?.data?.counts?.authorizationReplaced ?? replaced.length
-				let message = this.t(
-					'openregister',
-					'{register} was imported from {app}.',
-					{
-						register: row.title,
-						app: row.appId,
-					},
-				)
-				if (count > 0 || replaced.length > 0) {
-					message +=
-						' '
-						+ this.t(
-							'openregister',
-							'Authorization taken from the file over a local change: {count}.',
-							{ count: Math.max(count, replaced.length) },
-						)
-				}
-				this.outcome = { ok: true, message, replaced }
+				this.outcome = this.importedOutcome(row, response?.data)
 				// Re-read rather than patch the row locally: the inventory is
 				// the authority on what is now present, and a locally-optimistic
 				// row would report success the import may not have achieved.
 				await this.load()
 			} catch (e) {
-				this.outcome = {
-					ok: false,
-					message: this.t('openregister', 'Import failed: {reason}', {
-						reason:
-							e?.response?.data?.reason
-							?? e?.response?.data?.error
-							?? e.message,
-					}),
-
-					replaced: [],
-				}
+				this.outcome = this.failedImportOutcome(e)
 			} finally {
 				this.busy = ''
+			}
+		},
+
+		/**
+		 * The outcome of an import the server accepted: which register came
+		 * from which app, and the authorization blocks it took from the file
+		 * over a local change.
+		 *
+		 * @param {object} row The re-imported row.
+		 * @param {object|undefined} data The import answer.
+		 * @return {{ok: boolean, message: string, replaced: Array}} The outcome.
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		importedOutcome(row, data) {
+			const replaced = Array.isArray(data?.replaced) ? data.replaced : []
+			const count = data?.counts?.authorizationReplaced ?? replaced.length
+			let message = this.t(
+				'openregister',
+				'{register} was imported from {app}.',
+				{
+					register: row.title,
+					app: row.appId,
+				},
+			)
+			if (count > 0 || replaced.length > 0) {
+				message += ' ' + this.takenOverNote(Math.max(count, replaced.length))
+			}
+			return { ok: true, message, replaced }
+		},
+
+		/**
+		 * The note on how many authorization blocks the import took from the
+		 * file over a local change.
+		 *
+		 * @param {number} count The number of blocks taken over.
+		 * @return {string} The note.
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		takenOverNote(count) {
+			return this.t(
+				'openregister',
+				'Authorization taken from the file over a local change: {count}.',
+				{ count },
+			)
+		},
+
+		/**
+		 * The outcome of an import that failed, worded from the server's reason
+		 * or error, else the request's own message.
+		 *
+		 * @param {Error} e The failure.
+		 * @return {{ok: boolean, message: string, replaced: Array}} The outcome.
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		failedImportOutcome(e) {
+			return {
+				ok: false,
+				message: this.t('openregister', 'Import failed: {reason}', {
+					reason:
+						e?.response?.data?.reason
+						?? e?.response?.data?.error
+						?? e.message,
+				}),
+
+				replaced: [],
 			}
 		},
 	},
