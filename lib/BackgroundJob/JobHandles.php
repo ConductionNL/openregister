@@ -115,6 +115,11 @@ final class JobHandles {
 	public const OBJECT_TEXT_EXTRACTION = ObjectTextExtractionJob::class;
 
 	/**
+	 * Object text extraction job for a chunk of objects (deferred by ObjectChangeListener).
+	 */
+	public const OBJECT_TEXT_EXTRACTION_CHUNK = ObjectTextExtractionChunkJob::class;
+
+	/**
 	 * Related retention recalculation job.
 	 */
 	public const RELATED_RETENTION_RECALCULATION = RelatedRetentionRecalculationJob::class;

@@ -15,7 +15,9 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Listener\ObjectChangeListener;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
 use OCP\BackgroundJob\IJobList;
+use OCP\IAppConfig;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -190,7 +192,10 @@ class ObjectChangeListenerGoldenTest extends TestCase {
 			default => $this->createMock(Event::class),
 		};
 
-		(new ObjectChangeListener($extract, $settingsService, $jobList, $logger))->handle($event);
+		// Kill switch on (`listenerDeferral=inline`): the per-object behaviour this recording holds.
+		$deferral = $this->createStub(ListenerDeferralInterface::class);
+		$deferral->method('isDeferralEnabled')->willReturn(false);
+		(new ObjectChangeListener($extract, $settingsService, $jobList, $logger, $deferral, $this->createStub(IAppConfig::class)))->handle($event);
 		$trace[] = ['reads', $reads];
 
 		$this->assertSame(self::golden()[$this->dataName()], $trace);
