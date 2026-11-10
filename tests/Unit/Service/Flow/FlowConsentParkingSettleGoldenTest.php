@@ -137,7 +137,7 @@ class FlowConsentParkingSettleGoldenTest extends TestCase {
 	 *
 	 * @return FlowRun The run.
 	 */
-	private function run(array|string|null $record): FlowRun {
+	private function parkedWith(array|string|null $record): FlowRun {
 		$run = new FlowRun();
 		$run->setUuid('run-1');
 		$run->setStatus(FlowRun::STATUS_AWAITING_CONSENT);
@@ -149,7 +149,7 @@ class FlowConsentParkingSettleGoldenTest extends TestCase {
 		$run->setContext($context);
 
 		return $run;
-	}//end run()
+	}//end parkedWith()
 
 	/**
 	 * A complete record waiting since `$hoursAgo`.
@@ -173,7 +173,7 @@ class FlowConsentParkingSettleGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testARecordThatIsNotAnArrayFailsTheRun(): void {
-		$run = $this->run('broken');
+		$run = $this->parkedWith('broken');
 
 		$this->assertSame(['released' => 0, 'failed' => 1], $this->sweep($run, null));
 		$this->assertSame(FlowRun::STATUS_FAILED, $run->getStatus());
@@ -194,7 +194,7 @@ class FlowConsentParkingSettleGoldenTest extends TestCase {
 		foreach ([['principal' => 'alice', 'actingAs' => '  '], ['actingAs' => 'mayor']] as $record) {
 			$this->requests = [];
 			$this->logged = [];
-			$run = $this->run($record);
+			$run = $this->parkedWith($record);
 
 			$this->assertSame(['released' => 0, 'failed' => 1], $this->sweep($run, null));
 			$this->assertSame(
@@ -215,7 +215,7 @@ class FlowConsentParkingSettleGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheDelegationIsAskedWithTheTrimmedParties(): void {
-		$this->sweep($this->run($this->record(hoursAgo: 1)), DelegationVerdict::granted(new DelegationGrant()));
+		$this->sweep($this->parkedWith($this->record(hoursAgo: 1)), DelegationVerdict::granted(new DelegationGrant()));
 
 		$this->assertCount(1, $this->requests);
 		$this->assertSame('alice', $this->requests[0]->principal);
@@ -230,7 +230,7 @@ class FlowConsentParkingSettleGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAllowedDelegationReleasesTheRun(): void {
-		$run = $this->run($this->record(hoursAgo: 1));
+		$run = $this->parkedWith($this->record(hoursAgo: 1));
 
 		$this->assertSame(
 			['released' => 1, 'failed' => 0],
@@ -250,7 +250,7 @@ class FlowConsentParkingSettleGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnreadableStoreLeavesTheRunParkedAndWarns(): void {
-		$run = $this->run($this->record(hoursAgo: 100));
+		$run = $this->parkedWith($this->record(hoursAgo: 100));
 
 		$this->assertSame(['released' => 0, 'failed' => 0], $this->sweep($run, null));
 		$this->assertSame(FlowRun::STATUS_AWAITING_CONSENT, $run->getStatus());
@@ -268,11 +268,11 @@ class FlowConsentParkingSettleGoldenTest extends TestCase {
 	public function testAPendingAnswerWaitsThenFailsClosed(): void {
 		$pending = DelegationVerdict::refused(DelegationVerdict::REASON_PENDING, 'still waiting.');
 
-		$young = $this->run($this->record(hoursAgo: 71));
+		$young = $this->parkedWith($this->record(hoursAgo: 71));
 		$this->assertSame(['released' => 0, 'failed' => 0], $this->sweep($young, $pending));
 		$this->assertSame(FlowRun::STATUS_AWAITING_CONSENT, $young->getStatus());
 
-		$old = $this->run($this->record(hoursAgo: 73));
+		$old = $this->parkedWith($this->record(hoursAgo: 73));
 		$this->assertSame(['released' => 0, 'failed' => 1], $this->sweep($old, $pending));
 		$this->assertSame(
 			'Nobody answered within 72 hours, so this run was not performed. An unanswered request is not consent.',
@@ -286,7 +286,7 @@ class FlowConsentParkingSettleGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnyOtherRefusalFailsTheRunWithItsReason(): void {
-		$run = $this->run($this->record(hoursAgo: 1));
+		$run = $this->parkedWith($this->record(hoursAgo: 1));
 
 		$outcome = $this->sweep(
 			$run,
