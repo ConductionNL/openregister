@@ -77,7 +77,7 @@ class UserSettingsControllerA24GoldenTest extends TestCase {
 			);
 		}
 
-		$this->controller = UserSettingsControllerFactory::create('openregister', $this->request, $this->gitHub, $this->userSession, $logger);
+		$this->controller = UserSettingsControllerFactory::create($this->request, $this->gitHub, $this->userSession, $logger);
 	}
 
 	private function signedIn(): void {

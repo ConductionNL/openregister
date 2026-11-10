@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OC\DB\Exceptions\DbalException;
 use OCA\OpenRegister\Controller\OrganisationController;
@@ -446,7 +447,7 @@ class OrganisationSlugConflictTest extends TestCase {
 		return new OrganisationMapper(
 			db: $database->idbConnection(),
 			logger: new NullLogger(),
-			eventDispatcher: $this->createMock(IEventDispatcher::class),
+			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
 			configs: new ConfigServices($this->createMock(IAppConfig::class), $this->createMock(IConfig::class))
 		);
 	}//end mapperOn()
@@ -461,7 +462,12 @@ class OrganisationSlugConflictTest extends TestCase {
 			private int $lookups = 0;
 
 			public function __construct($db, $dispatcher, $appConfig, $config) {
-				parent::__construct(db: $db, logger: new NullLogger(), eventDispatcher: $dispatcher, configs: new ConfigServices($appConfig, $config));
+				parent::__construct(
+					db: $db,
+					logger: new NullLogger(),
+					entityEvents: new EntityEventPublisher(dispatcher: $dispatcher),
+					configs: new ConfigServices($appConfig, $config)
+				);
 			}
 
 			public function findBySlug(string $slug): Organisation {
