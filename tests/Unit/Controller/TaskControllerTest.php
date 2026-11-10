@@ -56,6 +56,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Service\Task\TaskInboxPage;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick;
 
 /**
  * HTTP status and body translation for every task route.
@@ -492,7 +494,7 @@ class TaskControllerTest extends TestCase {
 	 */
 	public function testEditPassesTheBodyAsTheChanges(): void {
 		$this->tasks->expects($this->once())->method('edit')
-			->with(uuid: 't-1', changes: ['title' => 'x'], actor: 'alice')
+			->with(new TaskActorRef(uuid: 't-1', actor: 'alice'), ['title' => 'x'])
 			->willReturn($this->task());
 
 		$response = $this->controller->edit(uuid: 't-1');
@@ -758,8 +760,8 @@ class TaskControllerTest extends TestCase {
 	public function testCheckItemParsesItsFlag(): void {
 		$seen = [];
 		$this->tasks->method('checkChecklistItem')->willReturnCallback(
-			function (string $uuid, string $itemId, bool $checked) use (&$seen): Task {
-				$seen[] = $checked;
+			function (TaskActorRef $ref, ChecklistTick $tick) use (&$seen): Task {
+				$seen[] = $tick->checked;
 
 				return $this->task();
 			}

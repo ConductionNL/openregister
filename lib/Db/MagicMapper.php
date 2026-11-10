@@ -120,6 +120,7 @@ use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
@@ -1972,10 +1973,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 		}
 
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
-		$rows = $this->mergeUnionBatchRows(rows: $rows, query: $query, isPostgres: $isPostgres);
+		$rows = $this->mergeUnionBatchRows(rows: $rows, query: $query);
 
 		$this->logger->debug(
 			message: '[MagicMapper] Cross-batch union search merged',
@@ -2225,14 +2223,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * the merged set, which is the whole point of the batching: the page has
 	 * to be the search's page, not the first batch's.
 	 *
-	 * @param array $rows       Rows from every batch, in batch order.
-	 * @param array $query      The caller's search parameters (offset and limit).
-	 * @param bool  $isPostgres Whether the platform is PostgreSQL.
+	 * @param array $rows  Rows from every batch, in batch order.
+	 * @param array $query The caller's search parameters (offset and limit).
 	 *
 	 * @return array The merged page.
 	 */
-	private function mergeUnionBatchRows(array $rows, array $query, bool $isPostgres): array {
-		$order = new MagicUnionOrder(isPostgres: $isPostgres);
+	private function mergeUnionBatchRows(array $rows, array $query): array {
+		$order = new MagicUnionOrder(isPostgres: $this->isPostgresPlatform());
 
 		return $this->unionPage(query: $query)->cut(rows: $order->sorted(rows: $rows, orderKeys: $order->keys(query: $query)));
 	}//end mergeUnionBatchRows()
@@ -4222,8 +4219,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param IQueryBuilder     $qb     The lookup query.
 	 * @param MagicObjectLookup $lookup The lookup.
 	 *
-	 * @throws DoesNotExistException If no row matches, or the query or conversion fails.
+	 * @throws DoesNotExistException If no row matches, the row does not convert, or the table is absent.
 	 * @throws MultipleObjectsReturnedException If the identifier is ambiguous.
+	 * @throws ObjectLookupFailedException If the query fails for another reason.
 	 *
 	 * @return ObjectEntity The found object.
 	 */
@@ -4258,7 +4256,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				]
 			);
 
-			throw new DoesNotExistException($e->getMessage());
+			// Only an absent table means the object is absent; any other failure leaves it unknown.
+			if ($e instanceof \OCP\DB\Exception && $e->getReason() === \OCP\DB\Exception::REASON_DATABASE_OBJECT_NOT_FOUND) {
+				throw new DoesNotExistException($e->getMessage());
+			}
+
+			throw new ObjectLookupFailedException(message: $e->getMessage(), code: 0, previous: $e);
 		}//end try
 	}//end fetchSingleObject()
 

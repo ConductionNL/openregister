@@ -18,6 +18,7 @@ use OCA\OpenRegister\Listener\PartyMergeListener;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyMergeRules;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -200,7 +201,7 @@ class PartyMergeListenerGoldenTest extends TestCase {
 		$moved = $this->link(objectUuid: 'case-2', partyUuid: 'party-b', role: 'belanghebbende');
 		$this->links->method('findByPartyUuid')->willReturn([$duplicate, $moved]);
 		$this->links->method('findByObjectContactAndRole')->willReturnCallback(
-			fn (string $objectUuid): ?ContactLink => ['case-1' => $held][$objectUuid] ?? null
+			fn (PersonLinkRef $ref): ?ContactLink => ['case-1' => $held][$ref->objectUuid] ?? null
 		);
 		$this->objects->expects($this->never())->method('saveObject');
 

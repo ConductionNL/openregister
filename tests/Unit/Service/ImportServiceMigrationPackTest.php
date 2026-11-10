@@ -45,6 +45,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportMapping;
 
 class ImportServiceMigrationPackTest extends TestCase {
 	use PassThroughL10nTrait;
@@ -150,7 +153,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -184,7 +193,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -227,7 +242,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -259,7 +280,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->validateObjectHandler->method('validateObject')->willReturn($validResult);
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack, dryRun: true);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack, dryRun: true),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -288,7 +315,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObjects');
 
 		try {
-			$result = $this->service->importFromCsv($file, $register, $schema, pack: $pack, dryRun: true);
+			$result = $this->service->importFromCsv(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack, dryRun: true),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -351,7 +384,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromJson($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromJson(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -388,7 +427,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 			);
 
 		try {
-			$result = $this->service->importFromJson($file, $register, $schema, pack: $pack);
+			$result = $this->service->importFromJson(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
@@ -415,7 +460,13 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObjects');
 
 		try {
-			$result = $this->service->importFromJson($file, $register, $schema, pack: $pack, dryRun: true);
+			$result = $this->service->importFromJson(
+				request: new ImportRequest(
+					filePath: $file,
+					scope: new ImportScope(register: $register, schema: $schema),
+					mapping: new ImportMapping(pack: $pack, dryRun: true),
+				),
+			);
 		} finally {
 			@unlink($file);
 		}
