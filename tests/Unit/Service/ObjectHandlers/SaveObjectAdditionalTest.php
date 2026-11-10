@@ -1353,7 +1353,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://test.com/obj');
 		$this->urlGenerator->method('linkToRoute')->willReturn('/obj');
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(false);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$result = $this->saveObject->saveObject(
 			register: $this->mockRegister,
@@ -1386,7 +1386,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://test.com/obj');
 		$this->urlGenerator->method('linkToRoute')->willReturn('/obj');
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(false);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$result = $this->saveObject->saveObject(
 			register: $this->mockRegister,
@@ -1422,8 +1422,8 @@ class SaveObjectAdditionalTest extends TestCase {
 			->willReturn($newObject);
 
 		// File property detected.
-		$this->filePropertyHandler->method('isFileProperty')
-			->willReturnCallback(function ($value, $schema, $propertyName) {
+		$this->filePropertyHandler->method('isFileInSchema')
+			->willReturnCallback(function ($schema, $propertyName) {
 				return $propertyName === 'logo';
 			});
 

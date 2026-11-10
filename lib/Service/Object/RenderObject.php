@@ -28,6 +28,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use Adbar\Dot;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -2886,8 +2887,7 @@ class RenderObject implements RenderObjectInterface {
 		if ($this->enrichers->derivations->computedFieldHandler->hasComputedProperties($run->schema) === true) {
 			$run->data = $this->enrichers->derivations->computedFieldHandler->evaluateComputedFields(
 				data: $run->data,
-				schema: $run->schema,
-				evaluateOn: 'read'
+				pass: new ComputedPass(schema: $run->schema, evaluateOn: 'read')
 			);
 			$run->entity->setObject($run->data);
 		}
