@@ -2758,7 +2758,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 		}
 
 		if ($request->spec['rowRbac'] === true) {
-			$rowPredicate = $this->magicMapper->rbacRowPredicateSql(schema: $request->schema, action: 'read', register: $request->register);
+			$rowPredicate = $this->magicMapper->rbacRowPredicateSql(schema: $request->schema, register: $request->register);
 			if ($rowPredicate !== null) {
 				$query->where(predicate: $rowPredicate);
 			}
