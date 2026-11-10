@@ -46,6 +46,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * Drives the services through the collaborators they build.
@@ -101,7 +102,7 @@ class TimelineEntryGoldenTest extends TestCase {
 		);
 
 		$service = $this->entryService(mapper: $mapper);
-		$service->listForObject($this->object(), 'public', 5, 2);
+		$service->listForObject($this->object(), new ListQuery(limit: 5, offset: 2, filters: ['visibility' => 'public']));
 		$service->listForObject($this->object());
 
 		$this->assertSame(['find ["object-1","public",5,2]', 'find ["object-1",null,50,0]'], $this->log);

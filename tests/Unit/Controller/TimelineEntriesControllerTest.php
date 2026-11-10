@@ -45,6 +45,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * TimelineEntriesControllerTest.
@@ -132,7 +133,7 @@ class TimelineEntriesControllerTest extends TestCase {
 		// The filter reaches the READ, so it cannot be dropped by omitting a
 		// query parameter.
 		$this->entries->expects($this->once())->method('listForObject')
-			->with($this->anything(), 'public', 50, 0)
+			->with($this->anything(), $this->callback(static fn (ListQuery $q): bool => [$q->filters['visibility'] ?? null, $q->limit, $q->offset ?? 0] === ['public', 50, 0]))
 			->willReturn([]);
 
 		$data = $this->controller->index('zaken', 'zaak', 'case-1')->getData();

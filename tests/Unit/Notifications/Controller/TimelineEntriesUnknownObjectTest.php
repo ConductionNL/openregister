@@ -39,6 +39,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * TimelineEntriesUnknownObjectTest.
@@ -105,7 +106,7 @@ class TimelineEntriesUnknownObjectTest extends TestCase {
 		$this->objects->expects($this->once())->method('setObject')->with('11111111-1111-4111-8111-111111111111');
 		$this->objects->method('getObject')->willReturn($object);
 		$this->entries->expects($this->once())->method('listForObject')
-			->with($object, $this->anything(), 50, 0)
+			->with($object, $this->callback(static fn (ListQuery $q): bool => [$q->limit, $q->offset] === [50, 0]))
 			->willReturn([]);
 
 		$response = $this->controller->index('reg', 'schema', '11111111-1111-4111-8111-111111111111');
