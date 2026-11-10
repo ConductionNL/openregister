@@ -302,18 +302,10 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	 */
 	private function documentOf(TransitionAttempt $attempt): array {
 		$move = $attempt->move;
-		$user = $this->userSession->getUser();
-		$uid = '';
-		$groups = [];
-		if ($user !== null) {
-			$uid = $user->getUID();
-			$groups = $this->groupManager->getUserGroupIds($user);
-		}
-
 		return [
 			'object' => $attempt->write->newData,
 			'previous' => $attempt->write->oldData,
-			'user' => ['uid' => $uid, 'groups' => $groups],
+			'user' => ConditionUser::of(userSession: $this->userSession, groupManager: $this->groupManager),
 			'transition' => ['action' => $move->action, 'from' => $move->from, 'to' => $move->to],
 		];
 	}//end documentOf()
