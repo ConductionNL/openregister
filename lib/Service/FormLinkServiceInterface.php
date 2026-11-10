@@ -103,10 +103,8 @@ interface FormLinkServiceInterface {
 	 * `(objectUuid, formId)` pair, the existing row is returned (no
 	 * duplicate is inserted, no exception is raised).
 	 *
-	 * @param string $objectUuid The OR object UUID.
-	 * @param integer $registerId The OR register id.
-	 * @param integer $formId The NC Forms form id.
-	 * @param integer $schemaId Optional OR schema id.
+	 * @param FormLinkScope $scope  The object, register and schema.
+	 * @param integer       $formId The NC Forms form id.
 	 *
 	 * @return FormLink The created (or existing) link row.
 	 *
@@ -114,21 +112,13 @@ interface FormLinkServiceInterface {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the form-link contract is owned by the integration-forms capability.
 	 */
-	public function linkForm(
-		string $objectUuid,
-		int $registerId,
-		int $formId,
-		?int $schemaId = null,
-	): FormLink;
+	public function linkFormTo(FormLinkScope $scope, int $formId): FormLink;
 
 	/**
 	 * Link a specific NC Forms submission to an OR object.
 	 *
-	 * @param string $objectUuid The OR object UUID.
-	 * @param integer $registerId The OR register id.
-	 * @param integer $formId The parent form id.
-	 * @param integer $submissionId The submission id.
-	 * @param integer $schemaId Optional OR schema id.
+	 * @param FormLinkScope     $scope      The object, register and schema.
+	 * @param FormSubmissionRef $submission The form and submission ids.
 	 *
 	 * @return FormLink The created (or existing) link row.
 	 *
@@ -136,13 +126,7 @@ interface FormLinkServiceInterface {
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the submission-link contract is owned by the integration-forms capability.
 	 */
-	public function linkFormSubmission(
-		string $objectUuid,
-		int $registerId,
-		int $formId,
-		int $submissionId,
-		?int $schemaId = null,
-	): FormLink;
+	public function linkSubmissionTo(FormLinkScope $scope, FormSubmissionRef $submission): FormLink;
 
 	/**
 	 * Unlink a form (and every submission-level row beneath it) from an object.
