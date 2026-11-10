@@ -66,6 +66,7 @@ use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
+use OCA\OpenRegister\Service\File\FileOverwrite;
 use OCA\OpenRegister\Service\File\FileContentHandlers;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
 use OCA\OpenRegister\Service\File\FileLifecycleHandlers;
@@ -1239,21 +1240,36 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *   (updates a file's content and tags within an object's folder)
 	 */
 	public function updateFile(string|int $filePath, mixed $content = null, array $tags = [], ?ObjectEntity $object = null): File {
+		return $this->overwriteFile(overwrite: new FileOverwrite(filePath: $filePath, content: $content, tags: $tags, object: $object));
+	}//end updateFile()
+
+	/**
+	 * Overwrite an existing file in NextCloud, as one overwrite.
+	 *
+	 * @param FileOverwrite $overwrite The file, its new content, its tags and the object searched first.
+	 *
+	 * @throws Exception If the file is locked, doesn't exist or if file operations fail.
+	 *
+	 * @return File The updated file.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#file-update-guards-locks-preserves-object-tags-and-persists-or-side-metadata-separately
+	 */
+	public function overwriteFile(FileOverwrite $overwrite): File {
 		// Reject content/metadata writes when the file is locked by another
 		// user. Only resolve the lock check when we can identify a numeric
 		// file ID -- string paths fall through (the lock map is keyed on ID
 		// and unresolvable paths cannot be safely guarded here).
-		if (is_int($filePath) === true) {
-			$this->fileLockHandler->assertCanModify($filePath);
+		if (is_int($overwrite->filePath) === true) {
+			$this->fileLockHandler->assertCanModify($overwrite->filePath);
 		}
 
 		return $this->updateFileHandler->updateFile(
-			filePath: $filePath,
-			content: $content,
-			tags: $tags,
-			object: $object
+			filePath: $overwrite->filePath,
+			content: $overwrite->content,
+			tags: $overwrite->tags,
+			object: $overwrite->object
 		);
-	}//end updateFile()
+	}//end overwriteFile()
 
 	/**
 	 * Update a file's OpenRegister-side metadata.
