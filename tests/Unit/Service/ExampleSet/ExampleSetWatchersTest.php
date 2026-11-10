@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
@@ -103,10 +105,10 @@ class ExampleSetWatchersTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame(expected: [], actual: $this->follows, message: 'the check writes no follow');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: ['alpha/esra-volgt' => 'created'], actual: $report['watchers']);
 
@@ -116,7 +118,7 @@ class ExampleSetWatchersTest extends ExampleSetTestCase {
 		$this->assertFalse(condition: $follow->notifies());
 		$this->assertSame(expected: 'cases', actual: $follow->getRegister());
 
-		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame(expected: ['alpha/esra-volgt' => 'kept'], actual: $again['watchers']);
 		$this->assertCount(expectedCount: 1, haystack: $this->follows);
 
@@ -134,10 +136,10 @@ class ExampleSetWatchersTest extends ExampleSetTestCase {
 	public function testAFollowThatDisappearedIsReportedMissing(): void {
 		$this->caseWithWatchers(watchers: [['key' => 'w', 'data' => ['user' => '{{cast:esra.uid}}', 'objectUuid' => '{{object:case-1.id}}']]]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->follows = [];
-		$report        = $this->installer->install(plan: $plan, today: $this->today());
+		$report        = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertContains(needle: 'watcher alpha/w', haystack: $report['missing']);
 		$this->assertFalse(condition: $report['ok']);
@@ -156,7 +158,7 @@ class ExampleSetWatchersTest extends ExampleSetTestCase {
 	public function testACheckRefusesAFaultyFollowAndWritesNothing(array $data, string $reason): void {
 		$this->caseWithWatchers(watchers: [['key' => 'bad', 'data' => $data]]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: 'watcher "bad"', haystack: $refusals[0]);

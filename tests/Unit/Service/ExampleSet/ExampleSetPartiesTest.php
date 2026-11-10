@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
@@ -106,10 +108,10 @@ class ExampleSetPartiesTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame(expected: [], actual: $this->partyLinks, message: 'the check links no party');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: ['alpha/gemachtigde' => 'created'], actual: $report['parties']);
 
@@ -121,7 +123,7 @@ class ExampleSetPartiesTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 7, actual: $link['registerId']);
 		$this->assertArrayNotHasKey(key: 'objectUuid', array: $link['payload']);
 
-		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame(expected: ['alpha/gemachtigde' => 'kept'], actual: $again['parties']);
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -141,10 +143,10 @@ class ExampleSetPartiesTest extends ExampleSetTestCase {
 	public function testARefreshWritesTheLinkAgainWhereItIs(): void {
 		$row = ['objectUuid' => '{{object:case-1.id}}', 'partyUuid' => 'party-vanwijk', 'role' => 'gemachtigde', 'note' => 'Awb 2:1'];
 		$this->caseWithParties(parties: [['key' => 'gemachtigde', 'data' => $row]]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->caseWithParties(parties: [['key' => 'gemachtigde', 'data' => ['note' => 'Machtiging tot 31 december'] + $row]]);
-		$report = $this->installer->install(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame('refreshed', $report['parties']['alpha/gemachtigde']);
@@ -162,7 +164,7 @@ class ExampleSetPartiesTest extends ExampleSetTestCase {
 		$this->caseWithParties(
 			parties: [['key' => 'p', 'data' => ['objectUuid' => '{{object:case-1.id}}', 'partyUuid' => 'not-a-party', 'role' => 'melder']]]
 		);
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(expected: [], actual: $this->partyLinks);
 		$this->assertStringContainsString(needle: 'is not a party', haystack: implode("\n", $report['dropped']));
@@ -181,7 +183,7 @@ class ExampleSetPartiesTest extends ExampleSetTestCase {
 	public function testACheckRefusesAFaultyLinkAndLinksNothing(array $data, string $reason): void {
 		$this->caseWithParties(parties: [['key' => 'bad', 'data' => $data]]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: 'party "bad"', haystack: $refusals[0]);

@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
@@ -109,9 +110,9 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame('created', $report['changes']['cases/case-1-result']);
 		$case   = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: [])[0];
@@ -141,12 +142,12 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 			'changes' => [['key' => 'case-1-result', 'register' => 'cases', 'schema' => 'case', 'object' => 'case-1', 'set' => ['result' => '{{object:result-1.id}}']]],
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame('created', $report['changes']['cases/case-1-result']);
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals'], 'the check on the kept object');
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals'], 'the check on the kept object');
 		$this->assertSame([], $this->remover->remove(set: 'demo')['failed'], 'remove writes the text property as text too');
 	}//end testAChangeSendsATextPropertyTheStoreReadsAsAStructureAsText()
 
@@ -165,8 +166,8 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$checked = $this->installer->check(plan: $plan, today: $this->today());
-		$report  = $this->installer->install(plan: $plan, today: $this->today());
+		$checked = $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
+		$report  = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertSame(['cases case' => 1, 'cases result' => 1], $checked['checked']);
 		$this->assertSame(['cases case' => 1], $checked['checkedChanges']);
@@ -192,9 +193,9 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame([], $report['lost']);
 		$this->assertSame('[{"at":"a"},{"at":"b"}]', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $id))['history']);
@@ -220,12 +221,12 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame([], $this->accounts->users, 'the check writes no account');
 
 		// The fake's save validates the user format with no planned accounts,
 		// so the ticket is only written when the accounts are there first.
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$ticket = $this->store->find(table: new RegisterSchemaRef(register: 'crm', schema: 'ticket'), filters: [])[0];
 		$this->assertSame('esra.demir', $ticket['assignee']);
@@ -247,7 +248,7 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 			'changes' => [['key' => 'reassign', 'register' => 'crm', 'schema' => 'ticket', 'object' => 'ticket-2', 'set' => ['owner' => 'ghost.user']]],
 		]);
 
-		$result = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$result = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(
 			[

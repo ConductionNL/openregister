@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
@@ -123,10 +125,10 @@ class ExampleSetDeckCardsTest extends ExampleSetTestCase {
 		$this->caseWithCards(cards: [['key' => 'offerte', 'data' => self::card()]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame(expected: [], actual: $this->deck['cards'], message: 'the check writes no card');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 
 		$board = array_values($this->deck['boards'])[0];
@@ -143,7 +145,7 @@ class ExampleSetDeckCardsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'alpha', actual: $link->getLinkedBy());
 		$this->assertSame(expected: 'Bezig', actual: json_decode((string) $link->getLabels(), true)[0]['title']);
 
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertCount(expectedCount: 1, haystack: $this->deck['cards'], message: 'a kept card is written once');
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -165,7 +167,7 @@ class ExampleSetDeckCardsTest extends ExampleSetTestCase {
 		$this->deck['stacks'][51] = ['board' => 50, 'title' => 'Deze week'];
 		$this->caseWithCards(cards: [['key' => 'offerte', 'data' => self::card()]]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertCount(expectedCount: 1, haystack: $this->deck['boards']);
 		$this->assertSame(expected: 51, actual: array_values($this->deck['cards'])[0]['stack']);
@@ -183,7 +185,7 @@ class ExampleSetDeckCardsTest extends ExampleSetTestCase {
 	public function testWithoutDeckTheCardIsNotWritten(): void {
 		$this->deckInstalled = false;
 		$this->caseWithCards(cards: [['key' => 'offerte', 'data' => self::card()]]);
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(expected: [], actual: $this->deck['cards']);
 		$this->assertStringContainsString(needle: 'Deck is not installed', haystack: (string) json_encode($report));
@@ -201,7 +203,7 @@ class ExampleSetDeckCardsTest extends ExampleSetTestCase {
 	 */
 	public function testACheckRefusesAFaultyCard(array $data, string $reason): void {
 		$this->caseWithCards(cards: [['key' => 'bad', 'data' => $data]]);
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: $reason, haystack: $refusals[0]);

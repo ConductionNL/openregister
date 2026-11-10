@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
@@ -91,13 +93,13 @@ class ExampleSetGroupSubAdminsTest extends ExampleSetTestCase {
 	public function testASubAdminIsMadeKeptAndTakenAway(): void {
 		$this->handlers(subAdmins: ['sanne']);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: ['cases-handlers / sanne.devries' => 'created'], actual: $report['subAdmins']);
 		$this->assertSame(expected: ['sanne.devries'], actual: $this->accounts->subAdmins['cases-handlers']);
 		$this->assertSame(expected: ['esra.demir'], actual: $this->accounts->groups['cases-handlers'], message: 'a sub-admin is not made a member');
 
-		$again = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->assertSame(expected: ['cases-handlers / sanne.devries' => 'kept'], actual: $again['subAdmins']);
 		$this->assertSame(expected: ['sanne.devries'], actual: $this->accounts->subAdmins['cases-handlers']);
 
@@ -116,7 +118,7 @@ class ExampleSetGroupSubAdminsTest extends ExampleSetTestCase {
 	public function testAnUnknownSubAdminRefusesTheSet(): void {
 		$this->handlers(subAdmins: ['nobody']);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertContains(needle: 'group "cases-handlers": sub-admin "nobody" is not a cast person with an account', haystack: $report['refusals']);
 		$this->assertSame(expected: 0, actual: $this->accounts->userCreates);

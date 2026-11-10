@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
 
 /**
@@ -99,14 +100,14 @@ class ExampleSetArchivalTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame(
 			expected: ['notificationLeadDays' => 14, 'destructionListRegister' => 7],
 			actual: json_decode($this->appValues['openregister']['archival'], true),
 			message: 'the check writes nothing'
 		);
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: ['openregister/destruction-lists' => 'created'], actual: $report['archival']);
 		$this->assertSame(
@@ -114,7 +115,7 @@ class ExampleSetArchivalTest extends ExampleSetTestCase {
 			actual: json_decode($this->appValues['openregister']['archival'], true)
 		);
 
-		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame(expected: ['openregister/destruction-lists' => 'kept'], actual: $again['archival']);
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -139,7 +140,7 @@ class ExampleSetArchivalTest extends ExampleSetTestCase {
 			'destructionListSchema'   => '{{schema:destruction-lists/destructionList}}',
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertTrue(condition: $this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue(condition: $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 
 		$setting = json_decode($this->appValues['openregister']['archival'], true);
 		$setting['destructionListSchema'] = 99;
@@ -149,7 +150,7 @@ class ExampleSetArchivalTest extends ExampleSetTestCase {
 		$this->assertSame(expected: ['destructionListSchema' => 99], actual: json_decode($this->appValues['openregister']['archival'], true));
 
 		$this->appValues = [];
-		$this->assertTrue(condition: $this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue(condition: $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 		$this->remover->remove(set: 'demo');
 		$this->assertArrayNotHasKey(key: 'archival', array: ($this->appValues['openregister'] ?? []), message: 'nothing was there, nothing stays');
 	}//end testRemoveLeavesWhatAnAdministratorChanged()
@@ -163,12 +164,12 @@ class ExampleSetArchivalTest extends ExampleSetTestCase {
 	 */
 	public function testAnUnknownKeyOrAMissingRegisterIsRefused(): void {
 		$this->castWithArchival(setting: ['destructionListRegister' => '{{register:destruction-lists}}', 'destructionBatchSize' => 5]);
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: 'destructionBatchSize', haystack: $refusals[0]);
 
 		$this->castWithArchival(setting: ['destructionListRegister' => '{{register:nowhere}}']);
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: 'cannot resolve', haystack: $refusals[0]);
 		$this->assertArrayNotHasKey(key: 'archival', array: ($this->appValues['openregister'] ?? []));

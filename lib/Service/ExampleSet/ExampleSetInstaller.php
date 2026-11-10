@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
 use OCA\OpenRegister\Service\CauseFrame;
 use OCA\OpenRegister\Service\WriteCause;
@@ -107,9 +108,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * counts as existing for a `user` format here: the accounts are written
 	 * first in a real install, and no other id is let through.
 	 *
-	 * @param array<string, mixed>   $plan  A plan from ExampleSetCatalogue::gather().
-	 * @param array<int, string>     $adopt Account ids the administrator lets the set use although it did not create them.
-	 * @param DateTimeImmutable|null $today The install day; now in the set's time zone when null.
+	 * @param ExampleSetInstallInput $input The plan, the account ids the administrator lets the set use although it
+	 *                                      did not create them, and the install day (now in the set's time zone when
+	 *                                      null); the password is not used.
 	 *
 	 * @return array{refusals: array<int, string>, checked: array<string, int>, checkedChanges: array<string, int>, registers: array<string, string>}
 	 *         Every refusal, the number of objects (`checked`) and of changes (`checkedChanges`) checked per register
@@ -117,9 +118,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
-	public function check(array $plan, array $adopt=[], ?DateTimeImmutable $today=null): array {
-		$today = ($today ?? $this->today(timezone: (string) $plan['timezone']));
-		return $this->checked(request: new ExampleSetInstallRequest(plan: $plan, adopt: $adopt, password: '', today: $today));
+	public function check(ExampleSetInstallInput $input): array {
+		$today = ($input->today ?? $this->today(timezone: (string) $input->plan['timezone']));
+		return $this->checked(request: new ExampleSetInstallRequest(plan: $input->plan, adopt: $input->adopt, password: '', today: $today));
 	}//end check()
 
 	/**
@@ -254,10 +255,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	/**
 	 * Install a set: check, then write what the record lacks, then prove it.
 	 *
-	 * @param array<string, mixed>   $plan     A plan from ExampleSetCatalogue::gather().
-	 * @param array<int, string>     $adopt    Account ids the administrator lets the set use.
-	 * @param string                 $password One password for every new account; '' makes one per account.
-	 * @param DateTimeImmutable|null $today    The install day; now in the set's time zone when null.
+	 * @param ExampleSetInstallInput $input The plan, the account ids the administrator lets the set use, one password
+	 *                                      for every new account ('' makes one per account) and the install day (now
+	 *                                      in the set's time zone when null).
 	 *
 	 * @return array<string, mixed> `refusals` (non-empty: none of the set's accounts or objects was written),
 	 *                              `registers`, `users`, `groups`, `memberships` and `changes` (each name to
@@ -266,9 +266,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
-	public function install(array $plan, array $adopt=[], string $password='', ?DateTimeImmutable $today=null): array {
-		$today = ($today ?? $this->today(timezone: (string) $plan['timezone']));
-		return $this->installRequested(request: new ExampleSetInstallRequest(plan: $plan, adopt: $adopt, password: $password, today: $today));
+	public function install(ExampleSetInstallInput $input): array {
+		$today   = ($input->today ?? $this->today(timezone: (string) $input->plan['timezone']));
+		$request = new ExampleSetInstallRequest(plan: $input->plan, adopt: $input->adopt, password: $input->password, today: $today);
+		return $this->installRequested(request: $request);
 	}//end install()
 
 	/**

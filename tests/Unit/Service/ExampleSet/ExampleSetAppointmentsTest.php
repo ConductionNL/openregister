@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
@@ -127,10 +129,10 @@ class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 		$this->caseWithAppointments(rows: [['key' => 'toelichting', 'data' => self::appointment()]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame(expected: [], actual: $this->calendarObjects, message: 'the check writes no event');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 
 		$this->assertSame(expected: [1 => ['principal' => 'principals/users/esra.demir', 'uri' => 'personal']], actual: $this->calendars);
@@ -150,7 +152,7 @@ class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: '2026-10-14 08:00 UTC', actual: $link->getDtstart()->format('Y-m-d H:i T'), message: 'the link holds the moment in UTC');
 		$this->assertSame(expected: '2026-10-14 08:30 UTC', actual: $link->getDtend()->format('Y-m-d H:i T'));
 
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertCount(expectedCount: 1, haystack: $this->calendarObjects, message: 'a kept appointment is written once');
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -167,7 +169,7 @@ class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 	public function testTheOwnersCalendarIsUsed(): void {
 		$this->calendars[7] = ['principal' => 'principals/users/esra.demir', 'uri' => 'personal'];
 		$this->caseWithAppointments(rows: [['key' => 'toelichting', 'data' => self::appointment()]]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertCount(expectedCount: 1, haystack: $this->calendars);
 		$this->assertStringStartsWith(prefix: '7 ', string: array_keys($this->calendarObjects)[0]);
@@ -184,9 +186,9 @@ class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 	public function testARefreshMovesTheAppointmentToItsNewDay(): void {
 		$this->caseWithAppointments(rows: [['key' => 'toelichting', 'data' => ['start' => '{{datetime:3 10:00}}', 'end' => '{{datetime:3 10:30}}'] + self::appointment()]]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+5 days'));
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+5 days')));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame('refreshed', $report['appointments']['alpha/toelichting']);
@@ -212,7 +214,7 @@ class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 			'appointments' => [['key' => 'hoorzitting', 'data' => ['object' => '{{task:hoorzitting.uuid}}', 'summary' => 'Hoorzitting bezwaar parkeerboete'] + self::appointment()]],
 		]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$taskUuid = (string) array_key_first($this->engineTasks);
@@ -233,7 +235,7 @@ class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 	 */
 	public function testACheckRefusesAFaultyAppointment(array $data, string $reason): void {
 		$this->caseWithAppointments(rows: [['key' => 'bad', 'data' => $data]]);
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: $reason, haystack: $refusals[0]);

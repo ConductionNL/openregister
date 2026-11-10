@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetExternalTask
@@ -103,10 +105,10 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame([], $this->engineTasks, 'the check writes no task');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame(['alpha/beoordelen' => 'created', 'alpha/ontvangst' => 'created'], $report['tasks']);
@@ -125,7 +127,7 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		$this->assertSame(expected: '2026-09-30 10:00', actual: $this->local(moment: $done->getCompletedAt()));
 		$this->assertSame('esra.demir', $done->getCompletedBy());
 
-		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame(['alpha/beoordelen' => 'kept', 'alpha/ontvangst' => 'kept'], $again['tasks']);
 		$this->assertCount(2, $this->taskImports, 'a second install writes nothing');
 
@@ -154,8 +156,8 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$import = $this->taskImports[0];
@@ -186,8 +188,8 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: $checklist, actual: $this->taskImports[0]['data']['checklist']);
@@ -211,8 +213,8 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$caseId = $this->store->ids(register: 'cases', schema: 'case')[0];
 		$this->assertSame(expected: 'contract', actual: $this->taskImports[0]['data']['key']);
@@ -238,8 +240,8 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$import = $this->taskImports[0]['data'];
@@ -263,8 +265,8 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$at = $this->taskImports[0]['at'];
@@ -282,7 +284,7 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 	 */
 	public function testATaskWithoutCreatedAtIsStampedByTheEngine(): void {
 		$this->caseWithTasks(tasks: [['key' => 't', 'data' => ['title' => 'Taak', 'objectUuid' => '{{object:case-1.id}}']]]);
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertNull(actual: $this->taskImports[0]['at']);
@@ -291,10 +293,10 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 	public function testATaskThatDisappearedIsReportedMissing(): void {
 		$this->caseWithTasks([['key' => 't', 'data' => ['title' => 'Taak', 'objectUuid' => '{{object:case-1.id}}']]]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->engineTasks = [];
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertContains('task alpha/t', $report['missing']);
 		$this->assertFalse($report['ok']);
@@ -309,12 +311,12 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 	public function testARefreshAdoptsTheTaskThatHoldsTheKey(): void {
 		$this->caseWithTasks(tasks: [['key' => 't', 'data' => ['title' => 'Taak', 'objectUuid' => '{{object:case-1.id}}']]]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$task = array_values($this->engineTasks)[0];
 		$task->setUuid('task-elsewhere');
 		$this->engineTasks = ['task-elsewhere' => $task];
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: ['task-elsewhere'], actual: array_keys($this->engineTasks), message: 'no second task with the key');
@@ -331,7 +333,7 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 	public function testACheckRefusesAFaultyTaskAndWritesNothing(array $data, string $reason): void {
 		$this->caseWithTasks([['key' => 'bad', 'data' => $data]]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(1, $refusals);
 		$this->assertStringContainsString('task "bad"', $refusals[0]);

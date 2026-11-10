@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
@@ -89,8 +91,8 @@ class ExampleSetObjectOwnerTest extends ExampleSetTestCase {
 		$this->decisionOwnedBy(owner: '{{cast:esra.uid}}');
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$id = $this->store->ids(register: 'besluiten', schema: 'decision')[0];
@@ -107,17 +109,17 @@ class ExampleSetObjectOwnerTest extends ExampleSetTestCase {
 	public function testARefreshHandsAKeptObjectToTheDeclaredOwner(): void {
 		$this->decisionOwnedBy(owner: '{{cast:esra.uid}}');
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$id = $this->store->ids(register: 'besluiten', schema: 'decision')[0];
 		$this->store->owners[$id] = '__system__';
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame('esra.demir', $this->store->owners[$id]);
 		$this->assertSame(1, $this->store->ownerChanges);
 
-		$this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 		$this->assertSame(1, $this->store->ownerChanges, 'an object the owner already holds is not handed over again');
 	}//end testARefreshHandsAKeptObjectToTheDeclaredOwner()
 
@@ -131,7 +133,7 @@ class ExampleSetObjectOwnerTest extends ExampleSetTestCase {
 	public function testAnOwnerOutsideTheCastIsRefused(): void {
 		foreach (['admin', '{{cast:nobody.uid}}', '{{cast:shop.name}}'] as $owner) {
 			$this->decisionOwnedBy(owner: $owner);
-			$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+			$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 			$this->assertCount(1, $refusals, $owner);
 			$this->assertStringContainsString('owner', $refusals[0], $owner);
 		}

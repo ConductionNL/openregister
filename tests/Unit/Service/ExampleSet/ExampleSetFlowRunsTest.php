@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
@@ -178,10 +179,10 @@ class ExampleSetFlowRunsTest extends ExampleSetTestCase {
 		$this->fragment(runs: [self::waitingRun()], tasks: [self::hearingTask()]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame(expected: [], actual: $this->flowRuns, message: 'the check writes no run');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 
 		$flow = array_values($this->flows)[0];
@@ -212,7 +213,7 @@ class ExampleSetFlowRunsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: (int) $task->getId(), actual: $claim->getTaskId());
 		$this->assertSame(expected: '2026-10-12 09:05', actual: $this->local(moment: $claim->getCreated()));
 
-		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $again['ok'], message: (string) json_encode($again));
 		$this->assertCount(expectedCount: 1, haystack: $this->flowRuns, message: 'a kept flow writes its run once');
 		$this->assertCount(expectedCount: 1, haystack: $this->taskAudits, message: 'a kept task is claimed once');
@@ -233,10 +234,10 @@ class ExampleSetFlowRunsTest extends ExampleSetTestCase {
 	 */
 	public function testARefreshKeepsTheWaitingRun(): void {
 		$this->fragment(runs: [self::waitingRun()], tasks: [self::hearingTask()]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$run = array_key_first($this->flowRuns);
 
-		$report = $this->installer->install(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: [$run], actual: array_keys($this->flowRuns));
 		$this->assertSame(expected: $run, actual: array_values($this->engineTasks)[0]->getRunUuid());
@@ -255,7 +256,7 @@ class ExampleSetFlowRunsTest extends ExampleSetTestCase {
 	 */
 	public function testACheckRefusesAFaultyWaitAndWritesNothing(array $runs, array $tasks, string $reason): void {
 		$this->fragment(runs: $runs, tasks: $tasks);
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertNotSame(expected: [], actual: $refusals);
 		$this->assertStringContainsString(needle: $reason, haystack: implode("\n", $refusals));

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 
 /**
@@ -90,7 +91,7 @@ class ExampleSetRemoveLiveTest extends ExampleSetTestCase {
 		@mkdir($folder, 0777, true);
 		file_put_contents($folder.'/01-besluit.pdf', '%PDF-1.4 example');
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 	}
 

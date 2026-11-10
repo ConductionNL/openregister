@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -110,13 +111,13 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		]]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue($report['ok'], json_encode($report));
 		$this->assertSame(1, $report['files']);
 		$objectId = $this->store->ids(register: 'pub', schema: 'publication')[0];
 		$this->assertSame([['name' => '01-besluit.pdf', 'shared' => true, 'content' => '%PDF-1.4 example']], array_values($this->files[$objectId]));
-		$this->assertSame(1, $this->installer->install(plan: $plan, today: $this->today())['ok'] === true ? count($this->files[$objectId]) : -1, 'a second install attaches nothing');
+		$this->assertSame(1, $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok'] === true ? count($this->files[$objectId]) : -1, 'a second install attaches nothing');
 
 		$removed = $this->remover->remove(set: 'demo');
 		$this->assertSame(1, $removed['removed']['files']);
@@ -140,13 +141,13 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 			'files'    => [['path' => 'demo/pub-1/01-besluit.pdf', 'title' => 'Besluit']],
 		]]]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$objectId = $this->store->ids(register: 'pub', schema: 'publication')[0];
 		$this->files['case-folder'] = $this->files[$objectId];
 		$this->files[$objectId]     = [];
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertSame(expected: [], actual: $report['missing']);
 		$this->assertSame(expected: [], actual: $this->files[$objectId], message: 'a moved file is not attached again');
@@ -162,14 +163,14 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	public function testFilesDeclaredLaterAreAttachedToTheKeptObjectOnce(): void {
 		$object = ['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['title' => 'Besluit']];
 		$this->alpha(fragment: ['objects' => [$object]]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$objectId = $this->store->ids(register: 'pub', schema: 'publication')[0];
 		$this->assertSame(expected: [], actual: array_values($this->files[$objectId] ?? []));
 
 		$object['files'] = [['path' => 'demo/pub-1/01-besluit.pdf', 'title' => 'Besluit']];
 		$this->alpha(fragment: ['objects' => [$object]]);
 		$plan   = $this->catalogue->gather(set: 'demo');
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: 1, actual: $report['files']);
@@ -177,7 +178,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: [$objectId], actual: $ids, message: 'the object is kept, not written again');
 		$this->assertCount(expectedCount: 1, haystack: $this->files[$objectId]);
 
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertCount(expectedCount: 1, haystack: $this->files[$objectId], message: 'a third install attaches nothing');
 	}//end testFilesDeclaredLaterAreAttachedToTheKeptObjectOnce()
 
@@ -187,7 +188,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 			'files' => [['path' => 'demo/pub-1/missing.pdf']],
 		]]]);
 
-		$result = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$result = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(
 			['alpha/lib/Settings/example-sets/demo.json: object "pub-1" (pub publication): file "demo/pub-1/missing.pdf" is not a readable file inside the fragment\'s folder'],
@@ -244,7 +245,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->alpha(fragment: $this->serviceFragment());
 		$this->accounts->unseenUsers = ['demo_background'];
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$dropped = array_filter($report['dropped'], static fn (string $line): bool => str_contains($line, 'demo_background'));
 		$this->assertSame(expected: [], actual: array_values($dropped));
@@ -256,7 +257,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	public function testAServiceAccountIsMadeWithoutAPasswordAnyoneSeesAndJoinsItsGroup(): void {
 		$this->alpha($this->serviceFragment());
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue($report['ok'], json_encode($report));
 		$this->assertSame('created', $report['users']['demo_background']);
@@ -275,11 +276,11 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->alpha($this->serviceFragment());
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertSame(['catalog_slug' => 'demo', 'background_service_account' => 'demo_background', 'groups' => 'demo-staff'], $this->appValues['alpha']);
 		$this->assertSame(['alpha/background_service_account' => 'created', 'alpha/catalog_slug' => 'created', 'alpha/groups' => 'created'], $report['appConfig']);
-		$this->assertSame('kept', $this->installer->install(plan: $plan, today: $this->today())['appConfig']['alpha/catalog_slug']);
+		$this->assertSame('kept', $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['appConfig']['alpha/catalog_slug']);
 
 		// An administrator changes one key after the install; remove must leave it.
 		$this->appValues['alpha']['groups'] = 'their-own';
@@ -303,11 +304,11 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->alpha(['appConfig' => [['key' => 'counter', 'value' => '402', 'type' => 'int']]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame('created', $report['appConfig']['alpha/counter'], (string) json_encode($report));
 		$this->assertSame(['402', 'int'], [$this->appValues['alpha']['counter'], $this->appTypes['alpha']['counter']]);
-		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue($this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 
 		$this->remover->remove(set: 'demo');
 		$this->assertSame('7', $this->appValues['alpha']['counter']);
@@ -331,14 +332,14 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->sensitive['alpha'] = ['secret' => true];
 		$this->alpha(['appConfig' => [['key' => 'secret', 'value' => 'from-a-file']]]);
 
-		$check = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$check = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->assertStringContainsString('app config "secret": app config alpha secret is kept as sensitive', $check['refusals'][0]);
 		$this->assertSame('theirs', $this->appValues['alpha']['secret']);
 
 		$this->appValues = [];
 		$this->sensitive = [];
 		$this->alpha(['appConfig' => [['key' => 'secret', 'generate' => true]]]);
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue($report['ok'], json_encode($report));
 		$this->assertTrue($this->sensitive['alpha']['secret']);
@@ -350,7 +351,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 
 	public function testAGeneratedKeyAnAdministratorReplacedStaysAndIsNamed(): void {
 		$this->alpha(['appConfig' => [['key' => 'secret', 'generate' => true]]]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		// The administrator puts a real token there after the install.
 		$this->appValues['alpha']['secret'] = 'their-real-api-token';
@@ -364,7 +365,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	public function testAGeneratedKeyThatHeldAnEmptyValueGetsItBack(): void {
 		$this->appValues['alpha'] = ['secret' => ''];
 		$this->alpha(['appConfig' => [['key' => 'secret', 'generate' => true]]]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->assertNotSame('', $this->appValues['alpha']['secret']);
 
 		$this->remover->remove(set: 'demo');
@@ -375,12 +376,12 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 
 	public function testTheInstanceAddressFillsAPlaceholderAndIsNeverEmpty(): void {
 		$this->alpha(['objects' => [['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['url' => '{{instance:baseUrl}}/apps/x']]]]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->assertSame('https://cloud.example.test/apps/x', $this->store->find(table: new RegisterSchemaRef(register: 'pub', schema: 'publication'), filters: [])[0]['url']);
 
 		$this->remover->remove(set: 'demo');
 		$this->baseUrl = '';
-		$check         = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$check         = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->assertStringContainsString('cannot resolve {{instance:baseUrl}}', $check['refusals'][0]);
 	}
 
@@ -394,8 +395,8 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue($report['ok'], json_encode($report));
 		$case   = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: [])[0];
@@ -436,7 +437,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 			],
 		]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(expected: [], actual: $report['lost']);
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
@@ -445,7 +446,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	public function testAChangeToAnObjectNotWrittenEarlierIsRefused(): void {
 		$this->alpha(['changes' => [['key' => 'c', 'register' => 'cases', 'schema' => 'case', 'object' => 'nope', 'set' => ['x' => 1]]]]);
 
-		$result = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$result = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertStringContainsString('object "nope" is not written earlier in this fragment', $result['refusals'][0]);
 	}
@@ -468,8 +469,8 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		]]]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
-		$this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue($report['ok'], json_encode($report));
 		$this->assertCount(2, $this->organisations, 'created once');
@@ -487,7 +488,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$file['cast']['openregisterOrganisations'] = [['key' => 'gemeente', 'name' => 'Gemeente Demo', 'slug' => 'demo']];
 		$this->app(app: 'openregister', fragment: $file);
 		$this->alpha(['objects' => [['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['organization' => '{{organisation:demo}}']]]]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->accounts->users['real.person'] = ['displayName' => 'Real Person', 'email' => '', 'password' => 'x'];
 		$this->organisations['org-1']->setUsers(['sanne.devries', 'real.person']);
 
@@ -521,7 +522,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->app(app: 'openregister', fragment: $file);
 		$this->alpha(fragment: ['objects' => [['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['organization' => '{{organisation:demo}}']]]]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$organisation = array_values($this->organisations)[0];

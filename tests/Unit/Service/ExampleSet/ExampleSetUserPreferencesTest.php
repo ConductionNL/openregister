@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
 
 /**
@@ -97,7 +98,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 			['user' => '{{account:background.uid}}', 'app' => 'alpha', 'key' => self::KEY, 'value' => '1.2.0'],
 		]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame('1.2.0', $this->userValues['esra.demir']['alpha'][self::KEY]);
@@ -107,7 +108,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 			$report['userPreferences']
 		);
 
-		$again = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->assertTrue($again['ok']);
 		$this->assertSame(['kept', 'kept'], array_values($again['userPreferences']), 'a second install writes nothing');
 
@@ -130,7 +131,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 			['user' => '{{cast:sanne.uid}}', 'key' => self::KEY, 'value' => '1.2.0'],
 			['user' => '{{cast:esra.uid}}', 'key' => self::KEY, 'value' => '1.2.0'],
 		]);
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), adopt: ['sanne.devries', 'esra.demir'], today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), adopt: ['sanne.devries', 'esra.demir'], today: $this->today()));
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame('1.2.0', $this->userValues['sanne.devries']['alpha'][self::KEY]);
 
@@ -159,7 +160,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 			['user' => '{{cast:esra.uid}}', 'key' => 'api_token', 'value' => 'abc'],
 		]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$where  = 'alpha/lib/Settings/example-sets/demo.json: user preference ';
 		$admins = 'account "admin" is one of Nextcloud\'s administrators and not in the set\'s cast; an example set never changes their preferences';
@@ -187,7 +188,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 		$this->accounts->groups['admin']        = ['sanne.devries'];
 		$this->alpha(preferences: [['user' => '{{cast:sanne.uid}}', 'key' => self::KEY, 'value' => '1.2.0']]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), adopt: ['sanne.devries'], today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), adopt: ['sanne.devries'], today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: '1.2.0', actual: $this->userValues['sanne.devries']['alpha'][self::KEY]);
@@ -203,7 +204,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 		$this->sensitiveUserValues['esra.demir']['alpha']['remote_link'] = true;
 		$this->alpha(preferences: [['user' => '{{cast:esra.uid}}', 'key' => 'remote_link', 'value' => 'y']]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), adopt: ['esra.demir'], today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), adopt: ['esra.demir'], today: $this->today()));
 
 		$this->assertSame(['alpha/lib/Settings/example-sets/demo.json: user preference "remote_link": user preference alpha remote_link holds a secret; a set never writes one'], $report['refusals']);
 		$this->assertSame('x', $this->userValues['esra.demir']['alpha']['remote_link']);

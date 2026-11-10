@@ -18,6 +18,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\BackgroundJob\ExampleSetDailyRefreshJob;
 use OCA\OpenRegister\Command\ExampleSetInstallCommand;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -119,7 +120,7 @@ class ExampleSetDailyRefreshTest extends ExampleSetTestCase {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	public function testAMarkedSetIsRefreshedAgainstTheDayOfTheRun(): void {
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$daily = $this->daily();
 		$id    = $this->store->ids(register: 'cases', schema: 'case')[0];
 

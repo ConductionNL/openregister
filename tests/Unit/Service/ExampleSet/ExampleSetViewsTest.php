@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 
 /**
@@ -99,10 +100,10 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 		$this->withViews([$this->savedSearch()]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame([], $this->savedViews, 'the check writes no view');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame(['alpha/zoek-lindelaan' => 'created'], $report['views']);
@@ -112,7 +113,7 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 		$this->assertSame('Lindelaan', $view->getQuery()['search']);
 		$this->assertSame(['operator' => 'gte', 'threshold' => 12], $view->getAlert());
 
-		$this->assertSame(['alpha/zoek-lindelaan' => 'kept'], $this->installer->install(plan: $plan, today: $this->today())['views']);
+		$this->assertSame(['alpha/zoek-lindelaan' => 'kept'], $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['views']);
 		$this->assertCount(1, $this->savedViews, 'a second install writes nothing');
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -137,8 +138,8 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 		$this->withViews(views: [$view]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertSame(
 			expected: [['group' => 'demo-staff', 'mode' => 'read'], ['user' => 'sanne.devries', 'mode' => 'write']],
@@ -167,10 +168,10 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame(expected: [], actual: $this->savedViews, message: 'the check writes no view');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(
@@ -196,7 +197,7 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 			]],
 		]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: 'cannot resolve', haystack: $refusals[0]);
 	}//end testAPreferenceQuotingAnUnknownViewIsRefused()
@@ -211,11 +212,11 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 	public function testARefreshUpdatesAViewInPlace(): void {
 		$this->withViews([$this->savedSearch()]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$before = array_keys($this->savedViews);
 
 		$this->withViews([['key' => 'zoek-lindelaan', 'data' => ['name' => 'Lindelaan en Parkweg'] + $this->savedSearch()['data']]]);
-		$report = $this->installer->install(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame($before, array_keys($this->savedViews));
@@ -232,9 +233,9 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 	public function testAViewKeepsItsUuidAcrossARemove(): void {
 		$this->withViews([$this->savedSearch()]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->remover->remove(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertSame([ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan')], array_keys($this->savedViews));
 	}//end testAViewKeepsItsUuidAcrossARemove()
@@ -242,11 +243,11 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 	public function testAViewThatDisappearedIsReportedMissing(): void {
 		$this->withViews([$this->savedSearch()]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->savedViews = [];
 
-		$this->assertContains('view alpha/zoek-lindelaan', $this->installer->install(plan: $plan, today: $this->today())['missing']);
+		$this->assertContains('view alpha/zoek-lindelaan', $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['missing']);
 	}
 
 	/**
@@ -258,7 +259,7 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 	public function testACheckRefusesAFaultyViewAndWritesNothing(array $data, string $reason): void {
 		$this->withViews([['key' => 'bad', 'data' => $data]]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(1, $refusals);
 		$this->assertStringContainsString('view "bad"', $refusals[0]);

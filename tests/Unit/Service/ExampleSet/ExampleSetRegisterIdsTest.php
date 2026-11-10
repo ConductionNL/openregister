@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
 /**
@@ -105,9 +106,9 @@ class ExampleSetRegisterIdsTest extends ExampleSetTestCase {
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$catalog = $this->store->find(table: new RegisterSchemaRef(register: 'publication', schema: 'catalog'), filters: [])[0];
 		$this->assertSame([31], $catalog['registers'], 'a whole-value placeholder keeps the integer');
@@ -121,7 +122,7 @@ class ExampleSetRegisterIdsTest extends ExampleSetTestCase {
 	public function testARegisterOrSchemaTheInstanceDoesNotHaveRefusesTheSet(): void {
 		$this->catalog(['registers' => ['{{register:nope}}'], 'schemas' => ['{{schema:publication/nope}}']]);
 
-		$result = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$result = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertCount(1, $result['refusals']);
 		$this->assertStringContainsString('object "catalogus"', $result['refusals'][0]);
@@ -142,7 +143,7 @@ class ExampleSetRegisterIdsTest extends ExampleSetTestCase {
 		$this->app(app: 'openregister', fragment: $cast);
 		$this->catalog(['registers' => ['{{register:brp}}', '{{register:publication}}']]);
 
-		$check = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$check = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(['brp' => 'imported'], $check['registers']);
 		$this->assertSame([], $check['refusals']);

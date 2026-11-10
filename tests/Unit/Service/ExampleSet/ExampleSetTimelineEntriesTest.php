@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * A fragment gives a case timeline entries by named people, once, and remove deletes them.
  */
@@ -70,10 +72,10 @@ class ExampleSetTimelineEntriesTest extends ExampleSetTestCase {
 		$this->caseWithEntries(rows: [['key' => 'status-4-okt', 'data' => self::statusChange()]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame([], $this->timelineEntries, 'the check writes no entry');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$entry = array_values($this->timelineEntries)[0];
 		$this->assertSame(['esra.demir', 'statuswijziging', 'Status gewijzigd naar In behandeling'], [$entry->getAuthor(), $entry->getKind(), $entry->getMessage()]);
@@ -81,7 +83,7 @@ class ExampleSetTimelineEntriesTest extends ExampleSetTestCase {
 		$this->assertSame(['to' => 'In behandeling'], $entry->getFields());
 		$this->assertSame('example-set:alpha/status-4-okt', $entry->getRawSource());
 
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertCount(1, $this->timelineEntries, 'a kept entry is written once');
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -99,7 +101,7 @@ class ExampleSetTimelineEntriesTest extends ExampleSetTestCase {
 		unset($row['author']);
 		$this->caseWithEntries(rows: [['key' => 'aangemaakt', 'data' => $row]]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertNull(array_values($this->timelineEntries)[0]->getAuthor());
@@ -113,7 +115,7 @@ class ExampleSetTimelineEntriesTest extends ExampleSetTestCase {
 	public function testAnUndeclaredKindIsNotWritten(): void {
 		$this->caseWithEntries(rows: [['key' => 'x', 'data' => self::statusChange(['kind' => 'nergens'])]]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertFalse($report['ok']);
 		$this->assertStringContainsString('No entry kind named nergens', (string) json_encode($report['dropped']));
@@ -133,7 +135,7 @@ class ExampleSetTimelineEntriesTest extends ExampleSetTestCase {
 	public function testACheckRefusesAFaultyEntry(array $data, string $reason): void {
 		$this->caseWithEntries(rows: [['key' => 'bad', 'data' => $data]]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(1, $refusals);
 		$this->assertStringContainsString($reason, $refusals[0]);

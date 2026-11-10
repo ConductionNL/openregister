@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
@@ -86,7 +88,7 @@ class ExampleSetGroupNamesTest extends ExampleSetTestCase {
 	 */
 	public function testAnUnnamedExistingGroupGetsTheDeclaredName(): void {
 		$plan   = $this->catalogue->gather(set: 'demo');
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame('Behandelaars', $this->accounts->groupNames['behandelaars']);
