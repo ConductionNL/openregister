@@ -286,7 +286,7 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 			$verdict = RuleVocabulary::VERDICT_FIRED;
 		}
 
-		return $this->result(run: $run, trace: $this->engine->tracer->trace(condition: $condition, document: $document, verdict: $verdict));
+		return $this->result(run: $run, trace: $this->engine->tracer->trace(judgement: new ConditionJudgement(condition: $condition, document: $document, verdict: $verdict)));
 	}//end runCondition()
 
 	/**
