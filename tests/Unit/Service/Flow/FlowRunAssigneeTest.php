@@ -28,6 +28,7 @@
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Service\Flow\RunSignal;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunAssignee;
 use OCP\IGroupManager;
@@ -69,13 +70,13 @@ class FlowRunAssigneeTest extends TestCase {
 	public function testTheAssigneeMayAnswer(): void {
 		$run = $this->runWithSlots(['n' => ['askedAt' => 'now', 'assignee' => 'bob']]);
 
-		$this->assertTrue((new FlowRunAssignee())->mayAnswer(run: $run, uid: 'bob'));
+		$this->assertTrue((new FlowRunAssignee())->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'bob')));
 	}//end testTheAssigneeMayAnswer()
 
 	public function testSomebodyElseMayNot(): void {
 		$run = $this->runWithSlots(['n' => ['askedAt' => 'now', 'assignee' => 'bob']]);
 
-		$this->assertFalse((new FlowRunAssignee())->mayAnswer(run: $run, uid: 'carol'));
+		$this->assertFalse((new FlowRunAssignee())->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'carol')));
 	}//end testSomebodyElseMayNot()
 
 	/**
@@ -90,8 +91,8 @@ class FlowRunAssigneeTest extends TestCase {
 
 		$assignee = new FlowRunAssignee();
 
-		$this->assertTrue($assignee->mayAnswer(run: $run, uid: 'anyone'));
-		$this->assertTrue($assignee->mayAnswer(run: $run, uid: null));
+		$this->assertTrue($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'anyone')));
+		$this->assertTrue($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: null)));
 	}//end testAnUnassignedStepIsAnswerableByAnyone()
 
 	/**
@@ -102,8 +103,8 @@ class FlowRunAssigneeTest extends TestCase {
 
 		$assignee = new FlowRunAssignee();
 
-		$this->assertFalse($assignee->mayAnswer(run: $run, uid: null));
-		$this->assertFalse($assignee->mayAnswer(run: $run, uid: ''));
+		$this->assertFalse($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: null)));
+		$this->assertFalse($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: '')));
 	}//end testAnAssignedStepRefusesAnAnonymousCaller()
 
 	/**
@@ -116,7 +117,7 @@ class FlowRunAssigneeTest extends TestCase {
 		$groups->method('isInGroup')->with('carol', 'behandelaars')->willReturn(true);
 
 		$this->assertTrue(
-			(new FlowRunAssignee(groupManager: $groups))->mayAnswer(run: $run, uid: 'carol')
+			(new FlowRunAssignee(groupManager: $groups))->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'carol'))
 		);
 	}//end testAGroupMemberMayAnswerAGroupAssignedStep()
 
@@ -127,7 +128,7 @@ class FlowRunAssigneeTest extends TestCase {
 		$groups->method('isInGroup')->willReturn(false);
 
 		$this->assertFalse(
-			(new FlowRunAssignee(groupManager: $groups))->mayAnswer(run: $run, uid: 'carol')
+			(new FlowRunAssignee(groupManager: $groups))->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'carol'))
 		);
 	}//end testANonMemberMayNot()
 
@@ -140,7 +141,7 @@ class FlowRunAssigneeTest extends TestCase {
 	public function testWithoutAGroupManagerAGroupAssignmentRefuses(): void {
 		$run = $this->runWithSlots(['n' => ['askedAt' => 'now', 'assignee' => 'behandelaars']]);
 
-		$this->assertFalse((new FlowRunAssignee())->mayAnswer(run: $run, uid: 'carol'));
+		$this->assertFalse((new FlowRunAssignee())->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'carol')));
 	}//end testWithoutAGroupManagerAGroupAssignmentRefuses()
 
 	public function testARunWithNoSlotsNamesNobodyAndIsOpen(): void {
@@ -149,7 +150,7 @@ class FlowRunAssigneeTest extends TestCase {
 		$assignee = new FlowRunAssignee();
 
 		$this->assertSame('', $assignee->recordedFor(run: $run));
-		$this->assertTrue($assignee->mayAnswer(run: $run, uid: 'anyone'));
+		$this->assertTrue($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'anyone')));
 	}//end testARunWithNoSlotsNamesNobodyAndIsOpen()
 
 	/**
@@ -167,9 +168,9 @@ class FlowRunAssigneeTest extends TestCase {
 		$assignee = new FlowRunAssignee();
 
 		$this->assertSame('bob', $assignee->recordedFor(run: $run, nodeId: 'ask-b'));
-		$this->assertTrue($assignee->mayAnswer(run: $run, uid: 'bob', nodeId: 'ask-b'));
+		$this->assertTrue($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'bob', nodeId: 'ask-b')));
 		// Without addressing, the run-level scan would have refused bob.
-		$this->assertFalse($assignee->mayAnswer(run: $run, uid: 'bob'));
+		$this->assertFalse($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'bob')));
 	}//end testAddressingANodeChecksThatNodesAssignee()
 
 	/**
@@ -184,7 +185,7 @@ class FlowRunAssigneeTest extends TestCase {
 		$assignee = new FlowRunAssignee();
 
 		$this->assertSame('alice', $assignee->recordedFor(run: $run, nodeId: 'never-asked'));
-		$this->assertFalse($assignee->mayAnswer(run: $run, uid: 'mallory', nodeId: 'never-asked'));
+		$this->assertFalse($assignee->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'mallory', nodeId: 'never-asked')));
 	}//end testAddressingASilentNodeFallsBackToTheRunLevelRule()
 
 	/**
@@ -198,7 +199,7 @@ class FlowRunAssigneeTest extends TestCase {
 		]);
 
 		$this->assertFalse(
-			(new FlowRunAssignee())->mayAnswer(run: $run, uid: 'mallory', nodeId: 'idle')
+			(new FlowRunAssignee())->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'mallory', nodeId: 'idle'))
 		);
 	}//end testAddressingAnUnaskedSlotFallsBackToo()
 
@@ -213,7 +214,7 @@ class FlowRunAssigneeTest extends TestCase {
 		]);
 
 		$this->assertTrue(
-			(new FlowRunAssignee())->mayAnswer(run: $run, uid: 'anyone', nodeId: 'hook')
+			(new FlowRunAssignee())->mayAnswer(run: $run, signal: new RunSignal(payload: [], actorUid: 'anyone', nodeId: 'hook'))
 		);
 	}//end testAnAddressedUnassignedNodeIsOpen()
 }//end class

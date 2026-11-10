@@ -78,62 +78,50 @@ jest.mock('../../services/getTheme.js', () => ({
 	__esModule: true,
 	getTheme: () => 'light',
 }))
-// vue-material-design-icons ships ESM .vue files this repo's jest transform
-// chain does not compile; stub each icon the screens import.
+// Stub each icon the screens import.
 jest.mock(
 	'vue-material-design-icons/ArrowDown.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/ArrowLeft.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/ArrowUp.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/ContentSave.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Download.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Eye.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Finance.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Pencil.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Plus.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/TrashCanOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Upload.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 // Each @nextcloud/vue component is a <div data-nc="Name"> that renders its
 // slots and carries its bindings as attributes, so a mounted screen shows
@@ -951,6 +939,30 @@ describe('the editor', () => {
 		expect(vm.applyJson()).toBe(false)
 		expect(vm.jsonError).toMatch(/^This is not valid JSON: /)
 		expect(vm.jsonError).not.toMatch(/&#39;|&quot;|&amp;/)
+	})
+
+	it.each([['null'], ['[]'], ['3'], ['"pack"']])(
+		'refuses the JSON %s, which is not an object, and keeps the draft',
+		async (text) => {
+			const vm = await loadedEditor()
+			vm.showJson()
+			const draft = vm.draft
+			vm.jsonText = text
+			expect(vm.applyJson()).toBe(false)
+			expect(vm.jsonError).toBe('A pack definition is a JSON object.')
+			expect(vm.draft).toBe(draft)
+		},
+	)
+
+	it('clears an earlier JSON error once the JSON applies', async () => {
+		const vm = await loadedEditor()
+		vm.showJson()
+		vm.jsonText = '{ not json'
+		expect(vm.applyJson()).toBe(false)
+		expect(vm.jsonError).not.toBe('')
+		vm.jsonText = JSON.stringify(MODULE_PACK)
+		expect(vm.applyJson()).toBe(true)
+		expect(vm.jsonError).toBe('')
 	})
 
 	it('keeps focus on a moved row and announces where it went', async () => {

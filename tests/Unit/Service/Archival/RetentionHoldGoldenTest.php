@@ -42,6 +42,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Service\Archival\AnnotatedRow;
+use OCA\OpenRegister\Service\HoldOrder;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Archival\HoldAction;
 
 /**
@@ -131,9 +133,9 @@ class RetentionHoldGoldenTest extends TestCase {
 		$object->setRetention(['archiefactiedatum' => '2030-01-01']);
 
 		$service = $this->holds();
-		$service->placeHold($object, 'WOO-1', 'case:a');
-		$service->placeHold($object, 'manual');
-		$service->placeHold($object, 'WOO-1 restated', 'case:a');
+		$service->placeHold($object, new HoldOrder('WOO-1', 'case:a'));
+		$service->placeHold($object, new HoldOrder('manual'));
+		$service->placeHold($object, new HoldOrder('WOO-1 restated', 'case:a'));
 
 		$this->assertTrue($service->hasActiveHold($object));
 		$this->assertTrue($service->hasActiveHoldFromRetention($object->getRetention()));
@@ -154,7 +156,7 @@ class RetentionHoldGoldenTest extends TestCase {
 			$this->mask($object->getRetention())
 		);
 
-		$this->holds(uid: null)->releaseHold($object, 'case closed', 'case:a');
+		$this->holds(uid: null)->releaseHold($object, new HoldOrder('case closed', 'case:a'));
 		$this->assertSame(
 			[
 				'active' => true, 'reason' => 'manual', 'placedBy' => 'officer', 'placedDate' => '<now>',
@@ -164,7 +166,7 @@ class RetentionHoldGoldenTest extends TestCase {
 			$this->mask($object->getRetention()['legalHold'])
 		);
 
-		$service->releaseHold($object, 'all done');
+		$service->releaseHold($object, new HoldOrder('all done'));
 		$this->assertFalse($service->hasActiveHold($object));
 		$this->assertFalse($service->hasActiveHoldFromRetention($object->getRetention()));
 		$this->assertSame(
@@ -218,7 +220,7 @@ class RetentionHoldGoldenTest extends TestCase {
 	}//end testTheLedgerReadsALegacySlotAndOddShapes()
 
 	public function testBulkHoldsAreQueuedAndHeldRecordsListed(): void {
-		$this->holds()->bulkPlaceHold(4, 2, 'WOO');
+		$this->holds()->bulkPlaceHold(new RegisterSchemaRef(2, 4), 'WOO');
 		$this->assertSame([[BulkLegalHoldJob::class, ['schemaId' => 4, 'registerId' => 2, 'reason' => 'WOO', 'placedBy' => 'officer']]], $this->jobs);
 
 		$this->assertSame(['results' => [], 'total' => 0, 'truncated' => false], $this->holds()->listActiveHolds());

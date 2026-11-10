@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
@@ -21,6 +22,7 @@ use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IGroup;
@@ -181,10 +183,10 @@ class DestructionExecutionJobGoldenTest extends TestCase
                 return $object->getUuid() === 'held';
             }
         );
-        $service->method('generateDestructionCertificate')->willReturnCallback(
-            function (array $list, int $count, string $at): array {
-                $this->record('generateDestructionCertificate', [self::mask($list), $count, $at === '' ? '' : 'T']);
-                return ['certificate' => $count];
+        $service->method('certify')->willReturnCallback(
+            function (ExecutedDestruction $execution): array {
+                $this->record('generateDestructionCertificate', [self::mask($execution->destructionList), $execution->destroyedCount, $execution->executedAt === '' ? '' : 'T']);
+                return ['certificate' => $execution->destroyedCount];
             }
         );
         return $service;
@@ -265,12 +267,12 @@ class DestructionExecutionJobGoldenTest extends TestCase
     private function audit(): AuditTrailMapperInterface
     {
         $mapper = $this->createMock(AuditTrailMapperInterface::class);
-        $mapper->method('createAuditTrailEntry')->willReturnCallback(
+        $mapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
             function (ObjectEntity $object, string $action, array $context=[]): AuditTrail {
                 $this->record('audit', [$object->getUuid(), $object->getRetention(), $action, $context]);
                 return new AuditTrail();
             }
-        );
+        ));
         return $mapper;
     }//end audit()
 

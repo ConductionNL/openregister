@@ -72,7 +72,10 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
+use OCA\OpenRegister\Service\Sharing\ShareGrantee;
+use OCA\OpenRegister\Service\Sharing\ShareListCheck;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
@@ -528,7 +531,7 @@ class CredentialBrokerService {
 		// stores the same normalised value. An all-whitespace secret trims
 		// to '', which the empty-secret branch below already treats as
 		// "metadata only, no vault write".
-		$secret = $this->trimmedSecret(secret: $options->secret);
+		$secret = $this->trimmedSecret(secret: $options->secret());
 
 		// Persist the credential-metadata object in system context. Mint is a trusted,
 		// caller-authorized operation ("authorization is the caller's" — the controller
@@ -944,10 +947,8 @@ class CredentialBrokerService {
 		// applied to stored data, so an entry that omits `permission` is treated
 		// as the default here rather than being silently dropped.
 		return $deriver->grants(
-			sharedWith: $sharedWith,
-			userId: $uid,
-			userGroups: $this->groupsOf(uid: $uid),
-			permissions: ['use', null]
+			grantee: new ShareGrantee(userId: $uid, groups: $this->groupsOf(uid: $uid)),
+			check: new ShareListCheck(sharedWith: $sharedWith, permissions: ['use', null])
 		);
 	}//end sharedPrincipalAdmits()
 
@@ -991,11 +992,7 @@ class CredentialBrokerService {
 			return false;
 		}
 
-		return $this->objectGrants->grantCarriesVerb(
-			userId: $this->userSession->getUser()?->getUID(),
-			objectUuid: $uuid,
-			verb: 'use'
-		);
+		return $this->objectGrants->grantCarriesVerb(lookup: new GrantLookup(userId: $this->userSession->getUser()?->getUID(), objectUuid: $uuid), verb: 'use');
 	}//end objectGrantAdmits()
 
 	/**

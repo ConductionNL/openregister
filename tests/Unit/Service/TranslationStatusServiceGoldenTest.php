@@ -18,11 +18,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Translation\LanguageCoverageCheck;
 use OCA\OpenRegister\Db\TranslationEdit;
 use OCA\OpenRegister\Db\TranslationFilter;
 use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
+use OCA\OpenRegister\Service\LanguageGapScan;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\TranslationSearch;
 use OCA\OpenRegister\Service\TranslationStatusService;
@@ -100,7 +102,7 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('alice');
 		$this->session->method('getUser')->willReturn($user);
-		$this->mapper->expects($this->once())->method('findOne')->with('u1', 'title', 'en')->willReturn($existing);
+		$this->mapper->expects($this->once())->method('findOne')->with($this->equalTo(new TranslationSlot('u1', 'title', 'en')))->willReturn($existing);
 		$this->mapper->expects($this->once())->method('upsert')
 			->with($this->equalTo(new TranslationSlot('u1', 'title', 'en')), $this->equalTo(new TranslationEdit('Hello', Translation::STATUS_APPROVED, 'alice')))
 			->willReturn($saved);
@@ -168,7 +170,8 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 			->willReturn([$a, $b, $c, $d]);
 		$this->mapper->expects($this->exactly(2))->method('findOne')
 			->willReturnCallback(
-				function (string $uuid, string $prop, string $lang) {
+				function (TranslationSlot $slot) {
+					[$uuid, $prop, $lang] = [$slot->objectUuid, $slot->property, $slot->language];
 					if ($uuid === 'u1') {
 						$this->assertSame(['title', 'nl'], [$prop, $lang]);
 						return $this->row('u1', 'title', 'nl', 'Hoi');
@@ -206,8 +209,8 @@ class TranslationStatusServiceGoldenTest extends TestCase {
 		$schema = new Schema();
 		$this->handler->method('getTranslatableProperties')->with($schema)->willReturn(['title']);
 		$this->mapper->expects($this->once())->method('findObjectsMissingLanguage')
-			->with('en', ['title'], ['u1', 'u2'])
+			->with($this->equalTo(new LanguageCoverageCheck('en', ['title'], ['u1', 'u2'])))
 			->willReturn(['u2']);
-		$this->assertSame(['u2'], $this->service->findObjectsMissingLanguage('en', $schema, ['u1', 'u2']));
+		$this->assertSame(['u2'], $this->service->findObjectsMissingLanguage($schema, new LanguageGapScan('en', ['u1', 'u2'])));
 	}//end testFindObjectsMissingLanguageUsesTranslatableProperties()
 }//end class

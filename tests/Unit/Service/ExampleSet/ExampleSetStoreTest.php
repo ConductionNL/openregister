@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
+use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetStore;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -281,8 +282,8 @@ class ExampleSetStoreTest extends TestCase {
 		)->willReturn($saved);
 		$system    = [];
 		$ownership = $this->createMock(ObjectOwnershipService::class);
-		$ownership->method('reassignMany')->willReturnCallback(
-			static function (array $identifiers, string $newOwner) use (&$system): array {
+		$ownership->method('reassign')->willReturnCallback(
+			static function (array $identifiers, OwnershipReassignment $reassignment) use (&$system): array {
 				$system[] = SystemOperationContext::isActive();
 				return ['failed' => ($identifiers === ['gone'] ? [['identifier' => 'gone', 'reason' => 'not found']] : [])];
 			}

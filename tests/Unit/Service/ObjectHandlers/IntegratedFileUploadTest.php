@@ -198,7 +198,7 @@ class IntegratedFileUploadTest extends TestCase {
 		$this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-123');
 
 		// Default: isFileProperty returns false (overridden per-test as needed).
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(false);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$linkedEntityHandler = $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class);
 		$computedFieldHandler = $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class);

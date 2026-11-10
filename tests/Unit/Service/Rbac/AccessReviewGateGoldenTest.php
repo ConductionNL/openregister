@@ -31,8 +31,10 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
@@ -150,9 +152,9 @@ class AccessReviewGateGoldenTest extends TestCase {
 		}
 
 		$handler->method('hasGroupPermission')->willReturnCallback(
-			static function (?array $authorization, string $groupId, string $action, ?string $userId = null): bool {
-				foreach (($authorization[$action] ?? []) as $entry) {
-					if ($entry === $groupId || ($userId !== null && $entry === 'user:' . $userId)) {
+			static function (GroupRuleRequest $request): bool {
+				foreach (($request->authorization[$request->action] ?? []) as $entry) {
+					if ($entry === $request->groupId || ($request->userId !== null && $entry === 'user:' . $request->userId)) {
 						return true;
 					}
 				}
@@ -243,7 +245,7 @@ class AccessReviewGateGoldenTest extends TestCase {
 				$expected = $record;
 			}
 
-			$this->assertSame($expected, $gate->resolve('reg', 'sch', 'id-1'));
+			$this->assertSame($expected, $gate->resolve(new ObjectRef('reg', 'sch', 'id-1')));
 		}
 	}//end testResolveIsPinned()
 }//end class

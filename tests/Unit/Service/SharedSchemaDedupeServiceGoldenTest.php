@@ -21,7 +21,9 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 use OCA\OpenRegister\Service\SharedSchema\OwnerCandidates;
 use OCA\OpenRegister\Service\SharedSchema\RegisterConfigurationLocator;
 use OCA\OpenRegister\Service\SharedSchema\SchemaAttribution;
@@ -29,6 +31,7 @@ use OCA\OpenRegister\Service\SharedSchema\SchemaIdSwap;
 use OCA\OpenRegister\Service\SharedSchema\SchemaTableMigrator;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaOwnership;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaStore;
+use OCA\OpenRegister\Service\SharedSchema\SplitTableColumns;
 use OCA\OpenRegister\Service\SharedSchemaDedupeService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -126,7 +129,7 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 			->willReturn(['owner' => 1, 'source' => 'evidence']);
 		$this->migrator->method('tableNameFor')->with(2, 5)->willReturn('t_2_5');
 		$this->migrator->method('countRows')->with('t_2_5')->willReturn(4);
-		$this->migrator->method('planUnmapped')->with('t_2_5', null, $entity->jsonSerialize())->willReturn(['x']);
+		$this->migrator->method('planUnmapped')->with(new SplitTableColumns('t_2_5', null, $entity->jsonSerialize()))->willReturn(['x']);
 		return $entity;
 	}//end arrangeInspect()
 
@@ -163,21 +166,21 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 		$this->db->expects($this->never())->method('beginTransaction');
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Register 4 is not part of this plan.');
-		$this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => []]], 4, false);
+		$this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => []]], 4);
 	}//end testApplySplitRefusesRegisterOutsideThePlan()
 
 	public function testApplySplitRefusesUnattributedPlan(): void {
 		$this->db->expects($this->never())->method('beginTransaction');
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Schema 5 is unattributed; pass --keep to name the owner.');
-		$this->service->applySplit(['schemaId' => '5', 'owner' => null, 'splits' => [2 => []]], 2, false);
+		$this->service->applySplit(['schemaId' => '5', 'owner' => null, 'splits' => [2 => []]], 2);
 	}//end testApplySplitRefusesUnattributedPlan()
 
 	public function testApplySplitStrictRefusesUnmappedColumns(): void {
 		$this->db->expects($this->never())->method('beginTransaction');
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Strict mode: 2 source column(s) have no destination (a, b).');
-		$this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['unmapped' => ['a', 'b']]]], 2, true);
+		$this->service->applySplitStrictly(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['unmapped' => ['a', 'b']]]], 2);
 	}//end testApplySplitStrictRefusesUnmappedColumns()
 
 	public function testApplySplitClonePathRelinksMovesAndLogs(): void {
@@ -203,7 +206,7 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 		$this->db->expects($this->once())->method('commit');
 		$this->db->expects($this->never())->method('rollBack');
 
-		$outcome = $this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['unmapped' => ['q']]]], 2, false);
+		$outcome = $this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['unmapped' => ['q']]]], 2);
 		$this->assertSame(['newSchemaId' => 11, 'rows' => 3, 'unmapped' => ['q'], 'backup' => 'bk'], $outcome);
 		$this->assertSame([11, 6], $register->getSchemas());
 	}//end testApplySplitClonePathRelinksMovesAndLogs()
@@ -215,13 +218,20 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->schemaMapper->method('getSlugToIdMap')->willReturn(['person' => 5]);
 		$this->importHandler->expects($this->once())->method('importSchema')
-			->with($definition, ['person' => 5], 'owner-two', 'app-two', '2.0.0', true, [])
+			->with(
+				new ImportedSchemaLookup(
+					data: $definition,
+					registerSchemaIds: [],
+					options: new SchemaImportOptions(owner: 'owner-two', appId: 'app-two', version: '2.0.0', force: true)
+				),
+				['person' => 5]
+			)
 			->willReturn($created);
 		$this->schemaMapper->expects($this->never())->method('createFromArray');
 		$this->attribution->method('replaceSchemaId')->willReturn([12]);
 		$this->migrator->method('migrate')->willReturn(['rows' => 0, 'unmapped' => [], 'backup' => null]);
 
-		$outcome = $this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['definition' => $definition]]], 2, false);
+		$outcome = $this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['definition' => $definition]]], 2);
 		$this->assertSame(['newSchemaId' => 12, 'rows' => 0, 'unmapped' => [], 'backup' => null], $outcome);
 	}//end testApplySplitConfigurationPathUsesImportHandler()
 
@@ -230,14 +240,21 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
 		$this->importHandler->expects($this->once())->method('importSchema')
-			->with(['slug' => 'p'], [], 'owner-two', 'app-two', '0.0.1', true, [])
+			->with(
+				new ImportedSchemaLookup(
+					data: ['slug' => 'p'],
+					registerSchemaIds: [],
+					options: new SchemaImportOptions(owner: 'owner-two', appId: 'app-two', version: '0.0.1', force: true)
+				),
+				[]
+			)
 			->willReturn(new Schema());
 		$this->schemaMapper->method('find')->willReturn($this->schema(5, 'p'));
 		$this->schemaMapper->expects($this->once())->method('createFromArray')->willReturn($this->schema(13, 'p'));
 		$this->attribution->method('replaceSchemaId')->willReturn([13]);
 		$this->migrator->method('migrate')->willReturn(['rows' => 0, 'unmapped' => [], 'backup' => null]);
 
-		$outcome = $this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['definition' => ['slug' => 'p']]]], 2, false);
+		$outcome = $this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => ['definition' => ['slug' => 'p']]]], 2);
 		$this->assertSame(13, $outcome['newSchemaId']);
 	}//end testApplySplitUnsavedImportFallsBackToCloneWithDefaultVersion()
 
@@ -248,6 +265,6 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 		$this->db->expects($this->never())->method('commit');
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('db down');
-		$this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => []]], 2, false);
+		$this->service->applySplit(['schemaId' => 5, 'owner' => 1, 'splits' => [2 => []]], 2);
 	}//end testApplySplitRollsBackAndRethrows()
 }//end class

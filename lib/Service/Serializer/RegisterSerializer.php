@@ -100,26 +100,6 @@ final class RegisterSerializer implements RegisterSerializerInterface {
 	/**
 	 * Serialize a collection of Register entities.
 	 *
-	 * Kept for RegisterService::findAllSerialized(), whose call an open change rewrites;
-	 * builds the extension and delegates to {@see self::serializePage()}.
-	 *
-	 * @param Register[] $registers Registers to serialize.
-	 * @param array $extend Extension keys to apply.
-	 * @param array<int,array<int,array{total:int}>>|null $schemaStatsByRegisterId Pre-computed per-register stats
-	 *                                                                             (registerId → schemaId →
-	 *                                                                             ['total' => int]).
-	 *
-	 * @return array<int,array> Serialized payload for each register.
-	 *
-	 * @spec openspec/specs/register-service-extensions/spec.md
-	 */
-	public function serializeMany(array $registers, array $extend = [], ?array $schemaStatsByRegisterId = null): array {
-		return $this->serializePage(registers: $registers, extension: new RegisterListExtension(extend: $extend, schemaStatsByRegisterId: $schemaStatsByRegisterId));
-	}//end serializeMany()
-
-	/**
-	 * Serialize a collection of Register entities.
-	 *
 	 * @param Register[]            $registers Registers to serialize.
 	 * @param RegisterListExtension $extension The extension keys and the per-register schema counts.
 	 *

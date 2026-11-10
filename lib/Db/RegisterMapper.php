@@ -23,11 +23,13 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Rbac\GrantDeclaration;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
@@ -780,9 +782,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		// granted nothing, and the role read as correctly configured in every
 		// screen that showed it.
 		AccessDeclarationValidators::permissionCatalogue(eventDispatcher: $this->eventDispatcher)->assertGrantable(
-			authorization: $authorization,
-			roleDefinitions: $roleDefinitions,
-			subject: $subject
+			declaration: new GrantDeclaration(authorization: $authorization, roleDefinitions: $roleDefinitions, subject: $subject)
 		);
 
 		if ($this->isEmptyAuthorization(authorization: $authorization) === true) {
@@ -946,7 +946,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		}
 
 		$objectEntityMapper = $this->container->get(MagicMapperInterface::class);
-		$stats = $objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+		$stats = $objectEntityMapper->getStatistics(scope: new StatisticsScope(registerId: $registerId));
 		if (($stats['total'] ?? 0) > 0) {
 			throw new ValidationException(message: 'Cannot delete register: objects are still attached.');
 		}

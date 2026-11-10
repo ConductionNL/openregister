@@ -385,6 +385,7 @@ class MagicMetadataColumnHealer {
 		}
 
 		sort($signature);
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		$this->version = substr(md5(implode(',', $signature)), 0, 12);
 
 		return $this->version;

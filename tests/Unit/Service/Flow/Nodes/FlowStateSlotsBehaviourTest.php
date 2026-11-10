@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStateHandle;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
 use OCP\IL10N;
@@ -54,7 +55,7 @@ class FlowStateSlotsBehaviourTest extends TestCase {
 	 * @return array<string, mixed> The single output item's json.
 	 */
 	private function step(FlowStateHandle $state, array $json, array $config): array {
-		return $this->node->execute(items: [['json' => $json]], config: $config, context: [FlowStateHandle::CONTEXT_KEY => $state])[0]['json'];
+		return $this->node->execute(new FlowNodeCall(items: [['json' => $json]], config: $config, context: [FlowStateHandle::CONTEXT_KEY => $state]))[0]['json'];
 	}//end step()
 
 	public function testForgetRemovesTheKeyAndPassesTheItemOn(): void {

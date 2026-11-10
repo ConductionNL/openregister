@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Rbac\GrantRowsQuery;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -120,7 +122,7 @@ class ObjectGrantsController extends Controller {
 	 * @return JSONResponse The rows, 404, 403 or 500.
 	 */
 	private function indexForObject(ObjectRef $ref, ?string $principalTypes = null): JSONResponse {
-		$object = $this->gate->resolve(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+		$object = $this->gate->resolve(ref: $ref);
 		if ($object === null) {
 			return ObjectSharingEndpoint::notFound();
 		}
@@ -156,9 +158,10 @@ class ObjectGrantsController extends Controller {
 	private function rows(ObjectEntity $object, array $types): array {
 		return $this->report->rowsFor(
 			object: $object,
-			registerRef: $this->objectService->getRegister(),
-			schemaRef: $this->objectService->getSchema(),
-			principalTypes: $types
+			query: new GrantRowsQuery(
+				table: new RegisterSchemaRef(register: $this->objectService->getRegister(), schema: $this->objectService->getSchema()),
+				principalTypes: $types
+			)
 		);
 	}//end rows()
 

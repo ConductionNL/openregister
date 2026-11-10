@@ -154,13 +154,13 @@ class ArrayElementFilter {
 		$paths      = new NestedPathFilter();
 		$conditions = [];
 		foreach ($fields as $field => $value) {
-			$expression = $paths->expression(column: $element->expression, path: [(string)$field], isPostgres: $element->isPostgres);
+			$expression = $paths->expression(column: $element, path: [(string)$field]);
 			if ($expression === null) {
 				return null;
 			}
 
-			$bind = $element->bind(...);
-			array_push($conditions, ...$paths->conditions(expression: $expression, value: $value, bind: $bind, isPostgres: $element->isPostgres));
+			$target = new NestedPathTarget(expression: $expression, bind: $element->bind(...), isPostgres: $element->isPostgres);
+			array_push($conditions, ...$paths->conditions(target: $target, value: $value));
 		}
 
 		return implode(' AND ', $conditions);

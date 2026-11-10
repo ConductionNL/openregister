@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Configuration;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
+
 /**
  * Read projects, branches and configuration files from a GitLab instance.
  *

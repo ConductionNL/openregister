@@ -49,10 +49,8 @@ interface ReadStateServiceInterface {
 	 * Idempotent, and writes nothing on the object itself: no audit entry, no
 	 * version.
 	 *
-	 * @param ObjectEntity $object The object, already resolved through RBAC.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
-	 * @param string|null $subResource A sub-resource that was opened, when one was.
+	 * @param AddressedObject $target      The object, already resolved through RBAC, and how the caller addressed it.
+	 * @param string|null     $subResource A sub-resource that was opened, when one was.
 	 *
 	 * @throws NotAuthorizedException When the caller is anonymous.
 	 *
@@ -60,12 +58,7 @@ interface ReadStateServiceInterface {
 	 *
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
-	public function markRead(
-		ObjectEntity $object,
-		?string $register = null,
-		?string $schema = null,
-		?string $subResource = null
-	): ObjectReadState;
+	public function markRead(AddressedObject $target, ?string $subResource = null): ObjectReadState;
 
 	/**
 	 * Put an object back to unread for the calling user.

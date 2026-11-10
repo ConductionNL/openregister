@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\DisposalSweep;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Service\Archival\DestructionInfrastructure;
@@ -35,6 +36,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\ApprovalChoice;
+use OCA\OpenRegister\Service\Archival\ApprovalRequest;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
 use OCA\OpenRegister\Service\Archival\ReviewerAnswer;
@@ -212,7 +214,7 @@ class DestructionGoldenTest extends TestCase {
 	}//end decidedList()
 
 	public function testApproveAllWithholdsDecidedEntriesAndQueuesTheJob(): void {
-		$result = $this->stripNow($this->destruction()->approveList(destructionList: $this->decidedList()));
+		$result = $this->stripNow($this->destruction()->approveList(destructionList: $this->decidedList(), request: new ApprovalRequest(choice: new ApprovalChoice(), requiresDual: false, listUuid: null)));
 
 		$this->assertSame(
 			[
@@ -253,11 +255,7 @@ class DestructionGoldenTest extends TestCase {
 		];
 
 		$result = $this->stripNow(
-			$this->destruction(extension: 'P2M')->approveList(
-				destructionList: $list,
-				choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['a', 'b', 'missing'], exclusionReasons: ['a' => 'Nog in gebruik']),
-				listUuid: 'given-uuid'
-			)
+			$this->destruction(extension: 'P2M')->approveList(destructionList: $list, request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['a', 'b', 'missing'], exclusionReasons: ['a' => 'Nog in gebruik']), requiresDual: false, listUuid: 'given-uuid'))
 		);
 
 		$this->assertSame(
@@ -297,10 +295,7 @@ class DestructionGoldenTest extends TestCase {
 	}//end testPartialApprovalExcludesExtendsAndMergesWithEarlierExclusions()
 
 	public function testPartialActionWithoutExclusionsAndBadExcludedKeyBehaveAsBefore(): void {
-		$result = $this->destruction()->approveList(
-			destructionList: ['objects' => [['uuid' => 'x']], 'excludedObjects' => 'broken', 'approvals' => []],
-			choice: new ApprovalChoice(action: 'approve_partial')
-		);
+		$result = $this->destruction()->approveList(destructionList: ['objects' => [['uuid' => 'x']], 'excludedObjects' => 'broken', 'approvals' => []], request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_partial'), requiresDual: false, listUuid: null));
 
 		$this->assertSame([['uuid' => 'x']], $result['objects']);
 		$this->assertSame('broken', $result['excludedObjects']);
@@ -308,10 +303,7 @@ class DestructionGoldenTest extends TestCase {
 		$this->assertSame([[DestructionExecutionJob::class, ['destructionListUuid' => null]]], $this->jobs);
 
 		$this->object('y', ['archiefactiedatum' => '2021-01-01']);
-		$partial = $this->destruction()->approveList(
-			destructionList: ['objects' => [['uuid' => 'y']], 'excludedObjects' => 'broken', 'approvals' => []],
-			choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['y'])
-		);
+		$partial = $this->destruction()->approveList(destructionList: ['objects' => [['uuid' => 'y']], 'excludedObjects' => 'broken', 'approvals' => []], request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['y']), requiresDual: false, listUuid: null));
 		$this->assertSame([], $partial['objects']);
 		$this->assertSame('2022-01-01', $this->updates[0]['retention']['archiefactiedatum']);
 		$this->assertSame(
@@ -323,19 +315,19 @@ class DestructionGoldenTest extends TestCase {
 	public function testDualApprovalNeedsTwoDistinctArchivists(): void {
 		$service = $this->destruction();
 
-		$first = $service->approveList(destructionList: $this->decidedList(), requiresDual: true);
+		$first = $service->approveList(destructionList: $this->decidedList(), request: new ApprovalRequest(choice: new ApprovalChoice(), requiresDual: true, listUuid: null));
 		$this->assertSame('awaiting_second_approval', $first['status']);
 		$this->assertCount(2, $first['excludedObjects']);
 		$this->assertSame([], $this->jobs);
 
-		$same = $service->approveList(destructionList: $first, requiresDual: true);
+		$same = $service->approveList(destructionList: $first, request: new ApprovalRequest(choice: new ApprovalChoice(), requiresDual: true, listUuid: null));
 		$this->assertSame('awaiting_second_approval', $same['status']);
 		$this->assertCount(1, $same['approvals']);
 		$this->assertCount(2, $same['excludedObjects']);
 		$this->assertSame([], $this->jobs);
 
 		$this->uid = '';
-		$second = $this->stripNow($service->approveList(destructionList: $first, requiresDual: true));
+		$second = $this->stripNow($service->approveList(destructionList: $first, request: new ApprovalRequest(choice: new ApprovalChoice(), requiresDual: true, listUuid: null)));
 		$this->assertSame('approved', $second['status']);
 		$this->assertSame(
 			[
@@ -406,10 +398,10 @@ class DestructionGoldenTest extends TestCase {
 
 		$retention = $this->createMock(RetentionServiceInterface::class);
 		$retention->method('getObjectsOnPendingDestructionLists')->willReturn(['on-list']);
-		$retention->method('destructionRefusal')->willReturnCallback(
-			function (ObjectEntity $object, string $today, array $excludeUuids): ?string {
-				$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $today);
-				$this->assertSame(['on-list'], $excludeUuids);
+		$retention->method('destructionRefusalIn')->willReturnCallback(
+			function (ObjectEntity $object, DisposalSweep $sweep): ?string {
+				$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $sweep->today);
+				$this->assertSame(['on-list'], $sweep->excludeUuids);
 				return ($object->getUuid() === 'held') ? 'legal_hold' : null;
 			}
 		);
@@ -443,7 +435,7 @@ class DestructionGoldenTest extends TestCase {
 		$this->object('held', []);
 		$retention = $this->createMock(RetentionServiceInterface::class);
 		$retention->method('getObjectsOnPendingDestructionLists')->willReturn([]);
-		$retention->method('destructionRefusal')->willReturn('not_due');
+		$retention->method('destructionRefusalIn')->willReturn('not_due');
 		$retention->expects($this->never())->method('createDestructionList');
 		$save = $this->createMock(SaveObjectInterface::class);
 		$save->expects($this->never())->method('saveObject');
@@ -456,7 +448,7 @@ class DestructionGoldenTest extends TestCase {
 
 	public function testCreatingAListRefusesWithoutConfigurationOrABuildableList(): void {
 		$retention = $this->createMock(RetentionServiceInterface::class);
-		$retention->expects($this->never())->method('destructionRefusal');
+		$retention->expects($this->never())->method('destructionRefusalIn');
 		$save = $this->createMock(SaveObjectInterface::class);
 		$save->expects($this->never())->method('saveObject');
 
@@ -470,7 +462,7 @@ class DestructionGoldenTest extends TestCase {
 		$this->object('ok', []);
 		$builder = $this->createMock(RetentionServiceInterface::class);
 		$builder->method('getObjectsOnPendingDestructionLists')->willReturn([]);
-		$builder->method('destructionRefusal')->willReturn(null);
+		$builder->method('destructionRefusalIn')->willReturn(null);
 		$builder->method('createDestructionList')->willReturn(null);
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('The destruction list could not be built from the archival settings.');

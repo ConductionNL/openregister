@@ -32,8 +32,6 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -108,10 +106,8 @@ class GroupObjectSourceProvider implements ObjectSourceProvider {
 	 * MUST return null when the group is absent OR the acting user may not read
 	 * it, so the two cases are indistinguishable (no enumeration oracle).
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string $id The group gid.
-	 * @param array<string, mixed> $config The object-source config block (unused).
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
 	 *
@@ -119,8 +115,8 @@ class GroupObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.2
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		return $this->findGroup(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
+		return $this->findGroup(binding: $source->binding(), id: $id);
 	}//end find()
 
 	/**
@@ -152,10 +148,8 @@ class GroupObjectSourceProvider implements ObjectSourceProvider {
 	 * Honours `filters.search`/`_search`, `limit` and `offset`. An admin sees
 	 * every group; a plain user sees only the groups they belong to.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query Query (filters/search/limit/offset).
-	 * @param array<string, mixed> $config The object-source config block (unused).
 	 *
 	 * @return ObjectEntity[] The matching virtual objects.
 	 *
@@ -163,8 +157,8 @@ class GroupObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.2
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		return $this->listGroups(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
+	public function findAll(SourcedTable $source, array $query = []): array {
+		return $this->listGroups(binding: $source->binding(), query: $query);
 	}//end findAll()
 
 	/**

@@ -23,8 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * The one call the backfill-slugs command makes.
@@ -36,9 +34,8 @@ interface ObjectSlugBackfillServiceInterface {
 	/**
 	 * Fill the missing slugs of one register and schema, or plan it.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema; must set `objectSlugField`.
-	 * @param bool     $dryRun   Plan only, write nothing.
+	 * @param ObjectSlugBackfillRequest $request The register, the schema (which must set `objectSlugField`) and
+	 *                                           whether to plan only and write nothing.
 	 *
 	 * @return array{
 	 *     duplicates: array<string, list<string>>,
@@ -51,5 +48,5 @@ interface ObjectSlugBackfillServiceInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	public function run(Register $register, Schema $schema, bool $dryRun=false): array;
+	public function run(ObjectSlugBackfillRequest $request): array;
 }//end interface

@@ -38,8 +38,8 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
-use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookEvent;
+use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -563,17 +563,11 @@ class WebhooksController extends Controller {
 
 			// Retrieve webhooks using mapper with pagination and filters.
 			$webhooks = $this->webhookMapper->findAll(
-				limit: $limit,
-				offset: $offset,
-				filters: $filters
+				new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: $filters)
 			);
 
 			// Get total count for pagination (without limit/offset but with filters).
-			$allWebhooks = $this->webhookMapper->findAll(
-				limit: null,
-				offset: null,
-				filters: $filters
-			);
+			$allWebhooks = $this->webhookMapper->findAll(ListQuery::unbounded(filters: $filters));
 			$total = count($allWebhooks);
 
 			// Serialize webhooks to arrays.
@@ -936,7 +930,7 @@ class WebhooksController extends Controller {
 			]
 		);
 
-		$preview = $this->webhookService->previewPayload(webhook: $webhook, eventName: $eventName, payload: $payload);
+		$preview = $this->webhookService->previewPayload(webhook: $webhook, event: new WebhookEvent(name: $eventName, payload: $payload));
 
 		return new JSONResponse(data: $preview + ['event' => $eventName]);
 	}//end preview()

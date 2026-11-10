@@ -293,8 +293,7 @@ trait OrganisationFilterTrait {
 			$userId = $user->getUID();
 		}
 
-		$this->logRedacted(
-			level: 'info',
+		$this->infoRedacted(
 			message: '[MultiTenancyTrait] Admin override: cross-organisation access granted',
 			context: ['type' => 'cross_tenant_access_admin_override', 'actor' => $userId]
 		);
