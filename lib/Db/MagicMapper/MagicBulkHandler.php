@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\ObjectVersionHandler;
@@ -278,7 +279,10 @@ class MagicBulkHandler {
 		$prepared['_description'] = $selfData['description'] ?? $object['description'] ?? null;
 		$prepared['_summary'] = $selfData['summary'] ?? $object['summary'] ?? null;
 		$prepared['_image'] = $selfData['image'] ?? $object['image'] ?? null;
-		$prepared['_slug'] = MagicBulkUpsertSql::rowSlug(selfData: $selfData, object: $object, managedSlug: $managedSlug);
+		$prepared['_slug'] = match ($managedSlug) {
+			true => MagicBulkUpsertSql::managedRowSlug(selfData: $selfData, object: $object),
+			false => MagicBulkUpsertSql::rowSlug(selfData: $selfData, object: $object),
+		};
 		$prepared['_uri'] = $selfData['uri'] ?? $object['uri'] ?? null;
 
 		return $prepared;
@@ -442,24 +446,40 @@ class MagicBulkHandler {
 	 * into two methods would duplicate the whole chunk path to vary one column
 	 * list.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function bulkUpsert(
-		array $objects,
-		Register $register,
-		Schema $schema,
-		string $tableName,
-		bool $needsPreUpdateState = true,
-	): array {
-		if ($objects === []) {
+	public function bulkUpsert(array $objects, Register $register, Schema $schema, string $tableName, bool $needsPreUpdateState = true): array {
+		$table = new RegisterSchema(register: $register, schema: $schema);
+		$command = new BulkUpsertCommand(objects: $objects, table: $table, tableName: $tableName, needsPreUpdateState: $needsPreUpdateState);
+		return $this->upsert(command: $command);
+	}//end bulkUpsert()
+
+	/**
+	 * Run one bulk upsert, chunk by chunk, each chunk in its own transaction.
+	 *
+	 * @param BulkUpsertCommand $command The upsert.
+	 *
+	 * @return array Array of complete objects with object_status field
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @psalm-return list<array<string, mixed>>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function upsert(BulkUpsertCommand $command): array {
+		$tableName = $command->tableName;
+		if ($command->objects === []) {
 			return [];
 		}
 
 		// Prepare objects for dynamic table structure.
 		$preparedObjects = $this->prepareObjectsForDynamicTable(
-			objects: $objects,
-			register: $register,
-			schema: $schema
+			objects: $command->objects,
+			register: $command->table->register,
+			schema: $command->table->schema
 		);
 
 		if ($preparedObjects === []) {
@@ -475,7 +495,7 @@ class MagicBulkHandler {
 		// Determine optimal chunk size.
 		$chunkSize = $this->calculateOptimalChunkSize(objects: $preparedObjects);
 		$chunks = array_chunk($preparedObjects, $chunkSize);
-		$this->managedSlugTables[$tableName] = MagicBulkUpsertSql::hasManagedSlugs(schema: $schema);
+		$this->managedSlugTables[$tableName] = MagicBulkUpsertSql::hasManagedSlugs(schema: $command->table->schema);
 
 		$allResults = [];
 
@@ -486,12 +506,7 @@ class MagicBulkHandler {
 		foreach ($chunks as $chunkIndex => $chunk) {
 			$this->sql->db->beginTransaction();
 			try {
-				$chunkResults = $this->executeUpsertChunk(
-					chunk: $chunk,
-					tableName: $tableName,
-					chunkNumber: ($chunkIndex + 1),
-					needsPreUpdateState: $needsPreUpdateState
-				);
+				$chunkResults = $this->executeUpsertChunk(run: $command->chunkRun(chunkNumber: ($chunkIndex + 1)), chunk: $chunk);
 
 				$this->sql->db->commit();
 			} catch (\Throwable $e) {
@@ -517,17 +532,13 @@ class MagicBulkHandler {
 		// Enable via $dispatchEvents parameter when business logic hooks are needed.
 		// $this->dispatchBulkEvents(results: $allResults, register: $register, schema: $schema).
 		return $allResults;
-	}//end bulkUpsert()
+	}//end upsert()
 
 	/**
 	 * Execute upsert operation for a single chunk
 	 *
-	 * @param array $chunk Chunk of prepared objects
-	 * @param string $tableName Target table name
-	 * @param int $chunkNumber Chunk number for logging
-	 * @param bool $needsPreUpdateState Whether anything downstream will read the
-	 *                                  pre-update rows. False narrows the fetch
-	 *                                  to the uuid. See the SuppressWarnings note.
+	 * @param MagicUpsertChunkRun $run   The chunk run, carrying the table, chunk number and pre-update flag
+	 * @param array               $chunk Chunk of prepared objects
 	 *
 	 * @return array Array of complete objects with object_status
 	 *
@@ -535,28 +546,18 @@ class MagicBulkHandler {
 	 *
 	 * @psalm-return list<array<string, mixed>>
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) See bulkUpsert(): a fact about
-	 * the caller, carried to the one statement that varies on it.
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
-	private function executeUpsertChunk(
-		array $chunk,
-		string $tableName,
-		int $chunkNumber,
-		bool $needsPreUpdateState = true,
-	): array {
+	private function executeUpsertChunk(MagicUpsertChunkRun $run, array $chunk): array {
 		if ($chunk === []) {
 			return [];
 		}
 
-		$run = new MagicUpsertChunkRun(tableName: $tableName, chunkNumber: $chunkNumber);
-		$run->needsPreUpdateState = $needsPreUpdateState;
 		$run->objectCount = count($chunk);
 		// Record operation start time for precise created/updated detection.
 		$run->operationStartTime = (new DateTime())->format('Y-m-d H:i:s');
 
-		$filteredChunk = $this->filterToTableColumns(chunk: $chunk, tableName: $tableName);
+		$filteredChunk = $this->filterToTableColumns(chunk: $chunk, tableName: $run->tableName);
 		if (empty($filteredChunk) === true) {
 			return [];
 		}
@@ -568,7 +569,7 @@ class MagicBulkHandler {
 
 		$run->collectColumnsAndUuids();
 		$run->isPostgres = $this->sql->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-		$run->fullTableName = $this->getFullTableName(tableName: $tableName);
+		$run->fullTableName = $this->getFullTableName(tableName: $run->tableName);
 
 		if (empty($run->uuids) === false) {
 			$this->loadExistingRows(run: $run);
@@ -785,18 +786,17 @@ class MagicBulkHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	private function buildUpsertUpdateClauses(MagicUpsertChunkRun $run): array {
+		$freezeSlug = ($this->managedSlugTables[$run->tableName] ?? false);
 		$updateClauses = [];
 		foreach ($run->columns as $column) {
 			if (in_array($column, self::COLUMNS_KEPT_ON_UPDATE, true) === true) {
 				continue;
 			}
 
-			$updateClauses[] = MagicBulkUpsertSql::updateClause(
-				column: $column,
-				isPostgres: $run->isPostgres,
-				fullTableName: $run->fullTableName,
-				freezeSlug: ($this->managedSlugTables[$run->tableName] ?? false)
-			);
+			$updateClauses[] = match ($column === '_slug' && $freezeSlug === true) {
+				true => MagicBulkUpsertSql::frozenSlugClause(isPostgres: $run->isPostgres, fullTableName: $run->fullTableName),
+				false => MagicBulkUpsertSql::updateClause(column: $column, isPostgres: $run->isPostgres),
+			};
 		}
 
 		return $updateClauses;
@@ -950,10 +950,29 @@ class MagicBulkHandler {
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
 	 */
 	public function purgeExpired(Register $register, Schema $schema, string $tableName): int {
+		return $this->purgeExpiredRows(table: new RegisterSchema(register: $register, schema: $schema), tableName: $tableName);
+	}//end purgeExpired()
+
+	/**
+	 * Hard-delete every row of a register+schema table whose `_expires` has passed.
+	 *
+	 * See purgeExpired() for why the rows are removed rather than soft-deleted
+	 * and why the database clock decides.
+	 *
+	 * @param RegisterSchema $table     The register and schema whose rows are swept.
+	 * @param string         $tableName The bare (unprefixed) table name to sweep.
+	 *
+	 * @return int The number of rows removed.
+	 *
+	 * @throws \OCP\DB\Exception If the delete fails.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
+	 */
+	public function purgeExpiredRows(RegisterSchema $table, string $tableName): int {
 		$qb = $this->sql->db->getQueryBuilder();
 		$qb->delete($tableName)
-			->where($qb->expr()->eq('_register', $qb->createNamedParameter($register->getId(), IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('_schema', $qb->createNamedParameter($schema->getId(), IQueryBuilder::PARAM_INT)))
+			->where($qb->expr()->eq('_register', $qb->createNamedParameter($table->register->getId(), IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('_schema', $qb->createNamedParameter($table->schema->getId(), IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->isNotNull('_expires'))
 			->andWhere($qb->expr()->lt('_expires', $qb->createFunction('NOW()')));
 
@@ -965,13 +984,13 @@ class MagicBulkHandler {
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'register' => $register->getId(),
-				'schema' => $schema->getId(),
+				'register' => $table->register->getId(),
+				'schema' => $table->schema->getId(),
 				'table' => $tableName,
 				'purged' => $purged,
 			]
 		);
 
 		return $purged;
-	}//end purgeExpired()
+	}//end purgeExpiredRows()
 }//end class

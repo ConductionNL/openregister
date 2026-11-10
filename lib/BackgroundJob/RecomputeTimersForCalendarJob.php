@@ -37,7 +37,6 @@ use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -71,18 +70,24 @@ class RecomputeTimersForCalendarJob extends QueuedJob implements CalendarRecompu
 	private readonly CalendarRecomputeInterface $recompute;
 
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory                          $time     The clock.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
 	 * @param RecomputeTimersForCalendarJobServices $services The timers, the supersession path and the rule.
-	 * @param LoggerInterface                       $logger   The logger.
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		JobRuntime $runtime,
 		RecomputeTimersForCalendarJobServices $services,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 		$this->timers = $services->timers;
 		$this->service = $services->service;
 		$this->recompute = $services->recompute;

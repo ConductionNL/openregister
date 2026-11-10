@@ -170,24 +170,38 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 	 *   which has carried these three suppressions since it was written. The
 	 *   branches are the tenancy rule itself (system context, admin, bypass,
 	 *   SaaS, active-org set) and collapsing them would hide it.
-	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	public function resolveOrganizationScope(
 		bool $adminBypassEnabled = false,
 		?int $registerId = null,
 		?int $schemaId = null,
 	): array {
+		return $this->scopeOf(adminBypassEnabled: $adminBypassEnabled, table: new OrganisationScopeTable(registerId: $registerId, schemaId: $schemaId));
+
+	}//end resolveOrganizationScope()
+
+	/**
+	 * The organisation scope of a table: the active organisation context's, else the session caller's.
+	 *
+	 * @param bool                   $adminBypassEnabled Whether the caller honours the admin bypass.
+	 * @param OrganisationScopeTable $table              The table being read, for shared master data.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} `mode` is one of the SCOPE_* constants.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 */
+	private function scopeOf(bool $adminBypassEnabled, OrganisationScopeTable $table): array {
 		// Code acting for an organisation reads that organisation (and its
 		// parents and shared master data holders), never more: the session
 		// user, the admin bypass and the system context do not widen it.
-		$table = new OrganisationScopeTable(registerId: $registerId, schemaId: $schemaId);
 		if (OrganisationContext::isActive() === true) {
 			return $this->contextOrganizationScope(table: $table);
 		}
 
 		return $this->callerOrganizationScope(adminBypassEnabled: $adminBypassEnabled, table: $table);
-
-	}//end resolveOrganizationScope()
+	}//end scopeOf()
 
 	/**
 	 * The organisation scope of the session caller, outside an organisation context.

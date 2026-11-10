@@ -28,6 +28,7 @@ use OCA\OpenRegister\Exception\DecisionConflictException;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
 use OCA\OpenRegister\Service\Decision\DecisionOwnership;
+use OCA\OpenRegister\Service\Decision\DecisionQuestion;
 use OCA\OpenRegister\Service\Decision\DecisionService;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
 use OCA\OpenRegister\Service\Decision\RelationDecisionStores;
@@ -269,7 +270,12 @@ class RelationDecisionServiceBehaviourTest extends TestCase
         $this->decisions->method('find')->willReturn($current);
         $this->ownership->expects($this->once())
             ->method('refusal')
-            ->with($current, 'bob', $this->isInstanceOf(ReviewPolicy::class), ['subjectId' => '5'])
+            ->with(
+                $current,
+                $this->callback(
+                    static fn(DecisionQuestion $q): bool => $q->actorId === 'bob' && $q->policy instanceof ReviewPolicy && $q->subject === ['subjectId' => '5']
+                )
+            )
             ->willReturn(['error' => 'decision-owned', 'decision' => 'cur-1']);
         $this->db->expects($this->never())->method('beginTransaction');
 
@@ -288,9 +294,7 @@ class RelationDecisionServiceBehaviourTest extends TestCase
             ->method('refusal')
             ->with(
                 $this->callback(static fn(Decision $d): bool => $d->getUuid() === 'ghost' && $d->getDecidedBy() === ''),
-                'bob',
-                $this->anything(),
-                $this->anything()
+                $this->callback(static fn(DecisionQuestion $q): bool => $q->actorId === 'bob')
             )
             ->willReturn(['error' => 'decision-owned', 'decision' => 'ghost']);
 

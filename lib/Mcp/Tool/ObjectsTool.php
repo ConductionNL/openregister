@@ -26,9 +26,6 @@ namespace OCA\OpenRegister\Mcp\Tool;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
-use ReflectionMethod;
 use RuntimeException;
 
 /**
@@ -50,26 +47,16 @@ use RuntimeException;
 class ObjectsTool extends AbstractTool {
 
 	/**
-	 * Object service
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private ObjectOperationsInterface $objectService;
-
-	/**
 	 * Constructor
 	 *
-	 * @param IUserSession $userSession User session service
-	 * @param LoggerInterface $logger Logger service
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
 	 * @param ObjectOperationsInterface $objectService Object service
 	 */
 	public function __construct(
-		IUserSession $userSession,
-		LoggerInterface $logger,
-		ObjectOperationsInterface $objectService,
+		ToolCallTrail $trail,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
-		parent::__construct(userSession: $userSession, logger: $logger);
-		$this->objectService = $objectService;
+		parent::__construct(trail: $trail);
 	}//end __construct()
 
 	/**
@@ -144,7 +131,7 @@ class ObjectsTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
-		return $this->executeWithUser(functionName: $functionName, parameters: $parameters, userId: $userId);
+		return $this->executeWithUser(call: new ToolCall(functionName: $functionName, parameters: $parameters), userId: $userId);
 	}//end executeFunction()
 
 	/**
@@ -183,11 +170,11 @@ class ObjectsTool extends AbstractTool {
 		// volunteering an extra hint should not be a fatal.
 		$methodName = $this->functionMethod(functionName: $functionName);
 		$known      = [];
-		foreach ((new ReflectionMethod($this, $methodName))->getParameters() as $parameter) {
+		foreach ($this->bindingTarget(methodName: $methodName)->getParameters() as $parameter) {
 			$known[$parameter->getName()] = true;
 		}
 
-		return $this->$methodName(...array_intersect_key($parameters, $known));
+		return $this->callMethod(methodName: $methodName, arguments: array_intersect_key($parameters, $known));
 	}//end invokeFunction()
 
 	/**
@@ -328,9 +315,7 @@ class ObjectsTool extends AbstractTool {
 	/**
 	 * Create a new object
 	 *
-	 * @param string $register Register identifier
-	 * @param string $schema Schema identifier
-	 * @param array $data Object data
+	 * @param CreateObjectCommand $command The register and schema identifiers and the object data
 	 *
 	 * @return (mixed|string|true)[] Result with created object
 	 *
@@ -340,8 +325,8 @@ class ObjectsTool extends AbstractTool {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function createObject(string $register, string $schema, array $data): array {
-		return $this->saveNew(scope: ['register' => $register, 'schema' => $schema], data: $data);
+	public function createObject(CreateObjectCommand $command): array {
+		return $this->saveNew(scope: ['register' => $command->register, 'schema' => $command->schema], data: $command->data);
 	}//end createObject()
 
 	/**

@@ -37,6 +37,10 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableSearch;
+use OCA\OpenRegister\Db\RegisterSchema;
 
 class LastUserActivityMetadataTest extends TestCase {
 
@@ -130,7 +134,7 @@ class LastUserActivityMetadataTest extends TestCase {
 		$connection->method('quote')->willReturnCallback(static fn ($v) => "'{$v}'");
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildMetadataFilterConditionsSql');
-		$conditions = $method->invoke($this->search, ['@self' => ['lastUserActivity' => ['lt' => '2026-10-01']]], $connection, true);
+		$conditions = $method->invoke($this->search, new ConditionSqlRun(query: ['@self' => ['lastUserActivity' => ['lt' => '2026-10-01']]], table: new MagicReadTable(schema: new Schema()), connection: $connection, isPostgres: true));
 
 		$this->assertSame(['"_last_user_activity" < \'2026-10-01\''], $conditions);
 	}
@@ -154,12 +158,7 @@ class LastUserActivityMetadataTest extends TestCase {
 		$register->setId(1);
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'convertRowToObjectEntity');
-		$entity = $method->invoke(
-			$this->search,
-			['_uuid' => 'u-1', '_updated' => '2026-10-10 08:00:00', '_last_user_activity' => '2026-09-01 10:00:00'],
-			$register,
-			$this->makeSchema()
-		);
+		$entity = $method->invoke($this->search, ['_uuid' => 'u-1', '_updated' => '2026-10-10 08:00:00', '_last_user_activity' => '2026-09-01 10:00:00'], new TableSearch(table: new RegisterSchema(register: $register, schema: $this->makeSchema()), tableName: ''));
 
 		$this->assertSame('2026-09-01 10:00:00', $entity->getLastUserActivity()->format('Y-m-d H:i:s'));
 		$this->assertSame('2026-10-10 08:00:00', $entity->getUpdated()->format('Y-m-d H:i:s'));
