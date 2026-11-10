@@ -157,7 +157,8 @@ class EntityRelationsControllerTest extends TestCase {
 			$this->emailLinkMapper,
 			$this->logger,
 			$this->relationDecisions,
-			$this->visibleAsIs()
+			$this->visibleAsIs(),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end makeController()
 
