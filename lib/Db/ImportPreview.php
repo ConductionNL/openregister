@@ -93,7 +93,6 @@ use OCP\AppFramework\Db\Entity;
  * threshold would cost a join on every progress poll.
  */
 class ImportPreview extends Entity implements JsonSerializable {
-	use HydrateBySettersTrait;
 
 	/**
 	 * The preview has been created but not walked yet.
