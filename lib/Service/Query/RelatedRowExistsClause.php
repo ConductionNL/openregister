@@ -311,20 +311,8 @@ final class RelatedRowExistsClause {
 		$sql        = [];
 		$parameters = [];
 
-		foreach (array_values($batch->filters) as $position => $filter) {
-			$alias  = sprintf('%s%d', $batch->parameterPrefix, $position);
-			$clause = $this->render(
-				filter: $filter,
-				subquery: new RelatedRowSubquery(
-					target: $batch->target,
-					inner: new RelatedRowInnerRow(
-						alias: $alias,
-						accessPredicate: (string)($batch->accessPredicateFor)($alias, $filter),
-						parameterPrefix: $alias
-					)
-				)
-			);
-
+		foreach (array_keys(array_values($batch->filters)) as $position) {
+			$clause     = $this->clauseAt(batch: $batch, position: $position);
 			$sql[]      = $clause['sql'];
 			$parameters = array_merge($parameters, $clause['parameters']);
 		}
@@ -334,6 +322,31 @@ final class RelatedRowExistsClause {
 			'parameters' => $parameters,
 		];
 	}//end renderAll()
+
+	/**
+	 * The clause for the block at one position, its alias and parameter prefix taken from that position.
+	 *
+	 * @param RelatedRowClauseBatch $batch    The filters, the target, the access predicate per inner row and the placeholder prefix.
+	 * @param int                   $position The block's position in the batch.
+	 *
+	 * @return array{sql: string, parameters: array<string, mixed>} The clause and its bindings.
+	 */
+	private function clauseAt(RelatedRowClauseBatch $batch, int $position): array {
+		$filter = array_values($batch->filters)[$position];
+		$alias  = sprintf('%s%d', $batch->parameterPrefix, $position);
+
+		return $this->render(
+			filter: $filter,
+			subquery: new RelatedRowSubquery(
+				target: $batch->target,
+				inner: new RelatedRowInnerRow(
+					alias: $alias,
+					accessPredicate: (string)($batch->accessPredicateFor)($alias, $filter),
+					parameterPrefix: $alias
+				)
+			)
+		);
+	}//end clauseAt()
 
 	/**
 	 * One comparison: numeric when the caller asked for a number, text otherwise.
