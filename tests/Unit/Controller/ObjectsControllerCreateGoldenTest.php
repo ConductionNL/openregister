@@ -290,7 +290,8 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 
 		$handler = $this->createMock(UpsertOnKeyHandler::class);
 		$handler->method('upsert')->willReturnCallback(function (...$args) use ($setup): array {
-			$this->calls[] = ['upsert' => [$args['constraintName'] ?? $args[0], $args['object'] ?? $args[1]]];
+			$request = ($args['request'] ?? $args[0]);
+			$this->calls[] = ['upsert' => [$request->constraintName, $request->object]];
 			$object = new ObjectEntity();
 			$object->setUuid('kept-uuid');
 			return ['object' => $object, 'created' => $setup['upsert']];
