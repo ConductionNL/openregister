@@ -641,7 +641,7 @@ class RenderObject implements RenderObjectInterface {
 
 		$translations = $this->enrichers->translations->translationHandler;
 		$row->setObject(
-			$translations->resolveTranslationsForRender(objectData: $row->getObject(), schema: $schema, register: $register)
+			$translations->resolveTranslationsForRender(objectData: $row->getObject(), scope: new TranslationScope(schema: $schema, register: $register))
 		);
 	}//end translateEntityRow()
 
@@ -662,8 +662,7 @@ class RenderObject implements RenderObjectInterface {
 
 		return $this->enrichers->translations->translationHandler->resolveTranslationsForRender(
 			objectData: $row,
-			schema: $schema,
-			register: $this->arrayRowRegister(row: $row)
+			scope: new TranslationScope(schema: $schema, register: $this->arrayRowRegister(row: $row))
 		);
 	}//end translateArrayRow()
 
@@ -3058,8 +3057,7 @@ class RenderObject implements RenderObjectInterface {
 
 		$run->data = $this->enrichers->translations->translationHandler->resolveTranslationsForRender(
 			objectData: $run->data,
-			schema: $run->schema,
-			register: $register
+			scope: new TranslationScope(schema: $run->schema, register: $register)
 		);
 		if ($this->shouldAttachLanguageMeta() === false) {
 			return $run->data;

@@ -96,21 +96,20 @@ class TranslationHandler implements TranslationHandlerInterface {
 	 * - Otherwise, resolves to the single value for the best matching language
 	 * - Falls back to the register's default language if requested language is missing
 	 *
-	 * @param array $objectData The object data array
-	 * @param Schema $schema The schema for property definitions
-	 * @param Register|null $register The register for language configuration
+	 * @param array            $objectData The object data array
+	 * @param TranslationScope $scope      The schema for property definitions and the register for language configuration
 	 *
 	 * @return array The object data with resolved translations
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function resolveTranslationsForRender(array $objectData, Schema $schema, ?Register $register = null): array {
-		$translatableProps = $this->propertiesToResolve(schema: $schema);
+	public function resolveTranslationsForRender(array $objectData, TranslationScope $scope): array {
+		$translatableProps = $this->propertiesToResolve(schema: $scope->schema);
 		if (empty($translatableProps) === true) {
 			return $objectData;
 		}
 
-		$chain = $this->languageChain(register: $register);
+		$chain = $this->languageChain(register: $scope->register);
 		foreach ($translatableProps as $propName) {
 			$value = ($objectData[$propName] ?? null);
 			if ($this->isLanguageKeyedValue(value: $value) === true) {
@@ -209,9 +208,8 @@ class TranslationHandler implements TranslationHandlerInterface {
 	 *  - Scalar value AND no target header: wrap under the register
 	 *    default (legacy behaviour preserved).
 	 *
-	 * @param array $objectData The incoming object data.
-	 * @param Schema $schema The schema for property definitions.
-	 * @param Register|null $register The register for language configuration.
+	 * @param array            $objectData The incoming object data.
+	 * @param TranslationScope $scope      The schema for property definitions and the register for language configuration.
 	 *
 	 * @return array The normalized object data with translations wrapped correctly.
 	 *
@@ -220,14 +218,14 @@ class TranslationHandler implements TranslationHandlerInterface {
 	 *
 	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
 	 */
-	public function normalizeTranslationsForSave(array $objectData, Schema $schema, ?Register $register = null): array {
-		$translatableProps = $this->getTranslatableProperties(schema: $schema);
+	public function normalizeTranslationsForSave(array $objectData, TranslationScope $scope): array {
+		$translatableProps = $this->getTranslatableProperties(schema: $scope->schema);
 		if (empty($translatableProps) === true) {
 			return $objectData;
 		}
 
 		$target = new TranslationSaveTarget(
-			defaultLanguage: ($register?->getDefaultLanguage() ?? 'nl'),
+			defaultLanguage: ($scope->register?->getDefaultLanguage() ?? 'nl'),
 			targetLanguage: $this->languageService->getTargetLanguage()
 		);
 		foreach ($translatableProps as $propName) {

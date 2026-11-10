@@ -1950,8 +1950,7 @@ class SaveObject implements SaveObjectInterface {
 		// Normalize translatable properties (wrap simple values under default language).
 		$call->data = $this->translationHandler->normalizeTranslationsForSave(
 			objectData: $call->data,
-			schema: $call->schema,
-			register: $call->register
+			scope: new TranslationScope(schema: $call->schema, register: $call->register)
 		);
 
 		// Skip when _rbac is false (internal/system calls bypass all authorization).

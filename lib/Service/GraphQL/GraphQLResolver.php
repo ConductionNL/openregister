@@ -24,6 +24,7 @@
 
 namespace OCA\OpenRegister\Service\GraphQL;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use GraphQL\Deferred;
 use GraphQL\Error\Error;
@@ -473,8 +474,7 @@ class GraphQLResolver {
 
 		return $this->shaping->translationHandler->resolveTranslationsForRender(
 			objectData: $data,
-			schema: $schema,
-			register: $register
+			scope: new TranslationScope(schema: $schema, register: $register)
 		);
 	}//end filterProperties()
 

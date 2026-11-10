@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Aggregation;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -161,8 +162,7 @@ final class TranslatableGroupKeyProjection {
 
 		$resolved = $this->translations->resolveTranslationsForRender(
 			objectData: [$field => $map],
-			schema: $this->schema,
-			register: $this->register
+			scope: new TranslationScope(schema: $this->schema, register: $this->register)
 		);
 
 		return $resolved[$field] ?? $rawKey;

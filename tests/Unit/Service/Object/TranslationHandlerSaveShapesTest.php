@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
@@ -66,7 +67,7 @@ class TranslationHandlerSaveShapesTest extends TestCase {
 			$this->callback(fn (array $context): bool => $context['property'] === 'title' && $context['defaultLanguage'] === 'nl')
 		);
 
-		$this->assertSame($expected, $this->handler(logger: $logger, target: $target)->normalizeTranslationsForSave($data, $this->schema(), $this->register()));
+		$this->assertSame($expected, $this->handler(logger: $logger, target: $target)->normalizeTranslationsForSave($data, new TranslationScope($this->schema(), $this->register())));
 	}
 
 	/**
@@ -77,7 +78,7 @@ class TranslationHandlerSaveShapesTest extends TestCase {
 	public function testAKeyedValueWithATargetIsAConflict(): void {
 		$handler = $this->handler(logger: $this->createMock(LoggerInterface::class), target: 'en');
 		try {
-			$handler->normalizeTranslationsForSave(['title' => ['nl' => 'Hallo']], $this->schema(), $this->register());
+			$handler->normalizeTranslationsForSave(['title' => ['nl' => 'Hallo']], new TranslationScope($this->schema(), $this->register()));
 			$this->fail('A conflict was expected.');
 		} catch (TranslationTargetConflictException $e) {
 			$this->assertStringContainsString('title', $e->getMessage());
@@ -93,7 +94,7 @@ class TranslationHandlerSaveShapesTest extends TestCase {
 	public function testNoRegisterMeansDutch(): void {
 		$handler = $this->handler(logger: $this->createMock(LoggerInterface::class), target: null);
 
-		$this->assertSame(['title' => ['nl' => 'x']], $handler->normalizeTranslationsForSave(['title' => 'x'], $this->schema()));
+		$this->assertSame(['title' => ['nl' => 'x']], $handler->normalizeTranslationsForSave(['title' => 'x'], new TranslationScope($this->schema())));
 	}
 
 	/**
@@ -106,7 +107,7 @@ class TranslationHandlerSaveShapesTest extends TestCase {
 		$schema->setProperties(['title' => ['type' => 'string']]);
 		$handler = $this->handler(logger: $this->createMock(LoggerInterface::class), target: 'en');
 
-		$this->assertSame(['title' => 'x'], $handler->normalizeTranslationsForSave(['title' => 'x'], $schema, $this->register()));
+		$this->assertSame(['title' => 'x'], $handler->normalizeTranslationsForSave(['title' => 'x'], new TranslationScope($schema, $this->register())));
 	}
 
 	/**

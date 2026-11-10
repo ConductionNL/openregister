@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -270,8 +271,7 @@ class RegisterI18nIntegrationTest extends TestCase {
 
 		$resolved = $this->translationHandler->resolveTranslationsForRender(
 			['title' => ['fr' => 'Salut le monde']],
-			$this->testSchema,
-			$this->testRegister
+			new TranslationScope($this->testSchema, $this->testRegister)
 		);
 
 		$this->assertSame('Salut le monde', $resolved['title']);
@@ -285,8 +285,7 @@ class RegisterI18nIntegrationTest extends TestCase {
 
 		$resolved = $this->translationHandler->resolveTranslationsForRender(
 			['title' => ['nl' => 'Hoi', 'en' => 'Hi']],
-			$this->testSchema,
-			$this->testRegister
+			new TranslationScope($this->testSchema, $this->testRegister)
 		);
 
 		$this->assertSame('Hi', $resolved['title']);
