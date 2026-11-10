@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Middleware;
 
 use Exception;
 use OCA\OpenRegister\Middleware\Exception\CallerRefusedException;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallObservation;
 use OCA\OpenRegister\Service\ApiCaller\CallerPolicyInterface;
 use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiterInterface;
 use OCP\AppFramework\Http\Response;
@@ -161,10 +162,8 @@ class ApiCallerMiddleware extends Middleware {
 			return;
 		}
 
-		$this->services->recorder->record(
-			path: $path,
-			method: $this->request->getMethod(),
-			apiVersion: $this->servedVersion,
+		$this->services->recorder->recordCall(
+			call: new ApiCallObservation(path: $path, method: $this->request->getMethod(), apiVersion: $this->servedVersion)
 		);
 
 	}//end recordServedCall()

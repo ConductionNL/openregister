@@ -25,7 +25,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,19 +47,18 @@ class ObjectSlugLog {
 	/**
 	 * Log a collision: the object was saved (or restored) without a slug.
 	 *
-	 * @param ObjectSlugWant $want       Who wanted which slug, where, on which path.
-	 * @param string         $holderUuid Who holds it.
-	 * @param string|null    $suffixed   The suffixed slug that was also taken, if tried.
+	 * @param ObjectSlugClash $clash Who wanted which slug, who holds it, and the suffixed slug that was also taken, if tried.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function collision(ObjectSlugWant $want, string $holderUuid, string|null $suffixed): void {
+	public function collision(ObjectSlugClash $clash): void {
+		$want = $clash->want;
 		$this->logger->warning(
-			message: $this->heldMessage(want: $want, holderUuid: $holderUuid)
-				. sprintf('object %s %s%s', $want->objectUuid, $this->collisionOutcome(path: $want->path), $this->alsoTaken(suffixed: $suffixed)),
-			context: $this->heldContext(want: $want, holderUuid: $holderUuid)
+			message: $this->heldMessage(want: $want, holderUuid: $clash->holderUuid)
+				. sprintf('object %s %s%s', $want->objectUuid, $this->collisionOutcome(path: $want->path), $this->alsoTaken(suffixed: $clash->suffixed)),
+			context: $this->heldContext(want: $want, holderUuid: $clash->holderUuid)
 		);
 	}//end collision()
 
@@ -102,19 +100,19 @@ class ObjectSlugLog {
 	 * The object silently changes its public slug there, so unlike a plain save it is
 	 * always said.
 	 *
-	 * @param ObjectSlugWant $want       Who wanted which slug, where, on which path.
-	 * @param string         $holderUuid Who holds it.
-	 * @param string         $suffixed   The suffixed slug the object gets.
+	 * @param ObjectSlugClash $clash Who wanted which slug, who holds it, and the suffixed slug the object gets.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function suffixedInstead(ObjectSlugWant $want, string $holderUuid, string $suffixed): void {
+	public function suffixedInstead(ObjectSlugClash $clash): void {
+		$want     = $clash->want;
+		$suffixed = (string)$clash->suffixed;
 		$this->logger->warning(
-			message: $this->heldMessage(want: $want, holderUuid: $holderUuid)
+			message: $this->heldMessage(want: $want, holderUuid: $clash->holderUuid)
 				. sprintf('object %s got the suffixed slug "%s" instead (%s)', $want->objectUuid, $suffixed, $want->path),
-			context: $this->heldContext(want: $want, holderUuid: $holderUuid) + ['suffixedSlug' => $suffixed]
+			context: $this->heldContext(want: $want, holderUuid: $clash->holderUuid) + ['suffixedSlug' => $suffixed]
 		);
 	}//end suffixedInstead()
 
@@ -143,25 +141,23 @@ class ObjectSlugLog {
 	/**
 	 * Log a slug that was dropped because the object's register did not resolve.
 	 *
-	 * @param Schema $schema     The schema.
-	 * @param string $objectUuid The object.
-	 * @param string $slug       The slug that would have been written.
+	 * @param ObjectSlugWant $want The slug that would have been written, its object and its schema.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function registerUnresolved(Schema $schema, string $objectUuid, string $slug): void {
+	public function registerUnresolved(ObjectSlugWant $want): void {
 		$this->logger->warning(
 			message: sprintf(
 				'[ObjectSlug] Slug "%s" for object %s (schema %s) was not written: its register did not resolve, so uniqueness could not be checked',
-				$slug,
-				$objectUuid,
-				(string)$schema->getSlug()
+				$want->slug,
+				$want->objectUuid,
+				(string)$want->scope->schema->getSlug()
 			),
-			context: (new ObjectSlugScope(register: null, schema: $schema))->context(path: 'single') + [
-				'slug' => $slug,
-				'objectUuid' => $objectUuid,
+			context: (new ObjectSlugScope(register: null, schema: $want->scope->schema))->context(path: 'single') + [
+				'slug' => $want->slug,
+				'objectUuid' => $want->objectUuid,
 			]
 		);
 	}//end registerUnresolved()

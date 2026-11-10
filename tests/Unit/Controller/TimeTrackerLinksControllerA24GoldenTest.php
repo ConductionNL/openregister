@@ -24,9 +24,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
-use OCA\OpenRegister\Controller\TimeTrackerLinksController;
 use OCA\OpenRegister\Controller\Support\TimeTrackerLinksControllerServices;
+use OCA\OpenRegister\Controller\TimeTrackerLinksController;
 use OCA\OpenRegister\Db\TimeTrackerLink;
+use OCA\OpenRegister\Service\TimeTracker\TimeEntry;
 use OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -140,7 +141,7 @@ class TimeTrackerLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase
 		$this->givenObject();
 		$this->params = ['entryType' => 'task', 'id' => ' e1 '];
 		$link         = $this->link();
-		$this->service->expects($this->once())->method('linkEntry')->with($this->equalTo($this->target()), 'task', ' e1 ')->willReturn($link);
+		$this->service->expects($this->once())->method('linkEntry')->with($this->equalTo($this->target()), new TimeEntry('task', ' e1 '))->willReturn($link);
 
 		$this->assertResponse(201, $link->jsonSerialize(), $this->controller->link('r', 's', 'o'));
 	}

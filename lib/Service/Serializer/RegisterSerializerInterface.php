@@ -50,4 +50,16 @@ interface RegisterSerializerInterface {
 		array $extend = [],
 		?array $schemaStatsByRegisterId = null,
 	): array;
+
+	/**
+	 * Serialize a collection of Register entities with one extension for the page.
+	 *
+	 * @param Register[]            $registers Registers to serialize.
+	 * @param RegisterListExtension $extension The extension keys and the per-register schema counts.
+	 *
+	 * @return array<int,array> Serialized payload for each register.
+	 *
+	 * @spec openspec/specs/register-service-extensions/spec.md
+	 */
+	public function serializePage(array $registers, RegisterListExtension $extension=new RegisterListExtension()): array;
 }//end interface

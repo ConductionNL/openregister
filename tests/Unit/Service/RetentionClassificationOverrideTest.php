@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -77,8 +78,9 @@ class RetentionClassificationOverrideTest extends TestCase {
 		// The store answers by the category filter, as the real one does, so
 		// a resolver that asked for the wrong category gets the wrong row or
 		// none at all.
-		$objectMapper->method('findAll')->willReturnCallback(
-			function (?int $limit = null, ?int $offset = null, ?array $filters = null): array {
+		$objectMapper->method('findAllListed')->willReturnCallback(
+			function (MagicListRequest $request): array {
+				$filters = $request->query->filters;
 				$category = ($filters['object->categorie'] ?? null);
 				if (isset($this->rows[$category]) === false) {
 					return [];

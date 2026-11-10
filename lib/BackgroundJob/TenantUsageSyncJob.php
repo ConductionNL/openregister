@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Db\TenantUsage\UsageBucket;
 use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 use OCA\OpenRegister\Db\UsageMeasurement;
 use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
@@ -151,8 +152,7 @@ class TenantUsageSyncJob extends TimedJob {
 
 			try {
 				$this->tenantUsageMapper->upsertUsage(
-					organisationUuid: $orgUuid,
-					period: $period,
+					bucket: new UsageBucket(organisationUuid: $orgUuid, period: $period),
 					measurement: new UsageMeasurement(requestCount: $requestCount, bandwidthBytes: $bandwidthBytes, storageBytes: 0)
 				);
 				$syncedCount++;

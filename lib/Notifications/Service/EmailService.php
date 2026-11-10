@@ -99,10 +99,7 @@ class EmailService implements EmailServiceInterface {
 	/**
 	 * Link an existing email to an object.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $registerId The register ID.
-	 * @param int $mailAccountId The mail account ID.
-	 * @param int $mailMessageId The mail message ID.
+	 * @param EmailLinkRequest $request The object uuid, its register id, and the mail account and message ids.
 	 *
 	 * @return EmailLink The created link.
 	 *
@@ -110,15 +107,8 @@ class EmailService implements EmailServiceInterface {
 	 *
 	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
-	public function linkEmail(
-		string $objectUuid,
-		int $registerId,
-		int $mailAccountId,
-		int $mailMessageId,
-	): EmailLink {
-		return $this->link(
-			request: new EmailLinkRequest(objectUuid: $objectUuid, registerId: $registerId, mailAccountId: $mailAccountId, mailMessageId: $mailMessageId)
-		);
+	public function linkEmail(EmailLinkRequest $request): EmailLink {
+		return $this->link(request: $request);
 	}//end linkEmail()
 
 	/**

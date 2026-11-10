@@ -23,8 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * What callers outside lib/Service need of UpsertOnKeyHandler: one upsert.
@@ -36,15 +34,12 @@ interface UpsertOnKeyHandlerInterface {
 	/**
 	 * Create the record, or update the one the declared key already names.
 	 *
-	 * @param string                          $constraintName The declared unique constraint.
-	 * @param array<string, mixed>            $object         The request body.
-	 * @param Register                        $register       The register.
-	 * @param Schema                          $schema         The schema.
-	 * @param callable(?string): ObjectEntity $save           Saves the body; null creates, a uuid updates that record.
+	 * @param UpsertOnKeyRequest              $request The declared unique constraint, the request body and where it goes.
+	 * @param callable(?string): ObjectEntity $save    Saves the body; null creates, a uuid updates that record.
 	 *
 	 * @return array{created: bool, object: ObjectEntity} Whether a record was created, and the saved record.
 	 *
 	 * @throws UpsertOnKeyException When the upsert is refused; the exception carries the answer.
 	 */
-	public function upsert(string $constraintName, array $object, Register $register, Schema $schema, callable $save): array;
+	public function upsert(UpsertOnKeyRequest $request, callable $save): array;
 }//end interface

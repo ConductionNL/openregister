@@ -32,8 +32,10 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CodedValueException;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
+use OCA\OpenRegister\Service\Vocabulary\CodedOptionScope;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueWrite;
 use OCA\OpenRegister\Service\Vocabulary\ConceptHierarchy;
 use OCA\OpenRegister\Service\Vocabulary\ConceptLifecycle;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
@@ -166,9 +168,11 @@ class CodedValueGuardTest extends TestCase {
 
 		try {
 			$this->guard->enforce(
-				object: ['resultaat' => 'urn:ingetrokken'],
-				schema: $schema,
-				at: new DateTimeImmutable('2026-09-14')
+				new CodedValueWrite(
+					object: ['resultaat' => 'urn:ingetrokken'],
+					schema: $schema,
+					at: new DateTimeImmutable('2026-09-14')
+				)
 			);
 			$this->fail('A write of a retired concept must be refused.');
 		} catch (CodedValueException $refused) {
@@ -191,9 +195,11 @@ class CodedValueGuardTest extends TestCase {
 		$refusal = null;
 		try {
 			$this->guard->enforce(
-				object: ['resultaat' => 'urn:ingetrokken'],
-				schema: $this->schemaWith(declaration: []),
-				at: new DateTimeImmutable('2020-06-01')
+				new CodedValueWrite(
+					object: ['resultaat' => 'urn:ingetrokken'],
+					schema: $this->schemaWith(declaration: []),
+					at: new DateTimeImmutable('2020-06-01')
+				)
 			);
 		} catch (CodedValueException $e) {
 			$refusal = $e->getMessage();
@@ -216,9 +222,7 @@ class CodedValueGuardTest extends TestCase {
 		$offered = array_column(
 			$this->options->options(
 				declaration: $declaration,
-				language: 'nl',
-				context: null,
-				asOf: new DateTimeImmutable('2026-09-14')
+				scope: new CodedOptionScope(language: 'nl', asOf: new DateTimeImmutable('2026-09-14'))
 			),
 			'value'
 		);
@@ -252,9 +256,11 @@ class CodedValueGuardTest extends TestCase {
 
 		try {
 			$this->guard->enforce(
-				object: ['urgentie' => ['urn:spoed', 'urn:regulier']],
-				schema: $schema,
-				at: new DateTimeImmutable('2026-09-14')
+				new CodedValueWrite(
+					object: ['urgentie' => ['urn:spoed', 'urn:regulier']],
+					schema: $schema,
+					at: new DateTimeImmutable('2026-09-14')
+				)
 			);
 			$this->fail('Two concepts of one exclusive group must be refused.');
 		} catch (CodedValueException $refused) {
@@ -274,9 +280,11 @@ class CodedValueGuardTest extends TestCase {
 
 		try {
 			$this->guard->enforce(
-				object: ['categorie' => 'urn:vergunning'],
-				schema: $schema,
-				at: new DateTimeImmutable('2026-09-14')
+				new CodedValueWrite(
+					object: ['categorie' => 'urn:vergunning'],
+					schema: $schema,
+					at: new DateTimeImmutable('2026-09-14')
+				)
 			);
 			$this->fail('A broader value must be refused under a leaf-only property.');
 		} catch (CodedValueException $refused) {
@@ -286,9 +294,11 @@ class CodedValueGuardTest extends TestCase {
 
 		// The leaf under it is accepted.
 		$this->guard->enforce(
-			object: ['categorie' => 'urn:kap'],
-			schema: $schema,
-			at: new DateTimeImmutable('2026-09-14')
+			new CodedValueWrite(
+				object: ['categorie' => 'urn:kap'],
+				schema: $schema,
+				at: new DateTimeImmutable('2026-09-14')
+			)
 		);
 		$this->addToAssertionCount(1);
 	}//end testALeafOnlyPropertyRefusesABroaderValue()
@@ -366,18 +376,14 @@ class CodedValueGuardTest extends TestCase {
 		$forBezwaar = array_column(
 			$this->options->options(
 				declaration: $declaration,
-				language: 'nl',
-				context: 'bezwaar',
-				asOf: new DateTimeImmutable('2026-09-14')
+				scope: new CodedOptionScope(language: 'nl', context: 'bezwaar', asOf: new DateTimeImmutable('2026-09-14'))
 			),
 			'value'
 		);
 		$forMelding = array_column(
 			$this->options->options(
 				declaration: $declaration,
-				language: 'nl',
-				context: 'melding',
-				asOf: new DateTimeImmutable('2026-09-14')
+				scope: new CodedOptionScope(language: 'nl', context: 'melding', asOf: new DateTimeImmutable('2026-09-14'))
 			),
 			'value'
 		);

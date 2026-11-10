@@ -26,6 +26,8 @@ use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\ContentSearchHandler;
+use OCA\OpenRegister\Service\Object\ContentSearchWidening;
+use OCA\OpenRegister\Service\Object\MetadataArmPage;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -83,11 +85,8 @@ class ContentSearchHandlerTest extends TestCase {
 	public function testNoSearchTermReturnsResultsAndTotalUnchanged(): void {
 		$this->chunkMapper->expects($this->never())->method('searchByKeyword');
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: [],
-			results: [],
-			total: 0,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: [], page: new MetadataArmPage(results: [], total: 0, limit: 20))
 		);
 
 		$this->assertSame([], $result['results']);
@@ -97,11 +96,8 @@ class ContentSearchHandlerTest extends TestCase {
 	public function testZeroLimitSkipsChunkFanOut(): void {
 		$this->chunkMapper->expects($this->never())->method('searchByKeyword');
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report'],
-			results: [],
-			total: 0,
-			limit: 0
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report'], page: new MetadataArmPage(results: [], total: 0, limit: 0))
 		);
 
 		$this->assertSame([], $result['results']);
@@ -113,11 +109,8 @@ class ContentSearchHandlerTest extends TestCase {
 		$this->objectMapper->expects($this->never())->method('find');
 
 		$existing = [$this->makeObject(1)];
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report'],
-			results: $existing,
-			total: 1,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report'], page: new MetadataArmPage(results: $existing, total: 1, limit: 20))
 		);
 
 		$this->assertSame($existing, $result['results']);
@@ -142,11 +135,8 @@ class ContentSearchHandlerTest extends TestCase {
 			->willReturn($matchedObject);
 		$this->fileMapper->expects($this->never())->method('findOwningObjectUuid');
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report'],
-			results: [],
-			total: 0,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report'], page: new MetadataArmPage(results: [], total: 0, limit: 20))
 		);
 
 		$this->assertCount(1, $result['results']);
@@ -172,11 +162,8 @@ class ContentSearchHandlerTest extends TestCase {
 			->with('obj-uuid-7')
 			->willReturn($matchedObject);
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report'],
-			results: [],
-			total: 0,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report'], page: new MetadataArmPage(results: [], total: 0, limit: 20))
 		);
 
 		$this->assertCount(1, $result['results']);
@@ -193,11 +180,8 @@ class ContentSearchHandlerTest extends TestCase {
 		$this->fileMapper->method('findOwningObjectUuid')->willReturn(null);
 		$this->objectMapper->expects($this->never())->method('find');
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report'],
-			results: [],
-			total: 3,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report'], page: new MetadataArmPage(results: [], total: 3, limit: 20))
 		);
 
 		$this->assertSame([], $result['results']);
@@ -217,11 +201,8 @@ class ContentSearchHandlerTest extends TestCase {
 		$this->objectMapper->method('find')->willThrowException(new DoesNotExistException('not found'));
 		$this->logger->expects($this->once())->method('debug');
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report'],
-			results: [],
-			total: 0,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report'], page: new MetadataArmPage(results: [], total: 0, limit: 20))
 		);
 
 		$this->assertSame([], $result['results']);
@@ -279,11 +260,8 @@ class ContentSearchHandlerTest extends TestCase {
 
 		$this->objectMapper->method('find')->with(42)->willReturn($this->makeObject(42));
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'rekening'],
-			results: [],
-			total: 0,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'rekening'], page: new MetadataArmPage(results: [], total: 0, limit: 20))
 		);
 
 		$this->assertCount(1, $result['results']);
@@ -312,11 +290,8 @@ class ContentSearchHandlerTest extends TestCase {
 		$this->objectMapper->method('find')->willReturn($existing);
 		$this->metadataArmAlsoMatches([$existing]);
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report'],
-			results: [$existing],
-			total: 1,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report'], page: new MetadataArmPage(results: [$existing], total: 1, limit: 20))
 		);
 
 		$this->assertCount(1, $result['results']);
@@ -351,35 +326,23 @@ class ContentSearchHandlerTest extends TestCase {
 		$this->metadataArmAlsoMatches([$sharedOwner]);
 
 		// Page 1 of the metadata arm holds a DIFFERENT row; 42 is on page 2.
-		$pageOne = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'q'],
-			results: [$this->makeObject(1)],
-			total: 2,
-			limit: 1,
-			offset: 0
+		$pageOne = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'q'], page: new MetadataArmPage(results: [$this->makeObject(1)], total: 2, limit: 1, offset: 0))
 		);
 		$this->assertSame(3, $pageOne['total'], 'metadata 2 + one chunk-only owner; the shared owner is not counted twice');
 		$this->assertCount(1, $pageOne['results']);
 
 		// Page 2 holds 42 itself. Same total, and 42 is not appended again.
-		$pageTwo = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'q'],
-			results: [$sharedOwner],
-			total: 2,
-			limit: 1,
-			offset: 1
+		$pageTwo = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'q'], page: new MetadataArmPage(results: [$sharedOwner], total: 2, limit: 1, offset: 1))
 		);
 		$this->assertSame(3, $pageTwo['total']);
 		$this->assertSame(['obj-uuid-42'], array_map(static fn (ObjectEntity $o): string => $o->getUuid(), $pageTwo['results']));
 
 		// Page 3: the metadata arm is exhausted, the chunk arm starts at 0 and
 		// holds only the chunk-only owner.
-		$pageThree = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'q'],
-			results: [],
-			total: 2,
-			limit: 1,
-			offset: 2
+		$pageThree = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'q'], page: new MetadataArmPage(results: [], total: 2, limit: 1, offset: 2))
 		);
 		$this->assertSame(3, $pageThree['total']);
 		$this->assertSame([$chunkOnly->getUuid()], array_map(static fn (ObjectEntity $o): string => $o->getUuid(), $pageThree['results']));
@@ -412,12 +375,8 @@ class ContentSearchHandlerTest extends TestCase {
 		);
 
 		// Metadata arm: 3 rows. _limit=2. Page 1 is metadata only.
-		$page = fn (array $results, int $offset): array => $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'q'],
-			results: $results,
-			total: 3,
-			limit: 2,
-			offset: $offset
+		$page = fn (array $results, int $offset): array => $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'q'], page: new MetadataArmPage(results: $results, total: 3, limit: 2, offset: $offset))
 		);
 
 		$pageOne = $page([$this->makeObject(1), $this->makeObject(2)], 0);
@@ -483,15 +442,10 @@ class ContentSearchHandlerTest extends TestCase {
 			)
 			->willReturn(['results' => [], 'total' => 0]);
 
-		$this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'q', '_registers' => [4], '_schemas' => [9, 10], '_page' => 3, '_limit' => 5, '_content_search' => true, '_facetable' => true],
-			results: [],
-			total: 10,
-			limit: 5,
+		$this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'q', '_registers' => [4], '_schemas' => [9, 10], '_page' => 3, '_limit' => 5, '_content_search' => true, '_facetable' => true], page: new MetadataArmPage(results: [], total: 10, limit: 5, offset: 10), activeOrgUuid: 'org-1'),
 			_rbac: false,
-			_multitenancy: false,
-			offset: 10,
-			activeOrgUuid: 'org-1'
+			_multitenancy: false
 		);
 	}//end testTheOverlapProbeIsTheSameQueryRestrictedToTheCandidatesWithoutPaging()
 
@@ -525,12 +479,8 @@ class ContentSearchHandlerTest extends TestCase {
 			}
 		);
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'q'],
-			results: [],
-			total: 5,
-			limit: 10,
-			offset: 5
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'q'], page: new MetadataArmPage(results: [], total: 5, limit: 10, offset: 5))
 		);
 
 		$this->assertCount(2, $probes);
@@ -550,11 +500,8 @@ class ContentSearchHandlerTest extends TestCase {
 		$this->chunkMapper->method('searchByKeyword')->willReturn([]);
 		$this->objectMapper->expects($this->never())->method('searchObjectsPaginated');
 
-		$this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'q'],
-			results: [],
-			total: 0,
-			limit: 5
+		$this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'q'], page: new MetadataArmPage(results: [], total: 0, limit: 5))
 		);
 	}//end testNoProbeIsIssuedWithoutResolvedCandidates()
 
@@ -570,11 +517,8 @@ class ContentSearchHandlerTest extends TestCase {
 		);
 		$this->objectMapper->method('find')->willReturn($this->makeObject(42, register: '9'));
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report', '_register' => 5],
-			results: [],
-			total: 0,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report', '_register' => 5], page: new MetadataArmPage(results: [], total: 0, limit: 20))
 		);
 
 		$this->assertSame([], $result['results']);
@@ -590,11 +534,8 @@ class ContentSearchHandlerTest extends TestCase {
 		);
 		$this->objectMapper->method('find')->willReturn($this->makeObject(42, schema: '99'));
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report', '_schemas' => [1, 2]],
-			results: [],
-			total: 0,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report', '_schemas' => [1, 2]], page: new MetadataArmPage(results: [], total: 0, limit: 20))
 		);
 
 		$this->assertSame([], $result['results']);
@@ -611,11 +552,8 @@ class ContentSearchHandlerTest extends TestCase {
 		$matched = $this->makeObject(42, register: '9', schema: '77');
 		$this->objectMapper->method('find')->willReturn($matched);
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report'],
-			results: [],
-			total: 0,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report'], page: new MetadataArmPage(results: [], total: 0, limit: 20))
 		);
 
 		$this->assertCount(1, $result['results']);
@@ -644,11 +582,8 @@ class ContentSearchHandlerTest extends TestCase {
 		$matched = $this->makeObject(42, register: '7', schema: '3');
 		$this->objectMapper->method('find')->willReturn($matched);
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report', '_registers' => [7, 8], '_schema' => 3],
-			results: [],
-			total: 0,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report', '_registers' => [7, 8], '_schema' => 3], page: new MetadataArmPage(results: [], total: 0, limit: 20))
 		);
 
 		$this->assertCount(1, $result['results']);
@@ -669,11 +604,8 @@ class ContentSearchHandlerTest extends TestCase {
 		);
 		$this->objectMapper->method('find')->willReturn($this->makeObject(42, register: '99', schema: '3'));
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report', '_registers' => [7, 8], '_schema' => 3],
-			results: [],
-			total: 0,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report', '_registers' => [7, 8], '_schema' => 3], page: new MetadataArmPage(results: [], total: 0, limit: 20))
 		);
 
 		$this->assertSame([], $result['results']);
@@ -698,11 +630,8 @@ class ContentSearchHandlerTest extends TestCase {
 		$this->objectMapper->method('find')->willReturn($this->makeObject(42));
 
 		// limit=1, already 1 metadata-match result -> zero room for chunk-only appends.
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report'],
-			results: [$this->makeObject(1)],
-			total: 1,
-			limit: 1
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report'], page: new MetadataArmPage(results: [$this->makeObject(1)], total: 1, limit: 1))
 		);
 
 		// The page is still clamped: nothing is appended beyond the room.
@@ -724,11 +653,8 @@ class ContentSearchHandlerTest extends TestCase {
 			->with('quarterly report', $this->anything(), $this->anything(), true)
 			->willReturn([]);
 
-		$this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'quarterly report'],
-			results: [],
-			total: 0,
-			limit: 20
+		$this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'quarterly report'], page: new MetadataArmPage(results: [], total: 0, limit: 20))
 		);
 	}//end testAlwaysRequestsUnrankedFallbackFromChunkMapper()
 
@@ -759,22 +685,16 @@ class ContentSearchHandlerTest extends TestCase {
 		// Page 1: metadata filled (10 rows, limit=10) → room=0, no chunks
 		// appended, but total still includes the chunk-owner upper bound.
 		$metaPage = array_map(fn (int $id): ObjectEntity => $this->makeObject($id), range(1, 10));
-		$pageOne = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'q'],
-			results: $metaPage,
-			total: 50,
-			limit: 10
+		$pageOne = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'q'], page: new MetadataArmPage(results: $metaPage, total: 50, limit: 10))
 		);
 		$this->assertCount(10, $pageOne['results']);
 		$this->assertSame(53, $pageOne['total']);
 
 		// Page 3 (offset=40, limit=10): metadata returned 10 rows, chunks fill
 		// remaining rows on this page — total stays 53, unchanged.
-		$pageThree = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'q'],
-			results: array_slice($metaPage, 0, 5),
-			total: 50,
-			limit: 10
+		$pageThree = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'q'], page: new MetadataArmPage(results: array_slice($metaPage, 0, 5), total: 50, limit: 10))
 		);
 		$this->assertSame(53, $pageThree['total']);
 	}//end testTotalIsStableAcrossPagesForSameQuery()
@@ -801,11 +721,8 @@ class ContentSearchHandlerTest extends TestCase {
 			fn (int|string $identifier) => ((int)$identifier === 42) ? $inScope : $this->makeObject(43, schema: '1')
 		);
 
-		$result = $this->handler->augmentWithChunkMatches(
-			query: ['_search' => 'dakkapel', '@self' => ['schema' => [2, 3]]],
-			results: [],
-			total: 0,
-			limit: 20
+		$result = $this->handler->widen(
+			widening: new ContentSearchWidening(query: ['_search' => 'dakkapel', '@self' => ['schema' => [2, 3]]], page: new MetadataArmPage(results: [], total: 0, limit: 20))
 		);
 
 		$this->assertSame([$inScope], $result['results']);
@@ -828,11 +745,8 @@ class ContentSearchHandlerTest extends TestCase {
 
 		$totals = [];
 		foreach ([[1, 2], [3, 4], [5, 6]] as $chunk) {
-			$result = $this->handler->augmentWithChunkMatches(
-				query: ['_search' => 'dakkapel', '@self' => ['schema' => $chunk]],
-				results: [],
-				total: 0,
-				limit: 20
+			$result = $this->handler->widen(
+				widening: new ContentSearchWidening(query: ['_search' => 'dakkapel', '@self' => ['schema' => $chunk]], page: new MetadataArmPage(results: [], total: 0, limit: 20))
 			);
 			$totals[] = $result['total'];
 		}
@@ -847,9 +761,9 @@ class ContentSearchHandlerTest extends TestCase {
 	public function testTheCandidateMemoIsKeyedOnTermAndGuardFlags(): void {
 		$this->chunkMapper->expects($this->exactly(3))->method('searchByKeyword')->willReturn([]);
 
-		$this->handler->augmentWithChunkMatches(query: ['_search' => 'a'], results: [], total: 0, limit: 5);
-		$this->handler->augmentWithChunkMatches(query: ['_search' => 'a'], results: [], total: 0, limit: 5);
-		$this->handler->augmentWithChunkMatches(query: ['_search' => 'b'], results: [], total: 0, limit: 5);
-		$this->handler->augmentWithChunkMatches(query: ['_search' => 'a'], results: [], total: 0, limit: 5, _rbac: false);
+		$this->handler->widen(widening: new ContentSearchWidening(query: ['_search' => 'a'], page: new MetadataArmPage(results: [], total: 0, limit: 5)));
+		$this->handler->widen(widening: new ContentSearchWidening(query: ['_search' => 'a'], page: new MetadataArmPage(results: [], total: 0, limit: 5)));
+		$this->handler->widen(widening: new ContentSearchWidening(query: ['_search' => 'b'], page: new MetadataArmPage(results: [], total: 0, limit: 5)));
+		$this->handler->widen(widening: new ContentSearchWidening(query: ['_search' => 'a'], page: new MetadataArmPage(results: [], total: 0, limit: 5)), _rbac: false);
 	}//end testTheCandidateMemoIsKeyedOnTermAndGuardFlags()
 }//end class

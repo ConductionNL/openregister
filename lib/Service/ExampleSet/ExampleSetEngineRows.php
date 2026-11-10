@@ -315,17 +315,15 @@ abstract class ExampleSetEngineRows {
 	/**
 	 * Check the rows of one fragment: each fills and passes refusal().
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<int, string>   $users    The account ids the set creates or adopts.
-	 * @param ExampleSetValues     $values   Fills placeholders.
+	 * @param array<string, mixed>    $fragment The fragment.
+	 * @param ExampleSetFragmentCheck $check    The context placeholders draw on, the account ids the set creates or
+	 *                                          adopts, and the filler.
 	 *
 	 * @return array<int, string> Refusals.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	public function checkFragment(array $fragment, array $context, array $users, ExampleSetValues $values): array {
-		$check    = new ExampleSetFragmentCheck(context: $context, users: $users, values: $values);
+	public function checkFragment(array $fragment, ExampleSetFragmentCheck $check): array {
 		$refusals = [];
 		foreach (($fragment[$this->part()] ?? []) as $entry) {
 			$why = $this->entryRefusal(entry: $entry, check: $check);
@@ -361,8 +359,8 @@ abstract class ExampleSetEngineRows {
 	 * Write the rows of one fragment that the record does not hold, and let go of the held ones it no longer declares.
 	 *
 	 * @param ExampleSetFragmentWrite $write  The fragment, the context placeholders draw on and their filler.
-	 * @param array<string, mixed>    $report The report; gains the outcomes under part() and `dropped`.
-	 * @param array<string, mixed>    $record The record; gains the rows written under part().
+	 * @param RecordLedger            $ledger The report (gains the outcomes under part() and `dropped`) and the record
+	 *                                        (gains the rows written under part()), held by reference.
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
@@ -371,12 +369,12 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetRecord::letGoUndeclared() is a pure function of its arguments, shared by every part.
 	 */
-	public function installFragment(ExampleSetFragmentWrite $write, array &$report, array &$record): bool {
+	public function installFragment(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
 		$fragment = $write->fragment;
 		$install  = new ExampleSetRowInstall(rows: $this, refusal: $this->refusalIn(...), fill: $this->fillContext(...), values: $write->values);
-		$changed  = $install->fragment(fragment: $fragment, context: $write->context, report: $report, record: $record);
+		$changed  = $install->fragment(fragment: $fragment, context: $write->context, report: $ledger->report, record: $ledger->record);
 		$part     = new ExampleSetRecordPart(part: $this->part(), noun: $this->noun());
-		if (ExampleSetRecord::letGoUndeclared(part: $part, fragment: $fragment, report: $report, record: $record) === true) {
+		if (ExampleSetRecord::letGoUndeclared(part: $part, fragment: $fragment, report: $ledger->report, record: $ledger->record) === true) {
 			$changed = true;
 		}
 

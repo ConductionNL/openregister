@@ -48,6 +48,8 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -208,7 +210,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		);
 		$runner = $this->runner(userId: 'learner-a', groups: ['students'], grants: [], schema: $schema);
 
-		$result = $runner->run(registerRef: 'learniq', schemaRef: 'engagement-score', name: 'byLevel', bypassRbac: true);
+		$result = $runner->run(ref: new NamedAggregationRef(register: 'learniq', schema: 'engagement-score', name: 'byLevel'), options: new NamedAggregationOptions(bypassRbac: true));
 
 		$this->assertSame(['high' => 2, 'low' => 3], $this->counts($result));
 	}//end testBypassRbacSkipsTheRowPredicate()
