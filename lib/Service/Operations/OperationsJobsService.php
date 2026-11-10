@@ -161,11 +161,10 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 		$job = $this->resolve(class: $class);
 
 		$this->runNow->recorder->around(
-			jobClass: $class,
+			start: new JobRunStart(jobClass: $class, context: new JobRunContext(cause: JobRun::CAUSE_MANUAL, actor: $actor)),
 			work: function () use ($job): void {
 				$job->start($this->runNow->jobList);
-			},
-			context: new JobRunContext(cause: JobRun::CAUSE_MANUAL, actor: $actor)
+			}
 		);
 
 		$started = $this->runs->findRecent(filter: new RunQuery(jobClass: $class), limit: 1);
