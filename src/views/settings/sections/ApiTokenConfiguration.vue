@@ -287,6 +287,31 @@ import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import { saveMessageMethods } from './saveMessage.js'
 
 /**
+ * Ask the backend whether a provider's token works.
+ *
+ * @param {string} provider 'github' or 'gitlab'
+ * @param {object} body The token, and for GitLab its instance URL
+ * @return {Promise<object>} The test endpoint's answer
+ */
+async function postTokenTest(provider, body) {
+	const response = await axios.post(
+		generateUrl(`/apps/openregister/api/settings/api-tokens/test/${provider}`),
+		body,
+	)
+	return response.data
+}
+
+/**
+ * The reason a token test failed: the server's message, else the error's own.
+ *
+ * @param {object} error The axios error
+ * @return {string} The reason
+ */
+function failureMessage(error) {
+	return error.response?.data?.message || error.message || 'Unknown error'
+}
+
+/**
  * API Token Configuration Component
  *
  * Manages GitHub and GitLab API tokens for configuration discovery
@@ -572,42 +597,53 @@ export default {
 			this.githubTestResult = null
 			try {
 				// Send the current token value for testing
-				const response = await axios.post(
-					generateUrl(
-						'/apps/openregister/api/settings/api-tokens/test/github',
-					),
-					{ token: this.githubToken },
-				)
-				this.githubTestResult = {
-					success: true,
-					message: response.data.message,
-					username: response.data.username,
-					scopes: response.data.scopes,
-				}
-				showSuccess(
-					this.t(
-						'openregister',
-						'GitHub token is valid! Username: {username}',
-						{
-							username: response.data.username,
-						},
-					),
-				)
+				const data = await postTokenTest('github', { token: this.githubToken })
+				this.githubTokenPassed(data)
 			} catch (error) {
-				const message =
-					error.response?.data?.message || error.message || 'Unknown error'
-				this.githubTestResult = {
-					success: false,
-					message,
-				}
-				showError(
-					this.t('openregister', 'GitHub token test failed: {message}', {
-						message,
-					}),
-				)
+				this.githubTokenFailed(failureMessage(error))
 			} finally {
 				this.testingGithub = false
 			}
+		},
+
+		/**
+		 * Show a passed GitHub token test.
+		 *
+		 * @spec exclude UI plumbing — token test result display.
+		 * @param {object} data The test endpoint's answer
+		 * @return {void}
+		 */
+		githubTokenPassed(data) {
+			this.githubTestResult = {
+				success: true,
+				message: data.message,
+				username: data.username,
+				scopes: data.scopes,
+			}
+			showSuccess(
+				this.t('openregister', 'GitHub token is valid! Username: {username}', {
+					username: data.username,
+				}),
+			)
+		},
+
+		/**
+		 * Show a failed GitHub token test.
+		 *
+		 * @spec exclude UI plumbing — token test result display.
+		 * @param {string} message Why it failed
+		 * @return {void}
+		 */
+		githubTokenFailed(message) {
+			this.githubTestResult = {
+				success: false,
+				message,
+			}
+			showError(
+				this.t('openregister', 'GitHub token test failed: {message}', {
+					message,
+				}),
+			)
 		},
 
 		/**
@@ -621,42 +657,56 @@ export default {
 			this.gitlabTestResult = null
 			try {
 				// Send the current token value for testing
-				const response = await axios.post(
-					generateUrl(
-						'/apps/openregister/api/settings/api-tokens/test/gitlab',
-					),
-					{ token: this.gitlabToken, url: this.gitlabUrl },
-				)
-				this.gitlabTestResult = {
-					success: true,
-					message: response.data.message,
-					username: response.data.username,
-					instance: response.data.instance,
-				}
-				showSuccess(
-					this.t(
-						'openregister',
-						'GitLab token is valid! Username: {username}',
-						{
-							username: response.data.username,
-						},
-					),
-				)
+				const data = await postTokenTest('gitlab', {
+					token: this.gitlabToken,
+					url: this.gitlabUrl,
+				})
+				this.gitlabTokenPassed(data)
 			} catch (error) {
-				const message =
-					error.response?.data?.message || error.message || 'Unknown error'
-				this.gitlabTestResult = {
-					success: false,
-					message,
-				}
-				showError(
-					this.t('openregister', 'GitLab token test failed: {message}', {
-						message,
-					}),
-				)
+				this.gitlabTokenFailed(failureMessage(error))
 			} finally {
 				this.testingGitlab = false
 			}
+		},
+
+		/**
+		 * Show a passed GitLab token test.
+		 *
+		 * @spec exclude UI plumbing — token test result display.
+		 * @param {object} data The test endpoint's answer
+		 * @return {void}
+		 */
+		gitlabTokenPassed(data) {
+			this.gitlabTestResult = {
+				success: true,
+				message: data.message,
+				username: data.username,
+				instance: data.instance,
+			}
+			showSuccess(
+				this.t('openregister', 'GitLab token is valid! Username: {username}', {
+					username: data.username,
+				}),
+			)
+		},
+
+		/**
+		 * Show a failed GitLab token test.
+		 *
+		 * @spec exclude UI plumbing — token test result display.
+		 * @param {string} message Why it failed
+		 * @return {void}
+		 */
+		gitlabTokenFailed(message) {
+			this.gitlabTestResult = {
+				success: false,
+				message,
+			}
+			showError(
+				this.t('openregister', 'GitLab token test failed: {message}', {
+					message,
+				}),
+			)
 		},
 	},
 }
