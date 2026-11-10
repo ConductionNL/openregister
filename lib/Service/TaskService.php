@@ -413,7 +413,7 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 */
 	public function createTask(int $registerId, int $schemaId, string $objectUuid, string $objectTitle, array $data): ?array {
 		$ref = new ObjectRef(register: $registerId, schema: $schemaId, id: $objectUuid);
-		return $this->createObjectTask(ref: $ref, objectTitle: $objectTitle, data: $data);
+		return $this->createObjectTask(ref: $ref, draft: new LinkedTaskDraft(objectTitle: $objectTitle, data: $data));
 	}//end createTask()
 
 	/**
@@ -421,9 +421,8 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 *
 	 * A payload that carries an engine task identity is REFUSED before anything is read or stored.
 	 *
-	 * @param ObjectRef $ref         The object to link: its register id, schema id and uuid.
-	 * @param string    $objectTitle The object title for the LINK label
-	 * @param array     $data        Task data: summary, description, priority, due, status
+	 * @param ObjectRef       $ref   The object to link: its register id, schema id and uuid.
+	 * @param LinkedTaskDraft $draft The object title for the LINK label, and the task data: summary, description, priority, due, status
 	 *
 	 * @return array|null The created task in JSON-friendly format, or null if the calendar data was not a VTODO
 	 *
@@ -432,16 +431,16 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
 	 */
-	public function createObjectTask(ObjectRef $ref, string $objectTitle, array $data): ?array {
-		if ($this->carriesEngineIdentity(data: $data) === true) {
+	public function createObjectTask(ObjectRef $ref, LinkedTaskDraft $draft): ?array {
+		if ($this->carriesEngineIdentity(data: $draft->data) === true) {
 			throw new TaskAccessDeniedException(
 				message: 'An engine task cannot be created through the object task endpoint; only OpenRegister projects engine tasks into a calendar.'
 			);
 		}
 
 		$calendarId = $this->findUserCalendar()['id'];
-		$link = ['registerId' => (int)$ref->register, 'schemaId' => (int)$ref->schema, 'objectUuid' => $ref->id, 'objectTitle' => $objectTitle];
-		$document = $this->documents->compose(...$link, data: $data);
+		$link = new ObjectRef(register: (int)$ref->register, schema: (int)$ref->schema, id: $ref->id);
+		$document = $this->documents->composeFor(ref: $link, draft: $draft);
 
 		$this->calDavBackend->createCalendarObject($calendarId, $document['uri'], $document['calendarData']);
 
