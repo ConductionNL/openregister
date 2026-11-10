@@ -29,7 +29,6 @@ use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
 use OCA\OpenRegister\Service\Case\CasePlanMove;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanStore;
-use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CasePlanTree;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseTransitionCause;
@@ -127,7 +126,6 @@ class CasePlanStateMachineTest extends TestCase {
 
 		return new CasePlanStateMachine(
 			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $this->db, logger: new NullLogger()),
-			table: new CasePlanTransitions(),
 			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->writer, dispatcher: $dispatcher)
 		);
 	}//end machine()
@@ -337,7 +335,6 @@ class CasePlanStateMachineTest extends TestCase {
 		$dispatcher->expects($this->once())->method('dispatchTyped')->willThrowException(new RuntimeException('listener broke'));
 		$machine = new CasePlanStateMachine(
 			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()),
-			table: new CasePlanTransitions(),
 			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->writer, dispatcher: $dispatcher)
 		);
 
@@ -347,7 +344,6 @@ class CasePlanStateMachineTest extends TestCase {
 
 		$silent = new CasePlanStateMachine(
 			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $this->db, logger: new NullLogger()),
-			table: new CasePlanTransitions(),
 			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->writer)
 		);
 		$other = CaseFixtures::row(id: 2, key: 'y', type: CaseItem::TYPE_MILESTONE, state: CaseItem::STATE_AVAILABLE);

@@ -63,19 +63,35 @@ class CasePlanStateMachine {
 	private array $pending = [];
 
 	/**
+	 * The lifecycle table.
+	 *
+	 * @var CasePlanTransitions
+	 */
+	private readonly CasePlanTransitions $table;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CasePlanStore $store The plan-item table, the audit, the one transaction per transition and the failure log.
-	 * @param CasePlanTransitions $table The lifecycle table.
 	 * @param CaseTransitionEffects $effects The realiser, the write-through and the event dispatcher.
 	 */
 	public function __construct(
 		private readonly CasePlanStore $store,
-		private readonly CasePlanTransitions $table,
 		private readonly CaseTransitionEffects $effects,
 	) {
-
+		$this->table = new CasePlanTransitions();
 	}//end __construct()
+
+	/**
+	 * The plan-item table, the audit, the transaction and the failure log this machine writes through.
+	 *
+	 * @return CasePlanStore The store.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 */
+	public function store(): CasePlanStore {
+		return $this->store;
+	}//end store()
 
 	/**
 	 * Move one item, with everything that entails, in one transaction: the
