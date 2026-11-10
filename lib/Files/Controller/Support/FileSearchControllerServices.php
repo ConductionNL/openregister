@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Files\Controller\Support;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * The service bundle of the file search API.
@@ -38,6 +39,7 @@ final class FileSearchControllerServices {
 	 * @param VectorizationServiceInterface $vectorService Vectorization service.
 	 * @param ChunkMapperInterface          $chunkMapper   Chunk mapper (ranked keyword arm).
 	 * @param FileReadScope                 $readScope     Keeps only the hits on files the caller may open.
+	 * @param LoggerInterface               $logger        Logger.
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md
 	 */
@@ -45,6 +47,7 @@ final class FileSearchControllerServices {
 		public readonly VectorizationServiceInterface $vectorService,
 		public readonly ChunkMapperInterface $chunkMapper,
 		public readonly FileReadScope $readScope,
+		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 }//end class

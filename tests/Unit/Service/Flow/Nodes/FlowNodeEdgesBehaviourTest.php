@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
@@ -61,7 +62,7 @@ class FlowNodeEdgesBehaviourTest extends TestCase {
 	public function testATransitionOfAnItemWithoutAnObjectIsRefusedBeforeAnythingMoves(): void {
 		$engine = $this->createMock(TransitionEngine::class);
 		$engine->expects($this->never())->method('transition');
-		$node = new TransitionNode($engine, $this->l10n(), $this->createMock(IURLGenerator::class));
+		$node = new TransitionNode($engine, new FlowNodePresentation($this->l10n(), $this->createMock(IURLGenerator::class)));
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('The transition step could not tell which object to move.');

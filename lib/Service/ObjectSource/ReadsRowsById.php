@@ -57,14 +57,26 @@ trait ReadsRowsById {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+		return $this->findSourcedRow(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	}//end find()
+
+	/**
+	 * Read one object for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param string               $id      The object id.
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent.
+	 */
+	private function findSourcedRow(SourcedObjectBinding $binding, string $id): ?ObjectEntity {
 		foreach ($this->readRows() as $row) {
 			if ((string)($row['id'] ?? '') === $id) {
-				return $this->rowEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), row: $row);
+				return $this->rowEntity(binding: $binding, row: $row);
 			}
 		}
 
 		return null;
-	}//end find()
+	}//end findSourcedRow()
 
 	/**
 	 * {@inheritDoc}
@@ -79,9 +91,20 @@ trait ReadsRowsById {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+		return $this->pageSourcedRows(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
+	}//end findAll()
+
+	/**
+	 * Read one page of objects for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param array<string, mixed> $query   Query (filters/search/limit/offset).
+	 *
+	 * @return ObjectEntity[] The virtual objects.
+	 */
+	private function pageSourcedRows(SourcedObjectBinding $binding, array $query): array {
 		$limit   = (int)($query['limit'] ?? 200);
 		$offset  = (int)($query['offset'] ?? 0);
-		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
 
 		$objects = [];
 		foreach (array_slice($this->readRows(), $offset, $limit) as $row) {
@@ -89,7 +112,7 @@ trait ReadsRowsById {
 		}
 
 		return $objects;
-	}//end findAll()
+	}//end pageSourcedRows()
 
 	/**
 	 * Map a row onto a non-persisted virtual ObjectEntity keyed by its `id`.

@@ -137,7 +137,7 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
 	public function ensureInstanceClient(array $provider, array $claims, string $redirectUri): array {
-		return $this->instanceClients->ensure(provider: $provider, claims: $claims, redirectUri: $redirectUri);
+		return $this->instanceClients->ensure(registration: new OAuth2ClientRegistration(provider: $provider, claims: $claims, redirectUri: $redirectUri));
 	}//end ensureInstanceClient()
 
 	/**
@@ -200,7 +200,8 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 		$config = new OAuth2ProviderConfig(provider: $provider);
 		$instanceBaseUrl = $flow->pinnedHost();
 		$query = array_merge(
-			$this->authorizationQuery(flow: $flow, provider: $provider, request: $request),
+			$this->authorizationQuery(flow: $flow, request: $request),
+			['scope' => implode($config->scopeSeparator(), $flow->scopes(provider: $provider))],
 			$this->pkceChallenge(config: $config, challenge: $request->challenge),
 			$config->authorizationParameters()
 		);
@@ -224,22 +225,40 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
 	 */
 	public function complete(array $claims, string $code, string $verifier, string $redirectUri): string {
-		$flow = new OAuth2FlowClaims(claims: $claims);
+		$grant = new OAuth2CodeGrant(code: $code, verifier: $verifier, redirectUri: $redirectUri);
+
+		return $this->connect(flow: new OAuth2FlowClaims(claims: $claims), grant: $grant);
+	}//end complete()
+
+	/**
+	 * Redeem a verified flow's code and store the token set it yields.
+	 *
+	 * @param OAuth2FlowClaims $flow  The verified state claims.
+	 * @param OAuth2CodeGrant  $grant The code, PKCE verifier and callback.
+	 *
+	 * @return string The credential UUID.
+	 *
+	 * @throws InvalidArgumentException When the claims name a provider that cannot be connected.
+	 * @throws RuntimeException When the exchange fails or a re-authorisation would re-point a credential.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
+	 */
+	private function connect(OAuth2FlowClaims $flow, OAuth2CodeGrant $grant): string {
 		$provider = $this->oauth2Provider(providerId: $flow->string(key: 'p'));
 		$instanceBaseUrl = $flow->pinnedHost();
 		$existing = $this->writer->reauthorisationTarget(flow: $flow, instanceBaseUrl: $instanceBaseUrl);
 
+		$client = $this->clientFor(flow: $flow, existing: $existing);
 		$response = $this->exchange->redeem(
-			provider: $provider,
-			grant: ['code' => $code, 'code_verifier' => $verifier, 'redirect_uri' => $redirectUri],
-			client: $this->clientFor(flow: $flow, existing: $existing),
-			instanceBaseUrl: $instanceBaseUrl
+			redemption: new OAuth2CodeRedemption(provider: $provider, grant: $grant, client: $client, instanceBaseUrl: $instanceBaseUrl)
 		);
 
 		$tokenSet = OAuth2TokenSet::fromTokenResponse(response: $response, requestedScopes: $flow->scopes(provider: $provider));
 
-		return $this->writer->store(provider: $provider, flow: $flow, existing: $existing, tokenSet: $tokenSet);
-	}//end complete()
+		return $this->writer->store(
+			connection: new RedeemedConnection(provider: $provider, flow: $flow, existing: $existing, tokenSet: $tokenSet)
+		);
+	}//end connect()
 
 	/**
 	 * Revoke a connection upstream where the provider has a revoke endpoint.
@@ -257,7 +276,9 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
 	 */
 	public function revokeUpstream(array $provider, array $credential, string $credentialId, string $scope): string {
-		return $this->revoker->revoke(provider: $provider, credential: $credential, credentialId: $credentialId, scope: $scope);
+		$address = new TokenSetAddress(credentialId: $credentialId, scope: $scope);
+
+		return $this->revoker->revoke(revocation: new OAuth2Revocation(provider: $provider, credential: $credential, address: $address));
 	}//end revokeUpstream()
 
 	/**
@@ -292,16 +313,16 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	/**
 	 * The core authorization request parameters, with the client resolved for them.
 	 *
-	 * @param OAuth2FlowClaims $flow The flow's claims.
-	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 * The scope parameter follows these, built by the caller from the provider entry.
+	 *
+	 * @param OAuth2FlowClaims           $flow    The flow's claims.
 	 * @param OAuth2AuthorizationRequest $request The callback and signed state.
 	 *
 	 * @return array<string, string> The query parameters.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
-	private function authorizationQuery(OAuth2FlowClaims $flow, array $provider, OAuth2AuthorizationRequest $request): array {
-		$scopes = $flow->scopes(provider: $provider);
+	private function authorizationQuery(OAuth2FlowClaims $flow, OAuth2AuthorizationRequest $request): array {
 		$client = $this->clients->resolve(
 			credential: ['clientId' => $flow->string(key: 'cl'), 'clientCredentialRef' => $flow->string(key: 'cr')],
 			provider: $flow->string(key: 'p'),
@@ -313,7 +334,6 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 			'client_id' => $client['clientId'],
 			'redirect_uri' => $request->redirectUri,
 			'state' => $request->state,
-			'scope' => implode((new OAuth2ProviderConfig(provider: $provider))->scopeSeparator(), $scopes),
 		];
 	}//end authorizationQuery()
 

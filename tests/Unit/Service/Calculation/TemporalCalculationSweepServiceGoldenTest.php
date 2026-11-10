@@ -125,7 +125,7 @@ class TemporalCalculationSweepServiceGoldenTest extends TestCase {
 
 		$logger = $this->logger;
 		$this->service = new TemporalCalculationSweepService(
-			scan: new TemporalSchemaScan(schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, logger: $logger),
+			scan: new TemporalSchemaScan(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)), logger: $logger),
 			calculations: new TemporalCalculations(),
 			sweeper: new TemporalSchemaSweeper(
 				terminals: new LifecycleTerminals(),

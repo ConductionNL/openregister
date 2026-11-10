@@ -44,7 +44,7 @@ class MagicNumberColumnEdgeDigitsTest extends TestCase {
 
 	public function testANumberWhoseDigitsCannotBeCountedIsLeftToTheDatabase(): void {
 		// is_numeric() accepts a leading form feed that trim() keeps, so the digits cannot be counted.
-		$this->assertNull((new MagicNumberColumn())->refusal("\f123456789", 4, 2));
-		$this->assertSame('has more than 2 decimals', (new MagicNumberColumn())->refusal('1.234', 4, 2));
+		$this->assertNull((new MagicNumberColumn())->refusal("\f123456789", ['precision' => 4, 'scale' => 2]));
+		$this->assertSame('has more than 2 decimals', (new MagicNumberColumn())->refusal('1.234', ['precision' => 4, 'scale' => 2]));
 	}//end testANumberWhoseDigitsCannotBeCountedIsLeftToTheDatabase()
 }//end class

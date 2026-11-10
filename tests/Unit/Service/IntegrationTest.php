@@ -86,9 +86,7 @@ class IntegrationTest extends TestCase {
 			logger: $this->logger
 		);
 
-		$this->searchController = new SearchController(
-			'openregister',
-			$this->request,
+		$this->searchController = new SearchController($this->request,
 			$this->objectService
 		);
 	}

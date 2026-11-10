@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\HookStoppedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -74,18 +75,16 @@ class AutoTransitionRunner {
 	 * computed fields, defaults and file ids are all present by then, and the
 	 * two update events of a file-bearing save collapse into one decision.
 	 *
-	 * @param string $uuid The object's uuid.
-	 * @param string $register The object's register reference.
-	 * @param string $schema The object's schema reference.
+	 * @param ObjectRef $ref The object's register and schema references and its uuid.
 	 * @param array<string, mixed> $previous The object before the triggering write.
 	 *
 	 * @return AutoTransitionDecision|null The decided move, or null.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function decide(string $uuid, string $register, string $schema, array $previous): ?AutoTransitionDecision {
+	public function decide(ObjectRef $ref, array $previous): ?AutoTransitionDecision {
 		return $this->decider->decide(
-			entry: ['uuid' => $uuid, 'register' => $register, 'schema' => $schema],
+			entry: ['uuid' => $ref->id, 'register' => (string)$ref->register, 'schema' => (string)$ref->schema],
 			previous: $previous
 		);
 	}//end decide()

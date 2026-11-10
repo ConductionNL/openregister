@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\EdepotSettingsControllerServices;
 use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferServiceInterface;
@@ -123,16 +124,14 @@ class EdepotSettingsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param EdepotSettingsControllerServices $services The edepot settings controller services.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
 		EdepotSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->appConfig = $services->platform->appConfig;
 		$this->transferService = $services->domain->transferService;
 		$this->sftpTransport = $services->domain->sftpTransport;

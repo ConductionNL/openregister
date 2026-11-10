@@ -56,7 +56,7 @@ class MigrationControllerGoldenTest extends TestCase {
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
 		$this->migrationService = $this->createMock(MigrationService::class);
-		$this->controller = new MigrationController('openregister', $this->request, $this->migrationService);
+		$this->controller = new MigrationController($this->request, $this->migrationService);
 		$this->register = $this->createMock(Register::class);
 		$this->schema = $this->createMock(Schema::class);
 	}

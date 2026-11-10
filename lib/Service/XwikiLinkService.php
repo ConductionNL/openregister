@@ -48,6 +48,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Db\XwikiLinkMapperInterface;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
@@ -541,36 +542,41 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function searchPages(?string $query = null, int $limit = 25, int $offset = 0): array {
-		$limit  = max(1, min(100, $limit));
-		$offset = max(0, $offset);
+		return $this->search(query: new ListQuery(limit: $limit, offset: $offset, search: $query));
+	}//end searchPages()
+
+	/**
+	 * Free-text search of the remote xWiki knowledge base (see searchPages()).
+	 *
+	 * @param ListQuery $query The search text, limit (clamped 1..100) and offset (clamped >= 0; none is 0).
+	 *
+	 * @return array<string,mixed> `{ results, total, limit, offset }`, or the unconfigured-source descriptor.
+	 *
+	 * @spec openspec/specs/integration-xwiki/spec.md
+	 */
+	public function search(ListQuery $query): array {
+		$page = new ListQuery(limit: max(1, min(100, $query->limit)), offset: max(0, ($query->offset ?? 0)), search: $query->search);
 
 		// Object-independent browse/search: empty OR context.
-		$outcome = $this->browse(filters: $this->searchFilters(query: $query, limit: $limit, offset: $offset), caller: 'searchPages');
+		$outcome = $this->browse(filters: $this->searchFilters(page: $page), caller: 'searchPages');
 		if ($outcome['cause'] !== null) {
-			return $this->degraded(cause: $outcome['cause'], limit: $limit, offset: $offset);
+			return $this->degraded(cause: $outcome['cause'], page: $page);
 		}
 
-		return [
-			'results' => $outcome['results'],
-			'total' => count($outcome['results']),
-			'limit' => $limit,
-			'offset' => $offset,
-		];
-	}//end searchPages()
+		return ['results' => $outcome['results'], 'total' => count($outcome['results']), 'limit' => $page->limit, 'offset' => $page->offset];
+	}//end search()
 
 	/**
 	 * Provider list filters for a free-text search page.
 	 *
-	 * @param string|null $query  Free-text query; blank adds no search filter.
-	 * @param int         $limit  Clamped limit.
-	 * @param int         $offset Clamped offset.
+	 * @param ListQuery $page The clamped page; a blank search adds no search filter.
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function searchFilters(?string $query, int $limit, int $offset): array {
-		$filters = ['_limit' => $limit, '_page' => (int)(floor($offset / $limit) + 1)];
-		if ($query !== null && trim($query) !== '') {
-			$filters['_search'] = trim($query);
+	private function searchFilters(ListQuery $page): array {
+		$filters = ['_limit' => $page->limit, '_page' => (int)(floor($page->offset / $page->limit) + 1)];
+		if ($page->search !== null && trim($page->search) !== '') {
+			$filters['_search'] = trim($page->search);
 		}
 
 		return $filters;
@@ -581,16 +587,15 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	 * folded with the resolved limit/offset, so the search shape stays stable
 	 * across the success + degraded paths (AD-23).
 	 *
-	 * @param string $cause One of the ProviderUnavailableException CAUSE_* values.
-	 * @param int $limit Resolved limit.
-	 * @param int $offset Resolved offset.
+	 * @param string    $cause One of the ProviderUnavailableException CAUSE_* values.
+	 * @param ListQuery $page  The clamped limit and offset.
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function degraded(string $cause, int $limit, int $offset): array {
+	private function degraded(string $cause, ListQuery $page): array {
 		$state = $this->unavailableState(cause: $cause);
-		$state['limit'] = $limit;
-		$state['offset'] = $offset;
+		$state['limit'] = $page->limit;
+		$state['offset'] = $page->offset;
 
 		return $state;
 	}//end degraded()

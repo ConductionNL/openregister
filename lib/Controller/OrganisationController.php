@@ -29,6 +29,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
@@ -144,16 +145,14 @@ class OrganisationController extends Controller {
 	/**
 	 * OrganisationController constructor
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
 	 * @param OrganisationControllerServices $services The organisation controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		OrganisationControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->usageService = $services->domain->usageService;
 		$this->lifecycleAuditor = $services->auditing->lifecycleAuditor;
 		$this->grantAuditor = $services->domain->grantAuditor;

@@ -189,7 +189,6 @@ class FilesControllerFileVerbsTest extends TestCase {
 		);
 
 		return FilesControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->fileService,
 			$this->objectService,

@@ -76,7 +76,7 @@ class TablesColumnMapper {
 				continue;
 			}
 
-			$name = $this->uniqueName(name: $this->propertyName(column: $column), columnId: $columnId, seen: $seen);
+			$name = $this->uniqueName(column: $column, seen: $seen);
 			$seen[$name] = $columnId;
 			$map[$columnId] = $name;
 		}
@@ -87,13 +87,14 @@ class TablesColumnMapper {
 	/**
 	 * The property name, suffixed with the column id when an earlier column took it.
 	 *
-	 * @param string             $name     The slugged name.
-	 * @param int                $columnId The column id.
-	 * @param array<string, int> $seen     Names taken so far => the column that took them.
+	 * @param array<string, mixed> $column The column descriptor (with a non-zero id).
+	 * @param array<string, int>   $seen   Names taken so far => the column that took them.
 	 *
 	 * @return string The unique name.
 	 */
-	private function uniqueName(string $name, int $columnId, array $seen): string {
+	private function uniqueName(array $column, array $seen): string {
+		$name     = $this->propertyName(column: $column);
+		$columnId = (int)($column['id'] ?? 0);
 		if (isset($seen[$name]) === false) {
 			return $name;
 		}
@@ -115,51 +116,43 @@ class TablesColumnMapper {
 	 * otherwise they fall back to the raw integer rowId with a logged warning
 	 * (design D9).
 	 *
-	 * @param array<string, mixed> $row The row descriptor ({id, cells:[{columnId,value}]}).
-	 * @param array<int, array<string, mixed>> $columns The table's column descriptors (keyed by list order).
-	 * @param array<int, string> $columnMap Map of columnId →
-	 *                                      property name.
-	 * @param callable(int): bool $targetSchemaExists Predicate: does the target table have a seeded schema?
+	 * @param array<string, mixed> $row        The row descriptor ({id, cells:[{columnId,value}]}).
+	 * @param TablesRowProjection  $projection The table's columns, column map and relation-target check.
 	 *
 	 * @return array<string, mixed> The projected object payload (property → value).
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	public function projectRow(array $row, array $columns, array $columnMap, callable $targetSchemaExists): array {
-		$byId = $this->columnsById(columns: $columns);
+	public function projectRow(array $row, TablesRowProjection $projection): array {
+		$byId = $this->columnsById(columns: $projection->columns);
 		$data = [];
 		foreach (($row['cells'] ?? []) as $cell) {
 			$columnId = (int)($cell['columnId'] ?? 0);
-			if ($this->isMapped(row: $row, columnId: $columnId, columnMap: $columnMap) === false) {
+			if (isset($projection->columnMap[$columnId]) === false) {
+				$this->logDrift(row: $row, columnId: $columnId);
 				continue;
 			}
 
-			$column = ($byId[$columnId] ?? []);
-			$data[$columnMap[$columnId]] = $this->coerceCell(value: ($cell['value'] ?? null), column: $column, targetSchemaExists: $targetSchemaExists);
+			$typedCell = new TablesCell(value: ($cell['value'] ?? null), column: ($byId[$columnId] ?? []));
+			$data[$projection->columnMap[$columnId]] = $this->coerceCell(cell: $typedCell, projection: $projection);
 		}
 
 		return $data;
 	}//end projectRow()
 
 	/**
-	 * Whether the cell's column is in the column map; an unmapped column is logged as drift.
+	 * Log a cell whose column is not in the column map as drift.
 	 *
-	 * @param array<string, mixed> $row       The raw row (for its id in the log line).
-	 * @param int                  $columnId  The cell's column id.
-	 * @param array<int, string>   $columnMap Column id => property name.
+	 * @param array<string, mixed> $row      The raw row (for its id in the log line).
+	 * @param int                  $columnId The cell's column id.
 	 *
-	 * @return bool
+	 * @return void
 	 */
-	private function isMapped(array $row, int $columnId, array $columnMap): bool {
-		if (isset($columnMap[$columnId]) === true) {
-			return true;
-		}
-
+	private function logDrift(array $row, int $columnId): void {
 		$this->logger->warning(
 			sprintf('[ObjectSource:tables] row %s references unknown column %d — skipped (drift)', (string)($row['id'] ?? '?'), $columnId)
 		);
-		return false;
-	}//end isMapped()
+	}//end logDrift()
 
 	/**
 	 * The column descriptors keyed by column id.
@@ -286,9 +279,8 @@ class TablesColumnMapper {
 	/**
 	 * Coerce a raw cell value to its projected type (design D5).
 	 *
-	 * @param mixed $value The raw cell value.
-	 * @param array<string, mixed> $column The column descriptor.
-	 * @param callable(int): bool $targetSchemaExists Predicate for relation targets.
+	 * @param TablesCell          $cell       The raw cell value and its column descriptor.
+	 * @param TablesRowProjection $projection The table projection (for relation targets).
 	 *
 	 * @return mixed The coerced value.
 	 *
@@ -296,17 +288,18 @@ class TablesColumnMapper {
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function coerceCell(mixed $value, array $column, callable $targetSchemaExists): mixed {
+	private function coerceCell(TablesCell $cell, TablesRowProjection $projection): mixed {
+		$value = $cell->value;
 		if ($value === null) {
 			return null;
 		}
 
-		$subtype = (string)($column['subtype'] ?? '');
-		return match ((string)($column['type'] ?? 'text')) {
-			'number' => $this->coerceNumber(value: $value, column: $column, subtype: $subtype),
+		$subtype = (string)($cell->column['subtype'] ?? '');
+		return match ((string)($cell->column['type'] ?? 'text')) {
+			'number' => $this->coerceNumber(value: $value, column: $cell->column),
 			'selection' => $this->coerceSelection(value: $value, subtype: $subtype),
 			'usergroup' => (array)$value,
-			'relation' => $this->relationValue(value: $value, column: $column, targetSchemaExists: $targetSchemaExists),
+			'relation' => $this->relationValue(cell: $cell, projection: $projection),
 			default => $this->coerceText(value: $value),
 		};
 	}//end coerceCell()
@@ -314,13 +307,13 @@ class TablesColumnMapper {
 	/**
 	 * A number cell: an int for progress, stars and zero-decimal columns, else a float.
 	 *
-	 * @param mixed                $value   The raw value.
-	 * @param array<string, mixed> $column  The column descriptor.
-	 * @param string               $subtype The column subtype.
+	 * @param mixed                $value  The raw value.
+	 * @param array<string, mixed> $column The column descriptor.
 	 *
 	 * @return int|float
 	 */
-	private function coerceNumber(mixed $value, array $column, string $subtype): int|float {
+	private function coerceNumber(mixed $value, array $column): int|float {
+		$subtype = (string)($column['subtype'] ?? '');
 		if ($subtype === 'progress' || $subtype === 'stars' || $this->isIntegral(column: $column) === true) {
 			return (int)$value;
 		}
@@ -365,24 +358,23 @@ class TablesColumnMapper {
 	/**
 	 * Map a relation cell to the referenced virtual object's uuid, or fall back.
 	 *
-	 * @param mixed $value The raw relation cell value (referenced rowId).
-	 * @param array<string, mixed> $column The relation column descriptor (carries the target tableId).
-	 * @param callable(int): bool $targetSchemaExists Predicate: does the target table have a seeded schema?
+	 * @param TablesCell          $cell       The referenced rowId and the relation column (carries the target tableId).
+	 * @param TablesRowProjection $projection Its targetSchemaExists predicate: does the target table have a seeded schema?
 	 *
 	 * @return string|int The derived uuid, or the raw integer rowId on fallback.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function relationValue(mixed $value, array $column, callable $targetSchemaExists): string|int {
-		[$targetTableId, $rowId] = [(int)($column['relationTargetTableId'] ?? 0), (int)$value];
-		if ($targetTableId !== 0 && $targetSchemaExists($targetTableId) === true) {
+	private function relationValue(TablesCell $cell, TablesRowProjection $projection): string|int {
+		[$targetTableId, $rowId] = [(int)($cell->column['relationTargetTableId'] ?? 0), (int)$cell->value];
+		if ($targetTableId !== 0 && ($projection->targetSchemaExists)($targetTableId) === true) {
 			return $this->uuidDeriver->deriveObjectUuid(tableId: $targetTableId, rowId: $rowId);
 		}
 
 		$this->logger->warning(
 			sprintf(
 				'[ObjectSource:tables] relation column %d target table %d has no seeded schema — falling back to raw rowId %d',
-				(int)($column['id'] ?? 0),
+				(int)($cell->column['id'] ?? 0),
 				$targetTableId,
 				$rowId
 			)

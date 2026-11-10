@@ -33,12 +33,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
 use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -117,16 +119,14 @@ class ObjectDraftController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string          $appName    App name.
 	 * @param IRequest        $request    Request.
 	 * @param ObjectDraftControllerServices $services The object draft controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectDraftControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->objects = $services->domain->objects;
 		$this->registers = $services->domain->registers;
 		$this->schemas = $services->domain->schemas;
@@ -162,6 +162,17 @@ class ObjectDraftController extends Controller {
 	#[NoCSRFRequired]
 	#[UserRateLimit(limit: 120, period: 60)]
 	public function activate(string $register, string $schema, string $id): JSONResponse {
+		return $this->activateForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end activate()
+
+	/**
+	 * activate() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse The activated object, or the refusal.
+	 */
+	private function activateForObject(ObjectRef $ref): JSONResponse {
 		$user = $this->session->getUser();
 		if ($user === null) {
 			return $this->notSignedIn();
@@ -170,13 +181,13 @@ class ObjectDraftController extends Controller {
 		// Through the RBAC boundary first: a record the caller may not read
 		// answers the same 404 an unknown id gets, so this endpoint cannot be
 		// used to probe which ids exist.
-		$draft = $this->readableDraft(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
+		$draft = $this->readableDraft(route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id));
 		if ($draft === null) {
 			return $this->notFound();
 		}
 
 		return $this->activateFor(draft: $draft, user: $user);
-	}//end activate()
+	}//end activateForObject()
 
 	/**
 	 * The register and schema of a draft the caller may read, or null when it is unknown or not readable.
@@ -274,10 +285,9 @@ class ObjectDraftController extends Controller {
 	 * @return JSONResponse The refusal.
 	 */
 	private function notSignedIn(): JSONResponse {
-		return $this->refusal(
-			message: $this->l10n->t('Please sign in to make this draft definitive.'),
-			reason: 'not-signed-in',
-			status: Http::STATUS_UNAUTHORIZED
+		return new JSONResponse(
+			data: $this->refusal(message: $this->l10n->t('Please sign in to make this draft definitive.'), reason: 'not-signed-in'),
+			statusCode: Http::STATUS_UNAUTHORIZED
 		);
 	}//end notSignedIn()
 
@@ -287,10 +297,9 @@ class ObjectDraftController extends Controller {
 	 * @return JSONResponse The refusal.
 	 */
 	private function notFound(): JSONResponse {
-		return $this->refusal(
-			message: $this->l10n->t('This draft does not exist.'),
-			reason: DraftActivationRefusedException::NOT_FOUND,
-			status: Http::STATUS_NOT_FOUND
+		return new JSONResponse(
+			data: $this->refusal(message: $this->l10n->t('This draft does not exist.'), reason: DraftActivationRefusedException::NOT_FOUND),
+			statusCode: Http::STATUS_NOT_FOUND
 		);
 	}//end notFound()
 
@@ -307,10 +316,12 @@ class ObjectDraftController extends Controller {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
 		);
 
-		return $this->refusal(
-			message: $this->l10n->t('The draft could not be made definitive right now. Nothing was changed; try again later.'),
-			reason: 'unavailable',
-			status: Http::STATUS_INTERNAL_SERVER_ERROR
+		return new JSONResponse(
+			data: $this->refusal(
+				message: $this->l10n->t('The draft could not be made definitive right now. Nothing was changed; try again later.'),
+				reason: 'unavailable'
+			),
+			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
 		);
 	}//end unavailable()
 
@@ -344,15 +355,14 @@ class ObjectDraftController extends Controller {
 	}//end renderedActivation()
 
 	/**
-	 * A refusal in the one body shape this endpoint answers with.
+	 * A refusal body in the one shape this endpoint answers with.
 	 *
 	 * @param string $message The sentence the caller shows.
 	 * @param string $reason  A stable word a client can branch on.
-	 * @param int    $status  The HTTP status.
 	 *
-	 * @return JSONResponse The refusal.
+	 * @return array{message: string, reason: string, findings: array<never>} The refusal body.
 	 */
-	private function refusal(string $message, string $reason, int $status): JSONResponse {
-		return new JSONResponse(data: ['message' => $message, 'reason' => $reason, 'findings' => []], statusCode: $status);
+	private function refusal(string $message, string $reason): array {
+		return ['message' => $message, 'reason' => $reason, 'findings' => []];
 	}//end refusal()
 }//end class

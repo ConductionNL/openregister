@@ -50,6 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatcherInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -67,16 +68,14 @@ class MessageDispatchController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
 	 * @param MessageDispatcherInterface $provider Outbound-messaging dispatch leaf.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly MessageDispatcherInterface $provider,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

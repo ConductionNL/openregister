@@ -25,8 +25,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCA\OpenRegister\Notifications\Controller\NotificationTemplatesController;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationTemplatesControllerServices;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -35,6 +37,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 #[CoversClass(NotificationTemplatesController::class)]
 class NotificationTemplatesControllerBehaviourTest extends TestCase {
@@ -61,7 +64,10 @@ class NotificationTemplatesControllerBehaviourTest extends TestCase {
 		}
 
 		$session->method('getUser')->willReturn($user);
-		return new NotificationTemplatesController($request, $this->registry, $this->groups, $session);
+		return new NotificationTemplatesController(
+			$request,
+			new NotificationTemplatesControllerServices($this->registry, new ControllerSession($session, $this->groups, $this->createMock(LoggerInterface::class)))
+		);
 	}
 
 	/**

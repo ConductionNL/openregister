@@ -78,7 +78,7 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function clearForObject(string $objectUuid, ?string $userId = null): int {
-		return $this->clear(objectUuid: $objectUuid, subjectId: null, userId: $userId);
+		return $this->clear(subject: new NoticeSubject(objectUuid: $objectUuid, subjectId: null), userId: $userId);
 
 	}//end clearForObject()
 
@@ -101,7 +101,7 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 			return 0;
 		}
 
-		return $this->clear(objectUuid: $objectUuid, subjectId: $subjectId, userId: $userId);
+		return $this->clear(subject: new NoticeSubject(objectUuid: $objectUuid, subjectId: $subjectId), userId: $userId);
 
 	}//end clearForSubResource()
 
@@ -203,27 +203,26 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 	/**
 	 * The shared body of the two clear paths.
 	 *
-	 * @param string $objectUuid The object that was opened.
-	 * @param string|null $subjectId The sub-resource, when one was opened.
-	 * @param string|null $userId The reader, or null for the caller.
+	 * @param NoticeSubject $subject The object that was opened, and the sub-resource when one was.
+	 * @param string|null   $userId  The reader, or null for the caller.
 	 *
 	 * @return integer How many notices were cleared.
 	 */
-	private function clear(string $objectUuid, ?string $subjectId, ?string $userId): int {
+	private function clear(NoticeSubject $subject, ?string $userId): int {
 		$uid = ($userId ?? $this->principals->userSession->getUser()?->getUID());
-		if ($objectUuid === '' || $uid === null || $uid === '') {
+		if ($subject->objectUuid === '' || $uid === null || $uid === '') {
 			return 0;
 		}
 
 		try {
 			return $this->mapper->markReadForSubject(
 				recipient: $uid,
-				objectUuid: $objectUuid,
-				subjectId: $subjectId
+				objectUuid: $subject->objectUuid,
+				subjectId: $subject->subjectId
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				sprintf('[NotificationClearingService] clearing failed for %s: %s', $objectUuid, $e->getMessage())
+				sprintf('[NotificationClearingService] clearing failed for %s: %s', $subject->objectUuid, $e->getMessage())
 			);
 			return 0;
 		}
