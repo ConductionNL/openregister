@@ -37,6 +37,8 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Document;
 use Sabre\VObject\Reader;
+use OCA\OpenRegister\Service\CalendarEvent\VeventDraft;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
 
 /**
  * CalendarEventService wraps CalDAV VEVENT operations for OpenRegister objects.
@@ -449,12 +451,7 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 		$calendarId = $this->findUserCalendar()['id'];
 
 		$uid = strtoupper(bin2hex(random_bytes(16)));
-		$calendarData = $this->veventCodec->calendarData(
-			uid: $uid,
-			dtstart: $dtstart,
-			data: $data,
-			link: $link
-		);
+		$calendarData = $this->veventCodec->calendarDataOf(draft: new VeventDraft(uid: $uid, dtstart: $dtstart, data: $data, link: $link));
 		$uri = $uid . '.ics';
 
 		$this->calDavBackend->createCalendarObject($calendarId, $uri, $calendarData);
@@ -742,7 +739,7 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 			return null;
 		}
 
-		return $this->veventCodec->eventArray(vevent: $vevent, calendarId: $stored->calendarId, uri: $stored->uri);
+		return $this->veventCodec->eventArrayAt(vevent: $vevent, address: new CalendarObjectAddress(calendarId: $stored->calendarId, uri: $stored->uri));
 	}//end veventToArray()
 
 	/**

@@ -30,6 +30,7 @@ use DateTime;
 use DateTimeZone;
 use OCA\OpenRegister\Service\CalendarEvent\VeventCodec;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\CalendarEvent\VeventDraft;
 
 /**
  * @covers \OCA\OpenRegister\Service\CalendarEvent\VeventCodec
@@ -44,12 +45,7 @@ class VeventCodecHeaderGoldenTest extends TestCase {
 	 * @return list<string>
 	 */
 	private function lines(array $data): array {
-		$ics = (new VeventCodec())->calendarData(
-			'uid-1',
-			new DateTime('2027-03-01T09:00:00Z', new DateTimeZone('UTC')),
-			$data,
-			['registerId' => 1, 'schemaId' => 2, 'objectUuid' => 'obj-1', 'objectTitle' => 'Case 1']
-		);
+		$ics = (new VeventCodec())->calendarDataOf(new VeventDraft('uid-1', new DateTime('2027-03-01T09:00:00Z', new DateTimeZone('UTC')), $data, ['registerId' => 1, 'schemaId' => 2, 'objectUuid' => 'obj-1', 'objectTitle' => 'Case 1']));
 		$this->assertStringEndsWith("\r\n", $ics);
 		$lines = explode("\r\n", substr($ics, 0, -2));
 		$this->assertMatchesRegularExpression('/^DTSTAMP:\d{8}T\d{6}Z$/', $lines[5]);
