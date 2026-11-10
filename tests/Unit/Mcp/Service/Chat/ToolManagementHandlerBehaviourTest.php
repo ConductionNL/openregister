@@ -27,7 +27,6 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp\Service\Chat;
 use LLPhant\Chat\FunctionInfo\FunctionInfo;
 use LLPhant\Chat\FunctionInfo\Parameter;
 use OCA\OpenRegister\Mcp\Db\Agent;
-use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCA\OpenRegister\Mcp\Tool\ToolInterface;
@@ -56,7 +55,7 @@ class ToolManagementHandlerBehaviourTest extends TestCase {
 		parent::setUp();
 		$this->registry = $this->createMock(ToolRegistry::class);
 		$this->logger   = $this->createMock(LoggerInterface::class);
-		$this->handler  = new ToolManagementHandler($this->createMock(AgentMapper::class), $this->registry, $this->logger);
+		$this->handler  = new ToolManagementHandler($this->registry, $this->logger);
 	}//end setUp()
 
 	/**
