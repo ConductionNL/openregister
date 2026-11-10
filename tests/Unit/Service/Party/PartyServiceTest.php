@@ -11,6 +11,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
 use Exception;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Service\Party\PartyAddressSelection;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
@@ -154,8 +155,8 @@ class PartyServiceTest extends TestCase {
 		$this->assertSame('correspondence', $addresses[0]['kind']);
 		$this->assertSame('email', $addresses[0]['type']);
 		$this->assertSame('oud@example.org', $addresses[0]['value']);
-		$this->assertCount(1, $this->service->addressesOfKind(party: $party, kind: 'case'));
-		$this->assertCount(2, $this->service->addressesOfKind(party: $party, kind: 'correspondence'));
+		$this->assertCount(1, $this->service->addressesOfKind(party: $party, selection: new PartyAddressSelection(kind: 'case')));
+		$this->assertCount(2, $this->service->addressesOfKind(party: $party, selection: new PartyAddressSelection(kind: 'correspondence')));
 	}//end testAddressesCarryAKindAndABareStringStillReads()
 
 	/**

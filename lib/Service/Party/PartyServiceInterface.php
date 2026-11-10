@@ -72,15 +72,15 @@ interface PartyServiceInterface {
 	/**
 	 * The addresses of one kind, in declaration order.
 	 *
-	 * @param ObjectEntity $party The party.
-	 * @param string $kind The address kind, `correspondence` / `case` / `location`.
-	 * @param PartyDefinition|null $definition The declaration, resolved when null.
+	 * @param ObjectEntity          $party     The party.
+	 * @param PartyAddressSelection $selection The address kind (`correspondence` / `case` / `location`) and the declaration,
+	 *                                         resolved when null.
 	 *
 	 * @return array<int, array{kind: string, type: string, value: string, label: string|null}> The addresses.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
-	public function addressesOfKind(ObjectEntity $party, string $kind, ?PartyDefinition $definition = null): array;
+	public function addressesOfKind(ObjectEntity $party, PartyAddressSelection $selection): array;
 
 	/**
 	 * The indicators a party carries, each normalised to `{key, label, effect, note}`.

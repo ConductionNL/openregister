@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Party;
 
+use OCA\OpenRegister\Service\Party\PartyAddressSelection;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -276,8 +277,7 @@ class PartyNotificationService {
 	private function outboundAddress(ObjectEntity $party, ?PartyDefinition $definition): ?string {
 		$addresses = $this->parties->addressesOfKind(
 			party: $party,
-			kind: self::OUTBOUND_KIND,
-			definition: $definition
+			selection: new PartyAddressSelection(kind: self::OUTBOUND_KIND, definition: $definition)
 		);
 
 		if ($addresses === []) {
