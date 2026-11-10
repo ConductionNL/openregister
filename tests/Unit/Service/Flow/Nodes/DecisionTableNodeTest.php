@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Dmn\DecisionEvaluationException;
 use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
@@ -448,7 +449,7 @@ class DecisionTableNodeTest extends TestCase {
 	public function testItemsAreIndependentAndProvenanceIsKept(): void {
 		$out = $this->node->execute(
 			items: [
-				FlowItems::item(json: ['severity' => 'licht', 'behaviour' => 'goedwillend', 'actorType' => 'burger'], binary: ['scan' => 'blob']),
+				FlowItems::item(json: ['severity' => 'licht', 'behaviour' => 'goedwillend', 'actorType' => 'burger'], options: new FlowItemOptions(binary: ['scan' => 'blob'])),
 				FlowItems::item(json: ['severity' => 'ernstig', 'behaviour' => 'opzettelijk', 'actorType' => 'bedrijf']),
 			],
 			config: ['table' => $this->lhsTable()],

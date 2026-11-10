@@ -52,6 +52,7 @@ use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -307,13 +308,13 @@ final class HandoffServiceHelpersGoldenTest extends TestCase {
 				return $entity;
 			}
 		);
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = []) {
 				$this->audits[] = [(string)$object->getUuid(), $action, $context];
 
 				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
 			}
-		);
+		));
 	}
 
 	/**

@@ -112,6 +112,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
@@ -3039,7 +3040,7 @@ class SaveObject implements SaveObjectInterface {
 		);
 
 		// Extract Nc* property references and populate linked entity metadata columns.
-		$this->linkedEntityHandler->extractAndPopulate($objectEntity, $schema, $preparedData);
+		$this->linkedEntityHandler->extractAndPopulate($objectEntity, $schema);
 
 		// Populate TMLO archival metadata defaults if register has TMLO enabled.
 		$this->populateTmloDefaults(objectEntity: $objectEntity, schema: $schema);
@@ -3278,8 +3279,7 @@ class SaveObject implements SaveObjectInterface {
 		if (empty($omittedWriteOnly) === false) {
 			$preparedData = $this->propertyRbacHandler->restoreWriteOnlyValues(
 				prepared: $preparedData,
-				stored: $oldData,
-				omittedPaths: $omittedWriteOnly
+				omitted: new OmittedWriteOnly(stored: $oldData, paths: $omittedWriteOnly)
 			);
 		}
 
@@ -3296,7 +3296,7 @@ class SaveObject implements SaveObjectInterface {
 		$this->hydrateObjectMetadata(entity: $existingObject, schema: $schema);
 
 		// Extract Nc* property references and populate linked entity metadata columns.
-		$this->linkedEntityHandler->extractAndPopulate($existingObject, $schema, $preparedData);
+		$this->linkedEntityHandler->extractAndPopulate($existingObject, $schema);
 
 		// Validate TMLO metadata if present (status transitions and field values).
 		$this->validateTmloOnUpdate(existingObject: $existingObject, selfData: $selfData);

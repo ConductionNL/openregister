@@ -3,7 +3,7 @@
 /**
  * MergeServiceExecuteCharacterisationTest
  *
- * Pins what MergeService::executeMerge() writes, in which order: the loser's
+ * Pins what MergeService::merge() writes, in which order: the loser's
  * merged status, the survivor's golden record, provenance and active status,
  * the merge-operation row, the log line and the event.
  *
@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
 use OCA\OpenRegister\Service\Merge\MergeReportingServices;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Merge\MergeSurvivorshipServices;
@@ -162,7 +163,7 @@ class MergeServiceExecuteCharacterisationTest extends TestCase {
 
 	public function testTheDefaultStatusesAreWrittenToTheLoserAndTheSurvivorInOrder(): void {
 		$operation = $this->service(mergeConfig: ['sourceLinkField' => 'sources', 'entityType' => 'organisation'])
-			->executeMerge('from-uuid', 'into-uuid', 'duplicate', 'alice');
+			->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'duplicate', mergedBy: 'alice'));
 
 		$this->assertCount(3, $this->saves);
 
@@ -200,7 +201,7 @@ class MergeServiceExecuteCharacterisationTest extends TestCase {
 	public function testTheAnnotationNamesTheStatusFieldAndBothStatuses(): void {
 		$this->service(
 			mergeConfig: ['sourceLinkField' => 'sources', 'statusField' => 'state', 'survivorStatus' => 'live', 'mergedStatus' => 'gone']
-		)->executeMerge('from-uuid', 'into-uuid', 'duplicate', 'alice');
+		)->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'duplicate', mergedBy: 'alice'));
 
 		$this->assertSame('gone', $this->saves[0]['payload']['state']);
 		$this->assertSame('active', $this->saves[0]['payload']['status']);

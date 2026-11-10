@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Quality;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
@@ -169,13 +170,15 @@ class DedupCreatePolicy implements DedupCreatePolicyInterface {
 		}
 
 		try {
-			$this->audit->auditTrailMapper->createAuditTrailEntry(
-				object: $object,
-				action: self::OVERRIDE_ACTION,
-				context: [
-					'matchedObjects' => $uuids,
-					'matches' => $matches,
-				]
+			$this->audit->auditTrailMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: self::OVERRIDE_ACTION,
+					context: [
+						'matchedObjects' => $uuids,
+						'matches' => $matches,
+					]
+				)
 			);
 		} catch (Throwable $e) {
 			$this->audit->logger->warning(

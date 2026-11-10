@@ -467,7 +467,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 
 		$good = $this->controller(params: ['direction' => 'both', 'depth' => '3', 'fields' => ' a, ,b '], readable: ['a']);
 		$this->trees->expects($this->once())->method('tree')
-			->with($this->isInstanceOf(ObjectEntity::class), new ObjectTreeQuery('both', 3, ['a', 'b']))
+			->with($this->callback(static fn (ObjectTreeQuery $query): bool => [$query->direction, $query->depth, $query->fields] === ['both', 3, ['a', 'b']]))
 			->willReturn(['root' => 'a']);
 		$this->assertSame([200, ['root' => 'a']], $this->outcome($good->tree('r', 's', 'a')));
 	}//end testTheTreeValidatesItsQuery()

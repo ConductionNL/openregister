@@ -75,19 +75,6 @@ class StoreActionAuthorizer {
 	/**
 	 * Whether the user may perform the action the store declared.
 	 *
-	 * @param string $appId  The declaring leaf app id.
-	 * @param string $action The dot-separated action name.
-	 * @param IUser  $user   The signed-in user.
-	 *
-	 * @return bool True only when the leaf app's own matrix says yes.
-	 */
-	public function can(string $appId, string $action, IUser $user): bool {
-		return $this->permits(check: new StoreActionCheck(appId: $appId, action: $action, user: $user));
-	}//end can()
-
-	/**
-	 * Whether the user may perform the action the store declared.
-	 *
 	 * @param StoreActionCheck $check The declaring leaf app id, the action and the signed-in user.
 	 *
 	 * @return bool True only when the leaf app's own matrix says yes.

@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCP\Files\File;
@@ -105,7 +107,8 @@ class ExampleSetFilesBehaviourTest extends TestCase {
 
 	public function testAttachAddsReadableFilesAndCollectsErrorsForTheRest(): void {
 		$this->fileService->expects($this->exactly(2))->method('addFile')->willReturnCallback(
-			function (...$args): File {
+			function (FileTarget $target, FileUpload $upload): File {
+				$args = [$target->object, $upload->fileName, $upload->content, $upload->share];
 				if ($args[3] === true) {
 					throw new \RuntimeException('quota exceeded');
 				}
@@ -127,7 +130,10 @@ class ExampleSetFilesBehaviourTest extends TestCase {
 
 	public function testAShareFlagThatIsNotLiterallyTrueDoesNotShare(): void {
 		$this->fileService->expects($this->once())->method('addFile')
-			->with('obj-1', 'brief.txt', 'Geachte heer', false)
+			->with(
+				$this->callback(fn (FileTarget $target): bool => $target->object === 'obj-1'),
+				$this->callback(fn (FileUpload $upload): bool => $upload->fileName === 'brief.txt' && $upload->content === 'Geachte heer' && $upload->share === false)
+			)
 			->willReturn($this->named(name: 'brief.txt', id: 1));
 
 		$result = $this->files()->attach($this->dir, ['files' => [['path' => 'docs/brief.txt', 'share' => 'yes']]], 'obj-1');

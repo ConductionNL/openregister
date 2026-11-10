@@ -26,6 +26,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -300,7 +303,11 @@ class CorrectionService implements CorrectionServiceInterface {
 	private function writeCorrectionEntry(ObjectEntity $object, array $context): ?AuditTrail {
 		$actor = $context['correction']['actor'];
 		try {
-			return $this->auditing->auditTrailMapper->createAuditTrailEntry(object: $object, action: self::ACTION, context: $context, actorId: $actor);
+			$options = new ObjectAuditEventOptions(actor: new NamedActor(id: $actor));
+
+			$event = new ObjectAuditEvent(object: $object, action: self::ACTION, context: $context, options: $options);
+
+			return $this->auditing->auditTrailMapper->recordObjectEvent(event: $event);
 		} catch (Throwable $e) {
 			$this->auditing->logger->error(
 				message: '[CorrectionService] The correction landed and the audit entry did not',

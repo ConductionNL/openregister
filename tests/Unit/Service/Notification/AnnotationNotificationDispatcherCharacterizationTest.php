@@ -57,6 +57,7 @@ use OCA\OpenRegister\Service\Notification\ReferenceOrigin;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\CoalesceBucket;
 use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCP\Activity\IEvent;
@@ -498,8 +499,9 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 
 		$coalescer = $this->createMock(NotificationCoalescer::class);
 		$coalescer->method('shouldDispatch')->willReturnCallback(
-			function (string $ruleId, string $recipient, ?array $perRuleOverride) use ($prefix): bool {
-				$this->record(what: 'coalescer.shouldDispatch', args: [$ruleId, $recipient, $perRuleOverride]);
+			function (CoalesceBucket $bucket, ?array $perRuleOverride) use ($prefix): bool {
+				$recipient = $bucket->recipient;
+				$this->record(what: 'coalescer.shouldDispatch', args: [$bucket->ruleId, $recipient, $perRuleOverride]);
 				if ($recipient === '__talk__') {
 					return (($perRuleOverride['blockTalk'] ?? false) !== true);
 				}

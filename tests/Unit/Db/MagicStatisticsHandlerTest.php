@@ -11,6 +11,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -98,7 +99,7 @@ class MagicStatisticsHandlerTest extends TestCase {
 			'published_at' => '',
 		];
 
-		$entity = $this->handler->convertRowToObjectEntity($row, $register, $schema);
+		$entity = $this->handler->toObjectEntity($row, new RegisterSchema($register, $schema));
 
 		$this->assertNotNull($entity, 'Row should convert to an ObjectEntity');
 		$data = $entity->getObject();
@@ -127,7 +128,7 @@ class MagicStatisticsHandlerTest extends TestCase {
 			'birth_date' => '',
 		];
 
-		$entity = $this->handler->convertRowToObjectEntity($row, $register, $schema);
+		$entity = $this->handler->toObjectEntity($row, new RegisterSchema($register, $schema));
 
 		$this->assertNotNull($entity, 'Row should convert to an ObjectEntity');
 		$data = $entity->getObject();
@@ -156,7 +157,7 @@ class MagicStatisticsHandlerTest extends TestCase {
 			'published_at' => '2026-04-20 14:00:00',
 		];
 
-		$entity = $this->handler->convertRowToObjectEntity($row, $register, $schema);
+		$entity = $this->handler->toObjectEntity($row, new RegisterSchema($register, $schema));
 
 		$this->assertNotNull($entity, 'Row should convert to an ObjectEntity');
 		$data = $entity->getObject();
@@ -187,7 +188,7 @@ class MagicStatisticsHandlerTest extends TestCase {
 			'published_at' => '   ',
 		];
 
-		$entity = $this->handler->convertRowToObjectEntity($row, $register, $schema);
+		$entity = $this->handler->toObjectEntity($row, new RegisterSchema($register, $schema));
 
 		$this->assertNotNull($entity, 'Row should convert to an ObjectEntity');
 		$data = $entity->getObject();
@@ -240,7 +241,7 @@ class MagicStatisticsHandlerTest extends TestCase {
 		];
 
 		$this->logger->expects($this->never())->method('error');
-		$entity = $this->handler->convertRowToObjectEntity($row, $this->makeRegister(), $schema);
+		$entity = $this->handler->toObjectEntity($row, new RegisterSchema($this->makeRegister(), $schema));
 
 		$this->assertNotNull($entity);
 		$this->assertSame('test-uuid-meta', $entity->getUuid());
@@ -265,7 +266,7 @@ class MagicStatisticsHandlerTest extends TestCase {
 		];
 
 		$this->logger->expects($this->never())->method('error');
-		$entity = $this->handler->convertRowToObjectEntity($row, $this->makeRegister(), $schema);
+		$entity = $this->handler->toObjectEntity($row, new RegisterSchema($this->makeRegister(), $schema));
 
 		$this->assertNotNull($entity);
 		$this->assertSame('test-uuid-unknown', $entity->getUuid());
