@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
 use OCA\OpenRegister\Service\Rbac\OwnershipHandover;
 use OCA\OpenRegister\Service\Rbac\OwnedRecord;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -48,6 +49,9 @@ use OCA\OpenRegister\Service\Rbac\OwnershipLog;
 use OCA\OpenRegister\Service\Rbac\OwnershipSources;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnerWriter;
+use OCA\OpenRegister\Service\Rbac\OwnerAssignment;
+use OCA\OpenRegister\Service\Rbac\AuthorizationAssignment;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\OwnershipGuards;
 use OCA\OpenRegister\Service\Rbac\OwnershipWriters;
@@ -260,7 +264,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->ownerWriter
 			->expects($this->once())
 			->method('writeOwner')
-			->with($this->anything(), $this->anything(), 'uuid-1', 'bob');
+			->with($this->anything(), new OwnerAssignment('uuid-1', 'bob'));
 
 		$outcome = $this->service->claim(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')));
 
@@ -400,7 +404,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->signIn(null);
 		$this->expectNotification();
 		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
-		$this->ownerWriter->expects($this->once())->method('writeOwner')->with($this->anything(), $this->anything(), 'uuid-1', 'carol');
+		$this->ownerWriter->expects($this->once())->method('writeOwner')->with($this->anything(), new OwnerAssignment('uuid-1', 'carol'));
 
 		$outcome = \OCA\OpenRegister\Service\SystemOperationContext::run(
 			fn () => $this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', '__system__')), handover: new OwnershipHandover(newOwner: 'carol', cascade: false))
@@ -424,7 +428,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->ownerWriter
 			->expects($this->once())
 			->method('writeOwner')
-			->with($this->anything(), $this->anything(), 'uuid-1', 'carol');
+			->with($this->anything(), new OwnerAssignment('uuid-1', 'carol'));
 
 		$outcome = $this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), handover: new OwnershipHandover(newOwner: 'carol', cascade: false));
 
@@ -458,9 +462,9 @@ class ObjectOwnershipServiceTest extends TestCase {
 			->method('createAuditTrail')
 			->willReturn($this->createMock(AuditTrail::class));
 
-		$outcome = $this->service->reassignMany(
+		$outcome = $this->service->reassign(
 			identifiers: ['uuid-1', 'uuid-2', 'uuid-3'],
-			newOwner: 'carol'
+			reassignment: new OwnershipReassignment(newOwner: 'carol', cascade: false)
 		);
 
 		$this->assertCount(3, $outcome['transferred']);
@@ -494,9 +498,9 @@ class ObjectOwnershipServiceTest extends TestCase {
 			}
 		);
 
-		$outcome = $this->service->reassignMany(
+		$outcome = $this->service->reassign(
 			identifiers: ['uuid-1', 'gone', 'uuid-2'],
-			newOwner: 'carol'
+			reassignment: new OwnershipReassignment(newOwner: 'carol', cascade: false)
 		);
 
 		$this->assertCount(2, $outcome['transferred']);
@@ -529,8 +533,8 @@ class ObjectOwnershipServiceTest extends TestCase {
 
 		$written = [];
 		$this->ownerWriter->method('writeOwner')->willReturnCallback(
-			static function ($register, $schema, string $objectUuid, string $owner) use (&$written): void {
-				$written[$objectUuid] = $owner;
+			static function ($table, OwnerAssignment $assignment) use (&$written): void {
+				$written[$assignment->objectUuid] = $assignment->owner;
 			}
 		);
 
@@ -562,8 +566,8 @@ class ObjectOwnershipServiceTest extends TestCase {
 
 		$written = [];
 		$this->ownerWriter->method('writeOwner')->willReturnCallback(
-			static function ($register, $schema, string $objectUuid, string $owner) use (&$written): void {
-				$written[$objectUuid] = $owner;
+			static function ($table, OwnerAssignment $assignment) use (&$written): void {
+				$written[$assignment->objectUuid] = $assignment->owner;
 			}
 		);
 
@@ -760,8 +764,8 @@ class ObjectOwnershipServiceTest extends TestCase {
 
 		$written = [];
 		$this->ownerWriter->method('writeOwner')->willReturnCallback(
-			static function ($register, $schema, string $objectUuid, string $owner) use (&$written): void {
-				$written[] = $objectUuid;
+			static function ($table, OwnerAssignment $assignment) use (&$written): void {
+				$written[] = $assignment->objectUuid;
 			}
 		);
 
@@ -811,9 +815,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			->method('writeAuthorizationBlock')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				'uuid-1',
-				['scope' => 'private', 'ownerGroup' => 'redactie']
+				new AuthorizationAssignment('uuid-1', ['scope' => 'private', 'ownerGroup' => 'redactie'])
 			);
 
 		$block = $this->service->setOwnerGroupFor(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $object), group: 'redactie');
@@ -879,8 +881,8 @@ class ObjectOwnershipServiceTest extends TestCase {
 
 		$written = [];
 		$this->ownerWriter->method('writeOwner')->willReturnCallback(
-			static function ($register, $schema, string $objectUuid, string $owner) use (&$written): void {
-				$written[] = $objectUuid;
+			static function ($table, OwnerAssignment $assignment) use (&$written): void {
+				$written[] = $assignment->objectUuid;
 			}
 		);
 
@@ -934,7 +936,10 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->authorizationWriter
 			->expects($this->exactly(2))
 			->method('writeAuthorizationBlock')
-			->with($this->identicalTo($register), $this->identicalTo($schema), 'uuid-1', $this->anything());
+			->with(
+				$this->callback(static fn (RegisterSchema $table): bool => $table->register === $register && $table->schema === $schema),
+				$this->callback(static fn (AuthorizationAssignment $assignment): bool => $assignment->objectUuid === 'uuid-1')
+			);
 
 		$this->assertSame('redactie', $this->service->setOwnerGroup($register, $schema, $this->record('uuid-1', 'alice'), 'redactie')['ownerGroup']);
 		$named = $this->service->setOwnerGroup(register: $register, schema: $schema, object: $this->record('uuid-1', 'alice'), group: null);

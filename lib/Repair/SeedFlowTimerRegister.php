@@ -98,26 +98,13 @@ class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterfa
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$path = $this->descriptors->appManager->getAppPath('openregister') . self::REGISTER_PATH;
-			if (is_file($path) === false) {
-				$output->warning('Flow-timers register descriptor not found: ' . $path);
+			$descriptor = new AppRegisterDescriptor(descriptors: $this->descriptors, label: 'Flow-timers');
+			$data = $descriptor->read(relativePath: self::REGISTER_PATH, output: $output);
+			if ($data === null) {
 				return;
 			}
 
-			$data = json_decode((string)file_get_contents($path), true);
-			if (is_array($data) === false) {
-				$output->warning('Flow-timers register descriptor is not valid JSON: ' . $path);
-				return;
-			}
-
-			// The importer takes the DECODED descriptor; force: false keeps
-			// the import idempotent and leaves administrator edits in place.
-			$this->descriptors->configurationService->importFromApp(
-				appId: 'openregister',
-				data: $data,
-				version: self::REGISTER_VERSION,
-				force: false
-			);
+			$descriptor->import(data: $data, version: self::REGISTER_VERSION);
 
 			$output->info('Flow-timers register imported (working-calendar + escalation-ladder schemas and seeded defaults)');
 		} catch (Throwable $e) {

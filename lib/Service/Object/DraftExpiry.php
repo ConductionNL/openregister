@@ -340,47 +340,79 @@ class DraftExpiry implements DraftExpiryInterface {
 	 * @return array{0: array<int, string>, 1: int} The uuids, and the number of expired drafts left unread.
 	 */
 	private function expiredIn(DraftExpiryPair $pair): array {
-		$register = $pair->register;
-		$schema = $pair->schema;
-		$cutoff = $pair->cutoff;
-		$moment = gmdate('Y-m-d H:i:s', $cutoff->getTimestamp());
-		$filters = [
+		$tally = new ExpiredDraftTally(pages: self::MAX_PAGES);
+		foreach ($this->expiredFilters(pair: $pair) as $filter) {
+			$run = new ExpiredDraftListRun(pair: $pair, query: $this->expiredQuery(pair: $pair, filter: $filter));
+			if ($tally->pages <= 0) {
+				$tally->unread += $this->countOf(run: $run);
+				continue;
+			}
+
+			if ($this->readExpired(run: $run, tally: $tally) === false) {
+				break;
+			}
+		}
+
+		return [array_values(array_unique($tally->expired)), $tally->unread];
+	}//end expiredIn()
+
+	/**
+	 * The two filters that together select the expired drafts.
+	 *
+	 * @param DraftExpiryPair $pair The register, the schema and the cutoff.
+	 *
+	 * @return array<int, array<string, mixed>> The `@self` filters.
+	 */
+	private function expiredFilters(DraftExpiryPair $pair): array {
+		$moment = gmdate('Y-m-d H:i:s', $pair->cutoff->getTimestamp());
+
+		return [
 			// Changed at some point, and not since the cutoff.
 			['updated' => ['lt' => $moment]],
 			// Never changed: the created moment counts.
 			['updated' => 'IS NULL', 'created' => ['lt' => $moment]],
 		];
+	}//end expiredFilters()
 
-		$expired = [];
-		$unread = 0;
-		$pages = self::MAX_PAGES;
-		foreach ($filters as $filter) {
-			$query = [
-				'@self' => (['register' => (string)$register->getId(), 'schema' => (string)$schema->getId()] + $filter),
-				// Drafts alone, whoever owns them (decision 201's lens).
-				DraftListLens::PARAMETER => 'true',
-			];
-			if ($pages <= 0) {
-				$unread += $this->countOf(run: new ExpiredDraftListRun(pair: $pair, query: $query));
-				continue;
-			}
+	/**
+	 * The list query for one filter of a register and schema's expired drafts.
+	 *
+	 * @param DraftExpiryPair      $pair   The register, the schema and the cutoff.
+	 * @param array<string, mixed> $filter One of the expired-draft filters.
+	 *
+	 * @return array<string, mixed> The list query, without paging.
+	 */
+	private function expiredQuery(DraftExpiryPair $pair, array $filter): array {
+		return [
+			'@self' => (['register' => (string)$pair->register->getId(), 'schema' => (string)$pair->schema->getId()] + $filter),
+			// Drafts alone, whoever owns them (decision 201's lens).
+			DraftListLens::PARAMETER => 'true',
+		];
+	}//end expiredQuery()
 
-			$run  = new ExpiredDraftListRun(pair: $pair, query: $query);
-			$scan = $this->scan(run: $run, pages: $pages);
-			array_push($expired, ...$scan['uuids']);
-			if ($scan['failed'] === true) {
-				// A list that cannot be read is logged once; the schema's drafts wait for the next run.
-				break;
-			}
-
-			$pages -= $scan['pages'];
-			if ($scan['full'] === true) {
-				$unread += max(1, ($this->countOf(run: $run) - $scan['rows']));
-			}
+	/**
+	 * Read one list of expired drafts within the pages left, and count what lies beyond them.
+	 *
+	 * @param ExpiredDraftListRun $run   The list to read.
+	 * @param ExpiredDraftTally   $tally What the reads found so far.
+	 *
+	 * @return bool False when the list could not be read and the schema's other list is not tried.
+	 */
+	private function readExpired(ExpiredDraftListRun $run, ExpiredDraftTally $tally): bool {
+		$scan = $this->scan(run: $run, pages: $tally->pages);
+		array_push($tally->expired, ...$scan['uuids']);
+		if ($scan['failed'] === true) {
+			// A list that cannot be read is logged once; the schema's drafts wait for the next run.
+			return false;
 		}
 
-		return [array_values(array_unique($expired)), $unread];
-	}//end expiredIn()
+		$tally->pages -= $scan['pages'];
+		if ($scan['full'] === true) {
+			$tally->unread += max(1, ($this->countOf(run: $run) - $scan['rows']));
+		}
+
+		return true;
+	}//end readExpired()
 
 	/**
 	 * Read the pages of one list, up to a page budget.

@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCP\IAppConfig;
@@ -89,21 +90,21 @@ class MagicRbacHandlerZaaktypeTest extends TestCase {
 		$this->mockUser('extern-adviseur', []);
 		$schema = $this->schema(['read' => ['hr-team', 'user:extern-adviseur']]);
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
+		$this->assertTrue($this->handler->hasPermission(new RbacPermissionAsk($schema, 'read')));
 	}
 
 	public function testUserOverrideDeniesOtherUser(): void {
 		$this->mockUser('random', ['externals']);
 		$schema = $this->schema(['read' => ['hr-team', 'user:extern-adviseur']]);
 
-		$this->assertFalse($this->handler->hasPermission($schema, 'read'));
+		$this->assertFalse($this->handler->hasPermission(new RbacPermissionAsk($schema, 'read')));
 	}
 
 	public function testUserOverrideNeverGrantsAnonymous(): void {
 		$this->mockUser(null, []);
 		$schema = $this->schema(['read' => ['user:extern-adviseur']]);
 
-		$this->assertFalse($this->handler->hasPermission($schema, 'read'));
+		$this->assertFalse($this->handler->hasPermission(new RbacPermissionAsk($schema, 'read')));
 	}
 
 	public function testUserOverrideComplexFormDelegatesMatch(): void {
@@ -117,7 +118,7 @@ class MagicRbacHandlerZaaktypeTest extends TestCase {
 			->willReturn(true);
 
 		$this->assertTrue(
-			$this->handler->hasPermission($schema, 'read', null, ['status' => 'open'])
+			$this->handler->hasPermission(new RbacPermissionAsk($schema, 'read', null, ['status' => 'open']))
 		);
 	}
 
@@ -130,7 +131,7 @@ class MagicRbacHandlerZaaktypeTest extends TestCase {
 		$this->conditionMatcher->expects($this->never())->method('objectMatchesConditions');
 
 		$this->assertFalse(
-			$this->handler->hasPermission($schema, 'read', null, ['status' => 'open'])
+			$this->handler->hasPermission(new RbacPermissionAsk($schema, 'read', null, ['status' => 'open']))
 		);
 	}
 }

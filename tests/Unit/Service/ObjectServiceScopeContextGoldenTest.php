@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -117,8 +118,19 @@ class ObjectServiceScopeContextGoldenTest extends TestCase
 
         $this->assertSame(['rendered'], $service->findAll($config, false, false));
 
+        $request   = $captured['request'];
+        $forwarded = [
+            'limit'   => $request->query->limit,
+            'offset'  => $request->query->offset,
+            'filters' => $request->query->filters,
+            'sort'    => $request->query->sort,
+            'search'  => $request->query->search,
+            'files'   => $request->files,
+            'uses'    => $request->selection->uses,
+            'ids'     => $request->selection->ids,
+        ];
         foreach ($config as $key => $value) {
-            $this->assertSame($value, $captured[$key], $key);
+            $this->assertSame($value, $forwarded[$key], $key);
         }
 
         $this->assertFalse($captured['_rbac']);
@@ -239,7 +251,7 @@ class ObjectServiceScopeContextGoldenTest extends TestCase
             ['saveHandler' => $save, 'currentRegister' => null, 'currentSchema' => null, 'currentSchemaRef' => null]
         );
 
-        $service->saveObjectsStreaming([['title' => 'row']]);
+        $service->saveObjectsStreaming(new StreamingSave(null, null, [['title' => 'row']]));
 
         $this->assertSame(['clear', 'stream'], $calls);
     }

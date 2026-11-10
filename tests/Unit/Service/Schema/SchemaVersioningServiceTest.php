@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\SchemaChangelogMapper;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
@@ -65,7 +66,7 @@ class SchemaVersioningServiceTest extends TestCase {
 
 	public function testClassifyDetectsBreaking(): void {
 		$existing = $this->schema(['email' => ['type' => 'string']]);
-		$cs = $this->service->classify($existing, ['properties' => [], 'required' => []]);
+		$cs = $this->service->classify($existing, new IncomingDefinition(['properties' => [], 'required' => []]));
 		$this->assertTrue($cs->isBreaking());
 	}
 

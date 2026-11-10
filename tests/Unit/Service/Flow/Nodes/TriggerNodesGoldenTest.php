@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
@@ -84,7 +85,7 @@ final class TriggerNodesGoldenTest extends TestCase {
 		$actual = [];
 		foreach ($nodes as $node) {
 			$surface = $this->surface(node: $node, configs: $this->configs());
-			$surface['execute'] = $node->execute($items, ['x' => 1], ['runId' => 1]);
+			$surface['execute'] = $node->execute(new FlowNodeCall(items: $items, config: ['x' => 1], context: ['runId' => 1]));
 			$surface['events'] = defined(get_class($node) . '::EVENTS') ? constant(get_class($node) . '::EVENTS') : null;
 			$actual[] = $surface;
 		}

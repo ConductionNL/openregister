@@ -103,30 +103,6 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 * state with a per-object outcome, which the operator then commits through
 	 * the bulk job surface, or does not.
 	 *
-	 * @param Schema $schema The schema the rule is declared on.
-	 * @param string $ruleId The derived rule id.
-	 * @param array<string, mixed> $selection Either `{"ids": [...]}` or `{"query": {...}}`.
-	 * @param string $actorUid The actor's uid.
-	 * @param string|null $justification The reason the operator typed.
-	 * @param int|null $registerId The register the selection lives in.
-	 *
-	 * @return array<string, mixed> The previewed job, or the refusal.
-	 *
-	 * @throws RuleCeilingException When the selection is larger than the rule's ceiling.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md
-	 */
-	public function preview(Schema $schema, string $ruleId, array $selection, string $actorUid,
-		?string $justification = null, ?int $registerId = null): array {
-		$request = new RuleReplayRequest(ruleId: $ruleId, actorUid: $actorUid, justification: $justification);
-		return $this->previewReplay(request: $request, selection: new RuleReplaySelection(schema: $schema, registerId: $registerId, criteria: $selection));
-	}//end preview()
-
-	/**
-	 * Preview a replay of one rule over a selection of existing objects.
-	 *
-	 * Nothing is written by this call; see preview().
-	 *
 	 * @param RuleReplayRequest   $request   The rule, who asks and why.
 	 * @param RuleReplaySelection $selection The objects, and the schema and register they are scoped to.
 	 *

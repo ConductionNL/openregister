@@ -137,24 +137,13 @@ class SeedVocabularyRegister implements IRepairStep {
 	 */
 	private function importRegisterDescriptor(IOutput $output): void {
 		try {
-			$path = $this->descriptors->appManager->getAppPath('openregister') . self::REGISTER_PATH;
-			if (is_file($path) === false) {
-				$output->warning('Vocabulary register descriptor not found: ' . $path);
+			$descriptor = new AppRegisterDescriptor(descriptors: $this->descriptors, label: 'Vocabulary');
+			$data = $descriptor->read(relativePath: self::REGISTER_PATH, output: $output);
+			if ($data === null) {
 				return;
 			}
 
-			$data = json_decode((string)file_get_contents($path), true);
-			if (is_array($data) === false) {
-				$output->warning('Vocabulary register descriptor is not valid JSON: ' . $path);
-				return;
-			}
-
-			$this->descriptors->configurationService->importFromApp(
-				appId: self::CONFIG_APP_ID,
-				data: $data,
-				version: self::REGISTER_VERSION,
-				force: false
-			);
+			$this->importDescriptor(data: $data);
 
 			$output->info('Vocabulary register imported (conceptScheme, concept)');
 		} catch (Throwable $e) {
@@ -162,6 +151,24 @@ class SeedVocabularyRegister implements IRepairStep {
 			$output->warning('Vocabulary register import skipped: ' . $e->getMessage());
 		}//end try
 	}//end importRegisterDescriptor()
+
+	/**
+	 * Import the decoded vocabulary register descriptor idempotently (force: false).
+	 *
+	 * @param array $data The decoded descriptor.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-003
+	 */
+	private function importDescriptor(array $data): void {
+		$this->descriptors->configurationService->importFromApp(
+			appId: self::CONFIG_APP_ID,
+			data: $data,
+			version: self::REGISTER_VERSION,
+			force: false
+		);
+	}//end importDescriptor()
 
 	/**
 	 * Seed the bundled TOOI SKOS/JSON-LD fixtures through the idempotent importer.
