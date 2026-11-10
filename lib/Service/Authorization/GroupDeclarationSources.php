@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Authorization;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IAppConfig;
 
@@ -37,19 +38,34 @@ use OCP\IAppConfig;
  * @spec openspec/specs/auth-system/spec.md
  */
 final class GroupDeclarationSources {
+
+	/**
+	 * Live register lookup.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Live schema lookup.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
 	/**
 	 * Bundle the sources.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Live register lookup.
-	 * @param SchemaMapperInterface   $schemaMapper   Live schema lookup.
-	 * @param IAppConfig              $appConfig      Stores each app's declared group list.
+	 * @param SchemaCatalogInterface $catalog   Live register and schema lookups.
+	 * @param IAppConfig             $appConfig Stores each app's declared group list.
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function __construct(
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
+		SchemaCatalogInterface $catalog,
 		public readonly IAppConfig $appConfig,
 	) {
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper = $catalog->schemas();
 	}//end __construct()
 }//end class
