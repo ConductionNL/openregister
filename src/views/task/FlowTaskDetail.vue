@@ -143,6 +143,16 @@ import {
 } from '@nextcloud/vue'
 import ClipboardListOutline from 'vue-material-design-icons/ClipboardListOutline.vue'
 
+/**
+ * A URL of the flow task API.
+ *
+ * @param {string} path The task's uuid, and the action after it if any
+ * @return {string} The URL
+ */
+function flowTaskUrl(path) {
+	return generateUrl(`/apps/openregister/api/flow-tasks/${path}`)
+}
+
 export default {
 	name: 'FlowTaskDetail',
 
@@ -416,9 +426,7 @@ export default {
 			this.notFound = false
 			this.task = null
 			try {
-				const response = await axios.get(
-					generateUrl(`/apps/openregister/api/flow-tasks/${uuid}`),
-				)
+				const response = await axios.get(flowTaskUrl(uuid))
 				this.task = response.data
 			} catch (error) {
 				this.showReadFailure(error)
@@ -466,10 +474,7 @@ export default {
 			}
 			this.acting = true
 			try {
-				await axios.post(
-					generateUrl(`/apps/openregister/api/flow-tasks/${uuid}/${verb}`),
-					body,
-				)
+				await axios.post(flowTaskUrl(`${uuid}/${verb}`), body)
 			} catch (error) {
 				this.showRefusal(error)
 			} finally {
