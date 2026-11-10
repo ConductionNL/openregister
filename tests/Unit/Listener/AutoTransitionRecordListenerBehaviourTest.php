@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -67,7 +68,7 @@ class AutoTransitionRecordListenerBehaviourTest extends TestCase {
 
 	public function testAnUpdateIsRecordedWithThePreviousData(): void {
 		$pass = $this->createMock(AutoTransitionPassInterface::class);
-		$pass->expects($this->once())->method('record')->with('u-1', '3', '9', $this->callback(fn (array $previous): bool => ($previous['status'] ?? null) === 'old'));
+		$pass->expects($this->once())->method('record')->with(new ObjectRef(register: '3', schema: '9', id: 'u-1'), $this->callback(fn (array $previous): bool => ($previous['status'] ?? null) === 'old'));
 
 		(new AutoTransitionRecordListener($this->mapperReturning($this->lifecycle()), $this->selector(true), $pass))
 			->handle(new ObjectUpdatedEvent($this->object('9', ['status' => 'new']), $this->object('9', ['status' => 'old'])));
@@ -75,7 +76,7 @@ class AutoTransitionRecordListenerBehaviourTest extends TestCase {
 
 	public function testACreateIsRecordedWithNoPreviousData(): void {
 		$pass = $this->createMock(AutoTransitionPassInterface::class);
-		$pass->expects($this->once())->method('record')->with('u-1', '3', '9', []);
+		$pass->expects($this->once())->method('record')->with(new ObjectRef(register: '3', schema: '9', id: 'u-1'), []);
 
 		(new AutoTransitionRecordListener($this->mapperReturning($this->lifecycle()), $this->selector(true), $pass))
 			->handle(new ObjectCreatedEvent($this->object('9', ['status' => 'new'])));
