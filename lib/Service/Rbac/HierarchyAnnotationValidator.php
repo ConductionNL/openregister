@@ -90,6 +90,20 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 			];
 		}
 
+		return $this->annotationFindings(annotation: $annotation, schema: $schema);
+	}//end validate()
+
+	/**
+	 * Findings for an annotation that is an object: unknown keys, then the parent, then the optional keys.
+	 *
+	 * Without a parent nothing else is judged beyond the unknown keys.
+	 *
+	 * @param array<string, mixed> $annotation The hierarchy annotation.
+	 * @param array<string, mixed> $schema     `properties`, `slug` and the annotation.
+	 *
+	 * @return array<int, array{code: string, message: string, severity: string}> The findings.
+	 */
+	private function annotationFindings(array $annotation, array $schema): array {
 		$findings = $this->unknownKeyFindings(annotation: $annotation);
 
 		$parent = trim((string)($annotation['parent'] ?? ($annotation['parentField'] ?? '')));
@@ -101,16 +115,13 @@ class HierarchyAnnotationValidator implements HierarchyAnnotationValidatorInterf
 			return $findings;
 		}
 
-		$findings = array_merge($findings, $this->checkParentProperty(parent: $parent, schema: $schema));
-
-		$findings = array_merge(
+		return array_merge(
 			$findings,
+			$this->checkParentProperty(parent: $parent, schema: $schema),
 			$this->maxDepthFindings(annotation: $annotation),
 			$this->inheritedVerbsFindings(annotation: $annotation)
 		);
-
-		return $findings;
-	}//end validate()
+	}//end annotationFindings()
 
 	/**
 	 * A warning for every annotation key this validator does not know.
