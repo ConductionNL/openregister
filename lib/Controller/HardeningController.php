@@ -38,6 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\HardeningControllerServices;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredExceptionInterface;
 use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
@@ -99,18 +100,16 @@ class HardeningController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The incoming request.
 	 * @param HardeningControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		HardeningControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->reportService = $services->reportService;
 		$this->settingsService = $services->settingsService;
 		$this->policy = $services->policy;

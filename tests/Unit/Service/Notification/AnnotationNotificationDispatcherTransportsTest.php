@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
+use OCA\OpenRegister\Notifications\Db\HistoryEntry;
 use OCA\OpenRegister\Notifications\Db\NotificationHistory;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -78,28 +79,14 @@ class AnnotationNotificationDispatcherTransportsTest extends TestCase {
 		$this->userManager->method('userExists')->willReturn(true);
 
 		$this->historyMapper->method('record')->willReturnCallback(
-			function (
-				string $ruleId,
-				string $channel,
-				string $recipient,
-				string $status,
-				?string $schemaId = null,
-				?string $registerId = null,
-				?string $objectUuid = null,
-				?string $subject = null,
-				?string $errorMessage = null,
-				?string $locale = null,
-				?string $subjectType = null,
-				?string $subjectId = null,
-				?string $eventId = null,
-			): NotificationHistory {
+			function (HistoryEntry $entry): NotificationHistory {
 				$this->recorded[] = [
-					'ruleId' => $ruleId,
-					'channel' => $channel,
-					'recipient' => $recipient,
-					'status' => $status,
-					'errorMessage' => $errorMessage,
-					'eventId' => $eventId,
+					'ruleId' => $entry->delivery->ruleId,
+					'channel' => $entry->delivery->channel,
+					'recipient' => $entry->delivery->recipient,
+					'status' => $entry->delivery->status,
+					'errorMessage' => $entry->notice->errorMessage,
+					'eventId' => $entry->target->eventId,
 				];
 
 				return new NotificationHistory();
