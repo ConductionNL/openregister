@@ -29,6 +29,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable PSR1.Classes.ClassDeclaration.MultipleClasses -- test doubles live next to the test.
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\Register;
@@ -176,7 +178,7 @@ final class DeckAndTalkSourceRowsTest extends TestCase {
 			]
 		);
 
-		$rows = $this->rows($this->deck()->findAll($this->register, $this->schema));
+		$rows = $this->rows($this->deck()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema))));
 
 		$this->assertCount(2, $rows);
 		$this->assertSame(['11', 'Fix', 'Leak', 3, 7, '2026-03-04T05:06:07+00:00'], [$rows[0]['id'], $rows[0]['title'], $rows[0]['description'], $rows[0]['stackId'], $rows[0]['boardId'], $rows[0]['duedate']]);
@@ -190,12 +192,12 @@ final class DeckAndTalkSourceRowsTest extends TestCase {
 	public function testDeckFindsOneCardById(): void {
 		$this->deckServices([$this->fake(['getId' => 7])], [7 => [$this->fake(['getCards' => [$this->fake(['getId' => 11, 'getTitle' => 'A']), $this->fake(['getId' => 12, 'getTitle' => 'B'])]])]]);
 
-		$found = $this->deck()->find($this->register, $this->schema, '12');
+		$found = $this->deck()->find(new SourcedTable(new RegisterSchema($this->register, $this->schema)), '12');
 
 		$this->assertSame('12', $found->getUuid());
 		$this->assertSame('B', $found->getObject()['title']);
 		$this->assertNull($found->getObject()['duedate'], 'A card without a getDuedate getter has no due date.');
-		$this->assertNull($this->deck()->find($this->register, $this->schema, '99'));
+		$this->assertNull($this->deck()->find(new SourcedTable(new RegisterSchema($this->register, $this->schema)), '99'));
 	}
 
 	public function testDeckSkipsBoardsWithoutAnIdAndStacksWhoseCardsAreUnreadable(): void {
@@ -208,7 +210,7 @@ final class DeckAndTalkSourceRowsTest extends TestCase {
 			]]
 		);
 
-		$rows = $this->rows($this->deck()->findAll($this->register, $this->schema));
+		$rows = $this->rows($this->deck()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema))));
 
 		$this->assertSame(['kept'], array_column($rows, 'title'));
 	}
@@ -219,7 +221,7 @@ final class DeckAndTalkSourceRowsTest extends TestCase {
 			'OCA\\Deck\\Service\\StackService' => $this->fake([]),
 		];
 
-		$this->assertSame([], $this->deck()->findAll($this->register, $this->schema));
+		$this->assertSame([], $this->deck()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema))));
 		$this->assertSame(['[ObjectSource:deck-source] could not list boards: db'], $this->warnings);
 	}
 
@@ -229,7 +231,7 @@ final class DeckAndTalkSourceRowsTest extends TestCase {
 			[7 => new RuntimeException('gone'), 8 => [$this->fake(['getCards' => [$this->fake(['getId' => 5, 'getTitle' => 'ok'])]])]]
 		);
 
-		$rows = $this->rows($this->deck()->findAll($this->register, $this->schema));
+		$rows = $this->rows($this->deck()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema))));
 
 		$this->assertSame(['ok'], array_column($rows, 'title'));
 		$this->assertSame(['[ObjectSource:deck-source] could not list stacks for board 7: gone'], $this->warnings);
@@ -241,7 +243,7 @@ final class DeckAndTalkSourceRowsTest extends TestCase {
 			'OCA\\Deck\\Service\\StackService' => $this->fake([]),
 		];
 
-		$this->assertSame([], $this->deck()->findAll($this->register, $this->schema));
+		$this->assertSame([], $this->deck()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema))));
 		$this->assertSame(['[ObjectSource:deck-source] could not resolve OCA\\Deck\\Service\\BoardService: not registered'], $this->warnings);
 	}
 
@@ -251,7 +253,7 @@ final class DeckAndTalkSourceRowsTest extends TestCase {
 			'OCA\\Deck\\Service\\StackService' => 'not an object',
 		];
 
-		$this->assertSame([], $this->deck()->findAll($this->register, $this->schema));
+		$this->assertSame([], $this->deck()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema))));
 		$this->assertSame([], $this->warnings);
 	}
 
@@ -259,10 +261,10 @@ final class DeckAndTalkSourceRowsTest extends TestCase {
 		$cards = array_map(fn (int $i) => $this->fake(['getId' => $i, 'getTitle' => 'c' . $i]), [1, 2, 3, 4]);
 		$this->deckServices([$this->fake(['getId' => 7])], [7 => [$this->fake(['getCards' => $cards])]]);
 
-		$page = $this->rows($this->deck()->findAll($this->register, $this->schema, ['limit' => 2, 'offset' => 1]));
+		$page = $this->rows($this->deck()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema)), ['limit' => 2, 'offset' => 1]));
 
 		$this->assertSame(['c2', 'c3'], array_column($page, 'title'));
-		$this->assertSame(4, $this->deck()->count($this->register, $this->schema));
+		$this->assertSame(4, $this->deck()->count(new SourcedTable(new RegisterSchema($this->register, $this->schema))));
 	}
 
 	public function testTalkTurnsTheUsersRoomsIntoRows(): void {
@@ -284,7 +286,7 @@ final class DeckAndTalkSourceRowsTest extends TestCase {
 			}]),
 		];
 
-		$rows = $this->rows($this->talk()->findAll($this->register, $this->schema));
+		$rows = $this->rows($this->talk()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema))));
 
 		$this->assertCount(2, $rows);
 		$this->assertSame(
@@ -302,7 +304,7 @@ final class DeckAndTalkSourceRowsTest extends TestCase {
 			'OCA\\Talk\\Manager' => $this->fake(['getRoomsForUser' => [$this->fake(['getToken' => 't', 'getName' => 'n', 'getDisplayName' => 'd'])]]),
 		];
 
-		$found = $this->talk()->find($this->register, $this->schema, 't');
+		$found = $this->talk()->find(new SourcedTable(new RegisterSchema($this->register, $this->schema)), 't');
 
 		$this->assertSame('t', $found->getUuid());
 		$this->assertSame(0, $found->getObject()['participantCount']);
@@ -312,13 +314,13 @@ final class DeckAndTalkSourceRowsTest extends TestCase {
 	public function testTalkWithoutAManagerReturnsNothing(): void {
 		$this->services = [];
 
-		$this->assertSame([], $this->talk()->findAll($this->register, $this->schema));
+		$this->assertSame([], $this->talk()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema))));
 	}
 
 	public function testTalkLogsAFailingRoomListAndReturnsNothing(): void {
 		$this->services = ['OCA\\Talk\\Manager' => $this->fake(['getRoomsForUser' => new RuntimeException('talk down')])];
 
-		$this->assertSame([], $this->talk()->findAll($this->register, $this->schema));
+		$this->assertSame([], $this->talk()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema))));
 		$this->assertSame(['[ObjectSource:talk-source] could not list rooms: talk down'], $this->warnings);
 	}
 	public function testWithoutASignedInUserNeitherSourceAsksTheOtherApp(): void {
@@ -328,7 +330,7 @@ final class DeckAndTalkSourceRowsTest extends TestCase {
 
 		$this->assertSame('deck-source', $this->deck()->getId());
 		$this->assertSame('talk-source', $this->talk()->getId());
-		$this->assertSame([], $this->deck()->findAll($this->register, $this->schema));
-		$this->assertSame([], $this->talk()->findAll($this->register, $this->schema));
+		$this->assertSame([], $this->deck()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema))));
+		$this->assertSame([], $this->talk()->findAll(new SourcedTable(new RegisterSchema($this->register, $this->schema))));
 	}
 }
