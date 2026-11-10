@@ -78,6 +78,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /** A subject carrying nothing — the marking lives on the run. */
 class HeartbeatSubject {
@@ -335,13 +338,8 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 	 * @return FlowRun The suspended run.
 	 */
 	private function suspendedOnBothTasks(): FlowRun {
-		$run = $this->service->queue('f1', user: 'alice');
-		$run = $this->service->execute(
-			$run,
-			$this->flow(),
-			new HeartbeatSubject(),
-			seedItems: [FlowItems::item(json: ['name' => 'Case 7'])]
-		);
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new HeartbeatSubject()), origin: new FlowRunOrigin(items: [FlowItems::item(json: ['name' => 'Case 7'])]));
 
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 		$this->assertSame(['askA', 'askB'], $this->created);
@@ -421,7 +419,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 
 		// The worker's next pass re-parks branch B on the SAME task — never a
 		// duplicate in somebody's inbox.
-		$run = $this->service->execute($run, $this->flow(), new HeartbeatSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new HeartbeatSubject()), origin: new FlowRunOrigin());
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 		$this->assertSame(['askA', 'askB'], $this->created, 'a wake must never create a second task for a parked node');
 		$this->assertSame($taskB, (string)($run->getContext()['resumeState']['askB']['taskUuid'] ?? ''));
@@ -450,7 +448,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$this->complete(uuid: $taskB, completedBy: 'carol');
 
 		// The heartbeat fires: findDue() → advance() → execute().
-		$run = $this->service->execute($run, $this->flow(), new HeartbeatSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new HeartbeatSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_COMPLETED, $run->getStatus());
 		$bagA = ($run->getItems()[0]['json']['task'] ?? null);
@@ -472,7 +470,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$run = $this->suspendedOnBothTasks();
 		$before = ($run->getContext()['resumeState'] ?? []);
 
-		$run = $this->service->execute($run, $this->flow(), new HeartbeatSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new HeartbeatSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 		$this->assertSame(['askA', 'askB'], $this->created);
@@ -500,7 +498,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		// Only task A completed, and its signal never arrived.
 		$this->complete(uuid: $taskA, completedBy: 'bob');
 
-		$run = $this->service->execute($run, $this->flow(), new HeartbeatSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new HeartbeatSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus(), 'branch B still waits');
 		$this->assertSame([$taskA], $this->recovered, 'only the addressed node\'s slot recovers');
@@ -548,7 +546,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$this->assertNotNull($run->getResumeAt(), 'a task-waiting run must park on a clock, never on a signal alone');
 
 		// The next heartbeat re-reads the task and applies the outcome.
-		$run = $this->service->execute($run, $this->flow(), new HeartbeatSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new HeartbeatSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame([$taskA], $this->recovered, 'the raced completion is recovered, and audited as a recovery');
 		$this->assertSame(['askA', 'askB'], $this->created, 'recovery never creates a task');
