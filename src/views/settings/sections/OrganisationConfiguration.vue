@@ -190,6 +190,21 @@ function emptyOrganisationStats() {
 }
 
 /**
+ * The statistics an answer reports, each count 0 when it has none.
+ *
+ * @param {object} data The statistics answer
+ * @return {object} The statistics
+ */
+function organisationStatsFrom(data) {
+	return {
+		totalOrganisations: data.total || 0,
+		activeOrganisations: data.active || 0,
+		totalMembers: data.totalMembers || 0,
+		averageMembersPerOrg: data.avgMembers || 0,
+	}
+}
+
+/**
  * An organisation as a select option: labelled by its name, keyed by its uuid.
  *
  * @param {object} org The organisation
@@ -403,12 +418,7 @@ export default {
 				)
 
 				if (response.data) {
-					this.stats = {
-						totalOrganisations: response.data.total || 0,
-						activeOrganisations: response.data.active || 0,
-						totalMembers: response.data.totalMembers || 0,
-						averageMembersPerOrg: response.data.avgMembers || 0,
-					}
+					this.stats = organisationStatsFrom(response.data)
 				}
 			} catch (error) {
 				console.error('Error loading statistics:', error)
@@ -454,10 +464,7 @@ export default {
 			this.saveError = null
 
 			try {
-				await axios.put(
-					generateUrl('/apps/openregister/api/settings/organisation'),
-					this.settingsPayload(),
-				)
+				await this.sendSettings()
 				this.markSaved()
 			} catch (error) {
 				console.error('Error saving settings:', error)
@@ -481,6 +488,19 @@ export default {
 				default_organisation: this.selectedDefaultOrganisation?.uuid || null,
 				auto_create_default_organisation: this.autoCreateDefault,
 			}
+		},
+
+		/**
+		 * Send the settings to the server.
+		 *
+		 * @spec exclude settings-section save plumbing; PUTs organisation settings (tenant-lifecycle contract)
+		 * @return {Promise<object>} The response
+		 */
+		sendSettings() {
+			return axios.put(
+				generateUrl('/apps/openregister/api/settings/organisation'),
+				this.settingsPayload(),
+			)
 		},
 
 		/**
