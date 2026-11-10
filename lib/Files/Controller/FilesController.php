@@ -58,6 +58,7 @@ use OCA\OpenRegister\Files\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter;
 use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -1266,10 +1267,12 @@ class FilesController extends Controller {
 		$this->requireNameAndContent(data: $data);
 		$file = $this->fileService->saveFile(
 			objectEntity: $object,
-			fileName: $data['name'],
-			content: (string)$data['content'],
-			share: (($data['share'] ?? false) === true),
-			tags: $this->savedTags(tags: $data['tags'] ?? [])
+			upload: new FileUpload(
+				fileName: $data['name'],
+				content: (string)$data['content'],
+				share: (($data['share'] ?? false) === true),
+				tags: $this->savedTags(tags: $data['tags'] ?? [])
+			)
 		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));

@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCA\OpenRegister\Service\ObjectService;
@@ -694,8 +695,8 @@ class FilesControllerActionsGoldenTest extends TestCase {
 
 			return $this->file;
 		});
-		$service->method('saveFile')->willReturnCallback(function (ObjectEntity $objectEntity, string $fileName, mixed $content, bool $share = false, array $tags = []): File {
-			$this->note(call: 'saveFile', detail: [$fileName, $content, $share, $tags]);
+		$service->method('saveFile')->willReturnCallback(function (ObjectEntity $objectEntity, FileUpload $upload): File {
+			$this->note(call: 'saveFile', detail: [$upload->fileName, $upload->content, $upload->share, $upload->tags]);
 			$this->work(call: 'saveFile');
 			return $this->file;
 		});

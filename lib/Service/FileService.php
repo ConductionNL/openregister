@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Service\File\FileRename;
 use OCA\OpenRegister\Service\File\FileTransfer;
 use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\DocumentAnonymization;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\ShareLinkRequest;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
@@ -1453,35 +1454,18 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * Delegates to CreateFileHandler for single-responsibility upsert operations.
 	 *
 	 * @param ObjectEntity $objectEntity The object entity to save the file to.
-	 * @param string $fileName The name of the file to save.
-	 * @param string|resource $content File content: a byte string, or a readable stream resource.
-	 * @param bool $share Whether to create a share link for the file (only for new files).
-	 * @param array $tags Optional array of tags to attach to the file.
+	 * @param FileUpload   $upload       The file name, content, share toggle (new files only) and tags.
 	 *
 	 * @return File The saved file.
 	 *
 	 * @throws NotPermittedException If file operations fail due to permissions.
 	 * @throws Exception If file operations fail for other reasons.
 	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
-	 *
 	 * @spec openspec/specs/file-actions/spec.md#file-creation-and-upsert-run-a-fixed-validate-write-own-tag-pipeline
 	 *   (creates/writes a file into an object's folder with optional tags and share toggle)
 	 */
-	public function saveFile(
-		ObjectEntity $objectEntity,
-		string $fileName,
-		mixed $content,
-		bool $share = false,
-		array $tags = [],
-	): File {
-		return $this->createFileHandler->saveFile(
-			objectEntity: $objectEntity,
-			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags)
-		);
+	public function saveFile(ObjectEntity $objectEntity, FileUpload $upload): File {
+		return $this->createFileHandler->saveFile(objectEntity: $objectEntity, upload: $upload);
 	}//end saveFile()
 
 	/**
@@ -1851,14 +1835,8 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 * This is a convenience method that creates replacement mappings
 	 * from entity detection results and applies them to a document.
 	 *
-	 * @param Node $node The file node to anonymize.
-	 * @param array $entities Array of detected entities with 'text' and 'key' fields.
-	 * @param string $scope Placeholder-numbering scope: 'document' (default) or 'dossier'.
-	 * @param string|null $fileKey Stable folder id of the dossier (per-dossier scope); null falls
-	 *                             back to the file's parent folder.
-	 * @param bool|null $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-preservation
-	 *                                     option — null/absent = auto (preserve iff the input is a
-	 *                                     tagged PDF), true = attempt, false = skip but still measure.
+	 * @param Node                  $node         The file node to anonymize.
+	 * @param DocumentAnonymization $anonymization The entities, the placeholder scope and the PDF structure option.
 	 *
 	 * @throws Exception If anonymization fails.
 	 *
@@ -1866,11 +1844,13 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @spec exclude One-line delegation to DocumentProcessingHandler::anonymizeDocument; no facade-owned logic.
 	 */
-	public function anonymizeDocument(
-		Node $node, array $entities, string $scope = 'document', ?string $fileKey = null, ?bool $preserveStructure = null
-	): Node {
+	public function anonymizeDocument(Node $node, DocumentAnonymization $anonymization): Node {
 		return $this->documentProcessingHandler->anonymizeDocument(
-			node: $node, entities: $entities, scope: $scope, fileKey: $fileKey, preserveStructure: $preserveStructure
+			node: $node,
+			entities: $anonymization->entities,
+			scope: $anonymization->scope,
+			fileKey: $anonymization->fileKey,
+			preserveStructure: $anonymization->preserveStructure
 		);
 	}//end anonymizeDocument()
 
