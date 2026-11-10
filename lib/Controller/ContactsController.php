@@ -28,6 +28,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\PersonLinkChange;
+use OCA\OpenRegister\Service\PersonLinkRef;
+use OCA\OpenRegister\Service\PersonLinkTarget;
+use OCA\OpenRegister\Service\ContactPlacement;
 use OCA\OpenRegister\Service\ContactServiceInterface;
 use OCA\OpenRegister\Service\PersonLinkServiceInterface;
 use OCP\AppFramework\Controller;
@@ -307,10 +311,8 @@ class ContactsController extends Controller {
 			return $this->createdContact(object: $object, data: $data);
 		}
 
-		$link = $this->personLinks->link(
-			objectUuid: $object->getUuid(),
-			registerId: (int)$object->getRegister(),
-			schemaId: $schemaId,
+		$link = $this->personLinks->linkPerson(
+			target: new PersonLinkTarget(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister(), schemaId: $schemaId),
 			payload: $data
 		);
 
@@ -351,12 +353,13 @@ class ContactsController extends Controller {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	private function createdContact(ObjectEntity $object, array $data): JSONResponse {
-		$created = $this->contactService->createAndLinkContact(
-			$object->getUuid(),
-			(int)$object->getRegister(),
-			$data,
-			$this->resolveSchemaId(object: $object)
+		$placement = new ContactPlacement(
+			objectUuid: $object->getUuid(),
+			registerId: (int)$object->getRegister(),
+			schemaId: $this->resolveSchemaId(object: $object),
+			role: ($data['role'] ?? null)
 		);
+		$created   = $this->contactService->createAndLinkContact(placement: $placement, data: $data);
 
 		return new JSONResponse($created, 201);
 	}//end createdContact()
@@ -375,12 +378,12 @@ class ContactsController extends Controller {
 		$data = $this->request->getParams();
 
 		return new JSONResponse(
-			$this->personLinks->update(
-				objectUuid: $object->getUuid(),
-				contactUid: $contactUid,
-				schemaId: $this->resolveSchemaId(object: $object),
-				changes: array_intersect_key($data, array_flip(['role', 'validFrom', 'validUntil', 'note'])),
-				currentRole: $this->optionalParam(name: 'currentRole')
+			$this->personLinks->changeLink(
+				change: new PersonLinkChange(
+					ref: new PersonLinkRef(objectUuid: $object->getUuid(), contactUid: $contactUid, role: $this->optionalParam(name: 'currentRole')),
+					schemaId: $this->resolveSchemaId(object: $object),
+					changes: array_intersect_key($data, array_flip(['role', 'validFrom', 'validUntil', 'note']))
+				)
 			)
 		);
 	}//end updatedLink()
@@ -410,7 +413,9 @@ class ContactsController extends Controller {
 			return new JSONResponse(['success' => true]);
 		}
 
-		$removed = $this->personLinks->unlink(objectUuid: $objectUuid, contactUid: $contactUid, role: $this->optionalParam(name: 'role'));
+		$removed = $this->personLinks->removeLinks(
+			ref: new PersonLinkRef(objectUuid: $objectUuid, contactUid: $contactUid, role: $this->optionalParam(name: 'role'))
+		);
 
 		return new JSONResponse(['success' => true, 'removed' => $removed]);
 	}//end removedLink()

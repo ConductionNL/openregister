@@ -37,6 +37,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService
@@ -89,12 +90,12 @@ class A26NotificationPreferenceServiceGoldenTest extends TestCase {
 		$out['keys'] = [
 			$service->configKey('case', 'assigned'),
 			$service->configKey($long, 'assigned-to-you'),
-			$service->scopedConfigKey('register:1', 'case', 'assigned'),
-			$service->scopedConfigKey('register:1', $long, 'assigned'),
-			$service->scopedConfigKey('domain:x', 'case', 'assigned', 'staff'),
-			$service->scopedConfigKey('domain:x', $long, 'assigned', 'staff'),
-			$service->groupConfigKey('staff', 'case', 'assigned'),
-			$service->groupConfigKey('staff', 'case', 'assigned', 'schema:2'),
+			$service->scopedKeyFor(new PreferenceAddress('case', 'assigned', 'register:1')),
+			$service->scopedKeyFor(new PreferenceAddress($long, 'assigned', 'register:1')),
+			$service->scopedKeyFor(new PreferenceAddress('case', 'assigned', 'domain:x'), 'staff'),
+			$service->scopedKeyFor(new PreferenceAddress($long, 'assigned', 'domain:x'), 'staff'),
+			$service->groupKeyFor('staff', new PreferenceAddress('case', 'assigned')),
+			$service->groupKeyFor('staff', new PreferenceAddress('case', 'assigned', 'schema:2')),
 		];
 		return $out;
 	}//end staticCases()

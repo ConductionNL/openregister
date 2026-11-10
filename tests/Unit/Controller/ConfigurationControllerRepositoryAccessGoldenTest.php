@@ -26,6 +26,8 @@ use OCA\OpenRegister\Controller\ConfigurationController;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabProjectRef;
+use OCA\OpenRegister\Service\Configuration\RepositorySearchPage;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\NotificationService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationControllerFactory;
@@ -125,7 +127,7 @@ class ConfigurationControllerRepositoryAccessGoldenTest extends TestCase {
 
 	public function testDiscoverGithubSearchesBothAndReturnsGithub(): void {
 		$this->params(['source' => 'GitHub', '_search' => 'q', 'page' => '2']);
-		$this->gitlab->expects($this->once())->method('searchConfigurations')->with('q', 2)->willReturn(['results' => ['gl']]);
+		$this->gitlab->expects($this->once())->method('searchPage')->with('q', new RepositorySearchPage(2, 30))->willReturn(['results' => ['gl']]);
 		$this->github->expects($this->once())->method('searchConfigurations')->with('q', 2)->willReturn(['results' => ['gh']]);
 
 		$response = $this->controller('admin', true)->discover();
@@ -136,14 +138,14 @@ class ConfigurationControllerRepositoryAccessGoldenTest extends TestCase {
 
 	public function testDiscoverGitlabDefaultsAndInvalidSource(): void {
 		$this->params(['source' => 'gitlab']);
-		$this->gitlab->expects($this->once())->method('searchConfigurations')->with('', 1)->willReturn(['results' => []]);
+		$this->gitlab->expects($this->once())->method('searchPage')->with('', new RepositorySearchPage(1, 30))->willReturn(['results' => []]);
 		$this->github->expects($this->never())->method('searchConfigurations');
 		$this->assertSame(['results' => []], $this->controller('admin', true)->discover()->getData());
 	}
 
 	public function testDiscoverInvalidSource(): void {
 		$this->params(['source' => 'svn']);
-		$this->gitlab->expects($this->never())->method('searchConfigurations');
+		$this->gitlab->expects($this->never())->method('searchPage');
 		$response = $this->controller('admin', true)->discover();
 		$this->assertSame(400, $response->getStatus());
 		$this->assertSame(['error' => 'Invalid source. Must be "github" or "gitlab"'], $response->getData());
@@ -151,7 +153,7 @@ class ConfigurationControllerRepositoryAccessGoldenTest extends TestCase {
 
 	public function testDiscoverFailure(): void {
 		$this->params([]);
-		$this->gitlab->method('searchConfigurations')->willThrowException(new Exception('down'));
+		$this->gitlab->method('searchPage')->willThrowException(new Exception('down'));
 		$this->github->method('searchConfigurations')->willThrowException(new Exception('down'));
 		$response = $this->controller('admin', true)->discover();
 		$this->assertSame(500, $response->getStatus());
@@ -186,7 +188,7 @@ class ConfigurationControllerRepositoryAccessGoldenTest extends TestCase {
 		$this->params(['namespace' => 'n', 'project' => 'p', 'ref' => 'dev']);
 		$this->gitlab->method('getProjectByPath')->with('n', 'p')->willReturn(['id' => 12]);
 		$this->gitlab->expects($this->once())->method('getBranches')->with(12)->willReturn(['b']);
-		$this->gitlab->expects($this->once())->method('listConfigurationFiles')->with(12, 'dev')->willReturn(['f']);
+		$this->gitlab->expects($this->once())->method('listConfigurationFiles')->with(new GitLabProjectRef(12, 'dev'))->willReturn(['f']);
 		$this->assertSame(['branches' => ['b']], $this->controller('admin', true)->getGitLabBranches()->getData());
 		$this->assertSame(['files' => ['f']], $this->controller('admin', true)->getGitLabConfigurations()->getData());
 	}

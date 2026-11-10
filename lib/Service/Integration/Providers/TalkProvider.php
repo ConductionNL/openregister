@@ -60,13 +60,38 @@ class TalkProvider extends AbstractIntegrationProvider {
 
 	private const REQUIRED_APP = 'spreed';
 
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ContainerInterface           $container      Resolves Talk's room manager lazily.
+	 * @param AppProviderDescription       $description    The app manager (isEnabled check) and localisation.
+	 * @param IUserSession                 $userSession    The signed-in user.
+	 * @param TalkLinkMapperInterface|null $talkLinkMapper Local link table, when wired.
+	 *
+	 * @return void
+	 */
 	public function __construct(
 		private ContainerInterface $container,
-		private IAppManager $appManager,
+		AppProviderDescription $description,
 		private IUserSession $userSession,
-		private IL10N $l10n,
 		private ?TalkLinkMapperInterface $talkLinkMapper = null,
 	) {
+		$this->appManager = $description->appManager;
+		$this->l10n       = $description->l10n;
 	}//end __construct()
 
 	public function getId(): string {

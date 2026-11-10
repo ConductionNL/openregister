@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\TableDeletionOptions;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -58,7 +59,7 @@ class ObjectServiceDeleteByRegisterTest extends TestCase {
 		$deletion = $this->createMock(SchemaDeletionService::class);
 		$deletion->expects($this->once())
 			->method('deleteObjectsByRegister')
-			->with($register, true)
+			->with($register, new TableDeletionOptions(true))
 			->willReturn($result);
 
 		$container = $this->createMock(IAppContainer::class);

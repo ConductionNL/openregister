@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\FragmentOrdering;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder;
 use PHPUnit\Framework\TestCase;
 use Throwable;
@@ -40,7 +41,7 @@ class ExampleSetOrderGoldenTest extends TestCase {
 		$actual = [];
 		foreach ($this->cases() as $name => [$after, $enabled, $expected]) {
 			try {
-				$actual[$name] = $order->order($after, $enabled, $expected);
+				$actual[$name] = $order->order(new FragmentOrdering($after, $enabled, $expected));
 			} catch (Throwable $e) {
 				$actual[$name] = ['threw' => get_class($e).': '.$e->getMessage()];
 			}

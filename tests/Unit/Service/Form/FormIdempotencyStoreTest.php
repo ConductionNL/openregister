@@ -16,6 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 use OCA\OpenRegister\Service\Form\FormFileStorage;
 use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
+use OCA\OpenRegister\Service\Form\IdempotentRequest;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryAppData;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryLockingProvider;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -54,7 +55,7 @@ class FormIdempotencyStoreTest extends TestCase {
 	 * Nothing remembered: nothing found.
 	 */
 	public function testAnUnknownKeyFindsNothing(): void {
-		$this->assertNull($this->store->find(scope: 'form-1', key: 'k1', binding: 'b'));
+		$this->assertNull($this->store->answerFor(new IdempotentRequest(scope: 'form-1', key: 'k1', binding: 'b')));
 	}//end testAnUnknownKeyFindsNothing()
 
 	/**
@@ -62,20 +63,20 @@ class FormIdempotencyStoreTest extends TestCase {
 	 */
 	public function testARememberedAnswerIsFoundWithinTheWindow(): void {
 		$answer = ['reference' => '2026-0412', 'id' => 'uuid-7'];
-		$this->store->remember(scope: 'form-1', key: 'k1', response: $answer, binding: 'b');
+		$this->store->keep(new IdempotentRequest(scope: 'form-1', key: 'k1', binding: 'b'), $answer);
 
 		$this->now += 86_399;
-		$this->assertSame($answer, $this->store->find(scope: 'form-1', key: 'k1', binding: 'b'));
+		$this->assertSame($answer, $this->store->answerFor(new IdempotentRequest(scope: 'form-1', key: 'k1', binding: 'b')));
 	}//end testARememberedAnswerIsFoundWithinTheWindow()
 
 	/**
 	 * After 24 hours the key is free again, and the expired entry is gone.
 	 */
 	public function testAnExpiredAnswerIsNotFound(): void {
-		$this->store->remember(scope: 'form-1', key: 'k1', response: ['id' => 'uuid-7'], binding: 'b');
+		$this->store->keep(new IdempotentRequest(scope: 'form-1', key: 'k1', binding: 'b'), ['id' => 'uuid-7']);
 
 		$this->now += 86_401;
-		$this->assertNull($this->store->find(scope: 'form-1', key: 'k1', binding: 'b'));
+		$this->assertNull($this->store->answerFor(new IdempotentRequest(scope: 'form-1', key: 'k1', binding: 'b')));
 		$this->assertSame([], $this->appData->folders[FormIdempotencyStore::FOLDER]->files);
 	}//end testAnExpiredAnswerIsNotFound()
 
@@ -83,9 +84,9 @@ class FormIdempotencyStoreTest extends TestCase {
 	 * The same key on another form is another submit.
 	 */
 	public function testKeysAreScopedPerForm(): void {
-		$this->store->remember(scope: 'form-1', key: 'k1', response: ['id' => 'uuid-7'], binding: 'b');
+		$this->store->keep(new IdempotentRequest(scope: 'form-1', key: 'k1', binding: 'b'), ['id' => 'uuid-7']);
 
-		$this->assertNull($this->store->find(scope: 'form-2', key: 'k1', binding: 'b'));
+		$this->assertNull($this->store->answerFor(new IdempotentRequest(scope: 'form-2', key: 'k1', binding: 'b')));
 	}//end testKeysAreScopedPerForm()
 
 	/**
@@ -93,11 +94,11 @@ class FormIdempotencyStoreTest extends TestCase {
 	 */
 	public function testAnotherBindingGetsNoAnswerOnlyAConflict(): void {
 		$mine = $this->store->bindingFor(subject: 'user:alice', payload: ['title' => 'a', 'n' => ['x' => 1, 'y' => 2]]);
-		$this->store->remember(scope: 'form-1', key: 'k1', response: ['reference' => 'secret'], binding: $mine);
+		$this->store->keep(new IdempotentRequest(scope: 'form-1', key: 'k1', binding: $mine), ['reference' => 'secret']);
 
 		// The same subject and an equal payload (keys in another order) is a repeat.
 		$again = $this->store->bindingFor(subject: 'user:alice', payload: ['n' => ['y' => 2, 'x' => 1], 'title' => 'a']);
-		$this->assertSame(['reference' => 'secret'], $this->store->find(scope: 'form-1', key: 'k1', binding: $again));
+		$this->assertSame(['reference' => 'secret'], $this->store->answerFor(new IdempotentRequest(scope: 'form-1', key: 'k1', binding: $again)));
 
 		foreach (
 			[
@@ -107,7 +108,7 @@ class FormIdempotencyStoreTest extends TestCase {
 			] as $other
 		) {
 			try {
-				$this->store->find(scope: 'form-1', key: 'k1', binding: $other);
+				$this->store->answerFor(new IdempotentRequest(scope: 'form-1', key: 'k1', binding: $other));
 				$this->fail('A different binding received the first answer.');
 			} catch (FormSubmitRefusedException $refused) {
 				$this->assertSame(409, $refused->getStatus());
@@ -142,13 +143,13 @@ class FormIdempotencyStoreTest extends TestCase {
 	 * The purge deletes only expired entries and counts them.
 	 */
 	public function testThePurgeCountsWhatItDeleted(): void {
-		$this->store->remember(scope: 'f', key: 'old', response: ['id' => 'a'], binding: 'b');
+		$this->store->keep(new IdempotentRequest(scope: 'f', key: 'old', binding: 'b'), ['id' => 'a']);
 		$this->now += 50_000;
-		$this->store->remember(scope: 'f', key: 'new', response: ['id' => 'b'], binding: 'b');
+		$this->store->keep(new IdempotentRequest(scope: 'f', key: 'new', binding: 'b'), ['id' => 'b']);
 		$this->now += 40_000;
 
 		$this->assertSame(1, $this->store->purge());
-		$this->assertSame(['id' => 'b'], $this->store->find(scope: 'f', key: 'new', binding: 'b'));
+		$this->assertSame(['id' => 'b'], $this->store->answerFor(new IdempotentRequest(scope: 'f', key: 'new', binding: 'b')));
 		$this->assertSame(0, $this->store->purge());
 	}//end testThePurgeCountsWhatItDeleted()
 

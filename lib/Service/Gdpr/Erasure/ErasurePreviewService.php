@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
 
 /**
@@ -78,20 +79,19 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	 * retention service — are called inside a catch that counts an unanswerable
 	 * question as PROTECTED (D-2).
 	 *
-	 * @param string      $subjectId Subject identifier value (email, bsn, …).
-	 * @param string|null $type      Optional GdprEntity type filter.
-	 * @param string      $eraseMode `pseudonymise` or `whole-object`.
+	 * @param SubjectQuery $subject   Subject identifier value (email, bsn, …) and optional GdprEntity type
+	 *                                filter; the match is always exact.
+	 * @param string       $eraseMode `pseudonymise` or `whole-object`.
 	 *
 	 * @return array<string, mixed> The preview: counts, items, protected, digest.
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function preview(
-		string $subjectId,
-		?string $type = null,
+		SubjectQuery $subject,
 		string $eraseMode = DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE,
 	): array {
-		$run = new ErasurePreviewRun(subjectId: trim($subjectId), type: $type, eraseMode: $this->normaliseMode(eraseMode: $eraseMode));
+		$run = new ErasurePreviewRun(subjectId: trim($subject->subjectId), type: $subject->type, eraseMode: $this->normaliseMode(eraseMode: $eraseMode));
 
 		return $this->assemble(run: $run, items: $this->classifyAll(run: $run));
 	}//end preview()
