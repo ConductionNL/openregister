@@ -367,16 +367,15 @@ interface AuditTrailMapperInterface {
 	/**
 	 * Get detailed statistics for audit trails including action counts within timeframe
 	 *
-	 * @param int|null $registerId Optional register ID to filter by
-	 * @param int|null $schemaId Optional schema ID to filter by
-	 * @param int|null $hours Optional number of hours to look back for recent activity (default: 24)
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema to filter by (each optional) and the hours to look
+	 *                                    back for recent activity (default: 24).
 	 *
 	 * @return int[]
 	 *
 	 * @psalm-return array{total: int, creates: int, updates: int,
 	 *     deletes: int, reads: int}
 	 */
-	public function getDetailedStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array;
+	public function detailedStatistics(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Lifetime row counts per action, for the actions that start with a prefix
@@ -396,7 +395,7 @@ interface AuditTrailMapperInterface {
 	/**
 	 * Get lifetime audit trail counts grouped by action
 	 *
-	 * Unlike getDetailedStatistics(), which windows the per-action counts to
+	 * Unlike detailedStatistics(), which windows the per-action counts to
 	 * the last N hours, this returns lifetime counts so the audit-trail page
 	 * statistics line up with the (unwindowed) audit-trail list beside them.
 	 * Keys are singular to match the audit-trail REST surface; the windowed
@@ -417,29 +416,26 @@ interface AuditTrailMapperInterface {
 	/**
 	 * Get action distribution data with percentages
 	 *
-	 * @param int|null $registerId Optional register ID to filter by
-	 * @param int|null $schemaId Optional schema ID to filter by
-	 * @param int|null $hours Optional number of hours to look back (default: 24)
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema to filter by (each optional) and the hours to look
+	 *                                    back (default: 24).
 	 *
 	 * @return (int|mixed)[][][]
 	 *
 	 * @psalm-return array{actions: list<array{count: int, name: mixed}>}
 	 */
-	public function getActionDistribution(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array;
+	public function actionDistribution(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Get most active objects based on audit trail activity
 	 *
-	 * @param int|null $registerId Optional register ID to filter by
-	 * @param int|null $schemaId Optional schema ID to filter by
-	 * @param int|null $limit Optional limit for number of results (default: 10)
-	 * @param int|null $hours Optional number of hours to look back (default: 24)
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema to filter by (each optional), the number of results
+	 *                                    (default: 10) and the hours to look back (default: 24).
 	 *
 	 * @return (int|mixed|string)[][][]
 	 *
 	 * @psalm-return array{objects: list<array{count: int, id: mixed, name: string}>}
 	 */
-	public function getMostActiveObjects(?int $registerId = null, ?int $schemaId = null, ?int $limit = 10, ?int $hours = 24): array;
+	public function mostActiveObjects(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Tombstone every audit-trail entry.
