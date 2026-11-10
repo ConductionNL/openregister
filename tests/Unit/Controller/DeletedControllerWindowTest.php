@@ -260,7 +260,7 @@ final class DeletedControllerWindowTest extends TestCase {
 		$this->scopes->method('destroy')->willReturn(
 			['scope' => [], 'destroyed' => [], 'total' => 0, 'failed' => []]
 		);
-		$this->recorder->method('record')->willReturn([]);
+		$this->recorder->method('recordDestruction')->willReturn([]);
 
 		$response = $this->controller->destroy('zaak-100');
 		$body = $response->getData();
@@ -289,7 +289,7 @@ final class DeletedControllerWindowTest extends TestCase {
 
 		$order = [];
 		$this->recorder->expects(self::once())
-			->method('record')
+			->method('recordDestruction')
 			->willReturnCallback(
 				static function () use (&$order): array {
 					$order[] = 'record';
