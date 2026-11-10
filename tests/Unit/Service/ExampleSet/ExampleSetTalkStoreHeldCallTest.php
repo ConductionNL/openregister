@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\HeldTalkCall;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
 use OCP\App\IAppManager;
 use OCP\IUserManager;
@@ -73,10 +74,7 @@ class ExampleSetTalkStoreHeldCallTest extends TestCase {
 
 	public function testAHeldCallIsAStartedAndAnEndedSystemMessage(): void {
 		$this->store()->heldCall(
-			token: 'room1',
-			owner: 'alice',
-			call: ['start' => '2020-01-02T10:00:00+00:00', 'end' => '2020-01-02T10:30:00+00:00'],
-			joined: ['a' => 'alice', 'b' => 'bob']
+			held: new HeldTalkCall(token: 'room1', owner: 'alice', call: ['start' => '2020-01-02T10:00:00+00:00', 'end' => '2020-01-02T10:30:00+00:00'], joined: ['a' => 'alice', 'b' => 'bob'])
 		);
 
 		$this->assertCount(2, $this->messages);
@@ -91,10 +89,7 @@ class ExampleSetTalkStoreHeldCallTest extends TestCase {
 
 	public function testAnEndBeforeTheStartLastsNoTime(): void {
 		$this->store()->heldCall(
-			token: 'room1',
-			owner: 'alice',
-			call: ['start' => '2020-01-02T10:30:00+00:00', 'end' => '2020-01-02T10:00:00+00:00'],
-			joined: []
+			held: new HeldTalkCall(token: 'room1', owner: 'alice', call: ['start' => '2020-01-02T10:30:00+00:00', 'end' => '2020-01-02T10:00:00+00:00'], joined: [])
 		);
 
 		$this->assertSame('{"message":"call_ended","parameters":{"users":[],"cloudIds":[],"guests":0,"duration":0}}', $this->messages[1][4]);

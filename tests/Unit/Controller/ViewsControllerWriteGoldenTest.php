@@ -15,6 +15,7 @@ use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Search\Service\ViewPresentationService;
 use OCA\OpenRegister\Search\Service\ViewDefinition;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
@@ -181,9 +182,13 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 
 			return $this->storedView($case['stored'] ?? []);
 		});
-		foreach (['create', 'update'] as $method) {
-			$service->method($method)->willReturnCallback(function (...$args) use ($case, $method) {
-				$this->calls[] = ['viewService.' . $method => $args];
+		foreach (['create' => 'create', 'revise' => 'update'] as $method => $recordedAs) {
+			$service->method($method)->willReturnCallback(function (...$args) use ($case, $recordedAs) {
+				if ($recordedAs === 'update') {
+					$args = self::updateArguments(id: $args[0], edit: $args[1]);
+				}
+
+				$this->calls[] = ['viewService.' . $recordedAs => $args];
 				if (isset($case['serviceThrows']) === true) {
 					throw new Exception($case['serviceThrows']);
 				}
@@ -197,6 +202,29 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 		}
 
 		return $service;
+	}
+
+	/**
+	 * The edit as the positional field list the recording holds.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private static function updateArguments(int|string $id, ViewEdit $edit): array {
+		$definition = $edit->definition;
+		$audience   = $edit->audience;
+		return [
+			$id,
+			$definition->name,
+			$definition->description,
+			$audience->owner,
+			$audience->isPublic,
+			$audience->isDefault,
+			$definition->query,
+			$edit->favoredBy,
+			$definition->presentation,
+			$audience->sharedWith,
+			$edit->alert,
+		];
 	}
 
 	/**

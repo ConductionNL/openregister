@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionProperty;
 
@@ -65,6 +66,12 @@ class ObjectServiceGetRegistersGoldenTest extends TestCase
         $service = (new ReflectionClass(ObjectService::class))->newInstanceWithoutConstructor();
         (new ReflectionProperty(ObjectService::class, 'registerMapper'))->setValue($service, $registers);
         (new ReflectionProperty(ObjectService::class, 'schemaMapper'))->setValue($service, $schemas);
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())->method('debug')->with(
+            '[ObjectService] Skipping a register schema that cannot be loaded',
+            ['schemaId' => '11', 'exception' => 'gone']
+        );
+        (new ReflectionProperty(ObjectService::class, 'logger'))->setValue($service, $logger);
 
         $this->assertSame(
             [['id' => 1, 'schemas' => [['id' => 10]]], ['id' => 2, 'schemas' => []]],

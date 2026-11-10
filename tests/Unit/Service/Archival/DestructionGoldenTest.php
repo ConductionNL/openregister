@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Archival;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Service\Archival\DestructionInfrastructure;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -759,9 +760,9 @@ class DestructionGoldenTest extends TestCase {
 		}
 
 		$mapper = $this->mapper();
-		$mapper->method('findAll')->willReturnCallback(
-			function (...$args) use ($lists): array {
-				$this->assertSame(['status' => ['executed']], $args[2]);
+		$mapper->method('findAllListed')->willReturnCallback(
+			function (MagicListRequest $request) use ($lists): array {
+				$this->assertSame(['status' => ['executed']], $request->query->filters);
 				return $lists;
 			}
 		);

@@ -219,16 +219,14 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	/**
 	 * Test embedding generation with custom configuration
 	 *
-	 * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
-	 * @param array $config Provider-specific configuration
-	 * @param string $testText Optional test text to embed
+	 * @param EmbeddingProbe $probe The provider ('openai', 'fireworks', 'ollama'), its configuration and the text to embed.
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function testEmbedding(string $provider, array $config, string $testText = 'Test.'): array {
-		return $this->probe(probe: new EmbeddingProbe(provider: $provider, config: $config, testText: $testText));
+	public function testEmbedding(EmbeddingProbe $probe): array {
+		return $this->probe(probe: $probe);
 	}//end testEmbedding()
 
 	/**
@@ -459,10 +457,8 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 * Caller supplies keyword search results; vector search runs against the database.
 	 * Results are fused using Reciprocal Rank Fusion (RRF).
 	 *
-	 * @param string $query Query text
-	 * @param array $keywordResults Pre-fetched keyword search results to fuse with vector results
-	 * @param int $limit Maximum results
-	 * @param array $weights Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
+	 * @param HybridSearchRequest $request The query text, the pre-fetched keyword results to fuse, the maximum
+	 *                                     results and the weight per search type.
 	 *
 	 * @return array Hybrid search results with combined scores and source breakdown
 	 *
@@ -470,15 +466,11 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function hybridSearch(
-		string $query,
-		array $keywordResults = [],
-		int $limit = 20,
-		array $weights = ['keyword' => 0.5, 'vector' => 0.5],
-	): array {
+	public function hybridSearch(HybridSearchRequest $request): array {
 		// The query embedding comes from the configured provider.
-		$vectorQuery = new VectorQuery(embedding: $this->generateEmbedding(text: $query)['embedding'], limit: $limit);
-		return $this->handlers->search->hybridSearch(query: $vectorQuery, keyword: new KeywordFusion(results: $keywordResults, weights: $weights));
+		$vectorQuery = new VectorQuery(embedding: $this->generateEmbedding(text: $request->query)['embedding'], limit: $request->limit);
+		$keyword     = new KeywordFusion(results: $request->keywordResults, weights: $request->weights);
+		return $this->handlers->search->hybridSearch(query: $vectorQuery, keyword: $keyword);
 	}//end hybridSearch()
 
 	// =============================================================================

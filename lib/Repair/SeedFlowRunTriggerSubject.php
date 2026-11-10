@@ -104,7 +104,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 
 		foreach ($this->everyRun(runs: $runs) as $run) {
 			try {
-				$seeded += $this->seedOne(run: $run, runs: $runs, subjects: $this->subjects);
+				$seeded += $this->seedOne(run: $run, runs: $runs);
 			} catch (Throwable $e) {
 				$skipped++;
 				$this->logger->warning(
@@ -124,16 +124,15 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	/**
 	 * Seed one run, if it has something to seed and nothing already.
 	 *
-	 * @param FlowRun                  $run      The run.
-	 * @param FlowRunMapperInterface   $runs     The mapper.
-	 * @param FlowRunSubjectsInterface $subjects The subject rules.
+	 * @param FlowRun                $run  The run.
+	 * @param FlowRunMapperInterface $runs The mapper.
 	 *
 	 * @return int 1 when it was seeded, 0 otherwise.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	private function seedOne(FlowRun $run, FlowRunMapperInterface $runs, FlowRunSubjectsInterface $subjects): int {
-		if ($subjects->all(run: $run) !== []) {
+	private function seedOne(FlowRun $run, FlowRunMapperInterface $runs): int {
+		if ($this->subjects->all(run: $run) !== []) {
 			// Already declared something. A repair must not overwrite what a
 			// flow author said.
 			return 0;
@@ -144,7 +143,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 			return 0;
 		}
 
-		$subjects->recordTrigger(run: $run);
+		$this->subjects->recordTrigger(run: $run);
 		$runs->update($run);
 
 		return 1;

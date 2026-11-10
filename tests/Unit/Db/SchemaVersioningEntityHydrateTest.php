@@ -36,7 +36,7 @@ use PHPUnit\Framework\TestCase;
 class SchemaVersioningEntityHydrateTest extends TestCase {
 	/**
 	 * SchemaChangelog::hydrate() must exist and populate every field the
-	 * SchemaVersioningService::recordChangelog() payload carries.
+	 * SchemaVersioningService::recordChange() payload carries.
 	 *
 	 * @return void
 	 */

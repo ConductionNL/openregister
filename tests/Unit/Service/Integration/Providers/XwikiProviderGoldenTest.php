@@ -117,12 +117,7 @@ class XwikiProviderGoldenTest extends TestCase {
 				}
 			);
 		}
-		return new XwikiProvider(
-			router: $router,
-			appManager: $this->createMock(IAppManager::class),
-			l10n: $l10n,
-			xwikiLinkMapper: $mapper
-		);
+		return new XwikiProvider(routing: new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($router, $this->createMock(IAppManager::class), $l10n), xwikiLinkMapper: $mapper);
 	}//end provider()
 
 	/**

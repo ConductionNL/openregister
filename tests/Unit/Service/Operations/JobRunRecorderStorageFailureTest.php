@@ -30,6 +30,8 @@ namespace Unit\Service\Operations;
 
 use OCA\OpenRegister\Db\JobRun;
 use OCA\OpenRegister\Db\JobRunMapperInterface;
+use OCA\OpenRegister\Service\Operations\OperatorAct;
+use OCA\OpenRegister\Service\Operations\JobRunStart;
 use OCA\OpenRegister\Service\Operations\JobAlertService;
 use OCA\OpenRegister\Service\Operations\JobRunContext;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
@@ -74,7 +76,7 @@ final class JobRunRecorderStorageFailureTest extends TestCase {
 	public function testTheRowCarriesTheCauseActorArgumentDigestAndDetails(): void {
 		$this->insertsSucceed();
 
-		$this->recorder()->around('Job\\A', static fn () => 'ok', new JobRunContext(JobRun::CAUSE_MANUAL, 'anna', ['register' => 3], ['batch' => 2]));
+		$this->recorder()->around(new JobRunStart('Job\\A', new JobRunContext(JobRun::CAUSE_MANUAL, 'anna', ['register' => 3], ['batch' => 2])), static fn () => 'ok');
 
 		$run = $this->inserted[0];
 		$this->assertSame([JobRun::CAUSE_MANUAL, 'anna'], [$run->getCause(), $run->getActor()]);
@@ -85,7 +87,7 @@ final class JobRunRecorderStorageFailureTest extends TestCase {
 	public function testWithoutAnArgumentOrDetailsThoseColumnsStayEmpty(): void {
 		$this->insertsSucceed();
 
-		$this->recorder()->around('Job\\A', static fn () => 'ok');
+		$this->recorder()->around(new JobRunStart('Job\\A'), static fn () => 'ok');
 
 		$run = $this->inserted[0];
 		$this->assertNull($run->getArgumentDigest());
@@ -96,7 +98,7 @@ final class JobRunRecorderStorageFailureTest extends TestCase {
 	public function testAnUnencodableArgumentOrDetailsIsStoredAsNull(): void {
 		$this->insertsSucceed();
 
-		$this->recorder()->around('Job\\A', static fn () => 'ok', new JobRunContext(JobRun::CAUSE_SCHEDULE, null, NAN, ['x' => NAN]));
+		$this->recorder()->around(new JobRunStart('Job\\A', new JobRunContext(JobRun::CAUSE_SCHEDULE, null, NAN, ['x' => NAN])), static fn () => 'ok');
 
 		$this->assertNull($this->inserted[0]->getArgumentDigest());
 		$this->assertNull($this->inserted[0]->getDetails());
@@ -106,7 +108,7 @@ final class JobRunRecorderStorageFailureTest extends TestCase {
 		$this->runs->method('insert')->willThrowException(new RuntimeException('table missing'));
 		$this->runs->expects($this->never())->method('update');
 
-		$result = $this->recorder()->around('Job\\A', static fn () => 'the work');
+		$result = $this->recorder()->around(new JobRunStart('Job\\A'), static fn () => 'the work');
 
 		$this->assertSame('the work', $result);
 		$this->assertSame(['[JobRunRecorder] Could not open a run row'], $this->warnings);
@@ -116,7 +118,7 @@ final class JobRunRecorderStorageFailureTest extends TestCase {
 		$this->insertsSucceed();
 		$this->runs->method('update')->willThrowException(new RuntimeException('locked'));
 
-		$this->assertSame(7, $this->recorder()->around('Job\\A', static fn () => 7));
+		$this->assertSame(7, $this->recorder()->around(new JobRunStart('Job\\A'), static fn () => 7));
 		$this->assertSame(['[JobRunRecorder] Could not close a run row'], $this->warnings);
 	}
 
@@ -125,7 +127,7 @@ final class JobRunRecorderStorageFailureTest extends TestCase {
 		$this->runs->method('update')->willReturnArgument(0);
 
 		try {
-			$this->recorder()->around('Job\\A', static function (): void {
+			$this->recorder()->around(new JobRunStart('Job\\A'), static function (): void {
 				throw new RuntimeException(str_repeat('x', 5000));
 			});
 			$this->fail('The failure must surface.');
@@ -141,7 +143,7 @@ final class JobRunRecorderStorageFailureTest extends TestCase {
 	public function testAnActThatCannotBeRecordedIsLoggedAndReturnsNull(): void {
 		$this->runs->method('insert')->willThrowException(new RuntimeException('read-only db'));
 
-		$this->assertNull($this->recorder()->recordAct('Console::act', 'root', ['a' => 1], 'Did it.'));
+		$this->assertNull($this->recorder()->recordAct(new OperatorAct('Console::act', 'root', ['a' => 1], 'Did it.')));
 		$this->assertSame(['[JobRunRecorder] Could not record the act'], $this->warnings);
 	}
 }

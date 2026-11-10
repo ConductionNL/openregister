@@ -27,6 +27,7 @@ use OCA\OpenRegister\BackgroundJob\AuditExportSource;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
 use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
 use OCA\OpenRegister\Service\LogService;
+use OCA\OpenRegister\Service\Operations\JobRunStart;
 use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\File;
@@ -106,8 +107,8 @@ class AuditTrailExportJobBehaviourTest extends TestCase {
 
 		$recorder = $this->createMock(JobRunRecorderInterface::class);
 		$recorder->method('around')->willReturnCallback(
-			function (string $jobClass, callable $work, $context): void {
-				$this->recorded[] = [$jobClass, $context->cause, $context->actor];
+			function (JobRunStart $start, callable $work): void {
+				$this->recorded[] = [$start->jobClass, $start->context->cause, $start->context->actor];
 				$work();
 			}
 		);
