@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
@@ -66,7 +67,7 @@ final class ConceptRepositorySchemeGoldenTest extends TestCase {
 			}
 		);
 
-		return new ConceptRepository($objects, $registers, $schemas);
+		return new ConceptRepository(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), $objects);
 	}//end repository()
 
 	/**
@@ -138,7 +139,7 @@ final class ConceptRepositorySchemeGoldenTest extends TestCase {
 		$registers->method('find')->willThrowException(new RuntimeException('missing'));
 		$objects = $this->createMock(MagicMapperInterface::class);
 		$objects->expects($this->never())->method('searchObjects');
-		$repository = new ConceptRepository($objects, $registers, $this->createMock(SchemaMapperInterface::class));
+		$repository = new ConceptRepository(new SchemaCatalog($registers, $this->createMock(SchemaMapperInterface::class), $this->createMock(MagicMapperInterface::class)), $objects);
 
 		$this->assertNull($repository->scheme('https://x/s'));
 		$this->assertNull($repository->schemeByReference('u-1'));

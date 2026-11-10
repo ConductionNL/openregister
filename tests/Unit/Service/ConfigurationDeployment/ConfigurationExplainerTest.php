@@ -53,7 +53,7 @@ final class ConfigurationExplainerTest extends TestCase {
 		$store = $this->createMock(ConfigurationValueStore::class);
 		$store->method('read')->willReturnCallback(
 			static function (string $layer, ?string $ref, string $key) use ($byLayer): ConfigurationSnapshot {
-				return ($byLayer[$layer] ?? ConfigurationSnapshot::absent($layer, $ref, $key));
+				return ($byLayer[$layer] ?? ConfigurationSnapshot::absent(new ConfigurationAddress($layer, $ref, $key)));
 			}
 		);
 
