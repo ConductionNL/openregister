@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -1734,7 +1735,7 @@ class SaveObject implements SaveObjectInterface {
 			container: $this->container
 		);
 
-		return $this->orphanGuard->allows(row: $orphan, register: $scope['register'], schema: $scope['schema']);
+		return $this->orphanGuard->allows(row: $orphan, table: new RegisterSchema(register: $scope['register'], schema: $scope['schema']));
 	}//end orphanMayBeDeleted()
 
 	/**
