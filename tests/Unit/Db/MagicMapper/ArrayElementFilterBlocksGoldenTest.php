@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\ArrayElementFilter;
+use OCA\OpenRegister\Db\MagicMapper\NestedPathTarget;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -109,20 +110,20 @@ class ArrayElementFilterBlocksGoldenTest extends TestCase {
 			"EXISTS (SELECT 1 FROM "
 			."json_array_elements(CASE WHEN json_typeof(t.p::json) = 'array' THEN t.p::json ELSE '[]'::json END) AS cn_el(e) WHERE "
 			."(cn_el.e #>> '{a}') = '1' AND (cn_el.e #>> '{b}') IN ('2', '3'))",
-			$filter->condition('t.p', ['a' => 1, 'b' => [2, 3]], $bind, true)
+			$filter->condition(new NestedPathTarget('t.p', $bind, true), ['a' => 1, 'b' => [2, 3]])
 		);
 		$this->assertSame(
 			"EXISTS (SELECT 1 FROM "
 			."JSON_TABLE(CASE WHEN JSON_TYPE(t.p) = 'ARRAY' THEN t.p ELSE '[]' END, '\$[*]' COLUMNS (e JSON PATH '\$')) AS cn_el WHERE "
 			."JSON_UNQUOTE(JSON_EXTRACT(cn_el.e, '$.a')) IS NULL)",
-			$filter->condition('t.p', ['a' => null], $bind, false)
+			$filter->condition(new NestedPathTarget('t.p', $bind, false), ['a' => null])
 		);
 		$this->assertSame(
 			"EXISTS (SELECT 1 FROM "
 			."json_array_elements(CASE WHEN json_typeof(t.p::json) = 'array' THEN t.p::json ELSE '[]'::json END) AS cn_el(e) WHERE "
 			.")",
-			$filter->condition('t.p', [], $bind, true)
+			$filter->condition(new NestedPathTarget('t.p', $bind, true), [])
 		);
-		$this->assertNull($filter->condition('t.p', ['a' => 1, 'b c' => 2], $bind, false));
+		$this->assertNull($filter->condition(new NestedPathTarget('t.p', $bind, false), ['a' => 1, 'b c' => 2]));
 	}//end testCondition()
 }//end class

@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ConfigLookup;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterResolverService;
 use OCA\OpenRegister\Service\RegisterSchemaMappers;
@@ -111,13 +112,13 @@ class RegisterResolverServiceTest extends TestCase {
 	}//end testResolveRegisterIdThrowsMissingConfigExceptionWithDiagnostics()
 
 	/**
-	 * Every case for each of the three id reads: config value, default, empty default, missing.
+	 * Every case for each of the two id reads: config value, default, empty default, missing.
 	 *
 	 * @return array<string, array{string, string, ?string, ?string}>
 	 */
 	public static function idReadCases(): array {
 		$cases = [];
-		foreach (['resolveRegisterId', 'resolveSchemaId', 'resolvePropertyId'] as $method) {
+		foreach (['resolveRegisterId', 'resolveSchemaId'] as $method) {
 			$cases[$method . ' config wins'] = [$method, 'configured', 'fallback', 'configured'];
 			$cases[$method . ' default'] = [$method, '', 'fallback', 'fallback'];
 			$cases[$method . ' empty default'] = [$method, '', '', null];
@@ -167,7 +168,7 @@ class RegisterResolverServiceTest extends TestCase {
 			->with('theme-2026')
 			->willReturn($register);
 
-		$resolved = $this->resolver->resolveRegister('opencatalogi', 'theme_register');
+		$resolved = $this->resolver->lookupRegister(new ConfigLookup('opencatalogi', 'theme_register'));
 
 		$this->assertSame($register, $resolved);
 
@@ -178,7 +179,7 @@ class RegisterResolverServiceTest extends TestCase {
 		$this->registerMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
 
 		try {
-			$this->resolver->resolveRegister('opencatalogi', 'theme_register');
+			$this->resolver->lookupRegister(new ConfigLookup('opencatalogi', 'theme_register'));
 			$this->fail('Expected RegisterNotFoundException');
 		} catch (RegisterNotFoundException $e) {
 			$this->assertSame('theme-2026', $e->getResolvedValue());
@@ -196,8 +197,8 @@ class RegisterResolverServiceTest extends TestCase {
 			->method('find')
 			->willReturn($register);
 
-		$first = $this->resolver->resolveRegister('opencatalogi', 'theme_register');
-		$second = $this->resolver->resolveRegister('opencatalogi', 'theme_register');
+		$first = $this->resolver->lookupRegister(new ConfigLookup('opencatalogi', 'theme_register'));
+		$second = $this->resolver->lookupRegister(new ConfigLookup('opencatalogi', 'theme_register'));
 
 		$this->assertSame($first, $second, 'Cached resolve must return the same instance.');
 
@@ -212,7 +213,7 @@ class RegisterResolverServiceTest extends TestCase {
 			->with('listing-v2')
 			->willReturn($schema);
 
-		$this->assertSame($schema, $this->resolver->resolveSchema('opencatalogi', 'listing_schema'));
+		$this->assertSame($schema, $this->resolver->lookupSchema(new ConfigLookup('opencatalogi', 'listing_schema')));
 
 	}//end testResolveSchemaReturnsEntity()
 
@@ -221,7 +222,7 @@ class RegisterResolverServiceTest extends TestCase {
 		$this->schemaMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
 
 		$this->expectException(SchemaNotFoundException::class);
-		$this->resolver->resolveSchema('opencatalogi', 'listing_schema');
+		$this->resolver->lookupSchema(new ConfigLookup('opencatalogi', 'listing_schema'));
 
 	}//end testResolveSchemaThrowsWhenSlugNotInTenant()
 
@@ -238,7 +239,7 @@ class RegisterResolverServiceTest extends TestCase {
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->schemaMapper->method('find')->willReturn($schema);
 
-		$pair = $this->resolver->resolvePair('opencatalogi', 'listing_register', 'listing_schema');
+		$pair = $this->resolver->lookupPair(new ConfigLookup('opencatalogi', 'listing_register'), new ConfigLookup('opencatalogi', 'listing_schema'));
 
 		$this->assertSame('cms', $pair->getRegisterId());
 		$this->assertSame('listing-v2', $pair->getSchemaId());
@@ -256,7 +257,7 @@ class RegisterResolverServiceTest extends TestCase {
 			->willReturn($register);
 
 		$this->expectException(RegisterNotFoundException::class);
-		$this->resolver->resolveRegister('opencatalogi', 'theme_register', null, 'org-caller');
+		$this->resolver->lookupRegister(new ConfigLookup('opencatalogi', 'theme_register', null, 'org-caller'));
 
 	}//end testOrganisationOverrideRejectsForeignTenant()
 
@@ -280,9 +281,9 @@ class RegisterResolverServiceTest extends TestCase {
 			->willReturnOnConsecutiveCalls($orgA, $orgB);
 
 		// First call → caches under org-a.
-		$this->resolver->resolveRegister('opencatalogi', 'theme_register');
+		$this->resolver->lookupRegister(new ConfigLookup('opencatalogi', 'theme_register'));
 		// Second call detects tenant switch and re-fetches.
-		$this->resolver->resolveRegister('opencatalogi', 'theme_register');
+		$this->resolver->lookupRegister(new ConfigLookup('opencatalogi', 'theme_register'));
 
 	}//end testCacheClearsOnTenantSwitch()
 
@@ -337,7 +338,7 @@ class RegisterResolverServiceTest extends TestCase {
 
 		$this->assertSame(
 			'id-9358c742-a631-47b5-80d4-f8e69b3a5d12',
-			$this->resolver->resolvePropertyId('openconnector', 'swc_type_property')
+			$this->resolver->lookupId(new ConfigLookup('openconnector', 'swc_type_property'))
 		);
 
 	}//end testResolvePropertyIdHappyPath()
@@ -345,7 +346,7 @@ class RegisterResolverServiceTest extends TestCase {
 	public function testResolvePropertyIdFallsBackToDefault(): void {
 		$this->appConfig->method('getValueString')->willReturn('');
 
-		$result = $this->resolver->resolvePropertyId('openconnector', 'swc_type_property', 'id-default');
+		$result = $this->resolver->lookupId(new ConfigLookup('openconnector', 'swc_type_property', 'id-default'));
 		$this->assertSame('id-default', $result);
 
 	}//end testResolvePropertyIdFallsBackToDefault()
@@ -354,7 +355,7 @@ class RegisterResolverServiceTest extends TestCase {
 		$this->appConfig->method('getValueString')->willReturn('');
 
 		try {
-			$this->resolver->resolvePropertyId('openconnector', 'swc_type_property');
+			$this->resolver->lookupId(new ConfigLookup('openconnector', 'swc_type_property'));
 			$this->fail('Expected MissingConfigException');
 		} catch (MissingConfigException $exception) {
 			$this->assertSame('openconnector', $exception->getAppId());
@@ -376,11 +377,7 @@ class RegisterResolverServiceTest extends TestCase {
 		]);
 		$this->schemaMapper->method('find')->with(id: 'extendview')->willReturn($schema);
 
-		[$key, $definition] = $this->resolver->resolveProperty(
-			'openconnector',
-			'swc_schema',
-			'swc_type_property'
-		);
+		[$key, $definition] = $this->resolver->lookupProperty(new ConfigLookup('openconnector', 'swc_schema'), new ConfigLookup('openconnector', 'swc_type_property'));
 
 		$this->assertSame('type', $key);
 		$this->assertSame('prop-7', $definition['id']);
@@ -400,11 +397,7 @@ class RegisterResolverServiceTest extends TestCase {
 		]);
 		$this->schemaMapper->method('find')->with(id: 'extendview')->willReturn($schema);
 
-		[$key, $definition] = $this->resolver->resolveProperty(
-			'openconnector',
-			'swc_schema',
-			'swc_type_property'
-		);
+		[$key, $definition] = $this->resolver->lookupProperty(new ConfigLookup('openconnector', 'swc_schema'), new ConfigLookup('openconnector', 'swc_type_property'));
 
 		$this->assertSame('type', $key);
 		$this->assertSame('prop-7', $definition['id']);
@@ -424,11 +417,7 @@ class RegisterResolverServiceTest extends TestCase {
 		$this->schemaMapper->method('find')->with(id: 'extendview')->willReturn($schema);
 
 		try {
-			$this->resolver->resolveProperty(
-				'openconnector',
-				'swc_schema',
-				'swc_type_property'
-			);
+			$this->resolver->lookupProperty(new ConfigLookup('openconnector', 'swc_schema'), new ConfigLookup('openconnector', 'swc_type_property'));
 			$this->fail('Expected PropertyNotFoundException');
 		} catch (PropertyNotFoundException $exception) {
 			$this->assertSame('openconnector', $exception->getAppId());

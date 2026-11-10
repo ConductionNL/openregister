@@ -43,6 +43,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * Class NotificationHistoryController.
@@ -176,7 +177,7 @@ class NotificationHistoryController extends Controller {
 		$limit = $this->resolveLimit();
 		$offset = $this->resolveOffset();
 
-		$results = $this->mapper->findFiltered(filters: $filters, limit: $limit, offset: $offset);
+		$results = $this->mapper->findFiltered(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
 		$total = $this->mapper->countFiltered(filters: $filters);
 
 		return new JSONResponse(

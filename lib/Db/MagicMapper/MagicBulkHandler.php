@@ -198,7 +198,7 @@ class MagicBulkHandler {
 			);
 
 			$preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
-			$preparedObject = $this->withExpiry(prepared: $preparedObject, object: $object, selfData: $selfData);
+			$preparedObject = $this->withExpiry(prepared: $preparedObject, object: $object);
 
 			$preparedObject = $this->withDisplayColumns(
 				prepared: $preparedObject,
@@ -302,15 +302,19 @@ class MagicBulkHandler {
 	 * never purged.
 	 *
 	 * @param array $prepared The prepared row so far.
-	 * @param array $object   The object as passed to bulkUpsert().
-	 * @param array $selfData The object's metadata block.
+	 * @param array $object   The object as passed to bulkUpsert(); its `@self` block, when present, is the metadata.
 	 *
 	 * @return array The prepared row, with `_expires` set when the object carries an expiry.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
 	 */
-	private function withExpiry(array $prepared, array $object, array $selfData): array {
+	private function withExpiry(array $prepared, array $object): array {
 		$hasMetadataBlock = (($object['@self'] ?? null) !== null || isset($object['object']) === true);
+		$selfData = $object;
+		if (($object['@self'] ?? null) !== null) {
+			$selfData = $object['@self'];
+		}
+
 		$expiresValue = $selfData['expires'] ?? null;
 		if ($expiresValue === null || $hasMetadataBlock === false) {
 			return $prepared;
@@ -413,6 +417,12 @@ class MagicBulkHandler {
 			}
 		} catch (\Exception $e) {
 			// Use default buffer on error.
+			$this->logger->debug(
+				message: '[MagicBulkHandler] Could not size the packet buffer, keeping the default',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 	}//end initializeMaxPacketSize()
 

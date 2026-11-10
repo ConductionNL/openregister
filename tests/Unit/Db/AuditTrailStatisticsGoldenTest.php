@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -66,10 +67,23 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 			);
 			$calls["getActionChartData $tag"] = fn (AuditTrailMapper $m) => $m->getActionChartData(null, null, $reg, $sch);
 			$calls["getActionChartData range $tag"] = fn (AuditTrailMapper $m) => $m->getActionChartData($from, $till, $reg, $sch);
-			$calls["getDetailedStatistics $tag"] = fn (AuditTrailMapper $m) => $m->getDetailedStatistics($reg, $sch, 12);
+			$calls["getDetailedStatistics $tag"] = static function (AuditTrailMapper $m) use ($reg, $sch): array {
+				$s = new AuditStatisticsScope($reg, $sch);
+				$s->hours = 12;
+				return $m->detailedStatistics($s);
+			};
 			$calls["getActionCounts $tag"] = fn (AuditTrailMapper $m) => $m->getActionCounts($reg, $sch);
-			$calls["getActionDistribution $tag"] = fn (AuditTrailMapper $m) => $m->getActionDistribution($reg, $sch, 48);
-			$calls["getMostActiveObjects $tag"] = fn (AuditTrailMapper $m) => $m->getMostActiveObjects($reg, $sch, 3, 6);
+			$calls["getActionDistribution $tag"] = static function (AuditTrailMapper $m) use ($reg, $sch): array {
+				$s = new AuditStatisticsScope($reg, $sch);
+				$s->hours = 48;
+				return $m->actionDistribution($s);
+			};
+			$calls["getMostActiveObjects $tag"] = static function (AuditTrailMapper $m) use ($reg, $sch): array {
+				$s = new AuditStatisticsScope($reg, $sch);
+				$s->limit = 3;
+				$s->hours = 6;
+				return $m->mostActiveObjects($s);
+			};
 		}
 
 		return $calls;
@@ -128,16 +142,19 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 		$this->builderCount = 0;
 		$this->parameterCount = 0;
 		$this->queuedRows = [[]];
-		$this->mapper()->getMostActiveObjects(null, null, null, 6);
+		$unlimited = new AuditStatisticsScope();
+		$unlimited->limit = null;
+		$unlimited->hours = 6;
+		$this->mapper()->mostActiveObjects($unlimited);
 		$actual['most active without limit'] = preg_grep('/setMaxResults/', $this->queryLog);
 
 		$failing = [
 			'getStatistics' => fn (AuditTrailMapper $m) => $m->getStatistics(),
 			'getActionChartData' => fn (AuditTrailMapper $m) => $m->getActionChartData(),
-			'getDetailedStatistics' => fn (AuditTrailMapper $m) => $m->getDetailedStatistics(),
+			'getDetailedStatistics' => fn (AuditTrailMapper $m) => $m->detailedStatistics(new AuditStatisticsScope()),
 			'getActionCounts' => fn (AuditTrailMapper $m) => $m->getActionCounts(5, 9),
-			'getActionDistribution' => fn (AuditTrailMapper $m) => $m->getActionDistribution(),
-			'getMostActiveObjects' => fn (AuditTrailMapper $m) => $m->getMostActiveObjects(),
+			'getActionDistribution' => fn (AuditTrailMapper $m) => $m->actionDistribution(new AuditStatisticsScope()),
+			'getMostActiveObjects' => fn (AuditTrailMapper $m) => $m->mostActiveObjects(new AuditStatisticsScope()),
 			'getStatisticsGroupedBySchema' => fn (AuditTrailMapper $m) => $m->getStatisticsGroupedBySchema([5, 9]),
 		];
 		foreach ($failing as $name => $call) {
@@ -193,7 +210,7 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 		);
 		$this->assertSame(
 			['total' => 0, 'creates' => 0, 'updates' => 0, 'deletes' => 0, 'reads' => 0],
-			$mapper->getDetailedStatistics()
+			$mapper->detailedStatistics(new AuditStatisticsScope())
 		);
 	}//end testEdgesOfTheReads()
 

@@ -122,12 +122,10 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	/**
 	 * Find duplicate-candidate pairs within a register/schema.
 	 *
-	 * @param int|string $register Register id, uuid or slug.
-	 * @param int|string $schema Schema id, uuid or slug.
-	 * @param array<int, mixed>|null $matchRules Optional caller-supplied match rules; when
-	 *                                           null the schema's x-openregister-dedup rules apply.
-	 * @param float|null $threshold Optional score cut-off; defaults to the
-	 *                              annotation threshold or {@see DedupRuleResolver::DEFAULT_THRESHOLD}.
+	 * @param DedupRun $request The register and schema (id, uuid or slug), optional caller-supplied
+	 *                          match rules (when null the schema's x-openregister-dedup rules apply)
+	 *                          and an optional score cut-off (defaults to the annotation threshold or
+	 *                          {@see DedupRuleResolver::DEFAULT_THRESHOLD}).
 	 *
 	 * @return array<int, array{
 	 *   objectA: string,
@@ -138,10 +136,8 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 *
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-6
 	 */
-	public function findDuplicates($register, $schema, ?array $matchRules = null, ?float $threshold = null): array {
-		return $this->duplicatesFor(
-			request: new DedupRun(register: $register, schema: $schema, matchRules: $matchRules, threshold: $threshold)
-		);
+	public function findDuplicates(DedupRun $request): array {
+		return $this->duplicatesFor(request: $request);
 	}//end findDuplicates()
 
 	/**
@@ -312,16 +308,14 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * The cut-off a register/schema applies, so a caller that needs to know
 	 * whether a match is "strong" asks the same question the scorer answered.
 	 *
-	 * @param int|string $register Register reference.
-	 * @param int|string $schema Schema reference.
-	 * @param float|null $threshold Caller override, when supplied.
+	 * @param DedupRun $request The register and schema reference and the caller override, when supplied.
 	 *
 	 * @return float The effective threshold.
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
-	public function effectiveThreshold($register, $schema, ?float $threshold = null): float {
-		$run = $this->ruleResolver->resolve(request: new DedupRun(register: $register, schema: $schema, threshold: $threshold));
+	public function effectiveThreshold(DedupRun $request): float {
+		$run = $this->ruleResolver->resolve(request: $request);
 		return $run?->getCutOff() ?? DedupRuleResolver::DEFAULT_THRESHOLD;
 	}//end effectiveThreshold()
 
@@ -358,16 +352,15 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * later compares against. Two implementations of "what was compared" is how
 	 * a dismissal silently stops matching itself.
 	 *
-	 * @param array<string, mixed> $dataA One object's payload.
-	 * @param array<string, mixed> $dataB The other object's payload.
-	 * @param array<int, array<string, mixed>> $rules The match rules that were compared.
+	 * @param array{0: array<string, mixed>, 1: array<string, mixed>} $payloads The two objects' payloads.
+	 * @param array<int, array<string, mixed>>                         $rules    The match rules that were compared.
 	 *
 	 * @return string A hex digest, or an empty string when there is nothing to fingerprint.
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
-	public function pairFingerprint(array $dataA, array $dataB, array $rules): string {
-		return $this->fingerprintOf(payloads: [$dataA, $dataB], rules: $this->ruleResolver->sanitise(rules: $rules));
+	public function pairFingerprint(array $payloads, array $rules): string {
+		return $this->fingerprintOf(payloads: $payloads, rules: $this->ruleResolver->sanitise(rules: $rules));
 	}//end pairFingerprint()
 
 	/**
@@ -494,8 +487,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 */
 	private function currentFingerprint(array $pair, DedupRun $run): string {
 		return $this->pairFingerprint(
-			dataA: ($run->getPayloads()[$pair['objectA']] ?? []),
-			dataB: ($run->getPayloads()[$pair['objectB']] ?? []),
+			payloads: [($run->getPayloads()[$pair['objectA']] ?? []), ($run->getPayloads()[$pair['objectB']] ?? [])],
 			rules: $run->getRules()
 		);
 	}//end currentFingerprint()
