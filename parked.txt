@@ -94,3 +94,4 @@ openregister#8344 f19afee9abe50006d461f53978a94468dc165e06 precheck-red alone on
 openregister#8361 d4b80aa1d62d4ad1aa9d4b679bf92358c827e89f precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Controller\ObjectIntegrationsControllerTest::testALinkOfAnotherObjectAnswers404Not
 openregister#8450 29819a35fadd9b20ea665e93a2179cf4681ae183 coordinator-park: superseded, change already on main (close by hand)
 openregister#7743 d1f2c5fda2f2293cf83ce7f85284feb562c31c84 coordinator-park: superseded, change already on main (close by hand)
+openregister#8397 d0351787fad75232767bfeea2895412e7f11582c precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\RegisterServiceFindAllGoldenTest::testFindAllHandsTheMapperTheQuery;OCA\OpenRegister\Tests\Unit\Service\RegisterServiceFindAllGoldenTest::testFindAllSerializedHandsTheMapperTheQ
