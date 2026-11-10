@@ -29,6 +29,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
 use Exception;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -1285,7 +1286,8 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$seen = null;
 		$this->propertyRbacHandler->method('getUnauthorizedProperties')->willReturnCallback(
-			static function (Schema $schema, array $object, array $incomingData, bool $isCreate = false) use (&$seen): array {
+			static function (PropertyWriteCheck $write) use (&$seen): array {
+				[$schema, $object, $incomingData, $isCreate] = [$write->schema, $write->request->object, $write->incoming, $write->request->isCreate];
 				$seen = $object;
 
 				return ['name'];

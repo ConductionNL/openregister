@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\ProtectedCarryForward;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
@@ -84,27 +85,27 @@ class PropertyRbacHandlerCarryForwardGoldenTest extends TestCase {
 	public function testAnOmittedPropertyTheCallerMayNotTouchIsCarriedForward(): void {
 		$stored = ['secret' => 's', 'frozen' => 'f', 'open' => 'o'];
 
-		$this->assertSame(['secret', 'frozen'], $this->handlerFor([])->collectOmittedProtectedProperties($this->schema(), ['open' => 'x'], $stored));
+		$this->assertSame(['secret', 'frozen'], $this->handlerFor([])->collectOmittedProtectedProperties(new ProtectedCarryForward($this->schema(), ['open' => 'x'], $stored)));
 	}
 
 	public function testAPropertyTheUpdateCarriesIsNotCarriedForward(): void {
 		$stored = ['secret' => 's', 'frozen' => 'f'];
 
-		$this->assertSame(['frozen'], $this->handlerFor([])->collectOmittedProtectedProperties($this->schema(), ['secret' => 'new'], $stored));
+		$this->assertSame(['frozen'], $this->handlerFor([])->collectOmittedProtectedProperties(new ProtectedCarryForward($this->schema(), ['secret' => 'new'], $stored)));
 	}
 
 	public function testAPropertyNeverStoredIsNotCarriedForward(): void {
-		$this->assertSame(['frozen'], $this->handlerFor([])->collectOmittedProtectedProperties($this->schema(), [], ['frozen' => 'f']));
+		$this->assertSame(['frozen'], $this->handlerFor([])->collectOmittedProtectedProperties(new ProtectedCarryForward($this->schema(), [], ['frozen' => 'f'])));
 	}
 
 	public function testACallerAllowedToReadAndUpdateCarriesNothing(): void {
 		$stored = ['secret' => 's', 'frozen' => 'f'];
 
-		$this->assertSame(['frozen'], $this->handlerFor(['readers'])->collectOmittedProtectedProperties($this->schema(), [], $stored));
-		$this->assertSame([], $this->handlerFor(['readers', 'editors'])->collectOmittedProtectedProperties($this->schema(), [], $stored));
+		$this->assertSame(['frozen'], $this->handlerFor(['readers'])->collectOmittedProtectedProperties(new ProtectedCarryForward($this->schema(), [], $stored)));
+		$this->assertSame([], $this->handlerFor(['readers', 'editors'])->collectOmittedProtectedProperties(new ProtectedCarryForward($this->schema(), [], $stored)));
 	}
 
 	public function testAnAdministratorCarriesNothing(): void {
-		$this->assertSame([], $this->handlerFor(['admin'])->collectOmittedProtectedProperties($this->schema(), [], ['secret' => 's']));
+		$this->assertSame([], $this->handlerFor(['admin'])->collectOmittedProtectedProperties(new ProtectedCarryForward($this->schema(), [], ['secret' => 's'])));
 	}
 }

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjects;
 
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkRowPropertyAuthorization;
@@ -33,7 +34,7 @@ class BulkRowPropertyAuthorizationTest extends TestCase {
 	public function testTheRefusalNamesTheUnauthorizedProperties(): void {
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->expects($this->once())->method('getUnauthorizedProperties')
-			->with($this->isInstanceOf(Schema::class), [], ['title' => 'x'], true)
+			->with($this->callback(static fn (PropertyWriteCheck $write): bool => $write->request->object === [] && $write->incoming === ['title' => 'x'] && $write->request->isCreate === true))
 			->willReturn(['secret', 'pin']);
 
 		$check = new BulkRowPropertyAuthorization(propertyRbac: $rbac, schema: new Schema(), existing: null);
