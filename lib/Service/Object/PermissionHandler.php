@@ -65,6 +65,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\ProvenanceOptions;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
 use OCA\OpenRegister\Service\Rbac\RoleBlockExpander;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
@@ -1394,7 +1395,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$resolver = new ProvenanceResolver(denyResolver: $this->denyResolver(), principals: $principals);
 		$enforced = $this->denyEnforcementMode()->enforces();
 
-		return $resolver->forActions(actions: $request->actions, blocks: $blocks, denials: $denials, enforced: $enforced);
+		return $resolver->forActions(actions: $request->actions, options: new ProvenanceOptions(blocks: $blocks, denials: $denials, enforced: $enforced));
 	}//end provenance()
 
 	/**
