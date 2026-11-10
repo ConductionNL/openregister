@@ -83,18 +83,29 @@ class OrganisationHaltCheck implements IFlowOversightCheck, OrganisationHaltChec
 
 		foreach ($matching as $halt) {
 			if ($halt['organisation'] === $organisation) {
-				return sprintf(
-					'%s is halted for this organisation since %s by %s: %s',
-					$halt['app'],
-					$halt['engagedAt'],
-					$halt['engagedBy'],
-					$halt['reason']
-				);
+				return self::haltMessage(halt: $halt);
 			}
 		}
 
 		return null;
 	}//end veto()
+
+	/**
+	 * What a halt that covers the run's organisation says: which app, since when, by whom and why.
+	 *
+	 * @param array<string, mixed> $halt The halt.
+	 *
+	 * @return string The refusal.
+	 */
+	private static function haltMessage(array $halt): string {
+		return sprintf(
+			'%s is halted for this organisation since %s by %s: %s',
+			$halt['app'],
+			$halt['engagedAt'],
+			$halt['engagedBy'],
+			$halt['reason']
+		);
+	}//end haltMessage()
 
 	/**
 	 * The run's organisation, or null when it cannot be established.
