@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCP\AppFramework\Db\Entity;
 
@@ -367,7 +366,7 @@ interface AuditTrailMapperInterface {
 	/**
 	 * Get detailed statistics for audit trails including action counts within timeframe
 	 *
-	 * @param AuditStatisticsScope $scope The register and schema to filter by (each optional) and the hours to look
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema to filter by (each optional) and the hours to look
 	 *                                    back for recent activity (default: 24).
 	 *
 	 * @return int[]
@@ -375,7 +374,7 @@ interface AuditTrailMapperInterface {
 	 * @psalm-return array{total: int, creates: int, updates: int,
 	 *     deletes: int, reads: int}
 	 */
-	public function detailedStatistics(AuditStatisticsScope $scope): array;
+	public function detailedStatistics(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Lifetime row counts per action, for the actions that start with a prefix
@@ -416,26 +415,26 @@ interface AuditTrailMapperInterface {
 	/**
 	 * Get action distribution data with percentages
 	 *
-	 * @param AuditStatisticsScope $scope The register and schema to filter by (each optional) and the hours to look
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema to filter by (each optional) and the hours to look
 	 *                                    back (default: 24).
 	 *
 	 * @return (int|mixed)[][][]
 	 *
 	 * @psalm-return array{actions: list<array{count: int, name: mixed}>}
 	 */
-	public function actionDistribution(AuditStatisticsScope $scope): array;
+	public function actionDistribution(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Get most active objects based on audit trail activity
 	 *
-	 * @param AuditStatisticsScope $scope The register and schema to filter by (each optional), the number of results
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema to filter by (each optional), the number of results
 	 *                                    (default: 10) and the hours to look back (default: 24).
 	 *
 	 * @return (int|mixed|string)[][][]
 	 *
 	 * @psalm-return array{objects: list<array{count: int, id: mixed, name: string}>}
 	 */
-	public function mostActiveObjects(AuditStatisticsScope $scope): array;
+	public function mostActiveObjects(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Tombstone every audit-trail entry.
