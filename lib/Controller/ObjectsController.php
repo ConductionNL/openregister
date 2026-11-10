@@ -4796,7 +4796,7 @@ class ObjectsController extends Controller {
 			return $object;
 		}
 
-		if (self::livesAt(object: $object, route: [$register, $schema]) === false) {
+		if (self::livesAt(object: $object, route: self::resolvedRoute(route: [$register, $schema], objectService: $objectService)) === false) {
 			$msg = 'Object does not belong to specified register/schema';
 			return new JSONResponse(data: ['message' => $msg], statusCode: 404);
 		}
@@ -4827,10 +4827,10 @@ class ObjectsController extends Controller {
 	}//end historyObject()
 
 	/**
-	 * Whether an object's stored register and schema are the ones on the route, ignoring case.
+	 * Whether an object's stored register and schema are the given ones, ignoring case.
 	 *
 	 * @param ObjectEntity $object The object.
-	 * @param array        $route  The register and schema on the route.
+	 * @param array        $route  The register and schema to compare with.
 	 *
 	 * @return bool
 	 *
@@ -4840,6 +4840,23 @@ class ObjectsController extends Controller {
 		return strtolower((string)$object->getRegister()) === strtolower($route[0])
 			&& strtolower((string)$object->getSchema()) === strtolower($route[1]);
 	}//end livesAt()
+
+	/**
+	 * The ids a route's register and schema resolved to; a part that did not resolve stays as named.
+	 *
+	 * @param array                     $route         The register and schema on the route.
+	 * @param ObjectOperationsInterface $objectService The object service, with the route set.
+	 *
+	 * @return array The register and schema.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function resolvedRoute(array $route, ObjectOperationsInterface $objectService): array {
+		return [
+			(string)($objectService->getCurrentRegisterEntity()?->getId() ?? $route[0]),
+			(string)($objectService->getCurrentSchemaEntity()?->getId() ?? $route[1]),
+		];
+	}//end resolvedRoute()
 
 	/**
 	 * One page of an object's audit log, masked for explicit-reveal values.

@@ -6712,6 +6712,49 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	/**
+	 * An object stored in a register and schema, on a route that names them by slug.
+	 *
+	 * @param int $registerId The id the route's register resolves to.
+	 *
+	 * @return \OCP\AppFramework\Http\JSONResponse The answer.
+	 */
+	private function logsBySlug(int $registerId): \OCP\AppFramework\Http\JSONResponse {
+		$this->setupAdminUser();
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$object->setRegister('1');
+		$object->setSchema('2');
+		$register = new \OCA\OpenRegister\Db\Register();
+		$register->setId($registerId);
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setId(2);
+		$this->objectService->method('find')->willReturn($object);
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($register);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schema);
+		$this->objectService->method('getLogs')->willReturn([]);
+		$this->request->method('getParams')->willReturn([]);
+
+		return $this->controller->logs('uuid', 'zaken', 'persoon', $this->objectService);
+	}
+
+	/**
+	 * An administrator reads an object's log through the slugs of its register and schema.
+	 *
+	 * @return void
+	 */
+	public function testLogsAnswerAnAdministratorOnASlugRoute(): void {
+		$this->assertSame(200, $this->logsBySlug(1)->getStatus());
+	}
+
+	/**
+	 * A slug route of another register still answers that the object is not there.
+	 *
+	 * @return void
+	 */
+	public function testLogsRefuseASlugRouteOfAnotherRegister(): void {
+		$this->assertSame(404, $this->logsBySlug(9)->getStatus());
+	}
+
+	/**
 	 * A JSON export is recorded with the format it was asked in.
 	 *
 	 * @return void
