@@ -201,6 +201,12 @@ class AggregationCache implements AggregationCacheInterface {
 			$this->cache->set($this->key(slot: $slot), json_encode($result), self::TTL);
 		} catch (\Throwable $e) {
 			// Don't escalate: a cache write failure shouldn't break the response.
+			$this->logger->debug(
+				message: '[AggregationCache] Cache write failed',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end write()
 
