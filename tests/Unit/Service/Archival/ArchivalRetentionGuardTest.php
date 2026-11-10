@@ -60,7 +60,7 @@ class ArchivalRetentionGuardTest extends TestCase {
 			}
 		);
 
-		return new ArchivalRetentionGuard($mapper, $this->createMock(LoggerInterface::class));
+		return new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($mapper, $this->createMock(LoggerInterface::class)));
 	}//end guard()
 
 	/**
@@ -195,7 +195,7 @@ class ArchivalRetentionGuardTest extends TestCase {
 				return $schema;
 			}
 		);
-		$guard = new ArchivalRetentionGuard($mapper, $this->createMock(LoggerInterface::class));
+		$guard = new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($mapper, $this->createMock(LoggerInterface::class)));
 
 		$this->assertNull($guard->erasureRefusal($this->record('u3', 'typo')));
 	}//end testANonArrayAnnotationDoesNotRefuse()
@@ -277,7 +277,7 @@ class ArchivalRetentionGuardTest extends TestCase {
 					return $schema;
 				}
 			);
-		$guard = new ArchivalRetentionGuard($mapper, $this->createMock(LoggerInterface::class));
+		$guard = new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($mapper, $this->createMock(LoggerInterface::class)));
 
 		$this->assertNotNull($guard->erasureRefusal($this->record('a', 'besluit')));
 		$this->assertNotNull($guard->erasureRefusal($this->record('b', 'besluit')));
@@ -294,7 +294,7 @@ class ArchivalRetentionGuardTest extends TestCase {
 		$mapper->expects($this->once())
 			->method('find')
 			->willThrowException(new DoesNotExistException('gone'));
-		$guard = new ArchivalRetentionGuard($mapper, $this->createMock(LoggerInterface::class));
+		$guard = new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($mapper, $this->createMock(LoggerInterface::class)));
 
 		$this->assertNotNull($guard->erasureRefusal($this->record('a', 'gone')));
 		$this->assertNotNull($guard->erasureRefusal($this->record('b', 'gone')));
@@ -322,7 +322,7 @@ class ArchivalRetentionGuardTest extends TestCase {
 				$this->isFalse()
 			)
 			->willReturn(new Schema());
-		$guard = new ArchivalRetentionGuard($mapper, $this->createMock(LoggerInterface::class));
+		$guard = new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($mapper, $this->createMock(LoggerInterface::class)));
 
 		$guard->erasureRefusal($this->record('a', 'besluit'));
 	}//end testTheSchemaIsReadWithoutRbacOrTenantScoping()

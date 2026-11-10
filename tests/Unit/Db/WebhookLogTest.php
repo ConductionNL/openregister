@@ -49,6 +49,7 @@ class WebhookLogTest extends TestCase {
 	public function testConstructorInitializesCreatedTimestamp(): void {
 		$created = $this->webhookLog->getCreated();
 		$this->assertInstanceOf(DateTime::class, $created);
+		$this->assertEqualsWithDelta(time(), $created->getTimestamp(), 5);
 	}
 
 	// --- Getters/Setters ---

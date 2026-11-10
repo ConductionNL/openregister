@@ -26,7 +26,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarSpan;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
+use OCA\OpenRegister\Service\Flow\Timer\UnitConversion;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use PHPUnit\Framework\TestCase;
 
@@ -75,16 +77,11 @@ class ElapsedBusinessHoursTest extends TestCase {
 		// measurements the calculator already had answer something else.
 		$this->assertSame(
 			65.0,
-			$sla->measure(from: $from, to: $to, unit: SlaCalculator::UNIT_HOURS, calendar: $calendar)
+			$sla->measure(span: new CalendarSpan(from: $from, to: $to, calendar: $calendar), unit: SlaCalculator::UNIT_HOURS)
 		);
 		$this->assertGreaterThan(
 			5.0,
-			$sla->convert(
-				value: $sla->measure(from: $from, to: $to, unit: SlaCalculator::UNIT_BUSINESS_DAYS, calendar: $calendar),
-				fromUnit: SlaCalculator::UNIT_BUSINESS_DAYS,
-				toUnit: SlaCalculator::UNIT_HOURS,
-				calendar: $calendar
-			)
+			$sla->convert(conversion: new UnitConversion(value: $sla->measure(span: new CalendarSpan(from: $from, to: $to, calendar: $calendar), unit: SlaCalculator::UNIT_BUSINESS_DAYS), fromUnit: SlaCalculator::UNIT_BUSINESS_DAYS, toUnit: SlaCalculator::UNIT_HOURS, calendar: $calendar))
 		);
 	}
 

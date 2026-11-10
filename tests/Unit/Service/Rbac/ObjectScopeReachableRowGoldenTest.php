@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\GrantedRows;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -115,8 +116,7 @@ class ObjectScopeReachableRowGoldenTest extends TestCase {
 	private function reachable(bool $defaultPrivate, bool $isPostgres, array $quotedUuids): string {
 		return $this->resolver->notPrivateOrGrantedSql(
 			notPrivateSql: $this->resolver->notPrivateSql(columnName: 't._authorization', defaultPrivate: $defaultPrivate, isPostgres: $isPostgres),
-			uuidColumn: 't._uuid',
-			quotedUuids: $quotedUuids
+			granted: new GrantedRows(uuidColumn: 't._uuid', quotedUuids: $quotedUuids)
 		);
 	}//end reachable()
 }//end class

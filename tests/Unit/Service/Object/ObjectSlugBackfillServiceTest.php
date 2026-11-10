@@ -102,7 +102,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			writer: new ObjectSlugBackfillWriter(
 				magicMapper: $this->magicMapper,
 				db: $this->createMock(IDBConnection::class),
-				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), auditTrail: $this->auditTrailMapper, logger: $logger),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->auditTrailMapper, logger: $logger)),
 				logger: $logger
 			),
 			logger: $logger
@@ -346,7 +346,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			writer: new ObjectSlugBackfillWriter(
 				magicMapper: $magicMapper,
 				db: $this->createMock(IDBConnection::class),
-				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), auditTrail: $this->auditMapper(), logger: $logger),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->auditMapper(), logger: $logger)),
 				logger: $logger
 			),
 			logger: $logger
@@ -435,7 +435,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			writer: new ObjectSlugBackfillWriter(
 				magicMapper: $magicMapper,
 				db: $this->createMock(IDBConnection::class),
-				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), auditTrail: $this->auditMapper(), logger: $logger),
+				ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->createMock(CacheHandler::class), audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $this->auditMapper(), logger: $logger)),
 				logger: $logger
 			),
 			logger: $logger

@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionCandidate;
@@ -68,12 +69,7 @@ class AutoTransitionRunnerRefusalCodeTest extends TestCase {
 		$this->deferral = $this->createMock(ListenerDeferralService::class);
 
 		return new AutoTransitionRunner(
-			new AutoTransitionDecider(
-				$container,
-				$this->createMock(SchemaMapperInterface::class),
-				$this->createMock(AutoTransitionSelector::class),
-				$logger
-			),
+			new AutoTransitionDecider($container, new SchemaReading($this->createMock(SchemaMapperInterface::class), $logger), $this->createMock(AutoTransitionSelector::class)),
 			$container,
 			new AutoTransitionQueue($this->deferral, $logger),
 			$logger

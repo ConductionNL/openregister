@@ -94,7 +94,7 @@ class CasePlanTimerRearmOutcomesTest extends TestCase {
 			->with(CasePlanItemTimers::SUBJECT_TYPE, 'i-1', [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED])
 			->willReturn([$this->timer(FlowTimer::PURPOSE_DUE)]);
 		$this->timers->expects($this->once())->method('rearmStatutoryExpiry')
-			->with($item, $this->callback(static fn ($now): bool => $now->format('Y-m-d') === '2026-02-01'))
+			->with($item, $this->callback(static fn ($act): bool => $act->actor === null && $act->now->format('Y-m-d') === '2026-02-01'))
 			->willReturn(CasePlanItemTimers::REARM_ARMED);
 
 		$this->assertSame(['armed' => 1, 'enforced' => 0, 'dropped' => 0, 'failed' => 0], $this->settlePass(['i-1']));
