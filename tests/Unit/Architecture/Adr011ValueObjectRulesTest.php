@@ -46,6 +46,8 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/PreferenceAddress.php',
 		'Kernel/Contracts/PreferenceWrite.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/ReportCaller.php',
+		'Kernel/Contracts/ScheduledReportUpdate.php',
 		'Kernel/Contracts/TemplateRendering.php',
 		'Kernel/Contracts/TimerSubjectRef.php',
 	];
@@ -65,6 +67,8 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/PreferenceAddress.php',
 		'Kernel/Contracts/PreferenceWrite.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/ReportCaller.php',
+		'Kernel/Contracts/ScheduledReportUpdate.php',
 		'Kernel/Contracts/TemplateRendering.php',
 		'Kernel/Contracts/RelationDecisionUpdate.php',
 		'Kernel/Contracts/TimerAnchorMove.php',
