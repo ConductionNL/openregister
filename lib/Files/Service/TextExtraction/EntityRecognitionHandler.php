@@ -117,6 +117,17 @@ class EntityRecognitionHandler {
 	public const CATEGORY_TEMPORAL_DATA = 'temporal_data';
 
 	/**
+	 * The result of a chunk without text or without detected entities.
+	 *
+	 * @var array{entities_found: int, relations_created: int, entities: array}
+	 */
+	private const NO_ENTITIES = [
+		'entities_found' => 0,
+		'relations_created' => 0,
+		'entities' => [],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param EntityRecognitionStores   $stores   Chunk, entity and relation stores plus the DB connection.
@@ -166,77 +177,103 @@ class EntityRecognitionHandler {
 	 *
 	 * @psalm-return array{chunks_processed: int<0, max>, entities_found: int<0, max>, relations_created: int<0, max>}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Chunk processing requires multiple condition checks
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-14
 	 */
 	public function extractEntities(EntityExtractionRequest $request): array {
-		$sourceType = $request->sourceType;
-		$sourceId = $request->sourceId;
-		$options = $request->options;
+		$this->logExtractionStart(request: $request);
+
+		$run = new EntityExtractionRun(request: $request);
+		foreach ($this->contentChunks(request: $request) as $chunk) {
+			$run->chunk = $chunk;
+			$this->extractCounted(run: $run);
+		}
+
+		$this->logExtractionComplete(run: $run);
+
+		return $run->totals();
+	}//end extractEntities()
+
+	/**
+	 * Log the start of a source's entity extraction.
+	 *
+	 * @param EntityExtractionRequest $request The source and the processing options.
+	 *
+	 * @return void
+	 */
+	private function logExtractionStart(EntityExtractionRequest $request): void {
 		$this->logger->info(
 			message: '[EntityRecognitionHandler] Processing chunks for entity extraction',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'source_type' => $sourceType,
-				'source_id' => $sourceId,
+				'source_type' => $request->sourceType,
+				'source_id' => $request->sourceId,
 			]
 		);
+	}//end logExtractionStart()
 
-		// Get all chunks for this source (excluding metadata chunks).
-		$chunks = $this->stores->chunkMapper->findBySource(sourceType: $sourceType, sourceId: $sourceId);
+	/**
+	 * The source's chunks, without the metadata chunks (chunk_index = -1).
+	 *
+	 * @param EntityExtractionRequest $request The source and the processing options.
+	 *
+	 * @return Chunk[]
+	 */
+	private function contentChunks(EntityExtractionRequest $request): array {
+		$chunks = $this->stores->chunkMapper->findBySource(sourceType: $request->sourceType, sourceId: $request->sourceId);
 
-		// Filter out metadata chunks (chunk_index = -1).
-		$chunks = array_filter(
+		return array_filter(
 			$chunks,
 			fn ($chunk) => $chunk->getChunkIndex() !== -1
 		);
+	}//end contentChunks()
 
-		$chunksProcessed = 0;
-		$totalEntities = 0;
-		$totalRelations = 0;
+	/**
+	 * Extract the run's current chunk and add its results to the totals; a failure is logged and skipped.
+	 *
+	 * @param EntityExtractionRun $run The extraction run, holding the chunk in hand.
+	 *
+	 * @return void
+	 */
+	private function extractCounted(EntityExtractionRun $run): void {
+		try {
+			$run->record(result: $this->extractFromChunk(chunk: $run->chunk, options: $run->request->options));
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[EntityRecognitionHandler] Failed to process chunk',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'chunk_id' => $run->chunk->getId(),
+					'source_type' => $run->request->sourceType,
+					'source_id' => $run->request->sourceId,
+					'error' => $e->getMessage(),
+				]
+			);
+		}
+	}//end extractCounted()
 
-		foreach ($chunks as $chunk) {
-			try {
-				$result = $this->extractFromChunk(chunk: $chunk, options: $options);
-				$chunksProcessed++;
-				$totalEntities += $result['entities_found'];
-				$totalRelations += $result['relations_created'];
-			} catch (Exception $e) {
-				$this->logger->error(
-					message: '[EntityRecognitionHandler] Failed to process chunk',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'chunk_id' => $chunk->getId(),
-						'source_type' => $sourceType,
-						'source_id' => $sourceId,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
-
+	/**
+	 * Log the end of a source's entity extraction with its totals.
+	 *
+	 * @param EntityExtractionRun $run The finished extraction run.
+	 *
+	 * @return void
+	 */
+	private function logExtractionComplete(EntityExtractionRun $run): void {
 		$this->logger->info(
 			message: '[EntityRecognitionHandler] Source processing complete',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'source_type' => $sourceType,
-				'source_id' => $sourceId,
-				'chunks_processed' => $chunksProcessed,
-				'entities_found' => $totalEntities,
-				'relations_created' => $totalRelations,
+				'source_type' => $run->request->sourceType,
+				'source_id' => $run->request->sourceId,
+				'chunks_processed' => $run->chunksProcessed,
+				'entities_found' => $run->entitiesFound,
+				'relations_created' => $run->relationsCreated,
 			]
 		);
-
-		return [
-			'chunks_processed' => $chunksProcessed,
-			'entities_found' => $totalEntities,
-			'relations_created' => $totalRelations,
-		];
-	}//end extractEntities()
+	}//end logExtractionComplete()
 
 	/**
 	 * Extract entities from a text chunk.
@@ -252,13 +289,35 @@ class EntityRecognitionHandler {
 	 *
 	 * @throws Exception When extraction fails.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Entity extraction requires multiple condition checks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple entity detection paths with error handling
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive entity extraction with logging
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-14
 	 */
 	public function extractFromChunk(Chunk $chunk, array $options = []): array {
+		$this->logChunkStart(chunk: $chunk);
+
+		$text = $chunk->getTextContent();
+		if (empty($text) === true || trim($text) === '') {
+			return self::NO_ENTITIES;
+		}
+
+		return $this->detectAndStore(
+			scan: new ChunkEntityScan(
+				chunk: $chunk,
+				text: $text,
+				method: $options['method'] ?? self::METHOD_HYBRID,
+				contextWindow: (int)($options['context_window'] ?? 50)
+			),
+			options: $options
+		);
+	}//end extractFromChunk()
+
+	/**
+	 * Log the start of one chunk's extraction.
+	 *
+	 * @param Chunk $chunk The chunk.
+	 *
+	 * @return void
+	 */
+	private function logChunkStart(Chunk $chunk): void {
 		$this->logger->debug(
 			message: '[EntityRecognitionHandler] Extracting entities from chunk',
 			context: [
@@ -269,51 +328,34 @@ class EntityRecognitionHandler {
 				'source_id' => $chunk->getSourceId(),
 			]
 		);
+	}//end logChunkStart()
 
-		$method = $options['method'] ?? self::METHOD_HYBRID;
-		$entityTypes = $options['entity_types'] ?? null;
-		$confidenceThreshold = (float)($options['confidence_threshold'] ?? 0.5);
-		$contextWindow = (int)($options['context_window'] ?? 50);
-
-		$text = $chunk->getTextContent();
-
-		if (empty($text) === true || trim($text) === '') {
-			return [
-				'entities_found' => 0,
-				'relations_created' => 0,
-				'entities' => [],
-			];
-		}
-
-		// Extract entities using selected method.
+	/**
+	 * Detect the entities in a chunk's text and store them against the chunk.
+	 *
+	 * @param ChunkEntityScan $scan    The chunk, its text, the method and the context window.
+	 * @param array           $options Processing options: entity_types, confidence_threshold.
+	 *
+	 * @return array Extraction results with entities_found, relations_created, and entities list.
+	 *
+	 * @throws Exception When detection fails.
+	 */
+	private function detectAndStore(ChunkEntityScan $scan, array $options): array {
 		$detectedEntities = $this->detectEntities(
 			query: new EntityDetectionQuery(
-				text: $text,
-				entityTypes: $entityTypes,
-				confidenceThreshold: $confidenceThreshold
+				text: $scan->text,
+				entityTypes: $options['entity_types'] ?? null,
+				confidenceThreshold: (float)($options['confidence_threshold'] ?? 0.5)
 			),
-			method: $method
+			method: $scan->method
 		);
 
 		if (empty($detectedEntities) === true) {
-			return [
-				'entities_found' => 0,
-				'relations_created' => 0,
-				'entities' => [],
-			];
+			return self::NO_ENTITIES;
 		}
 
-		// Store entities and create relations.
-		return $this->storeDetectedEntities(
-			detectedEntities: $detectedEntities,
-			scan: new ChunkEntityScan(
-				chunk: $chunk,
-				text: $text,
-				method: $method,
-				contextWindow: $contextWindow
-			)
-		);
-	}//end extractFromChunk()
+		return $this->storeDetectedEntities(detectedEntities: $detectedEntities, scan: $scan);
+	}//end detectAndStore()
 
 	/**
 	 * Store detected entities and create chunk-entity relations.
