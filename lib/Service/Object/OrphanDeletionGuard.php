@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Archival\RecordState;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\IUserSession;
@@ -152,8 +153,14 @@ class OrphanDeletionGuard {
 	private function mayWriteSharedData(RegisterSchema $table): bool {
 		$shared = $this->container->get(SharedMasterDataService::class);
 		$organisations = $this->container->get(OrganisationServiceInterface::class)->getUserActiveOrganisations();
-		$shared->assertWritable(table: SharedMasterDataService::REGISTERS, id: $table->register->getId(), activeOrgUuids: $organisations);
-		$shared->assertWritable(table: SharedMasterDataService::SCHEMAS, id: $table->schema->getId(), activeOrgUuids: $organisations);
+		$shared->assertWritable(
+			row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: $table->register->getId()),
+			activeOrgUuids: $organisations
+		);
+		$shared->assertWritable(
+			row: new DeclaredRow(table: SharedMasterDataService::SCHEMAS, id: $table->schema->getId()),
+			activeOrgUuids: $organisations
+		);
 
 		return true;
 	}//end mayWriteSharedData()
