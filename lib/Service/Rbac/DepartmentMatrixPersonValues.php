@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -171,12 +172,10 @@ class DepartmentMatrixPersonValues {
 	private function searchPersons(RegisterSchemaRef $source, PersonMatch $who): mixed {
 		$schema = $this->schemas->find((string)$source->schema, _multitenancy: false, _rbac: false);
 
-		$registerId = $this->registerIdFor(source: $source, schemaId: (int)$schema->getId());
-		if ($registerId === '') {
+		$register = $this->registerHolding(source: $source, schemaId: (int)$schema->getId());
+		if ($register === null) {
 			return null;
 		}
-
-		$register = $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
 
 		return $this->objects->searchObjects(
 			query: self::personQuery(
@@ -205,21 +204,27 @@ class DepartmentMatrixPersonValues {
 	}//end personQuery()
 
 	/**
-	 * The register the source names, else the first one holding the schema; '' when there is none.
+	 * The register the source names, else the first one holding the schema; null when there is none.
 	 *
 	 * @param RegisterSchemaRef $source   The register's slug or id ('' to find it).
 	 * @param int               $schemaId The person schema's id.
 	 *
-	 * @return string The register id.
+	 * @return Register|null The register.
+	 *
+	 * @throws \Throwable When the register cannot be read.
 	 */
-	private function registerIdFor(RegisterSchemaRef $source, int $schemaId): string {
+	private function registerHolding(RegisterSchemaRef $source, int $schemaId): ?Register {
 		$registerId = (string)$source->register;
-		if ($registerId !== '') {
-			return $registerId;
+		if ($registerId === '') {
+			$registerId = (string)($this->registers->getFirstRegisterWithSchema($schemaId) ?? '');
 		}
 
-		return (string)($this->registers->getFirstRegisterWithSchema($schemaId) ?? '');
-	}//end registerIdFor()
+		if ($registerId === '') {
+			return null;
+		}
+
+		return $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
+	}//end registerHolding()
 
 	/**
 	 * The property's values over the persons that really match the user.
