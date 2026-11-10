@@ -92,7 +92,7 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 		try {
 			$slug = trim((string)$this->catalog->registers()->find(id: $identifier, _rbac: false, _multitenancy: false)->getSlug());
 		} catch (Throwable $e) {
-			$this->reportUnresolved(kind: 'register', identifier: $identifier, error: $e);
+			$this->reportUnresolved(what: 'register identifier "' . $identifier . '"', error: $e);
 
 			return $identifier;
 		}
@@ -127,7 +127,7 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 		try {
 			$slug = trim((string)$this->catalog->schemas()->find(id: $identifier, _rbac: false, _multitenancy: false)->getSlug());
 		} catch (Throwable $e) {
-			$this->reportUnresolved(kind: 'schema', identifier: $identifier, error: $e);
+			$this->reportUnresolved(what: 'schema identifier "' . $identifier . '"', error: $e);
 
 			return $identifier;
 		}
@@ -146,16 +146,14 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 	 * since-deleted register still has to pass through unchanged, and warning
 	 * on every event for it would drown the log without changing the outcome.
 	 *
-	 * @param string $kind Which catalogue was asked.
-	 * @param string $identifier What was asked for.
+	 * @param string    $what  Which catalogue was asked, and for what: `register identifier "x"`.
 	 * @param Throwable $error Why it did not resolve.
 	 *
 	 * @return void
 	 */
-	private function reportUnresolved(string $kind, string $identifier, Throwable $error): void {
+	private function reportUnresolved(string $what, Throwable $error): void {
 		$this->logger->debug(
-			message: '[FlowTriggerSlugs] The ' . $kind . ' identifier "' . $identifier
-				. '" did not resolve to a slug and is matched as-is: ' . $error->getMessage(),
+			message: '[FlowTriggerSlugs] The ' . $what . ' did not resolve to a slug and is matched as-is: ' . $error->getMessage(),
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
