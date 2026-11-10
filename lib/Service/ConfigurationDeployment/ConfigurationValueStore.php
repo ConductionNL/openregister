@@ -95,11 +95,7 @@ class ConfigurationValueStore {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function readAt(ConfigurationAddress $address): ConfigurationSnapshot {
-		$row = $this->values->findAtAddress(
-			layer: $address->layer,
-			layerRef: $address->layerRef,
-			configKey: $address->configKey
-		);
+		$row = $this->rowAt(address: $address);
 
 		if ($address->layer !== ConfigurationLayer::INSTANCE) {
 			return $this->rowSnapshot(address: $address, row: $row);
@@ -156,29 +152,13 @@ class ConfigurationValueStore {
 	public function write(ConfigurationAddress $address, ConfigurationWrite $write): array {
 		$undo = $this->undoEntryFor(layer: $address->layer, configKey: $address->configKey);
 
-		$row = $this->values->findAtAddress(
-			layer: $address->layer,
-			layerRef: $address->layerRef,
-			configKey: $address->configKey
-		);
+		$row = $this->rowAt(address: $address);
 		if ($row !== null) {
-			$row->setConfigValue(['value' => $write->value]);
-			$row->setDeploymentUuid($write->deploymentUuid);
-			$row->setUpdatedBy($write->actor);
-			$this->values->save($row);
+			$this->overwriteRow(row: $row, write: $write);
 		}
 
 		if ($row === null) {
-			$this->values->createFromArray(
-				[
-					'layer' => $address->layer,
-					'layerRef' => $address->layerRef,
-					'configKey' => $address->configKey,
-					'configValue' => ['value' => $write->value],
-					'deploymentUuid' => $write->deploymentUuid,
-					'updatedBy' => $write->actor,
-				]
-			);
+			$this->createRow(address: $address, write: $write);
 		}
 
 		if ($address->layer === ConfigurationLayer::INSTANCE) {
@@ -188,6 +168,60 @@ class ConfigurationValueStore {
 		return $undo;
 
 	}//end write()
+
+	/**
+	 * Point an existing row at a new value, deployment and author, and save it.
+	 *
+	 * @param ConfigurationValue $row   The row at the address.
+	 * @param ConfigurationWrite $write The value to make live, the deployment doing the writing and who is doing it.
+	 *
+	 * @return void
+	 */
+	private function overwriteRow(ConfigurationValue $row, ConfigurationWrite $write): void {
+		$row->setConfigValue(['value' => $write->value]);
+		$row->setDeploymentUuid($write->deploymentUuid);
+		$row->setUpdatedBy($write->actor);
+		$this->values->save($row);
+
+	}//end overwriteRow()
+
+	/**
+	 * Create the row of an address that has none.
+	 *
+	 * @param ConfigurationAddress $address The layer, layer reference and key.
+	 * @param ConfigurationWrite   $write   The value to make live, the deployment doing the writing and who is doing it.
+	 *
+	 * @return void
+	 */
+	private function createRow(ConfigurationAddress $address, ConfigurationWrite $write): void {
+		$this->values->createFromArray(
+			[
+				'layer' => $address->layer,
+				'layerRef' => $address->layerRef,
+				'configKey' => $address->configKey,
+				'configValue' => ['value' => $write->value],
+				'deploymentUuid' => $write->deploymentUuid,
+				'updatedBy' => $write->actor,
+			]
+		);
+
+	}//end createRow()
+
+	/**
+	 * The stored row of an address, if any.
+	 *
+	 * @param ConfigurationAddress $address The layer, layer reference and key.
+	 *
+	 * @return ConfigurationValue|null The row, or null.
+	 */
+	private function rowAt(ConfigurationAddress $address): ?ConfigurationValue {
+		return $this->values->findAtAddress(
+			layer: $address->layer,
+			layerRef: $address->layerRef,
+			configKey: $address->configKey
+		);
+
+	}//end rowAt()
 
 	/**
 	 * Remove one address, returning what it takes to put it back.
@@ -217,7 +251,7 @@ class ConfigurationValueStore {
 	public function removeAt(ConfigurationAddress $address): array {
 		$undo = $this->undoEntryFor(layer: $address->layer, configKey: $address->configKey);
 
-		$row = $this->values->findAtAddress(layer: $address->layer, layerRef: $address->layerRef, configKey: $address->configKey);
+		$row = $this->rowAt(address: $address);
 		if ($row !== null) {
 			$this->values->remove($row);
 		}
