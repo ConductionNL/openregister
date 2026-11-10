@@ -43,6 +43,8 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 
 /**
  * Evaluates threshold-typed notifications declared on a schema.
@@ -264,10 +266,12 @@ class ThresholdEvaluationService {
 	 */
 	private function aggregationValue(ThresholdRun $run, string $aggregationName): int|float|null {
 		$result = $this->aggregationRunner->run(
-			registerRef: (string)$run->object->getRegister(),
-			schemaRef: (string)$run->schema->getSlug(),
-			name: $aggregationName,
-			bypassRbac: true
+			ref: new NamedAggregationRef(
+				register: (string)$run->object->getRegister(),
+				schema: (string)$run->schema->getSlug(),
+				name: $aggregationName
+			),
+			options: new NamedAggregationOptions(bypassRbac: true)
 		);
 		$value = ($result['value'] ?? null);
 		if (is_int($value) === false && is_float($value) === false) {
