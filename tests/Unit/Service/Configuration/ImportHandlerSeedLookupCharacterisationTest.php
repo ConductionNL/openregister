@@ -51,14 +51,19 @@ use RuntimeException;
 
 class ImportHandlerSeedLookupCharacterisationTest extends TestCase {
 
+	/** @var SchemaMapper&MockObject The schema mapper double. */
 	private SchemaMapper&MockObject $schemaMapper;
 
+	/** @var RegisterMapper&MockObject The register mapper double. */
 	private RegisterMapper&MockObject $registerMapper;
 
+	/** @var ObjectService&MockObject The object service double. */
 	private ObjectService&MockObject $objectService;
 
+	/** @var LoggerInterface&MockObject The logger double. */
 	private LoggerInterface&MockObject $logger;
 
+	/** @var ImportHandler The handler under test. */
 	private ImportHandler $handler;
 
 	/** @var array<string, mixed> What the register mapper answers per id; a Throwable is thrown. */
@@ -151,8 +156,6 @@ class ImportHandlerSeedLookupCharacterisationTest extends TestCase {
 		return $schema;
 	}//end schema()
 
-	// ---- computeRegisterScopedSchemaIds ----
-
 	public function testNoRegisterComponentsGivesNothing(): void {
 		$this->assertSame([], $this->call('computeRegisterScopedSchemaIds', [[]]));
 		$this->assertSame([], $this->call('computeRegisterScopedSchemaIds', [['components' => ['registers' => 'x']]]));
@@ -198,8 +201,6 @@ class ImportHandlerSeedLookupCharacterisationTest extends TestCase {
 			$this->calls
 		);
 	}//end testEachSlugGetsTheUnionOfItsRegistersCurrentSchemaIds()
-
-	// ---- resolveImportRegisterSchema ----
 
 	public function testBothComeFromTheImportMapsWithoutLookups(): void {
 		$register = self::register(1, 'pub', [], 'app');
@@ -275,8 +276,6 @@ class ImportHandlerSeedLookupCharacterisationTest extends TestCase {
 			$this->call('resolveImportRegisterSchema', [['@self' => ['register' => 'pub', 'schema' => 'organization']], 'opencatalogi'])
 		);
 	}//end testASchemaTheRegisterListsIsKept()
-
-	// ---- findExistingSeedUuid ----
 
 	private function seedUuid(mixed $answer): mixed {
 		$this->searchAnswer = $answer;
