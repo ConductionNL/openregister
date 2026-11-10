@@ -220,7 +220,7 @@ class ExampleSetEngineKinds {
 				continue;
 			}
 
-			if ($rows?->installFragment(write: $write, report: $ledger->report, record: $ledger->record) === true) {
+			if ($rows?->installFragment(write: $write, ledger: $ledger) === true) {
 				$changed = true;
 			}
 
@@ -250,7 +250,7 @@ class ExampleSetEngineKinds {
 		$changed = false;
 		$kinds   = $this->kinds();
 		foreach (self::BEFORE_CHANGES as $part) {
-			if ($kinds[$part][0]?->installFragment(write: $write, report: $ledger->report, record: $ledger->record) === true) {
+			if ($kinds[$part][0]?->installFragment(write: $write, ledger: $ledger) === true) {
 				$changed = true;
 			}
 		}
