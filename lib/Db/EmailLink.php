@@ -196,7 +196,7 @@ class EmailLink extends Entity implements JsonSerializable {
 	 *
 	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
 	 */
-	public static function storableMessageId(?string $messageId): ?string {
+	public static function storableMessageId(string|null $messageId): string|null {
 		if ($messageId === null || $messageId === '' || strlen($messageId) > self::RFC_MESSAGE_ID_LENGTH) {
 			return null;
 		}

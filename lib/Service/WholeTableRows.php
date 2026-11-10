@@ -23,9 +23,11 @@
 namespace OCA\OpenRegister\Service;
 
 use Generator;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
@@ -171,11 +173,8 @@ final class WholeTableRows {
 		$offset = 0;
 		do {
 			$objects = $this->mapper->findAllInRegisterSchemaTable(
-				register: $register,
-				schema: $schema,
-				limit: self::CHUNK_SIZE,
-				offset: $offset,
-				filters: $filters
+				table: new RegisterSchema(register: $register, schema: $schema),
+				listing: new ListQuery(limit: self::CHUNK_SIZE, offset: $offset, filters: $filters)
 			);
 			$full = (count($objects) === self::CHUNK_SIZE);
 			yield from $objects;

@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
@@ -79,10 +81,8 @@ final class ConditionDocumentUserGoldenTest extends TestCase {
 		foreach ([true, false] as $signedIn) {
 			[$session, $groups] = $this->identity($signedIn);
 			$evaluator = new LifecycleConditionEvaluator(
-				$session,
-				$groups,
 				new LifecycleConditionReporting($this->createMock(IL10N::class), $this->createMock(LoggerInterface::class)),
-				$this->dialect()
+				new LifecycleRuleCheck($this->dialect(), new LifecycleRuleCaller($session, $groups))
 			);
 
 			$user = ['uid' => '', 'groups' => []];

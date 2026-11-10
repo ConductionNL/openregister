@@ -204,6 +204,25 @@ import { configurationStore, navigationStore } from '../../store/store.js'
  * - check-version: Check for updates
  * - preview-update: Preview available updates
  */
+/**
+ * Ask for the configurations imported for an app.
+ *
+ * @param {string} appId The app id
+ * @return {Promise<Response>} The response
+ */
+function fetchConfigurationsOfApp(appId) {
+	return fetch(
+		`/index.php/apps/openregister/api/configurations?app=${encodeURIComponent(appId)}`,
+		{
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
+			},
+		},
+	)
+}
+
 export default {
 	name: 'ConfigurationCard',
 	components: {
@@ -658,49 +677,40 @@ export default {
 			this.checkingImportStatus = true
 
 			try {
-				const response = await fetch(
-					`/index.php/apps/openregister/api/configurations?app=${encodeURIComponent(this.appId)}`,
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-							Accept: 'application/json',
-						},
-					},
-				)
-
+				const response = await fetchConfigurationsOfApp(this.appId)
 				if (response.ok) {
 					const data = await response.json()
-
-					// Check if we got results
-					if (data.results && data.results.length > 0) {
-						const importedConfig = data.results[0]
-
-						// Configuration exists! Store the ID and add to store if not present
-						this.importedConfigId = importedConfig.id
-
-						// Add to store if not already there (for pagination support)
-						const existsInStore =
-							configurationStore.configurationList.find(
-								(c) => c.id === importedConfig.id,
-							)
-						if (!existsInStore) {
-							configurationStore.configurationList.push(importedConfig)
-						}
-
-						// Debug logging removed for production
-					} else {
-						// Not imported
-						this.importedConfigId = null
-						// Debug logging removed for production
-					}
+					this.rememberImported(data.results)
 				}
 			} catch {
-				// Debug logging removed for production
 				// On error, assume not imported
 				this.importedConfigId = null
 			} finally {
 				this.checkingImportStatus = false
+			}
+		},
+
+		/**
+		 * Remember the configuration the app was imported as, adding it to the
+		 * store when it is not there yet (for pagination support), or that the
+		 * app was not imported.
+		 *
+		 * @param {Array<object>|undefined} results The configurations of the app
+		 * @return {void}
+		 */
+		rememberImported(results) {
+			if (!(results && results.length > 0)) {
+				// Not imported
+				this.importedConfigId = null
+				return
+			}
+			const importedConfig = results[0]
+			this.importedConfigId = importedConfig.id
+			const existsInStore = configurationStore.configurationList.find(
+				(c) => c.id === importedConfig.id,
+			)
+			if (!existsInStore) {
+				configurationStore.configurationList.push(importedConfig)
 			}
 		},
 

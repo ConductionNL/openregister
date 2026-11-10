@@ -210,54 +210,13 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 					</table>
 				</div>
 
-				<div class="chartGrid">
-					<!-- Audit Trail Actions Chart -->
-					<div class="chartCard">
-						<h3>Audit Trail Actions</h3>
-						<Apexchart
-							type="line"
-							height="350"
-							:options="auditTrailChartOptions"
-							:series="
-								dashboardStore.chartData?.auditTrailActions?.series
-								|| []
-							" />
-					</div>
-
-					<!-- Objects by Register Chart -->
-					<div class="chartCard">
-						<h3>Objects by Register</h3>
-						<Apexchart
-							type="pie"
-							height="350"
-							:options="registerChartOptions"
-							:series="
-								dashboardStore.chartData?.objectsByRegister?.series
-								|| []
-							"
-							:labels="
-								dashboardStore.chartData?.objectsByRegister?.labels
-								|| []
-							" />
-					</div>
-
-					<!-- Objects by Size Chart -->
-					<div class="chartCard">
-						<h3>Objects by Size Distribution</h3>
-						<Apexchart
-							type="bar"
-							height="350"
-							:options="sizeChartOptions"
-							:series="[
-								{
-									name: 'Objects',
-									data:
-										dashboardStore.chartData?.objectsBySize
-											?.series || [],
-								},
-							]" />
-					</div>
-				</div>
+				<DetailChartGrid
+					:chartData="dashboardStore.chartData"
+					distributionKey="objectsByRegister"
+					distributionTitle="Objects by Register"
+					:auditOptions="auditTrailChartOptions"
+					:distributionOptions="registerChartOptions"
+					:sizeOptions="sizeChartOptions" />
 			</div>
 		</div>
 	</NcAppContent>
@@ -271,7 +230,6 @@ import {
 	NcEmptyContent,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
-import VueApexCharts from 'vue3-apexcharts'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import CalendarMonth from 'vue-material-design-icons/CalendarMonth.vue'
 import ChartBox from 'vue-material-design-icons/ChartBox.vue'
@@ -285,9 +243,15 @@ import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import SchemaDraftBar from '../../components/schema/SchemaDraftBar.vue'
+import DetailChartGrid from '../register/DetailChartGrid.vue'
 import SchemaWorkflowTab from '../schemas/SchemaWorkflowTab.vue'
 import CalendarProviderTab from './CalendarProviderTab.vue'
 import SchemaRulesTab from './SchemaRulesTab.vue'
+import {
+	auditTrailChartOptions,
+	distributionChartOptions,
+	sizeChartOptions,
+} from '../register/detailChartOptions.js'
 
 export default {
 	name: 'SchemaDetails',
@@ -297,7 +261,7 @@ export default {
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
-		Apexchart: VueApexCharts,
+		DetailChartGrid,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
@@ -333,26 +297,10 @@ export default {
 		 * @return {object}
 		 */
 		auditTrailChartOptions() {
-			return {
-				chart: {
-					type: 'line',
-					toolbar: { show: true },
-					zoom: { enabled: true },
-				},
-
-				xaxis: {
-					categories:
-						dashboardStore.chartData?.auditTrailActions?.labels || [],
-
-					title: { text: 'Date' },
-				},
-
-				yaxis: { title: { text: 'Number of Actions' } },
-				colors: ['#41B883', '#E46651', '#00D8FF'],
-				stroke: { curve: 'smooth', width: 2 },
-				legend: { position: 'top' },
-				theme: { mode: 'light' },
-			}
+			return auditTrailChartOptions(
+				dashboardStore.chartData?.auditTrailActions?.labels || [],
+				'light',
+			)
 		},
 
 		/**
@@ -362,20 +310,9 @@ export default {
 		 * @return {object}
 		 */
 		registerChartOptions() {
-			return {
-				chart: { type: 'pie' },
-				labels: dashboardStore.chartData?.objectsByRegister?.labels || [],
-				legend: { position: 'bottom' },
-				responsive: [
-					{
-						breakpoint: 480,
-						options: {
-							chart: { width: 200 },
-							legend: { position: 'bottom' },
-						},
-					},
-				],
-			}
+			return distributionChartOptions(
+				dashboardStore.chartData?.objectsByRegister?.labels || [],
+			)
 		},
 
 		/**
@@ -385,26 +322,9 @@ export default {
 		 * @return {object}
 		 */
 		sizeChartOptions() {
-			return {
-				chart: { type: 'bar' },
-				plotOptions: {
-					bar: {
-						horizontal: false,
-						columnWidth: '55%',
-						endingShape: 'rounded',
-					},
-				},
-
-				xaxis: {
-					categories:
-						dashboardStore.chartData?.objectsBySize?.labels || [],
-
-					title: { text: 'Size Range' },
-				},
-
-				yaxis: { title: { text: 'Number of Objects' } },
-				fill: { opacity: 1 },
-			}
+			return sizeChartOptions(
+				dashboardStore.chartData?.objectsBySize?.labels || [],
+			)
 		},
 	},
 
@@ -510,8 +430,6 @@ export default {
 	gap: 20px;
 	padding: 20px;
 }
-
-@include chart-card;
 
 @include media-screen-and-max-width-1024px;
 
