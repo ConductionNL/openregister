@@ -27,6 +27,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCA\OpenRegister\AppHost\Service\StoreListing;
+use OCA\OpenRegister\AppHost\Service\StoreSharing;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCA\OpenRegister\AppHost\Store\StoreActionCheck;
 use OCP\IGroupManager;
@@ -159,11 +161,15 @@ class StoreActionAuthorizerRefusalGoldenTest extends TestCase {
 	 */
 	private function publishing(array $groups): StoreDescriptor {
 		return new StoreDescriptor(
-			appId: 'learniq',
-			schema: 'shared-course-package',
-			defaultRegister: 'learniq',
-			publishFields: ['title'],
-			publishGroups: $groups
+			listing: new StoreListing(
+				appId: 'learniq',
+				schema: 'shared-course-package',
+				defaultRegister: 'learniq'
+			),
+			sharing: new StoreSharing(
+				publishFields: ['title'],
+				publishGroups: $groups
+			)
 		);
 	}
 
