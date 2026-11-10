@@ -3613,9 +3613,9 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'name' => 'Test'];
 		$extend = ['@self.register', '@self.schema'];
 
-		$result = $this->invokePrivate('extendObject', [
-			$entity, $objectData, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true),
-		]);
+		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
+		$run->data = $objectData;
+		$result = $this->invokePrivate('extendObject', [$run]);
 
 		$this->assertArrayHasKey('@self', $result);
 		$this->assertArrayHasKey('register', $result['@self']);
@@ -3641,9 +3641,9 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ref' => $uuid];
 		$extend = ['ref'];
 
-		$result = $this->invokePrivate('extendObject', [
-			$entity, $objectData, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true),
-		]);
+		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
+		$run->data = $objectData;
+		$result = $this->invokePrivate('extendObject', [$run]);
 
 		// ref should be extended to the full object.
 		$this->assertIsArray($result['ref']);
@@ -3669,9 +3669,9 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ref' => $uuid];
 		$extend = ['all'];
 
-		$result = $this->invokePrivate('extendObject', [
-			$entity, $objectData, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true),
-		]);
+		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
+		$run->data = $objectData;
+		$result = $this->invokePrivate('extendObject', [$run]);
 
 		$this->assertIsArray($result);
 	}
