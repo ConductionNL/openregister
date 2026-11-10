@@ -59,6 +59,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\ContextChat\ContentItem;
 use OCP\ContextChat\IContentManager;
@@ -331,14 +332,9 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 		}
 
 		$isPubliclyReadable = $this->permissionHandler->hasGroupPermission(
-			authorization: $authorization,
-			groupId: 'public',
-			action: 'read',
-			userId: null,
-			userGroup: null,
-			objectOwner: null,
-			objectData: $object->getMatchEnvelope(),
-			objectOrganisation: $object->getOrganisation()
+			request: (new GroupRuleRequest(authorization: $authorization, action: 'read'))
+				->forGroup(groupId: 'public', userGroup: null)
+				->onObject(data: $object->getMatchEnvelope(), organisation: $object->getOrganisation())
 		);
 
 		if ($isPubliclyReadable === false) {
