@@ -409,4 +409,47 @@ class SchemasControllerReadAndDialectCharacterisationTest extends TestCase {
 
 		$this->assertSame(410, $result->getStatus());
 	}//end testAFailedImportByReferenceAnswersWithTheExceptionStatus()
+
+	public function testAGgmDocumentTypeIsNotAReference(): void {
+		$import = $this->createMock(SchemaImportService::class);
+		$import->method('resolveUploadDialect')->willReturn('ggm');
+		$import->expects($this->never())->method('import');
+
+		$result = $this->applyDialect($this->controller($import), ['@type' => 'Persoon']);
+
+		$this->assertSame(400, $result->getStatus());
+	}//end testAGgmDocumentTypeIsNotAReference()
+
+	public function testAnEmptyReferenceParameterFallsBackToTheDocumentType(): void {
+		$this->params = ['reference' => ''];
+		$import = $this->createMock(SchemaImportService::class);
+		$import->method('resolveUploadDialect')->willReturn('schema.org');
+		$import->expects($this->once())->method('import')
+			->with('schema.org', 'Person', $this->anything())->willReturn($this->imported());
+
+		$this->applyDialect($this->controller($import), ['@type' => 'Person']);
+	}//end testAnEmptyReferenceParameterFallsBackToTheDocumentType()
+
+	// ---- resolveSchema ambiguity diagnostics --------------------------------
+
+	/**
+	 * @dataProvider ambiguityCases
+	 */
+	public function testOnlyAnUnscopedSlugIsCheckedForAmbiguity(mixed $id, array $params, int $checks): void {
+		$this->params = $params;
+		$this->schemaMapper->method('find')->willReturn($this->schema(1));
+		$this->schemaMapper->method('findExtendedBy')->willReturn([]);
+		$this->schemaMapper->expects($this->exactly($checks))->method('findAll')->willReturn([]);
+
+		$this->assertSame(200, $this->controller()->show($id)->getStatus());
+	}//end testOnlyAnUnscopedSlugIsCheckedForAmbiguity()
+
+	public static function ambiguityCases(): array {
+		return [
+			'slug without register' => ['agent', [], 1],
+			'numeric string' => ['12', [], 0],
+			'integer id' => [12, [], 0],
+			'slug with an empty register' => ['agent', ['register' => ''], 0],
+		];
+	}//end ambiguityCases()
 }//end class
