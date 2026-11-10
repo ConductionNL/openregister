@@ -33,8 +33,6 @@ use OCA\OpenRegister\Db\Schema\AnnotationVocabulary;
 use OCA\OpenRegister\Db\Schema\AuthorizationRulesValidator;
 use OCA\OpenRegister\Db\Schema\ConfigurationValidator;
 use OCA\OpenRegister\Db\Schema\DeclaredActions;
-use OCA\OpenRegister\Db\Schema\GrantActor;
-use OCA\OpenRegister\Db\Schema\GrantObject;
 use OCA\OpenRegister\Db\Schema\GrantQuery;
 use OCA\OpenRegister\Db\Schema\PropertyAuthorization;
 use OCA\OpenRegister\Db\Schema\SchemaGrantEvaluator;
@@ -1061,14 +1059,9 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * When $propertyName is provided, check the property's authorization array first,
 	 * then fall back to schema-level authorization if no property-level authorization exists.
 	 *
-	 * @param string $groupId The group ID to check
-	 * @param string $action The CRUD action (create, read, update, delete)
-	 * @param string $userId Optional user ID for owner check
-	 * @param string $userGroup Optional user group for admin check
-	 * @param string $objectOwner Optional object owner for ownership check
-	 * @param array $objectData Optional object data for conditional match evaluation
-	 * @param string $objectOrganisation Optional object organisation UUID (@self.organisation)
-	 * @param string $activeOrganisation Optional user's active organisation UUID for $organisation variable
+	 * @param GrantQuery $query The group and CRUD action (create, read, update, delete) asked for, the
+	 *                         actor (user, user group, active organisation) and the object (owner,
+	 *                         data for conditional matches, organisation).
 	 *
 	 * @return bool True if the group has permission for the action
 	 *
@@ -1086,19 +1079,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Conditional authorization rules require multiple checks
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Match condition evaluation creates multiple paths
 	 */
-	public function hasPermission(
-		string $groupId,
-		string $action,
-		?string $userId = null,
-		?string $userGroup = null,
-		?string $objectOwner = null,
-		?array $objectData = null,
-		?string $objectOrganisation = null,
-		?string $activeOrganisation = null,
-	): bool {
-		$actor = new GrantActor(userId: $userId, userGroup: $userGroup, activeOrganisation: $activeOrganisation);
-		$object = new GrantObject(owner: $objectOwner, data: $objectData, organisation: $objectOrganisation);
-		$query = new GrantQuery(groupId: $groupId, action: $action, actor: $actor, object: $object);
+	public function hasPermission(GrantQuery $query): bool {
 		return (new SchemaGrantEvaluator())->allows(authorization: $this->authorization, query: $query);
 	}//end hasPermission()
 

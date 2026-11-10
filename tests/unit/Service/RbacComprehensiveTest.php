@@ -101,6 +101,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\Schema\GrantActor;
+use OCA\OpenRegister\Db\Schema\GrantObject;
+use OCA\OpenRegister\Db\Schema\GrantQuery;
 use OCA\OpenRegister\Db\Schema;
 use PHPUnit\Framework\TestCase;
 
@@ -241,7 +244,7 @@ class RbacComprehensiveTest extends TestCase {
 		$userGroup = $userType === 'admin' ? 'admin' : null;
 
 		// Test the permission.
-		$actualResult = $schema->hasPermission($userType, $operation, null, $userGroup);
+		$actualResult = $schema->hasPermission($this->grantQuery($userType, $operation, null, $userGroup));
 
 		// Assert the result with detailed failure message.
 		$this->assertEquals(
@@ -281,10 +284,10 @@ class RbacComprehensiveTest extends TestCase {
 		$schema->setAuthorization($this->schemaConfigs[$schemaType]);
 
 		// Test that user normally wouldn't have permission.
-		$normalResult = $schema->hasPermission($userType, $operation);
+		$normalResult = $schema->hasPermission($this->grantQuery($userType, $operation));
 
 		// Test that object owner always has permission.
-		$ownerResult = $schema->hasPermission($userType, $operation, 'testuser', null, 'testuser');
+		$ownerResult = $schema->hasPermission($this->grantQuery($userType, $operation, 'testuser', null, 'testuser'));
 
 		// Object owner should always have access regardless of normal permissions.
 		$this->assertTrue(
@@ -340,19 +343,19 @@ class RbacComprehensiveTest extends TestCase {
 		]);
 
 		// Scenario 1: User in multiple groups - should have permissions from any group.
-		$this->assertTrue($schema->hasPermission('editors', 'read')); // Editor can read via editors group
-		$this->assertTrue($schema->hasPermission('viewers', 'read')); // Viewer can read via viewers group
-		$this->assertFalse($schema->hasPermission('viewers', 'create')); // Viewer cannot create
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'read'))); // Editor can read via editors group
+		$this->assertTrue($schema->hasPermission($this->grantQuery('viewers', 'read'))); // Viewer can read via viewers group
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'create'))); // Viewer cannot create
 
 		// Scenario 2: Admin override in complex schema.
-		$this->assertTrue($schema->hasPermission('any-group', 'delete', 'admin-user', 'admin')); // Admin can delete anything
+		$this->assertTrue($schema->hasPermission($this->grantQuery('any-group', 'delete', 'admin-user', 'admin'))); // Admin can delete anything
 
 		// Scenario 3: Object owner vs group permissions.
-		$this->assertFalse($schema->hasPermission('staff', 'read')); // Staff not in viewers/editors groups
-		$this->assertTrue($schema->hasPermission('staff', 'read', 'user1', null, 'user1')); // But owner can read their object
+		$this->assertFalse($schema->hasPermission($this->grantQuery('staff', 'read'))); // Staff not in viewers/editors groups
+		$this->assertTrue($schema->hasPermission($this->grantQuery('staff', 'read', 'user1', null, 'user1'))); // But owner can read their object
 
 		// Scenario 4: Missing action (should be open).
-		$this->assertTrue($schema->hasPermission('anyone', 'publish')); // Unspecified actions are open
+		$this->assertTrue($schema->hasPermission($this->grantQuery('anyone', 'publish'))); // Unspecified actions are open
 	}
 
 	/**
@@ -365,13 +368,13 @@ class RbacComprehensiveTest extends TestCase {
 		]);
 
 		// Empty inputs.
-		$this->assertFalse($schema->hasPermission('', 'read')); // Empty group ID
-		$this->assertTrue($schema->hasPermission('editors', '')); // Empty action (unspecified = open)
+		$this->assertFalse($schema->hasPermission($this->grantQuery('', 'read'))); // Empty group ID
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', ''))); // Empty action (unspecified = open)
 
 		// Group vs owner permissions.
-		$this->assertTrue($schema->hasPermission('editors', 'read', 'user1', null, 'user2')); // Editors can read regardless of owner
-		$this->assertFalse($schema->hasPermission('viewers', 'read', 'user1', null, 'user2')); // Viewers can't read (not authorized)
-		$this->assertTrue($schema->hasPermission('viewers', 'read', 'user1', null, 'user1')); // But object owner can read their own
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'read', 'user1', null, 'user2'))); // Editors can read regardless of owner
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'read', 'user1', null, 'user2'))); // Viewers can't read (not authorized)
+		$this->assertTrue($schema->hasPermission($this->grantQuery('viewers', 'read', 'user1', null, 'user1'))); // But object owner can read their own
 	}
 
 	/**
@@ -392,5 +395,28 @@ class RbacComprehensiveTest extends TestCase {
 		$this->assertEquals(20, $counts['public_read'], 'Public Read should have 20 scenarios');
 		$this->assertEquals(16, $counts['staff_only'], 'Staff Only should have 16 scenarios');
 		$this->assertEquals(16, $counts['collaborative'], 'Collaborative should have 16 scenarios');
+	}
+
+	/**
+	 * The GrantQuery Schema::hasPermission() takes, built from the group, action, actor and object fields.
+	 *
+	 * @return GrantQuery
+	 */
+	private function grantQuery(
+		string $groupId,
+		string $action,
+		?string $userId = null,
+		?string $userGroup = null,
+		?string $objectOwner = null,
+		?array $objectData = null,
+		?string $objectOrganisation = null,
+		?string $activeOrganisation = null,
+	): GrantQuery {
+		return new GrantQuery(
+			groupId: $groupId,
+			action: $action,
+			actor: new GrantActor(userId: $userId, userGroup: $userGroup, activeOrganisation: $activeOrganisation),
+			object: new GrantObject(owner: $objectOwner, data: $objectData, organisation: $objectOrganisation)
+		);
 	}
 }

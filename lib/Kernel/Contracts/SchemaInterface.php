@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
+use OCA\OpenRegister\Db\Schema\GrantQuery;
+
 use DateTime;
 use Exception;
 use InvalidArgumentException;
@@ -279,14 +281,9 @@ interface SchemaInterface extends JsonSerializable {
 	 * When $propertyName is provided, check the property's authorization array first,
 	 * then fall back to schema-level authorization if no property-level authorization exists.
 	 *
-	 * @param string $groupId The group ID to check
-	 * @param string $action The CRUD action (create, read, update, delete)
-	 * @param string $userId Optional user ID for owner check
-	 * @param string $userGroup Optional user group for admin check
-	 * @param string $objectOwner Optional object owner for ownership check
-	 * @param array $objectData Optional object data for conditional match evaluation
-	 * @param string $objectOrganisation Optional object organisation UUID (@self.organisation)
-	 * @param string $activeOrganisation Optional user's active organisation UUID for $organisation variable
+	 * @param GrantQuery $query The group and CRUD action (create, read, update, delete) asked for, the
+	 *                         actor (user, user group, active organisation) and the object (owner,
+	 *                         data for conditional matches, organisation).
 	 *
 	 * @return bool True if the group has permission for the action
 	 *
@@ -304,16 +301,7 @@ interface SchemaInterface extends JsonSerializable {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Conditional authorization rules require multiple checks
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Match condition evaluation creates multiple paths
 	 */
-	public function hasPermission(
-		string $groupId,
-		string $action,
-		?string $userId = null,
-		?string $userGroup = null,
-		?string $objectOwner = null,
-		?array $objectData = null,
-		?string $objectOrganisation = null,
-		?string $activeOrganisation = null,
-	): bool;
+	public function hasPermission(GrantQuery $query): bool;
 
 	/**
 	 * Get all groups that have permission for a specific action

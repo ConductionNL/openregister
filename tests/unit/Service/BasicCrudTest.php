@@ -86,6 +86,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\Schema\GrantActor;
+use OCA\OpenRegister\Db\Schema\GrantObject;
+use OCA\OpenRegister\Db\Schema\GrantQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -405,12 +408,12 @@ class BasicCrudTest extends TestCase {
 		]);
 
 		// Test basic permission checks.
-		$this->assertTrue($schema->hasPermission('editors', 'create'));
-		$this->assertTrue($schema->hasPermission('viewers', 'read'));
-		$this->assertTrue($schema->hasPermission('editors', 'update'));
-		$this->assertTrue($schema->hasPermission('managers', 'delete'));
-		$this->assertFalse($schema->hasPermission('viewers', 'create'));
-		$this->assertFalse($schema->hasPermission('viewers', 'delete'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'create')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('viewers', 'read')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'update')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('managers', 'delete')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'create')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'delete')));
 	}
 
 	/**
@@ -426,14 +429,14 @@ class BasicCrudTest extends TestCase {
 		]);
 
 		// Admin should have access to everything.
-		$this->assertTrue($schema->hasPermission('admin', 'create'));
-		$this->assertTrue($schema->hasPermission('admin', 'read'));
-		$this->assertTrue($schema->hasPermission('admin', 'update'));
-		$this->assertTrue($schema->hasPermission('admin', 'delete'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('admin', 'create')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('admin', 'read')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('admin', 'update')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('admin', 'delete')));
 
 		// Test admin through userGroup parameter.
-		$this->assertTrue($schema->hasPermission('anygroup', 'create', 'admin-user', 'admin'));
-		$this->assertTrue($schema->hasPermission('anygroup', 'delete', 'admin-user', 'admin'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('anygroup', 'create', 'admin-user', 'admin')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('anygroup', 'delete', 'admin-user', 'admin')));
 	}
 
 	/**
@@ -449,13 +452,13 @@ class BasicCrudTest extends TestCase {
 		]);
 
 		// Object owner should have access to their own objects.
-		$this->assertTrue($schema->hasPermission('staff', 'read', 'user123', null, 'user123'));
-		$this->assertTrue($schema->hasPermission('staff', 'update', 'user123', null, 'user123'));
-		$this->assertTrue($schema->hasPermission('staff', 'delete', 'user123', null, 'user123'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('staff', 'read', 'user123', null, 'user123')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('staff', 'update', 'user123', null, 'user123')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('staff', 'delete', 'user123', null, 'user123')));
 
 		// But not to other users' objects.
-		$this->assertFalse($schema->hasPermission('staff', 'read', 'user123', null, 'user456'));
-		$this->assertFalse($schema->hasPermission('staff', 'update', 'user123', null, 'user456'));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('staff', 'read', 'user123', null, 'user456')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('staff', 'update', 'user123', null, 'user456')));
 	}
 
 	// =================== DATA INTEGRITY TESTS ===================.
@@ -575,12 +578,35 @@ class BasicCrudTest extends TestCase {
 		$this->assertEquals('integration-user', $object->getOwner());
 
 		// 5. Test RBAC permissions.
-		$this->assertTrue($schema->hasPermission('contributors', 'create'));
-		$this->assertTrue($schema->hasPermission('public', 'read'));
-		$this->assertTrue($schema->hasPermission('editors', 'delete'));
-		$this->assertFalse($schema->hasPermission('public', 'create'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('contributors', 'create')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('public', 'read')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'delete')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('public', 'create')));
 
 		// 6. Test object owner can access regardless of group restrictions.
-		$this->assertTrue($schema->hasPermission('random-group', 'delete', 'integration-user', null, 'integration-user'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('random-group', 'delete', 'integration-user', null, 'integration-user')));
+	}
+
+	/**
+	 * The GrantQuery Schema::hasPermission() takes, built from the group, action, actor and object fields.
+	 *
+	 * @return GrantQuery
+	 */
+	private function grantQuery(
+		string $groupId,
+		string $action,
+		?string $userId = null,
+		?string $userGroup = null,
+		?string $objectOwner = null,
+		?array $objectData = null,
+		?string $objectOrganisation = null,
+		?string $activeOrganisation = null,
+	): GrantQuery {
+		return new GrantQuery(
+			groupId: $groupId,
+			action: $action,
+			actor: new GrantActor(userId: $userId, userGroup: $userGroup, activeOrganisation: $activeOrganisation),
+			object: new GrantObject(owner: $objectOwner, data: $objectData, organisation: $objectOrganisation)
+		);
 	}
 }

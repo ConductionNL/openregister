@@ -48,6 +48,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\Schema\GrantActor;
+use OCA\OpenRegister\Db\Schema\GrantObject;
+use OCA\OpenRegister\Db\Schema\GrantQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -94,14 +97,14 @@ class RbacTest extends TestCase {
 		$schema->setAuthorization([]);
 
 		// Test all CRUD operations for different user types.
-		$this->assertTrue($schema->hasPermission('viewers', 'read'));
-		$this->assertTrue($schema->hasPermission('editors', 'create'));
-		$this->assertTrue($schema->hasPermission('managers', 'delete'));
-		$this->assertTrue($schema->hasPermission('public', 'read'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('viewers', 'read')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'create')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('managers', 'delete')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('public', 'read')));
 
 		// Test with null authorization (also open access).
 		$schema->setAuthorization(null);
-		$this->assertTrue($schema->hasPermission('anyone', 'update'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('anyone', 'update')));
 	}
 
 	/**
@@ -119,13 +122,13 @@ class RbacTest extends TestCase {
 		]);
 
 		// Admin group should bypass all restrictions.
-		$this->assertTrue($schema->hasPermission('admin', 'create'));
-		$this->assertTrue($schema->hasPermission('admin', 'read'));
-		$this->assertTrue($schema->hasPermission('admin', 'update'));
-		$this->assertTrue($schema->hasPermission('admin', 'delete'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('admin', 'create')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('admin', 'read')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('admin', 'update')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('admin', 'delete')));
 
 		// Admin userGroup parameter should also work.
-		$this->assertTrue($schema->hasPermission('other', 'create', 'user123', 'admin'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('other', 'create', 'user123', 'admin')));
 	}
 
 	/**
@@ -143,15 +146,15 @@ class RbacTest extends TestCase {
 		]);
 
 		// User not in authorized groups should be blocked normally.
-		$this->assertFalse($schema->hasPermission('editors', 'read', 'user123'));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('editors', 'read', 'user123')));
 
 		// Same user should have access when they own the object.
-		$this->assertTrue($schema->hasPermission('editors', 'read', 'user123', null, 'user123'));
-		$this->assertTrue($schema->hasPermission('editors', 'update', 'user123', null, 'user123'));
-		$this->assertTrue($schema->hasPermission('editors', 'delete', 'user123', null, 'user123'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'read', 'user123', null, 'user123')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'update', 'user123', null, 'user123')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'delete', 'user123', null, 'user123')));
 
 		// Different owner should not grant access.
-		$this->assertFalse($schema->hasPermission('editors', 'read', 'user123', null, 'user456'));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('editors', 'read', 'user123', null, 'user456')));
 	}
 
 	/**
@@ -168,14 +171,14 @@ class RbacTest extends TestCase {
 		]);
 
 		// Test authorized groups can perform allowed actions.
-		$this->assertTrue($schema->hasPermission('viewers', 'read'));
-		$this->assertTrue($schema->hasPermission('editors', 'read'));
-		$this->assertTrue($schema->hasPermission('editors', 'create'));
-		$this->assertTrue($schema->hasPermission('editors', 'update'));
-		$this->assertTrue($schema->hasPermission('managers', 'read'));
-		$this->assertTrue($schema->hasPermission('managers', 'create'));
-		$this->assertTrue($schema->hasPermission('managers', 'update'));
-		$this->assertTrue($schema->hasPermission('managers', 'delete'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('viewers', 'read')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'read')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'create')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'update')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('managers', 'read')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('managers', 'create')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('managers', 'update')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('managers', 'delete')));
 	}
 
 	/**
@@ -192,13 +195,13 @@ class RbacTest extends TestCase {
 		]);
 
 		// Test unauthorized groups are blocked from restricted actions.
-		$this->assertFalse($schema->hasPermission('viewers', 'create'));
-		$this->assertFalse($schema->hasPermission('viewers', 'update'));
-		$this->assertFalse($schema->hasPermission('viewers', 'delete'));
-		$this->assertFalse($schema->hasPermission('editors', 'delete'));
-		$this->assertFalse($schema->hasPermission('staff', 'read'));
-		$this->assertFalse($schema->hasPermission('staff', 'create'));
-		$this->assertFalse($schema->hasPermission('public', 'create'));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'create')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'update')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'delete')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('editors', 'delete')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('staff', 'read')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('staff', 'create')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('public', 'create')));
 	}
 
 	/**
@@ -215,14 +218,14 @@ class RbacTest extends TestCase {
 
 		// rbac-default-deny: unspecified actions on a non-empty authorization
 		// block are now denied (fail-closed), including for `public`.
-		$this->assertFalse($schema->hasPermission('anyone', 'read'));
-		$this->assertFalse($schema->hasPermission('viewers', 'update'));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('anyone', 'read')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'update')));
 
 		// Specified actions should respect restrictions.
-		$this->assertTrue($schema->hasPermission('editors', 'create'));
-		$this->assertFalse($schema->hasPermission('viewers', 'create'));
-		$this->assertTrue($schema->hasPermission('managers', 'delete'));
-		$this->assertFalse($schema->hasPermission('editors', 'delete'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'create')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'create')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('managers', 'delete')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('editors', 'delete')));
 	}
 
 	/**
@@ -239,12 +242,12 @@ class RbacTest extends TestCase {
 		]);
 
 		// Public should have read access.
-		$this->assertTrue($schema->hasPermission('public', 'read'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('public', 'read')));
 
 		// Public should not have other permissions.
-		$this->assertFalse($schema->hasPermission('public', 'create'));
-		$this->assertFalse($schema->hasPermission('public', 'update'));
-		$this->assertFalse($schema->hasPermission('public', 'delete'));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('public', 'create')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('public', 'update')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('public', 'delete')));
 	}
 
 	/**
@@ -284,21 +287,21 @@ class RbacTest extends TestCase {
 		]);
 
 		// Staff should have full access except delete needs managers too.
-		$this->assertTrue($schema->hasPermission('staff', 'create'));
-		$this->assertTrue($schema->hasPermission('staff', 'read'));
-		$this->assertTrue($schema->hasPermission('staff', 'update'));
-		$this->assertTrue($schema->hasPermission('staff', 'delete'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('staff', 'create')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('staff', 'read')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('staff', 'update')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('staff', 'delete')));
 
 		// Managers should only have delete access.
-		$this->assertFalse($schema->hasPermission('managers', 'create'));
-		$this->assertFalse($schema->hasPermission('managers', 'read'));
-		$this->assertFalse($schema->hasPermission('managers', 'update'));
-		$this->assertTrue($schema->hasPermission('managers', 'delete'));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('managers', 'create')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('managers', 'read')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('managers', 'update')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('managers', 'delete')));
 
 		// Other groups should have no access.
-		$this->assertFalse($schema->hasPermission('editors', 'read'));
-		$this->assertFalse($schema->hasPermission('viewers', 'read'));
-		$this->assertFalse($schema->hasPermission('public', 'read'));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('editors', 'read')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'read')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('public', 'read')));
 	}
 
 	/**
@@ -314,28 +317,28 @@ class RbacTest extends TestCase {
 		]);
 
 		// Public should only have read access.
-		$this->assertTrue($schema->hasPermission('public', 'read'));
-		$this->assertFalse($schema->hasPermission('public', 'create'));
-		$this->assertFalse($schema->hasPermission('public', 'update'));
-		$this->assertFalse($schema->hasPermission('public', 'delete'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('public', 'read')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('public', 'create')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('public', 'update')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('public', 'delete')));
 
 		// Editors should have create, read, update.
-		$this->assertTrue($schema->hasPermission('editors', 'create'));
-		$this->assertTrue($schema->hasPermission('editors', 'read'));
-		$this->assertTrue($schema->hasPermission('editors', 'update'));
-		$this->assertFalse($schema->hasPermission('editors', 'delete'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'create')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'read')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'update')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('editors', 'delete')));
 
 		// Managers should have full access.
-		$this->assertTrue($schema->hasPermission('managers', 'create'));
-		$this->assertTrue($schema->hasPermission('managers', 'read'));
-		$this->assertTrue($schema->hasPermission('managers', 'update'));
-		$this->assertTrue($schema->hasPermission('managers', 'delete'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('managers', 'create')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('managers', 'read')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('managers', 'update')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('managers', 'delete')));
 
 		// Viewers should have no access (not included in any groups).
-		$this->assertFalse($schema->hasPermission('viewers', 'create'));
-		$this->assertFalse($schema->hasPermission('viewers', 'read'));
-		$this->assertFalse($schema->hasPermission('viewers', 'update'));
-		$this->assertFalse($schema->hasPermission('viewers', 'delete'));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'create')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'read')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'update')));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'delete')));
 	}
 
 	/**
@@ -348,17 +351,17 @@ class RbacTest extends TestCase {
 		]);
 
 		// Empty group ID should be denied.
-		$this->assertFalse($schema->hasPermission('', 'read'));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('', 'read')));
 
 		// rbac-default-deny: an unspecified action on a non-empty authorization
 		// block is denied (was: allowed under the old permissive default).
-		$this->assertFalse($schema->hasPermission('editors', ''));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('editors', '')));
 
 		// User in authorized group should still have access regardless of object owner.
-		$this->assertTrue($schema->hasPermission('editors', 'read', 'user1', null, 'user2'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'read', 'user1', null, 'user2')));
 
 		// User NOT in authorized group should be denied access when different from object owner.
-		$this->assertFalse($schema->hasPermission('viewers', 'read', 'user1', null, 'user2'));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('viewers', 'read', 'user1', null, 'user2')));
 	}
 
 	/**
@@ -376,20 +379,20 @@ class RbacTest extends TestCase {
 		// Test combinations of conditions.
 
 		// Regular user in authorized group.
-		$this->assertTrue($schema->hasPermission('editors', 'create', 'user1'));
-		$this->assertTrue($schema->hasPermission('viewers', 'read', 'user2'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('editors', 'create', 'user1')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('viewers', 'read', 'user2')));
 
 		// User not in authorized group but is object owner.
-		$this->assertFalse($schema->hasPermission('staff', 'read', 'user3'));
-		$this->assertTrue($schema->hasPermission('staff', 'read', 'user3', null, 'user3'));
+		$this->assertFalse($schema->hasPermission($this->grantQuery('staff', 'read', 'user3')));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('staff', 'read', 'user3', null, 'user3')));
 
 		// Admin user overrides everything.
-		$this->assertTrue($schema->hasPermission('any-group', 'delete', 'admin-user', 'admin'));
+		$this->assertTrue($schema->hasPermission($this->grantQuery('any-group', 'delete', 'admin-user', 'admin')));
 
 		// Multiple scenarios combined.
-		$this->assertTrue($schema->hasPermission('contributors', 'create', 'user4', null, 'user5')); // authorized group
-		$this->assertTrue($schema->hasPermission('staff', 'delete', 'user4', null, 'user4')); // object owner
-		$this->assertTrue($schema->hasPermission('random', 'update', 'admin', 'admin')); // admin override
+		$this->assertTrue($schema->hasPermission($this->grantQuery('contributors', 'create', 'user4', null, 'user5'))); // authorized group
+		$this->assertTrue($schema->hasPermission($this->grantQuery('staff', 'delete', 'user4', null, 'user4'))); // object owner
+		$this->assertTrue($schema->hasPermission($this->grantQuery('random', 'update', 'admin', 'admin'))); // admin override
 	}
 
 	/**
@@ -431,5 +434,28 @@ class RbacTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessage("Authorization rules for action 'create'");
 		$schema->validateAuthorization();
+	}
+
+	/**
+	 * The GrantQuery Schema::hasPermission() takes, built from the group, action, actor and object fields.
+	 *
+	 * @return GrantQuery
+	 */
+	private function grantQuery(
+		string $groupId,
+		string $action,
+		?string $userId = null,
+		?string $userGroup = null,
+		?string $objectOwner = null,
+		?array $objectData = null,
+		?string $objectOrganisation = null,
+		?string $activeOrganisation = null,
+	): GrantQuery {
+		return new GrantQuery(
+			groupId: $groupId,
+			action: $action,
+			actor: new GrantActor(userId: $userId, userGroup: $userGroup, activeOrganisation: $activeOrganisation),
+			object: new GrantObject(owner: $objectOwner, data: $objectData, organisation: $objectOrganisation)
+		);
 	}
 }

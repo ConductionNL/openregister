@@ -23,6 +23,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Schema\GrantActor;
+use OCA\OpenRegister\Db\Schema\GrantObject;
+use OCA\OpenRegister\Db\Schema\GrantQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use PHPUnit\Framework\TestCase;
@@ -51,7 +54,7 @@ class SchemaAuthorizationGoldenTest extends TestCase {
 		foreach ($this->permissionCases() as $name => [$authorization, $arguments]) {
 			$schema = new Schema();
 			$schema->setAuthorization($authorization);
-			$actual['permission '.$name] = $schema->hasPermission(...$arguments);
+			$actual['permission '.$name] = $schema->hasPermission($this->grantQuery(...$arguments));
 		}
 
 		foreach ($this->propertyCases() as $name => $properties) {
@@ -239,5 +242,28 @@ class SchemaAuthorizationGoldenTest extends TestCase {
 				'reject'   => ['name' => 'Reject', 'description' => 'Send back'],
 			]],
 		];
+	}
+
+	/**
+	 * The GrantQuery Schema::hasPermission() takes, built from the group, action, actor and object fields.
+	 *
+	 * @return GrantQuery
+	 */
+	private function grantQuery(
+		string $groupId,
+		string $action,
+		?string $userId = null,
+		?string $userGroup = null,
+		?string $objectOwner = null,
+		?array $objectData = null,
+		?string $objectOrganisation = null,
+		?string $activeOrganisation = null,
+	): GrantQuery {
+		return new GrantQuery(
+			groupId: $groupId,
+			action: $action,
+			actor: new GrantActor(userId: $userId, userGroup: $userGroup, activeOrganisation: $activeOrganisation),
+			object: new GrantObject(owner: $objectOwner, data: $objectData, organisation: $objectOrganisation)
+		);
 	}
 }
