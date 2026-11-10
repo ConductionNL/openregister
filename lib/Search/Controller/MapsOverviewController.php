@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Search\Service\MapMarkerSource;
 use OCA\OpenRegister\Search\Service\MapsOverviewService;
 use OCP\AppFramework\Controller;
@@ -46,6 +47,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Search\Service\MapOverview;
 
 /**
  * Page-level multi-object map overview controller.
@@ -54,18 +56,16 @@ class MapsOverviewController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
 	 * @param MapsOverviewService $overviewService Map overview register/query service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private MapsOverviewService $overviewService,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -110,16 +110,18 @@ class MapsOverviewController extends Controller {
 				$baseLayer = (array)$params['baseLayer'];
 			}
 
-			$stored = $this->overviewService->registerOverview(
-				overviewKey: (string)($params['overviewKey'] ?? ''),
-				source: new MapMarkerSource(
-					register: (string)($params['register'] ?? ''),
-					schema: (string)($params['schema'] ?? ''),
-					geoProperty: $geoProperty,
-					filters: (array)($params['filters'] ?? [])
-				),
-				title: $title,
-				baseLayer: $baseLayer
+			$stored = $this->overviewService->declareOverview(
+				overview: new MapOverview(
+					key: (string)($params['overviewKey'] ?? ''),
+					source: new MapMarkerSource(
+						register: (string)($params['register'] ?? ''),
+						schema: (string)($params['schema'] ?? ''),
+						geoProperty: $geoProperty,
+						filters: (array)($params['filters'] ?? [])
+					),
+					title: $title,
+					baseLayer: $baseLayer
+				)
 			);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);

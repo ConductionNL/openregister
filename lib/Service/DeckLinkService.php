@@ -42,11 +42,8 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapperInterface;
-use OCP\App\IAppManager;
 use OCP\IUserManager;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -65,26 +62,6 @@ use Throwable;
  *     contract.
  */
 class DeckLinkService implements DeckLinkServiceInterface {
-	/**
-	 * NC app manager.
-	 *
-	 * @var IAppManager
-	 */
-	private readonly IAppManager $appManager;
-
-	/**
-	 * Active session.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
 
 	/**
 	 * Constructor.
@@ -96,13 +73,10 @@ class DeckLinkService implements DeckLinkServiceInterface {
 	 */
 	public function __construct(
 		private readonly DeckLinkMapperInterface $deckLinkMapper,
-		LinkServiceRuntime $runtime,
+		private readonly LinkServiceRuntime $runtime,
 		private readonly IUserManager $userManager,
 		private readonly ContainerInterface $container,
 	) {
-		$this->appManager = $runtime->appManager();
-		$this->userSession = $runtime->userSession();
-		$this->logger = $runtime->logger();
 	}//end __construct()
 
 	/**
@@ -111,7 +85,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 	 * @return bool
 	 */
 	public function isDeckAvailable(): bool {
-		return $this->appManager->isEnabledForUser('deck');
+		return $this->runtime->appManager()->isEnabledForUser('deck');
 	}//end isDeckAvailable()
 
 	/**
@@ -132,7 +106,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function linkCard(LinkTarget $target, int $cardId): DeckLink {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
@@ -293,7 +267,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 					}
 				} catch (Throwable $e) {
 					// Stale link — keep cached row as-is.
-					$this->logger->debug('Stale deck link for card ' . $link->getCardId() . ': ' . $e->getMessage());
+					$this->runtime->logger()->debug('Stale deck link for card ' . $link->getCardId() . ': ' . $e->getMessage());
 				}
 			}
 
@@ -322,7 +296,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function createAndLinkCard(LinkTarget $target, CardDraft $card): DeckLink {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
@@ -350,7 +324,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 				$card->duedate()
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('Failed to create Deck card: ' . $e->getMessage());
+			$this->runtime->logger()->warning('Failed to create Deck card: ' . $e->getMessage());
 			throw new Exception('Failed to create Deck card: ' . $e->getMessage(), 500);
 		}
 
@@ -392,7 +366,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			return [];
 		}
 
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			return [];
 		}
@@ -400,7 +374,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 		try {
 			$boards = $boardService->findAll();
 		} catch (Throwable $e) {
-			$this->logger->debug('Deck BoardService->findAll failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Deck BoardService->findAll failed: ' . $e->getMessage());
 			return [];
 		}
 
@@ -429,7 +403,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 		try {
 			$stacks = $stackService->findAll($boardId);
 		} catch (Throwable $e) {
-			$this->logger->debug('Deck StackService->findAll(' . $boardId . ') failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Deck StackService->findAll(' . $boardId . ') failed: ' . $e->getMessage());
 			return [];
 		}
 
@@ -488,7 +462,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 		try {
 			return $this->container->get('OCA\\Deck\\Service\\CardService');
 		} catch (Throwable $e) {
-			$this->logger->debug('Deck CardService not resolvable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Deck CardService not resolvable: ' . $e->getMessage());
 			return null;
 		}
 	}//end resolveCardService()
@@ -506,7 +480,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 		try {
 			return $this->container->get('OCA\\Deck\\Service\\BoardService');
 		} catch (Throwable $e) {
-			$this->logger->debug('Deck BoardService not resolvable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Deck BoardService not resolvable: ' . $e->getMessage());
 			return null;
 		}
 	}//end resolveBoardService()
@@ -524,7 +498,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 		try {
 			return $this->container->get('OCA\\Deck\\Service\\StackService');
 		} catch (Throwable $e) {
-			$this->logger->debug('Deck StackService not resolvable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Deck StackService not resolvable: ' . $e->getMessage());
 			return null;
 		}
 	}//end resolveStackService()
@@ -552,7 +526,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 
 			return 0;
 		} catch (Throwable $e) {
-			$this->logger->debug('Deck CardMapper::findBoardId(' . $cardId . ') failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Deck CardMapper::findBoardId(' . $cardId . ') failed: ' . $e->getMessage());
 			return 0;
 		}
 	}//end resolveBoardId()
@@ -601,6 +575,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			}
 		} catch (Throwable $e) {
 			// Leave default null.
+			$this->runtime->logger()->debug('[DeckLinkService] Card due date not readable: ' . $e->getMessage());
 		}
 
 		return [null, null];
@@ -624,6 +599,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			}
 		} catch (Throwable $e) {
 			// Leave default empty.
+			$this->runtime->logger()->debug('[DeckLinkService] Card labels not readable: ' . $e->getMessage());
 		}
 
 		return $labels;
@@ -647,6 +623,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			}
 		} catch (Throwable $e) {
 			// Leave default empty.
+			$this->runtime->logger()->debug('[DeckLinkService] Card assignees not readable: ' . $e->getMessage());
 		}
 
 		return $assignees;
@@ -670,6 +647,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			}
 		} catch (Throwable $e) {
 			// Leave the title empty.
+			$this->runtime->logger()->debug('[DeckLinkService] Card relation title not readable via ' . $getter . ': ' . $e->getMessage());
 		}
 
 		return '';

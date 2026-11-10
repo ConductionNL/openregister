@@ -60,10 +60,18 @@ import {
 import { NcNoteCard } from '@nextcloud/vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import {
+	objectUsageGuard,
+	refreshSchemaObjects,
+} from '../../composables/objectUsageGuard.js'
 
 export default {
 	name: 'DeleteSchemaProperty',
 	components: { ConfirmDialogFrame, NcNoteCard, Delete },
+
+	mixins: [
+		objectUsageGuard(() => navigationStore.modal === 'deleteSchemaProperty'),
+	],
 
 	data() {
 		return {
@@ -72,26 +80,6 @@ export default {
 			error: false,
 			closeModalTimeout: null,
 			objects: [],
-			isUpdated: false,
-		}
-	},
-
-	computed: {
-		/**
-		 * @spec exclude Computed delete-enablement guard (no objects use the property); UI validation helper.
-		 */
-		canDelete() {
-			return this.objects.length === 0
-		},
-	},
-
-	/**
-	 * @spec exclude Vue updated() hook running one-time dialog init when the modal opens; modal init plumbing.
-	 */
-	updated() {
-		if (!this.isUpdated && navigationStore.modal === 'deleteSchemaProperty') {
-			this.isUpdated = true
-			this.initDialog()
 		}
 	},
 
@@ -111,11 +99,7 @@ export default {
 						(regSchema) => regSchema.id === schemaStore.schemaItem.id,
 					)
 				) {
-					await objectStore.refreshObjectList({
-						register: reg.id,
-						schema: schemaStore.schemaItem.id,
-						search: '',
-					})
+					await refreshSchemaObjects(reg)
 					if (objectStore.getCollection(objectStore.currentType).length) {
 						for (const obj of objectStore.getCollection(
 							objectStore.currentType,

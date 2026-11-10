@@ -138,11 +138,32 @@ class ActionInputsNode extends LogicNodeBase implements IFlowNode, IFlowNodeConf
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		$inputs = array_merge(
+		return $this->withInputs(items: $items, inputs: $this->inputsOf(context: $context));
+	}//end execute()
+
+	/**
+	 * The run's inputs merged with the held writeOnly values.
+	 *
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array The inputs every item carries.
+	 */
+	private function inputsOf(array $context): array {
+		return array_merge(
 			(array)($context['inputs'] ?? []),
 			ObjectActionSecrets::read(ref: ($context[ObjectActionSecrets::CONTEXT_KEY] ?? null))
 		);
+	}//end inputsOf()
 
+	/**
+	 * Every item with `inputs` set on its json.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $inputs The inputs to set.
+	 *
+	 * @return array The items, each carrying `inputs`.
+	 */
+	private function withInputs(array $items, array $inputs): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
@@ -151,7 +172,7 @@ class ActionInputsNode extends LogicNodeBase implements IFlowNode, IFlowNodeConf
 		}
 
 		return $out;
-	}//end execute()
+	}//end withInputs()
 
 	/**
 	 * The BPMN kind.

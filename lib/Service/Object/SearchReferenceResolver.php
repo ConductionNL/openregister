@@ -31,8 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -108,15 +107,13 @@ class SearchReferenceResolver {
 	/**
 	 * SearchReferenceResolver constructor.
 	 *
-	 * @param RegisterMapperInterface  $registerMapper Resolves a register reference.
-	 * @param SchemaMapperInterface    $schemaMapper   Resolves a schema reference.
-	 * @param LoggerInterface $logger         Records each reference that had to be resolved.
+	 * @param SchemaCatalogInterface $catalog Resolves a register or schema reference.
+	 * @param LoggerInterface        $logger  Records each reference that had to be resolved.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -333,10 +330,10 @@ class SearchReferenceResolver {
 		// instance that is merely unreachable is the same lie in a new place.
 		try {
 			if ($kind === 'register') {
-				return (int)$this->registerMapper->find((string)$reference, _rbac: false, _multitenancy: false)->getId();
+				return (int)$this->catalog->registers()->find((string)$reference, _rbac: false, _multitenancy: false)->getId();
 			}
 
-			return (int)$this->schemaMapper->find((string)$reference, _rbac: false, _multitenancy: false)->getId();
+			return (int)$this->catalog->schemas()->find((string)$reference, _rbac: false, _multitenancy: false)->getId();
 		} catch (DoesNotExistException | MultipleObjectsReturnedException $e) {
 			if ($kind === 'register') {
 				throw $this->noSuchRegister(reference: (string)$reference, cause: $e);

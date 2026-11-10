@@ -513,6 +513,9 @@ class FilePublishingHandler {
 			return 'object_' . $objectIdentifier . '_files_' . date('Y-m-d_H-i-s') . '.zip';
 		}
 
+		// A requested name is a file name in the temporary directory, never a path: keep its last part only.
+		$zipName = basename(str_replace('\\', '/', $zipName));
+
 		if (pathinfo($zipName, PATHINFO_EXTENSION) !== 'zip') {
 			$zipName .= '.zip';
 		}

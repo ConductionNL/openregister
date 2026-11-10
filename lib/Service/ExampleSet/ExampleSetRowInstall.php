@@ -70,86 +70,90 @@ final class ExampleSetRowInstall {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
 	public function fragment(array $fragment, array $context, array &$report, array &$record): bool {
-		$part    = $this->rows->part();
-		$run     = [
-			'fragment' => $fragment,
-			'context'  => $context,
-			'refresh'  => (($context['refresh'] ?? false) === true && in_array($part, ExampleSetEngineRows::REFRESHED, true) === true),
-		];
+		$refresh = (($context['refresh'] ?? false) === true && in_array($this->rows->part(), ExampleSetEngineRows::REFRESHED, true) === true);
+		$run     = new RowInstallRun(fragment: $fragment, context: $context, refresh: $refresh, ledger: new RecordLedger(report: $report, record: $record));
+		return $this->entries(run: $run);
+	}//end fragment()
+
+	/**
+	 * Write, update or keep each declared row of the part.
+	 *
+	 * @param RowInstallRun $run The fragment, the context, whether this run refreshes the part, and the report and
+	 *                           record.
+	 *
+	 * @return bool Whether the record changed.
+	 */
+	private function entries(RowInstallRun $run): bool {
 		$changed = false;
-		foreach (($fragment[$part] ?? []) as $entry) {
-			if ($this->entry(run: $run, entry: $entry, report: $report, record: $record) === true) {
+		foreach (($run->fragment[$this->rows->part()] ?? []) as $entry) {
+			if ($this->entry(run: $run, entry: $entry) === true) {
 				$changed = true;
 			}
 		}
 
 		return $changed;
-	}//end fragment()
+	}//end entries()
 
 	/**
 	 * Write, update or keep one declared row.
 	 *
-	 * @param array<string, mixed> $run    The fragment, the context and whether this run refreshes the part.
-	 * @param array<string, mixed> $entry  The declared row, `{key, data}`.
-	 * @param array<string, mixed> $report The report.
-	 * @param array<string, mixed> $record The record.
+	 * @param RowInstallRun        $run   The fragment, the context, whether this run refreshes the part, and the
+	 *                                    report and record.
+	 * @param array<string, mixed> $entry The declared row, `{key, data}`.
 	 *
 	 * @return bool Whether the record changed.
 	 */
-	private function entry(array $run, array $entry, array &$report, array &$record): bool {
-		$row = $this->row(fragment: $run['fragment'], entry: $entry, record: $record);
-		$report[$this->rows->part()][$row['name']] = 'kept';
-		$mode = $this->mode(row: $row, refresh: $run['refresh'], report: $report);
+	private function entry(RowInstallRun $run, array $entry): bool {
+		$step = new RowInstallStep(run: $run, row: $this->row(run: $run, entry: $entry));
+		$run->ledger->report[$this->rows->part()][$step->row['name']] = 'kept';
+		$mode = $this->mode(step: $step);
 		if ($mode === 'skip') {
 			return false;
 		}
 
-		$made = $this->made(run: $run, row: $row, mode: $mode, users: array_keys($record['users']));
-
-		return $this->keep(row: $row, made: $made, report: $report, record: $record);
+		return $this->keep(step: $step, made: $this->made(step: $step, mode: $mode));
 	}//end entry()
 
 	/**
 	 * One declared row as the loop handles it: its record name, whether the record holds it and what it holds, and
 	 * where it is for messages.
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $entry    The declared row, `{key, data}`.
-	 * @param array<string, mixed> $record   The record.
+	 * @param RowInstallRun        $run   The fragment and the record.
+	 * @param array<string, mixed> $entry The declared row, `{key, data}`.
 	 *
 	 * @return array{entry: array<string, mixed>, name: string, held: bool, earlier: array<string, mixed>, where: string}
 	 */
-	private function row(array $fragment, array $entry, array $record): array {
-		$part = $this->rows->part();
-		$name = $fragment['app'].'/'.$entry['key'];
+	private function row(RowInstallRun $run, array $entry): array {
+		$part   = $this->rows->part();
+		$record = $run->ledger->record;
+		$name   = $run->fragment['app'].'/'.$entry['key'];
 		return [
 			'entry'   => $entry,
 			'name'    => $name,
 			'held'    => isset($record[$part][$name]),
 			'earlier' => ($record[$part][$name] ?? []),
-			'where'   => $fragment['file'].': '.$this->rows->noun().' "'.$entry['key'].'"',
+			'where'   => $run->fragment['file'].': '.$this->rows->noun().' "'.$entry['key'].'"',
 		];
 	}//end row()
 
 	/**
 	 * What this run does with a row: `write` it, `update` the held one where it is, or `skip` a held one.
 	 *
-	 * @param array<string, mixed> $row     The row: whether it is `held`, its `earlier` entry and `where` it is.
-	 * @param bool                 $refresh Whether this run refreshes this part.
-	 * @param array<string, mixed> $report  The report; gains a row that could not be taken away.
+	 * @param RowInstallStep $step The run (whether it refreshes this part; its report gains a row that could not be
+	 *                             taken away) and the row: whether it is `held`, its `earlier` entry and `where` it is.
 	 *
 	 * @return string
 	 */
-	private function mode(array $row, bool $refresh, array &$report): string {
-		if ($row['held'] === false) {
+	private function mode(RowInstallStep $step): string {
+		if ($step->row['held'] === false) {
 			return 'write';
 		}
 
-		if ($refresh === true && $this->rows->updatesInPlace() === true) {
+		if ($step->run->refresh === true && $this->rows->updatesInPlace() === true) {
 			return 'update';
 		}
 
-		if ($this->writesAgain(refresh: $refresh, row: $row, report: $report) === true) {
+		if ($this->writesAgain(step: $step) === true) {
 			return 'write';
 		}
 
@@ -160,21 +164,18 @@ final class ExampleSetRowInstall {
 	 * Whether a row an earlier run wrote is written again: only on `--refresh`, after the old row is taken away; false
 	 * (and named under `dropped`) when it could not be taken away, so the old row stays and is not written twice.
 	 *
-	 * @param bool                 $refresh Whether this run refreshes this part.
-	 * @param array<string, mixed> $row     The row: its `earlier` entry and `where` it is.
-	 * @param array<string, mixed> $report  The report.
+	 * @param RowInstallStep $step The run (whether it refreshes this part, and its report) and the row: its `earlier`
+	 *                             entry and `where` it is.
 	 *
 	 * @return bool
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
 	 */
-	private function writesAgain(bool $refresh, array $row, array &$report): bool {
-		if ($refresh === false) {
+	private function writesAgain(RowInstallStep $step): bool {
+		if ($step->run->refresh === false) {
 			return false;
 		}
 
-		if ($this->rows->revert(entry: $row['earlier']) === 'failed') {
-			$report['dropped'][] = $row['where'].': not refreshed, the earlier one could not be taken away';
+		if ($this->rows->revert(entry: $step->row['earlier']) === 'failed') {
+			$step->run->ledger->report['dropped'][] = $step->row['where'].': not refreshed, the earlier one could not be taken away';
 			return false;
 		}
 
@@ -184,17 +185,17 @@ final class ExampleSetRowInstall {
 	/**
 	 * Fill and check a row, then write it or update the held one; why not when it is refused or unresolved.
 	 *
-	 * @param array<string, mixed> $run   The fragment and the context.
-	 * @param array<string, mixed> $row   The row: its declared `entry` and `earlier` entry.
-	 * @param string               $mode  `write` or `update`, from mode().
-	 * @param array<int, string>   $users The account ids the set creates or adopts.
+	 * @param RowInstallStep $step The run (the fragment, the context and the record's accounts) and the row: its
+	 *                             declared `entry` and `earlier` entry.
+	 * @param string         $mode `write` or `update`, from mode().
 	 *
 	 * @return array{error: string, entry: array<string, mixed>|null}
 	 */
-	private function made(array $run, array $row, string $mode, array $users): array {
+	private function made(RowInstallStep $step, string $mode): array {
+		$run   = $step->run;
 		$gaps  = [];
-		$data  = (array) $this->values->fill(value: $row['entry']['data'], context: ($this->fill)($run['context']), gaps: $gaps);
-		$error = ($this->refusal)($data, $users, $run['context']);
+		$data  = (array) $this->values->fill(value: $step->row['entry']['data'], context: ($this->fill)($run->context), gaps: $gaps);
+		$error = ($this->refusal)($data, array_keys($run->ledger->record['users']), $run->context);
 		if ($gaps !== []) {
 			$error = 'cannot resolve '.implode(', ', array_unique($gaps));
 		}
@@ -203,33 +204,36 @@ final class ExampleSetRowInstall {
 			return ['error' => $error, 'entry' => null];
 		}
 
+		$row = new ExampleSetRow(app: $run->fragment['app'], key: $step->row['entry']['key'], data: $data);
 		if ($mode === 'update') {
-			return $this->rows->update(entry: $row['earlier'], row: new ExampleSetRow(app: $run['fragment']['app'], key: $row['entry']['key'], data: $data));
+			return $this->rows->update(entry: $step->row['earlier'], row: $row);
 		}
 
-		return $this->rows->write(row: new ExampleSetRow(app: $run['fragment']['app'], key: $row['entry']['key'], data: $data));
+		return $this->rows->write(row: $row);
 	}//end made()
 
 	/**
 	 * Report a row's outcome and hold what was written.
 	 *
-	 * @param array<string, mixed>                                   $row    The row: its record `name`, whether it was `held` and `where` it is.
-	 * @param array{error: string, entry: array<string, mixed>|null} $made   What made() did.
-	 * @param array<string, mixed>                                   $report The report.
-	 * @param array<string, mixed>                                   $record The record.
+	 * @param RowInstallStep                                         $step The run (its report and record) and the row:
+	 *                                                                     its record `name`, whether it was `held` and
+	 *                                                                     `where` it is.
+	 * @param array{error: string, entry: array<string, mixed>|null} $made What made() did.
 	 *
 	 * @return bool Whether the record changed.
 	 */
-	private function keep(array $row, array $made, array &$report, array &$record): bool {
-		$part = $this->rows->part();
+	private function keep(RowInstallStep $step, array $made): bool {
+		$part   = $this->rows->part();
+		$row    = $step->row;
+		$ledger = $step->run->ledger;
 		if ($made['entry'] === null) {
-			$report['dropped'][] = $row['where'].': '.$made['error'];
-			$report[$part][$row['name']] = 'failed';
+			$ledger->report['dropped'][] = $row['where'].': '.$made['error'];
+			$ledger->report[$part][$row['name']] = 'failed';
 			return false;
 		}
 
-		$record[$part][$row['name']] = $made['entry'];
-		$report[$part][$row['name']] = ['created', 'refreshed'][(int) $row['held']];
+		$ledger->record[$part][$row['name']] = $made['entry'];
+		$ledger->report[$part][$row['name']] = ['created', 'refreshed'][(int) $row['held']];
 
 		return true;
 	}//end keep()

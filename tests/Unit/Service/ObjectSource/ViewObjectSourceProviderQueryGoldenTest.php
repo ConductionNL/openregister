@@ -26,10 +26,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
-use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
@@ -74,7 +75,7 @@ class ViewObjectSourceProviderQueryGoldenTest extends TestCase {
 		$schemas->method('find')->willReturn(new Schema());
 
 		$this->received = null;
-		$reader         = $this->createMock(MagicTableRowReaderInterface::class);
+		$reader         = $this->createMock(MagicMapperInterface::class);
 		$reader->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
 			function (array $query): array {
 				$this->received = $query;
@@ -89,8 +90,7 @@ class ViewObjectSourceProviderQueryGoldenTest extends TestCase {
 		);
 
 		return new ViewObjectSourceProvider(
-			new ViewSourceMappers(viewMapper: $views, registerMapper: $registers, schemaMapper: $schemas),
-			$reader,
+			new ViewSourceMappers(viewMapper: $views, catalog: new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $reader)),
 			new NullLogger()
 		);
 	}//end provider()

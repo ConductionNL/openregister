@@ -21,6 +21,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -415,15 +418,21 @@ class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 		}
 
 		return new CacheHandler(
-			organisationMapper: $organisationMapper,
-			logger: $logger,
-			cacheFactory: $cacheFactory,
-			userSession: $session,
-			container: $container,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			db: $db,
-			groupManager: $groupManager
+			stores: new CacheHandlerStores(
+				organisationMapper: $organisationMapper,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				db: $db
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $logger,
+				cacheFactory: $cacheFactory,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $session,
+				groupManager: $groupManager
+			)
 		);
 	}//end handler()
 }//end class

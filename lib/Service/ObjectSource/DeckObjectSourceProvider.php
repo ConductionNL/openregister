@@ -83,21 +83,41 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 	private const STACK_SERVICE = 'OCA\\Deck\\Service\\StackService';
 
 	/**
+	 * App availability checks.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Server container (lazy app-service lookup).
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IAppManager $appManager App availability checks.
-	 * @param IUserSession $userSession The acting-user session.
-	 * @param ContainerInterface $container Server container (lazy Deck-service lookup).
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param OptionalAppBridge $app         Whether the app is installed, its services, and the log of failed reads.
+	 * @param IUserSession      $userSession The acting-user session.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IAppManager $appManager,
+		OptionalAppBridge $app,
 		private readonly IUserSession $userSession,
-		private readonly ContainerInterface $container,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->appManager = $app->appManager;
+		$this->container = $app->container;
+		$this->logger = $app->logger;
 	}//end __construct()
 
 	/**
@@ -289,6 +309,12 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 			}
 		} catch (Throwable $e) {
 			// Getter missing on this Deck version — leave null.
+			$this->logger->debug(
+				message: '[DeckObjectSourceProvider] Card due date not readable',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return null;

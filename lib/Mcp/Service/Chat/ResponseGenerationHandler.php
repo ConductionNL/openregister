@@ -74,27 +74,6 @@ use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 class ResponseGenerationHandler {
 
 	/**
-	 * Settings service
-	 *
-	 * @var SettingsServiceInterface
-	 */
-	private SettingsServiceInterface $settingsService;
-
-	/**
-	 * Tool management handler
-	 *
-	 * @var ToolManagementHandler
-	 */
-	private ToolManagementHandler $toolHandler;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Token/latency usage from the last generateResponse() call, for per-run cost recording
 	 * (run-analytics). Populated from the LLPhant chat instance; empty when the provider
 	 * does not expose usage. Keys: promptTokens, completionTokens, totalDurationMs, llmSeconds.
@@ -115,13 +94,10 @@ class ResponseGenerationHandler {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		SettingsServiceInterface $settingsService,
-		ToolManagementHandler $toolHandler,
-		LoggerInterface $logger,
+		private readonly SettingsServiceInterface $settingsService,
+		private readonly ToolManagementHandler $toolHandler,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->settingsService = $settingsService;
-		$this->toolHandler = $toolHandler;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -148,35 +124,28 @@ class ResponseGenerationHandler {
 	 *                                           null it runs in legacy blocking mode, load-bearing
 	 *                                           for `POST /api/chat/send`) and the Conduction AI
 	 *                                           context overrides (provider/model hints).
-	 * @param array              $context        RAG context with 'text' and 'sources' keys.
-	 * @param array              $messageHistory Array of LLPhantMessage objects.
-	 * @param Agent|null         $agent          Agent configuration (optional).
+	 * @param ReplyGrounding     $grounding      The RAG context, the earlier messages (LLPhantMessage
+	 *                                           objects) and the agent configuration.
 	 *
 	 * @return string Generated response text
 	 *
 	 * @throws \Exception If LLM provider is not configured or API call fails
 	 *
-	 * @psalm-param  array{text: string, sources: list<array>} $context
 	 * @psalm-return string
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	public function generateResponse(
-		ChatMessageRequest $request,
-		array $context,
-		array $messageHistory,
-		?Agent $agent,
-	): string {
+	public function generateResponse(ChatMessageRequest $request, ReplyGrounding $grounding): string {
 		return $this->respond(
 			turn: [
 				'userMessage' => $request->userMessage,
-				'context' => $context,
-				'agent' => $agent,
+				'context' => $grounding->context,
+				'agent' => $grounding->agent,
 				'selectedTools' => $request->selectedTools,
 				'channel' => $request->channel,
 				'cnAiContext' => $request->cnAiContext,
 			],
-			messageHistory: $messageHistory
+			messageHistory: $grounding->messageHistory
 		);
 	}//end generateResponse()
 

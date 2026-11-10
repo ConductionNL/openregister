@@ -44,6 +44,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
 
 /**
  * Pins allowed and refused outcomes of TasksController.
@@ -389,7 +390,9 @@ class TasksControllerA24GoldenTest extends TestCase {
 	public function testAggregateCriteria(): void {
 		$seen = [];
 		$inbox = $this->createMock(TaskInboxService::class);
-		$inbox->method('inbox')->willReturnCallback(function (TaskInboxCriteria $criteria, int $limit, int $offset) use (&$seen): array {
+		$inbox->method('inbox')->willReturnCallback(function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$seen): array {
+			$limit = $page->limit;
+			$offset = $page->offset;
 			$seen[] = [$criteria, $limit, $offset];
 			return ['results' => [], 'total' => 0];
 		});

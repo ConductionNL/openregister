@@ -131,7 +131,6 @@ class AttachNodeHandlerTest extends TestCase {
 		$fileService->expects($this->never())->method('addFile');
 
 		$controller = FilesControllerFactory::create(
-			'openregister',
 			$request,
 			$fileService,
 			$objectService,
@@ -177,7 +176,6 @@ class AttachNodeHandlerTest extends TestCase {
 		$fileService->method('formatFile')->willReturn(['title' => 'brief.txt']);
 
 		$controller = FilesControllerFactory::create(
-			'openregister',
 			$request,
 			$fileService,
 			$objectService,

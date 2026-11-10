@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Archival\RetentionScanStores;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -49,6 +50,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 /**
  * Tests for the retention scan and the two eligibility sweeps built on it.
@@ -117,9 +119,7 @@ class RetentionSweepTest extends TestCase {
 
 		$this->service = new RetentionService(
 			new RetentionStores(
-				$this->objectMapper,
-				$this->schemaMapper,
-				$this->registerMapper,
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
 				$this->createMock(AuditTrailMapper::class)
 			),
 			new RetentionRules(
@@ -129,10 +129,7 @@ class RetentionSweepTest extends TestCase {
 				// walked and how, and a mocked scanner would assert only that this
 				// service called something.
 				new RetentionRowScanner(
-					$this->db,
-					$this->registerMapper,
-					$this->schemaMapper,
-					$this->objectMapper,
+					new RetentionScanStores(db: $this->db, catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper)),
 					$this->logger
 				),
 				new ArchiveActionDateCalculator($this->objectMapper, $this->logger),

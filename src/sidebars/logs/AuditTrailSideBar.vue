@@ -17,68 +17,51 @@ import {
 		:subname="t('openregister', 'Export, view, or delete audit trails')"
 		:open="navigationStore.sidebarState.auditTrail"
 		@update:open="(e) => navigationStore.setSidebarState('auditTrail', e)">
-		<FiltersSidebarTab>
-			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openregister', 'Filter Audit Trails') }}</h3>
-				<ScopeFilterFields
-					@registerChange="handleRegisterChange"
-					@schemaChange="handleSchemaChange" />
-				<div class="filterGroup">
-					<label for="actionSelect">{{
-						t('openregister', 'Actions')
-					}}</label>
-					<NcSelect
-						id="actionSelect"
-						v-model="selectedActions"
-						:options="actionOptions"
-						:placeholder="t('openregister', 'All actions')"
-						:inputLabel="t('openregister', 'Actions')"
-						:multiple="true"
-						:clearable="true"
-						@update:modelValue="applyFilters">
-						<template #option="{ label }">
-							{{ label }}
-						</template>
-					</NcSelect>
-				</div>
-				<TrailUserDateFields
-					v-model:users="selectedUsers"
-					v-model:dateFrom="dateFrom"
-					v-model:dateTo="dateTo"
-					:userOptions="userOptions"
-					@change="applyFilters" />
-				<div class="filterGroup">
-					<label for="objectFilter">{{
-						t('openregister', 'Object ID')
-					}}</label>
-					<NcTextField
-						id="objectFilter"
-						v-model="objectFilter"
-						:label="t('openregister', 'Filter by object ID')"
-						:placeholder="t('openregister', 'Enter object ID')"
-						@update:modelValue="handleObjectFilterChange" />
-				</div>
-				<div class="filterGroup">
-					<NcCheckboxRadioSwitch
-						v-model="showOnlyWithChanges"
-						@update:modelValue="applyFilters">
-						{{ t('openregister', 'Show only entries with changes') }}
-					</NcCheckboxRadioSwitch>
-				</div>
+		<ScopeFiltersTab
+			:title="t('openregister', 'Filter Audit Trails')"
+			:hint="
+				t(
+					'openregister',
+					'Use filters to narrow down audit trail entries by register, schema, action type, user, date range, or object ID.',
+				)
+			"
+			clearable
+			@registerChange="handleRegisterChange"
+			@schemaChange="handleSchemaChange"
+			@clear="clearFilters">
+			<SidebarFilterSelect
+				id="actionSelect"
+				v-model="selectedActions"
+				:options="actionOptions"
+				:placeholder="t('openregister', 'All actions')"
+				:label="t('openregister', 'Actions')"
+				multiple
+				@update:modelValue="applyFilters" />
+			<TrailUserDateFields
+				v-model:users="selectedUsers"
+				v-model:dateFrom="dateFrom"
+				v-model:dateTo="dateTo"
+				:userOptions="userOptions"
+				@change="applyFilters" />
+			<div class="filterGroup">
+				<label for="objectFilter">{{
+					t('openregister', 'Object ID')
+				}}</label>
+				<NcTextField
+					id="objectFilter"
+					v-model="objectFilter"
+					:label="t('openregister', 'Filter by object ID')"
+					:placeholder="t('openregister', 'Enter object ID')"
+					@update:modelValue="handleObjectFilterChange" />
 			</div>
-
-			<ClearFiltersButton @clear="clearFilters" />
-
-			<NcNoteCard type="info" class="filter-hint">
-				{{
-					t(
-						'openregister',
-						'Use filters to narrow down audit trail entries by register, schema, action type, user, date range, or object ID.',
-					)
-				}}
-			</NcNoteCard>
-		</FiltersSidebarTab>
+			<div class="filterGroup">
+				<NcCheckboxRadioSwitch
+					v-model="showOnlyWithChanges"
+					@update:modelValue="applyFilters">
+					{{ t('openregister', 'Show only entries with changes') }}
+				</NcCheckboxRadioSwitch>
+			</div>
+		</ScopeFiltersTab>
 
 		<StatisticsSidebarTab>
 			<!-- Statistics Section -->
@@ -139,8 +122,6 @@ import {
 import {
 	NcAppSidebar,
 	NcCheckboxRadioSwitch,
-	NcNoteCard,
-	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
@@ -148,13 +129,7 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import ClearFiltersButton from '../../components/shared/ClearFiltersButton.vue'
-import CountListItem from '../../components/shared/CountListItem.vue'
-import FiltersSidebarTab from '../../components/shared/FiltersSidebarTab.vue'
-import SidebarStatCard from '../../components/shared/SidebarStatCard.vue'
-import StatisticsSidebarTab from '../../components/shared/StatisticsSidebarTab.vue'
-import ScopeFilterFields from '../ScopeFilterFields.vue'
-import TrailUserDateFields from './TrailUserDateFields.vue'
+import { trailSidebar } from '../../composables/trailSidebar.js'
 import eventBus from '../../eventBus.js'
 import {
 	addDateRange,
@@ -167,7 +142,6 @@ import {
 	addJoinedValues,
 	addPresent,
 	addScopeIds,
-	trailUserOptions,
 } from '../../services/trailFilters.js'
 import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
 
@@ -205,16 +179,7 @@ function actionOption(byValue, value) {
 export default {
 	name: 'AuditTrailSideBar',
 	components: {
-		ClearFiltersButton,
-		CountListItem,
-		FiltersSidebarTab,
-		SidebarStatCard,
-		StatisticsSidebarTab,
-		TrailUserDateFields,
-		ScopeFilterFields,
 		NcAppSidebar,
-		NcSelect,
-		NcNoteCard,
 		NcTextField,
 		NcCheckboxRadioSwitch,
 		CogOutline,
@@ -224,7 +189,10 @@ export default {
 		Eye,
 	},
 
-	mixins: [routeBoundFilters('/audit-trails')],
+	mixins: [
+		routeBoundFilters('/audit-trails'),
+		trailSidebar(() => auditTrailStore.auditTrailList),
+	],
 
 	data() {
 		return {
@@ -249,9 +217,6 @@ export default {
 
 			activeTab: 'filters-tab',
 			selectedActions: [],
-			selectedUsers: [],
-			dateFrom: null,
-			dateTo: null,
 			objectFilter: '',
 			showOnlyWithChanges: false,
 			filteredCount: 0,
@@ -268,13 +233,6 @@ export default {
 	computed: {
 		// A <script setup> binding is not on `this`, and a watch path reads `this`.
 		auditTrailStore: () => auditTrailStore,
-
-		/**
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		userOptions() {
-			return trailUserOptions(auditTrailStore.auditTrailList)
-		},
 	},
 
 	watch: {

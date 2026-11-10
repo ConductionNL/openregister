@@ -57,6 +57,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectEntityIndex;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectLoader;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectWriter;
+use OCA\OpenRegister\Service\Gdpr\Subject\SubjectWriteLabel;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectRetentionGate;
 use Psr\Log\LoggerInterface;
 
@@ -135,8 +136,18 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		string $subjectId, ?string $type = null, string $mode = 'exact', bool $rbac = true, bool $multitenancy = true
 	): array {
 		$query = new SubjectQuery(subjectId: $subjectId, type: $type, mode: $mode);
-		$hits = $this->findSubjectObjects(query: $query, rbac: $rbac, multitenancy: $multitenancy);
 
+		return $this->serialiseHits(hits: $this->findSubjectObjects(query: $query, rbac: $rbac, multitenancy: $multitenancy));
+	}//end findSubjectData()
+
+	/**
+	 * The discovery hits as the HTTP envelope: the object's json and its hits.
+	 *
+	 * @param array<int, array{object: ObjectEntity, gdprEntities: array}> $hits The loaded hits.
+	 *
+	 * @return array<int, array{object: array, gdprEntities: array}>
+	 */
+	private function serialiseHits(array $hits): array {
 		return array_map(
 			static fn (array $hit): array => [
 				'object' => $hit['object']->jsonSerialize(),
@@ -144,7 +155,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 			],
 			$hits
 		);
-	}//end findSubjectData()
+	}//end serialiseHits()
 
 	/**
 	 * The same cross-register discovery, handing back the loaded entities.
@@ -173,7 +184,8 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		}
 
 		$hits = [];
-		foreach ($this->records->index->discover(subjectId: $subjectId, type: $query->type, mode: $query->mode) as $entry) {
+		$trimmed = new SubjectQuery(subjectId: $subjectId, type: $query->type, mode: $query->mode);
+		foreach ($this->records->index->discover(query: $trimmed) as $entry) {
 			$object = $this->records->loader->loadEntry(entry: $entry, rbac: $rbac, multitenancy: $multitenancy);
 			if ($object !== null) {
 				$hits[] = ['object' => $object, 'gdprEntities' => $entry['gdprEntities']];
@@ -191,22 +203,20 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * decided per object rather than per request — does not have to re-run the
 	 * discovery and re-make the decision to reach the same write.
 	 *
-	 * @param ObjectEntity $object The object to scrub.
-	 * @param string $subjectId Subject identifier value.
-	 * @param array<int, array> $matched GdprEntity hits that triggered inclusion.
+	 * @param SubjectMatch $match     The object to scrub and the GdprEntity hits that triggered inclusion.
+	 * @param string       $subjectId Subject identifier value.
 	 *
 	 * @return array<string, mixed>|null The persisted envelope, or null on failure.
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
-	public function pseudonymiseObject(ObjectEntity $object, string $subjectId, array $matched): ?array {
-		$this->pseudonymise(object: $object, subjectId: $subjectId, matched: $matched);
-		$this->records->writer->attribute(object: $object);
+	public function pseudonymiseObject(SubjectMatch $match, string $subjectId): ?array {
+		$this->pseudonymise(match: $match, subjectId: $subjectId);
+		$this->records->writer->attribute(object: $match->object);
 
-		return $this->records->writer->persist(
-			object: $object,
-			op: 'erase',
-			identifier: (string)($object->getUuid() ?? '')
+		return $this->records->writer->persistAs(
+			object: $match->object,
+			label: new SubjectWriteLabel(op: 'erase', identifier: (string)($match->object->getUuid() ?? ''))
 		);
 	}//end pseudonymiseObject()
 
@@ -257,7 +267,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		$object->setObject(array_merge($current, $changes));
 		$this->records->writer->attribute(object: $object);
 
-		return $this->records->writer->persist(object: $object, op: 'rectify', identifier: $objectIdentifier);
+		return $this->records->writer->persistAs(object: $object, label: new SubjectWriteLabel(op: 'rectify', identifier: $objectIdentifier));
 	}//end rectify()
 
 	/**
@@ -297,17 +307,27 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		bool $dryRun = false,
 	): array {
 		$eraseMode = $this->normaliseEraseMode(eraseMode: $eraseMode);
-		$subjectId = trim($subjectId);
-		$grouped = $this->records->index->discover(subjectId: $subjectId, type: $type, mode: 'exact');
-		$request = new ErasureRequest(subjectId: $subjectId, type: $type, eraseMode: $eraseMode, dryRun: $dryRun);
-		$summary = $this->openSummary(request: $request, matchedCount: count($grouped));
+
+		return $this->eraseFor(request: new ErasureRequest(subjectId: trim($subjectId), type: $type, eraseMode: $eraseMode, dryRun: $dryRun));
+	}//end erase()
+
+	/**
+	 * Erase the subject's data across matching objects, for one normalised request.
+	 *
+	 * @param ErasureRequest $request The erasure: trimmed subject, type filter, normalised mode, dry run.
+	 *
+	 * @return array<string, mixed> The summary.
+	 */
+	private function eraseFor(ErasureRequest $request): array {
+		$grouped = $this->records->index->discover(query: new SubjectQuery(subjectId: $request->subjectId, type: $request->type));
+		$run = new ErasureRun(request: $request, matchedCount: count($grouped));
 
 		foreach ($grouped as $entry) {
-			$this->eraseEntry(entry: $entry, request: $request, summary: $summary);
+			$this->eraseEntry(entry: $entry, run: $run);
 		}
 
-		return $this->closeSummary(summary: $summary);
-	}//end erase()
+		return $run->close();
+	}//end eraseFor()
 
 	/**
 	 * Flag/unflag processing restriction on a single object (art-18).
@@ -316,32 +336,32 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * (active flag + reason + timestamp), RBAC/tenant scoped, attributed
 	 * to the DSAR activity. Jurisdiction wording stays in the leaf app.
 	 *
-	 * @param string $objectIdentifier Object id/uuid.
-	 * @param bool $restricted Whether processing is restricted.
-	 * @param string $reason Reason recorded on the marker.
+	 * @param string         $objectIdentifier Object id/uuid.
+	 * @param ProcessingFlag $flag             Whether processing is restricted, and the reason recorded on the marker.
 	 *
 	 * @return array<string, mixed>|null Updated object envelope, or null on miss.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 */
-	public function setRestriction(string $objectIdentifier, bool $restricted, string $reason): ?array {
-		return $this->setMarker(objectIdentifier: $objectIdentifier, op: 'restrict', active: $restricted, reason: $reason);
+	public function setRestriction(string $objectIdentifier, ProcessingFlag $flag): ?array {
+		return $this->setMarker(
+			objectIdentifier: $objectIdentifier,
+			marker: new ProcessingMarker(op: 'restrict', active: $flag->active, reason: $flag->reason)
+		);
 
 	}//end setRestriction()
 
 	/**
 	 * Flag/unflag objection on a single object (art-21).
 	 *
-	 * @param string $objectIdentifier Object id/uuid.
-	 * @param bool $objected Whether the subject objects to processing.
-	 * @param string $reason Reason recorded on the marker.
+	 * @param string         $objectIdentifier Object id/uuid.
+	 * @param ProcessingFlag $flag             Whether the subject objects to processing, and the reason recorded on the marker.
 	 *
 	 * @return array<string, mixed>|null Updated object envelope, or null on miss.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 */
-	public function setObjection(string $objectIdentifier, bool $objected, string $reason): ?array {
-		return $this->setMarker(objectIdentifier: $objectIdentifier, op: 'object', active: $objected, reason: $reason);
+	public function setObjection(string $objectIdentifier, ProcessingFlag $flag): ?array {
+		return $this->setMarker(
+			objectIdentifier: $objectIdentifier,
+			marker: new ProcessingMarker(op: 'object', active: $flag->active, reason: $flag->reason)
+		);
 
 	}//end setObjection()
 
@@ -395,81 +415,30 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	}//end normaliseEraseMode()
 
 	/**
-	 * The empty erasure summary, before any candidate is decided.
-	 *
-	 * @param ErasureRequest $request      The erasure: subject, type filter, normalised mode, dry run.
-	 * @param int            $matchedCount Number of objects the index matched.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function openSummary(ErasureRequest $request, int $matchedCount): array {
-		return [
-			'subject' => $request->subjectId,
-			'type' => $request->type,
-			'eraseMode' => $request->eraseMode,
-			'dryRun' => $request->dryRun,
-			'matchedCount' => $matchedCount,
-			'erased' => [],
-			SubjectRetentionGate::BUCKET_HELD => [],
-			'failed' => [],
-			// RETENTION WINS OVER ERASURE: records the Archiefwet keeps are
-			// refused, named here with their ground, and reported back with the
-			// rest of the answer to the data subject.
-			SubjectRetentionGate::BUCKET_WITHHELD => [],
-		];
-	}//end openSummary()
-
-	/**
-	 * Close the summary: completeness and per-bucket counts.
-	 *
-	 * A RUN THAT KEPT DATA BACK IS NOT A COMPLETE ERASURE. `complete` used to
-	 * mean "nothing errored", so a request that lawfully held every single
-	 * record still answered `complete: true` and the data subject was told
-	 * their data was gone. Held and withheld rows now count against it too.
-	 * The buckets stay separate because the answers differ: `failed` is
-	 * retried, `held` waits for the hold to lift, `withheld` is explained.
-	 *
-	 * @param array<string, mixed> $summary The filled summary.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function closeSummary(array $summary): array {
-		$summary['complete'] = ($summary['failed'] === []
-			&& $summary['held'] === []
-			&& $summary['withheld'] === []);
-		$summary['failedCount'] = count($summary['failed']);
-		$summary['heldCount'] = count($summary['held']);
-		$summary['withheldCount'] = count($summary['withheld']);
-
-		return $summary;
-	}//end closeSummary()
-
-	/**
 	 * Decide and (unless refused or dry) erase one discovered object.
 	 *
 	 * Loaded RBAC + tenant scoped; an object the caller cannot load is
 	 * reported `failed`. Refusals are asked before any write.
 	 *
-	 * @param array<string, mixed> $entry   Grouped index entry.
-	 * @param ErasureRequest       $request The erasure: subject, normalised mode, dry run.
-	 * @param array<string, mixed> $summary Summary (mutated by reference).
+	 * @param array<string, mixed> $entry Grouped index entry.
+	 * @param ErasureRun           $run   The erasure in progress: request and summary.
 	 *
 	 * @return void
 	 */
-	private function eraseEntry(array $entry, ErasureRequest $request, array &$summary): void {
+	private function eraseEntry(array $entry, ErasureRun $run): void {
 		$object = $this->records->loader->loadEntry(entry: $entry, rbac: true, multitenancy: true);
 		if ($object === null) {
-			$summary['failed'][] = $this->loadFailure(entry: $entry);
+			$run->record(bucket: 'failed', row: $this->loadFailure(entry: $entry));
 			return;
 		}
 
-		$verdict = $this->verdictFor(object: $object, entry: $entry, dryRun: $request->dryRun);
+		$verdict = $this->verdictFor(object: $object, dryRun: $run->request->dryRun);
 		if ($verdict !== null) {
-			$summary[$verdict[0]][] = $verdict[1];
+			$run->record(bucket: $verdict[0], row: $verdict[1]);
 			return;
 		}
 
-		$this->eraseOne(object: $object, request: $request, matched: $entry['gdprEntities'], summary: $summary);
+		$this->eraseOne(match: new SubjectMatch(object: $object, matched: $entry['gdprEntities']), run: $run);
 	}//end eraseEntry()
 
 	/**
@@ -492,20 +461,19 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * Withheld (archival) and held (legal hold / immutable) come first; a
 	 * dry run then reports the object as erasable without touching it.
 	 *
-	 * @param ObjectEntity         $object Loaded object.
-	 * @param array<string, mixed> $entry  Grouped index entry.
-	 * @param bool                 $dryRun Whether nothing is written.
+	 * @param ObjectEntity $object Loaded object.
+	 * @param bool         $dryRun Whether nothing is written.
 	 *
 	 * @return array{0: string, 1: array<string, mixed>}|null [bucket, row], or null to erase.
 	 */
-	private function verdictFor(ObjectEntity $object, array $entry, bool $dryRun): ?array {
+	private function verdictFor(ObjectEntity $object, bool $dryRun): ?array {
 		$block = $this->retentionGate->erasureBlock(object: $object);
 		if ($block !== null) {
 			return $block;
 		}
 
 		if ($dryRun === true) {
-			return ['erased', $this->refOf(entry: $entry, object: $object)];
+			return ['erased', $this->refOf(entry: [], object: $object)];
 		}
 
 		return null;
@@ -514,23 +482,22 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	/**
 	 * Erase one object per the selected mode, recording the result.
 	 *
-	 * @param ObjectEntity         $object  Object to erase.
-	 * @param ErasureRequest       $request The erasure: subject (for pseudonymise match + audit) and mode.
-	 * @param array<int, array>    $matched GdprEntity hits that triggered inclusion.
-	 * @param array<string, mixed> $summary Summary (mutated by reference).
+	 * @param SubjectMatch $match The object to erase and the hits that triggered inclusion.
+	 * @param ErasureRun   $run   The erasure in progress: subject (for pseudonymise match + audit), mode, summary.
 	 *
 	 * @return void
 	 */
-	private function eraseOne(ObjectEntity $object, ErasureRequest $request, array $matched, array &$summary): void {
-		$this->applyEraseMode(object: $object, request: $request, matched: $matched);
+	private function eraseOne(SubjectMatch $match, ErasureRun $run): void {
+		$object = $match->object;
+		$this->applyEraseMode(match: $match, request: $run->request);
 		$this->records->writer->attribute(object: $object);
 
 		$ref = $this->refOf(entry: [], object: $object);
 		try {
 			$this->records->writer->save(object: $object);
-			$summary['erased'][] = $ref;
+			$run->record(bucket: 'erased', row: $ref);
 		} catch (\Throwable $e) {
-			$summary['failed'][] = ['object' => $ref, 'error' => $e->getMessage()];
+			$run->record(bucket: 'failed', row: ['object' => $ref, 'error' => $e->getMessage()]);
 			$this->logger->warning(
 				message: '[DSR] Erase failed',
 				context: ['object' => $ref, 'error' => $e->getMessage()]
@@ -541,19 +508,18 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	/**
 	 * Mutate the object per the erase mode: soft-delete stamp or pseudonymise.
 	 *
-	 * @param ObjectEntity      $object  Object to erase.
-	 * @param ErasureRequest    $request The erasure: subject value and mode.
-	 * @param array<int, array> $matched GdprEntity hits that triggered inclusion.
+	 * @param SubjectMatch   $match   The object to erase and the hits that triggered inclusion.
+	 * @param ErasureRequest $request The erasure: subject value and mode.
 	 *
 	 * @return void
 	 */
-	private function applyEraseMode(ObjectEntity $object, ErasureRequest $request, array $matched): void {
+	private function applyEraseMode(SubjectMatch $match, ErasureRequest $request): void {
 		if ($request->eraseMode === self::ERASE_MODE_WHOLE_OBJECT) {
-			$object->setDeleted($this->erasureStamp(subjectId: $request->subjectId));
+			$match->object->setDeleted($this->erasureStamp(subjectId: $request->subjectId));
 		}
 
 		if ($request->eraseMode === self::ERASE_MODE_PSEUDONYMISE) {
-			$this->pseudonymise(object: $object, subjectId: $request->subjectId, matched: $matched);
+			$this->pseudonymise(match: $match, subjectId: $request->subjectId);
 		}
 	}//end applyEraseMode()
 
@@ -580,15 +546,15 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * subject id or to any matched GdprEntity value, substitutes the
 	 * pseudonym token. Deterministic and reversible only via the audit log.
 	 *
-	 * @param ObjectEntity $object Object whose payload is mutated.
-	 * @param string $subjectId Subject identifier value.
-	 * @param array<int, array> $matched GdprEntity hits (each has a `value`).
+	 * @param SubjectMatch $match     Object whose payload is mutated, with the GdprEntity hits (each has a `value`).
+	 * @param string       $subjectId Subject identifier value.
 	 *
 	 * @return void
 	 */
-	private function pseudonymise(ObjectEntity $object, string $subjectId, array $matched): void {
+	private function pseudonymise(SubjectMatch $match, string $subjectId): void {
+		$object = $match->object;
 		$needles = [strtolower($subjectId)];
-		foreach ($matched as $hit) {
+		foreach ($match->matched as $hit) {
 			$value = strtolower((string)($hit['value'] ?? ''));
 			if ($value !== '') {
 				$needles[] = $value;
@@ -647,41 +613,36 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	/**
 	 * Set a generic boolean marker (with reason + timestamp) on an object.
 	 *
-	 * @param string $objectIdentifier Object id/uuid.
-	 * @param string $op               Operation label for logging; names the marker's payload key in MARKER_KEYS.
-	 * @param bool   $active           Whether the marker is active.
-	 * @param string $reason           Reason recorded on the marker.
+	 * @param string           $objectIdentifier Object id/uuid.
+	 * @param ProcessingMarker $marker           The marker: its op (names the payload key in MARKER_KEYS), active flag and reason.
 	 *
 	 * @return array<string, mixed>|null
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 */
-	private function setMarker(string $objectIdentifier, string $op, bool $active, string $reason): ?array {
+	private function setMarker(string $objectIdentifier, ProcessingMarker $marker): ?array {
 		$object = $this->records->loader->loadByIdentifier(identifier: $objectIdentifier);
 		if ($object === null || $this->retentionGate->isImmutable(object: $object) === true) {
 			return null;
 		}
 
 		$payload = ($object->getObject() ?? []);
-		$payload[self::MARKER_KEYS[$op]] = $this->marker(active: $active, reason: $reason);
+		$payload[self::MARKER_KEYS[$marker->op]] = $this->marker(marker: $marker);
 		$object->setObject($payload);
 		$this->records->writer->attribute(object: $object);
 
-		return $this->records->writer->persist(object: $object, op: $op, identifier: $objectIdentifier);
+		return $this->records->writer->persistAs(object: $object, label: new SubjectWriteLabel(op: $marker->op, identifier: $objectIdentifier));
 	}//end setMarker()
 
 	/**
 	 * The marker value written by setMarker().
 	 *
-	 * @param bool   $active Whether the marker is active.
-	 * @param string $reason Reason recorded on the marker.
+	 * @param ProcessingMarker $marker The marker: active flag and reason.
 	 *
 	 * @return array{active: bool, reason: string, setBy: string, setAt: string}
 	 */
-	private function marker(bool $active, string $reason): array {
+	private function marker(ProcessingMarker $marker): array {
 		return [
-			'active' => $active,
-			'reason' => $reason,
+			'active' => $marker->active,
+			'reason' => $marker->reason,
 			'setBy' => $this->records->writer->currentUserId(),
 			'setAt' => (new DateTime())->format(DateTime::ATOM),
 		];

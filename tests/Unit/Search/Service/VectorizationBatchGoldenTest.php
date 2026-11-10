@@ -18,7 +18,7 @@ namespace OCA\OpenRegister\Tests\Unit\Search\Service;
 
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
 use Exception;
-use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrategyInterface;
+use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use PHPUnit\Framework\TestCase;

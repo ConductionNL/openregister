@@ -54,33 +54,7 @@ use Throwable;
  *
  * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
  */
-class CalendarRecompute {
-
-	/**
-	 * The supersession reason a calendar change carries.
-	 *
-	 * @var string
-	 */
-	public const REASON = 'calendar-changed';
-
-	/**
-	 * Who the ledger records as the actor.
-	 *
-	 * A named machine actor rather than the administrator who edited the
-	 * calendar: the edit and the supersession are different acts, minutes and
-	 * a job apart, and attributing thousands of supersessions to a person who
-	 * pressed Save once reads as though they moved each deadline by hand.
-	 *
-	 * @var string
-	 */
-	public const ACTOR = 'calendar-recompute';
-
-	/**
-	 * How many timers one pass examines before it stores its cursor.
-	 *
-	 * @var int
-	 */
-	public const BATCH = 500;
+class CalendarRecompute implements CalendarRecomputeInterface {
 
 	/**
 	 * Where the "this version has been done" marks are kept.
@@ -90,27 +64,6 @@ class CalendarRecompute {
 	public const DONE_KEY_PREFIX = 'calendar_recompute_done_';
 
 	/**
-	 * The one dependency question.
-	 *
-	 * @var CalendarDependency
-	 */
-	private readonly CalendarDependency $dependency;
-
-	/**
-	 * The resolver.
-	 *
-	 * @var WorkingCalendarService
-	 */
-	private readonly WorkingCalendarService $calendars;
-
-	/**
-	 * The engine.
-	 *
-	 * @var SlaCalculatorInterface
-	 */
-	private readonly SlaCalculatorInterface $calculator;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param CalendarRecomputeSources $sources   The dependency question, the resolver and the engine.
@@ -118,13 +71,10 @@ class CalendarRecompute {
 	 * @param LoggerInterface          $logger    The logger.
 	 */
 	public function __construct(
-		CalendarRecomputeSources $sources,
+		private readonly CalendarRecomputeSources $sources,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->dependency = $sources->dependency;
-		$this->calendars  = $sources->calendars;
-		$this->calculator = $sources->calculator;
 	}//end __construct()
 
 	/**
@@ -164,44 +114,48 @@ class CalendarRecompute {
 	/**
 	 * Re-project every timer in this batch that the changed calendar governs.
 	 *
-	 * @param string                 $slug       The calendar that changed.
-	 * @param string                 $version    Its object version.
-	 * @param iterable<FlowTimer>    $timers     The candidate timers.
-	 * @param callable(FlowTimer):void $supersede What to do with a timer whose moment moved.
+	 * @param CalendarBatch $batch The calendar, its version, the timers and the supersede action.
 	 *
 	 * @return array{examined: int, moved: int, unchanged: int, unresolvable: int, deferred: int, skipped: bool} The counts.
 	 *
 	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
 	 */
-	public function recomputeBatch(string $slug, string $version, iterable $timers, callable $supersede): array {
-		if ($this->alreadyRan(slug: $slug, version: $version) === true) {
+	public function recompute(CalendarBatch $batch): array {
+		if ($this->alreadyRan(slug: $batch->slug, version: $batch->version) === true) {
 			$this->logger->info(
-				sprintf('[CalendarRecompute] %s version %s has already been recomputed; skipping', $slug, $version)
+				sprintf('[CalendarRecompute] %s version %s has already been recomputed; skipping', $batch->slug, $batch->version)
 			);
 
-			return [
-				'examined' => 0,
-				'moved' => 0,
-				'unchanged' => 0,
-				'unresolvable' => 0,
-				'deferred' => 0,
-				'skipped' => true,
-			];
+			return ['examined' => 0, 'moved' => 0, 'unchanged' => 0, 'unresolvable' => 0, 'deferred' => 0, 'skipped' => true];
 		}
 
 		$counts = ['examined' => 0, 'moved' => 0, 'unchanged' => 0, 'unresolvable' => 0, 'deferred' => 0, 'skipped' => false];
 
-		foreach ($timers as $timer) {
+		foreach ($batch->timers as $timer) {
 			$counts['examined']++;
-			$outcome = ($this->outcomeFor(timer: $timer, slug: $slug) ?? $this->superseded(timer: $timer, slug: $slug, supersede: $supersede));
+			$outcome = ($this->outcomeFor(timer: $timer, slug: $batch->slug) ?? $this->superseded(timer: $timer, batch: $batch));
 			$counts[$outcome]++;
-		}//end foreach
+		}
 
+		$this->logCounts(batch: $batch, counts: $counts);
+
+		return $counts;
+	}//end recompute()
+
+	/**
+	 * Log what one batch did.
+	 *
+	 * @param CalendarBatch      $batch  The batch.
+	 * @param array<string, int> $counts Its counts.
+	 *
+	 * @return void
+	 */
+	private function logCounts(CalendarBatch $batch, array $counts): void {
 		$this->logger->info(
 			sprintf(
 				'[CalendarRecompute] %s version %s: examined %d, moved %d, unchanged %d, deferred %d, unresolvable %d',
-				$slug,
-				$version,
+				$batch->slug,
+				$batch->version,
 				$counts['examined'],
 				$counts['moved'],
 				$counts['unchanged'],
@@ -209,9 +163,7 @@ class CalendarRecompute {
 				$counts['unresolvable']
 			)
 		);
-
-		return $counts;
-	}//end recomputeBatch()
+	}//end logCounts()
 
 	/**
 	 * What became of ONE timer without superseding it, as the counter key to
@@ -225,7 +177,7 @@ class CalendarRecompute {
 	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
 	 */
 	private function outcomeFor(FlowTimer $timer, string $slug): ?string {
-		$verdict = $this->dependency->verdictFor(timer: $timer, changedSlug: $slug);
+		$verdict = $this->sources->dependency->verdictFor(timer: $timer, changedSlug: $slug);
 
 		if ($verdict === CalendarDependency::UNRESOLVABLE) {
 			return 'unresolvable';
@@ -278,17 +230,16 @@ class CalendarRecompute {
 	/**
 	 * Supersede a timer whose moment moved, as the counter key to raise.
 	 *
-	 * @param FlowTimer                $timer     The timer.
-	 * @param string                   $slug      The changed calendar.
-	 * @param callable(FlowTimer):void $supersede What to do with a timer whose moment moved.
+	 * @param FlowTimer     $timer The timer.
+	 * @param CalendarBatch $batch The batch: the changed calendar and the supersede action.
 	 *
 	 * @return string Moved, or unresolvable when superseding failed.
 	 *
 	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
 	 */
-	private function superseded(FlowTimer $timer, string $slug, callable $supersede): string {
+	private function superseded(FlowTimer $timer, CalendarBatch $batch): string {
 		try {
-			$supersede($timer);
+			($batch->supersede)($timer);
 			return 'moved';
 		} catch (Throwable $e) {
 			// One timer that cannot be superseded must not abandon the rest:
@@ -297,7 +248,7 @@ class CalendarRecompute {
 				sprintf(
 					'[CalendarRecompute] timer %s could not be superseded for %s: %s',
 					(string)$timer->getUuid(),
-					$slug,
+					$batch->slug,
 					$e->getMessage()
 				)
 			);
@@ -327,14 +278,14 @@ class CalendarRecompute {
 		}
 
 		try {
-			$calendar = $this->calendars->resolve(
+			$calendar = $this->sources->calendars->resolve(
 				calendarSlug: $timer->getCalendarSlug(),
 				organisation: $timer->getOrganisation()
 			);
 
 			$remaining = ((float)$timer->getBudgetValue() - (float)$timer->getConsumedValue());
 
-			return $this->calculator->add(
+			return $this->sources->calculator->add(
 				from: $runningSince,
 				value: max(0.0, $remaining),
 				unit: (string)$timer->getBudgetUnit(),

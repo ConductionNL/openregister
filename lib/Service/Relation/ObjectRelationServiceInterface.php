@@ -57,13 +57,8 @@ interface ObjectRelationServiceInterface {
 	 * three, and it costs no new concept: a relation target that happens not
 	 * to be an object.
 	 *
-	 * @param string $sourceUuid The object the link hangs off.
-	 * @param string $url The address.
-	 * @param string|null $title What to call it.
-	 * @param string|null $relationType The vocabulary key, when the schema names one.
-	 * @param string|null $label What the link reads as, when no schema can answer.
-	 * @param int|null $register The source object's register.
-	 * @param int|null $schema The source object's schema.
+	 * @param RelationEndpoint $source The object the link hangs off, in its register and schema.
+	 * @param ExternalLink $link The address, what to call it, and its type or label.
 	 *
 	 * @return ObjectRelation The row.
 	 *
@@ -71,15 +66,7 @@ interface ObjectRelationServiceInterface {
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function addExternalLink(
-		string $sourceUuid,
-		string $url,
-		?string $title = null,
-		?string $relationType = null,
-		?string $label = null,
-		?int $register = null,
-		?int $schema = null,
-	): ObjectRelation;
+	public function addExternalLink(RelationEndpoint $source, ExternalLink $link): ObjectRelation;
 
 	/**
 	 * Record a reference somebody wrote in prose, on both sides.
@@ -92,23 +79,15 @@ interface ObjectRelationServiceInterface {
 	 * Idempotent per anchor and target: saving the same note twice does not
 	 * write the mention twice.
 	 *
-	 * @param string $sourceUuid The object the text belongs to.
-	 * @param string $targetUuid The object the text names.
-	 * @param string $anchor What identifies the text, so it can be withdrawn.
-	 * @param string|null $relationType The vocabulary key, when there is one.
-	 * @param array<string, int|null> $scope Source and target register/schema ids.
+	 * @param ProseMention $mention The object the text belongs to and the one it names, each in its
+	 *                              register and schema; the anchor that identifies the text so it can
+	 *                              be withdrawn; and the vocabulary key, when there is one.
 	 *
 	 * @return array<int, ObjectRelation> The rows written, one per direction.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function recordProseReference(
-		string $sourceUuid,
-		string $targetUuid,
-		string $anchor,
-		?string $relationType = null,
-		array $scope = [],
-	): array;
+	public function recordProseReference(ProseMention $mention): array;
 
 	/**
 	 * Withdraw every row one piece of text wrote, on both sides.
@@ -194,16 +173,28 @@ interface ObjectRelationServiceInterface {
 	public function applyInheritance(ObjectEntity $parent, array $childData, array $inherits): array;
 
 	/**
+	 * What a child takes from its parent at creation, as {@see applyInheritance()} describes.
+	 *
+	 * @param ParentInheritance $inheritance The parent, the child's data so far and the roles inherited.
+	 *
+	 * @return array{data: array<string, mixed>, inherited: array<string, mixed>}
+	 *         The child's data with the inherited values applied, and the record.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function inherit(ParentInheritance $inheritance): array;
+
+	/**
 	 * Record a child created under a parent, with what it inherited.
 	 *
 	 * @param ObjectEntity $parent The parent object.
 	 * @param ObjectEntity $child The created child.
-	 * @param string|null $relationType The vocabulary key naming the link.
+	 * @param ProvenanceLink|null $link The vocabulary key naming the link, and the
+	 *                                  entry of the parent it came out of, when it
+	 *                                  came out of one. A derivation and a split are
+	 *                                  the same act seen twice: a sub-case started
+	 *                                  from a timeline entry is both.
 	 * @param array<string, mixed> $inherited What the child took, as recorded.
-	 * @param string|null $entry The entry of the parent it came out of, when it
-	 *                           came out of one. A derivation and a split are
-	 *                           the same act seen twice: a sub-case started
-	 *                           from a timeline entry is both.
 	 *
 	 * @return ObjectRelation The row.
 	 *
@@ -212,10 +203,20 @@ interface ObjectRelationServiceInterface {
 	public function recordDerivation(
 		ObjectEntity $parent,
 		ObjectEntity $child,
-		?string $relationType = null,
+		?ProvenanceLink $link = null,
 		array $inherited = [],
-		?string $entry = null,
 	): ObjectRelation;
+
+	/**
+	 * Record a child created under a parent, with what it inherited.
+	 *
+	 * @param Derivation $derivation The parent, the child, the link naming it and what the child inherited.
+	 *
+	 * @return ObjectRelation The row.
+	 *
+	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 */
+	public function recordDerived(Derivation $derivation): ObjectRelation;
 
 	/**
 	 * Record that one object was created out of another.
@@ -229,8 +230,7 @@ interface ObjectRelationServiceInterface {
 	 *
 	 * @param ObjectEntity $source The object the new one came out of.
 	 * @param ObjectEntity $created The new object.
-	 * @param string|null $entry The entry of the source it came out of.
-	 * @param string|null $relationType The vocabulary key naming the link.
+	 * @param ProvenanceLink|null $link The entry of the source it came out of and the vocabulary key naming the link.
 	 *
 	 * @return ObjectRelation The provenance row.
 	 *
@@ -239,7 +239,6 @@ interface ObjectRelationServiceInterface {
 	public function recordSplit(
 		ObjectEntity $source,
 		ObjectEntity $created,
-		?string $entry = null,
-		?string $relationType = null,
+		?ProvenanceLink $link = null,
 	): ObjectRelation;
 }//end interface

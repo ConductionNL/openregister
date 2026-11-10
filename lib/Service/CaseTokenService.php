@@ -46,10 +46,8 @@ use Exception;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
-use OCA\OpenRegister\Db\CaseTokenMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
-use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\Security\ISecureRandom;
 use Psr\Container\ContainerInterface;
@@ -91,20 +89,16 @@ class CaseTokenService implements CaseTokenServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param CaseTokenMapperInterface $mapper Token persistence.
-	 * @param ISecureRandom $secureRandom NC secure RNG.
-	 * @param IUserSession $userSession Current user (minter).
-	 * @param IURLGenerator $urlGenerator Public URL builder.
-	 * @param LoggerInterface $logger Logger.
-	 * @param ContainerInterface $container App container the ObjectOperationsInterface is resolved from on demand.
+	 * @param CaseTokenIssuance  $issuance    Token store, secure RNG and public URL builder.
+	 * @param IUserSession       $userSession Current user (minter).
+	 * @param LoggerInterface    $logger      Logger.
+	 * @param ContainerInterface $container   App container the ObjectOperationsInterface is resolved from on demand.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private CaseTokenMapperInterface $mapper,
-		private ISecureRandom $secureRandom,
+		private readonly CaseTokenIssuance $issuance,
 		private IUserSession $userSession,
-		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,
 		private ContainerInterface $container,
 	) {
@@ -164,7 +158,7 @@ class CaseTokenService implements CaseTokenServiceInterface {
 		$now = new DateTime();
 		$expires = $this->expiryOf(now: $now, ttlSeconds: $ttlSeconds);
 
-		$token = $this->secureRandom->generate(
+		$token = $this->issuance->secureRandom->generate(
 			self::TOKEN_LENGTH,
 			ISecureRandom::CHAR_ALPHANUMERIC
 		);
@@ -175,7 +169,7 @@ class CaseTokenService implements CaseTokenServiceInterface {
 		$entity->setExpiresAt($expires);
 		$entity->setRevokedAt(null);
 
-		$saved = $this->mapper->insert($entity);
+		$saved = $this->issuance->mapper->insert($entity);
 
 		$data = $saved->jsonSerialize();
 		$data['url'] = $this->buildPublicUrl(token: $token);
@@ -293,7 +287,7 @@ class CaseTokenService implements CaseTokenServiceInterface {
 			return null;
 		}
 
-		$row = $this->mapper->findByToken($token);
+		$row = $this->issuance->mapper->findByToken($token);
 		if ($row === null || $row->isValidAt(new DateTime()) === false) {
 			// Unknown, revoked or expired — fail closed.
 			return null;
@@ -401,7 +395,7 @@ class CaseTokenService implements CaseTokenServiceInterface {
 		}
 
 		$row->setRevokedAt(new DateTime());
-		$this->mapper->update($row);
+		$this->issuance->mapper->update($row);
 		return true;
 	}//end revoke()
 
@@ -416,9 +410,9 @@ class CaseTokenService implements CaseTokenServiceInterface {
 	 * @throws Exception With code 404 when no token of this object matches.
 	 */
 	private function tokenOfObject(string $objectUuid, string $tokenOrId): CaseToken {
-		$row = $this->mapper->findByToken($tokenOrId);
+		$row = $this->issuance->mapper->findByToken($tokenOrId);
 		if ($row === null && ctype_digit($tokenOrId) === true) {
-			$row = $this->mapper->findById((int)$tokenOrId);
+			$row = $this->issuance->mapper->findById((int)$tokenOrId);
 		}
 
 		if ($row === null || $row->getObjectUuid() !== $objectUuid) {
@@ -438,7 +432,7 @@ class CaseTokenService implements CaseTokenServiceInterface {
 	 * @spec openspec/specs/integration-leaf-foundation/spec.md
 	 */
 	public function listForObject(string $objectUuid): array {
-		$rows = $this->mapper->findByObjectUuid($objectUuid);
+		$rows = $this->issuance->mapper->findByObjectUuid($objectUuid);
 		return array_map(
 			function (CaseToken $row): array {
 				$data = $row->jsonSerialize();
@@ -457,11 +451,11 @@ class CaseTokenService implements CaseTokenServiceInterface {
 	 * @return string Absolute URL.
 	 */
 	private function buildPublicUrl(string $token): string {
-		$path = $this->urlGenerator->linkToRoute(
+		$path = $this->issuance->urlGenerator->linkToRoute(
 			'openregister.caseToken.resolve',
 			['token' => $token]
 		);
-		return $this->urlGenerator->getAbsoluteURL($path);
+		return $this->issuance->urlGenerator->getAbsoluteURL($path);
 	}//end buildPublicUrl()
 
 	/**

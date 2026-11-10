@@ -103,9 +103,7 @@ class VectorSearchHandler {
 	 * missing pgvector extension, dimension mismatch, or no converted rows
 	 * yet during warm-up).
 	 *
-	 * @param array $queryEmbedding Query embedding vector
-	 * @param int $limit Maximum number of results
-	 * @param array $filters Additional filters (entity_type, etc.)
+	 * @param VectorQuery $query The query embedding, limit and filters (entity_type, etc.)
 	 *
 	 * @return array<int,array<string,mixed>> Search results
 	 *
@@ -113,30 +111,23 @@ class VectorSearchHandler {
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#3.1
 	 */
-	public function semanticSearch(
-		array $queryEmbedding,
-		int $limit = 10,
-		array $filters = [],
-	): array {
+	public function semanticSearch(VectorQuery $query): array {
 		$startTime = microtime(true);
+		$filters   = $query->filters;
 
 		$this->logger->info(
 			message: '[VectorSearchHandler] Performing semantic search',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'limit' => $limit,
+				'limit' => $query->limit,
 				'filters' => $filters,
 			]
 		);
 
 		try {
 			// Primary path: index-backed SQL KNN on PostgreSQL/pgvector.
-			$knnResults = $this->knnSearch(
-				queryEmbedding: $queryEmbedding,
-				limit: $limit,
-				filters: $filters
-			);
+			$knnResults = $this->knnSearch(query: $query);
 
 			if ($knnResults !== null && $knnResults !== []) {
 				$this->logSemanticSearchCompleted(path: 'pgvector KNN path', run: ['results' => $knnResults, 'startTime' => $startTime]);
@@ -158,7 +149,7 @@ class VectorSearchHandler {
 				return [];
 			}
 
-			$results = array_slice($this->rankVectors(queryEmbedding: $queryEmbedding, vectors: $vectors), 0, $limit);
+			$results = array_slice($this->rankVectors(queryEmbedding: $query->embedding, vectors: $vectors), 0, $query->limit);
 
 			$this->logSemanticSearchCompleted(path: 'PHP fallback path', run: ['results' => $results, 'startTime' => $startTime]);
 
@@ -316,27 +307,25 @@ class VectorSearchHandler {
 	 * query/sidecar dimension mismatch) or when the KNN query itself fails —
 	 * the caller then uses the PHP fallback.
 	 *
-	 * @param array $queryEmbedding Query embedding vector
-	 * @param int $limit Maximum number of results
-	 * @param array $filters Additional filters (entity_type, entity_id)
+	 * @param VectorQuery $query The query embedding, limit and filters (entity_type, entity_id)
 	 *
 	 * @return array<int,array<string,mixed>>|null Results, or null when unavailable
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#3.1
 	 */
-	private function knnSearch(array $queryEmbedding, int $limit, array $filters = []): ?array {
+	private function knnSearch(VectorQuery $query): ?array {
 		$columnDimension = $this->pgVector->getVectorColumnDimension();
 
-		if ($columnDimension === null || count($queryEmbedding) !== $columnDimension) {
+		if ($columnDimension === null || count($query->embedding) !== $columnDimension) {
 			return null;
 		}
 
-		$qvec    = $this->pgVector->formatVector($queryEmbedding);
-		$clauses = $this->knnClauses(filters: $filters);
+		$qvec    = $this->pgVector->formatVector($query->embedding);
+		$clauses = $this->knnClauses(filters: $query->filters);
 
 		$rows = $this->knnRows(
 			statement: new KnnStatement(
-				sql: $this->knnSql(where: $clauses['where'], limit: $limit),
+				sql: $this->knnSql(where: $clauses['where'], limit: $query->limit),
 				params: ['qvec' => $qvec] + $clauses['params'],
 				types: $clauses['types']
 			)
@@ -483,10 +472,9 @@ class VectorSearchHandler {
 	 * The keyword results set is passed in by the caller; vector search
 	 * always runs against the PostgreSQL database backend.
 	 *
-	 * @param array $queryEmbedding Query embedding vector
-	 * @param array $keywordResults Keyword search results to fuse with vector results
-	 * @param int $limit Maximum results
-	 * @param array $weights Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
+	 * @param VectorQuery   $query   Query embedding vector and the maximum number of results
+	 * @param KeywordFusion $keyword Keyword search results to fuse with vector results, and the
+	 *                               weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
 	 *
 	 * @return (((array|bool|float|int|mixed|null)[]|float|int)[]|float|int)[]
 	 *
@@ -505,31 +493,26 @@ class VectorSearchHandler {
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function hybridSearch(
-		array $queryEmbedding,
-		array $keywordResults = [],
-		int $limit = 20,
-		array $weights = ['keyword' => 0.5, 'vector' => 0.5],
-	): array {
+	public function hybridSearch(VectorQuery $query, KeywordFusion $keyword): array {
 		$startTime = microtime(true);
 
 		try {
-			$weight = $this->normalisedWeights(weights: $weights);
+			$weight = $this->normalisedWeights(keyword: $keyword);
 
 			// No vector side when its weight is zero.
 			$vectorResults = [];
 			if ($weight['vector'] > 0) {
-				$vectorResults = $this->hybridVectorResults(queryEmbedding: $queryEmbedding, limit: $limit);
+				$vectorResults = $this->hybridVectorResults(query: $query);
 			}
 
 			// Combine results using Reciprocal Rank Fusion (RRF).
 			$combined = $this->reciprocalRankFusion(
 				vector: new RankedResults(results: $vectorResults, weight: $weight['vector']),
-				keyword: new RankedResults(results: $keywordResults, weight: $weight['keyword'])
+				keyword: new RankedResults(results: $keyword->results, weight: $weight['keyword'])
 			);
 
 			// Return top N results.
-			$finalResults = array_slice($combined, 0, $limit);
+			$finalResults = array_slice($combined, 0, $query->limit);
 
 			return [
 				'results' => $finalResults,
@@ -558,11 +541,12 @@ class VectorSearchHandler {
 	 * The keyword and vector weights, scaled to sum to one when positive;
 	 * a missing weight is 0.5.
 	 *
-	 * @param array<string, mixed> $weights The requested weights.
+	 * @param KeywordFusion $keyword The keyword side carrying the requested weights.
 	 *
 	 * @return array{keyword: mixed, vector: mixed} The weights.
 	 */
-	private function normalisedWeights(array $weights): array {
+	private function normalisedWeights(KeywordFusion $keyword): array {
+		$weights       = $keyword->weights;
 		$keywordWeight = $weights['keyword'] ?? 0.5;
 		$vectorWeight  = $weights['vector'] ?? 0.5;
 
@@ -579,14 +563,13 @@ class VectorSearchHandler {
 	 * The vector side of a hybrid search: twice the limit, and none (logged)
 	 * when the search fails.
 	 *
-	 * @param array $queryEmbedding Query embedding vector
-	 * @param int   $limit          The hybrid limit.
+	 * @param VectorQuery $query Query embedding vector and the hybrid limit.
 	 *
 	 * @return array<int, array<string, mixed>> The vector results.
 	 */
-	private function hybridVectorResults(array $queryEmbedding, int $limit): array {
+	private function hybridVectorResults(VectorQuery $query): array {
 		try {
-			return $this->semanticSearch(queryEmbedding: $queryEmbedding, limit: $limit * 2, filters: []);
+			return $this->semanticSearch(query: new VectorQuery(embedding: $query->embedding, limit: $query->limit * 2));
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[VectorSearchHandler] Vector search failed in hybrid search',
@@ -751,8 +734,7 @@ class VectorSearchHandler {
 				->from('openregister_vectors');
 
 			// Apply filters.
-			$this->applyFetchFilter(qb: $qb, column: 'entity_type', value: ($filters['entity_type'] ?? null));
-			$this->applyFetchFilter(qb: $qb, column: 'entity_id', value: ($filters['entity_id'] ?? null));
+			$this->applyFetchFilters(qb: $qb, filters: $filters);
 
 			// Approximate-fallback bound (hybrid-document-search, decision 4):
 			// max_vectors caps how many BLOB rows the O(n) PHP cosine fallback
@@ -783,27 +765,29 @@ class VectorSearchHandler {
 	}//end fetchVectors()
 
 	/**
-	 * Narrow the fallback fetch on one column: IN for a list, = for a value,
-	 * nothing for null.
+	 * Narrow the fallback fetch on each entity column (entity_type, entity_id):
+	 * IN for a list, = for a value, nothing for null.
 	 *
-	 * @param IQueryBuilder $qb     The fetch being built.
-	 * @param string        $column The column (entity_type or entity_id).
-	 * @param mixed         $value  The filter value.
+	 * @param IQueryBuilder        $qb      The fetch being built.
+	 * @param array<string, mixed> $filters The filters (entity_type, entity_id, etc.).
 	 *
 	 * @return void
 	 */
-	private function applyFetchFilter(IQueryBuilder $qb, string $column, mixed $value): void {
-		if ($value === null) {
-			return;
-		}
+	private function applyFetchFilters(IQueryBuilder $qb, array $filters): void {
+		foreach (array_keys(self::KNN_PARAMETER_NAMES) as $column) {
+			$value = ($filters[$column] ?? null);
+			if ($value === null) {
+				continue;
+			}
 
-		if (is_array($value) === true) {
-			$qb->andWhere($qb->expr()->in($column, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
-			return;
-		}
+			if (is_array($value) === true) {
+				$qb->andWhere($qb->expr()->in($column, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)));
+				continue;
+			}
 
-		$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
-	}//end applyFetchFilter()
+			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+		}
+	}//end applyFetchFilters()
 
 	/**
 	 * Calculate cosine similarity between two vectors

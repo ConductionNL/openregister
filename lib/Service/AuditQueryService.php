@@ -34,9 +34,8 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -73,15 +72,12 @@ class AuditQueryService implements AuditQueryServiceInterface {
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objectService Cross-schema object search (audit entries ARE objects).
-	 * @param RegisterMapperInterface $registerMapper Register lookup + register/schema relationship helpers.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
+	 * @param SchemaCatalogInterface    $catalog       Register and schema lookup + register/schema relationship helpers.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly SchemaCatalogInterface $catalog,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -188,7 +184,7 @@ class AuditQueryService implements AuditQueryServiceInterface {
 		}
 
 		$pairs = [];
-		foreach ($this->registerMapper->findAll() as $register) {
+		foreach ($this->catalog->registers()->findAll() as $register) {
 			$pairs = array_merge($pairs, $this->auditSchemaPairsForRegister(register: $register));
 		}
 
@@ -215,7 +211,7 @@ class AuditQueryService implements AuditQueryServiceInterface {
 	 */
 	private function auditSchemaPairsForRegisterSlug($registerSlug): array {
 		try {
-			$register = $this->registerMapper->find(id: $registerSlug);
+			$register = $this->catalog->registers()->find(id: $registerSlug);
 		} catch (DoesNotExistException $e) {
 			return [];
 		}
@@ -233,7 +229,7 @@ class AuditQueryService implements AuditQueryServiceInterface {
 	 */
 	private function pairsForExplicitSchema($registerSlug, $schemaSlug): array {
 		try {
-			$schema = $this->schemaMapper->find(id: $schemaSlug);
+			$schema = $this->catalog->schemas()->find(id: $schemaSlug);
 		} catch (DoesNotExistException $e) {
 			return [];
 		}
@@ -255,7 +251,7 @@ class AuditQueryService implements AuditQueryServiceInterface {
 	 */
 	private function pairOnRegister($registerSlug, Schema $schema): array {
 		try {
-			$register = $this->registerMapper->find(id: $registerSlug);
+			$register = $this->catalog->registers()->find(id: $registerSlug);
 		} catch (DoesNotExistException $e) {
 			return [];
 		}
@@ -272,9 +268,9 @@ class AuditQueryService implements AuditQueryServiceInterface {
 	 */
 	private function pairsOnRegistersWith(Schema $schema): array {
 		$pairs = [];
-		foreach ($this->registerMapper->getAllRegisterIdsWithSchema(schemaId: $schema->getId()) as $registerId) {
+		foreach ($this->catalog->registers()->getAllRegisterIdsWithSchema(schemaId: $schema->getId()) as $registerId) {
 			try {
-				$pairs[] = [$this->registerMapper->find(id: $registerId), $schema];
+				$pairs[] = [$this->catalog->registers()->find(id: $registerId), $schema];
 			} catch (DoesNotExistException $e) {
 				continue;
 			}
@@ -292,7 +288,7 @@ class AuditQueryService implements AuditQueryServiceInterface {
 	 */
 	private function auditSchemaPairsForRegister(Register $register): array {
 		$pairs = [];
-		foreach ($this->registerMapper->getSchemasByRegisterId(registerId: $register->getId()) as $schema) {
+		foreach ($this->catalog->registers()->getSchemasByRegisterId(registerId: $register->getId()) as $schema) {
 			if ($this->looksLikeAuditSchema(schema: $schema) === true) {
 				$pairs[] = [$register, $schema];
 			}

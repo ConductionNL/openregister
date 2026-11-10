@@ -101,11 +101,7 @@ import {
 						{{ row.title }}
 						<ManagedBadge :config="getManagingConfiguration(row)" />
 					</strong>
-					<span
-						v-if="row.description"
-						class="textDescription textEllipsis"
-						>{{ row.description }}</span
-					>
+					<IndexRowDescription :text="row.description" />
 				</div>
 			</template>
 
@@ -122,14 +118,11 @@ import {
 				}}
 			</template>
 
-			<!-- Custom column: created date -->
-			<template #column-created="{ row }">
-				{{ listDateTime(row.created) }}
-			</template>
-
-			<!-- Custom column: updated date -->
-			<template #column-updated="{ row }">
-				{{ listDateTime(row.updated) }}
+			<!-- Custom columns: created and updated dates -->
+			<template
+				v-for="key in ['created', 'updated']"
+				#[`column-${key}`]="{ row }">
+				{{ listDateTime(row[key]) }}
 			</template>
 
 			<!-- Custom row actions for table view -->
@@ -154,12 +147,17 @@ import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 import RegisterFormFields from '../../components/register/RegisterFormFields.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ManagedBadge from '../../components/shared/ManagedBadge.vue'
+import IndexRowDescription from '../IndexRowDescription.vue'
+import {
+	headerListData,
+	headerListMethods,
+} from '../../composables/headerListControls.js'
 import {
 	isExternalConfiguration,
 	isLocalConfiguration,
 	managedRowClass,
 } from '../../composables/managedConfiguration.js'
-import { applyFilterChange, filterRows } from '../../services/listFilter.js'
+import { filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
 import { deleteAction, editAction } from '../../services/menuActions.js'
 import {
@@ -167,10 +165,7 @@ import {
 	registerPayload,
 	schemaOptionsOf,
 } from '../../services/registerForm.js'
-import {
-	BUILTIN_ACTIONS_OFF,
-	timestampColumns,
-} from '../indexPageOptions.js'
+import { timestampColumns } from '../indexPageOptions.js'
 
 /**
  * How the names cache changed in size, in words.
@@ -230,6 +225,7 @@ function failureText(error) {
 export default {
 	name: 'RegistersIndex',
 	components: {
+		IndexRowDescription,
 		ActionMenu,
 		NcActionButton,
 		Upload,
@@ -244,16 +240,10 @@ export default {
 
 	data() {
 		return {
-			builtinActionsOff: BUILTIN_ACTIONS_OFF,
+			...headerListData(),
 			selectedRegisters: [],
-			isRefreshing: false,
 			schemaSelectOptions: [],
 			schemasLoading: false,
-			// The header the list is sorted by; null keeps the store's order.
-			sortKey: null,
-			sortOrder: 'asc',
-			// The header filters, as `{ paramKey: values[] }` (`title[like]`).
-			activeFilters: {},
 		}
 	},
 
@@ -375,6 +365,8 @@ export default {
 	},
 
 	methods: {
+		...headerListMethods(() => registerStore),
+
 		/**
 		 * The menu of one register.
 		 *
@@ -507,34 +499,6 @@ export default {
 			} finally {
 				this.isRefreshing = false
 			}
-		},
-
-		/**
-		 * Sort by a clicked header. The list is loaded whole, so it is sorted
-		 * here, and paging goes back to page 1.
-		 *
-		 * @param {{key: string, order: string}} payload The header and direction.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
-		 */
-		onSort(payload) {
-			this.sortKey = payload && payload.key ? payload.key : null
-			this.sortOrder = payload && payload.order === 'desc' ? 'desc' : 'asc'
-			registerStore.setPagination(1, registerStore.pagination.limit || 20)
-		},
-
-		/**
-		 * Apply a header filter on the loaded list and go back to page 1.
-		 *
-		 * @param {{key: string, values: Array}} payload The filter change.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
-		 */
-		onFilterChange(payload) {
-			this.activeFilters = applyFilterChange(this.activeFilters, payload)
-			registerStore.setPagination(1, registerStore.pagination.limit || 20)
 		},
 
 		/**
@@ -715,22 +679,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-/* Table row accents. Drawn with an inset box-shadow, never border-left: a
-   border adds layout width and shifts the row's cell content sideways, while
-   box-shadow paints inside the box. Matches .cn-table-row--selected.
+@use '../managedRowAccents.scss' as *;
 
-   Skipped on a selected row so the library's .cn-table-row--selected accent
-   wins. Scoping adds a [data-v-*] attribute, which would otherwise outweigh
-   the library's single-class rule and leave a selected row showing its
-   managed/local colour instead of the selection colour. */
-
-/* Managed registers (external - green) */
-:deep(.viewTableRow--managed:not(.cn-table-row--selected)) {
-	box-shadow: inset 3px 0 0 0 var(--color-success);
-}
-
-/* Local configurations (orange) */
-:deep(.viewTableRow--local:not(.cn-table-row--selected)) {
-	box-shadow: inset 3px 0 0 0 var(--color-warning);
-}
+@include managed-row-accents;
 </style>

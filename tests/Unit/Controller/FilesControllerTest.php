@@ -26,6 +26,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
 
 class FilesControllerTest extends TestCase {
 	private FilesController $controller;
@@ -46,7 +47,6 @@ class FilesControllerTest extends TestCase {
 		$this->userManager = $this->createMock(IUserManager::class);
 
 		$this->controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -78,8 +78,8 @@ class FilesControllerTest extends TestCase {
 
 		$entity = new \OCA\OpenRegister\Files\Db\File();
 		$this->fileService->expects($this->once())
-			->method('updateFileMetadata')
-			->with(7, 'a scanned invoice', 'finance', ['paid'])
+			->method('changeFileMetadata')
+			->with(new FileMetadataChange(7, 'a scanned invoice', 'finance', ['paid']))
 			->willReturn($entity);
 
 		$response = $this->controller->updateMetadata(
@@ -105,8 +105,8 @@ class FilesControllerTest extends TestCase {
 		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
 
 		$this->fileService->expects($this->once())
-			->method('updateFileMetadata')
-			->with(7, null, 'finance', null)
+			->method('changeFileMetadata')
+			->with(new FileMetadataChange(7, null, 'finance', null))
 			->willReturn(new \OCA\OpenRegister\Files\Db\File());
 
 		$this->controller->updateMetadata(register: 'reg', schema: 'sch', id: 'obj-1', fileId: 7);
@@ -123,8 +123,8 @@ class FilesControllerTest extends TestCase {
 		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
 
 		$this->fileService->expects($this->once())
-			->method('updateFileMetadata')
-			->with(7, '', null, null)
+			->method('changeFileMetadata')
+			->with(new FileMetadataChange(7, '', null, null))
 			->willReturn(new \OCA\OpenRegister\Files\Db\File());
 
 		$this->controller->updateMetadata(register: 'reg', schema: 'sch', id: 'obj-1', fileId: 7);
@@ -138,7 +138,7 @@ class FilesControllerTest extends TestCase {
 	public function testUpdateMetadataOnAMissingObjectIs404(): void {
 		$this->request->method('getParams')->willReturn(['category' => 'x']);
 		$this->objectService->method('getObject')->willReturn(null);
-		$this->fileService->expects($this->never())->method('updateFileMetadata');
+		$this->fileService->expects($this->never())->method('changeFileMetadata');
 
 		$this->assertSame(
 			404,
@@ -367,6 +367,8 @@ class FilesControllerTest extends TestCase {
 	public function testPage(): void {
 		$result = $this->controller->page();
 		$this->assertInstanceOf(TemplateResponse::class, $result);
+		$this->assertSame('index', $result->getTemplateName());
+		$this->assertSame('openregister', $result->getApp());
 	}
 
 	// ==================== index() Tests ====================
@@ -449,6 +451,9 @@ class FilesControllerTest extends TestCase {
 		$result = $this->controller->show('reg1', 'schema1', 'obj1', 1);
 
 		$this->assertInstanceOf(StreamResponse::class, $result);
+		$this->assertSame('text/plain', $result->getHeaders()['Content-Type']);
+		$this->assertStringContainsString('filename="test.txt"', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('42', $result->getHeaders()['Content-Length']);
 		fclose($resource);
 	}
 
@@ -528,6 +533,9 @@ class FilesControllerTest extends TestCase {
 		$result = $this->controller->show('reg1', 'schema1', 'obj1', 42);
 
 		$this->assertInstanceOf(StreamResponse::class, $result);
+		$this->assertSame('image/png', $result->getHeaders()['Content-Type']);
+		$this->assertStringContainsString('filename="logo.png"', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('1024', $result->getHeaders()['Content-Length']);
 		fclose($resource);
 	}
 
@@ -614,6 +622,9 @@ class FilesControllerTest extends TestCase {
 		$result = $this->controller->show('reg1', 'schema1', 'obj1', 42);
 
 		$this->assertInstanceOf(StreamResponse::class, $result);
+		$this->assertSame('application/pdf', $result->getHeaders()['Content-Type']);
+		$this->assertStringContainsString('filename="doc.pdf"', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame('2048', $result->getHeaders()['Content-Length']);
 		fclose($resource);
 	}
 
@@ -1360,7 +1371,7 @@ class FilesControllerTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$file = $this->createMock(File::class);
-		$this->fileService->method('updateFile')->willReturn($file);
+		$this->fileService->method('overwriteFile')->willReturn($file);
 		$this->fileService->method('formatFile')->willReturn(['id' => 1, 'name' => 'updated.txt']);
 
 		$this->request->method('getParams')->willReturn([
@@ -1378,7 +1389,7 @@ class FilesControllerTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$file = $this->createMock(File::class);
-		$this->fileService->method('updateFile')->willReturn($file);
+		$this->fileService->method('overwriteFile')->willReturn($file);
 		$this->fileService->method('formatFile')->willReturn(['id' => 1]);
 
 		$this->request->method('getParams')->willReturn([
@@ -1405,7 +1416,7 @@ class FilesControllerTest extends TestCase {
 		$object = $this->createMock(ObjectEntity::class);
 		$this->setupObjectServiceMocks($object);
 
-		$this->fileService->method('updateFile')
+		$this->fileService->method('overwriteFile')
 			->willThrowException(new Exception('Update failed'));
 
 		$this->request->method('getParams')->willReturn([
@@ -1424,7 +1435,7 @@ class FilesControllerTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$file = $this->createMock(File::class);
-		$this->fileService->method('updateFile')->willReturn($file);
+		$this->fileService->method('overwriteFile')->willReturn($file);
 		$this->fileService->method('formatFile')->willReturn(['id' => 1]);
 
 		$this->request->method('getParams')->willReturn([]);
@@ -1709,6 +1720,8 @@ class FilesControllerTest extends TestCase {
 	// -- validateUploadedFile --
 
 	public function testValidateUploadedFileSuccess(): void {
+		$this->expectNotToPerformAssertions();
+
 		$tmpFile = tempnam(sys_get_temp_dir(), 'test_');
 		file_put_contents($tmpFile, 'test content');
 
@@ -1720,7 +1733,6 @@ class FilesControllerTest extends TestCase {
 
 		// Should not throw
 		$this->invokePrivateMethod('validateUploadedFile', [$file]);
-		$this->assertTrue(true);
 
 		@unlink($tmpFile);
 	}

@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Notifications\Controller\Support\TimelineAdminControllerServices;
 use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TextBlockService;
@@ -106,18 +107,16 @@ class TimelineAdminController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                          $appName  App name.
 	 * @param IRequest                        $request  Request.
 	 * @param TimelineAdminControllerServices $services The kinds, references, text blocks and session.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		TimelineAdminControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->kinds = $services->kinds;
 		$this->references = $services->references;

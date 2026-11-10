@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Mcp\McpDiscoveryRun;
+use OCA\OpenRegister\Mcp\McpProviderCandidate;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\PerAppMcpProviderProbe;
 use OCP\App\IAppManager;
@@ -113,10 +115,10 @@ class PerAppMcpProviderProbeGoldenTest extends TestCase
                 return [$appId . ':a', $appId . ':b', $appId . ':c'];
             }
 
-            protected function tryResolveMcpProviderCandidate(ContainerInterface $container, LoggerInterface $logger, string $appId, string $key): ?IMcpToolProvider
+            protected function tryResolveMcpProviderCandidate(McpDiscoveryRun $run, McpProviderCandidate $candidate): ?IMcpToolProvider
             {
-                $this->tried[] = $key;
-                return match ($key) {
+                $this->tried[] = $candidate->key;
+                return match ($candidate->key) {
                     'one:b' => $this->first,
                     'two:a' => $this->other,
                     default => null,
@@ -134,10 +136,10 @@ class PerAppMcpProviderProbeGoldenTest extends TestCase
             }
         );
 
-        $providers = [];
-        $probe->collectPerAppMcpProviders($container, $this->createMock(LoggerInterface::class), $providers);
+        $run = new McpDiscoveryRun($container, $this->createMock(LoggerInterface::class));
+        $probe->collectPerAppMcpProviders($run);
 
-        $this->assertSame([$first, $other], $providers);
+        $this->assertSame([$first, $other], $run->providers());
         $this->assertSame(['one:a', 'one:b', 'two:a', 'three:a', 'three:b', 'three:c'], $probe->tried);
     }//end testColdProbeStopsAtTheFirstResolvingCandidate()
 }//end class

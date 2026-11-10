@@ -128,9 +128,10 @@ class SecuritySettingAnnouncer {
 		$actor = $this->actor();
 		$sent = 0;
 		foreach ($changes as $path => $change) {
-			$parameters = $this->parameters(path: $path, change: $change, actor: $actor);
+			$setting = new SettingChange(path: (string)$path, old: $change['old'], new: $change['new']);
+			$parameters = $this->parameters(change: $setting, actor: $actor);
 			foreach ($recipients as $uid) {
-				$sent += $this->deliver(uid: $uid, path: $path, parameters: $parameters);
+				$sent += $this->deliver(uid: $uid, parameters: $parameters);
 			}
 		}
 
@@ -176,28 +177,27 @@ class SecuritySettingAnnouncer {
 	/**
 	 * The notification parameters for one change.
 	 *
-	 * @param string                        $path   The setting path.
-	 * @param array{old: mixed, new: mixed} $change The old and new value.
-	 * @param string                        $actor  Who made the change.
+	 * @param SettingChange $change The setting path and its old and new value.
+	 * @param string        $actor  Who made the change.
 	 *
 	 * @return array<string, string|bool> The parameters, with no values for a secret.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function parameters(string $path, array $change, string $actor): array {
+	public function parameters(SettingChange $change, string $actor): array {
 		$parameters = [
-			'setting' => $path,
-			'label' => $this->registry->label(path: $path),
+			'setting' => $change->path,
+			'label' => $this->registry->label(path: $change->path),
 			'actor' => $actor,
-			'secret' => $this->registry->isSecret(path: $path),
+			'secret' => $this->registry->isSecret(path: $change->path),
 		];
 
 		if ($parameters['secret'] === true) {
 			return $parameters;
 		}
 
-		$parameters['oldValue'] = self::render(value: $change['old']);
-		$parameters['newValue'] = self::render(value: $change['new']);
+		$parameters['oldValue'] = self::render(value: $change->old);
+		$parameters['newValue'] = self::render(value: $change->new);
 
 		return $parameters;
 	}//end parameters()
@@ -282,14 +282,14 @@ class SecuritySettingAnnouncer {
 	 * Deliver one notification.
 	 *
 	 * @param string                     $uid        The recipient.
-	 * @param string                     $path       The setting path, used as the object id.
-	 * @param array<string, string|bool> $parameters The subject parameters.
+	 * @param array<string, string|bool> $parameters The subject parameters; their `setting` path is the object id.
 	 *
 	 * @return int 1 when delivered, 0 when not.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function deliver(string $uid, string $path, array $parameters): int {
+	private function deliver(string $uid, array $parameters): int {
+		$path = (string)$parameters['setting'];
 		try {
 			$notification = $this->recipients->notifications->createNotification();
 			$notification->setApp('openregister')

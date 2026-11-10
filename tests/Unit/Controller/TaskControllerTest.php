@@ -36,6 +36,7 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
@@ -53,6 +54,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
 
 /**
  * HTTP status and body translation for every task route.
@@ -181,7 +183,9 @@ class TaskControllerTest extends TestCase {
 	 */
 	public function testIndexReturnsTheInboxPageForTheSession(): void {
 		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
-			function (TaskInboxCriteria $criteria, int $limit, int $offset): array {
+			function (TaskInboxCriteria $criteria, TaskInboxPage $page): array {
+				$limit = $page->limit;
+				$offset = $page->offset;
 				$this->assertSame('alice', $criteria->uid);
 				$this->assertSame(['reviewers'], $criteria->groupIds);
 				$this->assertFalse($criteria->isAdmin);
@@ -210,7 +214,9 @@ class TaskControllerTest extends TestCase {
 	public function testIndexPassesOpenFirstIntoTheCriteria(): void {
 		$seen = [];
 		$this->inbox->expects($this->exactly(2))->method('inbox')->willReturnCallback(
-			function (TaskInboxCriteria $criteria, int $limit, int $offset) use (&$seen): array {
+			function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$seen): array {
+				$limit = $page->limit;
+				$offset = $page->offset;
 				$seen[] = $criteria->openFirst;
 
 				return ['results' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset];
@@ -315,7 +321,7 @@ class TaskControllerTest extends TestCase {
 	 */
 	public function testCompletePassesTheFieldValuesThrough(): void {
 		$this->completion->expects($this->once())->method('complete')
-			->with('t-1', 'rejected', null, 'late', ['reason' => 'late'], 'alice')
+			->with('t-1', new TaskAnswer(outcome: 'rejected', comment: 'late'), ['reason' => 'late'], 'alice')
 			->willReturn($this->task());
 
 		$response = $this->controller->complete(uuid: 't-1', outcome: 'rejected', comment: 'late', data: ['reason' => 'late']);

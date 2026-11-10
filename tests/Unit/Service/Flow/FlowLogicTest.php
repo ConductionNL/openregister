@@ -10,8 +10,10 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
@@ -92,12 +94,10 @@ class FlowLogicTest extends TestCase {
 
 	private function walk(array $flow, array $items, TrackingDispatcher $dispatcher): array {
 		return $this->engine->run(
-			flow: $flow,
-			store: new MethodMarkingStore(false, 'marking'),
-			subject: new LogicSubject(),
-			dispatcher: $dispatcher,
-			context: [],
-			items: $items
+			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new LogicSubject(), dispatcher: $dispatcher)),
+			origin: new FlowRunOrigin(
+				items: $items
+			)
 		);
 	}
 
@@ -299,12 +299,10 @@ class FlowLogicTest extends TestCase {
 
 		$d = new RouteTaggingDispatcher(tag: 'no');
 		$result = $this->engine->run(
-			flow: $flow,
-			store: new MethodMarkingStore(false, 'marking'),
-			subject: new LogicSubject(),
-			dispatcher: $d,
-			context: [],
-			items: [FlowItems::item(json: ['name' => 'Case 7'])]
+			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new LogicSubject(), dispatcher: $d)),
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['name' => 'Case 7'])]
+			)
 		);
 
 		$this->assertSame(['route', 'rejected'], $d->ran, 'the rejection branch, and only it, fires');
@@ -337,12 +335,10 @@ class FlowLogicTest extends TestCase {
 
 		$d = new RouteTaggingDispatcher(tag: 'no');
 		$this->engine->run(
-			flow: $flow,
-			store: new MethodMarkingStore(false, 'marking'),
-			subject: new LogicSubject(),
-			dispatcher: $d,
-			context: [],
-			items: [FlowItems::item(json: ['name' => 'Case 7'])]
+			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new LogicSubject(), dispatcher: $d)),
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['name' => 'Case 7'])]
+			)
 		);
 
 		$this->assertSame(['route', 'rejected'], $d->ran, 'the token follows the routing decision, not declaration order');

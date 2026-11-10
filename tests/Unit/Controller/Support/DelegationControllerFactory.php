@@ -18,7 +18,7 @@ final class DelegationControllerFactory {
 	/**
 	 * The constructor arguments of DelegationController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param DelegationGrantMapper $grants Constructor argument.
 	 * @param DelegationConsentService $consent Constructor argument.
@@ -44,7 +44,6 @@ final class DelegationControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\DelegationControllerServices(
 				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(

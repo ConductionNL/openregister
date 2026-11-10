@@ -230,6 +230,20 @@ async function pick(wrapper, id, value) {
 describe.each(Object.keys(SIDEBARS))('route sidebar %s', (name) => {
 	const entry = SIDEBARS[name]
 
+	it('renders the whole filters tab: fields, clear button and hint', async () => {
+		const { wrapper } = await open(entry)
+		const tab = wrapper
+			.find('[id="filters-tab"]')
+			.html()
+			.replace(/ data-v-[a-f0-9]+(="")?/g, '')
+			.replace(/<!--[\s\S]*?-->/g, '')
+			.split('\n')
+			.filter((line) => line.trim() !== '')
+			.join('\n')
+		expect(tab).toContain('filter-hint')
+		expect(tab).toMatchSnapshot()
+	})
+
 	it('renders the filters without and with a register', async () => {
 		const { wrapper } = await open(entry)
 		expect(filters(wrapper)).toMatchSnapshot()

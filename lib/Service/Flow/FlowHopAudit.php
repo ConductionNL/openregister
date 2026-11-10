@@ -45,7 +45,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditFlowAttributionInterface;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunStep;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -84,13 +84,13 @@ class FlowHopAudit {
 	 * Constructor.
 	 *
 	 * @param AuditTrailMapperInterface $audit     Writes the row.
-	 * @param FlowMapper                $flows     Reads the flow's own flag.
+	 * @param FlowMapperInterface                $flows     Reads the flow's own flag.
 	 * @param IAppConfig                $appConfig Reads the instance default.
 	 * @param LoggerInterface           $logger    Records a row that could not be written.
 	 */
 	public function __construct(
 		private readonly AuditTrailMapperInterface $audit,
-		private readonly FlowMapper $flows,
+		private readonly FlowMapperInterface $flows,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {

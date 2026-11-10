@@ -33,11 +33,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Controller\Support\ImportPreviewControllerServices;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapperInterface;
 use OCA\OpenRegister\Db\ImportPreviewRowMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Import\ConflictPolicyNames;
@@ -138,16 +140,14 @@ class ImportPreviewController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param ImportPreviewControllerServices $services The import preview controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ImportPreviewControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->service = $services->domain->service;
 		$this->previewMapper = $services->mappers->previewMapper;
 		$this->rowMapper = $services->mappers->rowMapper;
@@ -224,9 +224,7 @@ class ImportPreviewController extends Controller {
 
 		$previews = $this->previewMapper->findByActor(
 			createdBy: $uid,
-			state: $state,
-			limit: $limit,
-			offset: $offset
+			query: new ListQuery(limit: $limit, offset: $offset, filters: ['state' => $state])
 		);
 
 		return new JSONResponse(data: ['results' => $previews]);

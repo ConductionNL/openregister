@@ -50,7 +50,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
  */
-class ExampleSetTimelineEntries extends ExampleSetEngineRows {
+class ExampleSetTimelineEntries extends ExampleSetEngineRows implements ExampleSetTimelineRowsInterface {
 
 	/**
 	 * The entry fields a fragment may set.
@@ -68,6 +68,17 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
+
+	/**
+	 * This writer, as the engine drives it.
+	 *
+	 * @return ExampleSetEngineRows
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
+	 */
+	public function rows(): ExampleSetEngineRows {
+		return $this;
+	}//end rows()
 
 	/**
 	 * The fragment and record part entries live in.

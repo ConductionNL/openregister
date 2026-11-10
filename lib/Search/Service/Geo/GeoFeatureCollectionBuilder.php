@@ -72,43 +72,55 @@ class GeoFeatureCollectionBuilder implements GeoFeatureCollectionBuilderInterfac
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
 	public function buildFeatureCollection(array $rows, ?string $geoProperty = null, ?array $fields = null, bool $includeArea = false): array {
-		$rows = array_filter($rows, static fn ($row): bool => is_array($row));
-		$features = array_map(
-			fn (array $row): ?array => $this->buildFeature(row: $row, geoProperty: $geoProperty, fields: $fields, includeArea: $includeArea),
-			$rows
+		return $this->collect(
+			rows: $rows,
+			shape: new FeatureShape(geoProperty: $geoProperty, fields: $fields, includeArea: $includeArea)
 		);
+	}//end buildFeatureCollection()
+
+	/**
+	 * Build a GeoJSON FeatureCollection from a list of object rows in one shape.
+	 *
+	 * @param array        $rows  Object rows (assoc arrays); a non-array row is skipped.
+	 * @param FeatureShape $shape The geo property, the allow-list and whether to add the area.
+	 *
+	 * @return array A GeoJSON FeatureCollection.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	public function collect(array $rows, FeatureShape $shape): array {
+		$rows = array_filter($rows, static fn ($row): bool => is_array($row));
+		$features = array_map(fn (array $row): ?array => $this->feature(row: $row, shape: $shape), $rows);
 
 		return [
 			'type' => 'FeatureCollection',
 			'features' => array_values(array_filter($features, static fn (?array $feature): bool => $feature !== null)),
 		];
-	}//end buildFeatureCollection()
+	}//end collect()
 
 	/**
-	 * Build a single GeoJSON Feature from an object row.
+	 * Build a single GeoJSON Feature from an object row in one shape.
 	 *
-	 * @param array $row The object row.
-	 * @param ?string $geoProperty Geo property name; null = auto-detect.
-	 * @param string[]|null $fields Property allow-list, or null for all.
-	 * @param bool $includeArea Add `_area_m2` for polygonal geometries.
+	 * @param array        $row   The object row.
+	 * @param FeatureShape $shape The geo property, the allow-list and whether to add the area.
 	 *
 	 * @return ?array The Feature, or null when no geometry is present.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	public function buildFeature(array $row, ?string $geoProperty = null, ?array $fields = null, bool $includeArea = false): ?array {
-		[$geomKey, $geometry] = $this->locateGeometry(row: $row, geoProperty: $geoProperty);
+	public function feature(array $row, FeatureShape $shape): ?array {
+		[$geomKey, $geometry] = $this->locateGeometry(row: $row, geoProperty: $shape->geoProperty);
 		if ($geometry === null) {
 			return null;
 		}
 
-		$properties = $this->allowedProperties(properties: $this->withoutKey(row: $row, key: $geomKey), fields: $fields);
-		if ($includeArea === true) {
+		$properties = $this->allowedProperties(properties: $this->withoutKey(row: $row, key: $geomKey), fields: $shape->fields);
+		if ($shape->includeArea === true) {
 			$properties = $this->withArea(properties: $properties, geometry: $geometry);
 		}
 
 		return $this->withId(feature: ['type' => 'Feature', 'geometry' => $geometry, 'properties' => $properties], row: $row);
-	}//end buildFeature()
+	}//end feature()
 
 	/**
 	 * Add the row's id (or `@self.id`) to the Feature, when it has one.
@@ -160,8 +172,19 @@ class GeoFeatureCollectionBuilder implements GeoFeatureCollectionBuilderInterfac
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
 	public function buildWfsResponse(array $rows, ?string $geoProperty = null, ?int $maxFeatures = null): array {
-		$collection = $this->buildFeatureCollection(rows: $rows, geoProperty: $geoProperty);
+		$collection = $this->collect(rows: $rows, shape: new FeatureShape(geoProperty: $geoProperty));
+		return $this->capped(collection: $collection, maxFeatures: $maxFeatures);
+	}//end buildWfsResponse()
 
+	/**
+	 * A FeatureCollection cut to at most maxFeatures features, with its `numberReturned`.
+	 *
+	 * @param array    $collection  A GeoJSON FeatureCollection.
+	 * @param int|null $maxFeatures Optional cap on returned features; a negative cap is ignored.
+	 *
+	 * @return array
+	 */
+	private function capped(array $collection, ?int $maxFeatures): array {
 		if ($maxFeatures !== null && $maxFeatures >= 0) {
 			$collection['features'] = array_slice($collection['features'], 0, $maxFeatures);
 		}
@@ -169,7 +192,7 @@ class GeoFeatureCollectionBuilder implements GeoFeatureCollectionBuilderInterfac
 		$collection['numberReturned'] = count($collection['features']);
 
 		return $collection;
-	}//end buildWfsResponse()
+	}//end capped()
 
 	/**
 	 * Locate a geometry value within a row.

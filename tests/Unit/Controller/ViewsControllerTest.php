@@ -20,6 +20,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 
 class ViewsControllerTest extends TestCase {
 	private ViewsController $controller;
@@ -52,13 +53,11 @@ class ViewsControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->viewers = new ViewerReachResolver(
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->userSession, $this->groupManager),
 			logger: $this->logger
 		);
 
 		$this->controller = new ViewsController(
-			'openregister',
 			$this->request,
 			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
 				$this->viewService,
@@ -232,7 +231,7 @@ class ViewsControllerTest extends TestCase {
 		]);
 
 		$view = $this->createViewEntity();
-		$this->viewService->method('update')->willReturn($view);
+		$this->viewService->method('revise')->willReturn($view);
 
 		$result = $this->controller->update('1');
 
@@ -248,7 +247,7 @@ class ViewsControllerTest extends TestCase {
 			'name' => 'Updated',
 			'query' => ['registers' => [1]],
 		]);
-		$this->viewService->method('update')
+		$this->viewService->method('revise')
 			->willThrowException(new DoesNotExistException('not found'));
 
 		$result = $this->controller->update('999');
@@ -263,7 +262,7 @@ class ViewsControllerTest extends TestCase {
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
 		$this->viewService->method('findById')->willReturn($view);
-		$this->viewService->method('update')->willReturn($view);
+		$this->viewService->method('revise')->willReturn($view);
 
 		$result = $this->controller->patch('1');
 
@@ -597,24 +596,30 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Updated Config View',
-				'Updated desc',
-				'testuser',
-				true,
-				false,
-				[
-					'registers' => [10],
-					'schemas' => [20],
-					'source' => 'elasticsearch',
-					'searchTerms' => ['foo'],
-					'facetFilters' => ['type' => 'bar'],
-					'enabledFacets' => ['type'],
-				],
-				null,
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Updated Config View',
+						description: 'Updated desc',
+						query: [
+							'registers' => [10],
+							'schemas' => [20],
+							'source' => 'elasticsearch',
+							'searchTerms' => ['foo'],
+							'facetFilters' => ['type' => 'bar'],
+							'enabledFacets' => ['type'],
+						],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: true,
+						isDefault: false
+					),
+					favoredBy: null
+				)
 			)
 			->willReturn($view);
 
@@ -633,7 +638,7 @@ class ViewsControllerTest extends TestCase {
 			'name' => 'Fail Update',
 			'query' => ['registers' => [1]],
 		]);
-		$this->viewService->method('update')
+		$this->viewService->method('revise')
 			->willThrowException(new \Exception('Update failed'));
 
 		$this->logger->expects($this->once())->method('error');
@@ -694,7 +699,7 @@ class ViewsControllerTest extends TestCase {
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
 		$this->viewService->method('findById')->willReturn($view);
-		$this->viewService->method('update')
+		$this->viewService->method('revise')
 			->willThrowException(new \Exception('Patch failed'));
 
 		$this->logger->expects($this->once())->method('error');
@@ -726,24 +731,30 @@ class ViewsControllerTest extends TestCase {
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Desc',
-				'testuser',
-				false,
-				false,
-				[
-					'registers' => [5],
-					'schemas' => [6],
-					'source' => 'solr',
-					'searchTerms' => ['hello'],
-					'facetFilters' => ['cat' => 'dog'],
-					'enabledFacets' => ['cat'],
-				],
-				[],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Desc',
+						query: [
+							'registers' => [5],
+							'schemas' => [6],
+							'source' => 'solr',
+							'searchTerms' => ['hello'],
+							'facetFilters' => ['cat' => 'dog'],
+							'enabledFacets' => ['cat'],
+						],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: false,
+						isDefault: false
+					),
+					favoredBy: []
+				)
 			)
 			->willReturn($updatedView);
 
@@ -764,17 +775,23 @@ class ViewsControllerTest extends TestCase {
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Desc',
-				'testuser',
-				false,
-				false,
-				['registers' => [99], 'schemas' => [88]],
-				[],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Desc',
+						query: ['registers' => [99], 'schemas' => [88]],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: false,
+						isDefault: false
+					),
+					favoredBy: []
+				)
 			)
 			->willReturn($updatedView);
 
@@ -796,17 +813,23 @@ class ViewsControllerTest extends TestCase {
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Desc',
-				'testuser',
-				true,
-				true,
-				['registers' => []],
-				[],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Desc',
+						query: ['registers' => []],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: true,
+						isDefault: true
+					),
+					favoredBy: []
+				)
 			)
 			->willReturn($updatedView);
 
@@ -827,17 +850,23 @@ class ViewsControllerTest extends TestCase {
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Desc',
-				'testuser',
-				false,
-				false,
-				['registers' => []],
-				['user1', 'user2'],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Desc',
+						query: ['registers' => []],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: false,
+						isDefault: false
+					),
+					favoredBy: ['user1', 'user2']
+				)
 			)
 			->willReturn($updatedView);
 
@@ -861,17 +890,23 @@ class ViewsControllerTest extends TestCase {
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Test View',
-				'Original Desc',
-				'testuser',
-				true,
-				true,
-				['registers' => [42]],
-				['userX'],
-				null
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Test View',
+						description: 'Original Desc',
+						query: ['registers' => [42]],
+						presentation: null
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: true,
+						isDefault: true
+					),
+					favoredBy: ['userX']
+				)
 			)
 			->willReturn($updatedView);
 
@@ -964,7 +999,7 @@ class ViewsControllerTest extends TestCase {
 			'presentation' => ['viewType' => 'calendar', 'calendar' => ['dateField' => 'missing']],
 		]);
 
-		$this->viewService->method('update')
+		$this->viewService->method('revise')
 			->willThrowException(new \InvalidArgumentException('Presentation calendar.dateField "missing" is not a property of the view\'s schema'));
 
 		$result = $this->controller->update('1');
@@ -985,17 +1020,23 @@ class ViewsControllerTest extends TestCase {
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
-			->method('update')
+			->method('revise')
 			->with(
 				'1',
-				'Renamed',
-				'Desc',
-				'testuser',
-				false,
-				false,
-				['registers' => []],
-				[],
-				$existingPresentation
+				new ViewEdit(
+					definition: new ViewDefinition(
+						name: 'Renamed',
+						description: 'Desc',
+						query: ['registers' => []],
+						presentation: $existingPresentation
+					),
+					audience: new ViewAudience(
+						owner: 'testuser',
+						isPublic: false,
+						isDefault: false
+					),
+					favoredBy: []
+				)
 			)
 			->willReturn($updatedView);
 
@@ -1187,7 +1228,7 @@ class ViewsControllerTest extends TestCase {
 		$published->setIsPublic(true);
 		$this->viewService->method('find')->willReturn($published);
 		$this->viewService->method('findById')->willReturn($published);
-		$this->viewService->method('update')->willReturn($published);
+		$this->viewService->method('revise')->willReturn($published);
 
 		$this->request->method('getParams')->willReturn(
 			[
@@ -1223,7 +1264,7 @@ class ViewsControllerTest extends TestCase {
 		$published->setIsPublic(true);
 		$this->viewService->method('find')->willReturn($published);
 		$this->viewService->method('findById')->willReturn($published);
-		$this->viewService->method('update')->willReturn($published);
+		$this->viewService->method('revise')->willReturn($published);
 
 		$this->request->method('getParams')->willReturn(['name' => 'Renamed by a stranger']);
 
@@ -1248,7 +1289,7 @@ class ViewsControllerTest extends TestCase {
 		$own->setIsPublic(true);
 		$this->viewService->method('find')->willReturn($own);
 		$this->viewService->method('findById')->willReturn($own);
-		$this->viewService->method('update')->willReturn($own);
+		$this->viewService->method('revise')->willReturn($own);
 
 		$this->request->method('getParams')->willReturn(
 			[

@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
 use Error;
+use OCA\OpenRegister\AppHost\Service\PublicPageManifests;
 use OCA\OpenRegister\AppHost\Service\PublicPageResolver;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\RedirectResponse;
@@ -101,11 +102,10 @@ class PublicPageResolverTest extends TestCase {
 
 	private function resolver(): PublicPageResolver {
 		return new PublicPageResolver(
-			appManager: $this->appManager,
+			manifests: new PublicPageManifests($this->appManager, $this->logger),
 			userSession: $this->session,
 			urlGenerator: $this->urls,
-			request: $this->request,
-			logger: $this->logger
+			request: $this->request
 		);
 	}
 

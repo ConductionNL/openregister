@@ -74,7 +74,22 @@ class SequenceService implements SequenceServiceInterface {
 	 * @throws DbException When the reservation cannot be completed.
 	 */
 	public function reserveNext(int $registerId, int $schemaId, string $scopeKey): int {
-		$scope = ['registerId' => $registerId, 'schemaId' => $schemaId, 'scopeKey' => $scopeKey];
+		return $this->reserveNextIn(sequence: new SequenceScope(registerId: $registerId, schemaId: $schemaId, scopeKey: $scopeKey));
+	}//end reserveNext()
+
+	/**
+	 * Atomically reserve and return the next number for the given scope.
+	 *
+	 * @param SequenceScope $sequence The register, schema and scope key of the counter.
+	 *
+	 * @return int The reserved running number (>= 1).
+	 *
+	 * @throws DbException When the reservation cannot be completed.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
+	 */
+	public function reserveNextIn(SequenceScope $sequence): int {
+		$scope = $sequence->toArray();
 		$this->db->beginTransaction();
 		try {
 			$reserved = $this->reserveInScope(scope: $scope);
@@ -84,7 +99,7 @@ class SequenceService implements SequenceServiceInterface {
 			$this->db->rollBack();
 			throw $e;
 		}
-	}//end reserveNext()
+	}//end reserveNextIn()
 
 	/**
 	 * Reserve the next number inside the open transaction.
@@ -96,7 +111,7 @@ class SequenceService implements SequenceServiceInterface {
 	 * @throws DbException When the reservation cannot be completed.
 	 */
 	private function reserveInScope(array $scope): int {
-		if ($this->mapper->incrementScope(...$scope) === 0) {
+		if ($this->mapper->incrementScope(new SequenceScope(...$scope)) === 0) {
 			// Scope row does not exist yet — seed it reserving value 1 by
 			// storing next_value = 2. A concurrent seeder may win the
 			// unique index; on that violation, fall back to the increment
@@ -118,7 +133,7 @@ class SequenceService implements SequenceServiceInterface {
 	 * @throws DbException When the row cannot be read.
 	 */
 	private function lastReserved(array $scope): int {
-		$row = $this->mapper->findForScope(...$scope);
+		$row = $this->mapper->findForScope(new SequenceScope(...$scope));
 		$next = (int)($row?->getNextValue() ?? 1);
 		return ($next - 1);
 	}//end lastReserved()
@@ -145,7 +160,7 @@ class SequenceService implements SequenceServiceInterface {
 			return ($nextValue - 1);
 		} catch (DbException $e) {
 			// Lost the insert race — the row now exists; increment it instead.
-			$this->mapper->incrementScope(...$scope);
+			$this->mapper->incrementScope(new SequenceScope(...$scope));
 			return $this->lastReserved(scope: $scope);
 		}
 	}//end seedScope()
@@ -192,25 +207,41 @@ class SequenceService implements SequenceServiceInterface {
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
 	public function advanceTo(int $registerId, int $schemaId, string $scopeKey, int $reserved): void {
+		$this->advanceScopeTo(sequence: new SequenceScope(registerId: $registerId, schemaId: $schemaId, scopeKey: $scopeKey), reserved: $reserved);
+	}//end advanceTo()
+
+	/**
+	 * Raise the counter of one scope so it never issues a number already issued elsewhere.
+	 *
+	 * @param SequenceScope $sequence The register, schema and scope key of the counter.
+	 * @param int           $reserved The number already issued elsewhere.
+	 *
+	 * @return void
+	 *
+	 * @throws DbException When the counter cannot be read or written.
+	 *
+	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
+	 */
+	public function advanceScopeTo(SequenceScope $sequence, int $reserved): void {
 		if ($reserved < 1) {
 			return;
 		}
 
-		$scope = ['registerId' => $registerId, 'schemaId' => $schemaId, 'scopeKey' => $scopeKey];
+		$scope = $sequence->toArray();
 		$target = ($reserved + 1);
-		if ($this->mapper->raiseTo(...$scope, minNextValue: $target) > 0) {
+		if ($this->mapper->raiseTo(new SequenceScope(...$scope), minNextValue: $target) > 0) {
 			return;
 		}
 
 		// Either the counter is already past this number, or it does not exist
 		// yet. Only the second needs anything doing, and the two are told apart
 		// by reading the row rather than by assuming which one it was.
-		if ($this->mapper->findForScope(...$scope) !== null) {
+		if ($this->mapper->findForScope(new SequenceScope(...$scope)) !== null) {
 			return;
 		}
 
 		$this->seedOrRaise(scope: $scope, target: $target);
-	}//end advanceTo()
+	}//end advanceScopeTo()
 
 	/**
 	 * Seed a missing counter at the target; if the seed fails, raise the counter instead.
@@ -230,7 +261,7 @@ class SequenceService implements SequenceServiceInterface {
 			$this->mapper->insert($this->newScopeRow(scope: $scope, nextValue: $target));
 		} catch (Throwable $e) {
 			// Lost the seed race. The row exists now, so raise it instead.
-			$this->mapper->raiseTo(...$scope, minNextValue: $target);
+			$this->mapper->raiseTo(new SequenceScope(...$scope), minNextValue: $target);
 		}
 	}//end seedOrRaise()
 }//end class

@@ -159,7 +159,6 @@ class FileRestrictionPathsTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		return FilesControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->fileService,
 			$objectService,
@@ -198,7 +197,7 @@ class FileRestrictionPathsTest extends TestCase {
 		$root->method('getId')->willReturn(7);
 		$root->method('getFirstNodeById')->willReturn($this->restricted);
 		$this->fileService->method('getObjectFolder')->willReturn($root);
-		$this->fileService->expects($this->never())->method('renameFile');
+		$this->fileService->expects($this->never())->method('renameAttachedFile');
 
 		$this->expectException(NotFoundException::class);
 		(new ObjectFolderBrowser($this->fileService, $this->guard(admitted: false)))->rename($this->object, self::RESTRICTED, 'x.pdf');

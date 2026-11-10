@@ -36,9 +36,10 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
-use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
+use OCA\OpenRegister\Service\Rbac\HierarchyLevel;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -87,18 +88,14 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param HierarchyDescender     $descender   Reads one level of children from a magic table.
-	 * @param HierarchyGrantExpander $hierarchies Reads a schema's hierarchy declaration.
-	 * @param ObjectTreeMappers      $mappers     Loads objects, filters them by read access, resolves register and schema.
-	 * @param RelationGraphService   $graphs      Holds the instance's node cap.
-	 * @param RenderObject           $renderer    Strips what the caller may not read from the properties a node carries.
-	 * @param LoggerInterface        $logger      The logger.
+	 * @param ObjectTreeSources      $sources  Reads children, the hierarchy declaration and the node cap.
+	 * @param SchemaCatalogInterface $catalog  Loads objects, filters them by read access, resolves register and schema.
+	 * @param RenderObject           $renderer Strips what the caller may not read from the properties a node carries.
+	 * @param LoggerInterface        $logger   The logger.
 	 */
 	public function __construct(
-		private readonly HierarchyDescender $descender,
-		private readonly HierarchyGrantExpander $hierarchies,
-		private readonly ObjectTreeMappers $mappers,
-		private readonly RelationGraphService $graphs,
+		private readonly ObjectTreeSources $sources,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly RenderObject $renderer,
 		private readonly LoggerInterface $logger,
 	) {
@@ -118,7 +115,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
 	 */
 	public function declarationFor(Schema $schema): ?array {
-		$hierarchy = $this->hierarchies->declarationFor(schema: $schema);
+		$hierarchy = $this->sources->hierarchies->declarationFor(schema: $schema);
 		if ($hierarchy !== null) {
 			return [
 				'property' => $hierarchy['parent'],
@@ -160,11 +157,9 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * A node the caller may not read is left out, and so is everything reached
 	 * only through it.
 	 *
-	 * @param ObjectEntity $root      The object to walk from, already read under the caller's RBAC.
-	 * @param string       $direction One of the DIRECTION_ constants.
-	 * @param int|null     $depth     The depth asked for; null means the declared bound.
-	 * @param string[]     $fields    Object properties to copy onto each node, after the read-side redaction.
-	 * @param bool         $_rbac     Whether to apply the caller's read access to every node.
+	 * @param ObjectEntity         $root  The object to walk from, already read under the caller's RBAC.
+	 * @param ObjectTreeQuery|null $query The direction, the depth and the fields asked for; null walks down to the declared bound.
+	 * @param bool                 $_rbac Whether to apply the caller's read access to every node.
 	 *
 	 * @return array{root: string, register: int, schema: int, parentProperty: string|null,
 	 *     direction: string, depth: int, requestedDepth: int|null, maxDepth: int,
@@ -175,16 +170,12 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 *
 	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
 	 */
-	public function tree(
-		ObjectEntity $root,
-		string $direction = self::DIRECTION_DESCENDANTS,
-		?int $depth = null,
-		array $fields = [],
-		bool $_rbac = true
-	): array {
-		$asked  = ['fields' => $fields, 'rbac' => $_rbac, 'direction' => $direction, 'requestedDepth' => $depth];
-		$answer = $this->rootAnswer(root: $root, walk: $asked);
-		$walk   = $this->treeWalk(root: $root, depth: $depth);
+	public function tree(ObjectEntity $root, ?ObjectTreeQuery $query = null, bool $_rbac = true): array {
+		$query ??= new ObjectTreeQuery();
+		$asked   = ['fields' => $query->fields, 'rbac' => $_rbac];
+		$answer  = self::rootAnswer(root: $root, query: $query);
+		$answer['nodes'] = [$this->rootNode(root: $root, walk: $asked)];
+		$walk    = $this->treeWalk(root: $root, depth: $query->depth);
 		if ($walk === null) {
 			return $answer;
 		}
@@ -193,26 +184,26 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	}//end tree()
 
 	/**
-	 * The tree answer with only the root, at level 0, and no declaration applied yet.
+	 * The tree answer with no nodes yet and no declaration applied yet.
 	 *
-	 * @param ObjectEntity $root The object to walk from.
-	 * @param array        $walk `fields`, `rbac`, `direction` and `requestedDepth` as the caller asked.
+	 * @param ObjectEntity    $root  The object to walk from.
+	 * @param ObjectTreeQuery $query The direction and depth the caller asked for.
 	 *
 	 * @return array<string, mixed> The answer.
 	 *
 	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
 	 */
-	private function rootAnswer(ObjectEntity $root, array $walk): array {
+	private static function rootAnswer(ObjectEntity $root, ObjectTreeQuery $query): array {
 		return [
 			'root' => (string)$root->getUuid(),
 			'register' => (int)$root->getRegister(),
 			'schema' => (int)$root->getSchema(),
 			'parentProperty' => null,
-			'direction' => $walk['direction'],
+			'direction' => $query->direction,
 			'depth' => 0,
-			'requestedDepth' => $walk['requestedDepth'],
+			'requestedDepth' => $query->depth,
 			'maxDepth' => 0,
-			'nodes' => [$this->rootNode(root: $root, walk: $walk)],
+			'nodes' => [],
 			'truncated' => false,
 			'truncatedBy' => null,
 		];
@@ -228,9 +219,9 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 */
 	private function rootNode(ObjectEntity $root, array $walk): array {
 		$rootUuid = (string)$root->getUuid();
-		$redacted = $this->redacted(objects: [$rootUuid => $root], fields: $walk['fields'], rbac: $walk['rbac']);
+		$redacted = $this->redacted(objects: [$rootUuid => $root], walk: $walk);
 
-		return $this->node(object: ($redacted[$rootUuid] ?? null), level: 0, parent: null, fields: $walk['fields'], uuid: $rootUuid);
+		return self::node(object: ($redacted[$rootUuid] ?? $rootUuid), fields: $walk['fields']);
 	}//end rootNode()
 
 	/**
@@ -289,7 +280,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 */
 	private function withBranches(array $answer, array $walk): array {
 		$ancestors   = $this->ancestorBranch(direction: $answer['direction'], walk: $walk);
-		$descendants = $this->descendantBranch(direction: $answer['direction'], rootUuid: $answer['root'], walk: $walk);
+		$descendants = $this->descendantBranch(direction: $answer['direction'], walk: $walk);
 
 		$answer['nodes'] = array_merge(
 			array_reverse($ancestors['nodes']),
@@ -322,14 +313,13 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * The descendants when the direction asks for them; an empty branch otherwise.
 	 *
 	 * @param string               $direction One of the DIRECTION_ constants.
-	 * @param string               $rootUuid  The root.
-	 * @param array<string, mixed> $walk      The walk.
+	 * @param array<string, mixed> $walk      The walk, with the `root` entity.
 	 *
 	 * @return array{nodes: array<int, array<string, mixed>>, truncatedBy: string|null} The branch.
 	 */
-	private function descendantBranch(string $direction, string $rootUuid, array $walk): array {
+	private function descendantBranch(string $direction, array $walk): array {
 		if ($direction === self::DIRECTION_DESCENDANTS || $direction === self::DIRECTION_BOTH) {
-			return $this->descendants(rootUuid: $rootUuid, walk: $walk);
+			return $this->descendants(rootUuid: (string)$walk['root']->getUuid(), walk: $walk);
 		}
 
 		return ['nodes' => [], 'truncatedBy' => null];
@@ -348,8 +338,8 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 			// Metadata only: which table and which declaration. Access to the
 			// rows is decided per node below.
 			return [
-				'register' => $this->mappers->registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false),
-				'schema' => $this->mappers->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false),
+				'register' => $this->catalog->registers()->find(id: $registerId, _rbac: false, _multitenancy: false),
+				'schema' => $this->catalog->schemas()->find(id: $schemaId, _rbac: false, _multitenancy: false),
 			];
 		} catch (Throwable $e) {
 			return null;
@@ -357,7 +347,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	}//end context()
 
 	/**
-	 * The descendants of the root, breadth first.
+	 * The descendants below the root, level by level, within the depth and the cap.
 	 *
 	 * @param string               $rootUuid The root.
 	 * @param array<string, mixed> $walk     The register, schema, property, depth, fields and rbac flag.
@@ -366,97 +356,89 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 */
 	private function descendants(string $rootUuid, array $walk): array {
 		$walk['table']  = MagicMapperInterface::TABLE_PREFIX.(int)$walk['register']->getId().'_'.(int)$walk['schema']->getId();
-		$walk['column'] = $this->descender->columnFor(property: $walk['property']);
-		$walk['cap']    = $this->graphs->maximumNodes();
+		$walk['column'] = $this->sources->descender->columnFor(property: $walk['property']);
+		$walk['cap']    = $this->sources->graphs->maximumNodes();
 
-		$state = ['nodes' => [], 'seen' => [$rootUuid => true], 'frontier' => [$rootUuid]];
+		$run = new TreeDescentRun(walk: $walk, rootUuid: $rootUuid);
 		for ($level = 1; $level <= $walk['depth']; $level++) {
-			$step = $this->descendLevel(walk: $walk, state: $state, level: $level);
-			if ($step['done'] === true) {
-				return ['nodes' => $step['state']['nodes'], 'truncatedBy' => $step['truncatedBy']];
+			$run->level = $level;
+			$stop       = $this->descendLevel(run: $run);
+			if ($stop !== null) {
+				return ['nodes' => $run->nodes, 'truncatedBy' => $stop['truncatedBy']];
 			}
-
-			$state = $step['state'];
 		}
 
-		return ['nodes' => $state['nodes'], 'truncatedBy' => $this->truncationBelow(walk: $walk, state: $state)];
+		return ['nodes' => $run->nodes, 'truncatedBy' => $this->truncationBelow(run: $run)];
 	}//end descendants()
 
 	/**
-	 * Walk one level down: read the frontier's readable children and add them as nodes.
+	 * Read one level below the frontier and add it to the run, or say why the walk ends here.
 	 *
-	 * @param array<string, mixed> $walk  The walk, with `table`, `column` and `cap`.
-	 * @param array<string, mixed> $state `nodes` so far, `seen` uuids and the `frontier` to read below.
-	 * @param int                  $level The level being read.
+	 * @param TreeDescentRun $run The descent, at the level being read.
 	 *
-	 * @return array{state: array<string, mixed>, done: bool, truncatedBy: string|null} The new state, and whether the walk ends here and why.
+	 * @return array{done: bool, truncatedBy: string|null}|null Why the walk ends, or null when it goes on.
 	 */
-	private function descendLevel(array $walk, array $state, int $level): array {
+	private function descendLevel(TreeDescentRun $run): array|null {
 		// What the cap still lets in, the root counted: the read below is
 		// bounded by it, so a level far wider than the cap is never fetched.
-		$read = $this->readableBelow(walk: $walk, state: $state);
+		$read = $this->readableBelow(run: $run);
 		$stop = $this->bounds->levelStop(read: $read);
 		if ($stop !== null) {
-			return $stop + ['state' => $state];
+			return $stop;
 		}
 
-		$state = $this->withLevel(walk: $walk, state: $state, children: $read['children'], level: $level);
-		return ['state' => $state, 'done' => false, 'truncatedBy' => null];
+		$this->withLevel(run: $run, children: $read['children']);
+		return null;
 	}//end descendLevel()
 
 	/**
-	 * The readable, unseen children of the frontier, within what the cap still admits.
+	 * The readable children below the frontier, bounded by what the cap still lets in.
 	 *
-	 * @param array<string, mixed> $walk  The walk, with `table`, `column` and `cap`.
-	 * @param array<string, mixed> $state `nodes`, `seen` and `frontier`.
+	 * @param TreeDescentRun $run The descent.
 	 *
 	 * @return array{children: array<string, string>, overflow: bool}|null The children, or null when the level cannot be read.
 	 */
-	private function readableBelow(array $walk, array $state): array|null {
+	private function readableBelow(TreeDescentRun $run): array|null {
 		return $this->readableChildren(
-			table: $walk['table'],
-			column: $walk['column'],
 			read: [
-				'parents' => $state['frontier'],
-				'budget' => ($walk['cap'] - count($state['nodes']) - 1),
-				'seen' => $state['seen'],
-				'walk' => $walk,
+				'parents' => $run->frontier,
+				'budget' => ($run->walk['cap'] - count($run->nodes) - 1),
+				'seen' => $run->seen,
+				'walk' => $run->walk,
 			]
 		);
 	}//end readableBelow()
 
 	/**
-	 * The state with one level of children added as nodes and made the new frontier.
+	 * Add one level of children to the run; they become the next frontier.
 	 *
-	 * @param array<string, mixed>  $walk     The walk.
-	 * @param array<string, mixed>  $state    `nodes`, `seen` and `frontier`.
+	 * @param TreeDescentRun        $run      The descent, at the level of the children.
 	 * @param array<string, string> $children Child uuid => parent uuid.
-	 * @param int                   $level    The level of the children.
 	 *
-	 * @return array<string, mixed> The new state.
+	 * @return void
 	 */
-	private function withLevel(array $walk, array $state, array $children, int $level): array {
-		$objects = $this->redacted(objects: $this->load(walk: $walk, uuids: array_keys($children)), fields: $walk['fields'], rbac: $walk['rbac']);
-		$state['frontier'] = [];
+	private function withLevel(TreeDescentRun $run, array $children): void {
+		$objects = $this->redacted(objects: $this->load(walk: $run->walk, uuids: array_keys($children)), walk: $run->walk);
+		$run->frontier = [];
 		foreach ($children as $child => $parent) {
-			$state['seen'][$child] = true;
-			$state['frontier'][]   = $child;
-			$state['nodes'][]      = $this->node(object: ($objects[$child] ?? null), level: $level, parent: $parent, fields: $walk['fields'], uuid: $child);
+			$node           = self::node(object: ($objects[$child] ?? $child), fields: $run->walk['fields']);
+			$node['level']  = $run->level;
+			$node['parent'] = $parent;
+			$run->seen[$child] = true;
+			$run->frontier[]   = $child;
+			$run->nodes[]      = $node;
 		}
-
-		return $state;
 	}//end withLevel()
 
 	/**
 	 * Why a walk that reached its depth bound stopped: a probe one level further down.
 	 *
-	 * @param array<string, mixed> $walk  The walk, with `table`, `column` and `cap`.
-	 * @param array<string, mixed> $state `nodes`, `seen` and `frontier`.
+	 * @param TreeDescentRun $run The descent, after its last level.
 	 *
 	 * @return string|null The truncation, or null when there is nothing below.
 	 */
-	private function truncationBelow(array $walk, array $state): string|null {
-		$read = $this->readableBelow(walk: $walk, state: $state);
+	private function truncationBelow(TreeDescentRun $run): string|null {
+		$read = $this->readableBelow(run: $run);
 		if ($read === null) {
 			return self::TRUNCATED_UNREADABLE;
 		}
@@ -488,21 +470,20 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * read and one whose read access could not be established: neither may be
 	 * answered as "nothing below".
 	 *
-	 * @param string               $table  The magic table.
-	 * @param string               $column The parent column.
-	 * @param array<string, mixed> $read   `parents` (the level to read below), `budget` (the children the cap still
-	 *                                     admits), `seen` (the uuids already in the answer) and `walk`.
+	 * @param array<string, mixed> $read `parents` (the level to read below), `budget` (the children the cap still
+	 *                                   admits), `seen` (the uuids already in the answer) and `walk` (with the
+	 *                                   magic `table` and the parent `column`).
 	 *
 	 * @return array{children: array<string, string>, overflow: bool}|null Child uuid => parent uuid, and whether the level is wider than the budget.
 	 */
-	private function readableChildren(string $table, string $column, array $read): ?array {
+	private function readableChildren(array $read): ?array {
 		$budget = max(0, $read['budget']);
-		$rows   = $this->childRows(table: $table, column: $column, parents: $read['parents'], limit: ($budget + 1));
+		$rows   = $this->childRows(read: $read, limit: ($budget + 1));
 		if ($rows === null) {
 			return null;
 		}
 
-		$bounded  = $this->bounds->withinBudget(rows: $rows, seen: $read['seen'], budget: $budget);
+		$bounded  = $this->bounds->withinBudget(rows: $rows, read: $read);
 		$readable = $this->readableOnly(walk: $read['walk'], uuids: $bounded['children']);
 		if ($readable === null) {
 			return null;
@@ -514,20 +495,21 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	/**
 	 * One bounded read of the children of a level; empty without parents, null when it fails.
 	 *
-	 * @param string             $table   The magic table.
-	 * @param string             $column  The parent column.
-	 * @param array<int, string> $parents The level to read below.
-	 * @param int                $limit   The most rows to read.
+	 * @param array<string, mixed> $read  `parents` (the level to read below) and `walk` (with `table` and `column`).
+	 * @param int                  $limit The most rows to read.
 	 *
 	 * @return array<string, string>|null Child uuid => parent uuid.
 	 */
-	private function childRows(string $table, string $column, array $parents, int $limit): array|null {
+	private function childRows(array $read, int $limit): array|null {
+		$parents = $read['parents'];
+		$table   = $read['walk']['table'];
+		$column  = $read['walk']['column'];
 		if ($parents === []) {
 			return [];
 		}
 
 		try {
-			return $this->descender->childrenOf(table: $table, parentColumn: $column, parentUuids: $parents, limit: $limit);
+			return $this->sources->descender->childrenOf(level: new HierarchyLevel(table: $table, parentColumn: $column, limit: $limit), parentUuids: $parents);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[ObjectTreeService] A level of the tree could not be read',
@@ -553,12 +535,14 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 */
 	private function ancestors(ObjectEntity $root, array $walk): array {
 		$chain = $this->ancestorChain(root: $root, walk: $walk);
-		$shown = $this->redacted(objects: $chain['chain'], fields: $walk['fields'], rbac: $walk['rbac']);
+		$shown = $this->redacted(objects: $chain['chain'], walk: $walk);
 		$uuids = array_keys($chain['chain']);
 		$nodes = [];
 		foreach ($uuids as $index => $uuid) {
-			$parent  = ($uuids[($index + 1)] ?? $chain['topParent']);
-			$nodes[] = $this->node(object: ($shown[$uuid] ?? null), level: -($index + 1), parent: $parent, fields: $walk['fields'], uuid: $uuid);
+			$node           = self::node(object: ($shown[$uuid] ?? $uuid), fields: $walk['fields']);
+			$node['level']  = -($index + 1);
+			$node['parent'] = ($uuids[($index + 1)] ?? $chain['topParent']);
+			$nodes[]        = $node;
 		}
 
 		return ['nodes' => $nodes, 'truncatedBy' => $chain['truncatedBy']];
@@ -580,7 +564,12 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 		$seen    = [(string)$root->getUuid() => true];
 		$current = $root;
 		for ($level = 1; $level <= ($walk['depth'] + 1); $level++) {
-			$step = $this->parentStep(object: $current, seen: $seen, walk: $walk);
+			$parentUuid = $this->bounds->reference(value: ($current->getObject()[$walk['property']] ?? null));
+			if ($parentUuid !== null && isset($seen[$parentUuid]) === true) {
+				$parentUuid = null;
+			}
+
+			$step = $this->parentStep(parentUuid: $parentUuid, walk: $walk);
 			if ($step['object'] === null || $level > $walk['depth']) {
 				return $this->bounds->climbEnd(chain: $chain, step: $step);
 			}
@@ -594,21 +583,19 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	}//end ancestorChain()
 
 	/**
-	 * The parent of one object when it exists, is new to the walk and is readable.
+	 * The parent of one object when it exists and is readable.
 	 *
 	 * Tells "there is none" (or it is a cycle) and "the caller may not read it"
 	 * from "read access could not be established": the last one is an
 	 * incomplete answer, and the tree says so.
 	 *
-	 * @param ObjectEntity         $object The object.
-	 * @param array<string, bool>  $seen   Every uuid already in the answer.
-	 * @param array<string, mixed> $walk   The walk.
+	 * @param string|null          $parentUuid The parent reference, null when there is none or it is already in the answer.
+	 * @param array<string, mixed> $walk       The walk.
 	 *
 	 * @return array{object: ObjectEntity|null, truncatedBy: string|null} The parent, or why there is none to show.
 	 */
-	private function parentStep(ObjectEntity $object, array $seen, array $walk): array {
-		$parentUuid = $this->bounds->reference(value: ($object->getObject()[$walk['property']] ?? null));
-		if ($parentUuid === null || isset($seen[$parentUuid]) === true) {
+	private function parentStep(?string $parentUuid, array $walk): array {
+		if ($parentUuid === null) {
 			return ['object' => null, 'truncatedBy' => null];
 		}
 
@@ -637,7 +624,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 			return $uuids;
 		}
 
-		$readable = $this->mappers->objectMapper->readableUuidsOrNull(
+		$readable = $this->catalog->tables()->readableUuidsOrNull(
 			registerId: (int)$walk['register']->getId(),
 			schemaId: (int)$walk['schema']->getId(),
 			uuids: array_map('strval', array_keys($uuids))
@@ -658,7 +645,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * @return array<string, ObjectEntity> Uuid => object.
 	 */
 	private function load(array $walk, array $uuids): array {
-		return $this->mappers->objectMapper->findObjectsByUuidsInRegisterSchema(
+		return $this->catalog->tables()->findObjectsByUuidsInRegisterSchema(
 			register: $walk['register'],
 			schema: $walk['schema'],
 			uuids: array_map('strval', $uuids)
@@ -675,49 +662,66 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * the walk reads the parent property from, and are never written back.
 	 *
 	 * @param array<string, ObjectEntity> $objects Uuid => object, as the mapper loaded them.
-	 * @param string[]                    $fields  The properties the request names.
-	 * @param bool                        $rbac    Whether the read is the caller's own (property read access applies).
+	 * @param array<string, mixed>        $walk    The walk: `fields` (the properties the request names) and
+	 *                                             `rbac` (whether the read is the caller's own, so property
+	 *                                             read access applies).
 	 *
 	 * @return array<string, ObjectEntity> Uuid => the redacted copy.
 	 */
-	private function redacted(array $objects, array $fields, bool $rbac): array {
-		if ($fields === [] || $objects === []) {
+	private function redacted(array $objects, array $walk): array {
+		if ($walk['fields'] === [] || $objects === []) {
 			return $objects;
 		}
 
 		$copies = array_map(static fn (ObjectEntity $object): ObjectEntity => clone $object, $objects);
-		$this->renderer->redactWriteOnlyFromRows(rows: $copies, _rbac: $rbac);
+		$this->renderer->redactWriteOnlyFromRows(rows: $copies, _rbac: $walk['rbac']);
 
 		return $copies;
 	}//end redacted()
 
 	/**
-	 * One node of the answer.
+	 * One node of the answer, placed as the root (level 0, no parent).
 	 *
-	 * @param ObjectEntity|null $object The object as the caller may read it, when it loaded.
-	 * @param int               $level  0 for the root, negative above, positive below.
-	 * @param string|null       $parent The parent uuid.
-	 * @param string[]          $fields Properties to copy.
-	 * @param string|null       $uuid   The uuid when the object did not load.
+	 * A node below or above the root has its `level` (negative above, positive
+	 * below) and `parent` uuid set by the walk that reached it.
+	 *
+	 * @param ObjectEntity|string $object The object as the caller may read it, or only its uuid when it did not load.
+	 * @param string[]            $fields Properties to copy.
 	 *
 	 * @return array<string, mixed> The node.
 	 */
-	private function node(?ObjectEntity $object, int $level, ?string $parent, array $fields, ?string $uuid = null): array {
-		$uuid = (string)($object?->getUuid() ?? $uuid);
-		$data = ($object?->getObject() ?? []);
+	private static function node(ObjectEntity|string $object, array $fields): array {
+		$loaded = null;
+		$uuid   = $object;
+		if ($object instanceof ObjectEntity) {
+			$loaded = $object;
+			$uuid   = (string)$object->getUuid();
+		}
 
+		return [
+			'uuid' => $uuid,
+			'name' => ($loaded?->getName() ?? $uuid),
+			'level' => 0,
+			'parent' => null,
+			'properties' => self::propertiesOf(data: ($loaded?->getObject() ?? []), fields: $fields),
+		];
+	}//end node()
+
+	/**
+	 * The properties a node carries: each field asked for, null where the object has none.
+	 *
+	 * @param array<string, mixed> $data   The object's data as the caller may read it.
+	 * @param string[]             $fields Properties to copy.
+	 *
+	 * @return array<string, mixed> The properties.
+	 */
+	private static function propertiesOf(array $data, array $fields): array {
 		$properties = [];
 		foreach ($fields as $field) {
 			$properties[$field] = ($data[$field] ?? null);
 		}
 
-		return [
-			'uuid' => $uuid,
-			'name' => ($object?->getName() ?? $uuid),
-			'level' => $level,
-			'parent' => $parent,
-			'properties' => $properties,
-		];
-	}//end node()
+		return $properties;
+	}//end propertiesOf()
 
 }//end class

@@ -189,7 +189,12 @@ final class ObjectEventProxyListener implements IEventListener {
 
 		$listenerNs = 0.0;
 		foreach ($subscriptions as $subscription) {
-			$listenerNs += $this->invoke(subscription: $subscription, event: $event, target: $target);
+			if ($this->wants(subscription: $subscription, target: $target) === false) {
+				$this->traceCount(counter: 'skipped');
+				continue;
+			}
+
+			$listenerNs += $this->invoke(class: $subscription['listener'], event: $event);
 		}
 
 		$this->traceTotals(start: $start, listenerNs: $listenerNs);
@@ -197,21 +202,15 @@ final class ObjectEventProxyListener implements IEventListener {
 	}//end handle()
 
 	/**
-	 * Invoke one subscription when it wants the written object.
+	 * Invoke one subscription that wants the written object.
 	 *
-	 * @param array{listener: string, registers: array<int,string>|null, schemas: array<int,string>|null} $subscription The declaration.
-	 * @param Event $event The dispatched event.
-	 * @param array{0: string|null, 1: string|null, 2: bool} $target What identify() read off the event.
+	 * @param string $class The subscribed listener's class name.
+	 * @param Event  $event The dispatched event.
 	 *
 	 * @return float Nanoseconds spent inside the listener while tracing, else 0.
 	 */
-	private function invoke(array $subscription, Event $event, array $target): float {
-		if ($this->wants(subscription: $subscription, target: $target) === false) {
-			$this->traceCount(counter: 'skipped');
-			return 0.0;
-		}
-
-		$listener = $this->resolve(class: $subscription['listener']);
+	private function invoke(string $class, Event $event): float {
+		$listener = $this->resolve(class: $class);
 		if ($listener === null) {
 			return 0.0;
 		}
@@ -360,9 +359,24 @@ final class ObjectEventProxyListener implements IEventListener {
 			return true;
 		}
 
-		return $this->filterAccepts(tokens: $subscription['registers'], id: $target[0], isSchema: false)
-			&& $this->filterAccepts(tokens: $subscription['schemas'], id: $target[1], isSchema: true);
+		return $this->filterAccepts(tokens: $subscription['registers'], run: $this->filterRun(id: $target[0], isSchema: false))
+			&& $this->filterAccepts(tokens: $subscription['schemas'], run: $this->filterRun(id: $target[1], isSchema: true));
 	}//end wants()
+
+	/**
+	 * One declared filter's comparison against the written object.
+	 *
+	 * @param string|null $id       The written object's register/schema id.
+	 * @param boolean     $isSchema True for schemas, false for registers.
+	 *
+	 * @return ObjectEventFilterRun
+	 */
+	private function filterRun(?string $id, bool $isSchema): ObjectEventFilterRun {
+		$run = new ObjectEventFilterRun();
+		$run->id = $id;
+		$run->isSchema = $isSchema;
+		return $run;
+	}//end filterRun()
 
 	/**
 	 * Whether one declared filter (registers or schemas) accepts the object.
@@ -371,22 +385,21 @@ final class ObjectEventProxyListener implements IEventListener {
 	 * fail closed. Invoking here is how a listener filtered to one schema
 	 * once ran on every update instance-wide (live defect H1).
 	 *
-	 * @param array<int,string>|null $tokens   Declared tokens, or null for no filter.
-	 * @param string|null            $id       The written object's register/schema id.
-	 * @param boolean                $isSchema True for schemas, false for registers.
+	 * @param array<int,string>|null $tokens Declared tokens, or null for no filter.
+	 * @param ObjectEventFilterRun   $run    The written object's id and which filter this is.
 	 *
 	 * @return boolean
 	 */
-	private function filterAccepts(?array $tokens, ?string $id, bool $isSchema): bool {
+	private function filterAccepts(?array $tokens, ObjectEventFilterRun $run): bool {
 		if ($tokens === null) {
 			return true;
 		}
 
-		if ($id === null) {
+		if ($run->id === null) {
 			return false;
 		}
 
-		return $this->tokensMatch(tokens: $tokens, id: $id, isSchema: $isSchema);
+		return $this->tokensMatch(tokens: $tokens, run: $run);
 	}//end filterAccepts()
 
 	/**
@@ -403,13 +416,12 @@ final class ObjectEventProxyListener implements IEventListener {
 	 * fire and the listener would be silently dead. That failure is strictly
 	 * worse than the `TypeError` it replaced, because a 500 is at least loud.
 	 *
-	 * @param array<int,string> $tokens Declared slugs and/or ids.
-	 * @param string $id The written object's register/schema id.
-	 * @param boolean $isSchema True for schemas, false for registers.
+	 * @param array<int,string>    $tokens Declared slugs and/or ids.
+	 * @param ObjectEventFilterRun $run    The written object's (non-null) id and which filter this is.
 	 *
 	 * @return boolean
 	 */
-	private function tokensMatch(array $tokens, string $id, bool $isSchema): bool {
+	private function tokensMatch(array $tokens, ObjectEventFilterRun $run): bool {
 		$slugs = [];
 		foreach ($tokens as $token) {
 			$token = (string)$token;
@@ -418,27 +430,26 @@ final class ObjectEventProxyListener implements IEventListener {
 				continue;
 			}
 
-			if ($token === $id) {
+			if ($token === $run->id) {
 				return true;
 			}
 		}
 
-		return $slugs !== [] && $this->slugsMatch(slugs: $slugs, id: $id, isSchema: $isSchema);
+		return $slugs !== [] && $this->slugsMatch(slugs: $slugs, run: $run);
 	}//end tokensMatch()
 
 	/**
 	 * Whether any declared slug resolves to the given id.
 	 *
-	 * @param array<int,string> $slugs    Declared slugs.
-	 * @param string            $id       The written object's register/schema id.
-	 * @param boolean           $isSchema True for schemas, false for registers.
+	 * @param array<int,string>    $slugs Declared slugs.
+	 * @param ObjectEventFilterRun $run   The written object's id and which filter this is.
 	 *
 	 * @return boolean
 	 */
-	private function slugsMatch(array $slugs, string $id, bool $isSchema): bool {
-		$map = $this->tokenMap(isSchema: $isSchema);
+	private function slugsMatch(array $slugs, ObjectEventFilterRun $run): bool {
+		$map = $this->tokenMap(isSchema: $run->isSchema);
 		foreach ($slugs as $slug) {
-			if (in_array($id, ($map[strtolower($slug)] ?? []), true) === true) {
+			if (in_array($run->id, ($map[strtolower($slug)] ?? []), true) === true) {
 				return true;
 			}
 		}
@@ -477,15 +488,17 @@ final class ObjectEventProxyListener implements IEventListener {
 			return $known;
 		}
 
-		$mapStart = (float)hrtime(true);
-		$tokens = $this->declaredTokens(isSchema: $isSchema);
-		$map = array_fill_keys(array_map('strtolower', $tokens), []);
+		$run = new ObjectEventSlugMapRun();
+		$run->isSchema = $isSchema;
+		$run->mapStart = (float)hrtime(true);
+		$run->tokens = $this->declaredTokens(isSchema: $isSchema);
+		$map = array_fill_keys(array_map('strtolower', $run->tokens), []);
 
-		if ($tokens !== []) {
-			$map = $this->resolveMap(tokens: $tokens, isSchema: $isSchema, fallback: $map);
+		if ($run->tokens !== []) {
+			$map = $this->resolveMap(run: $run, fallback: $map);
 		}
 
-		return $this->rememberMap(isSchema: $isSchema, map: $map, mapStart: $mapStart);
+		return $this->rememberMap(run: $run, map: $map);
 	}//end tokenMap()
 
 	/**
@@ -521,28 +534,29 @@ final class ObjectEventProxyListener implements IEventListener {
 	/**
 	 * Answer a slug map from the local cache, else from the mapper.
 	 *
-	 * @param array<int, string>                $tokens   Declared slugs.
-	 * @param boolean                           $isSchema True for schemas, false for registers.
+	 * Sorts the run's tokens and sets its cache and cache key.
+	 *
+	 * @param ObjectEventSlugMapRun             $run      The resolution in progress.
 	 * @param array<string, array<int, string>> $fallback The empty-but-built map kept when resolution fails.
 	 *
 	 * @return array<string, array<int, string>>
 	 */
-	private function resolveMap(array $tokens, bool $isSchema, array $fallback): array {
-		sort($tokens);
+	private function resolveMap(ObjectEventSlugMapRun $run, array $fallback): array {
+		sort($run->tokens);
 
 		$prefix = 'r:';
-		if ($isSchema === true) {
+		if ($run->isSchema === true) {
 			$prefix = 's:';
 		}
 
-		$cacheKey = $prefix . md5(implode(',', $tokens));
-		$cache = $this->cacheFactory->createLocal('openregister_event_interest');
-		$cached = $this->cachedMap(cache: $cache, cacheKey: $cacheKey);
+		$run->cacheKey = $prefix . hash(algo: 'xxh128', data: implode(',', $run->tokens));
+		$run->cache = $this->cacheFactory->createLocal('openregister_event_interest');
+		$cached = $this->cachedMap(cache: $run->cache, cacheKey: $run->cacheKey);
 		if ($cached !== null) {
 			return $cached;
 		}
 
-		return ($this->fetchMap(tokens: $tokens, isSchema: $isSchema, cache: $cache, cacheKey: $cacheKey) ?? $fallback);
+		return ($this->fetchMap(run: $run) ?? $fallback);
 	}//end resolveMap()
 
 	/**
@@ -574,23 +588,20 @@ final class ObjectEventProxyListener implements IEventListener {
 	 * map empty-but-built and every declaration falls through to the id
 	 * comparison. Logged, never silent.
 	 *
-	 * @param array<int, string> $tokens   Declared slugs, sorted.
-	 * @param boolean            $isSchema True for schemas, false for registers.
-	 * @param ICache             $cache    The local cache.
-	 * @param string             $cacheKey The map's key.
+	 * @param ObjectEventSlugMapRun $run The resolution, with sorted tokens, cache and cache key set.
 	 *
 	 * @return array<string, array<int, string>>|null Null when the lookup failed.
 	 */
-	private function fetchMap(array $tokens, bool $isSchema, ICache $cache, string $cacheKey): ?array {
+	private function fetchMap(ObjectEventSlugMapRun $run): ?array {
 		$mapperClass = RegisterMapperInterface::class;
-		if ($isSchema === true) {
+		if ($run->isSchema === true) {
 			$mapperClass = SchemaMapperInterface::class;
 		}
 
 		$map = null;
 		try {
-			$map = $this->container->get($mapperClass)->findIdsBySlugs($tokens);
-			$cache->set($cacheKey, json_encode($map), self::MAP_TTL);
+			$map = $this->container->get($mapperClass)->findIdsBySlugs($run->tokens);
+			$run->cache->set($run->cacheKey, json_encode($map), self::MAP_TTL);
 		} catch (\Throwable $e) {
 			$this->logger->warning('Filtered object-event subscription could not resolve slugs: ' . $e->getMessage(), ['exception' => $e]);
 		}
@@ -601,20 +612,19 @@ final class ObjectEventProxyListener implements IEventListener {
 	/**
 	 * Memoise a resolved token map for the rest of the request.
 	 *
-	 * @param boolean $isSchema True for schemas, false for registers.
+	 * @param ObjectEventSlugMapRun             $run The resolution: which map, and when it started.
 	 * @param array<string, array<int, string>> $map The resolved map.
-	 * @param float $mapStart hrtime at which resolution started.
 	 *
 	 * @return array<string, array<int, string>>
 	 */
-	private function rememberMap(bool $isSchema, array $map, float $mapStart): array {
-		if ($isSchema === true) {
+	private function rememberMap(ObjectEventSlugMapRun $run, array $map): array {
+		if ($run->isSchema === true) {
 			$this->schemaIds = $map;
 		} else {
 			$this->registerIds = $map;
 		}
 
-		$this->trace['mapUs'] += (((float)hrtime(true) - $mapStart) / 1000);
+		$this->trace['mapUs'] += (((float)hrtime(true) - $run->mapStart) / 1000);
 
 		return $map;
 	}//end rememberMap()

@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowFieldPath;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
@@ -198,6 +199,18 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	public function execute(array $items, array $config, array $context): array {
 		$plan = new SetFieldsPlan(config: $config, context: $context, itemCount: count($items));
 
+		return $this->reshapeEach(plan: $plan, items: $items);
+	}//end execute()
+
+	/**
+	 * Apply the plan to every item, one in and one out.
+	 *
+	 * @param SetFieldsPlan $plan  The step's plan for this run.
+	 * @param array         $items The input items.
+	 *
+	 * @return array The output items, one per input item.
+	 */
+	private function reshapeEach(SetFieldsPlan $plan, array $items): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$out[] = FlowItems::item(
@@ -208,7 +221,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 		}
 
 		return $out;
-	}//end execute()
+	}//end reshapeEach()
 
 	/**
 	 * Apply the plan to one item's record.
@@ -383,11 +396,13 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function expressionData(array $json, SetFieldsPlan $plan): array {
-		return FlowExpression::dataFor(
+		return FlowExpression::documentFor(
 			item: [FlowItems::JSON => $json],
-			itemIndex: $plan->itemIndex(),
-			itemCount: $plan->itemCount,
-			context: $plan->context
+			options: new FlowExpressionDataOptions(
+				itemIndex: $plan->itemIndex(),
+				itemCount: $plan->itemCount,
+				context: $plan->context
+			)
 		);
 
 	}//end expressionData()

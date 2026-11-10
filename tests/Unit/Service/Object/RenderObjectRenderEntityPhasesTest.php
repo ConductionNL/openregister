@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -111,29 +112,41 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		?LensResolver $lens = null
 	): RenderObject {
 		return new RenderObject(
-			$this->createMock(FileMapper::class),
-			$this->createMock(MagicMapper::class),
-			$this->registers,
-			$this->schemaMapper,
-			$this->createMock(ISystemTagManager::class),
-			$this->createMock(ISystemTagObjectMapper::class),
-			$this->createMock(CacheHandler::class),
-			$this->createMock(PropertyRbacHandler::class),
-			$this->logger,
-			$this->createMock(FileService::class),
-			$this->createMock(ComputedFieldHandler::class),
-			$this->translationHandler,
-			$this->enricher,
-			$this->evaluator,
-			$this->urnService,
-			$this->translationStatus,
-			$this->createMock(TranslationMapper::class),
-			$this->createMock(LanguageService::class),
-			$request,
-			null,
-			null,
-			$container,
-			$lens
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->createMock(MagicMapper::class),
+					registerMapper: $this->registers,
+					schemaMapper: $this->schemaMapper,
+					objectCacheService: $this->createMock(CacheHandler::class)
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->createMock(FileMapper::class),
+					fileService: $this->createMock(FileService::class),
+					systemTagManager: $this->createMock(ISystemTagManager::class),
+					systemTagMapper: $this->createMock(ISystemTagObjectMapper::class)
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->translationHandler,
+					translationStatusService: $this->translationStatus,
+					translationMapper: $this->createMock(TranslationMapper::class),
+					languageService: $this->createMock(LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
+					calculationEvaluator: $this->evaluator,
+					linkedEntityEnricher: $this->enricher,
+					urnService: $this->urnService
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(objectSourceRegistry: null, fieldEncryptionHandler: null, lensResolver: $lens),
+				request: $request,
+				container: $container
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class)
 		);
 	}//end render()
 
@@ -387,8 +400,8 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		$seen = [];
 		$this->translationHandler = $this->createMock(TranslationHandler::class);
 		$this->translationHandler->method('resolveTranslationsForRender')->willReturnCallback(
-			static function (array $objectData, Schema $schema, ?Register $register) use (&$seen): array {
-				$seen[] = [$schema, $register];
+			static function (array $objectData, TranslationScope $scope) use (&$seen): array {
+				$seen[] = [$scope->schema, $scope->register];
 				$objectData['translated'] = true;
 
 				return $objectData;
@@ -516,7 +529,11 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		$entity = $this->entity();
 		$entity->setCreated(new \DateTime('2026-01-02T00:00:00+00:00'));
 
-		$this->assertIsArray($this->render()->renderEntity(entity: $entity)->getArchivalRetention());
+		$retention = $this->render()->renderEntity(entity: $entity)->getArchivalRetention();
+		$this->assertIsArray($retention);
+		// The schema's default of one year runs from the creation date.
+		$this->assertSame('P1Y', $retention['retentionPeriod']);
+		$this->assertSame('2027-01-02T00:00:00+00:00', $retention['disposalDate']);
 	}//end testTheArchivalDecisionLandsOnTheEntity()
 
 	/**

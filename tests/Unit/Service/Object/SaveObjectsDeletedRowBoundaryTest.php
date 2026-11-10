@@ -25,13 +25,16 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Object\BulkRowChecks;
 use OCA\OpenRegister\Service\Object\BulkSaveReporting;
 use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -185,7 +188,7 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 			$groups,
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(MagicMapper::class),
-			new ConditionMatcher($session, $container, new OperatorEvaluator($logger), $logger),
+			new ConditionMatcher(new ConditionUserResolvers($session), $container, new OperatorEvaluator($logger), $logger),
 			$appConfig,
 			$logger,
 			$container
@@ -257,8 +260,9 @@ class SaveObjectsDeletedRowBoundaryTest extends TestCase {
 
 		$rows = array_map(static fn (array $row): array => $row + ['title' => 'overwritten'], $rows);
 		$result = ['invalid' => [], 'statistics' => ['invalid' => 0, 'errors' => 0]];
-		$args = [$rows, $register, $schema, $flags + ['validation' => false], &$result];
-		$passed = (new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards'))->invokeArgs($this->handler(), $args);
+		$batch = new SafeguardBatchRun(objects: $rows, defaults: new BulkBatchDefaults($register, $schema), flags: $flags + ['validation' => false], result: $result);
+		$passed = (new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards'))->invokeArgs($this->handler(), [$batch]);
+		$result = $batch->result;
 		$passedIds = array_map(static fn (array $row): mixed => $row['id'] ?? $row['@self']['id'] ?? null, $passed);
 
 		$answers = [];

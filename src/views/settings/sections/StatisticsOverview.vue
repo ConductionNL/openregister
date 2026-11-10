@@ -755,6 +755,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@use './sectionStyles.scss' as *;
 @use '../../../styles/views.scss' as *;
 
 /* SettingsSection handles all action button positioning and spacing */
@@ -795,46 +796,7 @@ export default {
 	border-left: 4px solid var(--color-primary);
 }
 
-.stats-table-container {
-	overflow-x: auto;
-}
-
-.stats-table {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: 14px;
-}
-
-.stats-table-header {
-	text-align: left;
-	padding: 12px 8px;
-	border-bottom: 2px solid var(--color-border);
-	background: var(--color-background-hover);
-	font-weight: 600;
-	color: var(--color-text-light);
-}
-
-.stats-table-row {
-	border-bottom: 1px solid var(--color-border-dark);
-}
-
-.stats-table-row:hover {
-	background: var(--color-background-hover);
-}
-
-.stats-table-label {
-	padding: 12px 8px;
-	color: var(--color-text-light);
-	font-weight: 500;
-}
-
-.stats-table-value {
-	padding: 12px 8px;
-	color: var(--color-text-maxcontrast);
-	text-align: right;
-	font-family: monospace;
-	font-size: 13px;
-}
+@include figures-table('.stats-table');
 
 .stats-table-value.danger {
 	color: var(--color-error);

@@ -27,9 +27,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCP\IGroupManager;
-use OCP\IL10N;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * Evaluates a transition `condition` and produces the refusal, if any.
@@ -66,21 +64,6 @@ use Psr\Log\LoggerInterface;
  */
 class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterface {
 	/**
-	 * Translation layer for the engine's own refusal message.
-	 *
-	 * @var IL10N
-	 */
-	private readonly IL10N $l10n;
-
-	/**
-	 * Logs refusals so a bad rule is diagnosable.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-
-	/**
 	 * The code every condition refusal carries, malformed or merely unmet.
 	 *
 	 * @var string
@@ -101,11 +84,9 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		LifecycleConditionReporting $reporting,
+		private readonly LifecycleConditionReporting $reporting,
 		private readonly ConditionDialect $dialect,
 	) {
-		$this->l10n   = $reporting->l10n;
-		$this->logger = $reporting->logger;
 	}//end __construct()
 
 	/**
@@ -136,19 +117,32 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 		string $schemaSlug,
 		string $field,
 	): ?array {
+		$attempt = new TransitionAttempt(
+			write: new LifecycleWrite(newData: $newData, oldData: $oldData, schemaSlug: $schemaSlug, field: $field),
+			move: new TransitionMove(action: $action, from: $from, to: $to)
+		);
+		return $this->refusalOf(spec: $spec, attempt: $attempt);
+	}//end refusal()
+
+	/**
+	 * The refusal for a transition attempt, or null when its condition lets it through.
+	 *
+	 * @param array<string, mixed> $spec    The matched transition's spec.
+	 * @param TransitionAttempt    $attempt The write and the transition it attempts.
+	 *
+	 * @return array{code: string, field: string, action: string, message: string}|null
+	 */
+	private function refusalOf(array $spec, TransitionAttempt $attempt): ?array {
 		$condition = $this->activeCondition(spec: $spec);
-		$write     = new LifecycleWrite(newData: $newData, oldData: $oldData, schemaSlug: $schemaSlug, field: $field);
-		if (
-			$condition === null
-			|| $this->holds(rule: $condition, write: $write, move: new TransitionMove(action: $action, from: $from, to: $to)) === true
-		) {
+		if ($condition === null || $this->holds(rule: $condition, attempt: $attempt) === true) {
 			return null;
 		}
 
-		$this->logMiss(condition: $condition, context: ['schema' => $schemaSlug, 'action' => $action, 'field' => $field]);
+		$context = ['schema' => $attempt->write->schemaSlug, 'action' => $attempt->move->action, 'field' => $attempt->write->field];
+		$this->logMiss(condition: $condition, context: $context);
 
-		return $this->refusalFor(spec: $spec, action: $action, field: $field);
-	}//end refusal()
+		return $this->refusalFor(spec: $spec, attempt: $attempt);
+	}//end refusalOf()
 
 	/**
 	 * The transition's condition, or null when there is none to evaluate.
@@ -187,7 +181,7 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	 */
 	private function logMiss(mixed $condition, array $context): void {
 		if (is_array($condition) === true && $condition !== []) {
-			$this->logger->debug('[LifecycleConditionEvaluator] Transition condition did not hold.', $context);
+			$this->reporting->logger->debug('[LifecycleConditionEvaluator] Transition condition did not hold.', $context);
 		}
 	}//end logMiss()
 
@@ -213,21 +207,23 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	 * `autoWhen` that is the common case on every write, and a line per write
 	 * per candidate would drown the log that the malformed case needs to reach.
 	 *
-	 * @param mixed          $rule  The rule to evaluate: a `condition` or an `autoWhen`.
-	 * @param LifecycleWrite $write The object after and before the write, its schema's slug and the lifecycle field.
-	 * @param TransitionMove $move  The transition's name and the states it moves between.
+	 * @param mixed             $rule    The rule to evaluate: a `condition` or an `autoWhen`.
+	 * @param TransitionAttempt $attempt The write (object after and before, schema slug, lifecycle field)
+	 *                                   and the transition it attempts (name, from, to).
 	 *
 	 * @return bool True only when the rule is a non-empty rule object that evaluates true.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function holds(mixed $rule, LifecycleWrite $write, TransitionMove $move): bool {
+	public function holds(mixed $rule, TransitionAttempt $attempt): bool {
+		$write = $attempt->write;
+		$move  = $attempt->move;
 		if (is_array($rule) === false || $rule === []) {
 			// A fault in the schema, not the rule working, hence a warning.
 			// The runtime does not trust save-time validation: a schema written
 			// by a path that skipped the mapper can still carry a scalar here.
-			$this->logger->warning(
+			$this->reporting->logger->warning(
 				'[LifecycleConditionEvaluator] Transition condition is not a rule object; refusing.',
 				['schema' => $write->schemaSlug, 'action' => $move->action, 'field' => $write->field]
 			);
@@ -236,31 +232,30 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 
 		return $this->dialect->holds(
 			node: $rule,
-			document: $this->document(
-				newData: $write->newData,
-				oldData: $write->oldData,
-				action: $move->action,
-				from: $move->from,
-				to: $move->to
-			)
+			document: $this->documentOf(attempt: $attempt)
 		);
 	}//end holds()
 
 	/**
 	 * Build the refusal error for a transition.
 	 *
-	 * @param array<string, mixed> $spec The matched transition's spec.
-	 * @param string $action The matched transition's name.
-	 * @param string $field The lifecycle field's name.
+	 * @param array<string, mixed> $spec    The matched transition's spec.
+	 * @param TransitionAttempt    $attempt The refused attempt: its lifecycle field and transition name.
 	 *
 	 * @return array{code: string, field: string, action: string, message: string}
 	 */
-	private function refusalFor(array $spec, string $action, string $field): array {
+	private function refusalFor(array $spec, TransitionAttempt $attempt): array {
+		$action = $attempt->move->action;
+		$field  = $attempt->write->field;
+
 		return [
 			'code' => self::CODE_UNMET,
 			'field' => $field,
 			'action' => $action,
-			'message' => $this->message(declared: ($spec['message'] ?? null), action: $action, field: $field),
+			'message' => $this->message(declared: ($spec['message'] ?? null)) ?? $this->reporting->l10n->t(
+				'The conditions for "%1$s" are not met, so "%2$s" cannot change yet.',
+				[$action, $field]
+			),
 		];
 	}//end refusalFor()
 
@@ -291,6 +286,22 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function document(array $newData, array $oldData, string $action, string $from, string $to): array {
+		// The document reads only the two objects and the move; the schema slug
+		// and field name of the write are for log lines and do not enter it.
+		$write = new LifecycleWrite(newData: $newData, oldData: $oldData, schemaSlug: '', field: '');
+		$move  = new TransitionMove(action: $action, from: $from, to: $to);
+		return $this->documentOf(attempt: new TransitionAttempt(write: $write, move: $move));
+	}//end document()
+
+	/**
+	 * Build the document a condition is evaluated against, for one attempt.
+	 *
+	 * @param TransitionAttempt $attempt The write (object after and before) and the move.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function documentOf(TransitionAttempt $attempt): array {
+		$move = $attempt->move;
 		$user = $this->userSession->getUser();
 		$uid = '';
 		$groups = [];
@@ -300,42 +311,35 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 		}
 
 		return [
-			'object' => $newData,
-			'previous' => $oldData,
+			'object' => $attempt->write->newData,
+			'previous' => $attempt->write->oldData,
 			'user' => ['uid' => $uid, 'groups' => $groups],
-			'transition' => ['action' => $action, 'from' => $from, 'to' => $to],
+			'transition' => ['action' => $move->action, 'from' => $move->from, 'to' => $move->to],
 		];
-	}//end document()
+	}//end documentOf()
 
 	/**
-	 * The text a refusal carries.
+	 * The author's text a refusal carries, when the transition declares one.
 	 *
 	 * An author's `message` is passed through UNTRANSLATED in both shapes: it
 	 * is their words, and a catalogue lookup would search for a string that was
-	 * never in one. Only the engine's own fallback is translated.
+	 * never in one. Only the engine's own fallback, which the caller supplies
+	 * when this answers null, is translated.
 	 *
 	 * @param mixed $declared The transition's `message`: string, map, or absent.
-	 * @param string $action The matched transition's name.
-	 * @param string $field The lifecycle field's name.
 	 *
-	 * @return string
+	 * @return string|null The author's text, or null when there is none to use.
 	 */
-	private function message(mixed $declared, string $action, string $field): string {
+	private function message(mixed $declared): ?string {
 		if (is_string($declared) === true && $declared !== '') {
 			return $declared;
 		}
 
 		if (is_array($declared) === true) {
-			$resolved = $this->fromLocaleMap(map: $declared);
-			if ($resolved !== null) {
-				return $resolved;
-			}
+			return $this->fromLocaleMap(map: $declared);
 		}
 
-		return $this->l10n->t(
-			'The conditions for "%1$s" are not met, so "%2$s" cannot change yet.',
-			[$action, $field]
-		);
+		return null;
 	}//end message()
 
 	/**
@@ -353,7 +357,7 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 		$default = ($map['defaultLocale'] ?? null);
 		unset($map['defaultLocale']);
 
-		return $this->localeText(map: $map, candidates: [$this->l10n->getLanguageCode(), $default, 'en']) ?? $this->firstText(map: $map);
+		return $this->localeText(map: $map, candidates: [$this->reporting->l10n->getLanguageCode(), $default, 'en']) ?? $this->firstText(map: $map);
 	}//end fromLocaleMap()
 
 	/**

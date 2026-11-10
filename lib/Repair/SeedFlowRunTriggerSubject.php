@@ -36,7 +36,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FlowRunListing;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\FlowRunViewer;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectsInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -102,7 +104,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 
 		foreach ($this->everyRun(runs: $runs) as $run) {
 			try {
-				$seeded += $this->seedOne(run: $run, runs: $runs, subjects: $this->subjects);
+				$seeded += $this->seedOne(run: $run, runs: $runs);
 			} catch (Throwable $e) {
 				$skipped++;
 				$this->logger->warning(
@@ -122,16 +124,15 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	/**
 	 * Seed one run, if it has something to seed and nothing already.
 	 *
-	 * @param FlowRun                  $run      The run.
-	 * @param FlowRunMapperInterface   $runs     The mapper.
-	 * @param FlowRunSubjectsInterface $subjects The subject rules.
+	 * @param FlowRun                $run  The run.
+	 * @param FlowRunMapperInterface $runs The mapper.
 	 *
 	 * @return int 1 when it was seeded, 0 otherwise.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	private function seedOne(FlowRun $run, FlowRunMapperInterface $runs, FlowRunSubjectsInterface $subjects): int {
-		if ($subjects->all(run: $run) !== []) {
+	private function seedOne(FlowRun $run, FlowRunMapperInterface $runs): int {
+		if ($this->subjects->all(run: $run) !== []) {
 			// Already declared something. A repair must not overwrite what a
 			// flow author said.
 			return 0;
@@ -142,13 +143,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 			return 0;
 		}
 
-		$subjects->record(
-			run: $run,
-			role: FlowRunSubjectsInterface::ROLE_TRIGGER,
-			uuid: $uuid,
-			register: trim((string)$run->getSubjectRegister()),
-			schema: trim((string)$run->getSubjectSchema())
-		);
+		$this->subjects->recordTrigger(run: $run);
 		$runs->update($run);
 
 		return 1;
@@ -176,7 +171,10 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 			// 🔴 `findAllRuns()`, NOT `findAll()`. The latter does not exist;
 			// writing it once already produced a repair that threw, reported
 			// itself skipped, and let the upgrade go green having done nothing.
-			$batch = $runs->findAllRuns(limit: $page, offset: $offset);
+			$batch = $runs->findAllRuns(
+				listing: new FlowRunListing(limit: $page, offset: $offset),
+				viewer: new FlowRunViewer(requesterUid: null, ownedFlowIds: [])
+			);
 			$all = array_merge($all, $batch);
 
 			if (count($batch) < $page) {

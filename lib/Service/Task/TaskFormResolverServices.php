@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FormLinkMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
@@ -37,13 +37,13 @@ final class TaskFormResolverServices {
 	 * Bundle the services.
 	 *
 	 * @param FlowRunMapperInterface $runs Reads the run for its flow and version pin.
-	 * @param FlowMapper $flows Reads the live flow, for an unpinned draft test run only.
+	 * @param FlowMapperInterface $flows Reads the live flow, for an unpinned draft test run only.
 	 * @param FlowPublishedGraph $published Resolves the pinned graph of a run.
 	 * @param FormLinkMapperInterface $formLinks Reads the subject's bound Forms form.
 	 */
 	public function __construct(
 		public readonly FlowRunMapperInterface $runs,
-		public readonly FlowMapper $flows,
+		public readonly FlowMapperInterface $flows,
 		public readonly FlowPublishedGraph $published,
 		public readonly FormLinkMapperInterface $formLinks,
 	) {

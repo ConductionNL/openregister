@@ -71,19 +71,33 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 	];
 
 	/**
+	 * App availability checks.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param UserTaskListInterface $taskService The CalDAV VTODO read/list service.
-	 * @param IAppManager $appManager App availability checks.
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param OptionalAppBridge     $app         Whether the app is installed, its services, and the log of failed reads.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly UserTaskListInterface $taskService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		OptionalAppBridge $app,
 	) {
+		$this->appManager = $app->appManager;
+		$this->logger = $app->logger;
 	}//end __construct()
 
 	/**
@@ -110,16 +124,28 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-5.1
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
-		$scope   = new VtodoScope(binding: $binding, config: $config);
+		$selection = VtodoSelection::fromConfig(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config);
+
+		return $this->findTask(selection: $selection, id: $id);
+	}//end find()
+
+	/**
+	 * Read the one in-scope task with this id.
+	 *
+	 * @param VtodoSelection $selection The binding and the scope that admits tasks.
+	 * @param string         $id        The task UID / URI.
+	 *
+	 * @return ObjectEntity|null The task, or null when absent or out of scope.
+	 */
+	private function findTask(VtodoSelection $selection, string $id): ?ObjectEntity {
 		foreach ($this->readTasks(query: ['limit' => 1000]) as $task) {
-			if ($scope->admits(task: $task) === true && $this->hasId(task: $task, id: $id) === true) {
-				return $this->toObjectEntity(binding: $binding, task: $task);
+			if ($selection->scope->admits(task: $task) === true && $this->hasId(task: $task, id: $id) === true) {
+				return $this->toObjectEntity(binding: $selection->binding, task: $task);
 			}
 		}
 
 		return null;
-	}//end find()
+	}//end findTask()
 
 	/**
 	 * {@inheritDoc}
@@ -134,17 +160,29 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-5.1
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
-		$scope   = new VtodoScope(binding: $binding, config: $config);
+		$selection = VtodoSelection::fromConfig(binding: new SourcedObjectBinding(register: $register, schema: $schema), config: $config);
+
+		return $this->listTasks(selection: $selection, query: $query);
+	}//end findAll()
+
+	/**
+	 * Read the in-scope tasks of one page.
+	 *
+	 * @param VtodoSelection       $selection The binding and the scope that admits tasks.
+	 * @param array<string, mixed> $query     Query (filters/limit/offset).
+	 *
+	 * @return ObjectEntity[] The matching tasks.
+	 */
+	private function listTasks(VtodoSelection $selection, array $query): array {
 		$objects = [];
 		foreach ($this->readTasks(query: $query) as $task) {
-			if ($scope->admits(task: $task) === true) {
-				$objects[] = $this->toObjectEntity(binding: $binding, task: $task);
+			if ($selection->scope->admits(task: $task) === true) {
+				$objects[] = $this->toObjectEntity(binding: $selection->binding, task: $task);
 			}
 		}
 
 		return $objects;
-	}//end findAll()
+	}//end listTasks()
 
 	/**
 	 * Whether a VTODO answers to an id: its calendar-object uri or its uid.

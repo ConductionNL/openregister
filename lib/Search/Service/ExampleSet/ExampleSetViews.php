@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Search\Service\ExampleSet;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Search\Service\ViewAudience;
 use OCA\OpenRegister\Search\Service\ViewDefinition;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use Psr\Container\ContainerInterface;
@@ -45,7 +46,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
  */
-class ExampleSetViews extends ExampleSetEngineRows {
+class ExampleSetViews extends ExampleSetEngineRows implements ExampleSetViewRowsInterface {
 	/**
 	 * The view fields a fragment may set.
 	 */
@@ -67,6 +68,17 @@ class ExampleSetViews extends ExampleSetEngineRows {
 		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
+
+	/**
+	 * This writer: the saved views of a fragment.
+	 *
+	 * @return ExampleSetEngineRows
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	public function rows(): ExampleSetEngineRows {
+		return $this;
+	}//end rows()
 
 	/**
 	 * The fragment and record part views live in.
@@ -237,17 +249,23 @@ class ExampleSetViews extends ExampleSetEngineRows {
 		}
 
 		try {
-			$this->service()->update(
+			$this->service()->revise(
 				id: $uuid,
-				name: (string) $data['name'],
-				description: (string) ($data['description'] ?? ''),
-				owner: (string) $data['owner'],
-				isPublic: ($data['isPublic'] ?? false) === true,
-				isDefault: false,
-				query: (array) ($data['query'] ?? []),
-				presentation: $this->optional(data: $data, field: 'presentation'),
-				sharedWith: $this->shares(declared: ($data['sharedWith'] ?? [])),
-				alert: $this->optional(data: $data, field: 'alert'),
+				edit: new ViewEdit(
+					definition: new ViewDefinition(
+						name: (string) $data['name'],
+						description: (string) ($data['description'] ?? ''),
+						query: (array) ($data['query'] ?? []),
+						presentation: $this->optional(data: $data, field: 'presentation')
+					),
+					audience: new ViewAudience(
+						owner: (string) $data['owner'],
+						isPublic: ($data['isPublic'] ?? false) === true,
+						isDefault: false,
+						sharedWith: $this->shares(declared: ($data['sharedWith'] ?? []))
+					),
+					alert: $this->optional(data: $data, field: 'alert')
+				)
 			);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];

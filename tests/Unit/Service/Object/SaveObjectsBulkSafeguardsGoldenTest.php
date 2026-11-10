@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -23,6 +24,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\BulkRowChecks;
@@ -30,6 +32,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveReporting;
 use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -229,16 +232,14 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 			'statistics' => ['totalProcessed' => count($case['rows']), 'saved' => 0, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0],
 		];
 		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
-		$passed = $method->invokeArgs(
-			$this->handler(case: $case, logger: $logger),
-			[
-				$case['rows'],
-				$this->defaultRegister(register: ($case['register'] ?? 'object')),
-				$this->defaultSchema(case: $case),
-				['rbac' => ($case['rbac'] ?? true), 'validation' => ($case['validation'] ?? false)],
-				&$result,
-			]
+		$batch  = new SafeguardBatchRun(
+			objects: $case['rows'],
+			defaults: new BulkBatchDefaults($this->defaultRegister(register: ($case['register'] ?? 'object')), $this->defaultSchema(case: $case)),
+			flags: ['rbac' => ($case['rbac'] ?? true), 'validation' => ($case['validation'] ?? false)],
+			result: $result
 		);
+		$passed = $method->invokeArgs($this->handler(case: $case, logger: $logger), [$batch]);
+		$result = $batch->result;
 
 		return ['passed' => $passed, 'result' => $result, 'calls' => $this->calls, 'log' => $logger->lines];
 	}//end runCase()
@@ -559,7 +560,8 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 	private function propertyRbac(array|string $mode): PropertyRbacHandler {
 		$rbac = $this->createMock(originalClassName: PropertyRbacHandler::class);
 		$rbac->method('getUnauthorizedProperties')->willReturnCallback(
-			function (...$args) use ($mode): array {
+			function (PropertyWriteCheck $write) use ($mode): array {
+				$args = [$write->schema, $write->request->object, $write->incoming, $write->request->isCreate];
 				$this->calls[] = 'getUnauthorizedProperties '.json_encode([$args[1], $args[2], ($args[3] ?? false)]);
 				if (is_array($mode) === true) {
 					return $mode;

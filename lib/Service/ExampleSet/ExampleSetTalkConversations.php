@@ -105,8 +105,8 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 		$rules = new ExampleSetFieldRules();
 		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'a talk conversation'),
-				fn (): string => $rules->missingRefusal(data: $data, required: self::REQUIRED, row: 'a talk conversation'),
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a talk conversation', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a talk conversation', required: self::REQUIRED)),
 				fn (): string => $rules->strangerRefusal(people: $this->people(data: $data), users: $users),
 				fn (): string => $this->callRefusal(call: ($data['call'] ?? null)),
 			]
@@ -184,7 +184,9 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	private function writeOn(ObjectEntity $object, array $conversation): array {
 		$data                   = $conversation['data'];
 		$conversation['people'] = array_values(array_unique($this->people(data: $data)));
-		$conversation['room']   = $this->store()->room(owner: (string) $data['owner'], name: (string) $data['name'], participants: $conversation['people']);
+		$conversation['room']   = $this->store()->openRoom(
+			room: new ExampleSetTalkRoom(owner: (string) $data['owner'], name: (string) $data['name'], participants: $conversation['people'])
+		);
 		$this->holdCall(conversation: $conversation);
 		$link = $this->link(object: $object, conversation: $conversation);
 
@@ -211,11 +213,12 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 		}
 
 		$this->store()->heldCall(
-			token: $conversation['room']['token'],
-			owner: (string) $data['owner'],
-			start: new DateTime((string) $data['call']['start']),
-			end: new DateTime((string) $data['call']['end']),
-			joined: $conversation['people']
+			held: new HeldTalkCall(
+				token: $conversation['room']['token'],
+				owner: (string) $data['owner'],
+				call: $data['call'],
+				joined: $conversation['people']
+			)
 		);
 	}//end holdCall()
 

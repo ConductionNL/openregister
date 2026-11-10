@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Schema\MigrationRequest;
+use OCA\OpenRegister\Service\Schema\RevalidationRequest;
 use InvalidArgumentException;
 use OCA\OpenRegister\BackgroundJob\SchemaRunJob;
 use OCA\OpenRegister\Controller\SchemaMigrationController;
@@ -143,7 +145,6 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 		}
 
 		return new SchemaMigrationController(
-			'openregister',
 			$request,
 			new SchemaMigrationControllerServices(
 				mappers: new SchemaMigrationMappers($this->schemas, $this->changelog, $this->runs, $this->entries),
@@ -243,7 +244,7 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 		$this->schemas->method('find')->willReturnOnConsecutiveCalls($this->missing(), new Schema(), new Schema(), new Schema());
 		$this->reader->method('resolveRegisterId')->willReturnOnConsecutiveCalls(null, 9, 9);
 		$this->params = ['proposedDefinition' => 'bad'];
-		$this->revalidation->method('start')->with(3, 9, null, 'alice')->willReturnOnConsecutiveCalls(
+		$this->revalidation->method('startRevalidation')->with(new RevalidationRequest(3, 9, null), 'alice')->willReturnOnConsecutiveCalls(
 			$this->throwException(new SchemaRunConcurrencyException('busy')),
 			$this->aRun(11, 3)
 		);
@@ -286,7 +287,7 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 		$this->reader->method('resolveRegisterId')->willReturnOnConsecutiveCalls(null, 9);
 		$this->assertSame([422, ['error' => 'No register contains this schema']], $this->pair($controller->previewMigration(3)));
 
-		$this->migration->method('preview')->with(3, 9, [['op' => 'x']], 4)->willReturn([['before' => 1]]);
+		$this->migration->method('previewSample')->with(new MigrationRequest(3, 9, [['op' => 'x']]), 4)->willReturn([['before' => 1]]);
 		$this->assertSame([200, ['results' => [['before' => 1]]]], $this->pair($controller->previewMigration(3)));
 	}
 
@@ -300,7 +301,7 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 		$this->reader->method('resolveRegisterId')->willReturnOnConsecutiveCalls(null, 9, 9, 9);
 		$this->assertSame([422, ['error' => 'No register contains this schema']], $this->pair($controller->migrate(3)));
 
-		$this->migration->method('start')->with(3, 9, ['p'], [], null)->willReturnOnConsecutiveCalls(
+		$this->migration->method('startMigration')->with(new MigrationRequest(3, 9, ['p'], []), null)->willReturnOnConsecutiveCalls(
 			$this->throwException(new InvalidArgumentException('bad')),
 			$this->throwException(new SchemaRunConcurrencyException('busy')),
 			$this->aRun(12, 3)

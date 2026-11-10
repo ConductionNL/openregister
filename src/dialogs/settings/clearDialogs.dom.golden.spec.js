@@ -18,6 +18,18 @@ jest.mock('@nextcloud/vue', () => ({
 	NcDialog: mockStub('NcDialog'),
 	NcLoadingIcon: mockStub('NcLoadingIcon'),
 }))
+// The real CnDialog, drawn with the stand-ins above, so the golden shows what
+// the shared frame really renders around ClearTableDialog.
+jest.mock('@conduction/nextcloud-vue', () => ({
+	...jest.requireActual('@conduction/nextcloud-vue'),
+	CnDialog: jest.requireActual(
+		'@conduction/nextcloud-vue/dist/esm/components/CnDialog/CnDialog.vue.js',
+	).default,
+}))
+jest.mock('vue-material-design-icons/Close.vue', () => ({
+	__esModule: true,
+	default: mockStub('Close'),
+}))
 jest.mock('vue-material-design-icons/Delete.vue', () => ({
 	__esModule: true,
 	default: mockStub('Delete'),

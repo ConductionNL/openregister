@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -29,7 +30,7 @@ class ConditionMatcherGapTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->matcher = new ConditionMatcher(
-			$this->userSession,
+			new ConditionUserResolvers($this->userSession),
 			$this->container,
 			$this->operatorEvaluator,
 			$this->logger

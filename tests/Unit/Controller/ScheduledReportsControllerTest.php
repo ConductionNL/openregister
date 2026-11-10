@@ -82,7 +82,6 @@ class ScheduledReportsControllerTest extends TestCase {
 		$this->setupUser('alice', false);
 
 		$this->controller = new ScheduledReportsController(
-			'openregister',
 			$this->request,
 			new ScheduledReportsControllerServices(
 				service: $this->service,

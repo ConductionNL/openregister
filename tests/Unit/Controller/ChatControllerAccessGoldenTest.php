@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\ChatController;
 use OCA\OpenRegister\Db\FeedbackMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
@@ -77,7 +78,6 @@ class ChatControllerAccessGoldenTest extends TestCase {
 		$l10n->method('t')->willReturnCallback(fn (string $text): string => 'T:'.$text);
 
 		$this->controller = ChatControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->chatService,
 			$this->conversationMapper,
@@ -196,7 +196,7 @@ class ChatControllerAccessGoldenTest extends TestCase {
 	public function testHistoryAllowedAndRefused(): void {
 		$this->params(['conversationId' => '11', 'limit' => '2', 'offset' => '1']);
 		$this->conversationMapper->method('find')->willReturnOnConsecutiveCalls($this->conversation('alice'), $this->conversation('bob'));
-		$this->messageMapper->expects($this->once())->method('findByConversation')->with(11, 2, 1)->willReturn([]);
+		$this->messageMapper->expects($this->once())->method('findByConversation')->with(11, new ListQuery(limit: 2, offset: 1))->willReturn([]);
 		$this->messageMapper->method('countByConversation')->willReturn(0);
 
 		$allowed = $this->controller->getHistory();

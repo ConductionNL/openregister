@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AuditQueryControllerServices;
 use OCA\OpenRegister\Service\AuditQueryServiceInterface;
 use OCP\AppFramework\Controller;
@@ -77,16 +78,14 @@ class AuditQueryController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request object.
 	 * @param AuditQueryControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		AuditQueryControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->auditQueryService = $services->auditQueryService;
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;

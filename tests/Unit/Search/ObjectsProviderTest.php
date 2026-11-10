@@ -106,7 +106,7 @@ class ObjectsProviderTest extends TestCase {
 
 		return new ObjectsProvider(
 			$objectService ?? $this->objectService,
-			$schemaMapper,
+			new \OCA\OpenRegister\Db\SchemaCatalog($registerMapper, $schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			new \OCA\OpenRegister\Search\ObjectsProviderOutput($this->l10n, $resultFormatter, $this->logger)
 		);
 	}

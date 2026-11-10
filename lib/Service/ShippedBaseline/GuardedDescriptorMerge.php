@@ -112,10 +112,8 @@ class GuardedDescriptorMerge {
 	 * instance did, and one conflict on the block's root path when both did or
 	 * when they moved different keys. A decision names that root path.
 	 *
-	 * @param array<string, mixed> $baseline  The definition the app shipped.
-	 * @param array<string, mixed> $live      The definition the instance runs.
-	 * @param array<string, mixed> $incoming  The definition the app now ships.
-	 * @param array<int, string>   $decisions Paths an administrator has decided to take from upstream.
+	 * @param DescriptorRevisions $revisions What the app shipped, what the instance runs and what the app now ships.
+	 * @param array<int, string>  $decisions Paths an administrator has decided to take from upstream.
 	 *
 	 * @return array{
 	 *     merged: array<string, mixed>,
@@ -130,17 +128,10 @@ class GuardedDescriptorMerge {
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
-	public function merge(array $baseline, array $live, array $incoming, array $decisions = []): array {
-		$states = $this->comparator->states(baseline: $baseline, live: $live, incoming: $incoming);
-
-		$sources = [
-			'baseline' => $this->parts->flatten(descriptor: $baseline),
-			'live' => $this->parts->flatten(descriptor: $live),
-			'incoming' => $this->parts->flatten(descriptor: $incoming),
-		];
-
-		$states    = $this->withMissingTakenFromUpstream(states: $states, sources: $sources);
-		$decisions = $this->decisionsInEffect(decisions: $decisions, incoming: $incoming);
+	public function mergeRevisions(DescriptorRevisions $revisions, array $decisions = []): array {
+		$sources   = $this->sources(revisions: $revisions);
+		$states    = $this->withMissingTakenFromUpstream(states: $this->comparator->states(descriptors: $revisions), sources: $sources);
+		$decisions = $this->decisionsInEffect(decisions: $decisions, incoming: $revisions->incoming);
 
 		$blocks = $this->blocks->settle(states: $states, decisions: $decisions);
 		$fold   = new DescriptorFold(sources: $sources, decisions: $decisions, blocks: $blocks, authorization: $this->blocks);
@@ -148,8 +139,33 @@ class GuardedDescriptorMerge {
 			$fold->fold(path: $path, state: $state);
 		}
 
-		$outcome = $this->blocks->outcome(blocks: $blocks, sources: $sources);
+		return $this->result(fold: $fold, outcome: $this->blocks->outcome(blocks: $blocks, sources: $sources));
+	}//end mergeRevisions()
 
+	/**
+	 * The flattened revisions, keyed as DescriptorFold and the authorization blocks read them.
+	 *
+	 * @param DescriptorRevisions $revisions The three revisions.
+	 *
+	 * @return array{baseline: array<string, mixed>, live: array<string, mixed>, incoming: array<string, mixed>} The parts.
+	 */
+	private function sources(DescriptorRevisions $revisions): array {
+		return [
+			'baseline' => $this->parts->flatten(descriptor: $revisions->baseline),
+			'live' => $this->parts->flatten(descriptor: $revisions->live),
+			'incoming' => $this->parts->flatten(descriptor: $revisions->incoming),
+		];
+	}//end sources()
+
+	/**
+	 * The merge result of a finished fold and the authorization blocks' outcome.
+	 *
+	 * @param DescriptorFold       $fold    The folded parts.
+	 * @param array<string, mixed> $outcome The blocks' applied, conflicts and replacedLocal.
+	 *
+	 * @return array<string, mixed> The result.
+	 */
+	private function result(DescriptorFold $fold, array $outcome): array {
 		return [
 			'merged' => $this->parts->unflatten(parts: $fold->mergedParts),
 			'applied' => array_merge($fold->applied, $outcome['applied']),
@@ -158,7 +174,7 @@ class GuardedDescriptorMerge {
 			'baseline' => $this->parts->unflatten(parts: $fold->nextBaseline),
 			'replacedLocal' => $outcome['replacedLocal'],
 		];
-	}//end merge()
+	}//end result()
 
 	/**
 	 * The divergence states, with every path of a shipped property the

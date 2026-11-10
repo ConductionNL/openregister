@@ -8,6 +8,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SchemaCacheClearers;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
@@ -37,8 +38,7 @@ class CacheSettingsHandlerBranchCoverageTest extends TestCase {
 
 		$this->handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			$this->objectCacheService,
 			$this->container
 		);
@@ -165,8 +165,7 @@ class CacheSettingsHandlerBranchCoverageTest extends TestCase {
 	public function testWarmupNamesCacheWhenNoCacheHandler(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			null
 		);
@@ -180,8 +179,7 @@ class CacheSettingsHandlerBranchCoverageTest extends TestCase {
 	public function testWarmupNamesCacheWithContainerFallback(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);
@@ -275,8 +273,7 @@ class CacheSettingsHandlerBranchCoverageTest extends TestCase {
 	public function testClearObjectCacheWhenContainerThrows(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);

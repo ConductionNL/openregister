@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -49,6 +50,8 @@ use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
+use OCA\OpenRegister\Service\Rbac\TokenGrantUse;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
@@ -65,10 +68,13 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\ProvenanceOptions;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
+use OCA\OpenRegister\Service\Rbac\StagedDenial;
 use OCA\OpenRegister\Service\Rbac\RoleBlockExpander;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
+use OCA\OpenRegister\Service\Rbac\TokenGrantTarget;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -319,146 +325,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 	public const CONFIG_ENFORCE_DEFAULT_CLOSED = 'enforce_default_closed';
 
 	/**
-	 * User session for getting current user.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * User manager for getting user objects.
-	 *
-	 * @var IUserManager
-	 */
-	private readonly IUserManager $userManager;
-
-	/**
-	 * Group manager for checking user groups.
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
-
-	/**
-	 * Mapper for schema operations.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Mapper for object entity operations.
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private readonly MagicMapperInterface $objectEntityMapper;
-
-	/**
-	 * Shared PHP-side match evaluator (ADR-011).
-	 *
-	 * @var ConditionMatcher
-	 */
-	private readonly ConditionMatcher $conditionMatcher;
-
-	/**
-	 * App config for the inheritFromPublic tenant default and the `enforce_default_closed` opt-in flag (Wave-12 Fix 2).
-	 *
-	 * @var IAppConfig
-	 */
-	private readonly IAppConfig $appConfig;
-
-	/**
-	 * Logger for permission auditing.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Container for lazy loading services.
-	 *
-	 * @var ContainerInterface
-	 */
-	private readonly ContainerInterface $container;
-
-	/**
-	 * Optional dispatcher for custom-scope events.
-	 *
-	 * @var \OCP\EventDispatcher\IEventDispatcher|null
-	 */
-	private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher;
-
-	/**
-	 * Shared object-scope resolver; null means a fresh one.
-	 *
-	 * @var ObjectScopeResolverInterface|null
-	 */
-	private readonly ?ObjectScopeResolverInterface $objectScopeResolver;
-
-	/**
-	 * Shared per-object grant resolver; null means a fresh one.
-	 *
-	 * @var ObjectGrantResolver|null
-	 */
-	private readonly ?ObjectGrantResolver $objectGrantResolver;
-
-	/**
-	 * Shared deny-grammar reader; null means a fresh one.
-	 *
-	 * @var DenyResolverInterface|null
-	 */
-	private readonly ?DenyResolverInterface $denyResolver;
-
-	/**
-	 * The staging switch; null means one over the app config.
-	 *
-	 * @var DenyEnforcementMode|null
-	 */
-	private readonly ?DenyEnforcementMode $denyEnforcementMode;
-
-	/**
-	 * The grantable set.
-	 *
-	 * @var PermissionCatalogueInterface|null
-	 */
-	private readonly ?PermissionCatalogueInterface $permissionCatalogue;
-
-	/**
-	 * Reads an entry's end and the area it is confined to.
-	 *
-	 * @var GrantConstraints|null
-	 */
-	private readonly ?GrantConstraints $grantConstraints;
-
-	/**
-	 * Access derived from identity claims; null means none.
-	 *
-	 * @var DerivedGrantStore|null
-	 */
-	private readonly ?DerivedGrantStore $derivedGrantStore;
-
-	/**
-	 * Reads a derived grant in one area.
-	 *
-	 * @var DerivedGrantResolver|null
-	 */
-	private readonly ?DerivedGrantResolver $derivedGrantResolver;
-
-	/**
-	 * Reads the grant the request's API token carries.
-	 *
-	 * @var TokenGrantSource|null
-	 */
-	private readonly ?TokenGrantSource $tokenGrantSource;
-
-	/**
-	 * Narrows the block to that token's grant.
-	 *
-	 * @var TokenGrantNarrower|null
-	 */
-	private readonly ?TokenGrantNarrower $tokenGrantNarrower;
-
-	/**
 	 * PermissionHandler constructor.
 	 *
 	 * The collaborators arrive in four bundles, autowired by the DI container.
@@ -473,31 +339,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function __construct(
-		PermissionCallerServices $caller,
-		PermissionDataServices $data,
-		PermissionRuleServices $rules,
-		PermissionGrantServices $grants,
+		private readonly PermissionCallerServices $caller,
+		private readonly PermissionDataServices $data,
+		private readonly PermissionRuleServices $rules,
+		private readonly PermissionGrantServices $grants,
 	) {
-		$this->userSession = $caller->userSession;
-		$this->userManager = $caller->userManager;
-		$this->groupManager = $caller->groupManager;
-		$this->schemaMapper = $data->schemaMapper;
-		$this->objectEntityMapper = $data->objectEntityMapper;
-		$this->conditionMatcher = $rules->conditionMatcher;
-		$this->appConfig = $caller->appConfig;
-		$this->logger = $data->logger;
-		$this->container = $data->container;
-		$this->eventDispatcher = $rules->eventDispatcher;
-		$this->objectScopeResolver = $rules->objectScopeResolver;
-		$this->objectGrantResolver = $rules->objectGrantResolver;
-		$this->denyResolver = $grants->deny->denyResolver;
-		$this->denyEnforcementMode = $grants->deny->denyEnforcementMode;
-		$this->permissionCatalogue = $grants->deny->permissionCatalogue;
-		$this->grantConstraints = $grants->deny->grantConstraints;
-		$this->derivedGrantStore = $grants->derived->derivedGrantStore;
-		$this->derivedGrantResolver = $grants->derived->derivedGrantResolver;
-		$this->tokenGrantSource = $grants->derived->tokenGrantSource;
-		$this->tokenGrantNarrower = $grants->derived->tokenGrantNarrower;
 	}//end __construct()
 
 	/**
@@ -514,7 +360,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function denyResolver(): DenyResolverInterface {
-		return ($this->denyResolver ?? new DenyResolver());
+		return ($this->grants->deny->denyResolver ?? new DenyResolver());
 	}//end denyResolver()
 
 	/**
@@ -528,7 +374,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return ObjectScopeResolverInterface The one definition of the scope vocabulary.
 	 */
 	private function objectScope(): ObjectScopeResolverInterface {
-		return ($this->objectScopeResolver ?? new ObjectScopeResolver());
+		return ($this->rules->objectScopeResolver ?? new ObjectScopeResolver());
 	}//end objectScope()
 
 	/**
@@ -541,12 +387,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return ObjectGrantResolver|null The resolver, or null when unavailable.
 	 */
 	private function objectGrants(): ?ObjectGrantResolver {
-		if ($this->objectGrantResolver !== null) {
-			return $this->objectGrantResolver;
+		if ($this->rules->objectGrantResolver !== null) {
+			return $this->rules->objectGrantResolver;
 		}
 
 		try {
-			$resolved = $this->container->get(ObjectGrantResolver::class);
+			$resolved = $this->data->container->get(ObjectGrantResolver::class);
 			if (($resolved instanceof ObjectGrantResolver) === true) {
 				return $resolved;
 			}
@@ -602,21 +448,36 @@ class PermissionHandler implements PermissionHandlerInterface {
 		?ObjectEntity $object = null,
 		?string $register = null,
 	): bool {
-		// RBAC disabled bypasses all permission checks. Explicitly-scoped system
-		// operations (config imports at app boot, repair steps, webcron jobs run via
-		// ObjectService::runAsSystem()) are trusted the same way CLI cron already is:
-		// these run without a user session, and the anonymous fail-closed policy
-		// (#1955) would otherwise deny the app maintaining its own objects on every boot.
+		$ask = (new PermissionAsk(schema: $schema, action: $action))
+			->askedBy(userId: $userId, objectOwner: $objectOwner)
+			->about(object: $object, register: $register);
+
+		return $this->permits(ask: $ask, _rbac: $_rbac);
+	}//end hasPermission()
+
+	/**
+	 * Whether a permission question is answered yes, or RBAC is bypassed for it.
+	 *
+	 * RBAC disabled bypasses all permission checks. Explicitly-scoped system
+	 * operations (config imports at app boot, repair steps, webcron jobs run via
+	 * ObjectService::runAsSystem()) are trusted the same way CLI cron already is:
+	 * these run without a user session, and the anonymous fail-closed policy
+	 * (#1955) would otherwise deny the app maintaining its own objects on every boot.
+	 *
+	 * @param PermissionAsk $ask   The schema, action, caller, owner, object and register asked about.
+	 * @param bool          $_rbac Whether RBAC applies (false bypasses the check).
+	 *
+	 * @return bool True when permitted
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function permits(PermissionAsk $ask, bool $_rbac): bool {
 		if ($_rbac === false || SystemOperationContext::isActive() === true) {
 			return true;
 		}
 
-		return $this->answer(
-			ask: (new PermissionAsk(schema: $schema, action: $action))
-				->askedBy(userId: $userId, objectOwner: $objectOwner)
-				->about(object: $object, register: $register)
-		);
-	}//end hasPermission()
+		return $this->answer(ask: $ask);
+	}//end permits()
 
 	/**
 	 * The answer to a question: the draft rule, then the cache, then the rule chain.
@@ -726,7 +587,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return $verdict;
 		}
 
-		return ObjectActionElevationScope::allows(schemaId: $ask->schema->getId(), registerId: $ask->register, verb: $ask->action);
+		return ObjectActionElevationScope::permits(
+			write: new ElevatedWrite(schemaId: $ask->schema->getId(), registerId: $ask->register, verb: $ask->action)
+		);
 	}//end elevated()
 
 	/**
@@ -762,9 +625,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 		return (new DraftCallerRule())->keptFromCaller(
 			object: $ask->object,
 			schema: $ask->schema,
-			userId: $subject,
-			isAdmin: in_array('admin', $this->groupsOf(userId: $subject), true),
-			commandLine: $this->isCommandLine()
+			caller: new DraftCaller(
+				userId: $subject,
+				isAdmin: in_array('admin', $this->groupsOf(userId: $subject), true),
+				commandLine: $this->isCommandLine()
+			)
 		);
 	}//end draftIsKeptFromCaller()
 
@@ -796,12 +661,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
 	 */
 	private function dispatchActionEvaluated(PermissionAsk $ask, bool $granted): void {
-		if ($this->eventDispatcher === null) {
+		if ($this->rules->eventDispatcher === null) {
 			return;
 		}
 
 		try {
-			$this->eventDispatcher->dispatchTyped(
+			$this->rules->eventDispatcher->dispatchTyped(
 				new ActionEvaluatedEvent(schema: $ask->schema, action: $ask->action, granted: $granted, actor: $ask->userId, object: $ask->object)
 			);
 		} catch (\Throwable $e) {
@@ -821,7 +686,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return void
 	 */
 	private function warnWith(string $message, array $facts): void {
-		$this->logger->warning(message: $message, context: ['file' => __FILE__, 'line' => __LINE__] + $facts);
+		$this->data->logger->warning(message: $message, context: ['file' => __FILE__, 'line' => __LINE__] + $facts);
 	}//end warnWith()
 
 	/**
@@ -1045,7 +910,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		try {
 			$check->authorization = $this->resolveAuthorization(schema: $check->schema, object: $check->object);
 		} catch (AuthorizationUnresolvableException $e) {
-			$this->logger->error(
+			$this->data->logger->error(
 				message: '[PermissionHandler] Authorization unresolvable; denying action (fail-closed)',
 				context: [
 					'file' => __FILE__,
@@ -1091,7 +956,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		$this->logger->info(
+		$this->data->logger->info(
 			message: '[PermissionHandler] Action denied by an explicit deny rule',
 			context: [
 				'file' => __FILE__,
@@ -1120,7 +985,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	private function callerVerdict(PermissionCheck $check): ?bool {
 		if ($check->userId === null) {
-			$user = $this->userSession->getUser();
+			$user = $this->caller->userSession->getUser();
 			if ($user === null) {
 				return $this->anonymousVerdict(check: $check);
 			}
@@ -1128,12 +993,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 			$check->userId = $user->getUID();
 		}
 
-		$userObj = $this->userManager->get($check->userId);
+		$userObj = $this->caller->userManager->get($check->userId);
 		if ($userObj === null) {
 			return $this->publicGrantForStranger(check: $check);
 		}
 
-		$check->userGroups = $this->groupManager->getUserGroupIds($userObj);
+		$check->userGroups = $this->caller->groupManager->getUserGroupIds($userObj);
 
 		return null;
 	}//end callerVerdict()
@@ -1218,7 +1083,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	private function customVerbVerdict(PermissionCheck $check): ?bool {
 		if (in_array(needle: $check->action, haystack: self::CANONICAL_ACTIONS, strict: true) === true
-			|| $this->eventDispatcher === null
+			|| $this->rules->eventDispatcher === null
 		) {
 			return null;
 		}
@@ -1245,7 +1110,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return false
 	 */
 	private function refuseUnevaluatedVerb(PermissionCheck $check, array $declaration): bool {
-		$this->logger->warning(
+		$this->data->logger->warning(
 			message: '[PermissionHandler] A declared custom verb has no evaluator; refusing',
 			context: [
 				'file' => __FILE__,
@@ -1345,7 +1210,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			$reason = 'the rule for this verb does not name this caller';
 		}
 
-		$this->logger->info(
+		$this->data->logger->info(
 			message: '[PermissionHandler] Action refused; the rule that decided it is named below',
 			context: [
 				'file' => __FILE__,
@@ -1409,29 +1274,15 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return null;
 		}
 
-		$denial = $this->denialFor(
-			authorization: $authorization,
-			action: $action,
-			userId: $userId,
-			object: $object
-		);
-		if ($denial === null) {
-			return null;
-		}
-
-		if ($mode->enforces() === true) {
+		$denial = $this->denialFor(authorization: $authorization, action: $action, userId: $userId, object: $object);
+		if ($denial === null || $mode->enforces() === true) {
 			return $denial;
 		}
 
 		// `staging`. The denial is real, and it is recorded, and it changes
 		// nothing. Returning null here rather than skipping the resolution above
 		// is the whole difference between a dry run and a disabled feature.
-		$mode->record(
-			denial: $denial,
-			action: $action,
-			userId: $this->callerId(userId: $userId),
-			context: $context
-		);
+		$mode->record(staged: new StagedDenial(denial: $denial, action: $action, userId: $this->callerId(userId: $userId), context: $context));
 
 		return null;
 	}//end enforcedDenialFor()
@@ -1466,21 +1317,13 @@ class PermissionHandler implements PermissionHandlerInterface {
 		?ObjectEntity $object = null,
 		?string $userId = null,
 	): array {
-		$permitted = [];
-		foreach ($this->rowVerbs() as $verb) {
-			$granted = $this->hasPermission(
-				schema: $schema,
-				action: $verb,
-				userId: $userId,
-				objectOwner: $object?->getOwner(),
-				object: $object
-			);
-			if ($granted === true) {
-				$permitted[] = $verb;
-			}
-		}
+		$asks = static fn (string $verb): PermissionAsk => (new PermissionAsk(schema: $schema, action: $verb))
+			->askedBy(userId: $userId, objectOwner: $object?->getOwner())
+			->about(object: $object, register: null);
 
-		return $permitted;
+		return array_values(
+			array_filter($this->rowVerbs(), fn (string $verb): bool => $this->permits(ask: $asks($verb), _rbac: true))
+		);
 	}//end permittedActionsFor()
 
 	/**
@@ -1526,29 +1369,42 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function provenanceFor(Schema $schema, array $actions, ?string $userId = null, ?ObjectEntity $object = null): array {
-		$userId = $this->callerId(userId: $userId);
+		return $this->provenance(request: new ProvenanceRequest(schema: $schema, actions: $actions, userId: $userId, object: $object));
+	}//end provenanceFor()
+
+	/**
+	 * Where the caller's answer for each requested action comes from (see provenanceFor()).
+	 *
+	 * @param ProvenanceRequest $request The schema, the actions, the caller and the optional object.
+	 *
+	 * @return array<string, array<string, mixed>> One provenance record per action.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function provenance(ProvenanceRequest $request): array {
+		$userId = $this->callerId(userId: $request->userId);
 		$principals = $this->denyResolver()->principalsFor(userId: $userId, userGroups: $this->groupsOf(userId: $userId));
 
 		try {
-			$cascaded = $this->resolveAuthorization(schema: $schema, object: $object);
+			$cascaded = $this->resolveAuthorization(schema: $request->schema, object: $request->object);
 		} catch (\Throwable $e) {
 			// An unresolvable cascade is reported as unresolvable rather than as
 			// an absence. "Nobody granted you this" and "the rules could not be
 			// read" send an administrator to two different screens.
-			return array_fill_keys($actions, ['source' => 'unresolvable', 'granted' => false]);
+			return array_fill_keys($request->actions, ['source' => 'unresolvable', 'granted' => false]);
 		}
 
-		$blocks = $this->provenanceBlocks(schema: $schema, object: $object);
+		$blocks = $this->provenanceBlocks(schema: $request->schema, object: $request->object);
 		$denials = [];
-		foreach ($actions as $action) {
-			$denials[$action] = $this->denialFor(authorization: $cascaded, action: $action, userId: $userId, object: $object);
+		foreach ($request->actions as $action) {
+			$denials[$action] = $this->denialFor(authorization: $cascaded, action: $action, userId: $userId, object: $request->object);
 		}
 
-		$resolver = new ProvenanceResolver(denyResolver: $this->denyResolver());
+		$resolver = new ProvenanceResolver(denyResolver: $this->denyResolver(), principals: $principals);
 		$enforced = $this->denyEnforcementMode()->enforces();
 
-		return $resolver->forActions(actions: $actions, principals: $principals, blocks: $blocks, denials: $denials, enforced: $enforced);
-	}//end provenanceFor()
+		return $resolver->forActions(actions: $request->actions, options: new ProvenanceOptions(blocks: $blocks, denials: $denials, enforced: $enforced));
+	}//end provenance()
 
 	/**
 	 * The blocks provenance reads: object, schema, register and the register's role definitions.
@@ -1585,7 +1441,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function callerId(?string $userId): ?string {
-		return ($userId ?? $this->userSession->getUser()?->getUID());
+		return ($userId ?? $this->caller->userSession->getUser()?->getUID());
 	}//end callerId()
 
 	/**
@@ -1602,12 +1458,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return [];
 		}
 
-		$user = $this->userManager->get($userId);
+		$user = $this->caller->userManager->get($userId);
 		if ($user === null) {
 			return [];
 		}
 
-		return $this->groupManager->getUserGroupIds($user);
+		return $this->caller->groupManager->getUserGroupIds($user);
 	}//end groupsOf()
 
 	/**
@@ -1623,7 +1479,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function permissionCatalogue(): PermissionCatalogueInterface {
-		return ($this->permissionCatalogue ?? new PermissionCatalogue(eventDispatcher: $this->eventDispatcher));
+		return ($this->grants->deny->permissionCatalogue ?? new PermissionCatalogue(eventDispatcher: $this->rules->eventDispatcher));
 	}//end permissionCatalogue()
 
 	/**
@@ -1638,9 +1494,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function denyEnforcementMode(): DenyEnforcementMode {
-		return ($this->denyEnforcementMode ?? new DenyEnforcementMode(
-			appConfig: $this->appConfig,
-			logger: $this->logger
+		return ($this->grants->deny->denyEnforcementMode ?? new DenyEnforcementMode(
+			appConfig: $this->caller->appConfig,
+			logger: $this->data->logger
 		));
 	}//end denyEnforcementMode()
 
@@ -1685,12 +1541,28 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function denialFor(?array $authorization, string $action, ?string $userId = null, ?ObjectEntity $object = null): ?array {
+		$question = (new DenialQuestion(authorization: $authorization, action: $action))->about(principals: [], object: $object);
+
+		return $this->denialAsked(question: $question, userId: $userId);
+	}//end denialFor()
+
+	/**
+	 * The deny that refuses a caller an action under an authorization block, or null (see denialFor()).
+	 *
+	 * @param DenialQuestion $question The block, the action and the object; its principals are filled in here.
+	 * @param string|null    $userId   The caller, or null for the session user.
+	 *
+	 * @return array<string, mixed>|null The denial, or null when nothing denies.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function denialAsked(DenialQuestion $question, ?string $userId): ?array {
 		$resolver = $this->denyResolver();
 
 		// The cheap exit, and the backwards-compatibility promise made
 		// structural: a block with no `deny` key costs one array lookup and
 		// resolves exactly as it did before this capability existed.
-		if ($resolver->declaresAnyDeny(authorization: $authorization) === false) {
+		if ($resolver->declaresAnyDeny(authorization: $question->authorization) === false) {
 			return null;
 		}
 
@@ -1702,10 +1574,8 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		$principals = $resolver->principalsFor(userId: $userId, userGroups: $userGroups);
 
-		$question = new DenialQuestion(authorization: $authorization, action: $action);
-
-		return $this->denialAnswer(question: $question->about(principals: $principals, object: $object));
-	}//end denialFor()
+		return $this->denialAnswer(question: $question->about(principals: $principals, object: $question->object));
+	}//end denialAsked()
 
 	/**
 	 * The unconditional denial of the question, else the first conditional one that selects its object.
@@ -1776,8 +1646,8 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return bool True when the denial applies.
 	 */
 	private function denialSelects(array $match, array $envelope): bool {
-		return $this->conditionMatcher->namesUnknownMetadata(match: $match, object: $envelope) === true
-			|| $this->conditionMatcher->objectMatchesConditions(object: $envelope, match: $match) === true;
+		return $this->rules->conditionMatcher->namesUnknownMetadata(match: $match, object: $envelope) === true
+			|| $this->rules->conditionMatcher->objectMatchesConditions(object: $envelope, match: $match) === true;
 	}//end denialSelects()
 
 	/**
@@ -1825,7 +1695,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		// schema stays the CEILING (design D3b). `private` narrows and a grant
 		// re-opens within that ceiling; neither can admit somebody the schema
 		// refuses.
-		if ($this->objectGrants()?->isGranted(userId: $userId, objectUuid: $object->getUuid(), action: $check->action) === true) {
+		if ($this->objectGrants()?->isGranted(lookup: new GrantLookup(userId: $userId, objectUuid: $object->getUuid()), action: $check->action) === true) {
 			return null;
 		}
 
@@ -1896,7 +1766,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	private function listenersRan(CustomScopeEvaluatingEvent $event): bool {
 		try {
-			$this->eventDispatcher?->dispatchTyped($event);
+			$this->rules->eventDispatcher?->dispatchTyped($event);
 		} catch (Exception $e) {
 			$this->warnWith(
 				message: '[PermissionHandler] CustomScopeEvaluatingEvent dispatch failed — denying',
@@ -1966,7 +1836,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	private function dispatchCustomScopeEvaluated(PermissionCheck $check, bool $verdict): void {
 		try {
-			$this->eventDispatcher?->dispatchTyped(
+			$this->rules->eventDispatcher?->dispatchTyped(
 				new CustomScopeEvaluatedEvent(schema: $check->schema, action: $check->action, userId: $check->userId, verdict: $verdict, fromListener: true)
 			);
 		} catch (Exception $e) {
@@ -2044,32 +1914,38 @@ class PermissionHandler implements PermissionHandlerInterface {
 		?ObjectEntity $object = null,
 		?string $register = null,
 	): void {
-		if ($this->hasPermission(
-			schema: $schema,
-			action: $action,
-			userId: $userId,
-			objectOwner: $objectOwner,
-			_rbac: $_rbac,
-			object: $object,
-			register: $register
-		) === false
-		) {
-			$user = $this->userSession->getUser();
-			$userName = 'Anonymous';
-			if ($user !== null) {
-				$userName = $user->getDisplayName();
-			}
-
-			// Use NotAuthorizedException (HTTP 403) rather than a generic
-			// Exception so controllers map an RBAC denial to a 403 Forbidden
-			// response instead of leaking a 500 Internal Server Error. The
-			// class extends \Exception, so any existing `catch (Exception)`
-			// call sites remain backward-compatible.
-			throw new NotAuthorizedException(
-				message: "User '{$userName}' does not have permission to '{$action}' objects in schema '{$schema->getTitle()}'"
-			);
+		$ask = (new PermissionAsk(schema: $schema, action: $action))
+			->askedBy(userId: $userId, objectOwner: $objectOwner)
+			->about(object: $object, register: $register);
+		if ($this->permits(ask: $ask, _rbac: $_rbac) === false) {
+			throw $this->notAuthorized(ask: $ask);
 		}
 	}//end checkPermission()
+
+	/**
+	 * The refusal of a permission question, naming the session user (or Anonymous), the action and the schema.
+	 *
+	 * NotAuthorizedException (HTTP 403) rather than a generic Exception, so controllers map an RBAC
+	 * denial to a 403 Forbidden response instead of leaking a 500 Internal Server Error. The class
+	 * extends \Exception, so any existing `catch (Exception)` call sites remain backward-compatible.
+	 *
+	 * @param PermissionAsk $ask The question that was refused.
+	 *
+	 * @return NotAuthorizedException
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function notAuthorized(PermissionAsk $ask): NotAuthorizedException {
+		$user = $this->caller->userSession->getUser();
+		$userName = 'Anonymous';
+		if ($user !== null) {
+			$userName = $user->getDisplayName();
+		}
+
+		return new NotAuthorizedException(
+			message: "User '{$userName}' does not have permission to '{$ask->action}' objects in schema '{$ask->schema->getTitle()}'"
+		);
+	}//end notAuthorized()
 
 	/*
 	 * NOTE: there is deliberately no object-level read filter here.
@@ -2121,11 +1997,22 @@ class PermissionHandler implements PermissionHandlerInterface {
 		// UUIDs through findMultipleAcrossAllMagicTables() a few lines later.
 		// Soft-deleted rows are included: bulk-deleting an already-trashed object
 		// is how it is destroyed for good.
-		$objects = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(
-			uuids: $uuids,
-			includeDeleted: true
-		);
+		$objects = $this->data->objectEntityMapper->findMultipleAcrossAllMagicTables(uuids: $uuids, includeDeleted: true);
 
+		return $this->keptUuids(caller: $caller, objects: $objects);
+	}//end filterUuidsForPermissions()
+
+	/**
+	 * The uuids of the objects a bulk caller may act on, in order; an object without a uuid is left out.
+	 *
+	 * @param BulkCaller          $caller  The bulk caller and its RBAC / multitenancy switches.
+	 * @param array<ObjectEntity> $objects The objects found.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function keptUuids(BulkCaller $caller, array $objects): array {
 		$filteredUuids = [];
 		foreach ($objects as $object) {
 			if ($this->bulkKeeps(caller: $caller, object: $object) === true && $object->getUuid() !== null) {
@@ -2134,7 +2021,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		return $filteredUuids;
-	}//end filterUuidsForPermissions()
+	}//end keptUuids()
 
 	/**
 	 * The session caller of a bulk filter.
@@ -2150,12 +2037,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the caller's posture, passed through.
 	 */
 	private function bulkCaller(bool $rbac, bool $multitenancy): BulkCaller {
-		$user   = $this->userSession->getUser();
+		$user   = $this->caller->userSession->getUser();
 		$caller = new BulkCaller(userId: $user?->getUID(), commandLine: $this->isCommandLine());
 
 		$caller->organisation       = $this->getActiveOrganisationForContext();
 		$caller->checksOrganisation = $this->organisationCheckApplies(multitenancy: $multitenancy, activeOrganisation: $caller->organisation);
-		$caller->isAdmin    = ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true);
+		$caller->isAdmin    = ($user !== null && in_array('admin', $this->caller->groupManager->getUserGroupIds($user), true) === true);
 		$caller->checksRbac = ($rbac === true && $caller->userId !== null);
 
 		return $caller;
@@ -2197,7 +2084,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
-			$schema = $this->schemaMapper->find($schemaId);
+			$schema = $this->data->schemaMapper->find($schemaId);
 
 			return $caller->keptFromDraft(object: $object, schema: $schema) === false
 				&& $this->hasPermission(schema: $schema, action: 'delete', userId: $caller->userId, objectOwner: $object->getOwner());
@@ -2252,7 +2139,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	public function getActiveOrganisationForContext(): ?string {
 		try {
 			// Use container to lazy load OrganisationService to avoid circular dependencies.
-			$organisationService = $this->container->get('OCA\\OpenRegister\\Service\\OrganisationService');
+			$organisationService = $this->data->container->get('OCA\\OpenRegister\\Service\\OrganisationService');
 
 			// Active organisations include the parent chain; the first is the primary one.
 			$orgUuids = $organisationService->getUserActiveOrganisations();
@@ -2361,8 +2248,8 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function tokenCeilingRefuses(GroupRuleRequest $request): bool {
-		return ($this->tokenGrantNarrower !== null
-			&& $this->tokenGrantNarrower->markerPermits(authorization: $request->authorization, action: $request->action) === false);
+		return ($this->grants->derived->tokenGrantNarrower !== null
+			&& $this->grants->derived->tokenGrantNarrower->markerPermits(authorization: $request->authorization, action: $request->action) === false);
 	}//end tokenCeilingRefuses()
 
 	/**
@@ -2439,7 +2326,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		$entries = new GroupRuleEntries(conditionMatcher: $this->conditionMatcher);
+		$entries = new GroupRuleEntries(conditionMatcher: $this->rules->conditionMatcher);
 		foreach ($request->authorization[$request->action] as $entry) {
 			if (self::isMcpScopeEntry(entry: $entry) === false && $entries->grants(entry: $entry, request: $request) === true) {
 				return true;
@@ -2495,14 +2382,14 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	private function isDefaultClosedEnforced(): bool {
 		// Wave-12 injected IAppConfig as an optional trailing constructor arg and
-		// guarded `$this->appConfig === null` here for BC with the then-current
+		// guarded `$this->caller->appConfig === null` here for BC with the then-current
 		// 8-arg signature. On this lineage IAppConfig is already a REQUIRED
 		// constructor dependency (it also backs the inheritFromPublic tenant
 		// default), so that guard is unreachable by construction and has been
 		// dropped rather than kept as an always-false comparison. The try/catch
 		// below still preserves the BC default-open on an unreachable appconfig.
 		try {
-			return $this->appConfig->getValueBool(
+			return $this->caller->appConfig->getValueBool(
 				app: self::APP_ID,
 				key: self::CONFIG_ENFORCE_DEFAULT_CLOSED,
 				default: false
@@ -2552,7 +2439,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			self::CONFIG_ENFORCE_DEFAULT_CLOSED,
 			' to true to require an explicit authorization block (or set `"public": true` on the schema to keep open writes).',
 		];
-		$this->logger->warning(
+		$this->data->logger->warning(
 			message: implode('', $messageParts),
 			context: [
 				'file' => __FILE__,
@@ -2655,7 +2542,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
-			return $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
+			return $this->data->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
 		} catch (\Throwable $e) {
 			$this->warnWith(
 				message: '[PermissionHandler] getReadableByUsers: schema lookup failed',
@@ -2684,7 +2571,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		try {
 			return $this->resolveReadGroupIds(authorization: $this->resolveAuthorization(schema: $schema));
 		} catch (AuthorizationUnresolvableException $e) {
-			$this->logger->error(
+			$this->data->logger->error(
 				message: '[PermissionHandler] Authorization unresolvable; no readable users resolved (fail-closed)',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'error' => $e->getMessage()]
 			);
@@ -2805,7 +2692,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	private function collectUsersFromGroups(array $groupIds): array {
 		$userIds = [];
 		foreach ($groupIds as $groupId) {
-			$group = $this->groupManager->get($groupId);
+			$group = $this->caller->groupManager->get($groupId);
 			if ($group === null) {
 				continue;
 			}
@@ -2933,11 +2820,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
 	 */
 	private function narrowByToken(?array $authorization, Schema $schema): ?array {
-		if ($this->tokenGrantNarrower === null) {
+		if ($this->grants->derived->tokenGrantNarrower === null) {
 			return $authorization;
 		}
 
-		$grant = $this->tokenGrantSource?->current();
+		$grant = $this->grants->derived->tokenGrantSource?->current();
 		if ($grant === null) {
 			return $authorization;
 		}
@@ -2955,11 +2842,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 			$registerSlug = null;
 		}
 
-		return $this->tokenGrantNarrower->narrow(
+		return $this->grants->derived->tokenGrantNarrower->narrow(
 			authorization: $authorization,
-			grant: $grant,
-			schemaSlug: $schema->getSlug(),
-			registerSlug: $registerSlug
+			use: new TokenGrantUse(grant: $grant, target: new TokenGrantTarget(schemaSlug: $schema->getSlug(), registerSlug: $registerSlug))
 		);
 	}//end narrowByToken()
 
@@ -3021,7 +2906,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 				compiled: $compiler->compile(matrix: $matrix, ownValues: $ownValues)
 			);
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->data->logger->error(
 				message: '[PermissionHandler] Could not compile a department matrix; the schema keeps its own rules',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
@@ -3042,9 +2927,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	public function matrixRowsFromApps(): MatrixRowsFromApps {
 		$this->matrixRowsFromApps ??= new MatrixRowsFromApps(
-			dispatcher: $this->eventDispatcher,
+			dispatcher: $this->rules->eventDispatcher,
 			validator: new DepartmentMatrixValidator(),
-			logger: $this->logger
+			logger: $this->data->logger
 		);
 
 		return $this->matrixRowsFromApps;
@@ -3059,10 +2944,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	private function personValues(): DepartmentMatrixPersonValues {
 		$this->personValues ??= new DepartmentMatrixPersonValues(
-			schemas: $this->schemaMapper,
-			registers: $this->container->get(RegisterMapperInterface::class),
-			objects: $this->objectEntityMapper,
-			logger: $this->logger
+			schemas: $this->data->schemaMapper,
+			registers: $this->data->container->get(RegisterMapperInterface::class),
+			objects: $this->data->objectEntityMapper,
+			logger: $this->data->logger
 		);
 
 		return $this->personValues;
@@ -3078,7 +2963,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return GrantConstraints The reader.
 	 */
 	private function grantConstraints(): GrantConstraints {
-		return ($this->grantConstraints ?? new GrantConstraints());
+		return ($this->grants->deny->grantConstraints ?? new GrantConstraints());
 	}//end grantConstraints()
 
 	/**
@@ -3133,17 +3018,17 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return array<int, string> The derived group ids.
 	 */
 	private function derivedGroupsFor(?string $userId, Schema $schema): array {
-		if ($userId === null || $this->derivedGrantStore === null) {
+		if ($userId === null || $this->grants->derived->derivedGrantStore === null) {
 			return [];
 		}
 
 		try {
-			$grants = $this->derivedGrantStore->grantsFor(userId: $userId);
+			$grants = $this->grants->derived->derivedGrantStore->grantsFor(userId: $userId);
 			if ($grants === []) {
 				return [];
 			}
 
-			$resolver = ($this->derivedGrantResolver ?? new DerivedGrantResolver());
+			$resolver = ($this->grants->derived->derivedGrantResolver ?? new DerivedGrantResolver());
 
 			// 🔴 A DERIVED GROUP IS NEVER A RESERVED ONE. `admin` bypasses every
 			// rule in this class, and `public`, `authenticated` and `mcp` are
@@ -3166,7 +3051,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		} catch (\Throwable $e) {
 			// Fail closed: a derivation that cannot be read grants nothing,
 			// which is the direction that cannot let somebody in by accident.
-			$this->logger->warning(
+			$this->data->logger->warning(
 				message: '[PermissionHandler] Could not read the derived grants; resolving without them',
 				context: [
 					'file' => __FILE__,
@@ -3197,12 +3082,16 @@ class PermissionHandler implements PermissionHandlerInterface {
 		// Compute the schema-or-register baseline first.
 		$baseline = $this->baselineAuthorization(schema: $schema);
 
-		// Wave-12 Fix 5: layer per-object overrides on top.
-		if ($object === null) {
+		// Wave-12 Fix 5: layer an object's own authorization, roles expanded, over the baseline.
+		$objectAuth = $object?->getAuthorization();
+		if (empty($objectAuth) === true || is_array($objectAuth) === false) {
 			return $baseline;
 		}
 
-		return $this->layerObjectAuthorization(baseline: $baseline, object: $object, schema: $schema);
+		return $this->mergeObjectAuthorization(
+			baseline: $baseline,
+			override: $this->expandRoles(authorization: $objectAuth, schema: $schema)
+		);
 	}//end resolveAuthorizationRaw()
 
 	/**
@@ -3232,29 +3121,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return $this->expandRoles(authorization: $registerAuth, schema: $schema);
 	}//end baselineAuthorization()
-
-	/**
-	 * Layer an object's own authorization over the baseline.
-	 *
-	 * @param array|null   $baseline The schema-or-register baseline.
-	 * @param ObjectEntity $object   The object.
-	 * @param Schema       $schema   The schema (for role expansion).
-	 *
-	 * @return array|null The effective authorization
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	private function layerObjectAuthorization(?array $baseline, ObjectEntity $object, Schema $schema): ?array {
-		$objectAuth = $object->getAuthorization();
-		if (empty($objectAuth) === true || is_array($objectAuth) === false) {
-			return $baseline;
-		}
-
-		return $this->mergeObjectAuthorization(
-			baseline: $baseline,
-			override: $this->expandRoles(authorization: $objectAuth, schema: $schema)
-		);
-	}//end layerObjectAuthorization()
 
 	/**
 	 * Merge an object's expanded authorization over a baseline: replace per action, union deny.
@@ -3394,7 +3260,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			$resolved = $this->cascadeInheritFromPublic(schema: $schema, schemaId: $schemaId);
 		} catch (\Throwable $e) {
 			$resolved = $this->inheritFromPublicTenantDefault();
-			$this->logger->error(
+			$this->data->logger->error(
 				message: '[PermissionHandler] inheritFromPublic resolution failed; falling back to tenant default',
 				context: [
 					'file' => __FILE__,
@@ -3446,7 +3312,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 	private function schemaInheritFromPublic(Schema $schema, ?int $schemaId): ?bool {
 		$auth = $schema->getAuthorization();
 		if (is_array($auth) === true && array_key_exists('inheritFromPublic', $auth) === true) {
-			return $this->coerceStrictBoolOrLog(value: $auth['inheritFromPublic'], level: 'schema', schemaId: $schemaId);
+			return $this->coerceStrictBoolOrLog(
+				setting: new InheritFromPublicSetting(value: $auth['inheritFromPublic'], level: 'schema', schemaId: $schemaId)
+			);
 		}
 
 		return null;
@@ -3467,9 +3335,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 	public function inheritFromPublicTenantDefault(): bool {
 		try {
 			// IAppConfig tolerates string forms ("true"/"1") here.
-			return $this->appConfig->getValueBool(app: 'openregister', key: 'rbac.inherit_from_public_default', default: true);
+			return $this->caller->appConfig->getValueBool(app: 'openregister', key: 'rbac.inherit_from_public_default', default: true);
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->data->logger->error(
 				message: '[PermissionHandler] IAppConfig unreachable resolving inheritFromPublic default; assuming true',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
@@ -3542,10 +3410,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	private function registerIdsWithSchema(int $schemaId): ?array {
 		try {
-			$registerMapper = $this->container->get(RegisterMapperInterface::class);
+			$registerMapper = $this->data->container->get(RegisterMapperInterface::class);
 			return $registerMapper->getAllRegisterIdsWithSchema(schemaId: $schemaId);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->data->logger->warning(
 				message: '[PermissionHandler] Failed to list registers for schema; skipping register cascade',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId, 'error' => $e->getMessage()]
 			);
@@ -3576,7 +3444,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return null;
 		}
 
-		return $this->coerceStrictBoolOrLog(value: $registerAuth['inheritFromPublic'], level: 'register', schemaId: $schemaId);
+		return $this->coerceStrictBoolOrLog(
+			setting: new InheritFromPublicSetting(value: $registerAuth['inheritFromPublic'], level: 'register', schemaId: $schemaId)
+		);
 	}//end registerInheritFromPublic()
 
 	/**
@@ -3587,24 +3457,22 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * "false" === true` would otherwise silently invert the gate on a
 	 * seed/migration/CLI write that bypasses the schema validator.
 	 *
-	 * @param mixed $value The stored value.
-	 * @param string $level The cascade level ('schema' | 'register'), for logging.
-	 * @param int|null $schemaId The schema id, for logging.
+	 * @param InheritFromPublicSetting $setting The stored value, and its cascade level and schema id for logging.
 	 *
 	 * @return bool|null The boolean value, or null when the value is not a real boolean.
 	 */
-	private function coerceStrictBoolOrLog(mixed $value, string $level, ?int $schemaId): ?bool {
-		if (is_bool($value) === true) {
-			return $value;
+	private function coerceStrictBoolOrLog(InheritFromPublicSetting $setting): ?bool {
+		if (is_bool($setting->value) === true) {
+			return $setting->value;
 		}
 
-		if ($value !== null) {
-			$this->logger->warning(
+		if ($setting->value !== null) {
+			$this->data->logger->warning(
 				message: '[PermissionHandler] Non-boolean inheritFromPublic value ignored; treating as unset',
 				context: [
-					'level' => $level,
-					'schemaId' => $schemaId,
-					'type' => get_debug_type($value),
+					'level' => $setting->level,
+					'schemaId' => $setting->schemaId,
+					'type' => get_debug_type($setting->value),
 				]
 			);
 		}
@@ -3642,7 +3510,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 */
 	private function getRegisterForSchema(Schema $schema): ?Register {
 		try {
-			$registerMapper = $this->container->get(RegisterMapperInterface::class);
+			$registerMapper = $this->data->container->get(RegisterMapperInterface::class);
 			$registerId = $registerMapper->getFirstRegisterWithSchema($schema->getId());
 			if ($registerId === null) {
 				return null;
@@ -3655,7 +3523,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			// not make it safe. A genuine "no register" answer still returns null
 			// above (getFirstRegisterWithSchema() === null); only the ERROR path
 			// throws.
-			$this->logger->error(
+			$this->data->logger->error(
 				message: '[PermissionHandler] Failed to get register for schema; denying access (fail-closed)',
 				context: [
 					'file' => __FILE__,
@@ -3700,7 +3568,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
-			$registerMapper = $this->container->get(RegisterMapperInterface::class);
+			$registerMapper = $this->data->container->get(RegisterMapperInterface::class);
 			// Multitenancy/RBAC scoping DISABLED: this loads the register purely to
 			// read its authorization + configuration policy for a security decision.
 			// Org-scoping this lookup would make a legitimate register unresolvable
@@ -3718,7 +3586,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			// Log — a sibling resolver (getRegisterForSchema) already logs on this
 			// exact shape; this one silently swallowed, so an authorization outage
 			// left no trace at all while granting full permissions.
-			$this->logger->error(
+			$this->data->logger->error(
 				message: '[PermissionHandler] Failed to resolve register authorization; denying access (fail-closed)',
 				context: [
 					'file' => __FILE__,
@@ -3801,7 +3669,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return $authorization;
 		}
 
-		return (new RoleBlockExpander(logger: $this->logger, schemaId: $schema->getId()))->expand(
+		return (new RoleBlockExpander(logger: $this->data->logger, schemaId: $schema->getId()))->expand(
 			authorization: $authorization,
 			definitions: $this->getRoleDefinitionsForSchema(schema: $schema)
 		);
@@ -3859,17 +3727,17 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * the listener only calls it when the key is present — so existing
 	 * transitions are completely unaffected (additive).
 	 *
-	 * @param array<int, mixed> $authorizationList Group ids / `{role}` entries permitted to perform the transition.
-	 * @param string|null $userId Caller uid, or null for an anonymous principal.
-	 * @param Schema $schema Schema the transition belongs to (for named-role expansion).
+	 * @param TransitionGate $gate   The group ids / `{role}` entries permitted to perform the transition, and the
+	 *                              schema it belongs to (for named-role expansion).
+	 * @param string|null    $userId Caller uid, or null for an anonymous principal.
 	 *
 	 * @return bool True when the caller is authorised; false (fail-closed) otherwise.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
 	 */
-	public function isTransitionAuthorized(array $authorizationList, ?string $userId, Schema $schema): bool {
+	public function isTransitionAuthorized(TransitionGate $gate, ?string $userId): bool {
 		// Fail-closed: an empty list authorises nobody.
-		if ($authorizationList === []) {
+		if ($gate->authorizationList === []) {
 			return false;
 		}
 
@@ -3879,29 +3747,29 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		// Admin bypass — consistent with every other verdict in this handler.
-		if (in_array(needle: 'admin', haystack: $userGroups, strict: true) === true) {
-			return true;
-		}
+		$run = new TransitionAuthorizationRun(userGroupSet: array_flip($userGroups), schema: $gate->schema);
 
-		return $this->transitionListAdmits(authorizationList: $authorizationList, userGroupSet: array_flip($userGroups), schema: $schema);
+		return $this->transitionListAdmits(run: $run, authorizationList: $gate->authorizationList);
 	}//end isTransitionAuthorized()
 
 	/**
 	 * Whether any entry of a transition authorization list admits the caller.
 	 *
-	 * @param array<int, mixed>  $authorizationList Group ids / `{role}` entries.
-	 * @param array<string, int> $userGroupSet      The caller's group ids as keys.
-	 * @param Schema             $schema            Schema the transition belongs to.
+	 * @param TransitionAuthorizationRun $run               The caller's groups and the transition's schema.
+	 * @param array<int, mixed>          $authorizationList Group ids / `{role}` entries.
 	 *
 	 * @return bool True when an entry admits the caller
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
 	 */
-	private function transitionListAdmits(array $authorizationList, array $userGroupSet, Schema $schema): bool {
-		$roleGroupMap = null;
+	private function transitionListAdmits(TransitionAuthorizationRun $run, array $authorizationList): bool {
+		// Admin bypass — consistent with every other verdict in this handler.
+		if (isset($run->userGroupSet['admin']) === true) {
+			return true;
+		}
+
 		foreach ($authorizationList as $entry) {
-			if ($this->transitionEntryAdmits(entry: $entry, userGroupSet: $userGroupSet, schema: $schema, roleGroupMap: $roleGroupMap) === true) {
+			if ($this->transitionEntryAdmits(run: $run, entry: $entry) === true) {
 				return true;
 			}
 		}
@@ -3923,12 +3791,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return null;
 		}
 
-		$userObj = $this->userManager->get($userId);
+		$userObj = $this->caller->userManager->get($userId);
 		if ($userObj === null) {
 			return null;
 		}
 
-		return $this->groupManager->getUserGroupIds($userObj);
+		return $this->caller->groupManager->getUserGroupIds($userObj);
 	}//end transitionCallerGroups()
 
 	/**
@@ -3938,19 +3806,17 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * groups assigned to that role (resolved once, on first use, into $roleGroupMap).
 	 * Anything else admits nobody.
 	 *
-	 * @param mixed                                   $entry        The entry.
-	 * @param array<string, int>                      $userGroupSet The caller's group ids as keys.
-	 * @param Schema                                  $schema       Schema the transition belongs to.
-	 * @param array<string, array<int, string>>|null $roleGroupMap The role map, or null when not resolved yet.
+	 * @param TransitionAuthorizationRun $run   The caller's groups, the schema, and the role map once resolved.
+	 * @param mixed                      $entry The entry.
 	 *
 	 * @return bool True when the entry admits the caller
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
 	 */
-	private function transitionEntryAdmits(mixed $entry, array $userGroupSet, Schema $schema, ?array &$roleGroupMap): bool {
+	private function transitionEntryAdmits(TransitionAuthorizationRun $run, mixed $entry): bool {
 		// Literal NC group id.
 		if (is_string($entry) === true) {
-			return $entry !== '' && isset($userGroupSet[$entry]) === true;
+			return $entry !== '' && isset($run->userGroupSet[$entry]) === true;
 		}
 
 		// Named-role indirection: { "role": "<name>" } → assigned groups.
@@ -3958,9 +3824,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		$roleGroupMap ??= $this->resolveTransitionRoleGroups(schema: $schema);
+		$run->roleGroupMap ??= $this->resolveTransitionRoleGroups(schema: $run->schema);
 
-		return $this->anyGroupInSet(groups: ($roleGroupMap[$entry['role']] ?? []), userGroupSet: $userGroupSet);
+		return $this->anyGroupInSet(groups: ($run->roleGroupMap[$entry['role']] ?? []), userGroupSet: $run->userGroupSet);
 	}//end transitionEntryAdmits()
 
 	/**

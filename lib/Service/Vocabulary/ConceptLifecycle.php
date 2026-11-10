@@ -112,11 +112,8 @@ class ConceptLifecycle {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isOfferable(array $concept, DateTimeInterface $at, bool $allowDeprecated = false): bool {
-		if ($allowDeprecated === false && ($concept['deprecated'] ?? false) === true) {
-			return false;
-		}
-
-		return $this->isWithinWindow(concept: $concept, at: $at);
+		$blocked = ($allowDeprecated === false && ($concept['deprecated'] ?? false) === true);
+		return $blocked === false && $this->isWithinWindow(concept: $concept, at: $at);
 	}//end isOfferable()
 
 	/**
@@ -297,7 +294,9 @@ class ConceptLifecycle {
 		$failed = [];
 		foreach ($properties as $name => $definition) {
 			$name = (string)$name;
-			if ($this->fieldViolatesShape(name: $name, fields: $fields, required: $required, definition: $definition) === true) {
+			$value = ($fields[$name] ?? null);
+			$missing = ($value === null && in_array($name, $required, true) === true);
+			if ($missing === true || $this->isIllTyped(value: $value, definition: $definition) === true) {
 				$failed[] = $name;
 			}
 		}//end foreach
@@ -306,30 +305,20 @@ class ConceptLifecycle {
 	}//end validateAgainstShape()
 
 	/**
-	 * Whether a single shape-declared field is missing-when-required or ill-typed.
+	 * Whether a present field value does not satisfy its declared type.
 	 *
-	 * An absent or null value fails only when the shape lists the field as
-	 * required; a present value fails when it does not satisfy the declared
-	 * type. This is the per-field half of {@see self::validateAgainstShape()},
-	 * pulled out so the caller stays a flat gather-the-failures loop.
+	 * An absent or null value is never ill-typed: whether it is missing is the
+	 * shape's `required` list's question, which {@see self::validateAgainstShape()}
+	 * asks.
 	 *
-	 * @param string              $name       The field name being judged.
-	 * @param array<string,mixed> $fields     The concept's submitted fields.
-	 * @param array<int,mixed>    $required   The shape's required field names.
-	 * @param mixed               $definition The shape property's definition.
+	 * @param mixed $value      The concept's submitted value, null when absent.
+	 * @param mixed $definition The shape property's definition.
 	 *
-	 * @return boolean True when the field is missing-when-required or ill-typed.
+	 * @return boolean True when the value is present and ill-typed.
 	 */
-	private function fieldViolatesShape(string $name, array $fields, array $required, mixed $definition): bool {
-		$present = array_key_exists($name, $fields);
-		$value = ($fields[$name] ?? null);
-
-		if ($present === false || $value === null) {
-			return in_array($name, $required, true) === true;
-		}
-
-		return $this->matchesDeclaredType(value: $value, definition: $definition) === false;
-	}//end fieldViolatesShape()
+	private function isIllTyped(mixed $value, mixed $definition): bool {
+		return $value !== null && $this->matchesDeclaredType(value: $value, definition: $definition) === false;
+	}//end isIllTyped()
 
 	/**
 	 * Coerce a value to an array, treating a non-array as an empty one.

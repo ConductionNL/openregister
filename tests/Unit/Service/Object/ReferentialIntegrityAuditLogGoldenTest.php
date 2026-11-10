@@ -31,6 +31,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
@@ -134,7 +136,7 @@ class ReferentialIntegrityAuditLogGoldenTest extends TestCase {
 		}
 
 		return new ReferentialIntegrityService(
-			new IntegrityRelationIndex($this->createMock(SchemaMapper::class), $this->createMock(RegisterMapper::class), $this->createMock(ICacheFactory::class)),
+			new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->createMock(ICacheFactory::class)),
 			new IntegrityStorage($this->createMock(MagicMapper::class), $this->createMock(IDBConnection::class)),
 			new IntegrityCascadeControls($audit, $guard),
 			$logger

@@ -35,6 +35,9 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * Raw-SQL object field filters and nested-path filters, recorded per filter and platform.
@@ -179,11 +182,11 @@ class MagicSearchHandlerRawObjectFiltersGoldenTest extends TestCase {
 				$connection = $this->createMock(IDBConnection::class);
 				$connection->method('quote')->willReturnCallback(static fn ($value): string => "'" . (string) $value . "'");
 				$this->captured = (new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql'))
-					->invoke($handler, $filters, $schema, $connection, $isPostgres);
+					->invoke($handler, new ConditionSqlRun(query: $filters, table: new MagicReadTable(schema: $schema), connection: $connection, isPostgres: $isPostgres));
 				return $this->captured;
 			}
 
-			(new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters'))->invoke($handler, $this->queryBuilder(), $filters, $schema);
+			(new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters'))->invoke($handler, new TableFilterRun(qb: $this->queryBuilder(), query: [], table: new MagicReadTable(schema: $schema)), $filters);
 		} catch (\Throwable $e) {
 			$this->captured[] = 'threw ' . get_class($e) . ': ' . $e->getMessage();
 		}

@@ -48,6 +48,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\NominationRecompute;
 
 /**
  * Golden allowed / refused outcomes of ArchivalController.
@@ -459,7 +460,7 @@ class ArchivalAccessGoldenTest extends TestCase {
 		$this->signIn('els', true);
 		$this->params = ['reason' => 'new list'];
 		$this->objectMapper->method('find')->willThrowException(new \RuntimeException('none'));
-		$this->nominations->expects($this->never())->method('nominate');
+		$this->nominations->expects($this->never())->method('recompute');
 
 		$response = $this->controller->recomputeNomination('o-1');
 
@@ -474,7 +475,7 @@ class ArchivalAccessGoldenTest extends TestCase {
 		$object->setSchema('5');
 		$this->objectMapper->method('find')->willReturn($object);
 		$this->schemaMapper->method('find')->willReturn(new Schema());
-		$this->nominations->method('nominate')->willThrowException(new \RuntimeException('rule'));
+		$this->nominations->method('recompute')->willThrowException(new \RuntimeException('rule'));
 		$this->objectMapper->expects($this->never())->method('update');
 		$this->audit->expects($this->never())->method('createAuditTrailEntry');
 
@@ -491,8 +492,8 @@ class ArchivalAccessGoldenTest extends TestCase {
 		$object->setSchema('5');
 		$this->objectMapper->method('find')->willReturn($object);
 		$this->schemaMapper->method('find')->willReturn(new Schema());
-		$this->nominations->expects($this->once())->method('nominate')
-			->with($object, $this->isInstanceOf(Schema::class), 'recompute', 'els', 'new list')
+		$this->nominations->expects($this->once())->method('recompute')
+			->with($this->callback(static fn (NominationRecompute $request): bool => $request->object === $object && $request->schema instanceof Schema && $request->actor === 'els' && $request->reason === 'new list'))
 			->willReturn(['status' => 'nominated', 'rule' => 'r-1']);
 		$this->objectMapper->expects($this->once())->method('update')->with($object);
 		$this->audit->expects($this->once())->method('createAuditTrailEntry')

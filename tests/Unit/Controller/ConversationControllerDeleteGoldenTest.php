@@ -155,7 +155,6 @@ class ConversationControllerDeleteGoldenTest extends TestCase {
 		}
 
 		$controller = ConversationControllerFactory::create(
-			'openregister',
 			$request,
 			$conversations,
 			$messages,

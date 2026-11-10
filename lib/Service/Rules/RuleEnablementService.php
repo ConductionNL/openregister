@@ -27,7 +27,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rules;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use Throwable;
@@ -64,16 +63,14 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RuleInventoryService $inventory Finds the rule as declared.
-	 * @param SchemaMapperInterface $schemaMapper Saves the schema carrying the switch.
-	 * @param FlowService $flows Saves a flow's own enabled flag and reindexes it.
-	 * @param RuleAuditService $audit Records who switched what.
+	 * @param RuleTargets      $targets Finds the rule as declared and saves the schema carrying the switch.
+	 * @param FlowService      $flows   Saves a flow's own enabled flag and reindexes it.
+	 * @param RuleAuditService $audit   Records who switched what.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RuleInventoryService $inventory,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RuleTargets $targets,
 		private readonly FlowService $flows,
 		private readonly RuleAuditService $audit,
 	) {
@@ -91,83 +88,95 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function setEnabled(Schema $schema, string $ruleId, bool $enabled): array {
-		$rule = $this->inventory->find(schema: $schema, ruleId: $ruleId);
+		return $this->apply(switch: new RuleSwitch(schema: $schema, ruleId: $ruleId, enabled: $enabled));
+	}//end setEnabled()
+
+	/**
+	 * Apply one switch.
+	 *
+	 * @param RuleSwitch $switch The rule and what to switch it to.
+	 *
+	 * @return array{ok: bool, rule?: array<string, mixed>, audit?: array<string, mixed>, error?: array{code: string, message: string}} The outcome.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function apply(RuleSwitch $switch): array {
+		$rule = $this->targets->rules->find(schema: $switch->schema, ruleId: $switch->ruleId);
 		if ($rule === null) {
-			$message = sprintf('Schema "%s" declares no rule "%s".', (string)($schema->getSlug() ?? ''), $ruleId);
+			$message = sprintf('Schema "%s" declares no rule "%s".', (string)($switch->schema->getSlug() ?? ''), $switch->ruleId);
 			return ['ok' => false, 'error' => ['code' => self::CODE_UNKNOWN_RULE, 'message' => $message]];
 		}
 
-		$audit = $this->audit->switched(rule: $rule, enabled: $enabled);
+		$audit = $this->audit->switched(rule: $rule, enabled: $switch->enabled);
 		try {
-			$updated = $this->write(schema: $schema, rule: $rule, enabled: $enabled);
+			$updated = $this->write(switch: $switch, rule: $rule);
 		} catch (Throwable $e) {
 			return ['ok' => false, 'error' => ['code' => self::CODE_NOT_WRITTEN, 'message' => $e->getMessage()]];
 		}
 
-		$after = $this->inventory->find(schema: $updated, ruleId: $ruleId);
+		$after = $this->targets->rules->find(schema: $updated, ruleId: $switch->ruleId);
 
 		return ['ok' => true, 'rule' => ($after?->jsonSerialize() ?? $rule->jsonSerialize()), 'audit' => $audit];
-	}//end setEnabled()
+	}//end apply()
 
 	/**
 	 * Write the switch into whichever declaration owns the rule.
 	 *
-	 * @param Schema $schema The schema the rule is declared on.
+	 * @param RuleSwitch $switch The schema the rule is declared on and what to switch it to.
 	 * @param RuleDescriptor $rule The rule as declared.
-	 * @param bool $enabled What to switch it to.
 	 *
 	 * @return Schema The schema as it now stands.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function write(Schema $schema, RuleDescriptor $rule, bool $enabled): Schema {
+	private function write(RuleSwitch $switch, RuleDescriptor $rule): Schema {
 		if ($rule->getKind() === RuleVocabulary::KIND_FLOW) {
 			// A flow's enabled flag lives on the flow and is denormalised onto
 			// every one of its trigger rows. Going through the flow's own save
 			// is what keeps the index in step; writing the column here would
 			// leave the hot path reading the old value.
-			$this->flows->save(data: ['enabled' => $enabled], uuid: $rule->getKey());
-			return $schema;
+			$this->flows->save(data: ['enabled' => $switch->enabled], uuid: $rule->getKey());
+			return $switch->schema;
 		}
 
-		return $this->schemaMapper->updateFromArray(
-			id: (int)$schema->getId(),
-			object: $this->switched(schema: $schema, rule: $rule, enabled: $enabled)
+		return $this->targets->catalog->schemas()->updateFromArray(
+			id: (int)$switch->schema->getId(),
+			object: $this->switched(switch: $switch, rule: $rule)
 		);
 	}//end write()
 
 	/**
 	 * The schema's configuration and properties with the switch written into the rule's declaration.
 	 *
-	 * @param Schema $schema The schema the rule is declared on.
+	 * @param RuleSwitch $switch The schema the rule is declared on and what to switch it to.
 	 * @param RuleDescriptor $rule The rule as declared; not a flow.
-	 * @param bool $enabled What to switch it to.
 	 *
 	 * @return array{configuration: array<string, mixed>, properties: array<string, mixed>} The declarations to save.
 	 */
-	private function switched(Schema $schema, RuleDescriptor $rule, bool $enabled): array {
+	private function switched(RuleSwitch $switch, RuleDescriptor $rule): array {
+		$schema = $switch->schema;
 		$declarations = ['configuration' => ($schema->getConfiguration() ?? []), 'properties' => ($schema->getProperties() ?? [])];
+		$flag = new RuleFlag(path: $this->switchPath(declarations: $declarations, rule: $rule), enabled: $switch->enabled);
 
-		return $this->withFlag(tree: $declarations, path: $this->switchPath(declarations: $declarations, rule: $rule), enabled: $enabled);
+		return $this->withFlag(tree: $declarations, flag: $flag);
 	}//end switched()
 
 	/**
-	 * A tree with one flag written at the end of a path, creating the maps on the way.
+	 * A tree with one flag written at the end of its path, creating the maps on the way.
 	 *
 	 * @param array<string, mixed> $tree The tree.
-	 * @param array<int, string> $path The path, never empty.
-	 * @param bool $enabled The flag.
+	 * @param RuleFlag $flag The path, never empty, and the value to write.
 	 *
 	 * @return array<string, mixed> The tree with the flag written.
 	 */
-	private function withFlag(array $tree, array $path, bool $enabled): array {
-		$key = (string)array_shift($path);
-		if ($path === []) {
-			$tree[$key] = $enabled;
+	private function withFlag(array $tree, RuleFlag $flag): array {
+		$key = $flag->key();
+		if ($flag->isLast() === true) {
+			$tree[$key] = $flag->enabled;
 			return $tree;
 		}
 
-		$tree[$key] = $this->withFlag(tree: ($tree[$key] ?? []), path: $path, enabled: $enabled);
+		$tree[$key] = $this->withFlag(tree: ($tree[$key] ?? []), flag: $flag->rest());
 
 		return $tree;
 	}//end withFlag()

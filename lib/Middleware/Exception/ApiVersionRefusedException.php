@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware\Exception;
 
 use Exception;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionInterface;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 
@@ -45,34 +45,6 @@ use OCP\AppFramework\Http\JSONResponse;
  * @package  OCA\OpenRegister\Middleware\Exception
  */
 class ApiVersionRefusedException extends Exception {
-
-	/**
-	 * The HTTP status the refusal answers with.
-	 *
-	 * @var integer
-	 */
-	private readonly int $statusCode;
-
-	/**
-	 * The identifier the caller named.
-	 *
-	 * @var string
-	 */
-	private readonly string $requestedId;
-
-	/**
-	 * The identifier the caller should move to, or null.
-	 *
-	 * @var string|null
-	 */
-	private readonly ?string $successor;
-
-	/**
-	 * The identifiers this instance does serve.
-	 *
-	 * @var array<int, string>
-	 */
-	private readonly array $acceptable;
 
 	/**
 	 * Constructor.
@@ -88,34 +60,29 @@ class ApiVersionRefusedException extends Exception {
 	 * @return void
 	 */
 	public function __construct(
-		int $statusCode,
-		string $requestedId,
-		?string $successor = null,
-		array $acceptable = [],
+		private readonly int $statusCode,
+		private readonly string $requestedId,
+		private readonly ?string $successor = null,
+		private readonly array $acceptable = [],
 	) {
-		$this->statusCode = $statusCode;
-		$this->requestedId = $requestedId;
-		$this->successor = $successor;
-		$this->acceptable = $acceptable;
 		parent::__construct(message: $this->sentence(), code: $statusCode);
-
 	}//end __construct()
 
 	/**
 	 * The refusal for a version that was withdrawn.
 	 *
-	 * @param ApiVersion $version The withdrawn version.
+	 * @param ApiVersionInterface $version The withdrawn version.
 	 * @param array<int, string> $acceptable The identifiers this instance serves.
 	 *
 	 * @return self The refusal.
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
-	public static function withdrawn(ApiVersion $version, array $acceptable): self {
+	public static function withdrawn(ApiVersionInterface $version, array $acceptable): self {
 		return new self(
 			statusCode: Http::STATUS_GONE,
-			requestedId: $version->id,
-			successor: $version->successor,
+			requestedId: $version->identifier(),
+			successor: $version->successorIdentifier(),
 			acceptable: $acceptable,
 		);
 

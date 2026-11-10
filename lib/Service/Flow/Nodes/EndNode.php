@@ -154,17 +154,30 @@ class EndNode extends LogicNodeBase implements IFlowNode, EndNodeInterface,
 			return [];
 		}
 
+		throw $this->stopFor(config: $config);
+	}//end execute()
+
+	/**
+	 * The stop a reached end node throws: its configured message, or the
+	 * default for a plain or an error stop.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return FlowStop The stop to throw.
+	 */
+	private function stopFor(array $config): FlowStop {
 		$isError = (($config['error'] ?? false) === true);
 		$message = trim((string)($config['message'] ?? ''));
-		if ($message === '') {
-			$message = 'Flow stopped';
-			if ($isError === true) {
-				$message = 'Flow stopped with an error';
-			}
+		if ($message === '' && $isError === true) {
+			return new FlowStop(reason: 'Flow stopped with an error', isError: true);
 		}
 
-		throw new FlowStop(reason: $message, isError: $isError);
-	}//end execute()
+		if ($message === '') {
+			$message = 'Flow stopped';
+		}
+
+		return new FlowStop(reason: $message, isError: $isError);
+	}//end stopFor()
 
 	/**
 	 * What kind of step this is. An end.

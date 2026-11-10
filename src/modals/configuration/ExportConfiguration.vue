@@ -28,16 +28,16 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 		<template #actions>
 			<CloseCancelButton label="Cancel" @click="closeModal" />
-			<NcButton
+			<BusyButton
+				:busy="loading"
 				:disabled="loading || !isValid"
 				variant="primary"
 				@click="exportConfiguration">
 				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Export v-else :size="20" />
+					<Export :size="20" />
 				</template>
 				Export
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
@@ -77,24 +77,22 @@ function downloadExport(response, id) {
 }
 
 import {
-	NcButton,
 	NcCheckboxRadioSwitch,
 	NcDialog,
-	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
 import Export from 'vue-material-design-icons/Export.vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'ExportConfiguration',
 	components: {
 		NcDialog,
-		NcButton,
-		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		// Icons
+		BusyButton,
 		CloseCancelButton,
 		Export,
 	},

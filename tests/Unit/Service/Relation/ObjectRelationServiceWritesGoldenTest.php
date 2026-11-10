@@ -31,7 +31,13 @@ use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Db\ObjectRelationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Relation\Derivation;
+use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
+use OCA\OpenRegister\Service\Relation\ObjectRelationStores;
+use OCA\OpenRegister\Service\Relation\ProvenanceLink;
+use OCA\OpenRegister\Service\Relation\ProseMention;
+use OCA\OpenRegister\Service\Relation\RelationEndpoint;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -94,9 +100,7 @@ class ObjectRelationServiceWritesGoldenTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		return new ObjectRelationService(
-			mapper: $mapper,
-			schemaMapper: $schemaMapper,
-			relationTypes: new RelationTypeResolver(),
+			stores: new ObjectRelationStores(mapper: $mapper, schemaMapper: $schemaMapper, relationTypes: new RelationTypeResolver()),
 			logger: $this->createMock(LoggerInterface::class),
 			userSession: $session
 		);
@@ -134,45 +138,44 @@ class ObjectRelationServiceWritesGoldenTest extends TestCase {
 		$out     = [];
 
 		$out[] = $service->recordSplit(source: $parent, created: $child)->jsonSerialize();
-		$out[] = $service->recordSplit(source: $parent, created: $child, entry: 'e1', relationType: 'cites')->jsonSerialize();
+		$out[] = $service->recordSplit(source: $parent, created: $child, link: new ProvenanceLink(entry: 'e1', relationType: 'cites'))->jsonSerialize();
 		$out[] = $service->applyInheritance(
 			parent: $parent,
 			childData: ['own' => 'C', 'cls' => ''],
 			inherits: ['classification' => 'cls', 'confidentiality' => 'conf', 'responsible' => 'resp', 'x' => 'own', 'y' => 'zero', 'z' => 'none', 'w' => 'cls']
 		);
-		$out[] = $service->recordDerivation(parent: $parent, child: $child)->jsonSerialize();
-		$out[] = $service->recordDerivation(parent: $parent, child: $child, relationType: 'cites', inherited: ['a' => 1], entry: 'e2')->jsonSerialize();
-		$out[] = $service->addExternalLink(sourceUuid: 's', url: ' https://example.org/a ')->jsonSerialize();
+		$out[] = $service->recordDerived(derivation: new Derivation(parent: $parent, child: $child))->jsonSerialize();
+		$out[] = $service->recordDerived(derivation: new Derivation(parent: $parent, child: $child, link: new ProvenanceLink(entry: 'e2', relationType: 'cites'), inherited: ['a' => 1]))->jsonSerialize();
+		$out[] = $service->addExternalLink(source: new RelationEndpoint(uuid: 's'), link: new ExternalLink(url: ' https://example.org/a '))->jsonSerialize();
 		$out[] = $service->addExternalLink(
-			sourceUuid: 's',
-			url: 'https://example.org/b',
-			title: ' Title ',
-			relationType: 't',
-			label: 'l',
-			register: 5,
-			schema: 6
+			source: new RelationEndpoint(uuid: 's', register: 5, schema: 6),
+			link: new ExternalLink(url: 'https://example.org/b', title: ' Title ', relationType: 't', label: 'l')
 		)->jsonSerialize();
-		$out[] = $service->addExternalLink(sourceUuid: 's', url: 'https://example.org/c', title: '  ')->jsonSerialize();
+		$out[] = $service->addExternalLink(source: new RelationEndpoint(uuid: 's'), link: new ExternalLink(url: 'https://example.org/c', title: '  '))->jsonSerialize();
 		foreach (['', '   ', 'not a url', 'ftp//x'] as $bad) {
 			try {
-				$service->addExternalLink(sourceUuid: 's', url: $bad);
+				$service->addExternalLink(source: new RelationEndpoint(uuid: 's'), link: new ExternalLink(url: $bad));
 				$out[] = 'accepted '.$bad;
 			} catch (InvalidArgumentException $e) {
 				$out[] = $e->getMessage();
 			}
 		}
 
-		$out[] = count($service->recordProseReference(sourceUuid: '', targetUuid: 't', anchor: 'p0'));
-		$out[] = count($service->recordProseReference(sourceUuid: 's', targetUuid: '', anchor: 'p0'));
-		$out[] = count($service->recordProseReference(sourceUuid: 's', targetUuid: 's', anchor: 'p0'));
-		$out[] = count($service->recordProseReference(sourceUuid: 's', targetUuid: 'known', anchor: 'p1'));
+		$out[] = count($service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: ''), target: new RelationEndpoint(uuid: 't'), anchor: 'p0')));
+		$out[] = count($service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 's'), target: new RelationEndpoint(uuid: ''), anchor: 'p0')));
+		$out[] = count($service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 's'), target: new RelationEndpoint(uuid: 's'), anchor: 'p0')));
+		$out[] = count($service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 's'), target: new RelationEndpoint(uuid: 'known'), anchor: 'p1')));
 		$out[] = array_map(
 			static fn (ObjectRelation $row): array => $row->jsonSerialize(),
-			$service->recordProseReference(sourceUuid: 's', targetUuid: 'known', anchor: 'p2', relationType: 'cites', scope: ['sourceRegister' => 1, 'targetSchema' => 9])
+			$service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 's', register: 1),
+				target: new RelationEndpoint(uuid: 'known', schema: 9),
+				anchor: 'p2',
+				relationType: 'cites'
+			))
 		);
 		$out[] = array_map(
 			static fn (ObjectRelation $row): array => $row->jsonSerialize(),
-			$service->recordProseReference(sourceUuid: 'q', targetUuid: 'r', anchor: 'p3')
+			$service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 'q'), target: new RelationEndpoint(uuid: 'r'), anchor: 'p3'))
 		);
 
 		$out[] = $this->written;

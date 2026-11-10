@@ -74,23 +74,42 @@ class LegalHoldService implements LegalHoldServiceInterface {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function placeHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
-		$userId = $this->getCurrentUserId();
+		return $this->place(object: $object, action: $this->action(ownerKey: $ownerKey, reason: $reason));
+	}//end placeHold()
 
+	/**
+	 * Place one matter's hold on an object and store it.
+	 *
+	 * @param ObjectEntity $object The object to place a hold on.
+	 * @param HoldAction   $action The matter placing it, why, and who places it now.
+	 *
+	 * @return ObjectEntity The updated object with legal hold applied.
+	 */
+	private function place(ObjectEntity $object, HoldAction $action): ObjectEntity {
 		// One hold per matter (#4172): a second matter adds its own hold
 		// instead of overwriting the first one's reason.
-		$retention = (new LegalHoldLedger())->place(
-			retention: ($object->getRetention() ?? []), reason: $reason, ownerKey: $ownerKey, userId: $userId, now: (new DateTime())->format('c')
-		);
+		$retention = (new LegalHoldLedger())->placeAction(retention: ($object->getRetention() ?? []), action: $action);
 		$object->setRetention($retention);
 		$this->records->objectMapper->update($object);
 
-		$this->logger->info(
-			message: '[LegalHoldService] Legal hold placed on object',
-			context: $this->logContext(object: $object, facts: ['reason' => $reason, 'ownerKey' => $ownerKey, 'placedBy' => $userId])
-		);
+		$facts = ['reason' => $action->reason, 'ownerKey' => $action->ownerKey, 'placedBy' => $action->stamp->userId];
+		$this->logger->info(message: '[LegalHoldService] Legal hold placed on object', context: $this->logContext(object: $object, facts: $facts));
 
 		return $object;
-	}//end placeHold()
+	}//end place()
+
+	/**
+	 * A hold action by the current user, now.
+	 *
+	 * @param string|null $ownerKey The matter acting; null for a manual hold, or to release every hold.
+	 * @param string      $reason   Why.
+	 *
+	 * @return HoldAction The action.
+	 */
+	private function action(?string $ownerKey, string $reason): HoldAction {
+		$stamp = new HoldStamp(userId: $this->getCurrentUserId(), now: (new DateTime())->format('c'));
+		return new HoldAction(ownerKey: $ownerKey, reason: $reason, stamp: $stamp);
+	}//end action()
 
 	/**
 	 * Release a legal hold on an object.
@@ -105,23 +124,29 @@ class LegalHoldService implements LegalHoldServiceInterface {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function releaseHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
-		$userId = $this->getCurrentUserId();
+		return $this->release(object: $object, action: $this->action(ownerKey: $ownerKey, reason: $reason));
+	}//end releaseHold()
 
+	/**
+	 * Release one matter's hold, or every hold, on an object and store it.
+	 *
+	 * @param ObjectEntity $object The object to release the hold from.
+	 * @param HoldAction   $action The matter releasing its own hold (null lifts every hold), why, and who releases it now.
+	 *
+	 * @return ObjectEntity The updated object with legal hold released.
+	 */
+	private function release(ObjectEntity $object, HoldAction $action): ObjectEntity {
 		// A matter lifts only its own hold (#4172); naming no matter lifts
 		// every hold, as a release always did.
-		$retention = (new LegalHoldLedger())->release(
-			retention: ($object->getRetention() ?? []), ownerKey: $ownerKey, releaseReason: $reason, userId: $userId, now: (new DateTime())->format('c')
-		);
+		$retention = (new LegalHoldLedger())->releaseAction(retention: ($object->getRetention() ?? []), action: $action);
 		$object->setRetention($retention);
 		$this->records->objectMapper->update($object);
 
-		$this->logger->info(
-			message: '[LegalHoldService] Legal hold released on object',
-			context: $this->logContext(object: $object, facts: ['releaseReason' => $reason, 'ownerKey' => $ownerKey, 'releasedBy' => $userId])
-		);
+		$facts = ['releaseReason' => $action->reason, 'ownerKey' => $action->ownerKey, 'releasedBy' => $action->stamp->userId];
+		$this->logger->info(message: '[LegalHoldService] Legal hold released on object', context: $this->logContext(object: $object, facts: $facts));
 
 		return $object;
-	}//end releaseHold()
+	}//end release()
 
 	/**
 	 * The log context of a hold change on one object.
@@ -176,15 +201,24 @@ class LegalHoldService implements LegalHoldServiceInterface {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function bulkPlaceHold(int $schemaId, int $registerId, string $reason): void {
-		$job = ['schemaId' => $schemaId, 'registerId' => $registerId, 'reason' => $reason, 'placedBy' => $this->getCurrentUserId()];
+		$this->queueBulkHold(job: ['schemaId' => $schemaId, 'registerId' => $registerId, 'reason' => $reason, 'placedBy' => $this->getCurrentUserId()]);
+	}//end bulkPlaceHold()
 
+	/**
+	 * Queue the bulk legal hold job, and say so in the log.
+	 *
+	 * @param array<string, mixed> $job The job's arguments.
+	 *
+	 * @return void
+	 */
+	private function queueBulkHold(array $job): void {
 		$this->jobList->add(\OCA\OpenRegister\BackgroundJob\JobHandles::BULK_LEGAL_HOLD, $job);
 
 		$this->logger->info(
 			message: '[LegalHoldService] Bulk legal hold job queued',
 			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $job)
 		);
-	}//end bulkPlaceHold()
+	}//end queueBulkHold()
 
 	/**
 	 * The records that carry an active legal hold, with their active holds.

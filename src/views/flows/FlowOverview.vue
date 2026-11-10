@@ -21,6 +21,7 @@
   re-recorded with every styling pass.
 -->
 <template>
+	<!-- eslint-disable vue/no-undef-components -- registered through pageShellComponents, which the rule cannot follow -->
 	<NcAppContent>
 		<div class="flowPage">
 			<NcLoadingIcon v-if="loading" :size="32" />
@@ -445,32 +446,20 @@ import { CnDataTable, CnStatusBadge } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
 import SitemapOutline from 'vue-material-design-icons/SitemapOutline.vue'
+import { pageShellComponents } from '../pageShell.js'
 import {
 	averageDuration,
 	catalogNames,
 	failedStep,
-	formatDateTime,
-	formatDuration,
 	matchesRunFilter,
 	nodeDetail,
 	nodeLabel,
 	orderedNodes,
 	runCounts,
 	runDuration,
-	shortUuid,
-	shownStatus,
-	statusLabel,
-	statusVariant,
-	triggerLabel,
 } from './flowDetail.js'
+import { flowPageHelpers, flowVersionLabel } from './flowPageHelpers.js'
 import { flowPageMethods } from './flowPageMethods.js'
 
 /**
@@ -485,11 +474,7 @@ export default {
 	components: {
 		CnDataTable,
 		CnStatusBadge,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 		SitemapOutline,
 	},
 
@@ -638,16 +623,10 @@ export default {
 
 	methods: {
 		...flowPageMethods,
-		formatDateTime,
-		formatDuration,
+		...flowPageHelpers,
 		nodeDetail,
 		nodeLabel,
 		runDuration,
-		shortUuid,
-		shownStatus,
-		statusLabel,
-		statusVariant,
-		triggerLabel,
 
 		/**
 		 * Read the flow, its versions, the node names and its runs.
@@ -731,11 +710,7 @@ export default {
 		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
 		 */
 		versionLabel(version) {
-			if (version === null || version === undefined) {
-				return ''
-			}
-			const match = this.versions.find((row) => row.version === version)
-			return 'v' + (match?.semver || version)
+			return flowVersionLabel(this.versions, version)
 		},
 
 		/**
@@ -836,41 +811,13 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
+@use './flowPage.scss' as page;
 
-.flowPage {
-	display: flex;
-	flex-direction: column;
-	gap: calc(var(--default-grid-baseline, 4px) * 5);
-	max-width: 1200px;
-	padding: calc(var(--default-grid-baseline, 4px) * 6)
-		calc(var(--default-grid-baseline, 4px) * 8)
-		calc(var(--default-grid-baseline, 4px) * 12);
-	box-sizing: border-box;
-}
+@include page.flow-page('flowPage');
+@include page.flow-card('flowCard');
 
 .flowPage__crumbs {
 	color: var(--color-text-maxcontrast);
-}
-
-.flowPage__header {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 16px;
-}
-
-.flowPage__title {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.flowPage__title h1 {
-	margin: 0;
-	font-size: 30px;
-	font-weight: 700;
-	line-height: 1.2;
 }
 
 .flowPage__badges,
@@ -900,13 +847,6 @@ export default {
 	gap: 20px;
 }
 
-.flowCard {
-	background: var(--color-main-background);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large);
-	min-width: 0;
-}
-
 .flowCard--stat {
 	padding: 16px 20px;
 }
@@ -916,23 +856,10 @@ export default {
 	align-items: center;
 	justify-content: space-between;
 	gap: 12px;
-	padding: 12px 20px;
-	border-bottom: 1px solid var(--color-border);
 }
 
 .flowCard__head--wrap {
 	flex-wrap: wrap;
-}
-
-.flowCard__head h2 {
-	margin: 0;
-	font-size: 16px;
-	font-weight: 600;
-}
-
-.flowCard__body {
-	margin: 0;
-	padding: 20px;
 }
 
 .flowCard__term,

@@ -36,6 +36,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportDuplicates;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportRun;
+use OCA\OpenRegister\Service\Configuration\SeedImport;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -222,13 +224,10 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->mappingMapper->method('createFromArray')
 			->willReturn($newMapping);
 
-		$result = $this->invokeMethod($this->handler, 'importMapping', [
-			['slug' => 'test-mapping', 'name' => 'Test'],
-			['test-mapping' => 5],
-			$config,
-			'1.0.0',
-			false,
-		]);
+		$run = new ImportRun(data: [], configuration: $config);
+		$run->slugsAndIdsMap = ['test-mapping' => 5];
+		$run->version = '1.0.0';
+		$result = $this->invokeMethod($this->handler, 'importMapping', [$run, ['slug' => 'test-mapping', 'name' => 'Test']]);
 
 		$this->assertInstanceOf(Mapping::class, $result);
 		$this->assertSame(10, $result->getId());
@@ -250,15 +249,14 @@ class ImportHandlerCoverageTest extends TestCase {
 				return $mapping;
 			});
 
-		$result = $this->invokeMethod($this->handler, 'importMapping', [
-			['slug' => 'no-version-mapping', 'name' => 'Test'],
-			[],
-			$config,
-			'2.0.0',
-			false,
-		]);
+		$run = new ImportRun(data: [], configuration: $config);
+		$run->slugsAndIdsMap = [];
+		$run->version = '2.0.0';
+		$result = $this->invokeMethod($this->handler, 'importMapping', [$run, ['slug' => 'no-version-mapping', 'name' => 'Test']]);
 
 		$this->assertInstanceOf(Mapping::class, $result);
+		// The mapping has no version of its own, so it takes the configuration's.
+		$this->assertSame('2.0.0', $result->getVersion());
 
 	}//end testImportMappingSetsVersionFromParam()
 
@@ -415,8 +413,15 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$this->schemaMapper->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
-		$this->schemaMapper->method('createFromArray')
-			->willReturn($createdSchema);
+		$created = null;
+		$this->schemaMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(
+				function (array $schemaData) use (&$created, $createdSchema): Schema {
+					$created = $schemaData;
+					return $createdSchema;
+				}
+			);
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
@@ -425,7 +430,8 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
 
-		$this->assertInstanceOf(Schema::class, $result);
+		$this->assertSame($createdSchema, $result);
+		$this->assertSame(['register' => 55], $created['properties']['children']['items']['objectConfiguration']);
 
 	}//end testImportSchemaResolvesItemsObjConfigRegisterFromDatabase()
 
@@ -452,8 +458,15 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$this->schemaMapper->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
-		$this->schemaMapper->method('createFromArray')
-			->willReturn($createdSchema);
+		$created = null;
+		$this->schemaMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(
+				function (array $schemaData) use (&$created, $createdSchema): Schema {
+					$created = $schemaData;
+					return $createdSchema;
+				}
+			);
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
@@ -462,7 +475,8 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
 
-		$this->assertInstanceOf(Schema::class, $result);
+		$this->assertSame($createdSchema, $result);
+		$this->assertSame([], $created['properties']['children']['items']['objectConfiguration']);
 
 	}//end testImportSchemaUnsetsItemsObjConfigRegisterWhenNotFound()
 
@@ -499,14 +513,22 @@ class ImportHandlerCoverageTest extends TestCase {
 				throw new \OCP\AppFramework\Db\DoesNotExistException('');
 			});
 
-		$this->schemaMapper->method('createFromArray')
-			->willReturn($createdSchema);
+		$created = null;
+		$this->schemaMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(
+				function (array $schemaData) use (&$created, $createdSchema): Schema {
+					$created = $schemaData;
+					return $createdSchema;
+				}
+			);
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
 		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
 
-		$this->assertInstanceOf(Schema::class, $result);
+		$this->assertSame($createdSchema, $result);
+		$this->assertSame(['schema' => 66], $created['properties']['children']['items']['objectConfiguration']);
 
 	}//end testImportSchemaResolvesItemsObjConfigSchemaFromDatabase()
 
@@ -533,14 +555,22 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$this->schemaMapper->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
-		$this->schemaMapper->method('createFromArray')
-			->willReturn($createdSchema);
+		$created = null;
+		$this->schemaMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(
+				function (array $schemaData) use (&$created, $createdSchema): Schema {
+					$created = $schemaData;
+					return $createdSchema;
+				}
+			);
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
 		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
 
-		$this->assertInstanceOf(Schema::class, $result);
+		$this->assertSame($createdSchema, $result);
+		$this->assertSame([], $created['properties']['children']['items']['objectConfiguration']);
 
 	}//end testImportSchemaUnsetsItemsObjConfigSchemaWhenNotFound()
 
@@ -570,14 +600,22 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$this->schemaMapper->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
-		$this->schemaMapper->method('createFromArray')
-			->willReturn($createdSchema);
+		$created = null;
+		$this->schemaMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(
+				function (array $schemaData) use (&$created, $createdSchema): Schema {
+					$created = $schemaData;
+					return $createdSchema;
+				}
+			);
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
 		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
 
-		$this->assertInstanceOf(Schema::class, $result);
+		$this->assertSame($createdSchema, $result);
+		$this->assertSame(77, $created['properties']['related']['register']);
 
 	}//end testImportSchemaResolvesLegacyRegisterFromRegistersMap()
 
@@ -605,14 +643,22 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$this->schemaMapper->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
-		$this->schemaMapper->method('createFromArray')
-			->willReturn($createdSchema);
+		$created = null;
+		$this->schemaMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(
+				function (array $schemaData) use (&$created, $createdSchema): Schema {
+					$created = $schemaData;
+					return $createdSchema;
+				}
+			);
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
 		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
 
-		$this->assertInstanceOf(Schema::class, $result);
+		$this->assertSame($createdSchema, $result);
+		$this->assertSame(78, $created['properties']['children']['items']['register']);
 
 	}//end testImportSchemaResolvesLegacyItemsRegisterFromRegistersMap()
 
@@ -628,8 +674,13 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$this->schemaMapper->method('find')
 			->willReturn($existing);
-		$this->schemaMapper->method('updateFromArray')
+		// With an app id the existing schema is found by application and slug.
+		$this->schemaMapper->method('findByApplicationAndSlug')
 			->willReturn($existing);
+		$this->schemaMapper->expects($this->once())
+			->method('updateFromArray')
+			->willReturn($existing);
+		$this->schemaMapper->expects($this->never())->method('createFromArray');
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
@@ -640,7 +691,7 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$result = $this->handler->importSchema($data, [], 'owner-user', 'my-app', '2.0.0', true);
 
-		$this->assertInstanceOf(Schema::class, $result);
+		$this->assertSame($existing, $result);
 
 	}//end testImportSchemaUpdatesWithOwnerAndApp()
 
@@ -942,7 +993,7 @@ class ImportHandlerCoverageTest extends TestCase {
 			->willThrowException(new Exception('not found'));
 
 		$config = $this->makeConfiguration(1, 'test-app', '0.5.0');
-		$this->configurationMapper->method('findByApp')
+		$this->configurationMapper->expects($this->once())->method('findByApp')
 			->willReturn([$config]);
 		$this->configurationMapper->method('update')
 			->willReturnArgument(0);
@@ -957,9 +1008,13 @@ class ImportHandlerCoverageTest extends TestCase {
 			'components' => [],
 		];
 
+		// The failed source-URL lookup falls back to the app's own configuration.
+		$this->configurationMapper->expects($this->never())->method('insert');
+
 		$result = $this->handler->importFromApp('test-app', $data, '1.0.0');
 
 		$this->assertIsArray($result);
+		$this->assertSame([], $result['schemas']);
 
 	}//end testImportFromAppCatchesSourceUrlException()
 
@@ -971,7 +1026,7 @@ class ImportHandlerCoverageTest extends TestCase {
 			->willReturn(null);
 		$this->configurationMapper->method('findByApp')
 			->willThrowException(new Exception('DB error'));
-		$this->configurationMapper->method('insert')
+		$this->configurationMapper->expects($this->once())->method('insert')
 			->willReturnCallback(function (Configuration $c) {
 				$this->setEntityId($c, 99);
 				return $c;
@@ -990,6 +1045,7 @@ class ImportHandlerCoverageTest extends TestCase {
 		$result = $this->handler->importFromApp('new-app', $data, '1.0.0');
 
 		$this->assertIsArray($result);
+		$this->assertSame([], $result['schemas']);
 
 	}//end testImportFromAppCatchesFindByAppException()
 
@@ -1086,6 +1142,8 @@ class ImportHandlerCoverageTest extends TestCase {
 		$result = $this->handler->importFromApp('desc-app', $data, '1.0.0');
 
 		$this->assertIsArray($result);
+		$this->assertSame('XOR Description', $config->getDescription());
+		$this->assertSame([$schema], $result['schemas']);
 
 	}//end testImportFromAppSetsDescriptionFromXOpenregister()
 
@@ -1157,9 +1215,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, 'owner', 'ext-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'ext-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 
@@ -1211,9 +1269,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, null, 'miss-reg-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'miss-reg-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 
@@ -1268,9 +1326,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, null, 'miss-schema-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'miss-schema-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 
@@ -1329,9 +1387,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, null, 'err-reg-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'err-reg-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 
@@ -1386,9 +1444,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, null, 'err-schema-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'err-schema-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 
@@ -1438,9 +1496,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, null, 'db-schema-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'db-schema-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 
@@ -1532,14 +1590,22 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$this->schemaMapper->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
-		$this->schemaMapper->method('createFromArray')
-			->willReturn($createdSchema);
+		$created = null;
+		$this->schemaMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(
+				function (array $schemaData) use (&$created, $createdSchema): Schema {
+					$created = $schemaData;
+					return $createdSchema;
+				}
+			);
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
 		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
 
-		$this->assertInstanceOf(Schema::class, $result);
+		$this->assertSame($createdSchema, $result);
+		$this->assertSame(['type' => 'string'], $created['properties']['files']['items']);
 
 	}//end testImportSchemaStripsBinaryFormatFromItems()
 
@@ -1569,14 +1635,22 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$this->schemaMapper->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
-		$this->schemaMapper->method('createFromArray')
-			->willReturn($createdSchema);
+		$created = null;
+		$this->schemaMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(
+				function (array $schemaData) use (&$created, $createdSchema): Schema {
+					$created = $schemaData;
+					return $createdSchema;
+				}
+			);
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
 		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
 
-		$this->assertInstanceOf(Schema::class, $result);
+		$this->assertSame($createdSchema, $result);
+		$this->assertSame(['key' => 'value'], $created['properties']['children']['items']['objectConfiguration']);
 
 	}//end testImportSchemaConvertsStdClassItemsObjectConfigToArray()
 
@@ -1625,7 +1699,7 @@ class ImportHandlerCoverageTest extends TestCase {
 		$connectorSvc = $this->getMockBuilder(\stdClass::class)
 			->addMethods(['importConfiguration'])
 			->getMock();
-		$connectorSvc->method('importConfiguration')
+		$connectorSvc->expects($this->once())->method('importConfiguration')
 			->willThrowException(new Exception('Connector error'));
 
 		$this->handler->setOpenConnectorConfigurationService($connectorSvc);
@@ -1639,6 +1713,7 @@ class ImportHandlerCoverageTest extends TestCase {
 		$result = $this->handler->importFromJson($data, $config, null, 'test-app', '1.0.0');
 
 		$this->assertIsArray($result);
+		$this->assertSame([], $result['registers']);
 
 	}//end testImportFromJsonCatchesOpenConnectorFailure()
 
@@ -1751,9 +1826,9 @@ class ImportHandlerCoverageTest extends TestCase {
 		];
 
 		$result = ['objects' => []];
-		$this->invokeMethod($this->handler, 'importSeedData', [
-			$configData, null, 'blob-app', $config, &$result,
-		]);
+		$seed = new SeedImport(configData: $configData, result: $result);
+		$seed->appId = 'blob-app';
+		$this->invokeMethod($this->handler, 'importSeedData', [$seed, $config]);
 
 		$this->assertNotEmpty($result['objects']);
 
@@ -2005,8 +2080,15 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$this->schemaMapper->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
-		$this->schemaMapper->method('createFromArray')
-			->willReturn($createdSchema);
+		$created = null;
+		$this->schemaMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(
+				function (array $schemaData) use (&$created, $createdSchema): Schema {
+					$created = $schemaData;
+					return $createdSchema;
+				}
+			);
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
@@ -2015,7 +2097,8 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
 
-		$this->assertInstanceOf(Schema::class, $result);
+		$this->assertSame($createdSchema, $result);
+		$this->assertSame(['register' => 88], $created['properties']['related']['objectConfiguration']);
 
 	}//end testImportSchemaResolvesObjConfigRegisterFromDatabase()
 
@@ -2040,8 +2123,15 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$this->schemaMapper->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
-		$this->schemaMapper->method('createFromArray')
-			->willReturn($createdSchema);
+		$created = null;
+		$this->schemaMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(
+				function (array $schemaData) use (&$created, $createdSchema): Schema {
+					$created = $schemaData;
+					return $createdSchema;
+				}
+			);
 		$this->schemaMapper->method('update')
 			->willReturnArgument(0);
 
@@ -2050,7 +2140,8 @@ class ImportHandlerCoverageTest extends TestCase {
 
 		$result = $this->handler->importSchema($data, [], null, null, '1.0.0');
 
-		$this->assertInstanceOf(Schema::class, $result);
+		$this->assertSame($createdSchema, $result);
+		$this->assertSame([], $created['properties']['related']['objectConfiguration']);
 
 	}//end testImportSchemaUnsetsObjConfigRegisterWhenNotFoundInDB()
 

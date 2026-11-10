@@ -31,16 +31,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationServiceInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationTriggerInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -53,16 +51,12 @@ class ArchivalNominationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ArchivalNominationTriggerInterface $nominations  Derives and writes the nomination.
-	 * @param SchemaMapperInterface              $schemaMapper Loads the transitioned object's schema.
-	 * @param MagicMapperInterface               $objectMapper Persists the nominated record.
-	 * @param LoggerInterface           $logger       Where a failure is reported.
+	 * @param ArchivalNominationTriggerInterface $nominations Derives and writes the nomination.
+	 * @param EventSchemaLookup                  $lookup      Loads the object's schema, persists the record, logs a failure.
 	 */
 	public function __construct(
 		private readonly ArchivalNominationTriggerInterface $nominations,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly LoggerInterface $logger,
+		private readonly EventSchemaLookup $lookup,
 	) {
 	}//end __construct()
 
@@ -98,7 +92,7 @@ class ArchivalNominationListener implements IEventListener {
 	 */
 	private function schemaOf(ObjectEntity $object): ?Schema {
 		try {
-			return $this->schemaMapper->find(id: (string)$object->getSchema());
+			return $this->lookup->catalog->schemas()->find(id: (string)$object->getSchema());
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -114,17 +108,17 @@ class ArchivalNominationListener implements IEventListener {
 	 */
 	private function nominateAndPersist(ObjectEntity $object, Schema $schema): void {
 		try {
-			$nomination = $this->nominations->nominate(object: $object, schema: $schema, trigger: 'closure');
+			$nomination = $this->nominations->nominate(object: $object, schema: $schema);
 			if (($nomination['status'] ?? null) === ArchivalNominationServiceInterface::STATUS_NOT_APPLICABLE) {
 				return;
 			}
 
-			$this->objectMapper->update($object);
+			$this->lookup->catalog->tables()->update($object);
 		} catch (Throwable $e) {
 			// The transition already happened. Losing the nomination is bad and
 			// is said so out loud; undoing a closure the user asked for would
 			// be worse, and nothing here can undo it anyway.
-			$this->logger->error(
+			$this->lookup->logger->error(
 				message: '[ArchivalNominationListener] Could not nominate '
 					. (string)$object->getUuid() . ': ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]

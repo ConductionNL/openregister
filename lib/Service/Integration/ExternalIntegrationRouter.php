@@ -148,7 +148,23 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-4
 	 */
 	public function call(IntegrationProvider $provider, string $method, string $path, array $options = []): array {
-		$target = $this->callTarget(provider: $provider);
+		$request = new UpstreamRequest(method: $method, path: $path, options: $options);
+
+		return $this->runCall(run: new UpstreamCallRun(provider: $provider, request: $request, kind: 'call'));
+	}//end call()
+
+	/**
+	 * The body of {@see call()}: the mock short-circuit, else the upstream call.
+	 *
+	 * @param UpstreamCallRun $run The provider, the request and the call kind.
+	 *
+	 * @return array<string,mixed> The decoded response body.
+	 *
+	 * @throws ProviderUnavailableException When OpenConnector or the upstream
+	 *                                      service is unavailable.
+	 */
+	private function runCall(UpstreamCallRun $run): array {
+		$target = $this->callTarget(provider: $run->provider);
 
 		// Mock mode: when the resolved source is flagged
 		// `configuration.mock === true`, short-circuit and return the canned
@@ -161,18 +177,17 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 			return $this->resolveMockBody(config: $target['config'], sourceId: $target['sourceId']);
 		}
 
-		$request = new UpstreamRequest(method: $method, path: $path, options: $options);
 		try {
-			return $this->invoke(source: $target['source'], request: $request);
+			return $this->invoke(source: $target['source'], request: $run->request);
 		} catch (ProviderUnavailableException $e) {
 			// Already classified — surface as-is.
 			throw $e;
 		} catch (\Throwable $e) {
 			// Anything else surfacing from OpenConnector / the upstream is
 			// treated as an upstream failure, wrapping the original throwable.
-			throw $this->upstreamFailure(provider: $provider, kind: 'call', request: $request->describe(), previous: $e);
+			throw $this->upstreamFailure(run: $run, previous: $e);
 		}
-	}//end call()
+	}//end runCall()
 
 	/**
 	 * Dispatch a call like {@see call()} but additionally surface the
@@ -212,7 +227,23 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 * @spec openspec/changes/integration-brp-audit-metadata/tasks.md
 	 */
 	public function callWithMeta(IntegrationProvider $provider, string $method, string $path, array $options = []): array {
-		$target = $this->callTarget(provider: $provider);
+		$request = new UpstreamRequest(method: $method, path: $path, options: $options);
+
+		return $this->runCallWithMeta(run: new UpstreamCallRun(provider: $provider, request: $request, kind: 'call (with meta)'));
+	}//end callWithMeta()
+
+	/**
+	 * The body of {@see callWithMeta()}: the mock short-circuit, else the upstream call.
+	 *
+	 * @param UpstreamCallRun $run The provider, the request and the call kind.
+	 *
+	 * @return array{body: array<string,mixed>, meta: array{status: int, durationMs: int, correlationId: ?string, headers: array<string,string>}}
+	 *
+	 * @throws ProviderUnavailableException When OpenConnector or the upstream
+	 *                                      service is unavailable.
+	 */
+	private function runCallWithMeta(UpstreamCallRun $run): array {
+		$target = $this->callTarget(provider: $run->provider);
 
 		// Mock mode: short-circuit a flagged source with the canned body PLUS a
 		// synthesized `meta` envelope (fake correlationId / durationMs /
@@ -224,16 +255,15 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 			return ['body' => $this->resolveMockBody(config: $config, sourceId: $target['sourceId']), 'meta' => $this->mockMeta(config: $config)];
 		}
 
-		$request = new UpstreamRequest(method: $method, path: $path, options: $options);
 		try {
-			return $this->invokeWithMeta(source: $target['source'], request: $request);
+			return $this->invokeWithMeta(source: $target['source'], request: $run->request);
 		} catch (ProviderUnavailableException $e) {
 			// Already classified — surface as-is.
 			throw $e;
 		} catch (\Throwable $e) {
-			throw $this->upstreamFailure(provider: $provider, kind: 'call (with meta)', request: $request->describe(), previous: $e);
+			throw $this->upstreamFailure(run: $run, previous: $e);
 		}
-	}//end callWithMeta()
+	}//end runCallWithMeta()
 
 	/**
 	 * Check the provider and the connector, then load the provider's source and its configuration.
@@ -249,7 +279,7 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 		$this->assertOpenConnectorAvailable();
 
 		$sourceId = (string)$provider->getOpenConnectorSource();
-		$source   = $this->loadSource(sourceId: $sourceId, providerId: $provider->getId());
+		$source   = $this->loadSource(provider: $provider);
 
 		return ['sourceId' => $sourceId, 'source' => $source, 'config' => $this->readSourceConfiguration(source: $source)];
 	}//end callTarget()
@@ -257,21 +287,20 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	/**
 	 * Log an unclassified upstream failure and classify it as upstream-service-down.
 	 *
-	 * @param IntegrationProvider $provider The provider making the call.
-	 * @param string              $kind     `call` or `call (with meta)`, for the log line.
-	 * @param string              $request  The method and path, for the log line.
-	 * @param \Throwable          $previous The failure.
+	 * @param UpstreamCallRun $run      The provider, the request and the call kind, for the log line.
+	 * @param \Throwable      $previous The failure.
 	 *
 	 * @return ProviderUnavailableException The exception to throw.
 	 */
-	private function upstreamFailure(IntegrationProvider $provider, string $kind, string $request, \Throwable $previous): ProviderUnavailableException {
+	private function upstreamFailure(UpstreamCallRun $run, \Throwable $previous): ProviderUnavailableException {
+		$providerId = $run->provider->getId();
 		$this->logger->error(
-			sprintf('[ExternalIntegrationRouter] upstream %s failed for provider %s %s', $kind, $provider->getId(), $request),
+			sprintf('[ExternalIntegrationRouter] upstream %s failed for provider %s %s', $run->kind, $providerId, $run->request->describe()),
 			['exception' => $previous]
 		);
 
 		return new ProviderUnavailableException(
-			message: sprintf('Upstream service for integration "%s" is unreachable.', $provider->getId()),
+			message: sprintf('Upstream service for integration "%s" is unreachable.', $providerId),
 			cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN,
 			previous: $previous
 		);
@@ -293,7 +322,7 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 		$this->assertProviderIsExternal(provider: $provider);
 		$this->assertOpenConnectorAvailable();
 
-		$source = $this->loadSource(sourceId: (string)$provider->getOpenConnectorSource(), providerId: $provider->getId());
+		$source = $this->loadSource(provider: $provider);
 
 		return $this->readSourceConfiguration(source: $source);
 	}//end sourceConfiguration()
@@ -321,7 +350,7 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 		}
 
 		try {
-			$this->loadSource(sourceId: (string)$provider->getOpenConnectorSource(), providerId: $provider->getId());
+			$this->loadSource(provider: $provider);
 		} catch (ProviderUnavailableException $e) {
 			return $this->probeUnavailable(message: $e->getMessage());
 		}
@@ -430,8 +459,7 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 * When no source answers, it raises `openconnector-source-missing` so the
 	 * UI shows "Reconfigure connector" rather than a generic 500.
 	 *
-	 * @param string $sourceId Source uuid or slug declared by the provider.
-	 * @param string $providerId Provider id (for error messages only).
+	 * @param IntegrationProvider $provider The provider whose declared source (uuid or slug) to load.
 	 *
 	 * @return ObjectEntity The source object.
 	 *
@@ -439,15 +467,15 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 *
 	 * @spec openspec/specs/integration-registry/spec.md#requirement-external-strategy-providers-must-route-through-openconnector
 	 */
-	private function loadSource(string $sourceId, string $providerId): ObjectEntity {
+	private function loadSource(IntegrationProvider $provider): ObjectEntity {
 		try {
-			$source = $this->findSource(sourceId: $sourceId);
+			$source = $this->findSource(sourceId: (string)$provider->getOpenConnectorSource());
 		} catch (\Throwable $e) {
-			throw $this->sourceMissing(sourceId: $sourceId, providerId: $providerId, previous: $e);
+			throw $this->sourceMissing(provider: $provider, previous: $e);
 		}
 
 		if ($source === null) {
-			throw $this->sourceMissing(sourceId: $sourceId, providerId: $providerId, previous: null);
+			throw $this->sourceMissing(provider: $provider, previous: null);
 		}
 
 		return $source;
@@ -544,18 +572,17 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	/**
 	 * Build the `openconnector-source-missing` failure.
 	 *
-	 * @param string $sourceId Source uuid or slug declared by the provider.
-	 * @param string $providerId Provider id (for the message only).
-	 * @param \Throwable|null $previous The lookup failure, when there was one.
+	 * @param IntegrationProvider $provider The provider; its declared source and its id name the failure.
+	 * @param \Throwable|null     $previous The lookup failure, when there was one.
 	 *
 	 * @return ProviderUnavailableException The classified failure.
 	 */
-	private function sourceMissing(string $sourceId, string $providerId, ?\Throwable $previous): ProviderUnavailableException {
+	private function sourceMissing(IntegrationProvider $provider, ?\Throwable $previous): ProviderUnavailableException {
 		return new ProviderUnavailableException(
 			message: sprintf(
 				'OpenConnector source "%s" for integration "%s" is missing or unreadable.',
-				$sourceId,
-				$providerId
+				(string)$provider->getOpenConnectorSource(),
+				$provider->getId()
 			),
 			cause: ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING,
 			previous: $previous
@@ -845,7 +872,7 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 * @throws ProviderUnavailableException When bodies are to be withheld and the connector cannot.
 	 */
 	private function assertCanWithholdBodies(mixed $callService, bool $withholdBodies): void {
-		if ($withholdBodies === true && (new CallSignature())->accepts(service: $callService, method: 'call', name: 'withholdBodies') === false) {
+		if ($withholdBodies === true && (new CallSignature(service: $callService, method: 'call'))->accepts(name: 'withholdBodies') === false) {
 			$this->logger->info(
 				'[ExternalIntegrationRouter] The connector CallService cannot withhold bodies; the call is not made.'
 			);

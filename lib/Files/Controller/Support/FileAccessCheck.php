@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller\Support;
 
-use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 
 /**
@@ -65,11 +64,11 @@ final class FileAccessCheck {
 	/**
 	 * A check on the object a route names.
 	 *
-	 * @param ObjectLinkRoute $route The object, as the route names it.
+	 * @param FileObjectRoute $route The object, as the route names it.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function __construct(public readonly ObjectLinkRoute $route) {
+	public function __construct(public readonly FileObjectRoute $route) {
 	}//end __construct()
 
 	/**

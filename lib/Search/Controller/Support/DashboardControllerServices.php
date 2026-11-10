@@ -22,10 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Controller\Support;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Search\Service\DashboardService;
-use OCP\IGroupManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * The services of the dashboard API.
@@ -36,18 +34,14 @@ final class DashboardControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param DashboardService $dashboardService The dashboard service
-	 * @param LoggerInterface  $logger           Logger for error tracking
-	 * @param IUserSession     $userSession      Active user session for caller identity
-	 * @param IGroupManager    $groupManager     Group manager for admin checks
+	 * @param DashboardService  $dashboardService The dashboard service
+	 * @param ControllerSession $session          Session, group manager (admin checks) and logger
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-5
 	 */
 	public function __construct(
 		public readonly DashboardService $dashboardService,
-		public readonly LoggerInterface $logger,
-		public readonly IUserSession $userSession,
-		public readonly IGroupManager $groupManager,
+		public readonly ControllerSession $session,
 	) {
 	}//end __construct()
 }//end class

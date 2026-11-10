@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object\DeletionGraph;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Object\DeletionGraph\ReadableDeletionAnalysis;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -142,9 +143,7 @@ class ReadableDeletionAnalysisTest extends TestCase {
 	public function testEveryTargetListIsRedactedAndAnEntryWithoutActionGetsNone(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: true,
-			cascadeTargets: [['objectUuid' => 'theirs-1', 'register' => '1', 'schema' => '7', 'property' => 'case', 'chain' => []]],
-			nullifyTargets: [['objectUuid' => 'theirs-2', 'schema' => '8', 'property' => 'case', 'isArray' => false, 'sourceUuid' => self::ROOT]],
-			defaultTargets: [['objectUuid' => 'theirs-3', 'schema' => '9', 'property' => 'case', 'defaultValue' => 'x']]
+			effects: new DeletionEffects(cascadeTargets: [['objectUuid' => 'theirs-1', 'register' => '1', 'schema' => '7', 'property' => 'case', 'chain' => []]], nullifyTargets: [['objectUuid' => 'theirs-2', 'schema' => '8', 'property' => 'case', 'isArray' => false, 'sourceUuid' => self::ROOT]], defaultTargets: [['objectUuid' => 'theirs-3', 'schema' => '9', 'property' => 'case', 'defaultValue' => 'x']])
 		);
 
 		$out = $this->redaction()->analysisFor(analysis: $analysis);
@@ -158,8 +157,7 @@ class ReadableDeletionAnalysisTest extends TestCase {
 	public function testAnUnreadableObjectIsBlankedFromTheChainsAndSourcesOfKeptEntries(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: false,
-			cascadeTargets: [['objectUuid' => 'theirs-1', 'schema' => '7', 'chain' => [self::ROOT.' → theirs-1 (CASCADE)']]],
-			nullifyTargets: [['objectUuid' => 'mine-2', 'schema' => '8', 'sourceUuid' => 'theirs-1']],
+			effects: new DeletionEffects(cascadeTargets: [['objectUuid' => 'theirs-1', 'schema' => '7', 'chain' => [self::ROOT.' → theirs-1 (CASCADE)']]], nullifyTargets: [['objectUuid' => 'mine-2', 'schema' => '8', 'sourceUuid' => 'theirs-1']]),
 			blockers: [self::blocker(uuid: 'mine-1', schema: '9', chain: [self::ROOT.' → theirs-1 (CASCADE)', 'theirs-1 → mine-1 (RESTRICT)'])],
 			chainPaths: [[self::ROOT.' → theirs-1 (CASCADE)'], 'not a chain']
 		);
@@ -206,7 +204,7 @@ class ReadableDeletionAnalysisTest extends TestCase {
 	public function testEachObjectIsReadOnceAsTheCaller(): void {
 		$analysis = new DeletionAnalysis(
 			deletable: false,
-			cascadeTargets: [['objectUuid' => 'theirs-1', 'schema' => '7']],
+			effects: new DeletionEffects(cascadeTargets: [['objectUuid' => 'theirs-1', 'schema' => '7']]),
 			blockers: [self::blocker(uuid: 'theirs-1', schema: '7'), self::blocker(uuid: 'mine-1', schema: '7')]
 		);
 

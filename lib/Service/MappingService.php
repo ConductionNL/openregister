@@ -29,8 +29,7 @@ use Adbar\Dot;
 use Exception;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapperInterface;
-use OCA\OpenRegister\Twig\MappingExtension;
-use OCA\OpenRegister\Twig\MappingRuntimeLoader;
+use OCA\OpenRegister\Twig\MappingTwigInstaller;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -171,14 +170,13 @@ class MappingService implements MappingServiceInterface {
 	 */
 	private function createTwig(): Environment {
 		$twig = new Environment(new ArrayLoader([]), ['autoescape' => false]);
-		$twig->addExtension(new MappingExtension());
+		(new MappingTwigInstaller(mappingService: $this, mappingMapper: $this->mappingMapper))->installOn(twig: $twig);
 
 		$contributed = $this->contributedFunctions();
 		foreach ($contributed['functions'] as $function) {
 			$twig->addFunction($function);
 		}
 
-		$twig->addRuntimeLoader(new MappingRuntimeLoader(mappingService: $this, mappingMapper: $this->mappingMapper));
 		$twig->addExtension((new MappingTwigSandbox())->extension(contributedNames: $contributed['names']));
 
 		return $twig;
@@ -206,21 +204,20 @@ class MappingService implements MappingServiceInterface {
 	/**
 	 * Replaces strings in array keys, helpful for characters like . in array keys.
 	 *
-	 * @param array $array The array to encode the array keys for.
-	 * @param string $toReplace The character to encode.
-	 * @param string $replacement The encoded character.
+	 * @param array             $array   The array to encode the array keys for.
+	 * @param MappingKeyRewrite $rewrite The substring to replace in every key, and its replacement.
 	 *
 	 * @return array The array with encoded array keys
 	 *
 	 * @spec exclude Pure array-key encoding helper used internally by executeMapping; no standalone behavior.
 	 */
-	public function encodeArrayKeys(array $array, string $toReplace, string $replacement): array {
+	public function encodeArrayKeys(array $array, MappingKeyRewrite $rewrite): array {
 		$result = [];
 		foreach ($array as $key => $value) {
-			$newKey          = str_replace($toReplace, $replacement, (string)$key);
+			$newKey          = str_replace($rewrite->search, $rewrite->replacement, (string)$key);
 			$result[$newKey] = $value;
 			if (is_array($value) === true && $value !== []) {
-				$result[$newKey] = $this->encodeArrayKeys(array: $value, toReplace: $toReplace, replacement: $replacement);
+				$result[$newKey] = $this->encodeArrayKeys(array: $value, rewrite: $rewrite);
 			}
 		}
 
@@ -253,7 +250,7 @@ class MappingService implements MappingServiceInterface {
 		$this->applyUnsets(mapping: $mapping, dotArray: $dotArray);
 		$this->applyCasts(mapping: $mapping, dotArray: $dotArray);
 
-		$output = $this->encodeArrayKeys(array: $dotArray->all(), toReplace: '&#46;', replacement: '.');
+		$output = $this->encodeArrayKeys(array: $dotArray->all(), rewrite: MappingKeyRewrite::decodeDots());
 
 		return $this->unwrapRootValue(output: $output);
 	}//end executeMapping()
@@ -268,7 +265,7 @@ class MappingService implements MappingServiceInterface {
 	 */
 	private function startOutput(Mapping $mapping, array $input): Dot {
 		if ($mapping->getPassThrough() === true) {
-			return new Dot($this->encodeArrayKeys(array: $input, toReplace: '.', replacement: '&#46;'));
+			return new Dot($this->encodeArrayKeys(array: $input, rewrite: MappingKeyRewrite::encodeDots()));
 		}
 
 		return new Dot();
@@ -336,7 +333,7 @@ class MappingService implements MappingServiceInterface {
 	 * @throws Exception When a template fails to render
 	 */
 	private function mappedValues(Mapping $mapping, array $input): array {
-		$dotInput = new Dot($this->encodeArrayKeys(array: $input, toReplace: '.', replacement: '&#46;'));
+		$dotInput = new Dot($this->encodeArrayKeys(array: $input, rewrite: MappingKeyRewrite::encodeDots()));
 		$values   = [];
 
 		foreach ($mapping->getMapping() as $key => $value) {
@@ -416,7 +413,7 @@ class MappingService implements MappingServiceInterface {
 			}
 
 			foreach ($cast as $singleCast) {
-				$this->handleCast(dotArray: $dotArray, key: $key, cast: $singleCast);
+				$this->handleCast(cast: $this->parseCast(cast: $singleCast) + ['key' => $key, 'dotArray' => $dotArray]);
 			}
 		}
 	}//end applyCasts()
@@ -451,21 +448,18 @@ class MappingService implements MappingServiceInterface {
 	/**
 	 * Handles a single cast operation.
 	 *
-	 * @param Dot $dotArray The dotArray of the array we are mapping.
-	 * @param string $key The key of the field we want to cast.
-	 * @param string $cast The type of cast we want to do.
+	 * @param array{type: string, argument: string|null, key: string, dotArray: Dot} $cast The parsed cast,
+	 *        the key of the field being cast and the dot array of the document being mapped.
 	 *
 	 * @return void
 	 */
-	private function handleCast(Dot $dotArray, string $key, string $cast): void {
-		$value = $this->applyCast(
-			value: $dotArray->get($key),
-			cast: $this->parseCast(cast: $cast) + ['key' => $key, 'dotArray' => $dotArray]
-		);
+	private function handleCast(array $cast): void {
+		$dotArray = $cast['dotArray'];
+		$value = $this->applyCast(value: $dotArray->get($cast['key']), cast: $cast);
 
 		// Don't reset key that was deleted on purpose.
-		if ($dotArray->has($key) === true) {
-			$dotArray->set($key, $value);
+		if ($dotArray->has($cast['key']) === true) {
+			$dotArray->set($cast['key'], $value);
 		}
 	}//end handleCast()
 
@@ -614,12 +608,7 @@ class MappingService implements MappingServiceInterface {
 	 */
 	private function applyDocumentCast(mixed $value, array $cast): mixed {
 		return match ($cast['type']) {
-			'keyCantBeValue' => $this->unsetKeyWhen(value: $value, cast: $cast, matches: $cast['key'] === $value),
-			'unsetIfValue' => $this->unsetKeyWhen(
-				value: $value,
-				cast: $cast,
-				matches: $this->matchesCastArgument(value: $value, argument: $cast['argument'])
-			),
+			'keyCantBeValue', 'unsetIfValue' => $this->unsetKeyWhenMatching(value: $value, cast: $cast),
 			'setNullIfValue' => $this->nullWhenMatching(value: $value, argument: $cast['argument']),
 			'countValue' => $this->countCastValue(value: $value, cast: $cast),
 			default => $value,
@@ -627,21 +616,28 @@ class MappingService implements MappingServiceInterface {
 	}//end applyDocumentCast()
 
 	/**
-	 * Delete the key being cast when a condition holds; the value is returned unchanged.
+	 * Delete the key being cast when the value matches; the value is returned unchanged.
 	 *
-	 * @param mixed                $value   The value being cast.
-	 * @param array<string, mixed> $cast    The key being cast and the dot array.
-	 * @param bool                 $matches Whether the key is deleted.
+	 * `keyCantBeValue` matches a value equal to the key's own name,
+	 * `unsetIfValue` a value matching the cast argument.
+	 *
+	 * @param mixed                $value The value being cast.
+	 * @param array<string, mixed> $cast  The cast type and argument, the key being cast and the dot array.
 	 *
 	 * @return mixed The value.
 	 */
-	private function unsetKeyWhen(mixed $value, array $cast, bool $matches): mixed {
+	private function unsetKeyWhenMatching(mixed $value, array $cast): mixed {
+		$matches = $this->matchesCastArgument(value: $value, argument: $cast['argument']);
+		if ($cast['type'] === 'keyCantBeValue') {
+			$matches = ($cast['key'] === $value);
+		}
+
 		if ($matches === true) {
 			$cast['dotArray']->delete($cast['key']);
 		}
 
 		return $value;
-	}//end unsetKeyWhen()
+	}//end unsetKeyWhenMatching()
 
 	/**
 	 * The `setNullIfValue` cast: null when the value matches the argument.

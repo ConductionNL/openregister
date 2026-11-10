@@ -24,6 +24,7 @@
 
 namespace OCA\OpenRegister\Search\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
@@ -57,7 +58,6 @@ class SearchController extends Controller {
 	 * Initializes controller with object service for database search operations.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName The name of the app
 	 * @param IRequest $request The HTTP request object
 	 * @param ObjectOperationsInterface $objectService The object service instance
 	 *
@@ -66,12 +66,11 @@ class SearchController extends Controller {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly ObjectOperationsInterface $objectService,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

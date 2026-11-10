@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkUpsertSql;
@@ -65,27 +67,27 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 
 	public function testNumberColumnRefusalEdges(): void {
 		$column = new MagicNumberColumn();
-		$this->assertSame('has more than 2 decimals', $column->refusal('12.345', 16, 2));
-		$this->assertNull($column->refusal('12.340', 16, 2));
-		$this->assertSame('has more than 14 digits before the point', $column->refusal(10 ** 15, 20, 6));
-		$this->assertSame('has more than 14 digits before the point', $column->refusal('1e14', 20, 6));
-		$this->assertNull($column->refusal('1e13', 20, 6));
-		$this->assertNull($column->refusal('abc', 20, 6));
-		$this->assertNull($column->refusal(true, 20, 6));
-		$this->assertNull($column->refusal([1], 20, 6));
-		$this->assertSame('is not a finite number', $column->refusal(INF, 20, 6));
-		$this->assertSame('has more than 2 decimals', $column->refusal(1.005, 16, 2));
-		$this->assertSame('has more than 14 digits before the point', $column->refusal(1.0e15, 16, 2));
-		$this->assertNull($column->refusal(0.1 + 0.2, 16, 2));
+		$this->assertSame('has more than 2 decimals', $column->refusal('12.345', ['precision' => 16, 'scale' => 2]));
+		$this->assertNull($column->refusal('12.340', ['precision' => 16, 'scale' => 2]));
+		$this->assertSame('has more than 14 digits before the point', $column->refusal(10 ** 15, ['precision' => 20, 'scale' => 6]));
+		$this->assertSame('has more than 14 digits before the point', $column->refusal('1e14', ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->refusal('1e13', ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->refusal('abc', ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->refusal(true, ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->refusal([1], ['precision' => 20, 'scale' => 6]));
+		$this->assertSame('is not a finite number', $column->refusal(INF, ['precision' => 20, 'scale' => 6]));
+		$this->assertSame('has more than 2 decimals', $column->refusal(1.005, ['precision' => 16, 'scale' => 2]));
+		$this->assertSame('has more than 14 digits before the point', $column->refusal(1.0e15, ['precision' => 16, 'scale' => 2]));
+		$this->assertNull($column->refusal(0.1 + 0.2, ['precision' => 16, 'scale' => 2]));
 	}//end testNumberColumnRefusalEdges()
 
 	public function testNumberColumnWideningEdges(): void {
 		$column = new MagicNumberColumn();
-		$this->assertSame(['precision' => 12, 'scale' => 4], $column->widening(['type' => 'DECIMAL', 'precision' => 10, 'scale' => 2], 10, 4));
-		$this->assertNull($column->widening(['type' => 'decimal', 'precision' => '20', 'scale' => '6'], 20, 6));
-		$this->assertNull($column->widening(['type' => 'decimal', 'precision' => 20], 20, 6));
-		$this->assertNull($column->widening([], 20, 6));
-		$this->assertSame(['precision' => 65, 'scale' => 30], $column->widening(['type' => 'numeric', 'precision' => 60, 'scale' => 10], 60, 40));
+		$this->assertSame(['precision' => 12, 'scale' => 4], $column->widening(['type' => 'DECIMAL', 'precision' => 10, 'scale' => 2], ['precision' => 10, 'scale' => 4]));
+		$this->assertNull($column->widening(['type' => 'decimal', 'precision' => '20', 'scale' => '6'], ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->widening(['type' => 'decimal', 'precision' => 20], ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->widening([], ['precision' => 20, 'scale' => 6]));
+		$this->assertSame(['precision' => 65, 'scale' => 30], $column->widening(['type' => 'numeric', 'precision' => 60, 'scale' => 10], ['precision' => 60, 'scale' => 40]));
 	}//end testNumberColumnWideningEdges()
 
 	public function testCreatedStatistics(): void {
@@ -138,15 +140,15 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 	}//end testUpdatedStatistics()
 
 	public function testUpdateClauseBranches(): void {
-		$this->assertSame('"_updated" = NOW()', MagicBulkUpsertSql::updateClause('_updated', true, 'oc_t', true));
-		$this->assertSame('`_updated` = NOW()', MagicBulkUpsertSql::updateClause('_updated', false, 'oc_t', false));
+		$this->assertSame('"_updated" = NOW()', MagicBulkUpsertSql::updateClause('_updated', true));
+		$this->assertSame('`_updated` = NOW()', MagicBulkUpsertSql::updateClause('_updated', false));
 		$this->assertSame(
 			'"_slug" = COALESCE(NULLIF("oc_t"."_slug", \'\'), EXCLUDED."_slug")',
-			MagicBulkUpsertSql::updateClause('_slug', true, 'oc_t', true)
+			MagicBulkUpsertSql::frozenSlugClause(true, 'oc_t')
 		);
-		$this->assertSame('`_slug` = COALESCE(NULLIF(`_slug`, \'\'), VALUES(`_slug`))', MagicBulkUpsertSql::updateClause('_slug', false, 'oc_t', true));
-		$this->assertSame('"_slug" = EXCLUDED."_slug"', MagicBulkUpsertSql::updateClause('_slug', true, 'oc_t', false));
-		$this->assertSame('`_title` = VALUES(`_title`)', MagicBulkUpsertSql::updateClause('_title', false, 'oc_t', true));
+		$this->assertSame('`_slug` = COALESCE(NULLIF(`_slug`, \'\'), VALUES(`_slug`))', MagicBulkUpsertSql::frozenSlugClause(false, 'oc_t'));
+		$this->assertSame('"_slug" = EXCLUDED."_slug"', MagicBulkUpsertSql::updateClause('_slug', true));
+		$this->assertSame('`_title` = VALUES(`_title`)', MagicBulkUpsertSql::updateClause('_title', false));
 	}//end testUpdateClauseBranches()
 
 	public function testValuesAndParameters(): void {
@@ -265,9 +267,8 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 		$magicMapper->method('checkTableExistsInDatabase')->willReturn(false);
 		$magicMapper->method('createTableForRegisterSchema')->willThrowException(new Exception('boom'));
 		$handler = new MagicTableHandler(
-			db: $this->createMock(IDBConnection::class),
+			sql: new MagicTableSql(db: $this->createMock(IDBConnection::class), config: $this->createMock(IConfig::class), logger: $this->createMock(LoggerInterface::class)),
 			appConfig: $this->createMock(IAppConfig::class),
-			logger: $this->createMock(LoggerInterface::class),
 			magicMapper: $magicMapper
 		);
 
@@ -294,9 +295,8 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 		$magicMapper->expects($this->once())->method('invalidateTableCache')->with('5_12');
 		$magicMapper->expects($this->once())->method('createTableForRegisterSchema')->willReturn(true);
 		$handler = new MagicTableHandler(
-			db: $this->createMock(IDBConnection::class),
+			sql: new MagicTableSql(db: $this->createMock(IDBConnection::class), config: $this->createMock(IConfig::class), logger: $this->createMock(LoggerInterface::class)),
 			appConfig: $this->createMock(IAppConfig::class),
-			logger: $this->createMock(LoggerInterface::class),
 			magicMapper: $magicMapper
 		);
 
@@ -343,9 +343,8 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 	 */
 	private function handler(IAppConfig $appConfig, IDBConnection $db): MagicTableHandler {
 		return new MagicTableHandler(
-			db: $db,
+			sql: new MagicTableSql(db: $db, config: $this->createMock(IConfig::class), logger: $this->createMock(LoggerInterface::class)),
 			appConfig: $appConfig,
-			logger: $this->createMock(LoggerInterface::class),
 			magicMapper: $this->magicMapper()
 		);
 	}//end handler()

@@ -91,7 +91,7 @@ HTML;
 
 		$bodyHtml = '<p class="widget-error">No data available — the data source did not resolve.</p>';
 		if ($data !== null) {
-			$bodyHtml = $this->renderBody(widget: $widget, data: $data, type: $type);
+			$bodyHtml = $this->renderBody(widget: $widget, data: $data);
 		}
 
 		$subtitleBlock = '';
@@ -116,11 +116,10 @@ HTML;
 	 *
 	 * @param array<string, mixed> $widget Widget descriptor.
 	 * @param array<string, mixed> $data Resolved data.
-	 * @param string $type Widget type.
 	 *
 	 * @return string HTML.
 	 */
-	private function renderBody(array $widget, array $data, string $type): string {
+	private function renderBody(array $widget, array $data): string {
 		$valueField = (string)($widget['options']['valueField'] ?? 'value');
 
 		// Group-based widgets.
@@ -131,7 +130,7 @@ HTML;
 
 		// Scalar value — render headline.
 		$headline = $this->extractHeadline(data: $data, valueField: $valueField);
-		if ($type === 'stats') {
+		if ((string)($widget['type'] ?? 'kpi') === 'stats') {
 			return $this->renderStatsBlock(data: $data);
 		}
 

@@ -33,9 +33,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Store;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
+use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
-use OCA\OpenRegister\Service\Config\IShareableConfigType;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -102,44 +102,25 @@ class FederatedStoreCatalog {
 	 * Browse every declared type's published configuration.
 	 *
 	 * @param StoreDescriptor $descriptor The calling app's store parameters.
-	 * @param string|null     $query      Optional free-text filter.
-	 * @param string|null     $kind       Optional type-id filter, matching the surface's kind chips.
+	 * @param StoreSearch     $search     Optional free-text filter, and optional type-id filter matching the
+	 *                                    surface's kind chips.
 	 *
 	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
 	 *
 	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#scenario-a-configuration-set-reaches-the-store-surface
 	 */
-	public function search(StoreDescriptor $descriptor, ?string $query = null, ?string $kind = null): array {
+	public function search(StoreDescriptor $descriptor, StoreSearch $search = new StoreSearch()): array {
 		$cards = [];
 
 		foreach ($descriptor->types as $typeId) {
-			$type = $this->searchableType(descriptor: $descriptor, typeId: $typeId, kind: $kind);
-			if ($type !== null) {
-				$cards = [...$cards, ...$this->matchingCards(typeId: $typeId, type: $type, query: $query)];
+			$declared = $this->ownedType(descriptor: $descriptor, typeId: $typeId);
+			if ($declared !== null && $this->kindExcludes(kind: $search->kind, typeId: $typeId) === false) {
+				$cards = [...$cards, ...$this->matchingCards(declared: $declared, query: $search->query)];
 			}
 		}
 
 		return ['outcome' => GenericStoreService::OUTCOME_OK, 'cards' => $cards];
 	}//end search()
-
-	/**
-	 * The type a search reads for a declared type id: its owned type, unless
-	 * the kind filter leaves it out.
-	 *
-	 * @param StoreDescriptor $descriptor The calling app's store parameters.
-	 * @param string          $typeId     The declared type id.
-	 * @param string|null     $kind       Optional type-id filter.
-	 *
-	 * @return IShareableConfigType|null The type, or null when it is not searched.
-	 */
-	private function searchableType(StoreDescriptor $descriptor, string $typeId, ?string $kind): ?IShareableConfigType {
-		$type = $this->ownedType(descriptor: $descriptor, typeId: $typeId);
-		if ($type === null || $this->kindExcludes(kind: $kind, typeId: $typeId) === true) {
-			return null;
-		}
-
-		return $type;
-	}//end searchableType()
 
 	/**
 	 * The registered type behind a declared type id, or null with a warning.
@@ -151,18 +132,19 @@ class FederatedStoreCatalog {
 	 * @param StoreDescriptor $descriptor The calling app's store parameters.
 	 * @param string          $typeId     The declared type id.
 	 *
-	 * @return IShareableConfigType|null The type, or null when no app owns it.
+	 * @return DeclaredShareableType|null The type, or null when no app owns it.
 	 */
-	private function ownedType(StoreDescriptor $descriptor, string $typeId): ?IShareableConfigType {
+	private function ownedType(StoreDescriptor $descriptor, string $typeId): ?DeclaredShareableType {
 		$type = $this->registry->get(id: $typeId);
 		if ($type === null) {
 			$this->logger->warning(
 				message: sprintf('[AppHost\\Store] %s declares shareable type %s, which no app owns', $descriptor->appId, $typeId),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
+			return null;
 		}
 
-		return $type;
+		return new DeclaredShareableType(typeId: $typeId, type: $type);
 	}//end ownedType()
 
 	/**
@@ -180,16 +162,15 @@ class FederatedStoreCatalog {
 	/**
 	 * The cards of one type that match the free-text query.
 	 *
-	 * @param string                       $typeId The type id.
-	 * @param IShareableConfigType $type   The type.
-	 * @param string|null                  $query  Optional free-text filter.
+	 * @param DeclaredShareableType $declared The declared type.
+	 * @param string|null           $query    Optional free-text filter.
 	 *
 	 * @return array<int, array<string, mixed>> The matching cards.
 	 */
-	private function matchingCards(string $typeId, IShareableConfigType $type, ?string $query): array {
+	private function matchingCards(DeclaredShareableType $declared, ?string $query): array {
 		$cards = [];
-		foreach ($this->discoverType(typeId: $typeId, type: $type) as $entry) {
-			$card = $this->toCard(typeId: $typeId, displayName: $type->getDisplayName(), entry: $entry);
+		foreach ($this->discoverType(declared: $declared) as $entry) {
+			$card = $this->toCard(declared: $declared, entry: $entry);
 			if ($this->matches(card: $card, query: $query) === true) {
 				$cards[] = $card;
 			}
@@ -202,17 +183,16 @@ class FederatedStoreCatalog {
 	 * The repositories discovered for a type; a failed discovery is logged
 	 * and yields none, so one unreachable topic does not blank the store.
 	 *
-	 * @param string                       $typeId The type id.
-	 * @param IShareableConfigType $type   The type.
+	 * @param DeclaredShareableType $declared The declared type.
 	 *
 	 * @return array<int, array<string, mixed>> The discovered entries.
 	 */
-	private function discoverType(string $typeId, IShareableConfigType $type): array {
+	private function discoverType(DeclaredShareableType $declared): array {
 		try {
-			return $this->federated->discover(topic: $type->getTopic());
+			return $this->federated->discover(topic: $declared->type->getTopic());
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				message: sprintf('[AppHost\\Store] discovery failed for %s: %s', $typeId, $e->getMessage()),
+				message: sprintf('[AppHost\\Store] discovery failed for %s: %s', $declared->typeId, $e->getMessage()),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return [];
@@ -237,7 +217,7 @@ class FederatedStoreCatalog {
 				continue;
 			}
 
-			$entry = $this->entryFor(typeId: $typeId, type: $type, slug: $slug);
+			$entry = $this->entryFor(declared: new DeclaredShareableType(typeId: $typeId, type: $type), slug: $slug);
 			if ($entry !== null) {
 				return $this->resolvedBundle(typeId: $typeId, entry: $entry);
 			}
@@ -249,16 +229,15 @@ class FederatedStoreCatalog {
 	/**
 	 * The first discovered entry of a type whose slug is the given one.
 	 *
-	 * @param string                       $typeId The type id.
-	 * @param IShareableConfigType $type   The type.
-	 * @param string                       $slug   The card slug.
+	 * @param DeclaredShareableType $declared The declared type.
+	 * @param string                $slug     The card slug.
 	 *
 	 * @return array<string, mixed>|null The entry, or null when none matches.
 	 */
-	private function entryFor(string $typeId, IShareableConfigType $type, string $slug): ?array {
-		foreach ($this->discoverType(typeId: $typeId, type: $type) as $entry) {
+	private function entryFor(DeclaredShareableType $declared, string $slug): ?array {
+		foreach ($this->discoverType(declared: $declared) as $entry) {
 			$repo = (string)($entry['repo'] ?? '');
-			if ($repo !== '' && self::slugFor(typeId: $typeId, repo: $repo) === $slug) {
+			if ($repo !== '' && self::slugFor(typeId: $declared->typeId, repo: $repo) === $slug) {
 				return $entry;
 			}
 		}
@@ -420,15 +399,15 @@ class FederatedStoreCatalog {
 	/**
 	 * Turn one discovered repository into a store card.
 	 *
-	 * @param string               $typeId      The shareable type id.
-	 * @param string               $displayName The type's human name.
-	 * @param array<string, mixed> $entry       One discovery result.
+	 * @param DeclaredShareableType $declared The declared type.
+	 * @param array<string, mixed>  $entry    One discovery result.
 	 *
 	 * @return array<string, mixed> The card.
 	 */
-	private function toCard(string $typeId, string $displayName, array $entry): array {
+	private function toCard(DeclaredShareableType $declared, array $entry): array {
 		$repo = (string)($entry['repo'] ?? '');
 		$owner = explode('/', $repo)[0];
+		$typeId = $declared->typeId;
 
 		return [
 			'slug' => self::slugFor(typeId: $typeId, repo: $repo),
@@ -438,7 +417,7 @@ class FederatedStoreCatalog {
 			// discriminator here: a set, a flow and a schema are what differ.
 			'kind' => $typeId,
 			'type' => $typeId,
-			'typeName' => $displayName,
+			'typeName' => $declared->type->getDisplayName(),
 			'publisher' => $owner,
 			'source' => (string)($entry['url'] ?? ''),
 			'updated' => (string)($entry['updated'] ?? ''),

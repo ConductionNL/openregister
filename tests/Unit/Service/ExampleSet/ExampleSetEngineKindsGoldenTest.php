@@ -26,8 +26,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
+use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineRowsInterface;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViewRowsInterface;
 use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppAndHistoryRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival;
@@ -49,7 +52,9 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
+use OCA\OpenRegister\Service\ExampleSet\RecordLedger;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds;
 use PHPUnit\Framework\TestCase;
@@ -108,8 +113,10 @@ class ExampleSetEngineKindsGoldenTest extends TestCase {
 			work: new ExampleSetWorkRowKinds(...$of('tasks', 'notes', 'readStates', 'watchers')),
 			own: new ExampleSetOwnRowKinds(...$of('views', 'flows', 'casePlans')),
 			links: new ExampleSetLinkRowKinds(...$of('parties', 'emailLinks', 'accessLinks', 'grants')),
-			apps: new ExampleSetAppRowKinds(...$of('deckCards', 'appointments', 'collectivesPages', 'talkConversations')),
-			history: new ExampleSetHistoryRowKinds(...$of('exportRuns', 'archival', 'auditEntries', 'timelineEntries'))
+			elsewhere: new ExampleSetAppAndHistoryRowKinds(
+				apps: new ExampleSetAppRowKinds(...$of('deckCards', 'appointments', 'collectivesPages', 'talkConversations')),
+				history: new ExampleSetHistoryRowKinds(...$of('exportRuns', 'archival', 'auditEntries', 'timelineEntries'))
+			)
 		);
 	}//end kinds()
 
@@ -124,6 +131,10 @@ class ExampleSetEngineKindsGoldenTest extends TestCase {
 	 */
 	private function writer(string $part, bool $changes, string $revert): mixed {
 		$writer = $this->createMock(self::PARTS[$part][0]);
+		if ($writer instanceof ExampleSetViewRowsInterface || $writer instanceof ExampleSetTimelineRowsInterface) {
+			$writer->method('rows')->willReturn($writer);
+		}
+
 		$writer->method('checkFragment')->willReturnCallback(function () use ($part): array {
 			$this->calls[] = 'check '.$part;
 			return [$part.' refused'];
@@ -168,7 +179,7 @@ class ExampleSetEngineKindsGoldenTest extends TestCase {
 			$expected[] = 'f.json: '.$noun.' "k-'.$part.'": this OpenRegister cannot write '.$part;
 		}
 
-		$this->assertSame($expected, $this->kinds(writers: [])->check(fragment: self::fragment(), context: [], users: [], values: new ExampleSetValues()));
+		$this->assertSame($expected, $this->kinds(writers: [])->check(write: new ExampleSetFragmentWrite(fragment: self::fragment(), context: [], values: new ExampleSetValues()), users: []));
 	}//end testCheckWithoutWritersRefusesEveryPartInOrder()
 
 	/**
@@ -187,7 +198,7 @@ class ExampleSetEngineKindsGoldenTest extends TestCase {
 				['key' => 'c2', 'set' => ['title' => 'plain'], 'where' => '{{accessLink:a.url}}'],
 			],
 		];
-		$refusals = $this->kinds(writers: [])->check(fragment: $fragment, context: [], users: [], values: new ExampleSetValues());
+		$refusals = $this->kinds(writers: [])->check(write: new ExampleSetFragmentWrite(fragment: $fragment, context: [], values: new ExampleSetValues()), users: []);
 		$this->assertSame(
 			[
 				'f.json: notes quotes an access link address ({{accessLink:key.url}}); only a change may, as the text of a set field',
@@ -209,7 +220,7 @@ class ExampleSetEngineKindsGoldenTest extends TestCase {
 			'file'    => 'f.json',
 			'changes' => [['key' => 'c1', 'set' => ['title' => '{{accessLink:a.url}}']]],
 		];
-		$this->assertSame([], $this->kinds(writers: [])->check(fragment: $fragment, context: [], users: [], values: new ExampleSetValues()));
+		$this->assertSame([], $this->kinds(writers: [])->check(write: new ExampleSetFragmentWrite(fragment: $fragment, context: [], values: new ExampleSetValues()), users: []));
 	}//end testCheckAllowsAQuotedAddressAsSetFieldText()
 
 	/**
@@ -223,7 +234,7 @@ class ExampleSetEngineKindsGoldenTest extends TestCase {
 			$writers[$part] = $this->writer(part: $part, changes: false, revert: 'removed');
 		}
 
-		$refusals = $this->kinds(writers: $writers)->check(fragment: self::fragment(), context: [], users: [], values: new ExampleSetValues());
+		$refusals = $this->kinds(writers: $writers)->check(write: new ExampleSetFragmentWrite(fragment: self::fragment(), context: [], values: new ExampleSetValues()), users: []);
 		$parts    = array_keys(array: self::PARTS);
 		$this->assertSame(array_map(callback: fn (string $p): string => $p.' refused', array: $parts), $refusals);
 		$this->assertSame(array_map(callback: fn (string $p): string => 'check '.$p, array: $parts), $this->calls);
@@ -243,12 +254,12 @@ class ExampleSetEngineKindsGoldenTest extends TestCase {
 		$kinds  = $this->kinds(writers: $writers);
 		$report = [];
 		$record = ['users' => []];
-		$this->assertFalse($kinds->install(fragment: self::fragment(), context: [], report: $report, record: $record, values: new ExampleSetValues()));
+		$this->assertFalse($kinds->install(write: new ExampleSetFragmentWrite(fragment: self::fragment(), context: [], values: new ExampleSetValues()), ledger: new RecordLedger(report: $report, record: $record)));
 		$after = array_values(array: array_diff(array_keys(array: self::PARTS), ExampleSetEngineKinds::BEFORE_CHANGES));
 		$this->assertSame(array_map(callback: fn (string $p): string => 'install '.$p, array: $after), $this->calls);
 
 		$this->calls = [];
-		$before = $kinds->installBeforeChanges(fragment: self::fragment(), context: [], report: $report, record: $record, values: new ExampleSetValues());
+		$before = $kinds->installBeforeChanges(write: new ExampleSetFragmentWrite(fragment: self::fragment(), context: [], values: new ExampleSetValues()), ledger: new RecordLedger(report: $report, record: $record));
 		$this->assertTrue($before);
 		$this->assertSame(['install flows', 'install accessLinks', 'install grants'], $this->calls);
 		$this->assertSame(['flows', 'accessLinks', 'grants'], ExampleSetEngineKinds::BEFORE_CHANGES);
@@ -263,8 +274,8 @@ class ExampleSetEngineKindsGoldenTest extends TestCase {
 		$kinds  = $this->kinds(writers: []);
 		$report = [];
 		$record = ['users' => []];
-		$this->assertFalse($kinds->install(fragment: self::fragment(), context: [], report: $report, record: $record, values: new ExampleSetValues()));
-		$before = $kinds->installBeforeChanges(fragment: self::fragment(), context: [], report: $report, record: $record, values: new ExampleSetValues());
+		$this->assertFalse($kinds->install(write: new ExampleSetFragmentWrite(fragment: self::fragment(), context: [], values: new ExampleSetValues()), ledger: new RecordLedger(report: $report, record: $record)));
+		$before = $kinds->installBeforeChanges(write: new ExampleSetFragmentWrite(fragment: self::fragment(), context: [], values: new ExampleSetValues()), ledger: new RecordLedger(report: $report, record: $record));
 		$this->assertFalse($before);
 		$this->assertSame([], $report);
 		$this->assertSame([], $kinds->accessLinksOf(fragment: self::fragment(), record: null));

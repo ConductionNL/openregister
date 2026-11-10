@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
+use OCA\OpenRegister\Service\Form\FormSubmission;
+use OCA\OpenRegister\Service\Form\FormSubmitter;
 use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
 use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
@@ -237,7 +239,9 @@ class FormsController extends Controller {
 				$draftId = null;
 			}
 
-			$answer = $this->submitForm(form: $form, subject: $subject, key: $key, draftId: $draftId);
+			$submitter = new FormSubmitter(subject: $subject, scope: $form['id'], draftId: $draftId);
+			$submission = new FormSubmission(writes: $this->writesOf(form: $form), payload: $this->payload(), submitter: $submitter);
+			$answer = $this->submitter->submit($submission, $key);
 		} catch (FormSubmitRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
 		}
@@ -274,27 +278,15 @@ class FormsController extends Controller {
 				$draftId = null;
 			}
 
-			$write = $form['writes'][0];
-			$destination = ['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null)];
-			$subject = $this->userSession->getUser();
-			if ($draftId !== null && $this->submitter->isOwnerOfDraft($destination, $draftId, $subject) === false) {
+			$write = $this->writesOf(form: $form)[0];
+			$destination = ['register' => $write['register'], 'schema' => $write['schema']];
+			$submitter = new FormSubmitter(subject: $this->userSession->getUser(), scope: $formId, draftId: $draftId);
+			if ($draftId !== null && $this->submitter->isOwnerOfDraft($destination, $submitter) === false) {
 				// The same 404 an unknown id gets, so a draft id is not an oracle.
 				throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
 			}
 
-			$mapping = null;
-			if (is_array($write['mapping'] ?? null) === true) {
-				$mapping = $write['mapping'];
-			}
-
-			$draft = $this->submitter->saveDraft(
-				$destination,
-				$mapping,
-				$this->payload(),
-				$subject,
-				$draftId,
-				$formId
-			);
+			$draft = $this->submitter->saveDraft(new FormSubmission(writes: [$write], payload: $this->payload(), submitter: $submitter));
 		} catch (FormSubmitRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
 		}
@@ -365,20 +357,17 @@ class FormsController extends Controller {
 	}//end signInRequired()
 
 	/**
-	 * One destination through FormSubmitService::submit(), a journey's writes through submitAll().
+	 * The form's writes as submitted: a journey's as they are, one destination as `{ register, schema, mapping }`.
 	 *
-	 * @param array{id: string, writes: array<int, array<string, mixed>>, audience: string} $form    The form.
-	 * @param IUser|null                                                                         $subject The subject.
-	 * @param string|null                                                                   $key     The Idempotency-Key.
-	 * @param string|null                                                                   $draftId The subject's draft to leave, when sent.
+	 * A single write drops its other keys (such as `as`), so its answer names it `write0`.
 	 *
-	 * @return array<string, mixed> The answer.
+	 * @param array{id: string, writes: array<int, array<string, mixed>>, audience: string} $form The form.
 	 *
-	 * @throws FormSubmitRefusedException On any refusal.
+	 * @return array<int, array<string, mixed>> The writes.
 	 */
-	private function submitForm(array $form, ?IUser $subject, ?string $key, ?string $draftId = null): array {
+	private function writesOf(array $form): array {
 		if (count($form['writes']) !== 1) {
-			return $this->submitter->submitAll($form['writes'], $this->payload(), $subject, $key, $form['id'], $draftId);
+			return $form['writes'];
 		}
 
 		$write = $form['writes'][0];
@@ -387,16 +376,8 @@ class FormsController extends Controller {
 			$mapping = $write['mapping'];
 		}
 
-		return $this->submitter->submit(
-			['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null)],
-			$mapping,
-			$this->payload(),
-			$subject,
-			$key,
-			$form['id'],
-			$draftId
-		);
-	}//end submitForm()
+		return [['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null), 'mapping' => $mapping]];
+	}//end writesOf()
 
 	/**
 	 * The stored form, registering a brute-force attempt when it does not resolve.

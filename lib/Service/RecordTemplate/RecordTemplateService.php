@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\RecordTemplate;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
@@ -89,7 +90,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 		private readonly ViewerReachResolver $viewers,
 	) {
 		$this->shares = new ViewShareResolver();
-		$this->input = new RecordTemplateInput();
+		$this->input = new RecordTemplateInput(shareFindings: $this->viewers->shareFindings(...));
 	}//end __construct()
 
 	/**
@@ -104,14 +105,10 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function listFor(ViewerReach $reach, ?string $register=null, ?string $schema=null): array {
-		$usable = [];
-		foreach ($this->store->mapper->findCandidates(userId: $reach->userId, register: $register, schema: $schema) as $template) {
-			if ($this->resolveUse(template: $template, reach: $reach) === true) {
-				$usable[] = $template;
-			}
-		}
+		$scope      = ListQuery::unbounded(filters: ['register' => $register, 'schema' => $schema]);
+		$candidates = $this->store->mapper->findCandidates(userId: $reach->userId, query: $scope);
 
-		return $usable;
+		return array_values(array_filter($candidates, fn (RecordTemplate $template): bool => $this->resolveUse(template: $template, reach: $reach)));
 	}//end listFor()
 
 	/**
@@ -148,7 +145,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function create(array $data, ViewerReach $reach): RecordTemplate {
-		$fields = $this->input->validated(data: $data, partial: false, shareFindings: $this->shareFindings(...));
+		$fields = $this->input->validated(data: $data, partial: false);
 		$this->assertMayCreate(schema: (string)$fields['schema'], reach: $reach);
 
 		$template = new RecordTemplate();
@@ -179,7 +176,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 */
 	public function change(string $uuid, array $data, ViewerReach $reach, bool $partial): RecordTemplate {
 		$template = $this->administered(uuid: $uuid, reach: $reach);
-		$fields = $this->input->validated(data: $data, partial: $partial, shareFindings: $this->shareFindings(...));
+		$fields = $this->input->validated(data: $data, partial: $partial);
 		if (isset($fields['schema']) === true && $fields['schema'] !== $template->getSchema()) {
 			$this->assertMayCreate(schema: (string)$fields['schema'], reach: $reach);
 		}
@@ -216,7 +213,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @return bool True when they may use it.
 	 */
 	private function resolveUse(RecordTemplate $template, ViewerReach $reach): bool {
-		$access = $this->shares->accessFor(view: $template->jsonSerialize(), userId: $reach->userId, userGroups: $reach->groups);
+		$access = $this->shares->accessOf(view: $template->jsonSerialize(), reach: $reach);
 		if ($access === null && $reach->isAdmin === true) {
 			$access = ViewShareResolver::ACCESS_WRITE;
 		}
@@ -242,7 +239,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 */
 	private function administered(string $uuid, ViewerReach $reach): RecordTemplate {
 		$template = $this->get(uuid: $uuid, reach: $reach);
-		if ($this->shares->mayAdminister(view: $template->jsonSerialize(), userId: $reach->userId, isAdmin: $reach->isAdmin) === false) {
+		if ($this->shares->mayAdministerAs(view: $template->jsonSerialize(), reach: $reach) === false) {
 			throw new RecordTemplateRefused(status: 403, message: 'Only the owner or an administrator may change this record template.');
 		}
 
@@ -321,15 +318,4 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 
 		return $this->mayCreate[$key];
 	}//end mayCreateIn()
-
-	/**
-	 * What is wrong with a share list, judged against the groups that exist.
-	 *
-	 * @param mixed $sharedWith The declared shares.
-	 *
-	 * @return array<int, array{code: string, message: string}> The findings.
-	 */
-	private function shareFindings(mixed $sharedWith): array {
-		return $this->viewers->shareFindings(sharedWith: $sharedWith);
-	}//end shareFindings()
 }//end class

@@ -22,12 +22,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ContactsControllerServices;
-use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
-use OCA\OpenRegister\Service\ContactServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\PersonLinkChange;
+use OCA\OpenRegister\Service\PersonLinkRef;
+use OCA\OpenRegister\Service\PersonLinkTarget;
+use OCA\OpenRegister\Service\ContactPlacement;
+use OCA\OpenRegister\Service\ContactServiceInterface;
 use OCA\OpenRegister\Service\PersonLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -75,18 +80,16 @@ class ContactsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
 	 * @param ContactsControllerServices $services The contacts controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ContactsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
 
 		$this->contactService = $services->domain->contactService;
@@ -109,18 +112,9 @@ class ContactsController extends Controller {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		return $this->withObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			handler: function (ObjectEntity $object): JSONResponse {
-				return new JSONResponse(
-					$this->personLinks->listForObject(
-						objectUuid: $object->getUuid(),
-						schemaId: $this->resolveSchemaId(object: $object)
-					)
-				);
-			},
-			fallbackStatus: 500
-		);
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
+
+		return $this->listing(ref: $ref, handler: fn (ObjectEntity $object): JSONResponse => $this->contactsOf(object: $object));
 	}//end index()
 
 	/**
@@ -148,38 +142,9 @@ class ContactsController extends Controller {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		return $this->withWritableObject(
-			register: $register,
-			schema: $schema,
-			id: $id,
-			handler: function (ObjectEntity $object): JSONResponse {
-				$data = $this->request->getParams();
-				$schemaId = $this->resolveSchemaId(object: $object);
-				// A payload naming a person (userId, or addressbookId plus
-				// contactUri) links that person; one naming only a new contact
-				// (fullName/displayName) creates it first. Naming neither, the
-				// link service answers the 400.
-				if ($this->namesPerson(data: $data) === false && $this->namesNewContact(data: $data) === true) {
-					$created = $this->contactService->createAndLinkContact(
-						$object->getUuid(),
-						(int)$object->getRegister(),
-						$data,
-						$schemaId
-					);
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
-					return new JSONResponse($created, 201);
-				}
-
-				$link = $this->personLinks->link(
-					objectUuid: $object->getUuid(),
-					registerId: (int)$object->getRegister(),
-					schemaId: $schemaId,
-					payload: $data
-				);
-
-				return new JSONResponse($link, 201);
-			}
-		);
+		return $this->withWritableObject(ref: $ref, handler: fn (ObjectEntity $object): JSONResponse => $this->linkedContact(object: $object));
 	}//end create()
 
 	/**
@@ -204,60 +169,77 @@ class ContactsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-16
 	 */
 	public function createNew(string $register, string $schema, string $id): JSONResponse {
-		return $this->withWritableObject(
-			register: $register,
-			schema: $schema,
-			id: $id,
-			handler: function (ObjectEntity $object): JSONResponse {
-				$data = $this->request->getParams();
-				// Refuse "link" payloads here: `/contacts/new` is create-only.
-				if (empty($data['contactUri']) === false) {
-					return new JSONResponse(['error' => 'Use POST /contacts to link an existing contact'], 400);
-				}
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
-				if (trim((string)($data['displayName'] ?? ($data['fullName'] ?? ''))) === '') {
-					return new JSONResponse(['error' => 'displayName is required'], 400);
-				}
-
-				$link = $this->contactService->createAndLinkContact(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					$data,
-					$this->resolveSchemaId(object: $object)
-				);
-
-				return new JSONResponse($link, 201);
-			}
-		);
+		return $this->withWritableObject(ref: $ref, handler: fn (ObjectEntity $object): JSONResponse => $this->newContact(object: $object));
 	}//end createNew()
 
 	/**
 	 * Run a handler on a validated object, mapping a missing object and a
-	 * thrown service exception to their responses.
+	 * thrown service exception (its HTTP code, else 400) to their responses.
 	 *
-	 * Every per-object route shares this frame, so the 404 for an unknown
+	 * Every per-object write shares this frame, so the 404 for an unknown
 	 * object and the status of a service exception are decided once.
 	 *
-	 * @param ObjectLinkRoute $route The register, schema and object id of the route.
+	 * @param ObjectRef $ref The register, schema and object id of the route.
 	 * @param callable(ObjectEntity): JSONResponse $handler What to do with the object.
-	 * @param int $fallbackStatus The status for an exception carrying none.
 	 *
 	 * @return JSONResponse The handler's response, or the error's.
+	 *
+	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	private function withObject(ObjectLinkRoute $route, callable $handler, int $fallbackStatus = 400): JSONResponse {
+	private function withObject(ObjectRef $ref, callable $handler): JSONResponse {
 		try {
-			$object = $this->validateObject(register: $route->register, schema: $route->schema, id: $route->id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			return $handler($object);
+			return $this->onObject(ref: $ref, handler: $handler);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		} catch (Exception $e) {
-			return $this->errorResponse(exception: $e, fallbackStatus: $fallbackStatus);
-		}//end try
+			return $this->errorResponse(exception: $e);
+		}
 	}//end withObject()
+
+	/**
+	 * Run a read on a validated object, as withObject() does, but answer an
+	 * exception without an HTTP code with 500.
+	 *
+	 * @param ObjectRef $ref The register, schema and object id of the route.
+	 * @param callable(ObjectEntity): JSONResponse $handler What to do with the object.
+	 *
+	 * @return JSONResponse The handler's response, or the error's.
+	 *
+	 * @spec openspec/specs/contacts-actions/spec.md
+	 */
+	private function listing(ObjectRef $ref, callable $handler): JSONResponse {
+		try {
+			return $this->onObject(ref: $ref, handler: $handler);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Object not found'], 404);
+		} catch (Exception $e) {
+			return $this->errorResponse(exception: $e, fallbackStatus: 500);
+		}
+	}//end listing()
+
+	/**
+	 * Run a handler on the object of a route: 404 when it resolves to nothing.
+	 *
+	 * @param ObjectRef $ref The register, schema and object id of the route.
+	 * @param callable(ObjectEntity): JSONResponse $handler What to do with the object.
+	 *
+	 * @return JSONResponse The handler's response, or the 404.
+	 *
+	 * @throws DoesNotExistException When no such object exists.
+	 * @throws Exception             When loading the object or the handler fails.
+	 *
+	 * @spec openspec/specs/contacts-actions/spec.md
+	 */
+	private function onObject(ObjectRef $ref, callable $handler): JSONResponse {
+		$object = $this->validateObject(ref: $ref);
+		if ($object === null) {
+			return new JSONResponse(['error' => 'Object not found'], 404);
+		}
+
+		return $handler($object);
+	}//end onObject()
 
 	/**
 	 * Run a handler on a validated object the caller may update.
@@ -265,18 +247,16 @@ class ContactsController extends Controller {
 	 * Changing an object's contacts changes the object, so it needs the same
 	 * `update` right as editing the object; a caller who may only read it gets 403.
 	 *
-	 * @param string $register The register slug.
-	 * @param string $schema The schema slug.
-	 * @param string $id The object id.
+	 * @param ObjectRef $ref The register, schema and object id of the route.
 	 * @param callable(ObjectEntity): JSONResponse $handler What to do with the object.
 	 *
 	 * @return JSONResponse The handler's response, or the error's.
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	private function withWritableObject(string $register, string $schema, string $id, callable $handler): JSONResponse {
+	private function withWritableObject(ObjectRef $ref, callable $handler): JSONResponse {
 		return $this->withObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			ref: $ref,
 			handler: function (ObjectEntity $object) use ($handler): JSONResponse {
 				$schemaEntity = $this->objectService->getCurrentSchemaEntity();
 				if ($schemaEntity === null
@@ -294,6 +274,151 @@ class ContactsController extends Controller {
 			}
 		);
 	}//end withWritableObject()
+
+	/**
+	 * The people linked to an object, grouped as the link service lists them.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The listing.
+	 *
+	 * @spec openspec/specs/contacts-actions/spec.md
+	 */
+	private function contactsOf(ObjectEntity $object): JSONResponse {
+		return new JSONResponse(
+			$this->personLinks->listForObject(objectUuid: $object->getUuid(), schemaId: $this->resolveSchemaId(object: $object))
+		);
+	}//end contactsOf()
+
+	/**
+	 * Link the person a payload names, or create the new contact it names and link that.
+	 *
+	 * A payload naming a person (userId, or addressbookId plus contactUri)
+	 * links that person; one naming only a new contact (fullName or
+	 * displayName) creates it first. Naming neither, the link service
+	 * answers the 400.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The link or the created contact, 201.
+	 *
+	 * @spec openspec/specs/contacts-actions/spec.md
+	 */
+	private function linkedContact(ObjectEntity $object): JSONResponse {
+		$data = $this->request->getParams();
+		$schemaId = $this->resolveSchemaId(object: $object);
+		if ($this->namesPerson(data: $data) === false && $this->namesNewContact(data: $data) === true) {
+			return $this->createdContact(object: $object, data: $data);
+		}
+
+		$link = $this->personLinks->linkPerson(
+			target: new PersonLinkTarget(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister(), schemaId: $schemaId),
+			payload: $data
+		);
+
+		return new JSONResponse($link, 201);
+	}//end linkedContact()
+
+	/**
+	 * Create the contact a create-only payload describes and link it;
+	 * a payload naming an existing contact, or no display name, is a 400.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The link, 201, or the 400.
+	 *
+	 * @spec openspec/specs/contacts-actions/spec.md
+	 */
+	private function newContact(ObjectEntity $object): JSONResponse {
+		$data = $this->request->getParams();
+		if (empty($data['contactUri']) === false) {
+			return new JSONResponse(['error' => 'Use POST /contacts to link an existing contact'], 400);
+		}
+
+		if (trim((string)($data['displayName'] ?? ($data['fullName'] ?? ''))) === '') {
+			return new JSONResponse(['error' => 'displayName is required'], 400);
+		}
+
+		return $this->createdContact(object: $object, data: $data);
+	}//end newContact()
+
+	/**
+	 * Create a contact from a payload and link it to the object, with the object's register and schema ids.
+	 *
+	 * @param ObjectEntity         $object The object.
+	 * @param array<string, mixed> $data   The payload.
+	 *
+	 * @return JSONResponse The created contact's link, 201.
+	 *
+	 * @spec openspec/specs/contacts-actions/spec.md
+	 */
+	private function createdContact(ObjectEntity $object, array $data): JSONResponse {
+		$placement = new ContactPlacement(
+			objectUuid: $object->getUuid(),
+			registerId: (int)$object->getRegister(),
+			schemaId: $this->resolveSchemaId(object: $object),
+			role: ($data['role'] ?? null)
+		);
+		$created   = $this->contactService->createAndLinkContact(placement: $placement, data: $data);
+
+		return new JSONResponse($created, 201);
+	}//end createdContact()
+
+	/**
+	 * Change the editable fields (role, validity, note) of a person's link to the object.
+	 *
+	 * @param ObjectEntity $object     The object.
+	 * @param string       $contactUid The contact UID.
+	 *
+	 * @return JSONResponse The updated link.
+	 *
+	 * @spec openspec/specs/contacts-actions/spec.md
+	 */
+	private function updatedLink(ObjectEntity $object, string $contactUid): JSONResponse {
+		$data = $this->request->getParams();
+
+		return new JSONResponse(
+			$this->personLinks->changeLink(
+				change: new PersonLinkChange(
+					ref: new PersonLinkRef(objectUuid: $object->getUuid(), contactUid: $contactUid, role: $this->optionalParam(name: 'currentRole')),
+					schemaId: $this->resolveSchemaId(object: $object),
+					changes: array_intersect_key($data, array_flip(['role', 'validFrom', 'validUntil', 'note']))
+				)
+			)
+		);
+	}//end updatedLink()
+
+	/**
+	 * Remove a person's links to the object: a numeric id is a legacy link
+	 * id limited to this object's links, anything else a contact uid whose
+	 * links (one role or all) are removed.
+	 *
+	 * @param ObjectEntity $object     The object.
+	 * @param string       $contactUid The contact UID, or a numeric link id.
+	 *
+	 * @return JSONResponse Success, with the number removed for a contact uid.
+	 *
+	 * @spec openspec/specs/contacts-actions/spec.md
+	 */
+	private function removedLink(ObjectEntity $object, string $contactUid): JSONResponse {
+		// An object without a uuid owns no links, and a null uuid would lift the object check.
+		$objectUuid = $object->getUuid();
+		if ($objectUuid === null || $objectUuid === '') {
+			return new JSONResponse(['error' => 'Contact link not found'], 404);
+		}
+
+		if (ctype_digit($contactUid) === true) {
+			$this->contactService->unlinkContact(linkId: (int)$contactUid, objectUuid: $objectUuid);
+
+			return new JSONResponse(['success' => true]);
+		}
+
+		$removed = $this->personLinks->removeLinks(
+			ref: new PersonLinkRef(objectUuid: $objectUuid, contactUid: $contactUid, role: $this->optionalParam(name: 'role'))
+		);
+
+		return new JSONResponse(['success' => true, 'removed' => $removed]);
+	}//end removedLink()
 
 	/**
 	 * Whether a payload names a person to link: a user, or a contact in an address book.
@@ -398,24 +523,9 @@ class ContactsController extends Controller {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	public function update(string $register, string $schema, string $id, string $contactUid): JSONResponse {
-		return $this->withWritableObject(
-			register: $register,
-			schema: $schema,
-			id: $id,
-			handler: function (ObjectEntity $object) use ($contactUid): JSONResponse {
-				$data = $this->request->getParams();
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
-				return new JSONResponse(
-					$this->personLinks->update(
-						objectUuid: $object->getUuid(),
-						contactUid: $contactUid,
-						schemaId: $this->resolveSchemaId(object: $object),
-						changes: array_intersect_key($data, array_flip(['role', 'validFrom', 'validUntil', 'note'])),
-						currentRole: $this->optionalParam(name: 'currentRole')
-					)
-				);
-			}
-		);
+		return $this->withWritableObject(ref: $ref, handler: fn (ObjectEntity $object): JSONResponse => $this->updatedLink(object: $object, contactUid: $contactUid));
 	}//end update()
 
 	/**
@@ -441,34 +551,9 @@ class ContactsController extends Controller {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	public function destroy(string $register, string $schema, string $id, string $contactUid): JSONResponse {
-		return $this->withWritableObject(
-			register: $register,
-			schema: $schema,
-			id: $id,
-			handler: function (ObjectEntity $object) use ($contactUid): JSONResponse {
-				// An object without a uuid owns no links, and a null uuid would lift the object check.
-				$objectUuid = $object->getUuid();
-				if ($objectUuid === null || $objectUuid === '') {
-					return new JSONResponse(['error' => 'Contact link not found'], 404);
-				}
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
-				// Numeric param: legacy link-id path, limited to this object's links.
-				if (ctype_digit($contactUid) === true) {
-					$this->contactService->unlinkContact(linkId: (int)$contactUid, objectUuid: $objectUuid);
-
-					return new JSONResponse(['success' => true]);
-				}
-
-				// Non-numeric: the person's links on the object, one role or all.
-				$removed = $this->personLinks->unlink(
-					objectUuid: $objectUuid,
-					contactUid: $contactUid,
-					role: $this->optionalParam(name: 'role')
-				);
-
-				return new JSONResponse(['success' => true, 'removed' => $removed]);
-			}
-		);
+		return $this->withWritableObject(ref: $ref, handler: fn (ObjectEntity $object): JSONResponse => $this->removedLink(object: $object, contactUid: $contactUid));
 	}//end destroy()
 
 	/**
@@ -501,25 +586,19 @@ class ContactsController extends Controller {
 	/**
 	 * Validate that the object exists.
 	 *
-	 * @param string $register The register slug
-	 * @param string $schema The schema slug
-	 * @param string $id The object ID
+	 * @param ObjectRef $ref The register, schema and object id
 	 *
-	 * @return \OCA\OpenRegister\Db\ObjectEntity|null
+	 * @return ObjectEntity|null
 	 *
 	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
 	 *                               than caught: every call site already wraps this helper and translates it to a 404.
 	 *                               Swallowing it here would collapse "no such object" into the same null this method
 	 *                               returns for other reasons, which the caller could no longer tell apart.
 	 */
-	private function validateObject(
-		string $register,
-		string $schema,
-		string $id,
-	): ?\OCA\OpenRegister\Db\ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+	private function validateObject(ObjectRef $ref): ?ObjectEntity {
+		$this->objectService->setRegister($ref->register);
+		$this->objectService->setSchema($ref->schema);
+		$this->objectService->setObject($ref->id);
 
 		return $this->objectService->getObject();
 	}//end validateObject()

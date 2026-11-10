@@ -30,12 +30,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ErasurePreviewControllerServices;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStoreInterface;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRefusedException;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunnerInterface;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -69,16 +71,14 @@ class ErasurePreviewController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                $appName        The app name.
 	 * @param IRequest              $request        The request.
 	 * @param ErasurePreviewControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ErasurePreviewControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->previewService = $services->previewService;
 		$this->store = $services->store;
 		$this->runner = $services->runner;
@@ -116,8 +116,7 @@ class ErasurePreviewController extends Controller {
 		}
 
 		$preview = $this->previewService->preview(
-			subjectId: $subject,
-			type: $this->optionalType(),
+			subject: new SubjectQuery(subjectId: $subject, type: $this->optionalType()),
 			eraseMode: (string)($this->request->getParam(key: 'eraseMode')
 				?? DataSubjectRequestServiceInterface::ERASE_MODE_PSEUDONYMISE)
 		);

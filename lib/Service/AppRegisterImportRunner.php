@@ -42,8 +42,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
 use ReflectionMethod;
@@ -88,7 +88,7 @@ class AppRegisterImportRunner implements AppRegisterImportRunnerInterface {
 	 * Constructor.
 	 *
 	 * @param IAppManager          $appManager           Resolves the app's namespace and path.
-	 * @param AppContainerLocator  $containers           Reaches the app's own DI container.
+	 * @param AppContainerFinderInterface $containers         Reaches the app's own DI container.
 	 * @param AppConfigurationImporterInterface $configurationService Imports on the fallback path.
 	 * @param RegisterDocumentLoaderInterface $documents Reads the app's register document and fragments.
 	 *
@@ -96,7 +96,7 @@ class AppRegisterImportRunner implements AppRegisterImportRunnerInterface {
 	 */
 	public function __construct(
 		private readonly IAppManager $appManager,
-		private readonly AppContainerLocator $containers,
+		private readonly AppContainerFinderInterface $containers,
 		private readonly AppConfigurationImporterInterface $configurationService,
 		private readonly RegisterDocumentLoaderInterface $documents,
 	) {

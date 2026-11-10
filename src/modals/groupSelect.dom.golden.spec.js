@@ -56,6 +56,9 @@ jest.mock('vue-material-design-icons/AccountMinus.vue', () =>
 )
 jest.mock('vue-material-design-icons/AccountPlus.vue', () => mockIcon('AccountPlus'))
 jest.mock('vue-material-design-icons/Close.vue', () => mockIcon('Close'))
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () =>
+	mockIcon('TrashCanOutline'),
+)
 jest.mock('vue-material-design-icons/ContentSave.vue', () => mockIcon('ContentSave'))
 jest.mock('vue-material-design-icons/ShareVariant.vue', () =>
 	mockIcon('ShareVariant'),

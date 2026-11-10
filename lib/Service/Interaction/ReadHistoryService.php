@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ProcessingLogService;
+use OCA\OpenRegister\Service\ProcessingRead;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -185,7 +186,7 @@ class ReadHistoryService {
 	public function registerProcessingRead(ObjectEntity $object, string $action = self::READ_ACTION): void {
 		try {
 			$service = $this->container->get(ProcessingLogService::class);
-			$service->logRead(object: $object, action: $action);
+			$service->recordRead(object: $object, read: new ProcessingRead(action: $action));
 			$service->flush();
 		} catch (\Throwable $e) {
 			$this->logger->debug(
@@ -200,21 +201,50 @@ class ReadHistoryService {
 	 * Register a list or search read on the AVG processing log.
 	 *
 	 * One collapsed entry per register and schema in the result, through
-	 * ProcessingLogService::logReadList, which applies the same `logReads`
+	 * ProcessingLogService::recordReadList, which applies the same `logReads`
 	 * opt-in as a single read and carries the query parameters. A row that
 	 * is a rendered array is read by its `@self` block; a row that names no
 	 * uuid, register and schema cannot be attributed and is reported in the
 	 * log rather than dropped silently. Fail-soft, like registerProcessingRead().
 	 *
 	 * @param array<int|string, mixed> $objects The listed objects: ObjectEntity or rendered arrays.
-	 * @param array<string, mixed>     $query   The query parameters of the list or search.
-	 * @param string                   $action  `read` or `export`.
+	 * @param ProcessingListRead       $read    The query parameters and the action of the read.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
 	 */
-	public function registerProcessingReadList(array $objects, array $query = [], string $action = self::READ_ACTION): void {
+	public function registerListRead(array $objects, ProcessingListRead $read): void {
+		$groups = $this->groupedByTable(objects: $objects);
+		if ($groups === []) {
+			return;
+		}
+
+		try {
+			$service = $this->container->get(ProcessingLogService::class);
+			foreach ($groups as $group) {
+				$service->recordReadList(objects: $group, read: new ProcessingRead(action: $read->action, query: $read->query));
+			}
+
+			$service->flush();
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				message: '[AVG] processing-log list read hook skipped',
+				context: ['exception' => $e->getMessage()]
+			);
+		}
+
+	}//end registerListRead()
+
+	/**
+	 * The listed rows as ObjectEntities grouped per register and schema; rows
+	 * that cannot be attributed are counted and reported, not dropped silently.
+	 *
+	 * @param array<int|string, mixed> $objects The listed objects: ObjectEntity or rendered arrays.
+	 *
+	 * @return array<string, list<ObjectEntity>> The groups, keyed `register|schema`.
+	 */
+	private function groupedByTable(array $objects): array {
 		$groups = [];
 		$unattributed = 0;
 		foreach ($objects as $row) {
@@ -234,25 +264,9 @@ class ReadHistoryService {
 			);
 		}
 
-		if ($groups === []) {
-			return;
-		}
+		return $groups;
 
-		try {
-			$service = $this->container->get(ProcessingLogService::class);
-			foreach ($groups as $group) {
-				$service->logReadList(objects: $group, action: $action, query: $query);
-			}
-
-			$service->flush();
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[AVG] processing-log list read hook skipped',
-				context: ['exception' => $e->getMessage()]
-			);
-		}
-
-	}//end registerProcessingReadList()
+	}//end groupedByTable()
 
 	/**
 	 * A listed row as an ObjectEntity, or null when it cannot be attributed.

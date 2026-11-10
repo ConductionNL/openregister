@@ -47,14 +47,20 @@ use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
-use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Search\Service\MetricsService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViewRowsInterface;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactory;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactoryInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategyInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -94,6 +100,9 @@ final class SearchWiring {
 		VectorStorageHandlerInterface::class => VectorStorageHandler::class,
 		AggregationCacheInterface::class => AggregationCache::class,
 		ViewMapperInterface::class => ViewMapper::class,
+		ExampleSetViewRowsInterface::class => ExampleSetViews::class,
+		ChunkVectorFactoryInterface::class => ChunkVectorFactory::class,
+		PropertySearchProfileInterface::class => PropertySearchProfile::class,
 	];
 
 	/**

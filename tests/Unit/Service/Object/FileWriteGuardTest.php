@@ -124,7 +124,6 @@ class FileWriteGuardTest extends TestCase {
 		$userManager = $this->createMock(IUserManager::class);
 
 		return FilesControllerFactory::create(
-			'openregister',
 			$request,
 			$this->fileService,
 			$this->objectService,

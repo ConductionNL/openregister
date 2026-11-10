@@ -199,9 +199,11 @@ class MdtoBestandGenerator {
 		$this->writer->verwijzing(
 			parent: $parent,
 			name: 'isRepresentatieVan',
-			verwijzingNaam: $represents['naam'],
-			kenmerk: $represents['kenmerk'],
-			bron: $represents['bron']
+			verwijzing: new MdtoVerwijzing(
+				naam: $represents['naam'],
+				kenmerk: $represents['kenmerk'],
+				bron: $represents['bron']
+			)
 		);
 	}//end addRepresents()
 
@@ -224,13 +226,7 @@ class MdtoBestandGenerator {
 			$label = substr($type, ($slash + 1));
 		}
 
-		$this->writer->begrip(
-			parent: $parent,
-			name: 'bestandsformaat',
-			label: $label,
-			code: $type,
-			list: self::MEDIA_TYPE_LIST
-		);
+		$this->writer->begrip(parent: $parent, name: 'bestandsformaat', begrip: new MdtoBegrip(label: $label, list: self::MEDIA_TYPE_LIST, code: $type));
 	}//end addFormat()
 
 	/**
@@ -249,9 +245,7 @@ class MdtoBestandGenerator {
 		$this->writer->begrip(
 			parent: $checksum,
 			name: 'checksumAlgoritme',
-			label: self::CHECKSUM_ALGORITHM,
-			code: null,
-			list: self::CHECKSUM_ALGORITHM_LIST
+			begrip: new MdtoBegrip(label: self::CHECKSUM_ALGORITHM, list: self::CHECKSUM_ALGORITHM_LIST)
 		);
 		$this->writer->text(parent: $checksum, name: 'checksumWaarde', content: strtolower((string)$file['checksum']));
 		$this->writer->text(parent: $checksum, name: 'checksumDatum', content: (string)$file['checksumDate']);

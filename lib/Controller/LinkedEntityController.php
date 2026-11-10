@@ -22,8 +22,11 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\LinkedEntityControllerServices;
+use OCA\OpenRegister\Controller\Support\LinkRemoval;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\EntityLink;
 use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -79,20 +82,18 @@ class LinkedEntityController extends Controller {
 	/**
 	 * Constructor for LinkedEntityController.
 	 *
-	 * @param string $appName The app name
 	 * @param IRequest $request The request object
 	 * @param LinkedEntityControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		LinkedEntityControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->linkedEntityService = $services->linkedEntityService;
-		$this->logger = $services->logger;
-		$this->userSession = $services->userSession;
-		$this->groupManager = $services->groupManager;
+		$this->logger = $services->session->logger;
+		$this->userSession = $services->session->userSession;
+		$this->groupManager = $services->session->groupManager;
 	}//end __construct()
 
 	/**
@@ -140,7 +141,7 @@ class LinkedEntityController extends Controller {
 				return new JSONResponse(['error' => 'Missing required field: id'], 400);
 			}
 
-			$result = $this->linkedEntityService->addLink($uuid, $type, (string)$entityId);
+			$result = $this->linkedEntityService->addLink(objectUuid: $uuid, link: new EntityLink(type: $type, entityId: (string)$entityId));
 
 			return new JSONResponse(['_' . $type => $result]);
 		} catch (NotAuthorizedException $e) {
@@ -176,22 +177,35 @@ class LinkedEntityController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function removeObjectLink(string $uuid, string $type, string $entityId): JSONResponse {
-		try {
-			$result = $this->linkedEntityService->removeLink($uuid, $type, $entityId);
+		return $this->removeLink(removal: new LinkRemoval(objectUuid: $uuid, type: $type, entityId: $entityId));
+	}//end removeObjectLink()
 
-			return new JSONResponse(['_' . $type => $result]);
+	/**
+	 * Remove a linked entity from an object; a write denial is a 403, any other failure a logged 400.
+	 *
+	 * @param LinkRemoval $removal The object, the linked entity type and the entity.
+	 *
+	 * @return JSONResponse The updated linked IDs
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
+	 */
+	private function removeLink(LinkRemoval $removal): JSONResponse {
+		try {
+			$result = $this->linkedEntityService->removeLink($removal->objectUuid, $removal->type, $removal->entityId);
+
+			return new JSONResponse(['_' . $removal->type => $result]);
 		} catch (NotAuthorizedException $e) {
 			// SEC-CTRL-4: write-permission denial maps to 403.
 			return new JSONResponse(['error' => $e->getMessage()], 403);
 		} catch (Exception $e) {
 			$this->logger->error(
 				'[LinkedEntityController] removeObjectLink failed',
-				['uuid' => $uuid, 'type' => $type, 'entityId' => $entityId, 'error' => $e->getMessage()]
+				['uuid' => $removal->objectUuid, 'type' => $removal->type, 'entityId' => $removal->entityId, 'error' => $e->getMessage()]
 			);
 
 			return new JSONResponse(['error' => $e->getMessage()], 400);
 		}
-	}//end removeObjectLink()
+	}//end removeLink()
 
 	// SEC-CTRL-8: CSRF protection retained — SPA-called authenticated write; #[NoCSRFRequired] removed.
 
@@ -224,7 +238,7 @@ class LinkedEntityController extends Controller {
 				return new JSONResponse(['error' => 'Missing required field: id'], 400);
 			}
 
-			$result = $this->linkedEntityService->addLinkToRegister($uuid, $type, (string)$entityId);
+			$result = $this->linkedEntityService->addLinkToRegister(registerUuid: $uuid, link: new EntityLink(type: $type, entityId: (string)$entityId));
 
 			return new JSONResponse(['_' . $type => $result]);
 		} catch (Exception $e) {
@@ -263,7 +277,7 @@ class LinkedEntityController extends Controller {
 				return new JSONResponse(['error' => 'Missing required field: id'], 400);
 			}
 
-			$result = $this->linkedEntityService->addLinkToSchema($uuid, $type, (string)$entityId);
+			$result = $this->linkedEntityService->addLinkToSchema(schemaUuid: $uuid, link: new EntityLink(type: $type, entityId: (string)$entityId));
 
 			return new JSONResponse(['_' . $type => $result]);
 		} catch (Exception $e) {

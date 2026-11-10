@@ -18,7 +18,6 @@ final class SelectielijstControllerFactory {
 	/**
 	 * The constructor arguments of SelectielijstController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param SelectielijstImportServiceInterface $selectielijst Constructor argument.
 	 * @param ArchivalSettingsReaderInterface $settingsHandler Constructor argument.
@@ -27,20 +26,18 @@ final class SelectielijstControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\Archival\SelectielijstImportServiceInterface $selectielijst,
 		\OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface $settingsHandler,
 		\OCA\OpenRegister\Controller\Support\ControllerSession $session,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\SelectielijstControllerServices(
 				selectielijst: $selectielijst,
 				settingsHandler: $settingsHandler,
+				session: $session,
 			),
-			$session,
 		];
 	}
 

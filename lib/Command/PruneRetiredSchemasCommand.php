@@ -41,9 +41,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use Symfony\Component\Console\Command\Command;
@@ -62,8 +61,7 @@ class PruneRetiredSchemasCommand extends Command {
 	/**
 	 * Wire the mappers and the cascade service.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper (app-scoped resolution).
-	 * @param RegisterMapperInterface $registerMapper Register mapper, to unlink the retired id.
+	 * @param SchemaCatalogInterface  $catalog         Schema lookups (app-scoped resolution) and the register mapper, to unlink the retired id.
 	 * @param SchemaTeardownInterface $deletionService Cascade teardown (objects, tables, row).
 	 *
 	 * @return void
@@ -71,8 +69,7 @@ class PruneRetiredSchemasCommand extends Command {
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly SchemaTeardownInterface $deletionService,
 	) {
 		parent::__construct();
@@ -172,8 +169,9 @@ class PruneRetiredSchemasCommand extends Command {
 			);
 		}
 
+		$pass = new PruneRetiredSchemasPass(run: $run, output: $output);
 		foreach ($slugs as $slug) {
-			$this->pruneSlug(slug: (string)$slug, run: $run, output: $output);
+			$this->pruneSlug(slug: (string)$slug, pass: $pass);
 		}
 
 		$suffix = '';
@@ -219,15 +217,16 @@ class PruneRetiredSchemasCommand extends Command {
 	/**
 	 * Prune every row the app owns under one slug.
 	 *
-	 * @param string                 $slug   The retired schema slug.
-	 * @param PruneRetiredSchemasRun $run    The run's flags and tally.
-	 * @param OutputInterface        $output Console output stream.
+	 * @param string                  $slug The retired schema slug.
+	 * @param PruneRetiredSchemasPass $pass The run's flags and tally, and the console output stream.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
-	private function pruneSlug(string $slug, PruneRetiredSchemasRun $run, OutputInterface $output): void {
+	private function pruneSlug(string $slug, PruneRetiredSchemasPass $pass): void {
+		$run = $pass->run;
+		$output = $pass->output;
 		$appId = $run->appId;
 
 		// EVERY row under this (application, slug), not the first.
@@ -241,7 +240,7 @@ class PruneRetiredSchemasCommand extends Command {
 		// instance: opencatalogi owned two `document` rows (39 and 40), this
 		// pruned 40, printed `Pruned=1, skipped=0`, and left 39 answering
 		// every lookup.
-		$schemas = $this->schemaMapper->findAllByApplicationAndSlug(slug: $slug, application: $appId);
+		$schemas = $this->catalog->schemas()->findAllByApplicationAndSlug(slug: $slug, application: $appId);
 
 		if ($schemas === []) {
 			$run->missing++;
@@ -267,34 +266,40 @@ class PruneRetiredSchemasCommand extends Command {
 		}
 
 		foreach ($schemas as $schema) {
-			$this->pruneSchema(schema: $schema, slug: $slug, run: $run, output: $output);
+			// The count the DELETE would produce, from the deletion service that
+			// enumerates the tables — not a second, narrower count of its own.
+			// The guard and the delete disagreeing is the whole defect.
+			$row = new RetiredSchemaRow(
+				schema: $schema,
+				slug: $slug,
+				objectCount: $this->deletionService->countObjectsCascadeWouldDelete(schema: $schema)
+			);
+			$this->pruneSchema(row: $row, pass: $pass);
 		}
 	}//end pruneSlug()
 
 	/**
 	 * Report one schema, apply the guards, then tear it down unless this is a dry run.
 	 *
-	 * @param Schema                 $schema The schema to prune.
-	 * @param string                 $slug   Its slug, as the operator named it.
-	 * @param PruneRetiredSchemasRun $run    The run's flags and tally.
-	 * @param OutputInterface        $output Console output stream.
+	 * @param RetiredSchemaRow        $row  The schema to prune, its slug as the operator named it, and its object count.
+	 * @param PruneRetiredSchemasPass $pass The run's flags and tally, and the console output stream.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
-	private function pruneSchema(Schema $schema, string $slug, PruneRetiredSchemasRun $run, OutputInterface $output): void {
+	private function pruneSchema(RetiredSchemaRow $row, PruneRetiredSchemasPass $pass): void {
+		$schema = $row->schema;
+		$run = $pass->run;
+		$output = $pass->output;
+		$objectCount = $row->objectCount;
 		$schemaId = (int)$schema->getId();
-		// The count the DELETE would produce, from the deletion service that
-		// enumerates the tables — not a second, narrower count of its own.
-		// The guard and the delete disagreeing is the whole defect.
-		$objectCount = $this->deletionService->countObjectsCascadeWouldDelete(schema: $schema);
 		$linkedRegisters = $this->registersReferencing(schemaId: $schemaId);
 
 		$output->writeln(
 			sprintf(
 				'<info>%s (id=%d, app=%s): %d object(s), referenced by %d register(s)</info>',
-				$slug,
+				$row->slug,
 				$schemaId,
 				$run->appId,
 				$objectCount,
@@ -302,7 +307,7 @@ class PruneRetiredSchemasCommand extends Command {
 			)
 		);
 
-		$skip = $this->skipReason(schema: $schema, objectCount: $objectCount, run: $run);
+		$skip = $this->skipReason(row: $row, run: $run);
 		if ($skip !== null) {
 			$run->skipped++;
 			$output->writeln($skip);
@@ -316,27 +321,26 @@ class PruneRetiredSchemasCommand extends Command {
 			return;
 		}
 
-		$this->tearDown(schema: $schema, objectCount: $objectCount, run: $run, output: $output);
+		$this->tearDown(row: $row, pass: $pass);
 	}//end pruneSchema()
 
 	/**
 	 * Why this schema is skipped before any write: the object guard, then the refusals.
 	 *
-	 * @param Schema                 $schema      The schema to prune.
-	 * @param int                    $objectCount The objects the cascade would delete.
-	 * @param PruneRetiredSchemasRun $run         The run's flags.
+	 * @param RetiredSchemaRow       $row The schema to prune and the objects the cascade would delete.
+	 * @param PruneRetiredSchemasRun $run The run's flags.
 	 *
 	 * @return string|null The line to print, or null when the schema may go.
 	 *
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
-	private function skipReason(Schema $schema, int $objectCount, PruneRetiredSchemasRun $run): ?string {
-		if ($objectCount > 0 && $run->force === false) {
+	private function skipReason(RetiredSchemaRow $row, PruneRetiredSchemasRun $run): ?string {
+		if ($row->objectCount > 0 && $run->force === false) {
 			return '  <comment>SKIP: still owns objects. Re-run with --force to drop them, '
 				. 'or migrate them first.</comment>';
 		}
 
-		return $this->refusalOf(schema: $schema, override: $run->override);
+		return $this->refusalOf(schema: $row->schema, override: $run->override);
 	}//end skipReason()
 
 	/**
@@ -344,21 +348,18 @@ class PruneRetiredSchemasCommand extends Command {
 	 *
 	 * The forced note is read before the teardown, as the dry run reads it.
 	 *
-	 * @param Schema                 $schema      The schema to delete.
-	 * @param int                    $objectCount The objects the guard counted.
-	 * @param PruneRetiredSchemasRun $run         The run's flags and tally.
-	 * @param OutputInterface        $output      Console output stream.
+	 * @param RetiredSchemaRow        $row  The schema to delete and the objects the guard counted.
+	 * @param PruneRetiredSchemasPass $pass The run's flags and tally, and the console output stream.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
-	private function tearDown(
-		Schema $schema,
-		int $objectCount,
-		PruneRetiredSchemasRun $run,
-		OutputInterface $output
-	): void {
+	private function tearDown(RetiredSchemaRow $row, PruneRetiredSchemasPass $pass): void {
+		$schema = $row->schema;
+		$objectCount = $row->objectCount;
+		$run = $pass->run;
+		$output = $pass->output;
 		$forcedNote = $this->forcedNote(schema: $schema);
 
 		try {
@@ -537,7 +538,7 @@ class PruneRetiredSchemasCommand extends Command {
 			$register->setSchemas(self::unlinkSchemaId(schemaRefs: $register->getSchemas(), schemaId: $schemaId));
 
 			try {
-				$this->registerMapper->update($register);
+				$this->catalog->registers()->update($register);
 				$output->writeln(sprintf('  <info>unlinked from %s</info>', $label));
 			} catch (\Throwable $e) {
 				$output->writeln(
@@ -559,7 +560,7 @@ class PruneRetiredSchemasCommand extends Command {
 	private function registersReferencing(int $schemaId): array {
 		$matches = [];
 
-		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+		foreach ($this->catalog->registers()->findAll(_rbac: false, _multitenancy: false) as $register) {
 			foreach ($register->getSchemas() as $ref) {
 				if ((int)$ref === $schemaId) {
 					$matches[] = $register;

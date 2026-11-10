@@ -147,19 +147,18 @@ class DenyEntryMatcher {
 	 * `match` clause. That record is what an answer carries when it has to say
 	 * WHY a verb is absent.
 	 *
-	 * @param array<int, mixed> $entries    The deny entries written for the action, in declaration order.
-	 * @param string            $action     The verb being decided.
-	 * @param string[]          $principals The caller's principal names.
+	 * @param array<int, mixed> $entries  The deny entries written for the action, in declaration order.
+	 * @param DenyQuestion      $question The verb being decided and the caller's principal names.
 	 *
 	 * @return array<int, array{rule: mixed, principal: string, action: string, conditional: bool}> The matching denials.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function matchingDenials(array $entries, string $action, array $principals): array {
+	public function matchingDenials(array $entries, DenyQuestion $question): array {
 		$matches = [];
 
 		foreach ($entries as $entry) {
-			$named = $this->entryNames(entry: $entry, principals: $principals);
+			$named = $this->entryNames(entry: $entry, principals: $question->principals);
 			if ($named === null) {
 				continue;
 			}
@@ -172,7 +171,7 @@ class DenyEntryMatcher {
 			$matches[] = [
 				'rule' => $entry,
 				'principal' => $named,
-				'action' => $action,
+				'action' => $question->action,
 				'conditional' => $conditional,
 			];
 		}

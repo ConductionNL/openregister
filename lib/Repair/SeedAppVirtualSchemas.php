@@ -40,9 +40,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\ObjectSource\NcEntitySemanticMap;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -138,15 +137,13 @@ class SeedAppVirtualSchemas implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register data mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema data mapper.
-	 * @param LoggerInterface $logger Logger for seed diagnostics.
+	 * @param SchemaCatalogInterface $catalog The register and schema mappers.
+	 * @param LoggerInterface        $logger  Logger for seed diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -213,7 +210,7 @@ class SeedAppVirtualSchemas implements IRepairStep {
 
 				if ($changed === true) {
 					$register->setSchemas($schemaIds);
-					$this->registerMapper->update($register);
+					$this->catalog->registers()->update($register);
 				}
 
 				$output->info(sprintf('App virtual register "%s" seeded', $registerSlug));
@@ -236,10 +233,10 @@ class SeedAppVirtualSchemas implements IRepairStep {
 	 */
 	private function ensureRegister(string $slug, string $application): Register {
 		try {
-			return $this->registerMapper->find($slug, _rbac: false, _multitenancy: false);
+			return $this->catalog->registers()->find($slug, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			// Not found — create it.
-			return $this->registerMapper->createFromArray(
+			return $this->catalog->registers()->createFromArray(
 				object: [
 					'title' => ucfirst($slug),
 					'slug' => $slug,
@@ -262,7 +259,7 @@ class SeedAppVirtualSchemas implements IRepairStep {
 	 */
 	private function ensureSchema(array $row): Schema {
 		try {
-			return $this->schemaMapper->find($row['schema'], _rbac: false, _multitenancy: false);
+			return $this->catalog->schemas()->find($row['schema'], _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			// Not found — create it as a read-only object-source-backed schema.
 			$properties = (self::SCHEMA_PROPERTIES[$row['schema']] ?? []);
@@ -283,7 +280,7 @@ class SeedAppVirtualSchemas implements IRepairStep {
 				$objectSource['config'] = $providerConfig;
 			}
 
-			return $this->schemaMapper->createFromArray(
+			return $this->catalog->schemas()->createFromArray(
 				object: [
 					'title' => $row['schema'],
 					'slug' => $row['schema'],

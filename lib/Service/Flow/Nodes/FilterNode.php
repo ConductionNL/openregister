@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -172,19 +173,66 @@ class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface
 	 * @return array The items that matched.
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		$condition = ($config['condition'] ?? null);
-		$count = count($items);
+		$documents = $this->documentsFor(items: $items, context: $context);
+		$verdicts = $this->verdicts(condition: ($config['condition'] ?? null), documents: $documents);
 
+		return $this->kept(items: $items, verdicts: $verdicts);
+	}//end execute()
+
+	/**
+	 * The expression document of each item, keyed by its input index.
+	 *
+	 * @param array $items   The input items.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array<int|string, array> One data document per item.
+	 */
+	private function documentsFor(array $items, array $context): array {
+		$count = count($items);
+		$documents = [];
+		foreach ($items as $index => $item) {
+			$documents[$index] = FlowExpression::documentFor(
+				item: $item,
+				options: new FlowExpressionDataOptions(
+					itemIndex: $index,
+					itemCount: $count,
+					context: $context
+				)
+			);
+		}
+
+		return $documents;
+	}//end documentsFor()
+
+	/**
+	 * Whether the condition holds for each document, keyed as the documents are.
+	 *
+	 * @param mixed $condition The JSONLogic condition.
+	 * @param array $documents The data documents, keyed by input index.
+	 *
+	 * @return array<int|string, bool> The verdict per input index.
+	 */
+	private function verdicts(mixed $condition, array $documents): array {
+		$verdicts = [];
+		foreach ($documents as $index => $data) {
+			$verdicts[$index] = FlowExpression::isTrue(logic: $condition, data: $data);
+		}
+
+		return $verdicts;
+	}//end verdicts()
+
+	/**
+	 * The items whose verdict holds, re-paired to their original input index.
+	 *
+	 * @param array $items    The input items.
+	 * @param array $verdicts The verdict per input index.
+	 *
+	 * @return array The items that matched.
+	 */
+	private function kept(array $items, array $verdicts): array {
 		$kept = [];
 		foreach ($items as $index => $item) {
-			$data = FlowExpression::dataFor(
-				item: $item,
-				itemIndex: $index,
-				itemCount: $count,
-				context: $context
-			);
-
-			if (FlowExpression::isTrue(logic: $condition, data: $data) === false) {
+			if ($verdicts[$index] === false) {
 				continue;
 			}
 
@@ -196,7 +244,7 @@ class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface
 		}
 
 		return $kept;
-	}//end execute()
+	}//end kept()
 
 	/**
 	 * What kind of step this is. Reshapes the item stream by dropping items.

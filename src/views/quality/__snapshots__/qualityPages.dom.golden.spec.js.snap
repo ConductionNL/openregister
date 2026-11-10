@@ -254,7 +254,6 @@ exports[`quality pages golden masterEntities: renders empty 1`] = `
           <p>t:Survivorship-enabled objects for a register and schema, with their materialised quality columns.</p>
         </div>
         <x-registerschemaselector></x-registerschemaselector>
-        
         <x-ncemptycontent name="t:No master entities found" description="t:This schema has no objects yet.">
           <slot-icon>
             <x-accountmultipleoutline size="64"></x-accountmultipleoutline>
@@ -290,7 +289,6 @@ exports[`quality pages golden masterEntities: renders loading 1`] = `
           <p>t:Survivorship-enabled objects for a register and schema, with their materialised quality columns.</p>
         </div>
         <x-registerschemaselector></x-registerschemaselector>
-        
         <x-ncloadingicon size="32"></x-ncloadingicon>
       </div>
       
@@ -377,7 +375,6 @@ exports[`quality pages golden masterEntities: renders noSelection 1`] = `
           <p>t:Survivorship-enabled objects for a register and schema, with their materialised quality columns.</p>
         </div>
         <x-registerschemaselector></x-registerschemaselector>
-        
         <x-ncemptycontent name="t:Select a register and schema" description="t:Choose a survivorship-enabled register and schema above to list its master entities.">
           <slot-icon>
             <x-accountmultipleoutline size="64"></x-accountmultipleoutline>

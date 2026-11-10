@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -97,7 +98,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 	public function testOutcomesMatchGolden(): void {
 		$actual = [];
 		foreach (self::readCases() as $name => $args) {
-			$actual['consumer: ' . $name] = $this->recorded(fn () => $this->consumerMapper()->findAll(...$args));
+			$actual['consumer: ' . $name] = $this->recorded(fn () => $this->consumerMapper()->findAll(...array_slice($args, 0, 3)));
 			foreach ([[true, true], [false, true], [true, false], [false, false]] as [$rbac, $mt]) {
 				$label = 'register rbac ' . var_export($rbac, true) . ' mt ' . var_export($mt, true) . ': ' . $name;
 				$actual[$label] = $this->recorded(
@@ -213,7 +214,8 @@ final class FindAllMappersGoldenTest extends TestCase {
 	 * @return array<int, mixed>
 	 */
 	private function applicationArgs(array $args): array {
-		foreach ([2, 3, 4] as $index) {
+		$args = array_slice($args, 0, 3);
+		foreach ([2] as $index) {
 			if (array_key_exists($index, $args) === true && $args[$index] === null) {
 				$args[$index] = [];
 			}
@@ -332,9 +334,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(IEventDispatcher::class),
 			$this->createMock(ContainerInterface::class),
-			$organisations,
-			$session,
-			$groups,
+			new TenancyServices($organisations, $session, $groups),
 			$this->createMock(IAppConfig::class),
 			new NullLogger()
 		);
@@ -349,7 +349,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 	 */
 	private function applicationMapper(array $persona): ApplicationMapper {
 		[$session, $groups, $organisations] = $this->caller(persona: $persona);
-		return new ApplicationMapper($this->connection(), new TenancyServices($organisations, $session, $groups), $this->createMock(IEventDispatcher::class));
+		return new ApplicationMapper($this->connection(), new TenancyServices($organisations, $session, $groups), new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)));
 	}//end applicationMapper()
 
 	/**
@@ -361,7 +361,7 @@ final class FindAllMappersGoldenTest extends TestCase {
 	 */
 	private function sourceMapper(array $persona): SourceMapper {
 		[$session, $groups, $organisations] = $this->caller(persona: $persona);
-		return new SourceMapper($this->connection(), new TenancyServices($organisations, $session, $groups), $this->createMock(IEventDispatcher::class), $this->createMock(IAppConfig::class));
+		return new SourceMapper($this->connection(), new TenancyServices($organisations, $session, $groups), new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)), $this->createMock(IAppConfig::class));
 	}//end sourceMapper()
 
 	/**

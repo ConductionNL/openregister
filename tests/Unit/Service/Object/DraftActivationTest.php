@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\UserDraftActivation;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -23,9 +24,11 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Form\FormPayloadFindings;
 use OCA\OpenRegister\Service\Object\DraftActivation;
+use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\Object\DraftActivationChecks;
 use OCA\OpenRegister\Service\Object\DraftActivationSignals;
 use OCA\OpenRegister\Service\Object\DraftOwner;
+use OCA\OpenRegister\Service\Object\DraftPromotion;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
@@ -296,7 +299,7 @@ class DraftActivationTest extends TestCase {
 	 */
 	private function refusalOf(string $draftId, DraftOwner $owner, array $changes = []): DraftActivationRefusedException {
 		try {
-			$this->activation->activate(register: $this->register, schema: $this->schema, draftId: $draftId, owner: $owner, changes: $changes);
+			$this->activation->activate(promotion: new DraftPromotion(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: $draftId), owner: $owner, changes: $changes));
 		} catch (DraftActivationRefusedException $refused) {
 			return $refused;
 		}
@@ -311,7 +314,7 @@ class DraftActivationTest extends TestCase {
 		$this->store(uuid: 'd1', owner: 'agent', status: 'draft', data: ['id' => 'd1', 'subject' => 'Bin not collected', 'channel' => 'phone']);
 		$agent = $this->user(uid: 'agent');
 
-		$saved = $this->activation->activate(register: $this->register, schema: $this->schema, draftId: 'd1', owner: DraftOwner::ofUser(user: $agent));
+		$saved = $this->activation->activate(promotion: new DraftPromotion(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'), owner: DraftOwner::ofUser(user: $agent)));
 
 		// The same object, now active: the real policy let the status move.
 		$this->assertSame('d1', $saved->getUuid());
@@ -346,13 +349,13 @@ class DraftActivationTest extends TestCase {
 		$this->store(uuid: 'd1', owner: 'agent', status: 'draft', data: ['subject' => 'A', 'channel' => 'phone']);
 		$this->store(uuid: 'd2', owner: 'agent', status: 'draft', data: ['subject' => 'B', 'channel' => 'phone']);
 
-		$saved = $this->activation->activateAsUser(register: $this->register, schema: $this->schema, draftId: 'd1', user: $this->user(uid: 'agent'), changes: ['channel' => 'email']);
+		$saved = $this->activation->activateAsUser(new UserDraftActivation(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'), user: $this->user(uid: 'agent'), changes: ['channel' => 'email']));
 		$this->assertSame('active', $saved->getStatus());
 		$this->assertSame('email', $this->saves[0]['object']['channel']);
 
 		// Control: another user is refused through the same door.
 		try {
-			$this->activation->activateAsUser(register: $this->register, schema: $this->schema, draftId: 'd2', user: $this->user(uid: 'colleague'));
+			$this->activation->activateAsUser(new UserDraftActivation(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd2'), user: $this->user(uid: 'colleague')));
 			$this->fail('A colleague made somebody else\'s draft definitive.');
 		} catch (DraftActivationRefusedException $refused) {
 			$this->assertSame(403, $refused->getStatus());
@@ -366,7 +369,7 @@ class DraftActivationTest extends TestCase {
 		$this->store(uuid: 'd1', owner: 'agent', status: 'draft', data: ['subject' => 'A', 'channel' => 'phone']);
 		$other = $this->store(uuid: 'd2', owner: 'agent', status: 'draft', data: ['subject' => 'B', 'channel' => 'phone']);
 
-		$this->activation->activate(register: $this->register, schema: $this->schema, draftId: 'd1', owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')));
+		$this->activation->activate(promotion: new DraftPromotion(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'), owner: DraftOwner::ofUser(user: $this->user(uid: 'agent'))));
 
 		// Control: a plain save that asks for `active` is still refused, for another draft and for any later write.
 		$this->expectException(ValidationException::class);
@@ -444,11 +447,11 @@ class DraftActivationTest extends TestCase {
 
 		// Control: with the two values sent, the same stored nulls stand in nobody's way.
 		$saved = $this->activation->activate(
-			register: $this->register,
-			schema: $this->schema,
-			draftId: 'd1',
-			owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')),
-			changes: ['subject' => 'Bin not collected', 'channel' => 'phone']
+			promotion: new DraftPromotion(
+				address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'),
+				owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')),
+				changes: ['subject' => 'Bin not collected', 'channel' => 'phone']
+			)
 		);
 		$this->assertSame('active', $saved->getStatus());
 		$this->assertArrayNotHasKey('priority', $this->saves[0]['object']);
@@ -472,11 +475,11 @@ class DraftActivationTest extends TestCase {
 		$this->store(uuid: 'd1', owner: 'agent', status: 'draft', data: ['subject' => 'Old subject']);
 
 		$saved = $this->activation->activate(
-			register: $this->register,
-			schema: $this->schema,
-			draftId: 'd1',
-			owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')),
-			changes: ['subject' => 'New subject', 'channel' => 'email', '@self' => ['owner' => 'somebody-else', 'status' => 'draft'], 'id' => 'another-id']
+			promotion: new DraftPromotion(
+				address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'),
+				owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')),
+				changes: ['subject' => 'New subject', 'channel' => 'email', '@self' => ['owner' => 'somebody-else', 'status' => 'draft'], 'id' => 'another-id']
+			)
 		);
 
 		$this->assertSame('active', $saved->getStatus());
@@ -549,7 +552,7 @@ class DraftActivationTest extends TestCase {
 	public function testAScopeValueOwnerActivatesItsOwnDraft(): void {
 		$this->store(uuid: 'p1', owner: 'portal:subject-1', status: 'draft', data: ['subject' => 'A', 'channel' => 'counter']);
 
-		$saved = $this->activation->activate(register: $this->register, schema: $this->schema, draftId: 'p1', owner: DraftOwner::portalSubject(subjectRef: 'subject-1'));
+		$saved = $this->activation->activate(promotion: new DraftPromotion(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'p1'), owner: DraftOwner::portalSubject(subjectRef: 'subject-1')));
 
 		$this->assertSame('active', $saved->getStatus());
 		$this->assertFalse($this->saves[0]['rbac']);
@@ -584,7 +587,7 @@ class DraftActivationTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('database gone');
-		$this->activation->activate(register: $this->register, schema: $this->schema, draftId: 'd1', owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')));
+		$this->activation->activate(promotion: new DraftPromotion(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'), owner: DraftOwner::ofUser(user: $this->user(uid: 'agent'))));
 	}//end testAnOutageIsRethrown()
 
 	/**
@@ -593,7 +596,7 @@ class DraftActivationTest extends TestCase {
 	public function testTheDraftIsReadInItsOwnRegisterAndSchema(): void {
 		$this->store(uuid: 'd1', owner: 'agent', status: 'draft', data: ['subject' => 'A', 'channel' => 'phone']);
 
-		$this->activation->activate(register: $this->register, schema: $this->schema, draftId: 'd1', owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')));
+		$this->activation->activate(promotion: new DraftPromotion(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'), owner: DraftOwner::ofUser(user: $this->user(uid: 'agent'))));
 
 		$this->assertSame(['id' => 'd1', 'rbac' => false, 'register' => $this->register, 'schema' => $this->schema], $this->finds[0]);
 	}//end testTheDraftIsReadInItsOwnRegisterAndSchema()
@@ -659,7 +662,7 @@ class DraftActivationTest extends TestCase {
 		);
 		$this->store(uuid: 'd1', owner: 'agent', status: 'draft', data: ['subject' => 'A', 'channel' => 'phone']);
 
-		$saved = $this->activation->activate(register: $this->register, schema: $this->schema, draftId: 'd1', owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')));
+		$saved = $this->activation->activate(promotion: new DraftPromotion(address: new DraftAddress(register: $this->register, schema: $this->schema, draftId: 'd1'), owner: DraftOwner::ofUser(user: $this->user(uid: 'agent'))));
 
 		$this->assertSame('active', $saved->getStatus());
 	}//end testAGeneratedRequiredIdentifierDoesNotBlockActivation()

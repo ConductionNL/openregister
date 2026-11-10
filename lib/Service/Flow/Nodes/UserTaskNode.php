@@ -170,11 +170,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 		$this->l10n       = $presentation->l10n;
 		$this->urls       = $presentation->urls;
 		$this->config     = new UserTaskConfig(l10n: $this->l10n, forms: $services->forms);
-		$this->performers = new UserTaskPerformers(
-			config: $this->config,
-			principals: $hooks->principals,
-			events: $hooks->events
-		);
+		$this->performers = new UserTaskPerformers(config: $this->config, hooks: $hooks);
 
 	}//end __construct()
 
@@ -335,6 +331,23 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 			return $items;
 		}
 
+		$resume = $this->resumeSlot(context: $context);
+
+		return $this->pass(step: new UserTaskStep(items: $items, config: $config, context: $context, nodeId: $resume->nodeId()), resume: $resume);
+	}//end execute()
+
+	/**
+	 * The node's resume slot, which a user task cannot run without.
+	 *
+	 * @param array<string, mixed> $context Run-level metadata.
+	 *
+	 * @return FlowNodeResumeState The slot.
+	 *
+	 * @throws RuntimeException When the run gave the node no slot.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	private function resumeSlot(array $context): FlowNodeResumeState {
 		$resume = ($context[FlowNodeResumeState::CONTEXT_KEY] ?? null);
 		if ($resume instanceof FlowNodeResumeState === false) {
 			// Without a slot there is nowhere to record that the task exists,
@@ -343,17 +356,33 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 			throw new RuntimeException('openregister.user-task needs a node resume slot; without one every heartbeat would create a task.');
 		}
 
-		$step = new UserTaskStep(items: $items, config: $config, context: $context, nodeId: $resume->nodeId());
+		return $resume;
+	}//end resumeSlot()
 
+	/**
+	 * Create the task on the first pass, or route on the outcome of the one in the slot.
+	 *
+	 * @param UserTaskStep        $step   The step's items, configuration, context and node.
+	 * @param FlowNodeResumeState $resume The node's slot.
+	 *
+	 * @return array The items, each carrying the outcome bag.
+	 *
+	 * @throws FlowSuspension While the task is not terminal.
+	 * @throws FlowStop When rejected and the step asked to fail on rejection.
+	 * @throws RuntimeException When its task is gone.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	private function pass(UserTaskStep $step, FlowNodeResumeState $resume): array {
 		$taskUuid = trim((string)$resume->get(key: FlowTaskBridge::SLOT_TASK_UUID, default: ''));
 		if ($taskUuid === '') {
 			$this->createTask(step: $step, resume: $resume);
 
-			throw $this->suspension(config: $config, items: $items);
+			throw $this->suspension(config: $step->config, items: $step->items);
 		}
 
 		return $this->answerFromTask(step: $step, taskUuid: $taskUuid);
-	}//end execute()
+	}//end pass()
 
 	/**
 	 * Read the task this step is waiting on: suspend again until it is terminal, then place its outcome.

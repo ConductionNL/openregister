@@ -46,8 +46,6 @@ use OCA\OpenRegister\Db\SchemaChangelog;
 use OCA\OpenRegister\Db\SchemaChangelogMapperInterface;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Db\SchemaRunEntry;
-use OCA\OpenRegister\Db\SchemaRunEntryMapperInterface;
-use OCA\OpenRegister\Db\SchemaRunMapperInterface;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -57,24 +55,27 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaVersioningService {
 	/**
+	 * Pure diff/classification: constructor-less, so it is built here, not injected.
+	 *
+	 * @var SchemaDiffService
+	 */
+	private readonly SchemaDiffService $diffService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SchemaDiffService $diffService Pure diff/classification.
 	 * @param SchemaChangelogMapperInterface $changelogMapper Changelog persistence.
-	 * @param SchemaRunMapperInterface $runMapper Run persistence (for invalid counts).
-	 * @param SchemaRunEntryMapperInterface $runEntryMapper Per-object run entries.
-	 * @param IUserSession $userSession Current user resolution.
-	 * @param LoggerInterface $logger Logger.
+	 * @param SchemaPopulationRuns           $runs            The run ledger (for invalid counts).
+	 * @param IUserSession                   $userSession     Current user resolution.
+	 * @param LoggerInterface                $logger          Logger.
 	 */
 	public function __construct(
-		private readonly SchemaDiffService $diffService,
 		private readonly SchemaChangelogMapperInterface $changelogMapper,
-		private readonly SchemaRunMapperInterface $runMapper,
-		private readonly SchemaRunEntryMapperInterface $runEntryMapper,
+		private readonly SchemaPopulationRuns $runs,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->diffService = new SchemaDiffService();
 	}//end __construct()
 
 	/**
@@ -98,11 +99,10 @@ class SchemaVersioningService {
 	}//end classify()
 
 	/**
-	 * Enforce the breaking-change acknowledgement gate.
+	 * Enforce the breaking-change acknowledgement gate on a change record.
 	 *
-	 * @param SchemaChangeSet $changeSet The classified change set.
-	 * @param bool $acknowledged Whether acknowledgeBreaking was set.
-	 * @param int $schemaId The schema id (for invalid-count lookup).
+	 * @param int                $schemaId The schema id (for invalid-count lookup).
+	 * @param SchemaChangeRecord $record   The change set and whether it was acknowledged.
 	 *
 	 * @return void
 	 *
@@ -110,21 +110,21 @@ class SchemaVersioningService {
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
-	public function enforceGate(SchemaChangeSet $changeSet, bool $acknowledged, int $schemaId): void {
-		if ($changeSet->isBreaking() === false) {
+	public function gateChange(int $schemaId, SchemaChangeRecord $record): void {
+		if ($record->changeSet->isBreaking() === false) {
 			return;
 		}
 
-		if ($acknowledged === true) {
+		if ($record->acknowledged === true) {
 			return;
 		}
 
 		throw new BreakingSchemaChangeException(
-			changes: $changeSet->getChanges(),
+			changes: $record->changeSet->getChanges(),
 			invalidCount: $this->latestInvalidCount(schemaId: $schemaId)
 		);
 
-	}//end enforceGate()
+	}//end gateChange()
 
 	/**
 	 * Compute the next version for a schema given a change set.
@@ -141,55 +141,42 @@ class SchemaVersioningService {
 	}//end nextVersion()
 
 	/**
-	 * Record a changelog entry for an applied schema update.
+	 * Record a changelog entry for an applied schema change.
 	 *
 	 * No entry is written for a metadata-only (no structural change) update.
 	 *
-	 * @param int $schemaId The schema id.
-	 * @param string|null $version The resulting version.
-	 * @param SchemaChangeSet $changeSet The classified change set.
-	 * @param bool $acknowledged Whether the change was acknowledged.
-	 * @param string|null $origin Where the change came from (import, agent tool, source merge), for the log.
+	 * @param int                $schemaId The schema id.
+	 * @param SchemaChangeRecord $record   The change set, acknowledgement, resulting version and origin.
 	 *
 	 * @return SchemaChangelog|null The recorded entry, or null for a no-op.
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
-	public function recordChangelog(
-		int $schemaId,
-		?string $version,
-		SchemaChangeSet $changeSet,
-		bool $acknowledged,
-		?string $origin = null
-	): ?SchemaChangelog {
-		if ($changeSet->hasChanges() === false) {
+	public function recordChange(int $schemaId, SchemaChangeRecord $record): ?SchemaChangelog {
+		if ($record->changeSet->hasChanges() === false) {
 			return null;
 		}
 
-		$data = $this->changelogData(schemaId: $schemaId, version: $version, changeSet: $changeSet);
+		$data = $this->changelogData(schemaId: $schemaId, record: $record);
 
-		return $this->persistChangelog(
-			data: $this->withAcknowledgement(data: $data, changeSet: $changeSet, acknowledged: $acknowledged, origin: $origin)
-		);
-	}//end recordChangelog()
+		return $this->persistChangelog(data: $this->withAcknowledgement(data: $data, record: $record));
+	}//end recordChange()
 
 	/**
 	 * A breaking change's changelog fields with who acknowledged it, or warned about when nobody did.
 	 *
-	 * @param array<string, mixed> $data         The changelog fields.
-	 * @param SchemaChangeSet      $changeSet    The classified change set.
-	 * @param bool                 $acknowledged Whether the change was acknowledged.
-	 * @param string|null          $origin       Where the change came from, for the warning.
+	 * @param array<string, mixed> $data   The changelog fields.
+	 * @param SchemaChangeRecord   $record The change set, acknowledgement and origin.
 	 *
 	 * @return array<string, mixed> The fields to record.
 	 */
-	private function withAcknowledgement(array $data, SchemaChangeSet $changeSet, bool $acknowledged, ?string $origin): array {
-		if ($changeSet->isBreaking() === false) {
+	private function withAcknowledgement(array $data, SchemaChangeRecord $record): array {
+		if ($record->changeSet->isBreaking() === false) {
 			return $data;
 		}
 
-		if ($acknowledged === false) {
-			$this->warnUnacknowledged(data: $data, origin: $origin);
+		if ($record->acknowledged === false) {
+			$this->warnUnacknowledged(data: $data, origin: $record->origin);
 			return $data;
 		}
 
@@ -202,18 +189,17 @@ class SchemaVersioningService {
 	/**
 	 * The changelog fields every recorded change carries.
 	 *
-	 * @param int             $schemaId  The schema id.
-	 * @param string|null     $version   The resulting version.
-	 * @param SchemaChangeSet $changeSet The classified change set.
+	 * @param int                $schemaId The schema id.
+	 * @param SchemaChangeRecord $record   The change set and resulting version.
 	 *
 	 * @return array<string, mixed> The fields.
 	 */
-	private function changelogData(int $schemaId, ?string $version, SchemaChangeSet $changeSet): array {
+	private function changelogData(int $schemaId, SchemaChangeRecord $record): array {
 		return [
 			'schemaId' => $schemaId,
-			'version' => $version,
-			'classification' => $changeSet->getClassification(),
-			'changes' => $changeSet->getChanges(),
+			'version' => $record->version,
+			'classification' => $record->changeSet->getClassification(),
+			'changes' => $record->changeSet->getChanges(),
 			'actor' => $this->currentActor(),
 		];
 	}//end changelogData()
@@ -272,7 +258,7 @@ class SchemaVersioningService {
 	 */
 	private function latestInvalidCount(int $schemaId): ?int {
 		try {
-			$runs = $this->runMapper->findBySchema($schemaId, 25);
+			$runs = $this->runs->runMapper->findBySchema($schemaId, 25);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -311,7 +297,7 @@ class SchemaVersioningService {
 		}
 
 		try {
-			return count($this->runEntryMapper->findByRun(runId: $run->getId(), filter: new OutcomeFilter(outcome: SchemaRunEntry::OUTCOME_INVALID)));
+			return count($this->runs->runEntryMapper->findByRun(runId: $run->getId(), filter: new OutcomeFilter(outcome: SchemaRunEntry::OUTCOME_INVALID)));
 		} catch (\Throwable $e) {
 			return null;
 		}

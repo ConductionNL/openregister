@@ -40,62 +40,6 @@ use OCP\EventDispatcher\Event;
 class ObjectTransitionedEvent extends Event {
 
 	/**
-	 * Object after the transition (lifecycle field is `to`).
-	 *
-	 * @var ObjectEntity
-	 */
-	private ObjectEntity $object;
-
-	/**
-	 * Action name from the transition table (e.g. "publish").
-	 *
-	 * @var string
-	 */
-	private string $action;
-
-	/**
-	 * Lifecycle state value before the transition.
-	 *
-	 * @var string
-	 */
-	private string $from;
-
-	/**
-	 * Lifecycle state value after the transition.
-	 *
-	 * @var string
-	 */
-	private string $to;
-
-	/**
-	 * Caller uid (null when the transition was applied by a system process).
-	 *
-	 * @var string|null
-	 */
-	private ?string $userId;
-
-	/**
-	 * Register slug.
-	 *
-	 * @var string
-	 */
-	private string $register;
-
-	/**
-	 * Schema slug.
-	 *
-	 * @var string
-	 */
-	private string $schema;
-
-	/**
-	 * Whether a rule made this move rather than a caller asking for it.
-	 *
-	 * @var boolean
-	 */
-	private bool $automatic;
-
-	/**
 	 * Capture the post-transition state for downstream listeners.
 	 *
 	 * @param ObjectEntity $object Object after the transition.
@@ -119,24 +63,16 @@ class ObjectTransitionedEvent extends Event {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		ObjectEntity $object,
-		string $action,
-		string $from,
-		string $to,
-		?string $userId,
-		string $register,
-		string $schema,
-		bool $automatic = false,
+		private readonly ObjectEntity $object,
+		private readonly string $action,
+		private readonly string $from,
+		private readonly string $to,
+		private readonly ?string $userId,
+		private readonly string $register,
+		private readonly string $schema,
+		private readonly bool $automatic = false,
 	) {
 		parent::__construct();
-		$this->object = $object;
-		$this->action = $action;
-		$this->from = $from;
-		$this->to = $to;
-		$this->userId = $userId;
-		$this->register = $register;
-		$this->schema = $schema;
-		$this->automatic = $automatic;
 	}//end __construct()
 
 	/**

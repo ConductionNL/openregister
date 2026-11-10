@@ -38,8 +38,6 @@ use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
-use OCP\IGroupManager;
-use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -66,20 +64,6 @@ class TenantLifecycleService implements TenantLifecycleServiceInterface {
 	];
 
 	/**
-	 * Nextcloud group manager
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
-
-	/**
-	 * Nextcloud user manager, to look up the org admin
-	 *
-	 * @var IUserManager
-	 */
-	private readonly IUserManager $userManager;
-
-	/**
 	 * Constructor
 	 *
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
@@ -89,12 +73,10 @@ class TenantLifecycleService implements TenantLifecycleServiceInterface {
 	 */
 	public function __construct(
 		private readonly OrganisationMapperInterface $organisationMapper,
-		TenantDirectory $directory,
+		private readonly TenantDirectory $directory,
 		private readonly LoggerInterface $logger,
 		private readonly ?OrganisationLifecycleAuditor $auditor = null,
 	) {
-		$this->groupManager = $directory->groupManager;
-		$this->userManager = $directory->userManager;
 	}//end __construct()
 
 	/**
@@ -160,7 +142,8 @@ class TenantLifecycleService implements TenantLifecycleServiceInterface {
 
 		try {
 			$groupIds = $this->provisionGroups(slug: $slug, adminUserId: $adminUserId);
-			$this->activateWithDefaultAccess(organisation: $organisation, groupIds: $groupIds, adminUserId: $adminUserId);
+			$this->activateWithDefaultAccess(organisation: $organisation, groupIds: $groupIds);
+			$organisation->addUser($adminUserId);
 			$result = $this->organisationMapper->update($organisation);
 
 			$this->logger->info('[TenantLifecycleService] Organisation provisioned and activated', ['uuid' => $organisation->getUuid(), 'slug' => $slug]);
@@ -224,8 +207,8 @@ class TenantLifecycleService implements TenantLifecycleServiceInterface {
 		// Create default groups prefixed with org slug.
 		$groupIds = ['admin' => $slug . '-admin', 'users' => $slug . '-users'];
 		foreach ($groupIds as $groupId) {
-			if ($this->groupManager->groupExists($groupId) === false) {
-				$this->groupManager->createGroup($groupId);
+			if ($this->directory->groupManager->groupExists($groupId) === false) {
+				$this->directory->groupManager->createGroup($groupId);
 			}
 		}
 
@@ -244,13 +227,13 @@ class TenantLifecycleService implements TenantLifecycleServiceInterface {
 	 */
 	private function addAdminToGroups(array $groupIds, string $adminUserId): void {
 		// Add admin user to admin group.
-		$adminGroup = $this->groupManager->get($groupIds['admin']);
-		$usersGroup = $this->groupManager->get($groupIds['users']);
+		$adminGroup = $this->directory->groupManager->get($groupIds['admin']);
+		$usersGroup = $this->directory->groupManager->get($groupIds['users']);
 		if ($adminGroup === null) {
 			return;
 		}
 
-		$user = $this->userManager->get($adminUserId);
+		$user = $this->directory->userManager->get($adminUserId);
 		if ($user === null) {
 			return;
 		}
@@ -260,23 +243,21 @@ class TenantLifecycleService implements TenantLifecycleServiceInterface {
 	}//end addAdminToGroups()
 
 	/**
-	 * Set the groups, the default authorization and the admin member, and mark the organisation active.
+	 * Set the groups and the default authorization, and mark the organisation active.
+	 *
+	 * The caller adds the admin member.
 	 *
 	 * @param Organisation                        $organisation The organisation.
 	 * @param array{admin: string, users: string} $groupIds     The group ids.
-	 * @param string                              $adminUserId  The admin user id.
 	 *
 	 * @return void
 	 */
-	private function activateWithDefaultAccess(Organisation $organisation, array $groupIds, string $adminUserId): void {
+	private function activateWithDefaultAccess(Organisation $organisation, array $groupIds): void {
 		// Set organisation groups.
 		$organisation->setGroups([$groupIds['admin'], $groupIds['users']]);
 
 		// Set default authorization RBAC rules.
 		$organisation->setAuthorization($this->defaultAuthorization(authorization: $organisation->getAuthorization(), groupIds: $groupIds));
-
-		// Add admin user to organisation.
-		$organisation->addUser($adminUserId);
 
 		// Transition to active.
 		$organisation->setStatus(self::STATUS_ACTIVE);

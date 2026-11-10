@@ -31,6 +31,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
 
 /**
  * The search index under administration, from the command line.
@@ -108,18 +109,13 @@ class SearchIndexCommand extends Command {
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$action = (string)$input->getArgument('action');
-		$apply = (bool)$input->getOption('apply');
-		$registerOption = $input->getOption('register');
-		$registerId = null;
-		if ($registerOption !== null) {
-			$registerId = (int)$registerOption;
-		}
+		$run = new IndexMaintenanceRun(input: $input, output: $output);
 
 		try {
 			return match ($action) {
-				'rebuild' => $this->rebuild(output: $output, registerId: $registerId, apply: $apply),
-				'snapshot' => $this->snapshot(input: $input, output: $output, registerId: $registerId),
-				'restore' => $this->restore(input: $input, output: $output, apply: $apply),
+				'rebuild' => $this->rebuild(run: $run),
+				'snapshot' => $this->snapshot(run: $run),
+				'restore' => $this->restore(run: $run),
 				'status' => $this->status(output: $output),
 				default => $this->unknownAction(output: $output, action: $action),
 			};
@@ -132,20 +128,17 @@ class SearchIndexCommand extends Command {
 	/**
 	 * Rebuild the indexes, reporting each one as it goes.
 	 *
-	 * @param OutputInterface $output     The console output.
-	 * @param int|null        $registerId Limit to one register.
-	 * @param bool            $apply      Whether to actually rebuild.
+	 * @param IndexMaintenanceRun $run The run: output, --register and --apply.
 	 *
 	 * @return int 0 when nothing failed.
 	 */
-	private function rebuild(OutputInterface $output, ?int $registerId, bool $apply): int {
-		$report = $this->maintenance->rebuild(
-			registerId: $registerId,
-			apply: $apply,
-			progress: static function (string $table, string $index, int $position, int $total) use ($output): void {
-				$output->writeln("  [{$position}/{$total}] {$table} · {$index}");
-			}
-		);
+	private function rebuild(IndexMaintenanceRun $run): int {
+		$output = $run->output;
+		$apply  = $run->apply();
+		$progress = static function (string $table, string $index, int $position, int $total) use ($output): void {
+			$output->writeln("  [{$position}/{$total}] {$table} · {$index}");
+		};
+		$report   = $this->maintenance->rebuild(registerId: $run->registerId(), pass: new SearchIndexPass(apply: $apply, progress: $progress));
 
 		if (($report['state'] ?? '') === 'refused') {
 			$output->writeln('<error>' . ($report['reason'] ?? 'Refused.') . '</error>');
@@ -179,21 +172,19 @@ class SearchIndexCommand extends Command {
 	/**
 	 * Write a snapshot of the index definitions.
 	 *
-	 * @param InputInterface  $input      The console input.
-	 * @param OutputInterface $output     The console output.
-	 * @param int|null        $registerId Limit to one register.
+	 * @param IndexMaintenanceRun $run The run: output, --file and --register.
 	 *
 	 * @return int 0 on success.
 	 */
-	private function snapshot(InputInterface $input, OutputInterface $output, ?int $registerId): int {
-		$path = $input->getOption('file');
+	private function snapshot(IndexMaintenanceRun $run): int {
+		$path = $run->file();
 		if ($path === null) {
-			$output->writeln('<error>snapshot needs --file.</error>');
+			$run->output->writeln('<error>snapshot needs --file.</error>');
 			return 1;
 		}
 
-		$report = $this->maintenance->snapshot(path: (string)$path, registerId: $registerId);
-		$output->writeln(
+		$report = $this->maintenance->snapshot(path: $path, registerId: $run->registerId());
+		$run->output->writeln(
 			"Wrote {$report['indexes']} index definitions over {$report['tables']} tables to {$report['path']}"
 		);
 
@@ -203,20 +194,20 @@ class SearchIndexCommand extends Command {
 	/**
 	 * Recreate from a snapshot whatever the database is missing.
 	 *
-	 * @param InputInterface  $input  The console input.
-	 * @param OutputInterface $output The console output.
-	 * @param bool            $apply  Whether to actually create.
+	 * @param IndexMaintenanceRun $run The run: output, --file and --apply.
 	 *
 	 * @return int 0 when nothing failed.
 	 */
-	private function restore(InputInterface $input, OutputInterface $output, bool $apply): int {
-		$path = $input->getOption('file');
+	private function restore(IndexMaintenanceRun $run): int {
+		$output = $run->output;
+		$path   = $run->file();
 		if ($path === null) {
 			$output->writeln('<error>restore needs --file.</error>');
 			return 1;
 		}
 
-		$report = $this->maintenance->restore(path: (string)$path, apply: $apply);
+		$apply  = $run->apply();
+		$report = $this->maintenance->restore(path: $path, apply: $apply);
 		$output->writeln("Missing: {$report['missing']}, created: {$report['created']}");
 
 		foreach (($report['indexes'] ?? []) as $entry) {

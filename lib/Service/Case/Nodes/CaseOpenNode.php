@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Case\Nodes;
 
 use OCA\OpenRegister\Exception\CasePlanExistsException;
+use OCA\OpenRegister\Service\Case\CasePlanCreation;
 use UnexpectedValueException;
 
 /**
@@ -142,31 +143,25 @@ class CaseOpenNode extends CaseNodeBase implements CaseOpenNodeInterface {
 	 */
 	public function execute(array $items, array $config, array $context): array {
 		$definition = ($config['definition'] ?? null);
-		$work = fn (array $target, string $uid): array => $this->open(target: $target, definition: $definition, uid: $uid);
+		$work = fn (CaseStepCall $call): array => $this->open(call: $call, definition: $definition);
 
-		return $this->perTarget(items: $items, config: $config, context: $context, work: $work);
+		return $this->perTarget(run: new CaseStepRun(items: $items, config: $config, context: $context), work: $work);
 	}//end execute()
 
 	/**
 	 * Create the plan, or report that one exists.
 	 *
-	 * @param array{uuid: string, register: int|null, schema: int|null} $target The object.
-	 * @param array $definition The plan.
-	 * @param string $uid The acting identity.
+	 * @param CaseStepCall $call       The object and the acting identity.
+	 * @param array        $definition The plan.
 	 *
 	 * @return array{opened: bool, reason: string} What happened.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
-	private function open(array $target, array $definition, string $uid): array {
+	private function open(CaseStepCall $call, array $definition): array {
+		$target = $call->target;
 		try {
-			$this->plans->createPlan(
-				objectUuid: $target['uuid'],
-				registerId: $target['register'],
-				schemaId: $target['schema'],
-				definition: $definition,
-				uid: $uid
-			);
+			$this->steps->plans->createPlan(creation: new CasePlanCreation(anchor: $target, definition: $definition, actor: $call->uid));
 		} catch (CasePlanExistsException) {
 			return ['opened' => false, 'reason' => 'exists'];
 		}

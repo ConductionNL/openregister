@@ -228,7 +228,17 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 	 *   object-independent so they are intentionally unused.
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		$bsn = trim((string)($filters['_search'] ?? ''));
+		return $this->personenFor(bsn: trim((string)($filters['_search'] ?? '')));
+	}//end list()
+
+	/**
+	 * The persons the BRP returns for one BSN; none for an empty BSN.
+	 *
+	 * @param string $bsn The BSN searched for, trimmed.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function personenFor(string $bsn): array {
 		if ($bsn === '') {
 			return [];
 		}
@@ -244,7 +254,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 		);
 
 		return $this->extractPersonen(response: $response);
-	}//end list()
+	}//end personenFor()
 
 	/**
 	 * Look up a single person by Burgerservicenummer (BSN).

@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowTestRunControllerServices;
-use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
-use OCA\OpenRegister\Service\Flow\FlowItems;
-use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
+use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
@@ -80,16 +80,14 @@ class FlowTestRunController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string            $appName     The app id.
 	 * @param IRequest          $request     The request.
 	 * @param FlowTestRunControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FlowTestRunControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->runner = $services->runner;
 		$this->resolvers = $services->resolvers;
 		$this->userSession = $services->userSession;
@@ -206,7 +204,7 @@ class FlowTestRunController extends Controller {
 				seedItems: $seed,
 				startAt: $startAt
 			);
-		} catch (FlowLifecycleRefused $e) {
+		} catch (FlowLifecycleRefusedInterface $e) {
 			return new JSONResponse(
 				[
 					'error' => $e->getMessage(),
@@ -216,7 +214,7 @@ class FlowTestRunController extends Controller {
 				],
 				Http::STATUS_CONFLICT
 			);
-		} catch (FlowDeadEnd $e) {
+		} catch (FlowDeadEndInterface $e) {
 			return new JSONResponse(
 				['error' => $e->getMessage(), 'reason' => 'dead-end', 'flowId' => $flowId],
 				Http::STATUS_CONFLICT
@@ -244,10 +242,6 @@ class FlowTestRunController extends Controller {
 	 * The items a test run is seeded with, normalised, or null when none are sent.
 	 *
 	 * @return array|null
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::normalise is a pure
-	 * value-normaliser with no state to inject; wrapping it in a collaborator
-	 * would add a constructor dependency to say the same thing.
 	 */
 	private function seedItemsParam(): array|null {
 		$seedParam = $this->request->getParam('seedItems');
@@ -255,6 +249,6 @@ class FlowTestRunController extends Controller {
 			return null;
 		}
 
-		return FlowItems::normalise(value: $seedParam);
+		return $this->runner->seedItemsFrom(value: $seedParam);
 	}//end seedItemsParam()
 }//end class

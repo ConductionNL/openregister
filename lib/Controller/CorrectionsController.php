@@ -26,15 +26,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\CorrectionsControllerServices;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\CorrectionServiceInterface;
 use OCA\OpenRegister\Service\Object\CorrectionTarget;
+use OCA\OpenRegister\Service\Object\CorrectionTargetsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Throwable;
 
 /**
  * Class CorrectionsController
@@ -48,24 +53,44 @@ use OCP\IUserSession;
 class CorrectionsController extends Controller {
 
 	/**
-	 * Constructor for the CorrectionsController.
+	 * The correction act.
 	 *
-	 * @param string $appName The name of the app.
-	 * @param IRequest $request The request object.
-	 * @param CorrectionServiceInterface $corrections The correction act.
-	 * @param IUserSession $userSession The user session.
+	 * @var CorrectionServiceInterface
+	 */
+	private readonly CorrectionServiceInterface $corrections;
+
+	/**
+	 * Names the record a correction is made on.
+	 *
+	 * @var CorrectionTargetsInterface
+	 */
+	private readonly CorrectionTargetsInterface $targets;
+
+	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest $request HTTP request.
+	 * @param CorrectionsControllerServices $services The corrections controller services.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly CorrectionServiceInterface $corrections,
-		private readonly IUserSession $userSession,
+		CorrectionsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->corrections = $services->corrections;
+		$this->targets = $services->targets;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**
@@ -94,6 +119,21 @@ class CorrectionsController extends Controller {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function correct(string $register, string $schema, string $id): JSONResponse {
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
+
+		return $this->correctionOf(target: $this->targets->forRecord(ref: $ref));
+	}//end correct()
+
+	/**
+	 * Correct the named record with the body's values, after the caller and body checks.
+	 *
+	 * @param CorrectionTarget $target The record the route names.
+	 *
+	 * @return JSONResponse The corrected record and its entry, or the refusal.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function correctionOf(CorrectionTarget $target): JSONResponse {
 		// `#[NoAdminRequired]` means "not only admins", never "no account".
 		// The right itself is checked in the service, so the two doors to a
 		// correction cannot disagree about who may open one.
@@ -109,12 +149,22 @@ class CorrectionsController extends Controller {
 			);
 		}
 
+		return $this->applyCorrection(target: $target, values: $values);
+	}//end correctionOf()
+
+	/**
+	 * Apply a correction and answer with the record and its audit entry.
+	 *
+	 * @param CorrectionTarget     $target The record the route names.
+	 * @param array<string, mixed> $values The corrected values.
+	 *
+	 * @return JSONResponse The corrected record and its entry, or the refusal.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function applyCorrection(CorrectionTarget $target, array $values): JSONResponse {
 		try {
-			$result = $this->corrections->correct(
-				target: new CorrectionTarget(register: $register, schema: $schema, id: $id),
-				values: $values,
-				reason: $this->request->getParam('reason')
-			);
+			$result = $this->corrections->correct(target: $target, values: $values, reason: $this->request->getParam('reason'));
 
 			return new JSONResponse(
 				data: [
@@ -122,15 +172,34 @@ class CorrectionsController extends Controller {
 					'audit' => $result['audit']?->jsonSerialize(),
 				]
 			);
-		} catch (CorrectionRefusedException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403);
-		} catch (DoesNotExistException $e) {
+		} catch (Throwable $e) {
+			return $this->correctionFailure(error: $e);
+		}
+	}//end applyCorrection()
+
+	/**
+	 * The answer to a failed correction: the refusal under its status, anything else an opaque 500.
+	 *
+	 * @param Throwable $error The failure.
+	 *
+	 * @return JSONResponse The refusal.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function correctionFailure(Throwable $error): JSONResponse {
+		if ($error instanceof CorrectionRefusedException) {
+			return new JSONResponse(data: ['error' => $error->getMessage()], statusCode: 400);
+		}
+
+		if ($error instanceof NotAuthorizedException) {
+			return new JSONResponse(data: ['error' => $error->getMessage()], statusCode: 403);
+		}
+
+		if ($error instanceof DoesNotExistException) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-		} catch (\Throwable $e) {
-			// SEC-CTRL-7: never leak internal exception detail on a 500.
-			return new JSONResponse(data: ['error' => 'Internal server error'], statusCode: 500);
-		}//end try
-	}//end correct()
+		}
+
+		// SEC-CTRL-7: never leak internal exception detail on a 500.
+		return new JSONResponse(data: ['error' => 'Internal server error'], statusCode: 500);
+	}//end correctionFailure()
 }//end class

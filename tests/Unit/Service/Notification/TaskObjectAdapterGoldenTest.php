@@ -26,6 +26,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskPayloadOptions;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -147,7 +148,7 @@ final class TaskObjectAdapterGoldenTest extends TestCase {
 			'register' => $adapter->getRegister(),
 			'name' => $adapter->getName(),
 			'object' => (new \ReflectionProperty($adapter, 'object'))->getValue($adapter),
-			'payload' => TaskObjectAdapter::payload($task, $row, $extra),
+			'payload' => TaskObjectAdapter::payload($task, new TaskPayloadOptions($row, $extra)),
 		];
 
 		if (getenv('OR_GOLDEN_WRITE') === '1') {

@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -60,11 +61,9 @@ class MagicBulkHandlerRawAppendTest extends TestCase {
 
 		// A REAL normaliser: the point of the expiry test is the stored format.
 		$this->handler = new MagicBulkHandler(
-			$this->db,
-			$logger,
+			new MagicTableSql($this->db, $this->createMock(IConfig::class), $logger),
 			$this->createMock(IEventDispatcher::class),
-			new DateTimeNormalizer($logger),
-			$this->createMock(IConfig::class)
+			new DateTimeNormalizer($logger)
 		);
 
 		$this->register = new Register();

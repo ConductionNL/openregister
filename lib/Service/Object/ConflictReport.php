@@ -52,6 +52,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -100,14 +102,28 @@ class ConflictReport implements ConflictReportInterface {
 	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
 	public function build(ObjectEntity $stored, Schema $schema, array $sent, array $intervening): array {
-		$current = $stored->getMatchEnvelope();
-		$conflicts = $this->conflictsOf(
+		$run = new ConflictRun(
 			schema: $schema,
-			current: $current,
+			current: $stored->getMatchEnvelope(),
 			sent: $sent,
 			changedByOthers: $this->changedByOthers(intervening: $intervening)
 		);
-		$cause = $this->causeOf(entry: ($intervening[0] ?? null));
+
+		return $this->body(run: $run, cause: $this->causeOf(entry: ($intervening[0] ?? null)));
+	}//end build()
+
+	/**
+	 * The 409 body of one refused write.
+	 *
+	 * @param ConflictRun                                           $run   The refused write and what others changed.
+	 * @param array{changedBy: string|null, changedAt: string|null} $cause Who made the first intervening write, and when.
+	 *
+	 * @return array<string, mixed> The 409 body.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 */
+	private function body(ConflictRun $run, array $cause): array {
+		$conflicts = $this->conflictsOf(run: $run);
 
 		return [
 			'error' => self::ERROR,
@@ -117,23 +133,22 @@ class ConflictReport implements ConflictReportInterface {
 			'changedBy' => $cause['changedBy'],
 			'changedAt' => $cause['changedAt'],
 		];
-	}//end build()
+	}//end body()
 
 	/**
 	 * The properties the caller changed that somebody else changed too, with their readings.
 	 *
-	 * @param Schema $schema          The schema.
-	 * @param array  $current         The stored object's match envelope.
-	 * @param array  $sent            What the caller sent.
-	 * @param array  $changedByOthers The value each intervening write found, per property.
+	 * @param ConflictRun $run The schema, the stored object, what the caller sent, and what others changed.
 	 *
 	 * @return array<string, array> The conflicts
 	 *
 	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
 	 */
-	private function conflictsOf(Schema $schema, array $current, array $sent, array $changedByOthers): array {
-		$conflicts = [];
-		foreach ($sent as $property => $sentValue) {
+	private function conflictsOf(ConflictRun $run): array {
+		$current         = $run->current;
+		$changedByOthers = $run->changedByOthers;
+		$conflicts       = [];
+		foreach ($run->sent as $property => $sentValue) {
 			$property = (string)$property;
 
 		// 🔑 BOTH HALVES OF THE INTERSECTION. The caller has to have
@@ -145,13 +160,7 @@ class ConflictReport implements ConflictReportInterface {
 				continue;
 			}
 
-			$conflicts[$property] = $this->readingsFor(
-				schema: $schema,
-				current: $current,
-				property: $property,
-				sentValue: $sentValue,
-				readValue: $changedByOthers[$property]
-			);
+			$conflicts[$property] = $this->readingsFor(run: $run, property: $property);
 		}
 
 		return $conflicts;
@@ -202,36 +211,43 @@ class ConflictReport implements ConflictReportInterface {
 	/**
 	 * The three readings of one property, filtered by what the caller may read.
 	 *
-	 * @param Schema               $schema    The schema.
-	 * @param array<string, mixed> $current   The stored object.
-	 * @param string               $property  The property.
-	 * @param mixed                $sentValue What the caller sent.
-	 * @param mixed                $readValue What was there when they read it.
+	 * @param ConflictRun $run      The schema, the stored object, what was sent and what others changed.
+	 * @param string      $property The property.
 	 *
 	 * @return array<string, mixed> The readings, or the withheld marker.
 	 *
 	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-the-conflict-body-discloses-no-more-than-a-read-would-req-cso-002
 	 */
-	private function readingsFor(
-		Schema $schema,
-		array $current,
-		string $property,
-		mixed $sentValue,
-		mixed $readValue,
-	): array {
-		if ($this->properties->canReadProperty(schema: $schema, property: $property, object: $current) === false) {
+	private function readingsFor(ConflictRun $run, string $property): array {
+		if ($this->properties->canReadProperty(property: new SchemaProperty(schema: $run->schema, name: $property), request: new PropertyAccessRequest(object: $run->current)) === false) {
 			// Named, valueless. The caller learns their write collided and
 			// learns nothing they could not have read.
 			return ['status' => self::WITHHELD];
 		}
 
+		return self::readings(run: $run, property: $property);
+	}//end readingsFor()
+
+	/**
+	 * The three readings of one conflicting property: sent, read and stored.
+	 *
+	 * What the caller sent, what was there when they read it, and what is stored now.
+	 *
+	 * @param ConflictRun $run      The refused write and what others changed.
+	 * @param string      $property The conflicting property.
+	 *
+	 * @return array<string, mixed> The readings.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 */
+	private static function readings(ConflictRun $run, string $property): array {
 		return [
 			'status' => 'conflict',
-			'sent' => $sentValue,
-			'read' => $readValue,
-			'stored' => ($current[$property] ?? null),
+			'sent' => $run->sent[$property],
+			'read' => $run->changedByOthers[$property],
+			'stored' => ($run->current[$property] ?? null),
 		];
-	}//end readingsFor()
+	}//end readings()
 
 	/**
 	 * Which properties the intervening writes touched, and what each was before.

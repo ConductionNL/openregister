@@ -1,7 +1,7 @@
 <?php
 
 /**
- * What a run starts from, as FlowEngine::run() received it.
+ * What a run starts from, as a caller hands it to FlowEngine::run().
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -79,6 +79,62 @@ final class FlowRunStart {
 	}//end __construct()
 
 	/**
+	 * Hand every step this run-level metadata.
+	 *
+	 * @param array<string, mixed> $context The metadata.
+	 *
+	 * @return self This start.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	public function withContext(array $context): self {
+		$this->context = $context;
+
+		return $this;
+	}//end withContext()
+
+	/**
+	 * Walk the run through this per-run stream collaborator.
+	 *
+	 * @param FlowStreamWalk|null $streams Claims before each firing, a locked delta commit after
+	 *                                     it; null walks a single in-memory stream.
+	 *
+	 * @return self This start.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md
+	 */
+	public function withStreams(?FlowStreamWalk $streams): self {
+		$this->streams = $streams;
+
+		return $this;
+	}//end withStreams()
+
+	/**
+	 * The same start, entering the graph at a chosen node instead of the flow's own start.
+	 *
+	 * The node overrides the flow's initial place, so a resume, whose marking
+	 * already comes from the store, is unaffected.
+	 *
+	 * @param string|null $node The node to start at; null or empty keeps the flow's start.
+	 *
+	 * @return self This start, or a copy that starts at the node.
+	 *
+	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 */
+	public function startingAt(?string $node): self {
+		if (($node ?? '') === '') {
+			return $this;
+		}
+
+		$flow = $this->flow;
+		$flow['initial'] = $node;
+
+		return (new self(flow: $flow, store: $this->store, subject: $this->subject, dispatcher: $this->dispatcher))
+			->withContext(context: $this->context)
+			->withStreams(streams: $this->streams);
+	}//end startingAt()
+
+	/**
 	 * The result of a run that could not start.
 	 *
 	 * @param string $error Why it could not.
@@ -126,7 +182,7 @@ final class FlowRunStart {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function streamPass(Workflow $workflow, FlowStreamWalk $streams): FlowStreamPass {
-		$pass = new FlowStreamPass(start: $this, workflow: $workflow, streams: $streams);
+		$pass = new FlowStreamPass(start: $this->withStreams(streams: $streams), workflow: $workflow);
 		$pass->items = $this->items;
 		$pass->placeItems = $this->placeItems;
 

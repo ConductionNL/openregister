@@ -28,9 +28,7 @@ use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
-use OCP\IUserManager;
 use OCP\IUserSession;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -51,77 +49,21 @@ use Psr\Log\LoggerInterface;
 class DeckCardService implements DeckCardServiceInterface {
 
 	/**
-	 * Deck link mapper.
-	 *
-	 * @var DeckLinkMapperInterface
-	 */
-	private readonly DeckLinkMapperInterface $deckLinkMapper;
-
-	/**
-	 * App manager.
-	 *
-	 * @var IAppManager
-	 */
-	private readonly IAppManager $appManager;
-
-	/**
-	 * User session.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * URL generator (webroot-aware deep links).
-	 *
-	 * @var IURLGenerator
-	 */
-	private readonly IURLGenerator $urlGenerator;
-
-	/**
-	 * User manager (assignee display names).
-	 *
-	 * @var IUserManager
-	 */
-	private readonly IUserManager $userManager;
-
-	/**
-	 * App container Deck's services are resolved from.
-	 *
-	 * @var ContainerInterface
-	 */
-	private readonly ContainerInterface $container;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param DeckLinkMapperInterface $deckLinkMapper Deck link mapper
-	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger
-	 * @param IURLGenerator $urlGenerator URL generator
-	 * @param DeckPlatform $deck User manager for assignee display names and the container Deck's services are resolved from
+	 * @param LinkServiceRuntime      $runtime        Whether the app is enabled, the current user, and the logger
+	 * @param IURLGenerator           $urlGenerator   URL generator (webroot-aware deep links)
+	 * @param DeckPlatform            $deck           User manager for assignee display names and the container Deck's services are resolved from
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		DeckLinkMapperInterface $deckLinkMapper,
-		LinkServiceRuntime $runtime,
-		IURLGenerator $urlGenerator,
-		DeckPlatform $deck,
+		private readonly DeckLinkMapperInterface $deckLinkMapper,
+		private readonly LinkServiceRuntime $runtime,
+		private readonly IURLGenerator $urlGenerator,
+		private readonly DeckPlatform $deck,
 	) {
-		$this->deckLinkMapper = $deckLinkMapper;
-		$this->appManager = $runtime->appManager();
-		$this->userSession = $runtime->userSession();
-		$this->urlGenerator = $urlGenerator;
-		$this->logger = $runtime->logger();
-		$this->userManager = $deck->userManager;
-		$this->container = $deck->container;
 	}//end __construct()
 
 	/**
@@ -130,7 +72,7 @@ class DeckCardService implements DeckCardServiceInterface {
 	 * @return bool True if Deck is available.
 	 */
 	public function isDeckAvailable(): bool {
-		return $this->appManager->isEnabledForUser('deck');
+		return $this->runtime->appManager()->isEnabledForUser('deck');
 	}//end isDeckAvailable()
 
 	/**
@@ -232,9 +174,9 @@ class DeckCardService implements DeckCardServiceInterface {
 		}
 
 		try {
-			return $this->container->get('OCA\\Deck\\Service\\CardService');
+			return $this->deck->container->get('OCA\\Deck\\Service\\CardService');
 		} catch (\Throwable $e) {
-			$this->logger->debug('Deck CardService not resolvable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Deck CardService not resolvable: ' . $e->getMessage());
 			return null;
 		}
 	}//end resolveDeckCardService()
@@ -316,6 +258,7 @@ class DeckCardService implements DeckCardServiceInterface {
 			}
 		} catch (\Throwable $e) {
 			// GetDuedate missing on this Deck version — leave null.
+			$this->runtime->logger()->debug('[DeckCardService] Card due date not readable: ' . $e->getMessage());
 		}
 
 		return null;
@@ -344,6 +287,7 @@ class DeckCardService implements DeckCardServiceInterface {
 			}
 		} catch (\Throwable $e) {
 			// GetLabels missing or returned unexpected shape — leave empty.
+			$this->runtime->logger()->debug('[DeckCardService] Card labels not readable: ' . $e->getMessage());
 		}
 
 		return [];
@@ -371,6 +315,7 @@ class DeckCardService implements DeckCardServiceInterface {
 			}
 		} catch (\Throwable $e) {
 			// GetAssignedUsers missing — leave empty.
+			$this->runtime->logger()->debug('[DeckCardService] Card assignees not readable: ' . $e->getMessage());
 		}
 
 		return [];
@@ -384,7 +329,7 @@ class DeckCardService implements DeckCardServiceInterface {
 	 * @return array{id: ?int, title: string, color: string}
 	 */
 	private function mapLabel(object $label): array {
-		return (new DeckRowMapper(userManager: $this->userManager))->label(label: $label);
+		return (new DeckRowMapper(userManager: $this->deck->userManager))->label(label: $label);
 	}//end mapLabel()
 
 	/**
@@ -399,7 +344,7 @@ class DeckCardService implements DeckCardServiceInterface {
 	 * @return array{uid: string, type: string, displayName: string}
 	 */
 	private function mapAssignee(object $assignment): array {
-		return (new DeckRowMapper(userManager: $this->userManager))->assignee(assignment: $assignment);
+		return (new DeckRowMapper(userManager: $this->deck->userManager))->assignee(assignment: $assignment);
 	}//end mapAssignee()
 
 	/**
@@ -431,7 +376,7 @@ class DeckCardService implements DeckCardServiceInterface {
 	 */
 	private function linkCardTo(LinkTarget $target, array $data): DeckLink {
 		$objectUuid = $target->objectUuid;
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
@@ -604,7 +549,7 @@ class DeckCardService implements DeckCardServiceInterface {
 		}
 
 		try {
-			$boardService = $this->container->get('OCA\\Deck\\Service\\BoardService');
+			$boardService = $this->deck->container->get('OCA\\Deck\\Service\\BoardService');
 			// Find() throws (NoPermissionException) when the session user
 			// lacks read access to the board.
 			$boardService->find($boardId);
@@ -644,14 +589,14 @@ class DeckCardService implements DeckCardServiceInterface {
 		try {
 			// Try using Deck's CardService if available.
 			if (class_exists('OCA\Deck\Service\CardService') === true) {
-				$cardService = $this->container->get('OCA\Deck\Service\CardService');
+				$cardService = $this->deck->container->get('OCA\Deck\Service\CardService');
 				$card = $cardService->find($cardId);
 
 				// Board ID is not a Card property — look it up via CardMapper,
 				// which is how Deck itself derives it (see CardService::update).
 				$boardId = 0;
 				if (class_exists('OCA\Deck\Db\CardMapper') === true) {
-					$cardMapper = $this->container->get('OCA\Deck\Db\CardMapper');
+					$cardMapper = $this->deck->container->get('OCA\Deck\Db\CardMapper');
 					$boardId = ($cardMapper->findBoardId($cardId) ?? 0);
 				}
 
@@ -662,7 +607,7 @@ class DeckCardService implements DeckCardServiceInterface {
 				];
 			}
 		} catch (Exception $e) {
-			$this->logger->debug('Deck CardService not available, card lookup skipped: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Deck CardService not available, card lookup skipped: ' . $e->getMessage());
 		}//end try
 
 		return null;
@@ -696,9 +641,9 @@ class DeckCardService implements DeckCardServiceInterface {
 	private function createDeckCard(CardDraft $card, string $description): ?int {
 		try {
 			if (class_exists('OCA\Deck\Service\CardService') === true) {
-				$cardService = $this->container->get('OCA\Deck\Service\CardService');
+				$cardService = $this->deck->container->get('OCA\Deck\Service\CardService');
 
-				$userUid = $this->userSession->getUser()->getUID();
+				$userUid = $this->runtime->userSession()->getUser()->getUID();
 				$created = $cardService->create($card->title, $card->stackId, 'plain', 0, $userUid);
 				// Deck CardService::update signature is:
 				// update($id, $title, $stackId, $type, $owner, $description = '', $order = 0, ...)
@@ -712,7 +657,7 @@ class DeckCardService implements DeckCardServiceInterface {
 				return $created->getId();
 			}//end if
 		} catch (Exception $e) {
-			$this->logger->warning('Failed to create Deck card: ' . $e->getMessage());
+			$this->runtime->logger()->warning('Failed to create Deck card: ' . $e->getMessage());
 		}//end try
 
 		return null;

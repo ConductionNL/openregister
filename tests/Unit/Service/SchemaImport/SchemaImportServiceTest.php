@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace Unit\Service\SchemaImport;
 
 use OCA\OpenRegister\Exception\SchemaImportException;
+use OCA\OpenRegister\Service\SchemaImport\GgmUpload;
+use OCA\OpenRegister\Service\SchemaImport\SourceUpdate;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
@@ -33,11 +35,9 @@ class SchemaImportServiceTest extends TestCase {
 	private SchemaImportService $service;
 
 	protected function setUp(): void {
-		$resourceRoot = dirname(__DIR__, 4) . '/lib/Resources';
 		$this->service = new SchemaImportService(
 			new DialectDetector(),
-			new ThreeWayMerge(),
-			$resourceRoot
+			new ThreeWayMerge()
 		);
 	}
 
@@ -101,10 +101,7 @@ class SchemaImportServiceTest extends TestCase {
 		// a property the (full) source has → update-from-source should add it.
 		$imported = $this->service->import('schema.org', 'Person', new ImportOptions(propertySubset: ['email']));
 
-		$diff = $this->service->previewUpdateFromSource(
-			importSource: $imported->importSource,
-			currentProperties: $imported->properties
-		);
+		$diff = $this->service->previewUpdateFromSource(update: new SourceUpdate(importSource: $imported->importSource, currentProperties: $imported->properties));
 
 		// The full Person import has more direct properties than the subset.
 		$this->assertNotEmpty($diff['added']);
@@ -118,10 +115,7 @@ class SchemaImportServiceTest extends TestCase {
 		$current = $imported->properties;
 		$current['internalNote'] = ['type' => 'string'];
 
-		$diff = $this->service->previewUpdateFromSource(
-			importSource: $imported->importSource,
-			currentProperties: $current
-		);
+		$diff = $this->service->previewUpdateFromSource(update: new SourceUpdate(importSource: $imported->importSource, currentProperties: $current));
 
 		$this->assertContains('internalNote', $diff['keptLocal']);
 		$this->assertArrayHasKey('internalNote', $diff['merged']);
@@ -129,7 +123,7 @@ class SchemaImportServiceTest extends TestCase {
 
 	public function testPreviewWithoutSourceThrows(): void {
 		$this->expectException(SchemaImportException::class);
-		$this->service->previewUpdateFromSource(['dialect' => '', 'reference' => ''], []);
+		$this->service->previewUpdateFromSource(new SourceUpdate(['dialect' => '', 'reference' => ''], []));
 	}
 
 	public function testGgmUploadImport(): void {
@@ -138,7 +132,7 @@ class SchemaImportServiceTest extends TestCase {
 			true
 		);
 
-		$imported = $this->service->importGgmUpload($normalised, 'ZAAK', new ImportOptions());
+		$imported = $this->service->importGgmUpload(new GgmUpload($normalised, 'ZAAK'), new ImportOptions());
 		$this->assertSame('Zaak', $imported->title);
 		$this->assertSame('upload', $imported->importSource['source']);
 	}

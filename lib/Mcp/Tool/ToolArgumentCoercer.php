@@ -57,18 +57,9 @@ final class ToolArgumentCoercer {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function argumentsFor(ReflectionMethod $method, array $arguments): array {
-		// Associative arrays have non-sequential keys (e.g., ['param1' => 'value']).
-		// Positional arrays have sequential numeric keys (e.g., [0 => 'value', 1 => 'value']).
-		$isAssociative = array_keys($arguments) !== range(0, count($arguments) - 1);
-
 		$typedArguments = [];
-		foreach ($method->getParameters() as $index => $param) {
-			$value = $this->rawValue(
-				arguments: $arguments,
-				index: $index,
-				paramName: $param->getName(),
-				isAssociative: $isAssociative
-			);
+		foreach ($method->getParameters() as $param) {
+			$value = $this->rawValue(arguments: $arguments, param: $param);
 			$typedArguments[] = $this->coerce(param: $param, value: $value);
 		}
 
@@ -78,16 +69,19 @@ final class ToolArgumentCoercer {
 	/**
 	 * The argument for one parameter: named argument > positional argument > null.
 	 *
-	 * @param array      $arguments     The call's arguments.
-	 * @param int|string $index         The parameter position.
-	 * @param string     $paramName     The parameter name.
-	 * @param bool       $isAssociative Whether the arguments are named.
+	 * @param array               $arguments The call's arguments.
+	 * @param ReflectionParameter $param     The parameter.
 	 *
 	 * @return mixed The raw value
 	 */
-	private function rawValue(array $arguments, int|string $index, string $paramName, bool $isAssociative): mixed {
+	private function rawValue(array $arguments, ReflectionParameter $param): mixed {
+		// Associative arrays have non-sequential keys (e.g., ['param1' => 'value']).
+		// Positional arrays have sequential numeric keys (e.g., [0 => 'value', 1 => 'value']).
+		$isAssociative = array_keys($arguments) !== range(0, count($arguments) - 1);
+		$paramName     = $param->getName();
+
 		// Use positional argument as default.
-		$value = $arguments[$index] ?? null;
+		$value = $arguments[$param->getPosition()] ?? null;
 		if ($isAssociative === true && (($arguments[$paramName] ?? null) !== null)) {
 			// Use named argument if available (associative array).
 			$value = $arguments[$paramName];

@@ -28,9 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use Psr\Log\LoggerInterface;
@@ -60,15 +58,13 @@ class TaskSubjectLocator implements TaskSubjectLocatorInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface $objects The magic-table object mapper.
-	 * @param RegisterMapperInterface $registers Loads a located subject's register.
-	 * @param SchemaMapperInterface $schemas Loads a located subject's schema.
+	 * @param SchemaCatalogInterface $catalog The magic-table object mapper, and
+	 *                                        the register and schema mappers a
+	 *                                        located subject's table is loaded by.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objects,
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -105,7 +101,7 @@ class TaskSubjectLocator implements TaskSubjectLocatorInterface {
 		$found = [];
 		foreach (array_chunk($uuids, self::CHUNK) as $chunk) {
 			try {
-				$found = array_merge($found, $this->objects->findMultipleAcrossAllMagicTables(uuids: $chunk));
+				$found = array_merge($found, $this->catalog->tables()->findMultipleAcrossAllMagicTables(uuids: $chunk));
 			} catch (Throwable $failure) {
 				$this->logger->debug(
 					'[TaskSubjectLocator] Could not locate subjects: ' . $failure->getMessage(),
@@ -188,36 +184,34 @@ class TaskSubjectLocator implements TaskSubjectLocatorInterface {
 	public function readLocated(array $tasks): array {
 		$found = [];
 		foreach ($this->locatedGroups(tasks: $tasks) as $pair => $uuids) {
-			$found = $this->mergePair(found: $found, pair: (string)$pair, uuids: $uuids);
+			$found = array_merge($found, $this->readPairOrNone(pair: (string)$pair, uuids: $uuids));
 		}
 
 		return $found;
 	}//end readLocated()
 
 	/**
-	 * Add one register and schema pair's subjects to those found so far.
-	 *
-	 * A pair that cannot be read is logged and leaves its subjects to the
+	 * One register and schema pair's subjects, or none when the pair cannot
+	 * be read: the failure is logged and its subjects are left to the
 	 * caller's fallback.
 	 *
-	 * @param array<string, mixed> $found The subjects found so far.
 	 * @param string $pair The `registerId:schemaId` pair.
 	 * @param array<int, string> $uuids The pair's subject uuids.
 	 *
-	 * @return array<string, mixed> The subjects found, this pair's included.
+	 * @return array<string, mixed> The pair's subjects, or an empty array.
 	 */
-	private function mergePair(array $found, string $pair, array $uuids): array {
+	private function readPairOrNone(string $pair, array $uuids): array {
 		try {
-			return array_merge($found, $this->readPair(pair: $pair, uuids: $uuids));
+			return $this->readPair(pair: $pair, uuids: $uuids);
 		} catch (Throwable $failure) {
 			$this->logger->debug(
 				'[TaskSubjectLocator] Could not read located subjects: ' . $failure->getMessage(),
 				['pair' => $pair]
 			);
 
-			return $found;
+			return [];
 		}
-	}//end mergePair()
+	}//end readPairOrNone()
 
 	/**
 	 * One register and schema pair's subjects, read from their own table.
@@ -230,9 +224,9 @@ class TaskSubjectLocator implements TaskSubjectLocatorInterface {
 	private function readPair(string $pair, array $uuids): array {
 		[$registerId, $schemaId] = array_map('intval', explode(':', $pair));
 
-		return $this->objects->findObjectsByUuidsInRegisterSchema(
-			register: $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false),
-			schema: $this->schemas->find(id: $schemaId, _rbac: false, _multitenancy: false),
+		return $this->catalog->tables()->findObjectsByUuidsInRegisterSchema(
+			register: $this->catalog->registers()->find(id: $registerId, _rbac: false, _multitenancy: false),
+			schema: $this->catalog->schemas()->find(id: $schemaId, _rbac: false, _multitenancy: false),
 			uuids: $uuids
 		);
 	}//end readPair()

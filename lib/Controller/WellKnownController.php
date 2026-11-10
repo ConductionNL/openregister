@@ -41,14 +41,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilder;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\WellKnownControllerServices;
+use OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilderInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 
@@ -63,23 +65,34 @@ use OCP\IURLGenerator;
 class WellKnownController extends Controller {
 
 	/**
+	 * Builds the administered security contact file.
+	 *
+	 * @var SecurityTxtBuilderInterface
+	 */
+	private readonly SecurityTxtBuilderInterface $securityTxt;
+
+	/**
+	 * Names this instance's own base URL.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urlGenerator;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
-	 * @param IRequest $request The incoming request.
-	 * @param SecurityTxtBuilder $securityTxt Builds the administered security contact file.
-	 * @param IURLGenerator $urlGenerator Names this instance's own base URL.
+	 * @param IRequest                    $request  The incoming request.
+	 * @param WellKnownControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly SecurityTxtBuilder $securityTxt,
-		private readonly IURLGenerator $urlGenerator,
+		WellKnownControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->securityTxt = $services->securityTxt;
+		$this->urlGenerator = $services->urlGenerator;
 	}//end __construct()
 
 	/**

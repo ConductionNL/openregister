@@ -34,7 +34,6 @@ final class ActivityLinksControllerFactory {
 		\OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface $visibility,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ActivityLinksControllerServices(
 				filterService: $filterService,

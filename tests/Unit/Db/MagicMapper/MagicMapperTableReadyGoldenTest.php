@@ -158,7 +158,7 @@ class MagicMapperTableReadyGoldenTest extends TestCase {
 	public function testCountTable(bool $exists, bool $magic, ?string $expected, array $log): void {
 		$mapper = $this->mapper(exists: $exists);
 		$count  = new ReflectionMethod(MagicMapper::class, 'resolveCountTable');
-		$table  = $count->invoke($mapper, $this->register(magic: $magic), $this->schema());
+		$table  = $count->invoke($mapper, $this->register(magic: $magic), $this->schema())?->tableName;
 
 		$this->assertSame($expected, $table);
 		$this->assertSame($log, $this->log);

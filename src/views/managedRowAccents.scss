@@ -1,0 +1,25 @@
+// SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+// SPDX-License-Identifier: EUPL-1.2
+
+/* Table row accents. Drawn with an inset box-shadow, never border-left: a
+   border adds layout width and shifts the row's cell content sideways, while
+   box-shadow paints inside the box. Matches .cn-table-row--selected.
+
+   Skipped on a selected row so the library's .cn-table-row--selected accent
+   wins. Scoping adds a [data-v-*] attribute, which would otherwise outweigh
+   the library's single-class rule and leave a selected row showing its
+   managed/local colour instead of the selection colour.
+
+   Include inside a scoped style block: the :deep() reaches the table rows
+   CnIndexPage renders. */
+@mixin managed-row-accents {
+	/* Managed (external - green) */
+	:deep(.viewTableRow--managed:not(.cn-table-row--selected)) {
+		box-shadow: inset 3px 0 0 0 var(--color-success);
+	}
+
+	/* Local configurations (orange) */
+	:deep(.viewTableRow--local:not(.cn-table-row--selected)) {
+		box-shadow: inset 3px 0 0 0 var(--color-warning);
+	}
+}

@@ -154,21 +154,19 @@ class TransitionDocument {
 	 * declaration is decoration, and the first check is a check of a field
 	 * nobody has to fill in truthfully.
 	 *
-	 * @param string               $ruleName The rule, for the message.
-	 * @param mixed                $node     Its condition.
-	 * @param array<string, mixed> $rule     Its declaration.
-	 * @param string|null          $trigger  The trigger it is attached to.
+	 * @param RuleAttachment $attachment The rule's name, its declaration and the trigger it is attached to.
+	 * @param mixed          $node       Its condition.
 	 *
 	 * @return string|null The reason, naming the rule.
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
 	 */
-	public function refusalFor(string $ruleName, mixed $node, array $rule, ?string $trigger): ?string {
-		if (($rule[self::REQUIRES_PRIOR] ?? false) !== true) {
-			return $this->undeclaredReadRefusal(ruleName: $ruleName, node: $node);
+	public function refusalFor(RuleAttachment $attachment, mixed $node): ?string {
+		if ($attachment->requiresPrior() === false) {
+			return $this->undeclaredReadRefusal(ruleName: $attachment->ruleName, node: $node);
 		}
 
-		return $this->createTriggerRefusal(ruleName: $ruleName, trigger: $trigger);
+		return $this->createTriggerRefusal(ruleName: $attachment->ruleName, trigger: $attachment->trigger);
 	}//end refusalFor()
 
 	/**

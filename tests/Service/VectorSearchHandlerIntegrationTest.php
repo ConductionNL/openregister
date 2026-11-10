@@ -17,6 +17,8 @@ namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSearchHandler;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion;
 
 /**
  * Integration tests for VectorSearchHandler
@@ -49,12 +51,7 @@ class VectorSearchHandlerIntegrationTest extends TestCase {
 	 */
 	public function testSemanticSearchEmptyEmbedding(): void {
 		// Even with empty/dummy embedding, the method should not crash
-		$result = $this->handler->semanticSearch(
-			[],
-			10,
-			[],
-			'php'
-		);
+		$result = $this->handler->semanticSearch(new VectorQuery(embedding: [], limit: 10, filters: []));
 
 		$this->assertIsArray($result);
 	}
@@ -68,12 +65,7 @@ class VectorSearchHandlerIntegrationTest extends TestCase {
 		// Create a dummy embedding vector
 		$queryEmbedding = array_fill(0, 384, 0.1);
 
-		$result = $this->handler->semanticSearch(
-			$queryEmbedding,
-			5,
-			[],
-			'php'
-		);
+		$result = $this->handler->semanticSearch(new VectorQuery(embedding: $queryEmbedding, limit: 5, filters: []));
 
 		$this->assertIsArray($result);
 	}
@@ -86,12 +78,7 @@ class VectorSearchHandlerIntegrationTest extends TestCase {
 	public function testSemanticSearchDatabaseBackend(): void {
 		$queryEmbedding = array_fill(0, 384, 0.1);
 
-		$result = $this->handler->semanticSearch(
-			$queryEmbedding,
-			5,
-			[],
-			'database'
-		);
+		$result = $this->handler->semanticSearch(new VectorQuery(embedding: $queryEmbedding, limit: 5, filters: []));
 
 		$this->assertIsArray($result);
 	}
@@ -104,12 +91,7 @@ class VectorSearchHandlerIntegrationTest extends TestCase {
 	public function testSemanticSearchWithFilters(): void {
 		$queryEmbedding = array_fill(0, 384, 0.1);
 
-		$result = $this->handler->semanticSearch(
-			$queryEmbedding,
-			10,
-			['entity_type' => 'object'],
-			'php'
-		);
+		$result = $this->handler->semanticSearch(new VectorQuery(embedding: $queryEmbedding, limit: 10, filters: ['entity_type' => 'object']));
 
 		$this->assertIsArray($result);
 	}
@@ -122,12 +104,7 @@ class VectorSearchHandlerIntegrationTest extends TestCase {
 	public function testSemanticSearchLimitOne(): void {
 		$queryEmbedding = array_fill(0, 384, 0.1);
 
-		$result = $this->handler->semanticSearch(
-			$queryEmbedding,
-			1,
-			[],
-			'php'
-		);
+		$result = $this->handler->semanticSearch(new VectorQuery(embedding: $queryEmbedding, limit: 1, filters: []));
 
 		$this->assertIsArray($result);
 		$this->assertLessThanOrEqual(1, count($result));
@@ -141,11 +118,7 @@ class VectorSearchHandlerIntegrationTest extends TestCase {
 	public function testHybridSearch(): void {
 		$queryEmbedding = array_fill(0, 384, 0.1);
 
-		$result = $this->handler->hybridSearch(
-			$queryEmbedding,
-			[],
-			10
-		);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: $queryEmbedding, limit: 10), new KeywordFusion(results: []));
 
 		$this->assertIsArray($result);
 	}
@@ -158,12 +131,7 @@ class VectorSearchHandlerIntegrationTest extends TestCase {
 	public function testHybridSearchEmptySolr(): void {
 		$queryEmbedding = array_fill(0, 384, 0.1);
 
-		$result = $this->handler->hybridSearch(
-			$queryEmbedding,
-			[],
-			10,
-			['solr' => 0.3, 'vector' => 0.7]
-		);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: $queryEmbedding, limit: 10), new KeywordFusion(results: [], weights: ['solr' => 0.3, 'vector' => 0.7]));
 
 		$this->assertIsArray($result);
 	}
@@ -176,12 +144,7 @@ class VectorSearchHandlerIntegrationTest extends TestCase {
 	public function testHybridSearchWithWeights(): void {
 		$queryEmbedding = array_fill(0, 384, 0.1);
 
-		$result = $this->handler->hybridSearch(
-			$queryEmbedding,
-			[],
-			5,
-			['solr' => 0.8, 'vector' => 0.2]
-		);
+		$result = $this->handler->hybridSearch(new VectorQuery(embedding: $queryEmbedding, limit: 5), new KeywordFusion(results: [], weights: ['solr' => 0.8, 'vector' => 0.2]));
 
 		$this->assertIsArray($result);
 	}

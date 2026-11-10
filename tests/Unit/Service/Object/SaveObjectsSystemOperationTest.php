@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -107,7 +108,7 @@ class SaveObjectsSystemOperationTest extends TestCase {
 		$method->invoke(
 			$this->service,
 			['created' => [$entity], 'updated' => []],
-			true
+			self::bulkRun(events: true, audit: true)
 		);
 
 	}//end emitOneCreate()
@@ -177,4 +178,20 @@ class SaveObjectsSystemOperationTest extends TestCase {
 		$this->emitOneCreate();
 
 	}//end testEventsResumeAfterTheSystemOperationEnds()
+
+	/**
+	 * A bulk save run carrying the events and audit flags the side effects read.
+	 *
+	 * @param bool $events Whether lifecycle events are dispatched.
+	 * @param bool $audit  Whether audit trail rows are written.
+	 *
+	 * @return BulkSaveRun
+	 */
+	private static function bulkRun(bool $events, bool $audit): BulkSaveRun {
+		$run         = new BulkSaveRun();
+		$run->events = $events;
+		$run->audit  = $audit;
+
+		return $run;
+	}//end bulkRun()
 }//end class

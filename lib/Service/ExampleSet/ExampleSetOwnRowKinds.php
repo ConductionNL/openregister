@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViewRowsInterface;
 
 /**
  * The writers of the rows in OpenRegister's own engines, bundled for the engine kinds.
@@ -37,14 +37,14 @@ final readonly class ExampleSetOwnRowKinds {
 	/**
 	 * Bundle the writers; a writer left out refuses its rows.
 	 *
-	 * @param ExampleSetViews|null     $views     Writes the saved views a fragment declares; null refuses them.
-	 * @param ExampleSetFlows|null     $flows     Writes the flows a fragment ships; null refuses them.
-	 * @param ExampleSetCasePlans|null $casePlans Writes the case plans a fragment puts on its objects; null refuses them.
+	 * @param ExampleSetViewRowsInterface|null $views     Writes the saved views a fragment declares; null refuses them.
+	 * @param ExampleSetFlows|null             $flows     Writes the flows a fragment ships; null refuses them.
+	 * @param ExampleSetCasePlans|null         $casePlans Writes the case plans a fragment puts on its objects; null refuses them.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
 	public function __construct(
-		public ?ExampleSetViews $views=null,
+		public ?ExampleSetViewRowsInterface $views=null,
 		public ?ExampleSetFlows $flows=null,
 		public ?ExampleSetCasePlans $casePlans=null,
 	) {
@@ -59,7 +59,7 @@ final readonly class ExampleSetOwnRowKinds {
 	 */
 	public function writers(): array {
 		return [
-			'views'     => $this->views,
+			'views'     => $this->views?->rows(),
 			'flows'     => $this->flows,
 			'casePlans' => $this->casePlans,
 		];

@@ -15,6 +15,7 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\FacetHandler;
+use OCA\OpenRegister\Service\Object\FacetLookups;
 use OCA\OpenRegister\Service\Object\FacetResponseCache;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -143,8 +144,7 @@ class FacetHandlerFacetsWithFallbackGoldenTest extends TestCase {
 		}
 
 		$handler = new FacetHandler(
-			$mapper,
-			$this->createMock(SchemaMapper::class),
+			new FacetLookups($mapper, $this->createMock(SchemaMapper::class)),
 			$this->createMock(FacetResponseCache::class),
 			$logger
 		);

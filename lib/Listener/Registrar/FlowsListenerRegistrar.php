@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener\Registrar;
 
-use OCA\OpenRegister\ContextChat\ContentProviderRegistrationListener;
+use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
 use OCA\OpenRegister\Event\BulkActionRegistrationEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
@@ -141,10 +141,8 @@ final class FlowsListenerRegistrar {
 		$context->registerEventListener(\OCP\OCM\Events\ResourceTypeRegisterEvent::class, OcmResourceTypeListener::class);
 
 		// Register OpenRegister as a Context Chat (OCP\ContextChat) content
-		// provider — softly gated by IContentManager::isContextChatAvailable()
-		// inside the listener body, so an instance without the `context_chat`
-		// app installed is entirely unaffected.
-		$context->registerEventListener(\OCP\ContextChat\Events\ContentProviderRegisterEvent::class, ContentProviderRegistrationListener::class);
+		// provider; the ContextChat component names its own listener.
+		ContextChatRegistrar::registerListeners(context: $context);
 	}//end registerFileAndDiscoveryListeners()
 
 	/**

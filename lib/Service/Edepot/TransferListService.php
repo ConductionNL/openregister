@@ -30,10 +30,8 @@ namespace OCA\OpenRegister\Service\Edepot;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\IAppConfig;
 use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -55,16 +53,12 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 	/**
 	 * Constructor.
 	 *
-	 * @param TransferRecordService $transferRecordService Durable transfer-record persistence.
-	 * @param IAppConfig            $appConfig             The app configuration.
-	 * @param INotificationManager  $notificationManager   The notification manager.
-	 * @param LoggerInterface       $logger                Logger.
+	 * @param TransferStores       $stores              The transfer records, the app settings and the log.
+	 * @param INotificationManager $notificationManager The notification manager.
 	 */
 	public function __construct(
-		private readonly TransferRecordService $transferRecordService,
-		private readonly IAppConfig $appConfig,
+		private readonly TransferStores $stores,
 		private readonly INotificationManager $notificationManager,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -83,9 +77,9 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 	 */
 	private function persist(array $transferList): array {
 		try {
-			return $this->transferRecordService->saveTransferList($transferList);
+			return $this->stores->records->saveTransferList($transferList);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->stores->logger->warning(
 				message: '[TransferListService] Could not persist transfer list: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => ($transferList['uuid'] ?? '')]
 			);
@@ -94,19 +88,16 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 	}//end persist()
 
 	/**
-	 * Log a review step and persist the list.
+	 * Log a review step.
 	 *
-	 * @param array<string,mixed> $transferList The transfer-list data.
-	 * @param string              $message      What happened.
-	 * @param array<string,mixed> $context      The log context.
+	 * @param string              $message What happened.
+	 * @param array<string,mixed> $context The log context.
 	 *
-	 * @return array<string,mixed> The persisted (or in-memory on failure) list.
+	 * @return void
 	 */
-	private function logAndPersist(array $transferList, string $message, array $context): array {
-		$this->logger->info(message: '[TransferListService] '.$message, context: $context);
-
-		return $this->persist(transferList: $transferList);
-	}//end logAndPersist()
+	private function logStep(string $message, array $context): void {
+		$this->stores->logger->info(message: '[TransferListService] '.$message, context: $context);
+	}//end logStep()
 
 	/**
 	 * Create a new transfer list from eligible objects.
@@ -133,11 +124,9 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 
 		$transferList = self::newList(objectReferences: self::referencesOf(objects: $objects), packageFormat: $this->packageFormat());
 
-		return $this->logAndPersist(
-			transferList: $transferList,
-			message: 'Created transfer list',
-			context: ['uuid' => $transferList['uuid'], 'objectCount' => $transferList['objectCount']]
-		);
+		$this->logStep(message: 'Created transfer list', context: ['uuid' => $transferList['uuid'], 'objectCount' => $transferList['objectCount']]);
+
+		return $this->persist(transferList: $transferList);
 	}//end createTransferList()
 
 	/**
@@ -162,49 +151,50 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 			'approvedAt' => (new DateTime())->format('c'),
 		];
 
-		return $this->logAndPersist(
-			transferList: $transferList,
-			message: 'Transfer list approved',
-			context: ['uuid' => $transferList['uuid'], 'approvedBy' => $archivistId]
-		);
+		$this->logStep(message: 'Transfer list approved', context: ['uuid' => $transferList['uuid'], 'approvedBy' => $archivistId]);
+
+		return $this->persist(transferList: $transferList);
 	}//end approveTransferList()
 
+
 	/**
-	 * Reject a transfer list.
+	 * Reject a transfer list in review.
 	 *
 	 * @param array<string,mixed> $transferList The transfer list data.
-	 * @param string              $archivistId  The rejecting archivist user ID.
-	 * @param string              $reason       The reason for rejection.
+	 * @param TransferRejection   $rejection    Who rejects it, and why.
 	 *
 	 * @return array<string,mixed> The updated transfer list data.
 	 *
 	 * @throws InvalidArgumentException If the list is not in review status, or no reason is given.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
-	 * @spec openspec/specs/edepot-transfer/spec.md
 	 */
-	public function rejectTransferList(array $transferList, string $archivistId, string $reason): array {
+	public function reject(array $transferList, TransferRejection $rejection): array {
 		self::refuseUnlessInReview(transferList: $transferList, refusal: "Cannot reject transfer list with status '%s'; expected 'in_review'");
-		if (empty($reason) === true) {
+		if (empty($rejection->reason) === true) {
 			throw new InvalidArgumentException('Rejection reason is required');
 		}
 
 		$transferList['status']           = self::STATUS_REJECTED;
-		$transferList['approvalMetadata'] = ['rejectedBy' => $archivistId, 'rejectedAt' => (new DateTime())->format('c'), 'rejectionReason' => $reason];
-
-		return $this->logAndPersist(
-			transferList: $transferList,
+		$transferList['approvalMetadata'] = [
+			'rejectedBy' => $rejection->archivistId,
+			'rejectedAt' => (new DateTime())->format('c'),
+			'rejectionReason' => $rejection->reason,
+		];
+		$this->logStep(
 			message: 'Transfer list rejected',
-			context: ['uuid' => $transferList['uuid'], 'rejectedBy' => $archivistId, 'reason' => $reason]
+			context: ['uuid' => $transferList['uuid'], 'rejectedBy' => $rejection->archivistId, 'reason' => $rejection->reason]
 		);
-	}//end rejectTransferList()
+
+		return $this->persist(transferList: $transferList);
+	}//end reject()
+
 
 	/**
-	 * Exclude objects from a transfer list.
+	 * Take objects off a transfer list in review.
 	 *
 	 * @param array<string,mixed> $transferList The transfer list data.
-	 * @param array<int, string>  $objectUuids  UUIDs of objects to exclude.
-	 * @param string              $reason       The reason for exclusion.
+	 * @param TransferExclusion   $exclusion    The objects to exclude, and why.
 	 *
 	 * @return array<string,mixed> The updated transfer list data.
 	 *
@@ -212,23 +202,19 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
 	 */
-	public function excludeObjects(array $transferList, array $objectUuids, string $reason): array {
+	public function exclude(array $transferList, TransferExclusion $exclusion): array {
 		self::refuseUnlessInReview(transferList: $transferList, refusal: "Cannot modify transfer list with status '%s'");
 
-		$transferList['exclusions']       = self::withExclusions(
-			excluded: ($transferList['exclusions'] ?? []),
-			objectUuids: $objectUuids,
-			reason: $reason
-		);
-		$transferList['objectReferences'] = self::withoutUuids(refs: $transferList['objectReferences'], objectUuids: $objectUuids);
+		$transferList['exclusions']       = self::withExclusions(excluded: ($transferList['exclusions'] ?? []), exclusion: $exclusion);
+		$transferList['objectReferences'] = self::withoutUuids(refs: $transferList['objectReferences'], objectUuids: $exclusion->objectUuids);
 		$transferList['objectCount']      = count($transferList['objectReferences']);
-
-		return $this->logAndPersist(
-			transferList: $transferList,
+		$this->logStep(
 			message: 'Objects excluded from transfer list',
-			context: ['uuid' => $transferList['uuid'], 'excludedCount' => count($objectUuids), 'reason' => $reason]
+			context: ['uuid' => $transferList['uuid'], 'excludedCount' => count($exclusion->objectUuids), 'reason' => $exclusion->reason]
 		);
-	}//end excludeObjects()
+
+		return $this->persist(transferList: $transferList);
+	}//end exclude()
 
 	/**
 	 * Get UUIDs of objects currently on active transfer lists.
@@ -267,12 +253,12 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 	public function notifyArchivists(array $transferList): void {
 		try {
 			$this->notificationManager->notify($this->archivistNotification(transferList: $transferList));
-			$this->logger->info(
+			$this->stores->logger->info(
 				message: '[TransferListService] Notification sent for transfer list',
 				context: ['uuid' => $transferList['uuid']]
 			);
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->stores->logger->warning(
 				message: '[TransferListService] Failed to send notification',
 				context: ['uuid' => $transferList['uuid'], 'error' => $e->getMessage()]
 			);
@@ -321,7 +307,7 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 	 * @return string The format.
 	 */
 	private function packageFormat(): string {
-		$packageFormat = $this->appConfig->getValueString('openregister', 'edepot_package_format', 'zip');
+		$packageFormat = $this->stores->settings->getValueString('openregister', 'edepot_package_format', 'zip');
 		if (in_array($packageFormat, ['zip', 'bagit'], true) === false) {
 			return 'zip';
 		}
@@ -355,15 +341,14 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 	/**
 	 * The existing exclusions with one entry appended per uuid.
 	 *
-	 * @param array<int, mixed>  $excluded    The existing exclusions.
-	 * @param array<int, string> $objectUuids The uuids.
-	 * @param string             $reason      The reason.
+	 * @param array<int, mixed> $excluded  The existing exclusions.
+	 * @param TransferExclusion $exclusion The uuids and the reason.
 	 *
 	 * @return array<int, mixed> The exclusions.
 	 */
-	private static function withExclusions(array $excluded, array $objectUuids, string $reason): array {
-		foreach ($objectUuids as $uuid) {
-			$excluded[] = ['uuid' => $uuid, 'reason' => $reason, 'excludedAt' => (new DateTime())->format('c')];
+	private static function withExclusions(array $excluded, TransferExclusion $exclusion): array {
+		foreach ($exclusion->objectUuids as $uuid) {
+			$excluded[] = ['uuid' => $uuid, 'reason' => $exclusion->reason, 'excludedAt' => (new DateTime())->format('c')];
 		}
 
 		return $excluded;

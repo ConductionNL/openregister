@@ -107,6 +107,18 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.1
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+		return $this->findUser(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	}//end find()
+
+	/**
+	 * Read one object for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param string               $id      The object id.
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
+	 */
+	private function findUser(SourcedObjectBinding $binding, string $id): ?ObjectEntity {
 		try {
 			$user = $this->userManager->get($id);
 		} catch (Throwable $e) {
@@ -118,8 +130,8 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 			return null;
 		}
 
-		return $this->toObjectEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), user: $user);
-	}//end find()
+		return $this->toObjectEntity(binding: $binding, user: $user);
+	}//end findUser()
 
 	/**
 	 * {@inheritDoc}
@@ -139,14 +151,25 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.1
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
+		return $this->listUsers(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
+	}//end findAll()
+
+	/**
+	 * Read one page of objects for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param array<string, mixed> $query   Query (filters/search/limit/offset).
+	 *
+	 * @return ObjectEntity[] The matching virtual objects.
+	 */
+	private function listUsers(SourcedObjectBinding $binding, array $query): array {
 		$objects = [];
 		foreach ($this->readUsers(query: $query) as $user) {
 			$objects[] = $this->toObjectEntity(binding: $binding, user: $user);
 		}
 
 		return $objects;
-	}//end findAll()
+	}//end listUsers()
 
 	/**
 	 * Read the users visible to the acting user, failing closed to an empty list.

@@ -37,15 +37,12 @@ interface ArchiveHandlerInterface {
 	/**
 	 * Archive an object.
 	 *
-	 * @param string $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason Why it is being archived.
-	 * @param string|null $register The register the url names, so an object in
-	 *                              another one is not reachable from this address.
-	 * @param string|null $schema The schema the url names, checked the same way.
+	 * Kept for the apps that call it by class name; archiveWith takes the request.
 	 *
-	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
-	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists.
+	 * @param string      $identifier Object id, uuid, slug or uri.
+	 * @param string|null $reason     Why it is being archived.
+	 * @param string|null $register   The register the url names.
+	 * @param string|null $schema     The schema the url names.
 	 *
 	 * @return array{uuid: string|null, archived: array|null} The stored marker.
 	 *
@@ -59,17 +56,31 @@ interface ArchiveHandlerInterface {
 	): array;
 
 	/**
-	 * Restore an object from the archive.
+	 * Archive the object a request names.
 	 *
-	 * @param string $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason Why it is being restored.
-	 * @param string|null $register The register the url names, so an object in
-	 *                              another one is not reachable from this address.
-	 * @param string|null $schema The schema the url names, checked the same way.
+	 * @param ObjectStateRequest $request The object (id, uuid, slug or uri), the register and schema
+	 *                                    the url names (so an object in another one is not reachable
+	 *                                    from this address) and why it is being archived.
 	 *
 	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists.
+	 *
+	 * @return array{uuid: string|null, archived: array|null} The stored marker.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function archiveWith(ObjectStateRequest $request): array;
+
+	/**
+	 * Restore an object from the archive.
+	 *
+	 * Kept for the apps that call it by class name; unarchiveWith takes the request.
+	 *
+	 * @param string      $identifier Object id, uuid, slug or uri.
+	 * @param string|null $reason     Why it is being restored.
+	 * @param string|null $register   The register the url names.
+	 * @param string|null $schema     The schema the url names.
 	 *
 	 * @return array{uuid: string|null, archived: null} The cleared marker.
 	 *
@@ -83,14 +94,29 @@ interface ArchiveHandlerInterface {
 	): array;
 
 	/**
-	 * Freeze an object.
+	 * Take the object a request names out of the archive.
 	 *
-	 * @param string $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason Why it is being frozen.
-	 * @param string|null $state The lifecycle state declaring the freeze, when one does.
-	 * @param string|null $register The register the url names, so an object in
-	 *                              another one is not reachable from this address.
-	 * @param string|null $schema The schema the url names, checked the same way.
+	 * @param ObjectStateRequest $request The object (id, uuid, slug or uri), the register and schema
+	 *                                    the url names (so an object in another one is not reachable
+	 *                                    from this address) and why it is being restored.
+	 *
+	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
+	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists.
+	 *
+	 * @return array{uuid: string|null, archived: null} The cleared marker.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function unarchiveWith(ObjectStateRequest $request): array;
+
+	/**
+	 * Freeze the object a request names.
+	 *
+	 * @param ObjectStateRequest $request The object (id, uuid, slug or uri), the register and schema
+	 *                                    the url names (so an object in another one is not reachable
+	 *                                    from this address) and why it is being frozen.
+	 * @param string|null        $state   The lifecycle state declaring the freeze, when one does.
 	 *
 	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
@@ -100,26 +126,17 @@ interface ArchiveHandlerInterface {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function freeze(
-		string $identifier,
-		?string $reason = null,
-		?string $state = null,
-		?string $register = null,
-		?string $schema = null,
-	): array;
+	public function freeze(ObjectStateRequest $request, ?string $state = null): array;
 
 	/**
 	 * Unfreeze an object.
 	 *
-	 * @param string $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason Why it is being unfrozen.
-	 * @param string|null $register The register the url names, so an object in
-	 *                              another one is not reachable from this address.
-	 * @param string|null $schema The schema the url names, checked the same way.
+	 * Kept for the apps that call it by class name; unfreezeWith takes the request.
 	 *
-	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
-	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists.
+	 * @param string      $identifier Object id, uuid, slug or uri.
+	 * @param string|null $reason     Why it is being unfrozen.
+	 * @param string|null $register   The register the url names.
+	 * @param string|null $schema     The schema the url names.
 	 *
 	 * @return array{uuid: string|null, frozen: null} The cleared marker.
 	 *
@@ -131,4 +148,21 @@ interface ArchiveHandlerInterface {
 		?string $register = null,
 		?string $schema = null,
 	): array;
+
+	/**
+	 * Unfreeze the object a request names.
+	 *
+	 * @param ObjectStateRequest $request The object (id, uuid, slug or uri), the register and schema
+	 *                                    the url names (so an object in another one is not reachable
+	 *                                    from this address) and why it is being unfrozen.
+	 *
+	 * @throws ArchiveNotOfferedException When the schema does not declare archiving.
+	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller lacks `update`.
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such object exists.
+	 *
+	 * @return array{uuid: string|null, frozen: null} The cleared marker.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function unfreezeWith(ObjectStateRequest $request): array;
 }//end interface

@@ -20,6 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ConfigurationSettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -41,20 +43,32 @@ use Psr\Log\LoggerInterface;
  */
 class ConfigurationSettingsController extends Controller {
 	/**
+	 * Settings service.
+	 *
+	 * @var AppSettingsInterface
+	 */
+	private readonly AppSettingsInterface $settingsService;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param AppSettingsInterface $settingsService Settings service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ConfigurationSettingsControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
-		private readonly AppSettingsInterface $settingsService,
-		private readonly LoggerInterface $logger,
+		ConfigurationSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->settingsService = $services->settingsService;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

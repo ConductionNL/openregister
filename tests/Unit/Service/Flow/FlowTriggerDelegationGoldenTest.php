@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Service\Delegation\DelegationRequest;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
@@ -179,7 +180,7 @@ class FlowTriggerDelegationGoldenTest extends TestCase {
 
 		$delegation = $this->createMock(DelegationService::class);
 		$delegation->method('verdictFor')->willReturnCallback(
-			function (string $principal, string $actingAs) use ($verdict): DelegationVerdict {
+			function (DelegationRequest $request) use ($verdict): DelegationVerdict {
 				$this->asked++;
 				return $verdict;
 			}

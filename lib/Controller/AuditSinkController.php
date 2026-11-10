@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AuditSinkControllerServices;
 use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
 use OCA\OpenRegister\Service\Audit\AuditSinkStatusInterface;
@@ -73,16 +74,14 @@ class AuditSinkController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string          $appName      App identifier.
 	 * @param IRequest        $request      Active request.
 	 * @param AuditSinkControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		AuditSinkControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->sink = $services->sink;
 		$this->status = $services->status;
 		$this->userSession = $services->userSession;

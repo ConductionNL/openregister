@@ -41,6 +41,8 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
 use Psr\Log\LoggerInterface;
 
@@ -58,48 +60,6 @@ class ReportRenderService {
 	public const FORMATS = ['csv', 'xlsx', 'ods', 'html', 'pdf'];
 
 	/**
-	 * Server-side aggregation runner.
-	 *
-	 * @var AggregationRunnerInterface
-	 */
-	private readonly AggregationRunnerInterface $aggregationRunner;
-
-	/**
-	 * GraphQL executor.
-	 *
-	 * @var GraphQLService
-	 */
-	private readonly GraphQLService $graphqlService;
-
-	/**
-	 * CSV / XLSX / ODS writer.
-	 *
-	 * @var SpreadsheetReportWriter
-	 */
-	private readonly SpreadsheetReportWriter $spreadsheetWriter;
-
-	/**
-	 * HTML writer.
-	 *
-	 * @var HtmlReportWriter
-	 */
-	private readonly HtmlReportWriter $htmlWriter;
-
-	/**
-	 * PDF writer (office server conversion).
-	 *
-	 * @var PdfReportWriter
-	 */
-	private readonly PdfReportWriter $pdfWriter;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param AggregationRunnerInterface $aggregationRunner Server-side aggregation runner.
@@ -108,17 +68,11 @@ class ReportRenderService {
 	 * @param LoggerInterface            $logger            Logger.
 	 */
 	public function __construct(
-		AggregationRunnerInterface $aggregationRunner,
-		GraphQLService $graphqlService,
-		ReportWriters $writers,
-		LoggerInterface $logger,
+		private readonly AggregationRunnerInterface $aggregationRunner,
+		private readonly GraphQLService $graphqlService,
+		private readonly ReportWriters $writers,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->aggregationRunner = $aggregationRunner;
-		$this->graphqlService    = $graphqlService;
-		$this->spreadsheetWriter = $writers->spreadsheetWriter;
-		$this->htmlWriter        = $writers->htmlWriter;
-		$this->pdfWriter         = $writers->pdfWriter;
-		$this->logger            = $logger;
 	}//end __construct()
 
 	/**
@@ -162,7 +116,7 @@ class ReportRenderService {
 		$filename = sprintf('%s_%s.%s', $slug, $stamp, $format);
 
 		if ($format === 'html') {
-			$bytes = $this->htmlWriter->write(
+			$bytes = $this->writers->htmlWriter->write(
 				dashboard: $payload,
 				resolvedWidgets: $resolvedWidgets
 			);
@@ -174,7 +128,7 @@ class ReportRenderService {
 		}
 
 		if ($format === 'pdf') {
-			$bytes = $this->pdfWriter->write(
+			$bytes = $this->writers->pdfWriter->write(
 				dashboard: $payload,
 				resolvedWidgets: $resolvedWidgets
 			);
@@ -185,9 +139,8 @@ class ReportRenderService {
 			];
 		}
 
-		$bytes = $this->spreadsheetWriter->write(
-			dashboard: $payload,
-			resolvedWidgets: $resolvedWidgets,
+		$bytes = $this->writers->spreadsheetWriter->write(
+			content: new ReportContent(dashboard: $payload, resolvedWidgets: $resolvedWidgets),
 			format: $format
 		);
 		return [
@@ -228,10 +181,8 @@ class ReportRenderService {
 				// schema's `list` permission. The dashboard's own
 				// RBAC gate already filtered the viewer at load time.
 				return $this->aggregationRunner->run(
-					registerRef: $register,
-					schemaRef: $schema,
-					name: $aggregation,
-					bypassRbac: true
+					ref: new NamedAggregationRef(register: $register, schema: $schema, name: $aggregation),
+					options: new NamedAggregationOptions(bypassRbac: true)
 				);
 			}
 

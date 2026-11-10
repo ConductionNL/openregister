@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -83,15 +84,6 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	protected OrganisationMapperInterface $organisationMapper;
 
 	/**
-	 * App configuration for multitenancy settings
-	 *
-	 * Used by MultiTenancyTrait for checking multitenancy configuration.
-	 *
-	 * @var IAppConfig App configuration instance
-	 */
-	protected IAppConfig $appConfig;
-
-	/**
 	 * User session for current user
 	 *
 	 * Used to determine current user context for RBAC filtering.
@@ -110,47 +102,29 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	private readonly IGroupManager $groupManager;
 
 	/**
-	 * Interception-flag cache invalidated on every webhook CRUD operation
-	 *
-	 * Nullable so the mapper stays constructible without a cache backend
-	 * (unit tests, degraded environments); invalidation is skipped then.
-	 *
-	 * @var WebhookInterceptionCacheInterface|null Interception cache instance
-	 */
-	private readonly ?WebhookInterceptionCacheInterface $interceptionCache;
-
-	/**
 	 * Constructor
 	 *
 	 * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
 	 * Calls parent constructor to set up base mapper functionality.
 	 *
-	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
-	 * @param IUserSession $userSession User session
-	 * @param IGroupManager $groupManager Group manager
-	 * @param IAppConfig $appConfig App configuration for multitenancy settings
-	 * @param WebhookInterceptionCacheInterface|null $interceptionCache Interception-flag cache invalidated on webhook CRUD
+	 * @param IDBConnection                          $db                Database connection
+	 * @param TenancyServices                        $tenancy           Organisation mapper, user session and groups for multi-tenancy and RBAC
+	 * @param IAppConfig                             $appConfig         App configuration for multitenancy settings, read by MultiTenancyTrait
+	 * @param WebhookInterceptionCacheInterface|null $interceptionCache Interception-flag cache invalidated on webhook CRUD;
+	 *                                                                  null skips invalidation (no cache backend)
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IDBConnection $db,
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
-		IAppConfig $appConfig,
-		?WebhookInterceptionCacheInterface $interceptionCache = null,
+		TenancyServices $tenancy,
+		protected IAppConfig $appConfig,
+		private readonly ?WebhookInterceptionCacheInterface $interceptionCache = null,
 	) {
-		// Call parent constructor to initialize base mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_webhooks', entityClass: Webhook::class);
-
-		// Store dependencies for use in mapper methods.
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
-		$this->appConfig = $appConfig;
-		$this->interceptionCache = $interceptionCache;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
 	}//end __construct()
 
 	/**
@@ -174,26 +148,29 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 			return [];
 		}
 
-		// Step 1: Get query builder instance.
-		$qb = $this->db->getQueryBuilder();
+		return $this->findEntities(query: $this->listQuery(page: new QueryPage(limit: $limit, offset: $offset), filters: $filters));
+	}//end findAll()
 
-		// Step 2: Build SELECT query for all columns.
+	/**
+	 * The listing query: one page, the column filters, and the organisation filter for multi-tenancy.
+	 *
+	 * @param QueryPage  $page    The page to take.
+	 * @param array|null $filters Column filters to apply.
+	 *
+	 * @return IQueryBuilder The query, ready to run.
+	 */
+	private function listQuery(QueryPage $page, ?array $filters): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName());
-
-		// Step 3: Apply pagination if provided.
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
-
-		// Step 4: Apply filters if provided.
+		$page->applyTo(qb: $qb);
 		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
-		// Step 5: Apply organisation filter for multi-tenancy.
-		// This ensures users only see webhooks from their organisation.
+		// Users only see webhooks from their organisation.
 		$this->applyOrganisationFilter(qb: $qb);
 
-		// Step 6: Execute query and return entities.
-		return $this->findEntities(query: $qb);
-	}//end findAll()
+		return $qb;
+	}//end listQuery()
 
 	/**
 	 * Find a single webhook by ID
@@ -401,7 +378,6 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	 *
 	 * @param Webhook $webhook Webhook to update
 	 * @param bool $success Was delivery successful
-	 * @param bool $incrementOnly Only increment counters, don't update timestamps
 	 *
 	 * @return Webhook
 	 *
@@ -409,26 +385,19 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control update behavior
 	 */
-	public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly = false): Webhook {
+	public function updateStatistics(Webhook $webhook, bool $success): Webhook {
 		$webhook->setTotalDeliveries($webhook->getTotalDeliveries() + 1);
-
-		if ($incrementOnly === false) {
-			$webhook->setLastTriggeredAt(new DateTime());
-		}
+		$webhook->setLastTriggeredAt(new DateTime());
 
 		if ($success === true) {
 			$webhook->setSuccessfulDeliveries($webhook->getSuccessfulDeliveries() + 1);
-			if ($incrementOnly === false) {
-				$webhook->setLastSuccessAt(new DateTime());
-			}
+			$webhook->setLastSuccessAt(new DateTime());
 
 			return $this->update(entity: $webhook);
 		}
 
 		$webhook->setFailedDeliveries($webhook->getFailedDeliveries() + 1);
-		if ($incrementOnly === false) {
-			$webhook->setLastFailureAt(new DateTime());
-		}
+		$webhook->setLastFailureAt(new DateTime());
 
 		return $this->update(entity: $webhook);
 	}//end updateStatistics()

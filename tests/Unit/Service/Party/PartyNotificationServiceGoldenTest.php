@@ -16,11 +16,14 @@ use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCA\OpenRegister\Notifications\Service\Party\PartyReachGates;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Notifications\Service\Notification\MailAddressee;
+use OCA\OpenRegister\Notifications\Service\Notification\MailContent;
 
 /**
  * Golden: who notifyParties() mails and who it refuses, for one object holding every kind of party.
@@ -100,9 +103,9 @@ class PartyNotificationServiceGoldenTest extends TestCase
         );
 
         $optOut = $this->createMock(OptOutAuthority::class);
-        $optOut->method('ask')->willReturnCallback(
-            function (string $channel, string $category, array $addresses, string $correlationId): array {
-                $this->log[] = ['ask', $channel, $category, $addresses, $correlationId];
+        $optOut->method('askQuestion')->willReturnCallback(
+            function (OptOutQuestion $question): array {
+                $this->log[] = ['ask', $question->channel, $question->category, $question->addresses, $question->correlationId];
                 return $this->decisions;
             }
         );
@@ -114,9 +117,9 @@ class PartyNotificationServiceGoldenTest extends TestCase
         );
 
         $email = $this->createMock(EmailSender::class);
-        $email->method('sendToAddress')->willReturnCallback(
-            function (string $address, string $displayName, string $subject, string $body, ?array $unsubscribe): string {
-                $this->log[] = ['mail', $address, $displayName, $subject, $body, $unsubscribe];
+        $email->method('sendMailTo')->willReturnCallback(
+            function (MailAddressee $to, MailContent $mail): string {
+                $this->log[] = ['mail', $to->address, $to->displayName, $mail->subject, $mail->body, $mail->unsubscribe];
                 return EmailSender::OUTCOME_DISPATCHED;
             }
         );

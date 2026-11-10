@@ -138,23 +138,17 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 	}//end principal()
 
 	/**
-	 * Record one call against the caller making the current request.
+	 * Count one observed call against the caller making the current request.
 	 *
-	 * @param string $path The request path.
-	 * @param string $method The HTTP method.
-	 * @param string $apiVersion The contract version that served it.
-	 * @param DateTime|null $moment When it happened; defaults to now.
+	 * A failure to count is logged and never fails the call itself.
+	 *
+	 * @param ApiCallObservation $call The path, method, API version and moment.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
-	public function record(
-		string $path,
-		string $method,
-		string $apiVersion,
-		?DateTime $moment = null,
-	): void {
+	public function recordCall(ApiCallObservation $call): void {
 		if ($this->isEnabled() === false) {
 			return;
 		}
@@ -162,16 +156,16 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 		try {
 			$key = ApiCallKeys::of(
 				principal: $this->principal(),
-				route: self::routeOf(path: $path),
-				method: strtoupper(substr($method, 0, 10)),
-				apiVersion: $apiVersion,
+				route: self::routeOf(path: $call->path),
+				method: strtoupper(substr($call->method, 0, 10)),
+				apiVersion: $call->apiVersion,
 			);
-			$this->mapper->count(key: $key, moment: ($moment ?? new DateTime()));
+			$this->mapper->count(key: $key, moment: ($call->moment ?? new DateTime()));
 		} catch (Throwable $e) {
 			$this->logger->debug('OpenRegister: could not record an API call.', ['exception' => $e]);
 		}
 
-	}//end record()
+	}//end recordCall()
 
 	/**
 	 * Collapse an expanded path back to the route it came from.

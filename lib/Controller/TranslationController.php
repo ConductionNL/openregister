@@ -29,14 +29,23 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\BulkTranslation;
 use OCA\OpenRegister\Controller\Support\TranslationControllerServices;
+use OCA\OpenRegister\Controller\Support\TranslationFilter;
+use OCA\OpenRegister\Controller\Support\TranslationSearchOptions;
+use OCA\OpenRegister\Controller\Support\TranslationSlot;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
+use OCA\OpenRegister\Db\TranslationFilter as RowFilter;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
+use OCA\OpenRegister\Db\TranslationSlot as RowSlot;
 use OCA\OpenRegister\Service\BulkTranslationServiceInterface;
+use OCA\OpenRegister\Service\TranslationSearch;
 use OCA\OpenRegister\Service\TranslationStatusServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -79,24 +88,28 @@ class TranslationController extends Controller {
 	private readonly BulkTranslationServiceInterface $bulkService;
 
 	/**
+	 * The object mapper.
+	 *
+	 * @var MagicObjectFinderInterface
+	 */
+	private readonly MagicObjectFinderInterface $objectMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The application name.
 	 * @param IRequest $request The current request.
 	 * @param TranslationControllerServices $services The translation controller services.
-	 * @param MagicObjectFinderInterface $objectMapper The object mapper.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		TranslationControllerServices $services,
-		private readonly MagicObjectFinderInterface $objectMapper,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->statusService = $services->statusService;
-		$this->translationMapper = $services->translationMapper;
-		$this->schemaMapper = $services->schemaMapper;
+		$this->translationMapper = $services->mappers->translationMapper;
+		$this->schemaMapper = $services->mappers->schemaMapper;
 		$this->bulkService = $services->bulkService;
+		$this->objectMapper = $services->mappers->objectMapper;
 	}//end __construct()
 
 	/**
@@ -136,54 +149,79 @@ class TranslationController extends Controller {
 		string|null $isOutOfDate = null,
 		string|null $compareToSource = null,
 	): JSONResponse {
-		$isOutOfDateBool = $this->isTruthy(value: $isOutOfDate);
-		$compareToSourceBool = $this->isTruthy(value: $compareToSource);
+		$filter = new TranslationFilter(language: $language, status: $status, objectUuid: $objectUuid, sourceLanguage: $sourceLanguage);
+		$listing = new ListQuery(limit: max(1, min(1000, (int)($limit ?? 100))), search: $query);
+		$options = new TranslationSearchOptions(listing: $listing, isOutOfDate: $isOutOfDate, compareToSource: $compareToSource);
 
-		if ($compareToSourceBool === true) {
-			$rows = $this->statusService->searchWithSourceValues(
-				query: $query,
-				language: $language,
-				status: $status,
-				objectUuid: $objectUuid,
-				limit: max(1, min(1000, (int)($limit ?? 100))),
-				sourceLanguage: $sourceLanguage,
-				isOutOfDate: $isOutOfDateBool
-			);
-		} else {
-			$rows = $this->statusService->search(
-				query: $query,
-				language: $language,
-				status: $status,
-				objectUuid: $objectUuid,
-				limit: max(1, min(1000, (int)($limit ?? 100))),
-				sourceLanguage: $sourceLanguage,
-				isOutOfDate: $isOutOfDateBool
-			);
-		}//end if
-
-		return new JSONResponse(
-			[
-				'results' => $rows,
-				'count' => count($rows),
-			]
-		);
+		return $this->searchRows(filter: $filter, options: $options);
 	}//end search()
 
 	/**
-	 * Coerce a string-ish query value to a boolean.
+	 * The rows a search finds, with each row's source value when the options ask for it.
 	 *
-	 * @param string|null $value Raw query parameter value.
+	 * @param TranslationFilter        $filter  The row filters.
+	 * @param TranslationSearchOptions $options The listing and the switches.
 	 *
-	 * @return bool True when the value is `1`, `true`, `yes`, or `on`.
+	 * @return JSONResponse JSON response with results and count.
 	 */
-	private function isTruthy(?string $value): bool {
-		if ($value === null || $value === '') {
-			return false;
+	private function searchRows(TranslationFilter $filter, TranslationSearchOptions $options): JSONResponse {
+		if ($options->withSource() === true) {
+			$rows = $this->rowsWithSource(filter: $filter, options: $options);
+		} else {
+			$rows = $this->plainRows(filter: $filter, options: $options);
 		}
 
-		$normalised = strtolower(trim($value));
-		return in_array($normalised, ['1', 'true', 'yes', 'on'], true);
-	}//end isTruthy()
+		return new JSONResponse(['results' => $rows, 'count' => count($rows)]);
+	}//end searchRows()
+
+	/**
+	 * The rows a search finds.
+	 *
+	 * @param TranslationFilter        $filter  The row filters.
+	 * @param TranslationSearchOptions $options The listing and the switches.
+	 *
+	 * @return array The rows.
+	 */
+	private function plainRows(TranslationFilter $filter, TranslationSearchOptions $options): array {
+		return $this->statusService->search(
+			new TranslationSearch(
+				filter: new RowFilter(
+					language: $filter->language,
+					status: $filter->status,
+					objectUuid: $filter->objectUuid,
+					sourceLanguage: $filter->sourceLanguage
+				),
+				query: $options->listing->search,
+				limit: $options->listing->limit,
+				isOutOfDate: $options->outdatedOnly()
+			)
+		);
+	}//end plainRows()
+
+	/**
+	 * The rows a search finds, each with its source value beside it.
+	 *
+	 * @param TranslationFilter        $filter  The row filters.
+	 * @param TranslationSearchOptions $options The listing and the switches.
+	 *
+	 * @return array The rows.
+	 */
+	private function rowsWithSource(TranslationFilter $filter, TranslationSearchOptions $options): array {
+		return $this->statusService->searchWithSourceValues(
+			new TranslationSearch(
+				filter: new RowFilter(
+					language: $filter->language,
+					status: $filter->status,
+					objectUuid: $filter->objectUuid,
+					sourceLanguage: $filter->sourceLanguage
+				),
+				query: $options->listing->search,
+				limit: $options->listing->limit,
+				isOutOfDate: $options->outdatedOnly()
+			)
+		);
+	}//end rowsWithSource()
+
 
 	/**
 	 * List every translation slot for one object + completeness summary.
@@ -250,6 +288,18 @@ class TranslationController extends Controller {
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
 	public function setStatus(string $uuid, string $property, string $language, ?string $status = null): JSONResponse {
+		return $this->setSlotStatus(slot: new TranslationSlot(uuid: $uuid, property: $property, language: $language), status: $status);
+	}//end setStatus()
+
+	/**
+	 * Change the workflow status of one translation slot.
+	 *
+	 * @param TranslationSlot $slot   The slot the route names.
+	 * @param string|null     $status The new workflow status.
+	 *
+	 * @return JSONResponse JSON response with the updated row.
+	 */
+	private function setSlotStatus(TranslationSlot $slot, ?string $status): JSONResponse {
 		if ($status === null || $status === '') {
 			return new JSONResponse(
 				['error' => 'status is required'],
@@ -258,13 +308,13 @@ class TranslationController extends Controller {
 		}
 
 		try {
-			$row = $this->statusService->setStatus($uuid, $property, $language, $status);
+			$row = $this->statusService->setStatus(new RowSlot(objectUuid: $slot->uuid, property: $slot->property, language: $slot->language), $status);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
 		return new JSONResponse($row->jsonSerialize());
-	}//end setStatus()
+	}//end setSlotStatus()
 
 	/**
 	 * Bulk-translate one object's translatable properties.
@@ -295,24 +345,34 @@ class TranslationController extends Controller {
 		?string $to = null,
 		?array $properties = null,
 	): JSONResponse {
-		if ($this->languagesMissing(from: $from, to: $to) === true) {
+		return $this->translateRequested(uuid: $uuid, translation: new BulkTranslation(from: $from, to: $to, properties: $properties));
+	}//end bulkTranslate()
+
+	/**
+	 * Refuse a translation without both languages, or translate the object.
+	 *
+	 * @param string          $uuid        The object UUID.
+	 * @param BulkTranslation $translation The languages and properties asked for.
+	 *
+	 * @return JSONResponse The translation result, 400 or 404.
+	 */
+	private function translateRequested(string $uuid, BulkTranslation $translation): JSONResponse {
+		if ($translation->languagesMissing() === true) {
 			return new JSONResponse(['error' => 'from and to are required'], Http::STATUS_BAD_REQUEST);
 		}
 
-		return $this->translateLoaded(uuid: $uuid, from: $from, to: $to, properties: $properties);
-	}//end bulkTranslate()
+		return $this->translateLoaded(uuid: $uuid, translation: $translation);
+	}//end translateRequested()
 
 	/**
 	 * Load the object and translate it, or answer 404.
 	 *
-	 * @param string             $uuid       The object UUID.
-	 * @param string             $from       Source language code.
-	 * @param string             $to         Target language code.
-	 * @param array<string>|null $properties Optional whitelist of property names.
+	 * @param string          $uuid        The object UUID.
+	 * @param BulkTranslation $translation The languages, both present, and the properties.
 	 *
 	 * @return JSONResponse The translation result, or 404.
 	 */
-	private function translateLoaded(string $uuid, string $from, string $to, array|null $properties): JSONResponse {
+	private function translateLoaded(string $uuid, BulkTranslation $translation): JSONResponse {
 		$object = $this->loadObject(uuid: $uuid);
 		if ($object === null) {
 			return new JSONResponse(['error' => 'object not found', 'uuid' => $uuid], Http::STATUS_NOT_FOUND);
@@ -320,27 +380,21 @@ class TranslationController extends Controller {
 
 		$result = $this->bulkService->translateObject(
 			object: $object,
-			fromLong: $from,
-			toLong: $to,
-			properties: $properties
+			fromLong: $translation->from,
+			toLong: $translation->to,
+			properties: $translation->properties
 		);
 
 		return new JSONResponse(
-			['uuid' => $uuid, 'from' => $from, 'to' => $to, 'translated' => $result['translated'], 'skipped' => $result['skipped']]
+			[
+				'uuid' => $uuid,
+				'from' => $translation->from,
+				'to' => $translation->to,
+				'translated' => $result['translated'],
+				'skipped' => $result['skipped'],
+			]
 		);
 	}//end translateLoaded()
-
-	/**
-	 * Whether either language code is missing.
-	 *
-	 * @param string|null $from Source language code.
-	 * @param string|null $to   Target language code.
-	 *
-	 * @return bool True when either is null or empty.
-	 */
-	private function languagesMissing(string|null $from, string|null $to): bool {
-		return (in_array($from, [null, ''], true) === true || in_array($to, [null, ''], true) === true);
-	}//end languagesMissing()
 
 	/**
 	 * Load an object by UUID; returns null when not found.

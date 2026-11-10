@@ -21,11 +21,23 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Tool\AgentTool;
+use OCA\OpenRegister\Mcp\Tool\UpdateSchemaCommand;
+use OCA\OpenRegister\Mcp\Tool\UpdateRegisterCommand;
+use OCA\OpenRegister\Mcp\Tool\ListSchemasQuery;
+use OCA\OpenRegister\Mcp\Tool\CreateSchemaCommand;
+use OCA\OpenRegister\Mcp\Tool\CreateRegisterCommand;
+use OCA\OpenRegister\Mcp\Tool\CreateObjectCommand;
+use OCA\OpenRegister\Mcp\Tool\UpdateApplicationCommand;
+use OCA\OpenRegister\Mcp\Tool\UpdateAgentCommand;
+use OCA\OpenRegister\Mcp\Tool\CreateApplicationCommand;
+use OCA\OpenRegister\Mcp\Tool\CreateAgentCommand;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
 use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
 use OCA\OpenRegister\Mcp\Tool\RegisterTool;
 use OCA\OpenRegister\Mcp\Tool\SchemaTool;
 use OCA\OpenRegister\Service\RegisterServiceInterface;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -80,7 +92,7 @@ class CrudToolsCharacterisationTest extends TestCase
             }
         );
 
-        return new AgentTool($mapper, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+        return new AgentTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper);
     }
 
     public function testCreateAgentSetsOnlyNonEmptyFieldsAndTheContextOwner(): void
@@ -91,7 +103,7 @@ class CrudToolsCharacterisationTest extends TestCase
         $context->setOwner('alice');
         $tool->setAgent($context);
 
-        $result = $tool->createAgent('Helper', 'Helps', '', 'Be kind');
+        $result = $tool->createAgent(new CreateAgentCommand('Helper', 'Helps', '', 'Be kind'));
 
         $this->assertTrue($result['success']);
         $this->assertSame("Agent 'Helper' created successfully with UUID agent-uuid.", $result['message']);
@@ -107,7 +119,7 @@ class CrudToolsCharacterisationTest extends TestCase
         $seen = [];
         $tool = $this->agentTool($seen);
 
-        $tool->createAgent('Helper', null, 'chat', null);
+        $tool->createAgent(new CreateAgentCommand('Helper', null, 'chat', null));
 
         $this->assertNull($seen[0]->getDescription());
         $this->assertSame('chat', $seen[0]->getType());
@@ -118,7 +130,7 @@ class CrudToolsCharacterisationTest extends TestCase
     public function testCreateAgentFailureIsAnError(): void
     {
         $seen = [];
-        $result = $this->agentTool($seen, new Exception('db down'))->createAgent('Helper');
+        $result = $this->agentTool($seen, new Exception('db down'))->createAgent(new CreateAgentCommand('Helper'));
 
         $this->assertSame(['success' => false, 'error' => 'Failed to create agent: db down'], $result);
     }
@@ -126,7 +138,7 @@ class CrudToolsCharacterisationTest extends TestCase
     public function testUpdateAgentChangesOnlyTheGivenFields(): void
     {
         $seen = [];
-        $result = $this->agentTool($seen)->updateAgent('a-1', null, '', 'New prompt');
+        $result = $this->agentTool($seen)->updateAgent(new UpdateAgentCommand('a-1', null, '', 'New prompt'));
 
         $this->assertTrue($result['success']);
         $this->assertSame('Agent updated successfully.', $result['message']);
@@ -140,11 +152,11 @@ class CrudToolsCharacterisationTest extends TestCase
         $seen = [];
         $this->assertSame(
             ['success' => false, 'error' => "Agent with UUID 'missing' not found."],
-            $this->agentTool($seen)->updateAgent('missing', 'x')
+            $this->agentTool($seen)->updateAgent(new UpdateAgentCommand('missing', 'x'))
         );
         $this->assertSame(
             ['success' => false, 'error' => 'Failed to update agent: db down'],
-            $this->agentTool($seen, new Exception('db down'))->updateAgent('a-1', 'x')
+            $this->agentTool($seen, new Exception('db down'))->updateAgent(new UpdateAgentCommand('a-1', 'x'))
         );
     }
 
@@ -182,7 +194,7 @@ class CrudToolsCharacterisationTest extends TestCase
             }
         );
 
-        return new ApplicationTool($mapper, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+        return new ApplicationTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper);
     }
 
     public function testCreateApplication(): void
@@ -190,8 +202,8 @@ class CrudToolsCharacterisationTest extends TestCase
         $seen = [];
         $tool = $this->applicationTool($seen);
 
-        $result = $tool->createApplication('Zaken', 'Cases', 'ignored');
-        $tool->createApplication('Leeg', '');
+        $result = $tool->createApplication(new CreateApplicationCommand('Zaken', 'Cases', 'ignored'));
+        $tool->createApplication(new CreateApplicationCommand('Leeg', ''));
 
         $this->assertTrue($result['success']);
         $this->assertSame("Application 'Zaken' created successfully with UUID app-uuid.", $result['message']);
@@ -199,25 +211,25 @@ class CrudToolsCharacterisationTest extends TestCase
         $this->assertNull($seen[1]->getDescription());
         $this->assertSame(
             ['success' => false, 'error' => 'Failed to create application: db down'],
-            $this->applicationTool($seen, new Exception('db down'))->createApplication('Zaken')
+            $this->applicationTool($seen, new Exception('db down'))->createApplication(new CreateApplicationCommand('Zaken'))
         );
     }
 
     public function testUpdateApplication(): void
     {
         $seen = [];
-        $result = $this->applicationTool($seen)->updateApplication('a-1', 'New', null);
+        $result = $this->applicationTool($seen)->updateApplication(new UpdateApplicationCommand('a-1', 'New', null));
 
         $this->assertSame('Application updated successfully.', $result['message']);
         $this->assertSame('New', $seen[0]->getName());
         $this->assertSame('old description', $seen[0]->getDescription());
         $this->assertSame(
             ['success' => false, 'error' => "Application with UUID 'missing' not found."],
-            $this->applicationTool($seen)->updateApplication('missing', 'x')
+            $this->applicationTool($seen)->updateApplication(new UpdateApplicationCommand('missing', 'x'))
         );
         $this->assertSame(
             ['success' => false, 'error' => 'Failed to update application: db down'],
-            $this->applicationTool($seen, new Exception('db down'))->updateApplication('a-1', 'x')
+            $this->applicationTool($seen, new Exception('db down'))->updateApplication(new UpdateApplicationCommand('a-1', 'x'))
         );
     }
 
@@ -249,10 +261,10 @@ class CrudToolsCharacterisationTest extends TestCase
                 return $this->storedSchema();
             }
         );
-        $tool = new SchemaTool($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class), $mapper);
+        $tool = new SchemaTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper);
 
-        $result = $tool->createSchema('T', ['p' => []], 'D', ['p']);
-        $tool->createSchema('T', ['p' => []]);
+        $result = $tool->createSchema(new CreateSchemaCommand('T', ['p' => []], 'D', ['p']));
+        $tool->createSchema(new CreateSchemaCommand('T', ['p' => []]));
 
         $this->assertSame(['title' => 'T', 'description' => 'D', 'properties' => ['p' => []], 'required' => ['p']], $given[0]);
         $this->assertSame(['title' => 'T', 'description' => '', 'properties' => ['p' => []]], $given[1]);
@@ -283,10 +295,10 @@ class CrudToolsCharacterisationTest extends TestCase
                 return [$this->storedSchema()];
             }
         );
-        $tool = new SchemaTool($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class), $mapper);
+        $tool = new SchemaTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper);
 
-        $result = $tool->listSchemas(5, 10, 'reg-1');
-        $tool->listSchemas();
+        $result = $tool->listSchemas(new ListSchemasQuery(5, 10, 'reg-1'));
+        $tool->listSchemas(new ListSchemasQuery());
 
         $this->assertSame([5, 10, ['register' => 'reg-1']], $calls[0]);
         $this->assertSame([100, 0, []], $calls[1]);
@@ -331,26 +343,26 @@ class CrudToolsCharacterisationTest extends TestCase
                 }
             );
             $versioning->method('nextVersion')->willReturn('2.0.0');
-            $versioning->method('recordChangelog')->willReturnCallback(
-                function (int $schemaId, ?string $version, SchemaChangeSet $set, bool $acknowledged, ?string $origin) use (&$log) {
-                    $log[] = 'changelog:' . $schemaId . ':' . $version . ':' . var_export($acknowledged, true) . ':' . $origin;
+            $versioning->method('recordChange')->willReturnCallback(
+                function (int $schemaId, SchemaChangeRecord $record) use (&$log) {
+                    $log[] = 'changelog:' . $schemaId . ':' . $record->version . ':' . var_export($record->acknowledged, true) . ':' . $record->origin;
                     return null;
                 }
             );
         }
 
-        return new SchemaTool($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class), $mapper, $versioning);
+        return new SchemaTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $mapper, $versioning);
     }
 
     public function testUpdateSchemaWithBreakingChangeBumpsAndRecords(): void
     {
         $log    = [];
-        $result = $this->schemaTool($log, true, true)->updateSchema('7', 'New', null, null, ['a', 'b']);
+        $result = $this->schemaTool($log, true, true)->updateSchema(new UpdateSchemaCommand('7', 'New', null, ['b' => []]));
 
         $this->assertSame(
             [
-                'classify:Old:{"properties":{"a":{"type":"string"}},"required":["a","b"]}',
-                'update:New|Old description|{"a":{"type":"string"}}|["a","b"]|2.0.0',
+                'classify:Old:{"properties":{"b":[]},"required":["a"]}',
+                'update:New|Old description|{"b":[]}|["a"]|2.0.0',
                 'changelog:7:2.0.0:false:agent tool',
             ],
             $log
@@ -362,7 +374,7 @@ class CrudToolsCharacterisationTest extends TestCase
     public function testUpdateSchemaWithoutChangesStillRecordsTheEmptyChangeSet(): void
     {
         $log = [];
-        $this->schemaTool($log, true, false)->updateSchema('7', null, 'D', ['b' => []]);
+        $this->schemaTool($log, true, false)->updateSchema(new UpdateSchemaCommand('7', null, 'D', ['b' => []]));
 
         $this->assertSame(
             [
@@ -377,13 +389,13 @@ class CrudToolsCharacterisationTest extends TestCase
     public function testUpdateSchemaWithoutDefinitionChangeOrVersioningDoesNotClassify(): void
     {
         $log = [];
-        $this->schemaTool($log, true, true)->updateSchema('7', 'T', 'D');
-        $this->schemaTool($log, false, true)->updateSchema('7', null, null, ['c' => []], ['c']);
+        $this->schemaTool($log, true, true)->updateSchema(new UpdateSchemaCommand('7', 'T', 'D'));
+        $this->schemaTool($log, false, true)->updateSchema(new UpdateSchemaCommand('7', null, null, ['c' => []]));
 
         $this->assertSame(
             [
                 'update:T|D|{"a":{"type":"string"}}|["a"]|1.0.0',
-                'update:Old|Old description|{"c":[]}|["c"]|1.0.0',
+                'update:Old|Old description|{"c":[]}|["a"]|1.0.0',
             ],
             $log
         );
@@ -419,7 +431,7 @@ class CrudToolsCharacterisationTest extends TestCase
             }
         );
 
-        return new RegisterTool($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class), $service);
+        return new RegisterTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $service);
     }
 
     public function testCreateAndUpdateRegister(): void
@@ -427,10 +439,10 @@ class CrudToolsCharacterisationTest extends TestCase
         $calls = [];
         $tool  = $this->registerTool($calls);
 
-        $created = $tool->createRegister('R', 'RD', 'r');
-        $tool->createRegister('R');
-        $updated = $tool->updateRegister('3', null, 'RD');
-        $tool->updateRegister('3', 'R', null);
+        $created = $tool->createRegister(new CreateRegisterCommand('R', 'RD', 'r'));
+        $tool->createRegister(new CreateRegisterCommand('R'));
+        $updated = $tool->updateRegister(new UpdateRegisterCommand('3', null, 'RD'));
+        $tool->updateRegister(new UpdateRegisterCommand('3', 'R', null));
 
         $this->assertSame(
             [
@@ -452,7 +464,7 @@ class CrudToolsCharacterisationTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('No update data provided');
 
-        $this->registerTool($calls)->updateRegister('3');
+        $this->registerTool($calls)->updateRegister(new UpdateRegisterCommand('3'));
     }
 
     /**
@@ -485,7 +497,7 @@ class CrudToolsCharacterisationTest extends TestCase
             }
         );
 
-        return new ObjectsTool($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class), $service);
+        return new ObjectsTool(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)), $service);
     }
 
     public function testSearchObjectsBuildsFiltersFromTheGivenCriteria(): void
@@ -524,7 +536,7 @@ class CrudToolsCharacterisationTest extends TestCase
     public function testCreateObjectStampsTheScopeAndCastsTheIds(): void
     {
         $calls  = [];
-        $result = $this->objectsTool($calls, [])->createObject('2', '5', ['name' => 'x', '@self' => ['owner' => 'bob']]);
+        $result = $this->objectsTool($calls, [])->createObject(new CreateObjectCommand('2', '5', ['name' => 'x', '@self' => ['owner' => 'bob']]));
 
         $this->assertSame(
             [['saveObject', ['name' => 'x', '@self' => ['register' => '2', 'schema' => '5']], 2, 5]],

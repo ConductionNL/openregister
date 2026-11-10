@@ -32,6 +32,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ArchivalControllerServices;
 use OCA\OpenRegister\Controller\Support\ArchivalNominationSubject;
 use OCA\OpenRegister\Controller\Support\ArchivalReviewAnswer;
@@ -46,6 +47,7 @@ use OCA\OpenRegister\Service\Archival\DestructionListRepositoryInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\DestructionServiceInterface;
 use OCA\OpenRegister\Service\Archival\LegalHoldServiceInterface;
+use OCA\OpenRegister\Service\Archival\NominationRecompute;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -183,16 +185,14 @@ class ArchivalController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request object.
 	 * @param ArchivalControllerServices $services The archival controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ArchivalControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->lists = $services->mappers->lists;
 		$this->reviews = $services->decisions->reviews;
 		$this->outcomes = $services->decisions->outcomes;
@@ -1244,12 +1244,8 @@ class ArchivalController extends Controller {
 		$schema = $subject->schema;
 
 		try {
-			$nomination = $this->nominations->nominate(
-				object: $object,
-				schema: $schema,
-				trigger: 'recompute',
-				actor: $this->currentUserId(),
-				reason: $reason
+			$nomination = $this->nominations->recompute(
+				request: new NominationRecompute(object: $object, schema: $schema, actor: $this->currentUserId(), reason: $reason)
 			);
 
 			if (($nomination['status'] ?? null) === ArchivalNominationServiceInterface::STATUS_NOT_APPLICABLE) {

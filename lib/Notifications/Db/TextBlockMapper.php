@@ -83,23 +83,20 @@ class TextBlockMapper extends QBMapper {
 	 * "mine or nobody's". A block scoped to a group the reader is not in is
 	 * left out entirely, which is the whole point of the group scope.
 	 *
-	 * @param string|null       $register The register being written on.
-	 * @param string|null       $schema   The schema being written on.
-	 * @param array<int,string> $groups   The reader's groups.
+	 * @param TextBlockScope $scope The register and schema being written on, and the reader's groups.
 	 *
 	 * @return array<int, TextBlock> The blocks a handler may insert.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function findInScope(?string $register = null, ?string $schema = null, array $groups = []): array {
+	public function findInScope(TextBlockScope $scope): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->orderBy('title', 'ASC');
 
-		$this->whereScopedOrUnscoped(qb: $qb, column: 'register', value: $register);
-		$this->whereScopedOrUnscoped(qb: $qb, column: 'schema', value: $schema);
-		$this->whereInGroupScope(qb: $qb, groups: $groups);
+		$this->whereScopedOrUnscoped(qb: $qb, columns: ['register' => $scope->register, 'schema' => $scope->schema]);
+		$this->whereInGroupScope(qb: $qb, groups: $scope->groups);
 
 		return $this->findEntities(query: $qb);
 	}//end findInScope()

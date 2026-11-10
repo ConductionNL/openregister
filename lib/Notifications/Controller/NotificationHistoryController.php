@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use DateTime;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationHistoryControllerServices;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
@@ -42,6 +43,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * Class NotificationHistoryController.
@@ -117,16 +119,14 @@ class NotificationHistoryController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param NotificationHistoryControllerServices $services The controller's services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		NotificationHistoryControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->mapper = $services->mapper;
 		$this->userSession = $services->userSession;
@@ -177,7 +177,7 @@ class NotificationHistoryController extends Controller {
 		$limit = $this->resolveLimit();
 		$offset = $this->resolveOffset();
 
-		$results = $this->mapper->findFiltered(filters: $filters, limit: $limit, offset: $offset);
+		$results = $this->mapper->findFiltered(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
 		$total = $this->mapper->countFiltered(filters: $filters);
 
 		return new JSONResponse(

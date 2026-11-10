@@ -114,79 +114,57 @@ class PdfTextReplacer {
 	 *
 	 * Runs the full pipeline: load → replace → re-serialise → validate.
 	 * Residual entity text does not fail the run: the output is returned and
-	 * the residual needles land in $residualEntities. A strict run throws
-	 * when the output cannot be re-read for that check.
+	 * the residual needles land in the result's residualEntities. A strict run
+	 * throws when the output cannot be re-read for that check.
 	 *
-	 * @param string $pdfBytes Raw input PDF bytes.
-	 * @param array $substitutions Map: entity-text => placeholder
-	 *                             (e.g. ['Jan Jansen' =>
-	 *                             '[PERSON: 7]']).
-	 * @param bool $strict Forwarded to {@see validateOutput}: when
-	 *                     true, an output that cannot be re-read is refused.
-	 * @param array $residualEntities Out-param receiving any entity text that
-	 *                                remained after replacement.
-	 * @param bool|null $preserveStructure Tri-state structure-preservation option
-	 *                                     (REQ-ORTPR-004): null/absent = auto
-	 *                                     (preserve iff the input is tagged);
-	 *                                     true = attempt even on ambiguous
-	 *                                     detection; false = skip but still
-	 *                                     measure. Default null (auto).
-	 * @param StructurePreservation|null $structureResult Out-param receiving the
-	 *                                                    `structurePreservation` result block
-	 *                                                    (REQ-ORTPR-003) for this run. Always populated
-	 *                                                    on return (never left null).
+	 * @param string        $pdfBytes Raw input PDF bytes.
+	 * @param RedactionPlan $plan     The substitution map, the strict policy
+	 *                                (forwarded to {@see validateOutput}) and
+	 *                                the tri-state structure option (REQ-ORTPR-004).
 	 *
-	 * @return string Anonymised PDF bytes.
+	 * @return PdfRedaction The anonymised PDF bytes, the residual entity text and
+	 *                      the `structurePreservation` result block (REQ-ORTPR-003).
 	 *
 	 * @throws PdfAnonymisationException On any pipeline failure, and in a strict
 	 *                                   run when the output cannot be re-read.
 	 *
-	 * @phpstan-param array<string, string> $substitutions
-	 * @psalm-param   array<string, string> $substitutions
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   $strict forwards the strict vs lenient validation policy.
-	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
 	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
 	 */
-	public function replaceInPdf(
-		string $pdfBytes,
-		array $substitutions,
-		bool $strict = false,
-		array &$residualEntities = [],
-		?bool $preserveStructure = null,
-		?StructurePreservation &$structureResult = null,
-	): string {
-		$residualEntities = [];
-		$structureResult = null;
-
-		if (count($substitutions) === 0) {
+	public function replaceInPdf(string $pdfBytes, RedactionPlan $plan): PdfRedaction {
+		if (count($plan->substitutions) === 0) {
 			// No-op: nothing to anonymise. Output bytes are byte-identical to
 			// the input (REQ-ORTPR-005), so tagCountAfter trivially equals
 			// tagCountBefore — still measured for a truthful report even on
 			// this fast path.
-			$structureResult = $this->measureNoOnStructurePreservation(pdfBytes: $pdfBytes, preserveStructure: $preserveStructure);
-			return $pdfBytes;
+			return new PdfRedaction(
+				bytes: $pdfBytes,
+				structurePreservation: $this->measureNoOnStructurePreservation(pdfBytes: $pdfBytes, preserveStructure: $plan->preserveStructure)
+			);
 		}
 
-		$substitutions = self::longestFirst(substitutions: $substitutions);
+		$plan = new RedactionPlan(
+			substitutions: self::longestFirst(substitutions: $plan->substitutions),
+			strict: $plan->strict,
+			preserveStructure: $plan->preserveStructure
+		);
 		$doc = $this->loadDocument(pdfBytes: $pdfBytes);
 
 		// Measure BEFORE any mutation, reusing this same loaded $doc — no
 		// second parse (REQ-ORTPR-001; design.md "Risks" — the extra-parse
 		// cost is avoided by inspecting the object model already in memory).
 		$tagCountBefore = $this->structureInspector->countStructElements(doc: $doc);
-		$stats = $this->replaceText(doc: $doc, substitutions: $substitutions);
+		$stats = $this->replaceText(doc: $doc, substitutions: $plan->substitutions);
 
 		// Re-measure AFTER text replacement, on the SAME in-memory $doc
 		// (`replace_text_in_document` mutates content streams only; the
 		// structure-tree objects — `/StructTreeRoot`, `/MarkInfo`,
 		// `/StructElem` — are not content streams, so this reflects what
 		// `to_pdf_file_s(rebuild: true)` will serialise). Never a silent
-		// flatten: any loss surfaces via $structureResult regardless of
+		// flatten: any loss surfaces via the structure report regardless of
 		// $preserveStructure (REQ-ORTPR-002).
 		$measurement = new StructureMeasurement(
-			rawOption: $preserveStructure,
+			rawOption: $plan->preserveStructure,
 			tagCountBefore: $tagCountBefore,
 			tagCountAfter: $this->structureInspector->countStructElements(doc: $doc),
 			structureIntactAfter: $this->structureInspector->isTagged(doc: $doc)
@@ -203,22 +181,33 @@ class PdfTextReplacer {
 		// Validation: re-extract the output and collect any residual
 		// substitution-map keys. The residual needles go back to the caller,
 		// which writes the file and surfaces a warning.
-		$residualEntities = $this->validateOutput(outputBytes: $outputBytes, substitutions: $substitutions, replaceStats: $stats, strict: $strict);
+		$residualEntities = $this->validateOutput(output: new SerialisedPdf(bytes: $outputBytes, replaceStats: $stats), plan: $plan);
+		$this->logSuccess(replaceStats: $stats, substitutionCount: count($plan->substitutions));
 
+		return new PdfRedaction(bytes: $outputBytes, structurePreservation: $structureResult, residualEntities: $residualEntities);
+	}//end replaceInPdf()
+
+	/**
+	 * Log the PII-free success line of a replace run.
+	 *
+	 * @param array<string, mixed> $replaceStats      Stats returned by SAPP's replace API.
+	 * @param int                  $substitutionCount Number of entries in the substitution map.
+	 *
+	 * @return void
+	 */
+	private function logSuccess(array $replaceStats, int $substitutionCount): void {
 		$this->logger->info(
 			message: '[PdfTextReplacer] PDF anonymisation succeeded',
 			context: [
-				'streams_scanned' => ($stats['streams_scanned'] ?? 0),
-				'streams_modified' => ($stats['streams_modified'] ?? 0),
-				'tj_arrays_modified' => ($stats['tj_arrays_modified'] ?? 0),
-				'subset_font_fallbacks_used' => ($stats['subset_font_fallbacks_used'] ?? 0),
-				'rejected_substitutions' => count(($stats['rejected_substitutions'] ?? [])),
-				'substitution_count' => count($substitutions),
+				'streams_scanned' => ($replaceStats['streams_scanned'] ?? 0),
+				'streams_modified' => ($replaceStats['streams_modified'] ?? 0),
+				'tj_arrays_modified' => ($replaceStats['tj_arrays_modified'] ?? 0),
+				'subset_font_fallbacks_used' => ($replaceStats['subset_font_fallbacks_used'] ?? 0),
+				'rejected_substitutions' => count(($replaceStats['rejected_substitutions'] ?? [])),
+				'substitution_count' => $substitutionCount,
 			]
 		);
-
-		return $outputBytes;
-	}//end replaceInPdf()
+	}//end logSuccess()
 
 	/**
 	 * Order a substitution map longest needle first.
@@ -343,44 +332,32 @@ class PdfTextReplacer {
 	 * be checked: a lenient run logs that and returns an empty list, a strict
 	 * run throws `REASON_VALIDATION_FAILED` so no unchecked file is written.
 	 *
-	 * @param string $outputBytes Serialised output PDF bytes.
-	 * @param array $substitutions The original substitution map.
-	 * @param array $replaceStats Stats returned by SAPP's replace API
-	 *                            (kept in the diagnostic surface
-	 *                            for ops review).
-	 * @param bool $strict When true (the entity-anonymisation flow), an
-	 *                     output the parser cannot re-read is refused;
-	 *                     when false (ad-hoc replace) it is returned
-	 *                     unchecked with a logged warning.
+	 * @param SerialisedPdf $output The serialised output PDF bytes and SAPP's
+	 *                              replace stats (kept in the diagnostic
+	 *                              surface for ops review).
+	 * @param RedactionPlan $plan   The original substitution map, and the
+	 *                              policy: strict (the entity-anonymisation
+	 *                              flow) refuses an output the parser cannot
+	 *                              re-read; lenient (ad-hoc replace) returns
+	 *                              it unchecked with a logged warning.
 	 *
 	 * @return string[] The substitution-map keys found in the output.
 	 *
-	 * @throws PdfAnonymisationException When $strict and the output cannot be re-read.
-	 *
-	 * @phpstan-param array<string, string> $substitutions
-	 * @phpstan-param array<string, mixed>  $replaceStats
-	 * @psalm-param   array<string, string> $substitutions
-	 * @psalm-param   array<string, mixed>  $replaceStats
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects strict (entity anonymisation) vs lenient (ad-hoc) behaviour.
+	 * @throws PdfAnonymisationException When the plan is strict and the output cannot be re-read.
 	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
 	 */
-	public function validateOutput(string $outputBytes, array $substitutions, array $replaceStats = [], bool $strict = false): array {
-		$extracted = $this->reExtract(outputBytes: $outputBytes, replaceStats: $replaceStats);
+	public function validateOutput(SerialisedPdf $output, RedactionPlan $plan): array {
+		$extracted = $this->reExtract(output: $output);
 		if ($extracted === null) {
-			$this->refuseUncheckedOutputWhenStrict(strict: $strict, outputBytes: $outputBytes);
+			$this->refuseUncheckedOutputWhenStrict(plan: $plan, output: $output);
 			return [];
 		}
 
-		$residual = $this->findResidualNeedles(
-			extracted: $extracted,
-			normalisedExtracted: $this->normaliseHaystack(extracted: $extracted),
-			substitutions: $substitutions
-		);
-
+		$text = new ExtractedText(raw: $extracted, normalised: $this->normaliseHaystack(extracted: $extracted));
+		$residual = $this->findResidualNeedles(text: $text, substitutions: $plan->substitutions);
 		if (count($residual) > 0) {
-			$this->logResidual(residualCount: count($residual), replaceStats: $replaceStats);
+			$this->logResidual(residualCount: count($residual), replaceStats: $output->replaceStats);
 		}
 
 		// Best-effort: the anonymisation flow writes the output and surfaces
@@ -432,30 +409,23 @@ class PdfTextReplacer {
 	/**
 	 * Collect the substitution-map keys still present in the output.
 	 *
-	 * @param string $extracted           Raw re-extracted output text.
-	 * @param string $normalisedExtracted Whitespace-normalised output text.
-	 * @param array  $substitutions       The original substitution map.
+	 * @param ExtractedText $text          The re-extracted output text.
+	 * @param array         $substitutions The original substitution map.
 	 *
 	 * @return string[] The residual needles, in substitution order.
 	 *
 	 * @phpstan-param array<string, string> $substitutions
 	 * @psalm-param   array<string, string> $substitutions
 	 */
-	private function findResidualNeedles(string $extracted, string $normalisedExtracted, array $substitutions): array {
+	private function findResidualNeedles(ExtractedText $text, array $substitutions): array {
 		$residual = [];
 		foreach (array_keys($substitutions) as $needleIndex => $needle) {
-			if ($needle === '') {
+			$rawNeedle = (string)$needle;
+			if ($rawNeedle === '') {
 				continue;
 			}
 
-			$rawNeedle = (string)$needle;
-			if ($this->needleIsResidual(
-				needleIndex: $needleIndex,
-				rawNeedle: $rawNeedle,
-				extracted: $extracted,
-				normalisedExtracted: $normalisedExtracted
-			) === true
-			) {
+			if ($text->holds(rawNeedle: $rawNeedle, normalisedNeedle: $this->normaliseNeedle(needleIndex: $needleIndex, rawNeedle: $rawNeedle)) === true) {
 				$residual[] = $rawNeedle;
 			}
 		}
@@ -464,23 +434,21 @@ class PdfTextReplacer {
 	}//end findResidualNeedles()
 
 	/**
-	 * Decide whether one needle is still present in the output.
+	 * Whitespace-normalise one needle.
 	 *
-	 * @param int    $needleIndex         Position of the needle in the map.
-	 * @param string $rawNeedle           The needle as given.
-	 * @param string $extracted           Raw re-extracted output text.
-	 * @param string $normalisedExtracted Whitespace-normalised output text.
+	 * An invalid-UTF-8 needle is NOT silently skipped — that would hide a
+	 * residual it should have flagged. It returns null so the raw bytes are
+	 * probed instead, and the degradation is logged structurally (needle
+	 * index only, never the needle text — ADR-005).
 	 *
-	 * @return bool
+	 * @param int    $needleIndex Position of the needle in the map.
+	 * @param string $rawNeedle   The needle as given.
+	 *
+	 * @return string|null The normalised needle, or null when normalisation failed.
 	 */
-	private function needleIsResidual(int $needleIndex, string $rawNeedle, string $extracted, string $normalisedExtracted): bool {
+	private function normaliseNeedle(int $needleIndex, string $rawNeedle): ?string {
 		$normalisedNeedle = preg_replace('/\s+/u', ' ', $rawNeedle);
 		if ($normalisedNeedle === null) {
-			// Invalid-UTF-8 needle: do NOT silently skip — that would
-			// hide a residual this needle should have flagged. Probe
-			// the raw bytes instead (`strpos` is encoding-agnostic)
-			// and surface the degradation structurally (needle index
-			// only, never the needle text — ADR-005).
 			$this->logger->warning(
 				message: '[PdfTextReplacer] Needle normalisation failed — probing raw bytes',
 				context: [
@@ -489,23 +457,10 @@ class PdfTextReplacer {
 					'preg_error' => preg_last_error_msg(),
 				]
 			);
-			return strpos($extracted, $rawNeedle) !== false;
 		}
 
-		$normalisedNeedle = trim($normalisedNeedle);
-		if ($normalisedNeedle === '') {
-			return false;
-		}
-
-		// Case-SENSITIVE, multibyte-safe substring check via `mb_strpos`
-		// — mirrors the replacement engine's guarantee. SAPP replaces
-		// exact-case needles only, so a case-insensitive probe here
-		// flagged text that was never a detected entity (e.g. the
-		// lowercase domain in "www.amsterdam.nl" tripping on the
-		// LOCATION needle "Amsterdam") and failed runs that were in
-		// fact fully anonymised.
-		return mb_strpos($normalisedExtracted, $normalisedNeedle) !== false;
-	}//end needleIsResidual()
+		return $normalisedNeedle;
+	}//end normaliseNeedle()
 
 	/**
 	 * Log the PII-free residual warning.
@@ -546,17 +501,13 @@ class PdfTextReplacer {
 	 *
 	 * A parser failure is logged structurally (no document or needle text).
 	 *
-	 * @param string $outputBytes  Serialised output PDF bytes.
-	 * @param array  $replaceStats Stats returned by SAPP's replace API.
+	 * @param SerialisedPdf $output Serialised output PDF bytes and SAPP's replace stats.
 	 *
 	 * @return string|null The extracted text, or null when the parser cannot read the output.
-	 *
-	 * @phpstan-param array<string, mixed> $replaceStats
-	 * @psalm-param   array<string, mixed> $replaceStats
 	 */
-	private function reExtract(string $outputBytes, array $replaceStats): ?string {
+	private function reExtract(SerialisedPdf $output): ?string {
 		try {
-			return $this->pdfExtractor->extractText(pdfBytes: $outputBytes);
+			return $this->pdfExtractor->extractText(pdfBytes: $output->bytes);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[PdfTextReplacer] Post-replace re-extraction skipped — smalot/pdfparser could not parse SAPP output',
@@ -564,9 +515,9 @@ class PdfTextReplacer {
 					'stage' => 'validate.extract',
 					'parser_exception' => get_class($e),
 					'parser_exception_msg' => $e->getMessage(),
-					'output_bytes' => strlen($outputBytes),
-					'streams_scanned' => ($replaceStats['streams_scanned'] ?? null),
-					'streams_modified' => ($replaceStats['streams_modified'] ?? null),
+					'output_bytes' => strlen($output->bytes),
+					'streams_scanned' => ($output->replaceStats['streams_scanned'] ?? null),
+					'streams_modified' => ($output->replaceStats['streams_modified'] ?? null),
 				]
 			);
 
@@ -580,17 +531,15 @@ class PdfTextReplacer {
 	 * A strict run (entity anonymisation) must not write an `_anonymized`
 	 * file nobody could check. The refusal carries counts only.
 	 *
-	 * @param bool   $strict      Whether this is a strict run.
-	 * @param string $outputBytes Serialised output PDF bytes.
+	 * @param RedactionPlan $plan   The plan of this run; only a strict plan refuses.
+	 * @param SerialisedPdf $output Serialised output PDF bytes.
 	 *
 	 * @return void
 	 *
-	 * @throws PdfAnonymisationException When $strict.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects strict (entity anonymisation) vs lenient (ad-hoc) behaviour.
+	 * @throws PdfAnonymisationException When the plan is strict.
 	 */
-	private function refuseUncheckedOutputWhenStrict(bool $strict, string $outputBytes): void {
-		if ($strict === false) {
+	private function refuseUncheckedOutputWhenStrict(RedactionPlan $plan, SerialisedPdf $output): void {
+		if ($plan->strict === false) {
 			return;
 		}
 
@@ -599,7 +548,7 @@ class PdfTextReplacer {
 			message: 'PDF anonymisation refused: the output could not be re-read to check for entity text, so no file was written',
 			diagnostic: [
 				'stage' => 'validate.extract',
-				'output_bytes' => strlen($outputBytes),
+				'output_bytes' => strlen($output->bytes),
 			]
 		);
 	}//end refuseUncheckedOutputWhenStrict()

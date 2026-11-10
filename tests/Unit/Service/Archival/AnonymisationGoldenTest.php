@@ -18,13 +18,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Archival;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Archival\AnonymisedPayload;
 use OCA\OpenRegister\Service\Archival\AnonymisationPlan;
 use OCA\OpenRegister\Service\Archival\AnonymisationPlanner;
 use OCA\OpenRegister\Service\Archival\AnonymisationRefusedException;
 use OCA\OpenRegister\Service\Archival\AnonymisationRun;
+use OCA\OpenRegister\Service\Archival\AnonymisationSubject;
 use OCA\OpenRegister\Service\Archival\AnonymisationService;
 use OCA\OpenRegister\Service\Archival\AnonymisationSweep;
 use OCA\OpenRegister\Service\Archival\AnonymisationTarget;
+use OCA\OpenRegister\Service\Archival\SaltedProfile;
+use OCA\OpenRegister\Service\Archival\PayloadChange;
+use OCA\OpenRegister\Service\Archival\AnonymisationClearance;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -73,7 +78,7 @@ class AnonymisationGoldenTest extends TestCase {
 	public function testTheServiceTreatsEveryPropertyAndReportsBothLists(): void {
 		$service = new AnonymisationService();
 		$planner = new AnonymisationPlanner();
-		$after = $service->apply($this->payload(), $planner->profileOf($this->annotation()), 'salt');
+		$after = $service->apply(payload: $this->payload(), profile: new SaltedProfile(rules: $planner->profileOf($this->annotation()), salt: 'salt'));
 
 		$pseudonym = 'anon-' . substr(hash('sha256', 'salt::123456782'), 0, 16);
 		$this->assertSame(
@@ -81,7 +86,7 @@ class AnonymisationGoldenTest extends TestCase {
 			$after
 		);
 
-		$report = $service->report($this->payload(), $after, 'p');
+		$report = $service->report(change: new PayloadChange(before: $this->payload(), after: $after), profileName: 'p');
 		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T/', $report['anonymisedAt']);
 		unset($report['anonymisedAt']);
 		$this->assertSame(
@@ -117,9 +122,9 @@ class AnonymisationGoldenTest extends TestCase {
 				'e' => 'anon-' . substr(hash('sha256', 's::'), 0, 16),
 				'f' => null, 'g' => 'same', 'h' => 'same', 'i' => '2001',
 			],
-			$service->apply($payload, $profile, 's')
+			$service->apply(payload: $payload, profile: new SaltedProfile(rules: $profile, salt: 's'))
 		);
-		$this->assertSame(['c' => '1234'], $service->apply(['c' => 1234567], ['c' => $profile['c']], 's'));
+		$this->assertSame(['c' => '1234'], $service->apply(payload: ['c' => 1234567], profile: new SaltedProfile(rules: ['c' => $profile['c']], salt: 's')));
 	}//end testUnparseableOrOddValuesBecomeNullOrPassThrough()
 
 	public function testThePlannerReadsTheProfileAndRefusesWhatCannotBeCarriedOut(): void {
@@ -165,28 +170,28 @@ class AnonymisationGoldenTest extends TestCase {
 
 		$this->assertSame(
 			'This record is under a legal hold (no reason was recorded with the hold), so it is not anonymised. A hold says somebody may still need it as it is, and as it is includes the name.',
-			$run->refuse(['state' => 'complete'], true, '  ', $fp)
+			$run->refuse(new AnonymisationClearance(marker: ['state' => 'complete'], hasLegalHold: true, holdReason: '  ', saltFingerprint: $fp))
 		);
 		$this->assertSame(
 			'This record is under a legal hold (WOO-1), so it is not anonymised. A hold says somebody may still need it as it is, and as it is includes the name.',
-			$run->refuse([], true, ' WOO-1 ', $fp)
+			$run->refuse(new AnonymisationClearance(marker: [], hasLegalHold: true, holdReason: ' WOO-1 ', saltFingerprint: $fp))
 		);
 		$this->assertSame(
 			'This record was already anonymised on an unrecorded date under the profile "unnamed". Running again would change nothing it has not changed, and under a rotated salt it would give its pseudonyms new values, so rows that used to join would stop joining with nothing on screen to say so.',
-			$run->refuse(['state' => 'complete'], false, '', $fp)
+			$run->refuse(new AnonymisationClearance(marker: ['state' => 'complete'], hasLegalHold: false, holdReason: '', saltFingerprint: $fp))
 		);
-		$this->assertStringContainsString('on 2026-01-01 under the profile "p"', (string)$run->refuse(['state' => 'complete', 'anonymisedAt' => '2026-01-01', 'profile' => 'p'], false, '', $fp));
+		$this->assertStringContainsString('on 2026-01-01 under the profile "p"', (string)$run->refuse(new AnonymisationClearance(marker: ['state' => 'complete', 'anonymisedAt' => '2026-01-01', 'profile' => 'p'], hasLegalHold: false, holdReason: '', saltFingerprint: $fp)));
 		$this->assertSame(
 			'This record was left half anonymised under a different salt. Finishing it now would leave one record carrying two families of pseudonym, so it needs the original salt or a decision to start again.',
-			$run->refuse(['state' => 'in_progress', 'saltFingerprint' => 'other'], false, '', $fp)
+			$run->refuse(new AnonymisationClearance(marker: ['state' => 'in_progress', 'saltFingerprint' => 'other'], hasLegalHold: false, holdReason: '', saltFingerprint: $fp))
 		);
-		$this->assertNull($run->refuse(['state' => 'in_progress', 'saltFingerprint' => $fp], false, '', $fp));
-		$this->assertNull($run->refuse([], false, '', $fp));
+		$this->assertNull($run->refuse(new AnonymisationClearance(marker: ['state' => 'in_progress', 'saltFingerprint' => $fp], hasLegalHold: false, holdReason: '', saltFingerprint: $fp)));
+		$this->assertNull($run->refuse(new AnonymisationClearance(marker: [], hasLegalHold: false, holdReason: '', saltFingerprint: $fp)));
 	}//end testTheRunRefusesHeldFinishedAndResaltedRecords()
 
 	public function testThePlanCarriesBothListsAndRefusesANoOp(): void {
 		$run = new AnonymisationRun();
-		$plan = $run->plan('u1', $this->payload(), $this->annotation(), 'salt', 'p');
+		$plan = $run->plan(new AnonymisationSubject('u1', $this->payload(), $this->annotation(), 'p'), 'salt');
 		$this->assertSame('u1', $plan->objectUuid);
 		$this->assertSame('p', $plan->profileName);
 		$this->assertSame($this->payload(), $plan->before);
@@ -195,14 +200,14 @@ class AnonymisationGoldenTest extends TestCase {
 		$this->assertSame($run->fingerprint('salt'), $plan->saltFingerprint);
 
 		try {
-			$run->plan('u2', ['zaak' => 'Z'], ['anonymisation' => ['zaak' => ['treatment' => 'fixed', 'value' => 'Z']]], 'salt');
+			$run->plan(new AnonymisationSubject('u2', ['zaak' => 'Z'], ['anonymisation' => ['zaak' => ['treatment' => 'fixed', 'value' => 'Z']]]), 'salt');
 			$this->fail('expected a refusal');
 		} catch (AnonymisationRefusedException $e) {
 			$this->assertSame('Anonymising u2 would change nothing: the declared profile touches no property this record carries.', $e->getMessage());
 		}
 
 		$this->expectException(InvalidArgumentException::class);
-		$run->plan('u3', ['zaak' => 'Z'], ['anonymisation' => ['ghost' => 'remove']], 'salt');
+		$run->plan(new AnonymisationSubject('u3', ['zaak' => 'Z'], ['anonymisation' => ['ghost' => 'remove']]), 'salt');
 	}//end testThePlanCarriesBothListsAndRefusesANoOp()
 
 	/**
@@ -233,7 +238,7 @@ class AnonymisationGoldenTest extends TestCase {
 
 	public function testApplyPreparesEverythingBeforeWritingAndSaysHowFarItGot(): void {
 		$run = new AnonymisationRun();
-		$plan = new AnonymisationPlan('u', 'p', [], [], ['a'], ['b'], 'fp');
+		$plan = new AnonymisationPlan('u', 'p', new AnonymisedPayload([], [], ['a'], ['b']), 'fp');
 
 		$log = [];
 		$marker = $run->apply($plan, [$this->target('db', $log), $this->target('index', $log)]);

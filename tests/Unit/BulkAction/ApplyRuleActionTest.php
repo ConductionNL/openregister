@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BulkAction;
 
+use OCA\OpenRegister\BulkAction\BulkObjectAccess;
 use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\ApplyRuleAction;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
@@ -31,7 +32,7 @@ use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\BulkAction\Support\ApplyRuleServices;
+use OCA\OpenRegister\Service\Rules\ApplyRuleServices;
 
 /**
  * Pins what the apply-rule bulk action validates, skips, previews and writes.
@@ -79,10 +80,8 @@ class ApplyRuleActionTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapperInterface::class);
 		$schemas->method('find')->willReturn(new Schema());
 		$this->action = new ApplyRuleAction(
-			$this->objects,
-			$schemas,
 			new ApplyRuleServices($this->inventory, $this->evaluator),
-			$this->createMock(LoggerInterface::class)
+			new BulkObjectAccess($this->objects, $schemas, $this->createMock(LoggerInterface::class))
 		);
 	}//end setUp()
 

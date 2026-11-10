@@ -99,25 +99,34 @@ class ClassificationOverride {
 	/**
 	 * The category that applies: the record's override, else the schema's.
 	 *
-	 * @param array<string, mixed> $archive       The schema's archive block.
-	 * @param array<string, mixed> $data          The record's data.
-	 * @param array<string, mixed> $configuration The schema's configuration.
+	 * @param CategoryDeclaration  $declaration The schema's archive block and configuration.
+	 * @param array<string, mixed> $data        The record's data.
 	 *
 	 * @return string|null The effective category, or null when neither declares one.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function effective(array $archive, array $data, array $configuration = []): ?string {
-		$requested = $this->requested(
-			property: $this->propertyOf(archive: $archive, configuration: $configuration),
-			data: $data
-		);
+	public function effective(CategoryDeclaration $declaration, array $data): ?string {
+		$property  = $this->propertyOf(archive: $declaration->archive, configuration: $declaration->configuration);
+		$requested = $this->requested(property: $property, data: $data);
+		return $this->requestedOrDeclared(requested: $requested, archive: $declaration->archive);
+	}//end effective()
+
+	/**
+	 * The requested category when it is text, else the schema's own.
+	 *
+	 * @param mixed                $requested The record's override, as requested() reads it.
+	 * @param array<string, mixed> $archive   The schema's archive block.
+	 *
+	 * @return string|null The effective category, or null when neither declares one.
+	 */
+	private function requestedOrDeclared(mixed $requested, array $archive): ?string {
 		if (is_string($requested) === true) {
 			return $requested;
 		}
 
 		return $this->text(value: ($archive['classification'] ?? null));
-	}//end effective()
+	}//end requestedOrDeclared()
 
 	/**
 	 * Refuse an override that is not text or names no selectielijst row.
@@ -137,7 +146,22 @@ class ClassificationOverride {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function guard(?string $property, array $data, SelectielijstResolver $resolver): void {
-		$requested = $this->requested(property: $property, data: $data);
+		$override = new RequestedCategory(property: $property, value: $this->requested(property: $property, data: $data));
+		$this->refuseUnresolvable(override: $override, resolver: $resolver);
+	}//end guard()
+
+	/**
+	 * Refuse a requested category that is not text or names no selectielijst row.
+	 *
+	 * @param RequestedCategory     $override The override property and the value the record gives it.
+	 * @param SelectielijstResolver $resolver Resolves a category to its row
+	 *
+	 * @return void
+	 *
+	 * @throws ValidationException When the override is not text or matches no selectielijst row
+	 */
+	private function refuseUnresolvable(RequestedCategory $override, SelectielijstResolver $resolver): void {
+		[$property, $requested] = [$override->property, $override->value];
 		if ($requested === null) {
 			return;
 		}
@@ -154,7 +178,7 @@ class ClassificationOverride {
 					. '" matches no selectielijst row.'
 			);
 		}
-	}//end guard()
+	}//end refuseUnresolvable()
 
 	/**
 	 * A non-empty trimmed string, or null.

@@ -35,11 +35,10 @@ interface AuditTrailPageServiceInterface {
 	/**
 	 * Export the filtered list, or queue it when it is too large.
 	 *
-	 * @param array<string, mixed> $filters        The filters.
-	 * @param string|null          $search         Full text on the change summary.
-	 * @param string               $format         csv, json, xml or txt.
-	 * @param bool                 $includeChanges Whether to include the change summary.
-	 * @param string|null          $actor          The requester, who receives a queued file.
+	 * @param AuditTrailQuery $query          The filters and the full-text search on the change summary, from {@see query()}.
+	 * @param string          $format         csv, json, xml or txt.
+	 * @param bool            $includeChanges Whether to include the change summary.
+	 * @param string|null     $actor          The requester, who receives a queued file.
 	 *
 	 * @return array{queued: bool, rows: int, file: array{content: string, filename: string, contentType: string}|null} The outcome.
 	 *
@@ -47,15 +46,14 @@ interface AuditTrailPageServiceInterface {
 	 *
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-the-filtered-audit-list-exports-with-its-hash-chain
 	 */
-	public function export(array $filters, ?string $search, string $format, bool $includeChanges, ?string $actor): array;
+	public function export(AuditTrailQuery $query, string $format, bool $includeChanges, ?string $actor): array;
 
 	/**
 	 * One page, newest first.
 	 *
-	 * @param array<string, mixed> $filters The filters (see AuditTrailPageQueryInterface::page()).
-	 * @param string|null          $search  Full text on the change summary.
-	 * @param int                  $limit   Page size.
-	 * @param int                  $cursor  The cursor, 0 for the first page.
+	 * @param AuditTrailQuery $query  The filters (see AuditTrailPageQueryInterface::page()) and search, from {@see query()}.
+	 * @param int             $limit  Page size.
+	 * @param int             $cursor The cursor, 0 for the first page.
 	 *
 	 * @return array{results: array, limit: int, cursor: int, nextCursor: int|null} The page.
 	 *
@@ -63,5 +61,19 @@ interface AuditTrailPageServiceInterface {
 	 *
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
 	 */
-	public function page(array $filters, ?string $search, int $limit, int $cursor): array;
+	public function page(AuditTrailQuery $query, int $limit, int $cursor): array;
+
+	/**
+	 * The query a page or an export is selected under: the filters and the full-text search.
+	 *
+	 * Built here, so callers outside this component never name the query class.
+	 *
+	 * @param array<string, mixed> $filters The filters (see AuditTrailPageQueryInterface::page()).
+	 * @param string|null          $search  Full text on the change summary.
+	 *
+	 * @return AuditTrailQuery The query, to hand to {@see page()} or {@see export()}.
+	 *
+	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
+	 */
+	public function query(array $filters, ?string $search): AuditTrailQuery;
 }//end interface

@@ -85,20 +85,39 @@ class AuthorizationService {
 	private ?ResolvedConsumer $resolvedConsumer = null;
 
 	/**
+	 * Nextcloud user manager.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Nextcloud user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group lookups for an endpoint's users/groups allow-list.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IUserManager $userManager Nextcloud user manager
-	 * @param IUserSession $userSession Nextcloud user session
+	 * @param UserDirectory $directory Nextcloud user session, user manager and group lookups for an
+	 *                                 endpoint's users/groups allow-list
 	 * @param ConsumerMapperInterface $consumerMapper Consumer database mapper
 	 * @param \OCA\OpenRegister\Service\Rbac\TokenGrantSource|null $tokenGrantSource What the calling token may do
 	 * @param TokenContext|null $tokenContext Carries the calling token to the audit writer
 	 * @param ICacheFactory|null $cacheFactory Distributed cache for jti replay refusal
-	 * @param IGroupManager|null $groupManager Group lookups for an endpoint's users/groups allow-list
 	 * @param IRequest|null $request The current request (the OAuth Bearer guard)
 	 */
 	public function __construct(
-		private readonly IUserManager $userManager,
-		private readonly IUserSession $userSession,
+		UserDirectory $directory,
 		private readonly ConsumerMapperInterface $consumerMapper,
 		// BOTH SIDES OF THIS MERGE ADDED A NULLABLE-LAST PARAMETER and neither
 		// replaces the other: `tokenGrantSource` answers what a token may DO,
@@ -108,10 +127,11 @@ class AuthorizationService {
 		private readonly ?\OCA\OpenRegister\Service\Rbac\TokenGrantSource $tokenGrantSource = null,
 		private readonly ?TokenContext $tokenContext = null,
 		private readonly ?ICacheFactory $cacheFactory = null,
-		private readonly ?IGroupManager $groupManager = null,
 		private readonly ?IRequest $request = null,
 	) {
-
+		$this->userManager = $directory->users;
+		$this->userSession = $directory->session;
+		$this->groupManager = $directory->groups;
 	}//end __construct()
 
 	/**
@@ -282,7 +302,7 @@ class AuthorizationService {
 		// The algorithm comes from the issuer's stored configuration, never
 		// from the token header (algorithm confusion); RS/PS are verified
 		// against the RSA public key and never fall through to HMAC.
-		$validator->verifyPinned(token: $token, header: $header, configuration: $authConf);
+		$validator->verifyPinned(jwt: new Consumer\DecodedJwt(token: $token, header: $header), configuration: $authConf);
 		$validator->validateClaims(payload: $payload);
 
 		// 🔴 THIS LINE IS THE ROW. Making the Consumer act AS its Nextcloud
@@ -550,22 +570,37 @@ class AuthorizationService {
 	 */
 	public function authorizeApiKey(string $header, array $keys, ?ConsumerSource $consumers=null): void {
 		$this->resolvedConsumer = null;
-		if ($header === '') {
-			throw new AuthenticationException(message: 'Invalid API key', details: []);
-		}
-
-		if ($this->actAsEndpointKeyUser(header: $header, keys: $keys) === true) {
+		if ($header !== '' && $this->actAsEndpointKeyUser(header: $header, keys: $keys) === true) {
 			return;
 		}
 
-		$consumer = $this->sourceFor(consumers: $consumers)->findByApiKey(apiKey: $header);
+		$this->actAsKeyConsumer(consumer: $this->keyConsumer(header: $header, consumers: $consumers));
+	}//end authorizeApiKey()
+
+	/**
+	 * The consumer that holds an API key, refusing an empty or unknown key.
+	 *
+	 * An empty key is refused before any lookup, as it was before the endpoint keys are tried.
+	 *
+	 * @param string              $header    The API key from the request header
+	 * @param ConsumerSource|null $consumers Where consumer keys are looked up (default: OpenRegister's consumers).
+	 *
+	 * @return ResolvedConsumer The consumer holding the key.
+	 *
+	 * @throws AuthenticationException If the API key is empty or no consumer holds it.
+	 */
+	private function keyConsumer(string $header, ?ConsumerSource $consumers): ResolvedConsumer {
+		$consumer = null;
+		if ($header !== '') {
+			$consumer = $this->sourceFor(consumers: $consumers)->findByApiKey(apiKey: $header);
+		}
+
 		if ($consumer === null) {
 			throw new AuthenticationException(message: 'Invalid API key', details: []);
 		}
 
-		$this->actAsKeyConsumer(consumer: $consumer);
-
-	}//end authorizeApiKey()
+		return $consumer;
+	}//end keyConsumer()
 
 	/**
 	 * Act as the user of the endpoint key that matches the header, when one does.

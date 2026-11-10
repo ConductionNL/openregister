@@ -74,10 +74,7 @@ class DataSubjectRequestLogRedactionTest extends TestCase {
 				$this->createMock(LoggerInterface::class)
 			)), new SubjectRetentionGate(
 				$this->createMock(RetentionService::class),
-				new ArchivalRetentionGuard(
-					$this->createMock(SchemaMapper::class),
-					$this->createMock(LoggerInterface::class)
-				)
+				new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class)))
 			), new DataSubjectDeadline(), $this->createMock(LoggerInterface::class));
 
 		$result = $service->findSubjectObjects(new SubjectQuery($subject));

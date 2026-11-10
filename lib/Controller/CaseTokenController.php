@@ -43,6 +43,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\CaseTokenControllerServices;
 use OCA\OpenRegister\Service\CaseTokenServiceInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCP\AppFramework\Controller;
@@ -70,22 +72,42 @@ class CaseTokenController extends Controller {
 	public const THROTTLE_ACTION = ThrottledSurfacesInterface::CASE_TOKEN;
 
 	/**
+	 * Case-token mint/resolve/revoke service.
+	 *
+	 * @var CaseTokenServiceInterface
+	 */
+	private readonly CaseTokenServiceInterface $tokenService;
+
+	/**
+	 * Brute-force throttler for rejected tokens.
+	 *
+	 * @var IThrottler
+	 */
+	private readonly IThrottler $throttler;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest $request Current request.
-	 * @param CaseTokenServiceInterface $tokenService Case-token mint/resolve/revoke service.
-	 * @param IThrottler $throttler Brute-force throttler for rejected tokens.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param IRequest                    $request  Current request.
+	 * @param CaseTokenControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IRequest $request,
-		private CaseTokenServiceInterface $tokenService,
-		private IThrottler $throttler,
-		private LoggerInterface $logger,
+		CaseTokenControllerServices $services,
 	) {
-		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->tokenService = $services->tokenService;
+		$this->throttler = $services->throttler;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

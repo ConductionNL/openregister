@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Reference;
 
 use OCA\OpenRegister\AppHost\SchemaScopedProvider;
+use OCA\OpenRegister\AppHost\SchemaScopeLookups;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface;
@@ -69,12 +70,31 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	private const LOG_NAME = 'AbstractSchemaReferenceProvider';
 
 	/**
+	 * Register mapper for slug-to-id resolution, read by SchemaScopedProvider.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema mapper for slug-to-id resolution, read by SchemaScopedProvider.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Logger, read by SchemaScopedProvider.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for AbstractSchemaReferenceProvider.
 	 *
 	 * @param ObjectPreviewFormatterInterface $formatter Shared preview-formatting/URL-parsing service
-	 * @param RegisterMapperInterface $registerMapper Register mapper for slug-to-id resolution
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for slug-to-id resolution and the `smartPickerEnabled` flag
-	 * @param LoggerInterface $logger Logger
+	 * @param SchemaScopeLookups $lookups The register and schema mappers and the logger
 	 * @param string|null $userId Current user ID (nullable for public/anonymous access)
 	 *
 	 * @return void
@@ -83,11 +103,12 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 */
 	public function __construct(
 		private readonly ObjectPreviewFormatterInterface $formatter,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly LoggerInterface $logger,
+		SchemaScopeLookups $lookups,
 		private readonly ?string $userId,
 	) {
+		$this->registerMapper = $lookups->registerMapper;
+		$this->schemaMapper = $lookups->schemaMapper;
+		$this->logger = $lookups->logger;
 	}//end __construct()
 
 	/**

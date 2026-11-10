@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleWrite;
+use OCA\OpenRegister\Service\Lifecycle\TransitionAttempt;
 use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\ExpressionValueSources;
@@ -155,8 +156,7 @@ class ExpressionValueSourcesTest extends TestCase {
 	private function transitionHolds(ConditionDialect $dialect, mixed $condition, string $region): bool {
 		return $this->lifecycle(dialect: $dialect)->holds(
 			rule: $condition,
-			write: new LifecycleWrite(newData: ['region' => $region], oldData: ['region' => $region], schemaSlug: 'intake', field: 'status'),
-			move: new TransitionMove(action: 'accept', from: 'new', to: 'accepted')
+			attempt: new TransitionAttempt(write: new LifecycleWrite(newData: ['region' => $region], oldData: ['region' => $region], schemaSlug: 'intake', field: 'status'), move: new TransitionMove(action: 'accept', from: 'new', to: 'accepted'))
 		);
 	}//end transitionHolds()
 

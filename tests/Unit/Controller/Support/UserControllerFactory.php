@@ -18,7 +18,7 @@ final class UserControllerFactory {
 	/**
 	 * The constructor arguments of UserController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Unused; kept so existing calls still fit.
 	 * @param IRequest $request Constructor argument.
 	 * @param UserService $userService Constructor argument.
 	 * @param SecurityService $securityService Constructor argument.
@@ -40,7 +40,6 @@ final class UserControllerFactory {
 		\OCP\IL10N $l10n,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\UserControllerServices(
 				domain: new \OCA\OpenRegister\Controller\Support\UserDomain(

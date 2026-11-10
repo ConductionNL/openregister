@@ -139,8 +139,11 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	private function introspectSource(Source $source, string $sourceId): array {
-		$connection    = $this->tools->connectionFactory->getConnection(source: $source);
-		$schemaManager = $connection->createSchemaManager();
+		$pass = new SourceIntrospection(
+			connection: $this->tools->connectionFactory->getConnection(source: $source),
+			sourceId: $sourceId
+		);
+		$schemaManager = $pass->schemaManager;
 		$tableNames    = $this->userTableNames(schemaManager: $schemaManager);
 		$viewNames     = $this->userViewNames(schemaManager: $schemaManager);
 
@@ -148,24 +151,18 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 		// second pass can resolve foreign-key targets and add inverse sides.
 		$tables = [];
 		foreach ($tableNames as $tableName) {
-			$tables[$tableName] = $this->introspectTable(
-				schemaManager: $schemaManager,
-				sourceId: $sourceId,
-				tableName: $tableName,
-				isView: false
-			);
+			$tables[$tableName] = $this->introspectTable(pass: $pass, table: new TableRef(name: $tableName, isView: false));
 		}
 
 		foreach ($viewNames as $viewName) {
 			if (isset($tables[$viewName]) === false) {
-				$tables[$viewName] = $this->introspectView(connection: $connection, schemaManager: $schemaManager, sourceId: $sourceId, viewName: $viewName);
+				$tables[$viewName] = $this->introspectView(pass: $pass, viewName: $viewName);
 			}
 		}
 
 		// Second pass: map single-column foreign keys onto the relation dialect
 		// and add the inverse side on the referenced schema.
-		$slugByTable = array_map(fn (array $record): string => $record['slug'], $tables);
-		$this->applyForeignKeys(schemaManager: $schemaManager, tables: $tables, slugByTable: $slugByTable);
+		$this->applyForeignKeys(schemaManager: $schemaManager, tables: $tables);
 
 		return $tables;
 	}//end introspectSource()
@@ -226,25 +223,18 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 * across mysql/pgsql/sqlite). An empty view yields no properties but is
 	 * still served list-only via SELECT *.
 	 *
-	 * @param Connection            $connection    The open connection.
-	 * @param AbstractSchemaManager $schemaManager The schema manager.
-	 * @param string                $sourceId      The owning source id.
-	 * @param string                $viewName      The view name.
+	 * @param SourceIntrospection $pass     The open connection, its schema manager and the owning source id.
+	 * @param string              $viewName The view name.
 	 *
 	 * @return array<string, mixed> The working record.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function introspectView(Connection $connection, AbstractSchemaManager $schemaManager, string $sourceId, string $viewName): array {
-		$record = $this->introspectTable(
-			schemaManager: $schemaManager,
-			sourceId: $sourceId,
-			tableName: $viewName,
-			isView: true
-		);
+	private function introspectView(SourceIntrospection $pass, string $viewName): array {
+		$record = $this->introspectTable(pass: $pass, table: new TableRef(name: $viewName, isView: true));
 
 		if ($record['properties'] === []) {
-			$record['properties'] = $this->viewColumnsFromSample(connection: $connection, viewName: $viewName);
+			$record['properties'] = $this->viewColumnsFromSample(connection: $pass->connection, viewName: $viewName);
 		}
 
 		return $record;
@@ -320,18 +310,18 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	/**
 	 * Introspect one table/view into a working record.
 	 *
-	 * @param AbstractSchemaManager $schemaManager The schema manager.
-	 * @param string $sourceId The owning source id.
-	 * @param string $tableName The table/view name.
-	 * @param bool $isView Whether this is a view.
+	 * @param SourceIntrospection $pass  The schema manager and the owning source id.
+	 * @param TableRef            $table The table/view name, and whether it is a view.
 	 *
 	 * @return array<string, mixed> The working table record.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function introspectTable(AbstractSchemaManager $schemaManager, string $sourceId, string $tableName, bool $isView): array {
-		$columns    = $schemaManager->listTableColumns($tableName);
-		$primaryKey = $this->primaryKeyColumns(schemaManager: $schemaManager, tableName: $tableName, isView: $isView);
+	private function introspectTable(SourceIntrospection $pass, TableRef $table): array {
+		$tableName  = $table->name;
+		$isView     = $table->isView;
+		$columns    = $pass->schemaManager->listTableColumns($tableName);
+		$primaryKey = $this->primaryKeyColumns(schemaManager: $pass->schemaManager, table: $table);
 
 		[$properties, $required, $nonFilterable] = $this->columnProperties(columns: $columns, primaryKey: $primaryKey);
 		[$idColumn, $idColumns] = $this->resolveIdentity(primaryKey: $primaryKey, tableName: $tableName);
@@ -343,10 +333,10 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 			'isView' => $isView,
 			'idColumn' => $idColumn,
 			'idColumns' => $idColumns,
-			'properties' => $this->withStringPrimaryKeys(properties: $properties, idColumn: $idColumn, idColumns: $idColumns),
+			'properties' => $this->withStringPrimaryKeys(properties: $properties, primaryKey: $primaryKey),
 			'required' => $required,
 			'nonFilterable' => $nonFilterable,
-			'sourceId' => $sourceId,
+			'sourceId' => $pass->sourceId,
 		];
 	}//end introspectTable()
 
@@ -392,21 +382,18 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 * very value the read path returns. The database still stores/coerces the
 	 * native column type.
 	 *
+	 * The id columns are exactly the primary-key columns: one for a single id,
+	 * all of them for a composite id, none when there is no primary key.
+	 *
 	 * @param array<string, array<string, mixed>> $properties The column properties.
-	 * @param string|null                         $idColumn   The single id column, if any.
-	 * @param array<int, string>|null             $idColumns  The composite id columns, if any.
+	 * @param array<int, string>                  $primaryKey The ordered primary-key columns (possibly empty).
 	 *
 	 * @return array<string, array<string, mixed>> The properties.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function withStringPrimaryKeys(array $properties, ?string $idColumn, ?array $idColumns): array {
-		$pkColumns = ($idColumns ?? []);
-		if ($idColumn !== null) {
-			$pkColumns = [$idColumn];
-		}
-
-		foreach ($pkColumns as $pkColumn) {
+	private function withStringPrimaryKeys(array $properties, array $primaryKey): array {
+		foreach ($primaryKey as $pkColumn) {
 			if (isset($properties[$pkColumn]) === true) {
 				$properties[$pkColumn] = array_merge(
 					$properties[$pkColumn],
@@ -468,25 +455,24 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 * Resolve the ordered primary-key column names for a table.
 	 *
 	 * @param AbstractSchemaManager $schemaManager The schema manager.
-	 * @param string $tableName The table name.
-	 * @param bool $isView Whether this is a view (never has a PK).
+	 * @param TableRef              $table         The table name, and whether it is a view (never has a PK).
 	 *
 	 * @return array<int, string> The PK column names in order (possibly empty).
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function primaryKeyColumns(AbstractSchemaManager $schemaManager, string $tableName, bool $isView): array {
-		if ($isView === true) {
+	private function primaryKeyColumns(AbstractSchemaManager $schemaManager, TableRef $table): array {
+		if ($table->isView === true) {
 			return [];
 		}
 
 		try {
-			$table = $schemaManager->introspectTable($tableName);
+			$introspected = $schemaManager->introspectTable($table->name);
 		} catch (Throwable $e) {
 			return [];
 		}
 
-		return $this->tablePrimaryKey(table: $table);
+		return $this->tablePrimaryKey(table: $introspected);
 	}//end primaryKeyColumns()
 
 	/**
@@ -564,22 +550,24 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	/**
 	 * Map single-column foreign keys onto the relation dialect and add inverses.
 	 *
-	 * @param AbstractSchemaManager $schemaManager The schema manager.
-	 * @param array<string, array<string, mixed>> $tables The working records, keyed by table name (mutated).
-	 * @param array<string, string> $slugByTable Table name → schema slug.
+	 * Each record carries its schema slug; the records' keys are the tables a
+	 * key may target.
+	 *
+	 * @param AbstractSchemaManager               $schemaManager The schema manager.
+	 * @param array<string, array<string, mixed>> $tables        The working records, keyed by table name (mutated).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function applyForeignKeys(AbstractSchemaManager $schemaManager, array &$tables, array $slugByTable): void {
+	private function applyForeignKeys(AbstractSchemaManager $schemaManager, array &$tables): void {
 		foreach ($tables as $tableName => $record) {
 			if ($record['isView'] === true) {
 				continue;
 			}
 
-			foreach ($this->foreignKeysFor(schemaManager: $schemaManager, tableName: $tableName) as $fk) {
-				$this->applyForeignKey(foreignKey: $fk, tableName: $tableName, tables: $tables, slugByTable: $slugByTable);
+			foreach ($this->foreignKeysFor(schemaManager: $schemaManager, tableName: $tableName) as $key) {
+				$this->applyForeignKey(key: $key, tables: $tables);
 			}
 		}
 	}//end applyForeignKeys()
@@ -590,16 +578,16 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 * A multi-column key is skipped (v1 maps single-column keys only), as is
 	 * a key whose target table is not introspected.
 	 *
-	 * @param ForeignKeyConstraint                $foreignKey  The constraint.
-	 * @param string                              $tableName   The owning table.
-	 * @param array<string, array<string, mixed>> $tables      The working records, keyed by table name (mutated).
-	 * @param array<string, string>               $slugByTable Table name → schema slug.
+	 * @param TableForeignKey                     $key    The constraint and its owning table.
+	 * @param array<string, array<string, mixed>> $tables The working records, keyed by table name (mutated).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function applyForeignKey(ForeignKeyConstraint $foreignKey, string $tableName, array &$tables, array $slugByTable): void {
+	private function applyForeignKey(TableForeignKey $key, array &$tables): void {
+		$foreignKey   = $key->constraint;
+		$tableName    = $key->tableName;
 		$localColumns = array_values($foreignKey->getLocalColumns());
 		if (count($localColumns) !== 1) {
 			$this->logger->info(
@@ -610,13 +598,13 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 
 		$localColumn  = $localColumns[0];
 		$foreignTable = $this->shortName(name: $foreignKey->getForeignTableName());
-		if (isset($slugByTable[$foreignTable]) === false) {
+		if (isset($tables[$foreignTable]) === false) {
 			return;
 		}
 
 		$existingFormat = ($tables[$tableName]['properties'][$localColumn]['format'] ?? null);
 		$tables[$tableName]['properties'][$localColumn] = $this->relationProperty(
-			targetSlug: $slugByTable[$foreignTable],
+			targetSlug: $tables[$foreignTable]['slug'],
 			existingFormat: $existingFormat
 		);
 
@@ -625,7 +613,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 		$tables[$foreignTable]['properties'][$inverseName] = [
 			'type' => 'array',
 			'items' => [
-				'$ref' => $slugByTable[$tableName],
+				'$ref' => $tables[$tableName]['slug'],
 				'inversedBy' => $localColumn,
 			],
 			'objectConfiguration' => ['handling' => 'related-object'],
@@ -667,16 +655,21 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 * @param AbstractSchemaManager $schemaManager The schema manager.
 	 * @param string $tableName The table name.
 	 *
-	 * @return array<int, ForeignKeyConstraint> The foreign-key constraints (possibly empty).
+	 * @return array<int, TableForeignKey> The foreign-key constraints with their table (possibly empty).
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	private function foreignKeysFor(AbstractSchemaManager $schemaManager, string $tableName): array {
 		try {
-			return array_values($schemaManager->listTableForeignKeys($tableName));
+			$constraints = array_values($schemaManager->listTableForeignKeys($tableName));
 		} catch (Throwable $e) {
 			return [];
 		}
+
+		return array_map(
+			static fn (ForeignKeyConstraint $constraint): TableForeignKey => new TableForeignKey(tableName: $tableName, constraint: $constraint),
+			$constraints
+		);
 	}//end foreignKeysFor()
 
 	/**

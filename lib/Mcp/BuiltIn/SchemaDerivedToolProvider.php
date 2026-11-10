@@ -24,7 +24,7 @@
  * session — no impersonation, no system account, RBAC/IDOR unchanged from
  * the REST path (REQ-DERIVED-005). Every invocation — read, write, or
  * failed — writes exactly one immutable, hash-chained audit record via
- * `AuditTrailMapper::createToolInvocationEntry()` (REQ-DERIVED-006).
+ * `AuditTrailMapper::recordToolInvocation()` (REQ-DERIVED-006).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -248,8 +248,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 				schema: $schema,
 				slug: $slug,
 				verb: $verb,
-				verbConfig: $this->verbConfig(toolsConfig: $toolsConfig, verb: $verb),
-				id: $this->appId . '.' . $slug . '.' . $verb
+				verbConfig: $this->verbConfig(toolsConfig: $toolsConfig, verb: $verb)
 			);
 			if ($this->claimToolId(tool: $tool, emittedIds: $emittedIds) === false) {
 				continue;
@@ -293,6 +292,17 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	}//end verbConfig()
 
 	/**
+	 * The fully-namespaced id of a derived tool: `{appId}.{slug}.{verb}`.
+	 *
+	 * @param DerivedToolDefinition $tool The tool being described.
+	 *
+	 * @return string The tool id.
+	 */
+	private function toolId(DerivedToolDefinition $tool): string {
+		return $this->appId . '.' . $tool->slug . '.' . $tool->verb;
+	}//end toolId()
+
+	/**
 	 * Claim a tool id for a schema, refusing suppressed and already-emitted ids.
 	 *
 	 * @param DerivedToolDefinition $tool       The tool whose id the schema claims.
@@ -301,7 +311,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @return bool Whether the id may be emitted for this schema.
 	 */
 	private function claimToolId(DerivedToolDefinition $tool, array &$emittedIds): bool {
-		$id = $tool->id;
+		$id = $this->toolId(tool: $tool);
 		$schema = $tool->schema;
 
 		// Self-suppression (REQ-DERIVED-003): a hand-written per-app
@@ -361,12 +371,14 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		return $this->audit()->run(
 			target: new ToolAuditTarget(toolId: $toolId, register: $register?->getId(), schema: $schema->getId()),
-			arguments: $arguments,
-			call: fn (): array => $this->runVerb(
-				verb: $verb,
-				call: new DerivedToolCall(schema: $schema, register: $register, arguments: $arguments)
-			),
-			summarise: fn (array $result): array => $this->resultSummary(verb: $verb, result: $result)
+			invocation: new AuditedInvocation(
+				arguments: $arguments,
+				call: fn (): array => $this->runVerb(
+					verb: $verb,
+					call: new DerivedToolCall(schema: $schema, register: $register, arguments: $arguments)
+				),
+				summarise: fn (array $result): array => $this->resultSummary(verb: $verb, result: $result)
+			)
 		);
 	}//end invokeTool()
 
@@ -656,7 +668,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	/**
 	 * Build one tool descriptor for a schema+verb pair.
 	 *
-	 * @param DerivedToolDefinition $tool The schema, slug, verb, verb config and tool id.
+	 * @param DerivedToolDefinition $tool The schema, slug, verb and verb config.
 	 *
 	 * @return array{id: string, name: string, description: string, inputSchema: array,
 	 *         app: string, subject: string, action: string,
@@ -668,7 +680,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 		$verb = $tool->verb;
 		$verbConfig = $tool->verbConfig;
 		$descriptor = [
-			'id' => $tool->id,
+			'id' => $this->toolId(tool: $tool),
 			'name' => $slug . '_' . $verb,
 			'description' => $this->description(tool: $tool, override: $verbConfig['description'] ?? null),
 			'inputSchema' => $this->buildInputSchema(tool: $tool),

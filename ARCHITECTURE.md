@@ -2,7 +2,7 @@
 
 OpenRegister is a Nextcloud app. It stores structured data as objects, validated against JSON Schema definitions and grouped in registers. Other Conduction apps (OpenCatalogi, IntegrIQ, Filinq and more) store their data here instead of in tables of their own.
 
-This page is for new developers and for anyone who assesses the code, such as SIG. It names the functional components, says where each one starts and stops, and marks every top-level directory as production, test, generated or tooling.
+This page is for new developers and for anyone who assesses the code, such as SIG. It names the components, says how they connect, and marks every top-level directory as production, test, generated or tooling.
 
 ## System boundary
 
@@ -33,11 +33,36 @@ OpenRegister runs inside a Nextcloud server as an app, in PHP on the server and 
 | `docker/`, `docker-compose*.yml`, `exapps/`, `n8n-templates/`, `n8n-mcp/` | Local development and demo environments, and example workflow templates. |
 | `patches/` | Patches applied to third-party Composer packages at install time. |
 
-## Functional components
+## Components
 
-We group the code by what it does, not by technical layer. A controller, its service and its mapper for one capability sit in the same component. The class name or its directory decides the component.
+A component is a top-level directory of the repository, as developers see it. This follows SIG's guidance for producers (section 2.2). ADR-014 records the decision, and `sigrid.yaml` declares it with `component_base_dirs: [""]`.
 
-| Component | What it covers | PHP lines |
+| Component | What it is |
+|---|---|
+| `lib/` | The backend: all production PHP. |
+| `src/` | The frontend: the Vue single-page app that runs in the browser. |
+| `appinfo/` | The app manifest (`info.xml`) and the route table (`routes.php`). |
+| `templates/` | PHP page templates that mount the frontend. |
+| `js/` | Three hand-written static scripts: the web push client, its service worker and the flow operator. |
+| `docker/` | Entry points and seed scripts for the development and demo containers. Not shipped. |
+| Root files | Build and test configuration in the repository root (`webpack.config.js`, `jest.config.js`, `playwright.config.ts`, `stylelint.config.js`). Sigrid groups them into one component. |
+
+Other top-level directories hold no code that Sigrid analyses. `tests/` is test code. `scripts/`, `tools/`, `vendor-bin/`, `.claude/` and `openspec/changes/` are excluded in `sigrid.yaml`. `docs/` is excluded by default. `l10n/`, `css/`, `img/`, `schemas/`, `data/` and the n8n directories hold data, styles and templates.
+
+### How the components connect
+
+- The frontend in `src/` runs in the browser. It calls the backend's controllers over REST with JSON, on the routes in `appinfo/routes.php`.
+- `templates/` renders the page that loads the frontend.
+- Other Nextcloud apps call the backend in-process, through the PHP contracts in `lib/Contract/`.
+- The backend reaches the Nextcloud server through the public `OCP` API.
+
+## Inside the backend
+
+`lib/` is one component. Inside it the code keeps the Nextcloud layout: controllers, services, mappers, events and listeners. ADR-013 sets the rules for that layering: a controller calls services, a service calls mappers, nothing calls back up a layer, and events replace upward calls. The architecture tests in `tests/Unit/Architecture/` check these rules, and ADR-013 adds one test that checks the whole dependency graph.
+
+The table groups the backend by what the code does. A controller, its service and its mapper for one capability belong to the same area. These areas are an internal view, not SIG components.
+
+| Area | What it covers | PHP lines |
 |---|---|---|
 | Processes and rules | Flows, BPMN and DMN, business rules, calculations, tasks, cases, forms | 60k |
 | Objects | Object storage and validation, relations, history, merging, bulk actions | 56k |
@@ -50,33 +75,32 @@ We group the code by what it does, not by technical layer. A controller, its ser
 | Search and aggregation | Search, facets, aggregations, Solr and Elasticsearch back ends | 21k |
 | Notifications and events | Events and listeners, notifications, webhooks, web push, activity | 20k |
 | Application wiring | Bootstrap, repair steps, commands, shared exceptions and helpers | 43k |
-| Web interface | The Vue front end in `src/` and the static scripts in `js/` | |
 
 Counts exclude `lib/Migration/`, which SIG leaves out by default.
 
 ### Boundaries
 
-Every component depends on **Objects** and **Schemas and registers**: they are the data model. Every component also uses **Application wiring** for shared exceptions and helpers. Those dependencies are intended.
+Every area depends on **Objects** and **Schemas and registers**: they are the data model. Every area also uses **Application wiring** for shared exceptions and helpers. Those dependencies are intended.
 
-Decoupling between components is in progress. The aim is that each component reaches the data model through a small interface of its own.
+Decoupling between areas is in progress. The aim is that each area reaches the data model through a small interface of its own.
 
 ### Contracts
 
 Two directories hold interfaces and value types, and both are leaves of the dependency graph: a contract may name another contract, an entity in `lib/Db/`, an event or an exception, and no other OpenRegister class.
 
 - `lib/Contract/` is the published contract that other apps consume (ADR-084). Hydra gate 67 requires it to be byte-identical to `hydra-gates/contracts/`, so a file goes here only when it is published there too.
-- `lib/Kernel/Contracts/` holds the interfaces that one OpenRegister component offers another. Other apps do not use them.
+- `lib/Kernel/Contracts/` holds the interfaces that one area of the backend offers another. Other apps do not use them.
 
 `tests/Unit/Architecture/ContractIsALeafTest.php` enforces both rules.
 
-A class that other components call implements its contract, and those callers type-hint the contract instead of the class. The concrete class stays resolvable by its own name, because other apps inject it that way.
+A class that other areas call implements its contract, and those callers type-hint the contract instead of the class. The concrete class stays resolvable by its own name, because other apps inject it that way.
 
 ## How a request flows
 
 1. The browser calls a route from `appinfo/routes.php`.
 2. A controller in `lib/Controller/` checks the user's rights and hands over to a service.
 3. Services in `lib/Service/<Capability>/` hold the logic and use mappers in `lib/Db/` to read and write.
-4. Changes fire typed events (`lib/Event/`). Listeners in other components react to them.
+4. Changes fire typed events (`lib/Event/`). Listeners in other areas react to them.
 5. Background jobs (`lib/BackgroundJob/`) run slow work, such as text extraction and retention sweeps, outside the request.
 
 ## Test code
@@ -90,7 +114,7 @@ SIG's Sigrid excludes `vendor/`, `node_modules/`, `docs/`, migrations, mocks and
 - `l10n/*.js`: generated translation catalogues that would count as JavaScript.
 - `scripts/` and `tools/`: developer tooling that would count as production code.
 
-`sigrid.yaml` excludes both and pins the model version. Components are left to Sigrid's automatic detection.
+`sigrid.yaml` excludes both, pins the model version and makes every top-level directory a component.
 
 ## Licence
 

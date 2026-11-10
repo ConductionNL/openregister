@@ -80,13 +80,7 @@ class ArchiveMoveGuardsGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		return new ArchiveHandler(
-			$magic,
-			$this->createMock(AuditTrailMapper::class),
-			$permissions,
-			$session,
-			$this->createMock(LoggerInterface::class)
-		);
+		return new ArchiveHandler($permissions, $session, new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($magic, $this->createMock(AuditTrailMapper::class), $this->createMock(LoggerInterface::class), $this->createStub(\OCP\EventDispatcher\IEventDispatcher::class)));
 	}//end archive()
 
 	/**
@@ -100,7 +94,7 @@ class ArchiveMoveGuardsGoldenTest extends TestCase {
 	 */
 	private static function outcome(ArchiveHandler $handler, ?string $register, ?string $schema): string {
 		try {
-			$handler->archive(identifier: 'o-1', register: $register, schema: $schema);
+			$handler->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: 'o-1', reason: null, register: $register, schema: $schema));
 			return 'ok';
 		} catch (\Exception $e) {
 			return (new \ReflectionClass($e))->getShortName() . ': ' . $e->getMessage();
@@ -165,13 +159,7 @@ class ArchiveMoveGuardsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testMoveSentences(): void {
-		$move = new MoveObject(
-			$this->createMock(MagicMapper::class),
-			$this->createMock(ObjectValidatorInterface::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IEventDispatcher::class)
-		);
+		$move = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->createMock(MagicMapper::class), $this->createMock(AuditTrailMapper::class), $this->createMock(LoggerInterface::class), $this->createMock(IEventDispatcher::class)), $this->createMock(ObjectValidatorInterface::class));
 		$sentence = new ReflectionMethod(MoveObject::class, 'sentenceFor');
 
 		$withPath = new class {

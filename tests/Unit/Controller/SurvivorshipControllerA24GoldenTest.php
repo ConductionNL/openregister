@@ -107,7 +107,7 @@ class SurvivorshipControllerA24GoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		return SurvivorshipControllerFactory::create('openregister', $request, $this->objects, $this->schemas, $this->resolver, $session);
+		return SurvivorshipControllerFactory::create($request, $this->objects, $this->schemas, $this->resolver, $session);
 	}//end controller()
 
 	/**

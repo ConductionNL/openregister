@@ -22,7 +22,7 @@
 
 namespace OCA\OpenRegister\Search\Service\Vectorization;
 
-use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrategyInterface;
+use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 
 /**
  * The entity whose items are embedded, the strategy that reads it, and its identifier.

@@ -27,10 +27,6 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use OCP\Http\Client\IClient;
-use OCP\Http\Client\IClientService;
-use OCP\IAppConfig;
-use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -50,88 +46,29 @@ class GitLabHandler implements GitLabHandlerInterface {
 	 */
 	private const LOG_TAG = '[GitLabHandler] ';
 
-
 	/**
-	 * GitLab API base URL (can be configured for self-hosted instances)
-	 *
-	 * @var string
+	 * The exception message of a failed request, before the failure's own message, by action.
 	 */
-	private string $apiBase;
+	private const FAILURE_PREFIXES = [
+		'search' => 'Failed to search GitLab: ',
+		'get branches' => 'Failed to fetch branches: ',
+		'get file content' => 'Failed to fetch file: ',
+		'list files' => 'Failed to list configuration files: ',
+		'get project' => 'Failed to fetch project: ',
+	];
 
-	/**
-	 * HTTP client for API requests
-	 *
-	 * @var IClient
-	 */
-	private IClient $client;
-
-	/**
-	 * App configuration service for app-level settings
-	 *
-	 * @var IAppConfig
-	 */
-	private IAppConfig $appConfig;
-
-	/**
-	 * Configuration service for system-level settings
-	 *
-	 * @var IConfig
-	 */
-	private IConfig $config;
-
-	/**
-	 * Logger instance
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
 
 	/**
 	 * GitLabHandler constructor
 	 *
-	 * @param IClientService $clientService HTTP client service
-	 * @param IAppConfig $appConfig App configuration service for app-level settings
-	 * @param IConfig $config Configuration service for system-level settings
+	 * @param GitLabApiClient $api    Authenticated GET requests against the configured GitLab API
 	 * @param LoggerInterface $logger Logger instance
 	 */
 	public function __construct(
-		IClientService $clientService,
-		IAppConfig $appConfig,
-		IConfig $config,
-		LoggerInterface $logger,
+		private readonly GitLabApiClient $api,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->client = $clientService->newClient();
-		$this->appConfig = $appConfig;
-		$this->config = $config;
-		$this->logger = $logger;
-
-		// Allow configuration of GitLab URL (app-level setting takes precedence over system setting).
-		$this->apiBase = $this->appConfig->getValueString('openregister', 'gitlab_api_url', '');
-		if (empty($this->apiBase) === true) {
-			$this->apiBase = $this->config->getSystemValue('gitlab_api_url', 'https://gitlab.com/api/v4');
-		}
 	}//end __construct()
-
-	/**
-	 * Get authentication headers for GitLab API
-	 *
-	 * @return string[]
-	 *
-	 * @psalm-return array{'PRIVATE-TOKEN'?: string}
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	private function getHeaders(): array {
-		$headers = [];
-
-		// Add authentication token if configured.
-		$token = $this->appConfig->getValueString('openregister', 'gitlab_api_token', '');
-		if (empty($token) === false) {
-			$headers['PRIVATE-TOKEN'] = $token;
-		}
-
-		return $headers;
-	}//end getHeaders()
 
 	/**
 	 * The log context every GitLab log line starts with, then the line's own keys.
@@ -145,35 +82,20 @@ class GitLabHandler implements GitLabHandlerInterface {
 	}//end logContext()
 
 	/**
-	 * GET a path of the configured GitLab API with the API headers and decode the JSON body.
+	 * Log a failed API call and turn it into an exception for the caller.
 	 *
-	 * @param string               $path    The path after the API base.
-	 * @param array<string, mixed> $options Request options; the headers are added last.
+	 * @param GuzzleException   $exception The failure.
+	 * @param RepositoryApiCall $call      What failed and the call's log keys, logged after the error.
 	 *
-	 * @return mixed The decoded body.
-	 *
-	 * @throws GuzzleException If the request fails.
+	 * @return Exception
 	 */
-	private function getJson(string $path, array $options = []): mixed {
-		$response = $this->client->request('GET', $this->apiBase.$path, $options + ['headers' => $this->getHeaders()]);
-		return json_decode($response->getBody(), true);
-	}//end getJson()
-
-	/**
-	 * Log a failed API call; the caller throws.
-	 *
-	 * @param string               $action    What failed, as in "GitLab API {action} failed".
-	 * @param GuzzleException      $exception The failure.
-	 * @param array<string, mixed> $context   The call's log keys, after the error.
-	 *
-	 * @return void
-	 */
-	private function logFailure(string $action, GuzzleException $exception, array $context): void {
+	private function requestFailure(GuzzleException $exception, RepositoryApiCall $call): Exception {
 		$this->logger->error(
-			message: self::LOG_TAG."GitLab API {$action} failed",
-			context: self::logContext(extra: ['error' => $exception->getMessage()] + $context)
+			message: self::LOG_TAG."GitLab API {$call->action} failed",
+			context: self::logContext(extra: ['error' => $exception->getMessage()] + $call->context)
 		);
-	}//end logFailure()
+		return new Exception(self::FAILURE_PREFIXES[$call->action].$exception->getMessage());
+	}//end requestFailure()
 
 	/**
 	 * Search for OpenRegister configurations on GitLab
@@ -199,6 +121,22 @@ class GitLabHandler implements GitLabHandlerInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function searchConfigurations(string $search = '', int $page = 1, int $perPage = 30): array {
+		return $this->searchPage(search: $search, page: new RepositorySearchPage(page: $page, perPage: $perPage));
+	}//end searchConfigurations()
+
+	/**
+	 * One page of configuration files found by the blob search.
+	 *
+	 * @param string               $search The user's search terms, possibly empty.
+	 * @param RepositorySearchPage $page   The page asked for.
+	 *
+	 * @return array{total_count: int, results: list<array<string, mixed>>, page: int, per_page: int}
+	 *
+	 * @throws Exception If the API request fails.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	public function searchPage(string $search, RepositorySearchPage $page): array {
 		// Always search for x-openregister, optionally narrowed by the user's terms.
 		$searchQuery = 'x-openregister';
 		if (empty($search) === false) {
@@ -207,34 +145,32 @@ class GitLabHandler implements GitLabHandlerInterface {
 
 		$where = ['_search' => $search, 'query' => $searchQuery];
 		try {
-			$items = $this->searchBlobs(where: $where, page: $page, perPage: $perPage);
+			$items = $this->searchBlobs(where: $where, page: $page);
 		} catch (GuzzleException $e) {
-			$this->logFailure(action: 'search', exception: $e, context: $where);
-			throw new Exception('Failed to search GitLab: '.$e->getMessage());
+			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'search', context: $where));
 		}
 
 		// File contents are fetched only when the user selects a configuration.
 		$results = array_values(array_map(self::searchResult(...), array_filter($items, self::isFileHit(...))));
-		return ['total_count' => count($items), 'results' => $results, 'page' => $page, 'per_page' => $perPage];
-	}//end searchConfigurations()
+		return ['total_count' => count($items), 'results' => $results, 'page' => $page->page, 'per_page' => $page->perPage];
+	}//end searchPage()
 
 	/**
 	 * Run the blob search.
 	 *
-	 * @param array{_search: string, query: string} $where   The user's terms and the query sent.
-	 * @param int                                   $page    Page number.
-	 * @param int                                   $perPage Results per page.
+	 * @param array{_search: string, query: string} $where The user's terms and the query sent.
+	 * @param RepositorySearchPage                  $page  The page asked for.
 	 *
 	 * @return mixed The decoded hits.
 	 *
 	 * @throws GuzzleException If the request fails.
 	 */
-	private function searchBlobs(array $where, int $page, int $perPage): mixed {
-		$context = self::logContext(extra: $where + ['page' => $page]);
+	private function searchBlobs(array $where, RepositorySearchPage $page): mixed {
+		$context = self::logContext(extra: $where + ['page' => $page->page]);
 		$this->logger->info(message: self::LOG_TAG.'Searching GitLab for OpenRegister configurations', context: $context);
 
-		$query = ['scope' => 'blobs', 'search' => $where['query'], 'page' => $page, 'per_page' => $perPage];
-		return $this->getJson(path: '/search', options: ['query' => $query]);
+		$query = ['scope' => 'blobs', 'search' => $where['query'], 'page' => $page->page, 'per_page' => $page->perPage];
+		return $this->api->getJson(path: '/search', options: ['query' => $query]);
 	}//end searchBlobs()
 
 	/**
@@ -286,10 +222,9 @@ class GitLabHandler implements GitLabHandlerInterface {
 		$where = ['project_id' => $projectId];
 		try {
 			$this->logger->info(message: self::LOG_TAG.'Fetching branches from GitLab', context: self::logContext(extra: $where));
-			$branches = $this->getJson(path: "/projects/{$projectId}/repository/branches");
+			$branches = $this->api->getJson(path: "/projects/{$projectId}/repository/branches");
 		} catch (GuzzleException $e) {
-			$this->logFailure(action: 'get branches', exception: $e, context: $where);
-			throw new Exception('Failed to fetch branches: '.$e->getMessage());
+			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'get branches', context: $where));
 		}
 
 		// Format branch data for frontend.
@@ -327,14 +262,29 @@ class GitLabHandler implements GitLabHandlerInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function getFileContent(int $projectId, string $path, string $ref = 'main'): array {
-		$where = ['project_id' => $projectId, 'path' => $path, 'ref' => $ref];
+		return $this->fileContent(project: new GitLabProjectRef(projectId: $projectId, ref: $ref), path: $path);
+	}//end getFileContent()
+
+	/**
+	 * The decoded JSON content of a file in a project.
+	 *
+	 * @param GitLabProjectRef $project The project and ref.
+	 * @param string           $path    The file path.
+	 *
+	 * @return array The decoded document.
+	 *
+	 * @throws Exception If the file cannot be fetched or parsed.
+	 *
+	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 */
+	public function fileContent(GitLabProjectRef $project, string $path): array {
+		$where = ['project_id' => $project->projectId, 'path' => $path, 'ref' => $project->ref];
 		try {
 			$this->logger->info(message: self::LOG_TAG.'Fetching file from GitLab', context: self::logContext(extra: $where));
-			$encodedPath = urlencode($path);
-			$json = $this->getJson(path: "/projects/{$projectId}/repository/files/{$encodedPath}/raw", options: ['query' => ['ref' => $ref]]);
+			$filePath = "/projects/{$project->projectId}/repository/files/".urlencode($path).'/raw';
+			$json = $this->api->getJson(path: $filePath, options: ['query' => ['ref' => $project->ref]]);
 		} catch (GuzzleException $e) {
-			$this->logFailure(action: 'get file content', exception: $e, context: $where);
-			throw new Exception('Failed to fetch file: '.$e->getMessage());
+			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'get file content', context: $where));
 		}
 
 		if (json_last_error() !== JSON_ERROR_NONE) {
@@ -342,61 +292,52 @@ class GitLabHandler implements GitLabHandlerInterface {
 		}
 
 		return $json;
-	}//end getFileContent()
+	}//end fileContent()
 
 	/**
-	 * List OpenRegister configuration files in a project
+	 * List OpenRegister configuration files in a project directory, read from the repository tree.
 	 *
-	 * Searches for files matching naming conventions within the project
+	 * @param GitLabProjectRef $project The project and ref.
+	 * @param string           $path    The directory path; empty for the root.
 	 *
-	 * @param int $projectId GitLab project ID
-	 * @param string $ref Branch or tag name (default: main)
-	 * @param string $path Directory path to search (default: root)
+	 * @return list<array<string, mixed>> The configuration files with their metadata.
 	 *
-	 * @return ((mixed|null|string)[]|mixed|null)[][] List of configuration files with metadata
-	 *
-	 * @throws \Exception If API request fails
+	 * @throws Exception If the API request fails.
 	 *
 	 * @since 0.2.10
 	 *
-	 * @psalm-return list<array{config: array{app: mixed|null,
-	 *     description: ''|mixed, title: mixed|string, type: 'manual'|mixed,
-	 *     version: '1.0.0'|mixed}, id: mixed|null, path: mixed}>
-	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function listConfigurationFiles(int $projectId, string $ref = 'main', string $path = ''): array {
-		$where = ['project_id' => $projectId, 'ref' => $ref];
+	public function listConfigurationFiles(GitLabProjectRef $project, string $path = ''): array {
+		$where = ['project_id' => $project->projectId, 'ref' => $project->ref];
 		try {
 			$context = self::logContext(extra: $where + ['path' => $path]);
 			$this->logger->info(message: self::LOG_TAG.'Listing configuration files from GitLab', context: $context);
-			$query = ['ref' => $ref, 'path' => $path, 'recursive' => true];
-			$tree = $this->getJson(path: "/projects/{$projectId}/repository/tree", options: ['query' => $query]);
+			$query = ['ref' => $project->ref, 'path' => $path, 'recursive' => true];
+			$tree = $this->api->getJson(path: "/projects/{$project->projectId}/repository/tree", options: ['query' => $query]);
 		} catch (GuzzleException $e) {
-			$this->logFailure(action: 'list files', exception: $e, context: $where);
-			throw new Exception('Failed to list configuration files: '.$e->getMessage());
+			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'list files', context: $where));
 		}
 
-		return $this->configurationFiles(projectId: $projectId, ref: $ref, tree: $tree);
+		return $this->configurationFiles(project: $project, tree: $tree);
 	}//end listConfigurationFiles()
 
 	/**
 	 * The blobs of a repository tree that are valid configuration files, as file entries.
 	 *
-	 * @param int                              $projectId GitLab project ID.
-	 * @param string                           $ref       Branch or tag name.
-	 * @param array<int, array<string, mixed>> $tree      The repository tree.
+	 * @param GitLabProjectRef                 $project The project and ref.
+	 * @param array<int, array<string, mixed>> $tree    The repository tree.
 	 *
 	 * @return list<array<string, mixed>>
 	 */
-	private function configurationFiles(int $projectId, string $ref, array $tree): array {
+	private function configurationFiles(GitLabProjectRef $project, array $tree): array {
 		$files = [];
 		foreach ($tree as $item) {
 			if (self::isConfigurationBlob(item: $item) === false) {
 				continue;
 			}
 
-			$configData = $this->parseConfigurationFile(projectId: $projectId, path: $item['path'], ref: $ref);
+			$configData = $this->parseConfigurationFile(project: $project, path: $item['path']);
 			if ($configData !== null) {
 				$files[] = self::fileEntry(item: $item, configData: $configData);
 			}
@@ -461,19 +402,17 @@ class GitLabHandler implements GitLabHandlerInterface {
 		try {
 			$projectPath = urlencode($namespace.'/'.$project);
 			$this->logger->info(message: self::LOG_TAG.'Fetching GitLab project by path', context: self::logContext(extra: $where));
-			return $this->getJson(path: "/projects/{$projectPath}");
+			return $this->api->getJson(path: "/projects/{$projectPath}");
 		} catch (GuzzleException $e) {
-			$this->logFailure(action: 'get project', exception: $e, context: $where);
-			throw new Exception('Failed to fetch project: '.$e->getMessage());
+			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'get project', context: $where));
 		}
 	}//end getProjectByPath()
 
 	/**
 	 * Parse and validate a configuration file
 	 *
-	 * @param int $projectId GitLab project ID
-	 * @param string $path File path
-	 * @param string $ref Branch or tag name (default: main)
+	 * @param GitLabProjectRef $project The project and ref.
+	 * @param string           $path    File path
 	 *
 	 * @return array|null Parsed configuration or null if invalid
 	 *
@@ -483,9 +422,9 @@ class GitLabHandler implements GitLabHandlerInterface {
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	private function parseConfigurationFile(int $projectId, string $path, string $ref = 'main'): ?array {
+	private function parseConfigurationFile(GitLabProjectRef $project, string $path): ?array {
 		try {
-			$content = $this->getFileContent(projectId: $projectId, path: $path, ref: $ref);
+			$content = $this->fileContent(project: $project, path: $path);
 		} catch (Exception $e) {
 			$this->logSkippedFile(reason: 'Failed to parse configuration file', context: ['path' => $path, 'error' => $e->getMessage()]);
 			return null;
@@ -522,6 +461,6 @@ class GitLabHandler implements GitLabHandlerInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function getApiBase(): string {
-		return $this->apiBase;
+		return $this->api->apiBase();
 	}//end getApiBase()
 }//end class

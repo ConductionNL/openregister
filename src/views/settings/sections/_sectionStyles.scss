@@ -1,0 +1,93 @@
+// SPDX-FileCopyrightText: 2026 Conduction B.V.
+// SPDX-License-Identifier: EUPL-1.2
+
+// Styles the settings sections share, each keeping its own class names.
+
+// A status callout: a tinted box with a coloured left border and a bold,
+// coloured badge line, in a success, warning and error tone. The section
+// keeps its own class names; $box is the box and $badge its badge line, the
+// tones are $box--success, $box--warning and $box--error.
+@mixin status-callout($box, $badge) {
+	#{$box} {
+		padding: 16px;
+		border-radius: var(--border-radius-large);
+		border-left: 4px solid;
+		margin-bottom: 16px;
+	}
+
+	@each $tone in (success, warning, error) {
+		#{$box}--#{$tone} {
+			background: var(--color-#{$tone}-light, rgba(var(--color-#{$tone}-rgb), 0.1));
+			border-color: var(--color-#{$tone});
+		}
+
+		#{$box}--#{$tone} #{$badge} {
+			color: var(--color-#{$tone});
+		}
+	}
+
+	#{$badge} {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-weight: 600;
+		font-size: 15px;
+		margin-bottom: 8px;
+	}
+}
+
+// An inline monospace chip for a key or an occ command.
+@mixin code-chip {
+	display: inline-block;
+	font-family: var(--font-face-monospace, monospace);
+	background: var(--color-background-dark);
+	border-radius: var(--border-radius);
+	padding: 4px 8px;
+	word-break: break-all;
+}
+
+// A two-column table of figures: a shaded header, hover rows, a label column
+// and a right-aligned monospace value column. $prefix is the table class; its
+// parts are $prefix-container, -header, -row, -label and -value.
+@mixin figures-table($prefix) {
+	#{$prefix}-container {
+		overflow-x: auto;
+	}
+
+	#{$prefix} {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 14px;
+	}
+
+	#{$prefix}-header {
+		text-align: left;
+		padding: 12px 8px;
+		border-bottom: 2px solid var(--color-border);
+		background: var(--color-background-hover);
+		font-weight: 600;
+		color: var(--color-text-light);
+	}
+
+	#{$prefix}-row {
+		border-bottom: 1px solid var(--color-border-dark);
+	}
+
+	#{$prefix}-row:hover {
+		background: var(--color-background-hover);
+	}
+
+	#{$prefix}-label {
+		padding: 12px 8px;
+		color: var(--color-text-light);
+		font-weight: 500;
+	}
+
+	#{$prefix}-value {
+		padding: 12px 8px;
+		color: var(--color-text-maxcontrast);
+		text-align: right;
+		font-family: monospace;
+		font-size: 13px;
+	}
+}

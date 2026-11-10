@@ -23,6 +23,9 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -169,7 +172,7 @@ class CacheHandlerNameWarmupGoldenTest extends TestCase {
 			$handler = $this->handler(['columns' => $columns]);
 			$method = (new ReflectionClass($handler))->getMethod('queryTableForNames');
 			$method->setAccessible(true);
-			return $method->invoke($handler, 'tbl', $uuids, $source);
+			return $method->invoke($handler, new \OCA\OpenRegister\Service\Object\NameTableQuery(tableName: 'tbl', uuids: $uuids, source: $source));
 		};
 
 		return [
@@ -287,7 +290,7 @@ class CacheHandlerNameWarmupGoldenTest extends TestCase {
 			$record('acrossMagic', $uuids, $rest);
 			return self::answer($setup['acrossMagic'] ?? []);
 		});
-		$mapper->method('findAll')->willReturnCallback(fn () => self::answer($setup['findAll'] ?? []));
+		$mapper->method('findAllListed')->willReturnCallback(fn () => self::answer($setup['findAll'] ?? []));
 		$mapper->method('filterReadableUuids')->willReturn($setup['readable'] ?? []);
 
 		$container = $this->createMock(IAppContainer::class);
@@ -463,14 +466,20 @@ class CacheHandlerNameWarmupGoldenTest extends TestCase {
 		$noMagic = ($setup['noMagic'] ?? false);
 
 		return new CacheHandler(
-			organisationMapper: $organisations,
-			logger: $logger,
-			cacheFactory: ($setup['noCache'] ?? false) ? null : $this->cacheFactory($setup),
-			userSession: $session,
-			container: $this->container($setup),
-			registerMapper: $registers,
-			schemaMapper: $schemas,
-			db: $noMagic ? null : $this->database($setup)
+			stores: new CacheHandlerStores(
+				organisationMapper: $organisations,
+				registerMapper: $registers,
+				schemaMapper: $schemas,
+				db: $noMagic ? null : $this->database($setup)
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $logger,
+				cacheFactory: ($setup['noCache'] ?? false) ? null : $this->cacheFactory($setup),
+				container: $this->container($setup)
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $session
+			)
 		);
 	}
 }

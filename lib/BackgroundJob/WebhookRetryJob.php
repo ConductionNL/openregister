@@ -27,8 +27,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\BackgroundJob\Support\WebhookDeliveryStores;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
+use OCA\OpenRegister\Service\WebhookDelivery;
+use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -86,8 +89,7 @@ class WebhookRetryJob extends TimedJob {
 	 * Constructor
 	 *
 	 * @param ITimeFactory $time Time factory
-	 * @param WebhookMapperInterface $webhookMapper Webhook mapper
-	 * @param WebhookLogMapperInterface $webhookLogMapper Webhook log mapper
+	 * @param WebhookDeliveryStores $stores The webhook and webhook log mappers
 	 * @param WebhookService $webhookService Webhook service
 	 * @param LoggerInterface $logger Logger
 	 *
@@ -95,15 +97,14 @@ class WebhookRetryJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		WebhookMapperInterface $webhookMapper,
-		WebhookLogMapperInterface $webhookLogMapper,
+		WebhookDeliveryStores $stores,
 		WebhookService $webhookService,
 		LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
 
-		$this->webhookMapper = $webhookMapper;
-		$this->webhookLogMapper = $webhookLogMapper;
+		$this->webhookMapper = $stores->webhookMapper;
+		$this->webhookLogMapper = $stores->webhookLogMapper;
 		$this->webhookService = $webhookService;
 		$this->logger = $logger;
 
@@ -208,10 +209,11 @@ class WebhookRetryJob extends TimedJob {
 				);
 
 				$success = $this->webhookService->deliverWebhook(
-					webhook: $webhook,
-					eventName: $log->getEventClass(),
-					payload: $log->getPayloadArray(),
-					attempt: $log->getAttempt() + 1
+					new WebhookDelivery(
+						webhook: $webhook,
+						event: new WebhookEvent(name: $log->getEventClass(), payload: $log->getPayloadArray()),
+						attempt: $log->getAttempt() + 1
+					)
 				);
 
 				if ($success === true) {

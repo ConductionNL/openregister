@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IUserSession;
@@ -91,7 +92,7 @@ class SaveObjectsChunkSideEffectFailuresTest extends TestCase {
 			checks: new BulkRowChecks(permissionHandler: null, validateHandler: null)
 		);
 		$method = new ReflectionMethod(SaveObjects::class, 'emitChunkSideEffects');
-		$method->invoke($handler, $sideEffects, true, true);
+		$method->invoke($handler, $sideEffects, self::bulkRun(events: true, audit: true));
 	}//end emit()
 
 	/**
@@ -170,4 +171,20 @@ class SaveObjectsChunkSideEffectFailuresTest extends TestCase {
 			$this->warnings
 		);
 	}//end testAFailingListenerIsLoggedPerObjectAndTheOthersStillDispatched()
+
+	/**
+	 * A bulk save run carrying the events and audit flags the side effects read.
+	 *
+	 * @param bool $events Whether lifecycle events are dispatched.
+	 * @param bool $audit  Whether audit trail rows are written.
+	 *
+	 * @return BulkSaveRun
+	 */
+	private static function bulkRun(bool $events, bool $audit): BulkSaveRun {
+		$run         = new BulkSaveRun();
+		$run->events = $events;
+		$run->audit  = $audit;
+
+		return $run;
+	}//end bulkRun()
 }//end class

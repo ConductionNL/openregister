@@ -71,7 +71,6 @@ class AuditQueryControllerTest extends TestCase {
 
 	private function buildController(): AuditQueryController {
 		return AuditQueryControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->auditQueryService,
 			$this->userSession,
@@ -90,7 +89,6 @@ class AuditQueryControllerTest extends TestCase {
 		}
 
 		return AuditQueryControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->auditQueryService,
 			$userSession,

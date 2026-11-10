@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -137,7 +139,20 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
 	protected function refusalIn(array $data, array $users, array $context): string {
-		$why = $this->refusal(data: $data, users: $users);
+		return $this->refusalOf(row: new FilledRow(data: $data, users: $users), context: $context);
+	}//end refusalIn()
+
+	/**
+	 * Why a filled link cannot be minted in this run, or '': refusal(), then the object and the expiry.
+	 *
+	 * @param FilledRow            $row     The filled link fields and the account ids the set creates or adopts.
+	 * @param array<string, mixed> $context The context: the set's `objects` and the install day.
+	 *
+	 * @return string
+	 */
+	private function refusalOf(FilledRow $row, array $context): string {
+		$data = $row->data;
+		$why  = $this->refusal(data: $data, users: $row->users);
 		if ($why !== '') {
 			return $why;
 		}
@@ -151,7 +166,7 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 		}
 
 		return $this->dateRefusal(field: 'expiresAt', value: $data['expiresAt'], context: $context, isEnd: true);
-	}//end refusalIn()
+	}//end refusalOf()
 
 	/**
 	 * Mint one link as its declared account, once the mint guard admits that account to the object.
@@ -163,11 +178,10 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
 	public function write(ExampleSetRow $row): array {
-		$data = $row->data;
-		$object    = (string) $data['object'];
-		$createdBy = (string) $data['createdBy'];
+		$data   = $row->data;
+		$object = (string) $data['object'];
 		try {
-			$link = $this->actingAs()->run(uid: $createdBy, operation: fn (): array => $this->mint(object: $object, createdBy: $createdBy, data: $data));
+			$link = $this->actingAs()->run(uid: (string) $data['createdBy'], operation: fn (): array => $this->mint(data: $data));
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
@@ -179,26 +193,31 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 	 * Mint the link as the declared account, once the guard says that account may publish the object at a link;
 	 * run inside the acting scope.
 	 *
-	 * @param string               $object    The object's uuid.
-	 * @param string               $createdBy The declared account.
-	 * @param array<string, mixed> $data      The filled link fields.
+	 * @param array<string, mixed> $data The filled link fields: the object's uuid, the declared account (createdBy),
+	 *                                   the capabilities, the expiry and the label.
 	 *
 	 * @return array<string, mixed> The minted link.
 	 *
 	 * @throws ExampleSetException When the guard refuses.
 	 */
-	private function mint(string $object, string $createdBy, array $data): array {
+	private function mint(array $data): array {
+		$object    = (string) $data['object'];
+		$createdBy = (string) $data['createdBy'];
 		if ($this->guard()->mayMint(subjectType: AccessLink::SUBJECT_OBJECT, subjectId: $object) === false) {
 			throw new ExampleSetException('"'.$createdBy.'" may not read object "'.$object.'", so may not publish it at a link');
 		}
 
 		return $this->links()->mint(
-			userId: $createdBy,
-			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: $object,
-			capabilities: array_values((array) ($data['capabilities'] ?? [])),
-			expiresAt: (string) $data['expiresAt'],
-			label: $this->labelOf(data: $data)
+			new LinkMintRequest(
+				minter: $createdBy,
+				subjectType: AccessLink::SUBJECT_OBJECT,
+				subjectId: $object,
+				terms: new AccessLinkTerms(
+					capabilities: array_values((array) ($data['capabilities'] ?? [])),
+					expiresAt: (string) $data['expiresAt'],
+					label: $this->labelOf(data: $data)
+				)
+			)
 		);
 	}//end mint()
 

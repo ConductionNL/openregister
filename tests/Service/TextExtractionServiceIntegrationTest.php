@@ -22,6 +22,9 @@ use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\SourceStamp;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -29,6 +32,8 @@ use ReflectionMethod;
 use OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeCall;
 use OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeDialect;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkEntityScan;
+use OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeRequest;
 
 /**
  * Integration tests for TextExtractionService and EntityRecognitionHandler
@@ -953,7 +958,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testIsSourceUpToDateForced(): void {
-		$result = $this->invokePrivate($this->service, 'isSourceUpToDate', [99999, 'file', time(), true]);
+		$result = $this->invokePrivate($this->service, 'isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 99999, timestamp: time()), true]);
 		$this->assertFalse($result);
 	}
 
@@ -963,7 +968,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testIsSourceUpToDateNonexistent(): void {
-		$result = $this->invokePrivate($this->service, 'isSourceUpToDate', [99999, 'file', time(), false]);
+		$result = $this->invokePrivate($this->service, 'isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 99999, timestamp: time()), false]);
 		$this->assertFalse($result);
 	}
 
@@ -1245,7 +1250,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	public function testExtractContextMiddle(): void {
 		$text = 'The quick brown fox jumps over the lazy dog near a river.';
 		// "fox" starts at position 16, ends at 19.
-		$result = $this->invokePrivate($this->entityHandler, 'extractContext', [$text, 16, 19, 10]);
+		$result = $this->invokePrivate($this->entityHandler, 'extractContext', [['position_start' => 16, 'position_end' => 19], new ChunkEntityScan(new Chunk(), $text, 'regex', 10)]);
 		$this->assertStringContainsString('fox', $result);
 		// Window should extend before and after.
 		$this->assertGreaterThan(3, strlen($result));
@@ -1258,7 +1263,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testExtractContextAtStart(): void {
 		$text = 'Hello World this is a test string.';
-		$result = $this->invokePrivate($this->entityHandler, 'extractContext', [$text, 0, 5, 10]);
+		$result = $this->invokePrivate($this->entityHandler, 'extractContext', [['position_start' => 0, 'position_end' => 5], new ChunkEntityScan(new Chunk(), $text, 'regex', 10)]);
 		$this->assertStringContainsString('Hello', $result);
 	}
 
@@ -1269,7 +1274,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testExtractContextAtEnd(): void {
 		$text = 'Hello World';
-		$result = $this->invokePrivate($this->entityHandler, 'extractContext', [$text, 6, 11, 10]);
+		$result = $this->invokePrivate($this->entityHandler, 'extractContext', [['position_start' => 6, 'position_end' => 11], new ChunkEntityScan(new Chunk(), $text, 'regex', 10)]);
 		$this->assertStringContainsString('World', $result);
 	}
 
@@ -1280,7 +1285,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 */
 	public function testExtractContextZeroWindow(): void {
 		$text = 'Hello World Test';
-		$result = $this->invokePrivate($this->entityHandler, 'extractContext', [$text, 6, 11, 0]);
+		$result = $this->invokePrivate($this->entityHandler, 'extractContext', [['position_start' => 6, 'position_end' => 11], new ChunkEntityScan(new Chunk(), $text, 'regex', 0)]);
 		$this->assertSame('World', $result);
 	}
 
@@ -1355,7 +1360,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testBuildAnalyzeRequestBodyBasic(): void {
-		$result = $this->invokePrivate($this->entityHandler, 'buildAnalyzeRequestBody', [new EntityDetectionQuery('Test text', null, 0.0), new AnalyzeDialect('en', null, 'presidio', 0.0)]);
+		$result = $this->invokePrivate($this->entityHandler, 'buildAnalyzeRequestBody', [new AnalyzeRequest(new EntityDetectionQuery('Test text', null, 0.0), new AnalyzeDialect('en', null, 'presidio', 0.0))]);
 		$this->assertSame('Test text', $result['text']);
 		$this->assertSame('en', $result['language']);
 		$this->assertArrayNotHasKey('entities', $result);
@@ -1367,7 +1372,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testBuildAnalyzeRequestBodyWithEntityTypes(): void {
-		$result = $this->invokePrivate($this->entityHandler, 'buildAnalyzeRequestBody', [new EntityDetectionQuery('Test', ['EMAIL', 'PERSON'], 0.0), new AnalyzeDialect('nl', null, 'presidio', 0.0)]);
+		$result = $this->invokePrivate($this->entityHandler, 'buildAnalyzeRequestBody', [new AnalyzeRequest(new EntityDetectionQuery('Test', ['EMAIL', 'PERSON'], 0.0), new AnalyzeDialect('nl', null, 'presidio', 0.0))]);
 		$this->assertSame('nl', $result['language']);
 		$this->assertArrayHasKey('entities', $result);
 		$this->assertContains('EMAIL_ADDRESS', $result['entities']);
@@ -1380,7 +1385,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testBuildAnalyzeRequestBodyEmptyEntityTypes(): void {
-		$result = $this->invokePrivate($this->entityHandler, 'buildAnalyzeRequestBody', [new EntityDetectionQuery('Test', [], 0.0), new AnalyzeDialect('en', null, 'presidio', 0.0)]);
+		$result = $this->invokePrivate($this->entityHandler, 'buildAnalyzeRequestBody', [new AnalyzeRequest(new EntityDetectionQuery('Test', [], 0.0), new AnalyzeDialect('en', null, 'presidio', 0.0))]);
 		$this->assertArrayNotHasKey('entities', $result);
 	}
 
@@ -1400,8 +1405,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 		$text = 'test@example.com is a valid email.';
 		$result = $this->invokePrivate($this->entityHandler, 'convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery($text, null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0),
+			new AnalyzeRequest(new EntityDetectionQuery($text, null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0)),
 		]);
 
 		$this->assertCount(1, $result);
@@ -1422,8 +1426,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 		$text = 'John Doe is a person.';
 		$result = $this->invokePrivate($this->entityHandler, 'convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery($text, null, 0.5),
-			new AnalyzeDialect('en', null, 'openanonymiser', 0.85),
+			new AnalyzeRequest(new EntityDetectionQuery($text, null, 0.5), new AnalyzeDialect('en', null, 'openanonymiser', 0.85)),
 		]);
 
 		$this->assertCount(1, $result);
@@ -1444,8 +1447,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 		];
 		$result = $this->invokePrivate($this->entityHandler, 'convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery('test text', null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0),
+			new AnalyzeRequest(new EntityDetectionQuery('test text', null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0)),
 		]);
 
 		$this->assertEmpty($result);
@@ -1459,8 +1461,7 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 	public function testConvertApiResultsEmpty(): void {
 		$result = $this->invokePrivate($this->entityHandler, 'convertApiResultsToEntities', [
 			[],
-			new EntityDetectionQuery('text', null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0),
+			new AnalyzeRequest(new EntityDetectionQuery('text', null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0)),
 		]);
 		$this->assertEmpty($result);
 	}
@@ -1666,9 +1667,13 @@ class TextExtractionServiceIntegrationTest extends TestCase {
 			'checksum' => 'abc123',
 		];
 
-		$chunk = $this->invokePrivate($this->service, 'hydrateChunkEntity', [
-			'file', 42, $chunkData, 'admin', 'TestOrg', time(),
-		]);
+		$source = new ChunkSource(
+			sourceType: 'file',
+			sourceId: 42,
+			ownership: new ChunkOwnership(owner: 'admin', organisation: 'TestOrg'),
+			sourceTimestamp: time()
+		);
+		$chunk = $this->invokePrivate($this->service, 'hydrateChunkEntity', [$source, $chunkData]);
 
 		$this->assertInstanceOf(Chunk::class, $chunk);
 		$this->assertSame('file', $chunk->getSourceType());

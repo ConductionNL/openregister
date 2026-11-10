@@ -22,10 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task\WriteBack;
 
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapters;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifierInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TransitionNotice;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -39,15 +38,11 @@ final class WriteBackRefusalNotice {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskInboxService                    $inbox      The row the notice is built from.
-	 * @param NotificationRuleDispatcherInterface $dispatcher The one dispatcher.
-	 * @param TaskNotificationRulesInterface      $rules      The task rule registry.
-	 * @param LoggerInterface                     $logger     Failure reporting.
+	 * @param TaskTransitionNotifierInterface $notifier Delivery, through the task rule set.
+	 * @param LoggerInterface                 $logger   Failure reporting.
 	 */
 	public function __construct(
-		private readonly TaskInboxService $inbox,
-		private readonly NotificationRuleDispatcherInterface $dispatcher,
-		private readonly TaskNotificationRulesInterface $rules,
+		private readonly TaskTransitionNotifierInterface $notifier,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -92,17 +87,11 @@ final class WriteBackRefusalNotice {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-unauthorized-write-back-is-undone-and-explained
 	 */
 	private function dispatch(WriteBackAttempt $attempt, string $reason): void {
-		$actor   = (string)$attempt->actor;
-		$adapter = TaskObjectAdapters::forTask(
-			task: $attempt->task,
-			row: $this->inbox->enrich(task: $attempt->task),
-			extra: ['writeBackActor' => $actor, 'writeBackReason' => $reason]
+		$actor = (string)$attempt->actor;
+		$notice = new TransitionNotice(
+			extra: ['writeBackActor' => $actor, 'writeBackReason' => $reason],
+			context: ['action' => TaskNotificationRulesInterface::ACTION_WRITE_BACK_REFUSED, 'actor' => $actor]
 		);
-		$this->dispatcher->dispatchWithSchema(
-			object: $adapter,
-			trigger: 'transition',
-			context: ['action' => TaskNotificationRulesInterface::ACTION_WRITE_BACK_REFUSED, 'actor' => $actor],
-			schema: $this->rules->buildSchema()
-		);
+		$this->notifier->notifyTransition(task: $attempt->task, notice: $notice);
 	}//end dispatch()
 }//end class

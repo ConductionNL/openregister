@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryServices;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
@@ -112,9 +113,11 @@ final class ObjectHistoryPurposeVerdictTest extends TestCase {
 
 		return new ObjectHistoryForReaders(
 			$access,
-			$this->createMock(AuditTrailMapper::class),
-			$redactor,
-			$registers,
+			new ObjectHistoryServices(
+				$this->createMock(AuditTrailMapper::class),
+				$redactor,
+				$registers
+			),
 			$guard,
 			$this->createMock(ReadEventVisibility::class)
 		);

@@ -144,17 +144,7 @@ class DocxSanitizer implements SanitizerInterface {
 	 */
 	public function sanitize(string $sourcePath, string $destPath): SanitizationReport {
 		$zip = $this->openPackage(sourcePath: $sourcePath, destPath: $destPath);
-
-		$counts = [
-			'commentsRemoved' => 0,
-			'trackedChangesAccepted' => 0,
-			'trackedChangesDropped' => 0,
-			'revisionAttributesStripped' => 0,
-			'hyperlinksFlattened' => 0,
-			'metadataFieldsScrubbed' => 0,
-			'customXmlPartsDropped' => 0,
-			'fieldCodesStripped' => 0,
-		];
+		$run = new DocxSanitizationRun(zip: $zip);
 
 		// Snapshot the body-part names BEFORE any part deletion mutates the
 		// central directory indices.
@@ -163,32 +153,32 @@ class DocxSanitizer implements SanitizerInterface {
 		// [Content_Types].xml and word/_rels/document.xml.rels are each touched
 		// by several passes. ZipArchive does not surface a pending in-session
 		// write to a later getFromName(), so every removal target is collected
-		// here and the two index parts are reconciled exactly once at the end.
-		$overridePartNames = [];
-		$documentRelTargets = [];
+		// on the run and the two index parts are reconciled exactly once at the end.
 
 		// Part-level removals (each deletes a distinct part — safe in-session).
-		$this->removeCommentParts(zip: $zip, counts: $counts, overridePartNames: $overridePartNames, documentRelTargets: $documentRelTargets);
-		$this->stripCustomXmlParts(zip: $zip, counts: $counts, overridePartNames: $overridePartNames, documentRelTargets: $documentRelTargets);
+		$this->removeCommentParts(run: $run);
+		$this->stripCustomXmlParts(run: $run);
 
 		// Metadata parts (each touched exactly once).
-		$this->scrubMetadata(zip: $zip, counts: $counts);
+		$this->scrubMetadata(run: $run);
 
 		// Inline body-part surgery: read once, run every inline pass, write once.
-		$documentRelIds = $this->processBodyParts(zip: $zip, bodyParts: $bodyParts, counts: $counts);
+		$documentRelIds = $this->processBodyParts(run: $run, bodyParts: $bodyParts);
 
 		// Single reconciliation of the two heavily-shared index parts.
-		$this->reconcileContentTypes(zip: $zip, partNames: $overridePartNames);
+		$this->reconcileContentTypes(zip: $zip, partNames: $run->overridePartNames());
 		$this->reconcileRels(
 			zip: $zip,
-			relsName: 'word/_rels/document.xml.rels',
-			targetBasenames: $documentRelTargets,
-			hyperlinkIds: $documentRelIds
+			prune: new RelsPrune(
+				relsName: 'word/_rels/document.xml.rels',
+				targetBasenames: $run->documentRelTargets(),
+				hyperlinkIds: $documentRelIds
+			)
 		);
 
 		$zip->close();
 
-		return $this->buildReport(counts: $counts);
+		return $this->buildReport(counts: $run->counts());
 	}//end sanitize()
 
 	/**
@@ -256,21 +246,20 @@ class DocxSanitizer implements SanitizerInterface {
 	 * single touch; the document part's hyperlink ids are returned for the
 	 * shared reconciliation at the end.
 	 *
-	 * @param ZipArchive $zip The open archive.
+	 * @param DocxSanitizationRun $run The sanitisation run.
 	 * @param string[] $bodyParts Body part names.
-	 * @param array<string, int> $counts Mutable counter map.
 	 *
 	 * @return string[] Hyperlink relationship ids flattened in word/document.xml.
 	 */
-	private function processBodyParts(ZipArchive $zip, array $bodyParts, array &$counts): array {
+	private function processBodyParts(DocxSanitizationRun $run, array $bodyParts): array {
 		$documentRelIds = [];
 		foreach ($bodyParts as $part) {
-			$relIds = $this->processBodyPart(zip: $zip, part: $part, counts: $counts);
+			$relIds = $this->processBodyPart(run: $run, part: $part);
 			if ($part === 'word/document.xml') {
 				$documentRelIds = array_merge($documentRelIds, $relIds);
 			} elseif ($relIds !== []) {
 				$relsName = 'word/_rels/' . basename($part) . '.rels';
-				$this->reconcileRels(zip: $zip, relsName: $relsName, targetBasenames: [], hyperlinkIds: $relIds);
+				$this->reconcileRels(zip: $run->zip, prune: new RelsPrune(relsName: $relsName, targetBasenames: [], hyperlinkIds: $relIds));
 			}
 		}
 
@@ -330,16 +319,15 @@ class DocxSanitizer implements SanitizerInterface {
 	/**
 	 * Run all inline passes on a single body part (one load / one save).
 	 *
-	 * @param ZipArchive $zip The open archive.
+	 * @param DocxSanitizationRun $run The sanitisation run.
 	 * @param string $part The body part name.
-	 * @param array<string, int> $counts Mutable counter map.
 	 *
 	 * @return string[] Relationship IDs of flattened external hyperlinks in this part.
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function processBodyPart(ZipArchive $zip, string $part, array &$counts): array {
-		$xml = $zip->getFromName($part);
+	private function processBodyPart(DocxSanitizationRun $run, string $part): array {
+		$xml = $run->zip->getFromName($part);
 		if ($xml === false || $xml === '') {
 			return [];
 		}
@@ -348,13 +336,13 @@ class DocxSanitizer implements SanitizerInterface {
 		$xpath = $this->wXpath(dom: $dom);
 
 		$this->removeCommentMarkers(xpath: $xpath);
-		$this->resolveTrackedChanges(xpath: $xpath, dom: $dom, counts: $counts);
+		$this->resolveTrackedChanges(xpath: $xpath, run: $run);
 		$this->unwrapDataBoundSdt(xpath: $xpath);
-		$counts['fieldCodesStripped'] += $this->stripSimpleFields(dom: $dom);
-		$counts['fieldCodesStripped'] += $this->stripComplexFields(dom: $dom);
-		$relIds = $this->flattenHyperlinkElements(xpath: $xpath, counts: $counts);
+		$run->count(category: 'fieldCodesStripped', amount: $this->stripSimpleFields(dom: $dom));
+		$run->count(category: 'fieldCodesStripped', amount: $this->stripComplexFields(dom: $dom));
+		$relIds = $this->flattenHyperlinkElements(xpath: $xpath, run: $run);
 
-		$zip->addFromString($part, $dom->saveXML());
+		$run->zip->addFromString($part, $dom->saveXML());
 
 		return $relIds;
 	}//end processBodyPart()
@@ -362,20 +350,18 @@ class DocxSanitizer implements SanitizerInterface {
 	/**
 	 * Remove comment parts; record content-types + rels removal targets.
 	 *
-	 * @param ZipArchive $zip The open archive.
-	 * @param array<string, int> $counts Mutable counter map.
-	 * @param string[] $overridePartNames Collected Override PartNames to drop.
-	 * @param string[] $documentRelTargets Collected document.xml.rels Target basenames to drop.
+	 * @param DocxSanitizationRun $run The sanitisation run.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function removeCommentParts(ZipArchive $zip, array &$counts, array &$overridePartNames, array &$documentRelTargets): void {
+	private function removeCommentParts(DocxSanitizationRun $run): void {
+		$zip = $run->zip;
 		$commentsXml = $zip->getFromName('word/comments.xml');
 		if ($commentsXml !== false && $commentsXml !== '') {
 			$dom = $this->loadXml(xml: $commentsXml);
-			$counts['commentsRemoved'] += $this->wXpath(dom: $dom)->query('//w:comment')->length;
+			$run->count(category: 'commentsRemoved', amount: $this->wXpath(dom: $dom)->query('//w:comment')->length);
 		}
 
 		$commentParts = ['word/comments.xml', 'word/commentsExtended.xml', 'word/commentsIds.xml', 'word/people.xml'];
@@ -384,11 +370,11 @@ class DocxSanitizer implements SanitizerInterface {
 				$zip->deleteName($part);
 			}
 
-			$overridePartNames[] = '/' . $part;
+			$run->dropOverride(partName: $part);
 		}
 
 		foreach (['comments.xml', 'commentsExtended.xml', 'commentsIds.xml', 'people.xml'] as $target) {
-			$documentRelTargets[] = $target;
+			$run->dropDocumentRelTarget(basename: $target);
 		}
 	}//end removeCommentParts()
 
@@ -412,29 +398,28 @@ class DocxSanitizer implements SanitizerInterface {
 	/**
 	 * Accept tracked-change inserts, drop deletions, strip revision attributes.
 	 *
-	 * @param DOMXPath $xpath The body-part xpath context.
-	 * @param DOMDocument $dom The body-part DOM.
-	 * @param array<string, int> $counts Mutable counter map.
+	 * @param DOMXPath $xpath The body-part xpath context (its document is the body-part DOM).
+	 * @param DocxSanitizationRun $run The sanitisation run.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function resolveTrackedChanges(DOMXPath $xpath, DOMDocument $dom, array &$counts): void {
+	private function resolveTrackedChanges(DOMXPath $xpath, DocxSanitizationRun $run): void {
 		// Unwrap <w:ins> (accept insert).
 		foreach (iterator_to_array($xpath->query('//w:ins')) as $ins) {
 			$this->unwrap(node: $ins);
-			$counts['trackedChangesAccepted']++;
+			$run->count(category: 'trackedChangesAccepted');
 		}
 
 		// Remove <w:del> (drop deletion).
 		foreach (iterator_to_array($xpath->query('//w:del')) as $del) {
 			$del->parentNode?->removeChild($del);
-			$counts['trackedChangesDropped']++;
+			$run->count(category: 'trackedChangesDropped');
 		}
 
 		// Strip revision attributes from every element.
-		$counts['revisionAttributesStripped'] += $this->stripRevisionAttributes(dom: $dom);
+		$run->count(category: 'revisionAttributesStripped', amount: $this->stripRevisionAttributes(dom: $xpath->document));
 	}//end resolveTrackedChanges()
 
 	/**
@@ -465,16 +450,14 @@ class DocxSanitizer implements SanitizerInterface {
 	/**
 	 * Remove all custom XML parts; record content-types + rels removal targets.
 	 *
-	 * @param ZipArchive $zip The open archive.
-	 * @param array<string, int> $counts Mutable counter map.
-	 * @param string[] $overridePartNames Collected Override PartNames to drop.
-	 * @param string[] $documentRelTargets Collected document.xml.rels Target basenames to drop.
+	 * @param DocxSanitizationRun $run The sanitisation run.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function stripCustomXmlParts(ZipArchive $zip, array &$counts, array &$overridePartNames, array &$documentRelTargets): void {
+	private function stripCustomXmlParts(DocxSanitizationRun $run): void {
+		$zip = $run->zip;
 		$toDelete = [];
 		for ($index = 0; $index < $zip->numFiles; $index++) {
 			$name = $zip->getNameIndex($index);
@@ -483,11 +466,11 @@ class DocxSanitizer implements SanitizerInterface {
 			}
 
 			if (preg_match('#^customXml/item\d*\.xml$#', $name) === 1) {
-				$counts['customXmlPartsDropped']++;
+				$run->count(category: 'customXmlPartsDropped');
 				$toDelete[] = $name;
-				$overridePartNames[] = '/' . $name;
+				$run->dropOverride(partName: $name);
 				// Document.xml.rels targets customXml as "../customXml/itemN.xml".
-				$documentRelTargets[] = basename($name);
+				$run->dropDocumentRelTarget(basename: basename($name));
 			} elseif (preg_match('#^customXml/(itemProps\d*\.xml|_rels/.*)$#', $name) === 1) {
 				$toDelete[] = $name;
 			}
@@ -530,17 +513,16 @@ class DocxSanitizer implements SanitizerInterface {
 	/**
 	 * Scrub document metadata fields to the sentinel.
 	 *
-	 * @param ZipArchive $zip The open archive.
-	 * @param array<string, int> $counts Mutable counter map.
+	 * @param DocxSanitizationRun $run The sanitisation run.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function scrubMetadata(ZipArchive $zip, array &$counts): void {
-		$counts['metadataFieldsScrubbed'] += $this->scrubCorePart(zip: $zip);
-		$counts['metadataFieldsScrubbed'] += $this->scrubAppPart(zip: $zip);
-		$counts['metadataFieldsScrubbed'] += $this->scrubCustomPart(zip: $zip);
+	private function scrubMetadata(DocxSanitizationRun $run): void {
+		$run->count(category: 'metadataFieldsScrubbed', amount: $this->scrubCorePart(zip: $run->zip));
+		$run->count(category: 'metadataFieldsScrubbed', amount: $this->scrubAppPart(zip: $run->zip));
+		$run->count(category: 'metadataFieldsScrubbed', amount: $this->scrubCustomPart(zip: $run->zip));
 	}//end scrubMetadata()
 
 	/**
@@ -738,7 +720,8 @@ class DocxSanitizer implements SanitizerInterface {
 				continue;
 			}
 
-			[$instr, $end] = $this->scanComplexField(xpath: $xpath, runs: $runs, cursor: $cursor);
+			[$instr, $span] = $this->scanComplexField(xpath: $xpath, runs: array_slice($runs, $cursor));
+			$end = ($cursor + $span);
 
 			if ($this->instructionMatches(instr: $instr) === true) {
 				for ($remove = $cursor; $remove <= $end; $remove++) {
@@ -760,16 +743,15 @@ class DocxSanitizer implements SanitizerInterface {
 	 * Without a matching end the field spans only its begin run.
 	 *
 	 * @param DOMXPath $xpath The xpath context.
-	 * @param DOMNode[] $runs The paragraph's <w:r> runs, in order.
-	 * @param int $cursor Index of the field's begin run.
+	 * @param DOMNode[] $runs The paragraph's <w:r> runs from the field's begin run on, in order.
 	 *
-	 * @return array{0: string, 1: int} The instruction text and the end-run index.
+	 * @return array{0: string, 1: int} The instruction text and the end-run offset from the begin run.
 	 */
-	private function scanComplexField(DOMXPath $xpath, array $runs, int $cursor): array {
+	private function scanComplexField(DOMXPath $xpath, array $runs): array {
 		$instr = '';
 		$depth = 0;
 		$runsCount = count($runs);
-		for ($scan = $cursor; $scan < $runsCount; $scan++) {
+		for ($scan = 0; $scan < $runsCount; $scan++) {
 			$type = $this->fldCharType(xpath: $xpath, run: $runs[$scan]);
 			if ($type === 'begin') {
 				$depth++;
@@ -780,7 +762,7 @@ class DocxSanitizer implements SanitizerInterface {
 			$instr .= $this->runInstructionText(xpath: $xpath, run: $runs[$scan]);
 		}
 
-		return [$instr, $cursor];
+		return [$instr, 0];
 	}//end scanComplexField()
 
 	/**
@@ -848,13 +830,13 @@ class DocxSanitizer implements SanitizerInterface {
 	 * Flatten hyperlink elements in a body-part DOM; return seen relationship IDs.
 	 *
 	 * @param DOMXPath $xpath The body-part xpath context.
-	 * @param array<string, int> $counts Mutable counter map.
+	 * @param DocxSanitizationRun $run The sanitisation run.
 	 *
 	 * @return string[] The relationship IDs of flattened external hyperlinks.
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function flattenHyperlinkElements(DOMXPath $xpath, array &$counts): array {
+	private function flattenHyperlinkElements(DOMXPath $xpath, DocxSanitizationRun $run): array {
 		$relIds = [];
 		foreach (iterator_to_array($xpath->query('//w:hyperlink')) as $link) {
 			if (($link instanceof DOMElement) === true) {
@@ -865,7 +847,7 @@ class DocxSanitizer implements SanitizerInterface {
 			}
 
 			$this->unwrap(node: $link);
-			$counts['hyperlinksFlattened']++;
+			$run->count(category: 'hyperlinksFlattened');
 		}
 
 		return array_keys($relIds);
@@ -910,41 +892,25 @@ class DocxSanitizer implements SanitizerInterface {
 	 * and drop hyperlink Relationship entries by Id.
 	 *
 	 * @param ZipArchive $zip The open archive.
-	 * @param string $relsName The rels part path.
-	 * @param string[] $targetBasenames Target basenames to drop (e.g. comments.xml, item1.xml).
-	 * @param string[] $hyperlinkIds Hyperlink relationship IDs to drop.
+	 * @param RelsPrune $prune The rels part and the entries to drop from it.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Dual-criteria relationship filter (by-target OR by-hyperlink-id) over a single DOM pass.
 	 */
-	private function reconcileRels(ZipArchive $zip, string $relsName, array $targetBasenames, array $hyperlinkIds): void {
-		if ($targetBasenames === [] && $hyperlinkIds === []) {
+	private function reconcileRels(ZipArchive $zip, RelsPrune $prune): void {
+		if ($prune->isEmpty() === true) {
 			return;
 		}
 
-		$xml = $zip->getFromName($relsName);
+		$xml = $zip->getFromName($prune->relsName);
 		if ($xml === false || $xml === '') {
 			return;
 		}
 
 		$dom = $this->loadXml(xml: $xml);
-		$changed = false;
-		foreach (iterator_to_array($dom->getElementsByTagName('Relationship')) as $rel) {
-			$byTarget = in_array(basename($rel->getAttribute('Target')), $targetBasenames, true);
-			$isHyperlink = (str_ends_with($rel->getAttribute('Type'), '/hyperlink') === true
-				&& in_array($rel->getAttribute('Id'), $hyperlinkIds, true) === true);
-
-			if ($byTarget === true || $isHyperlink === true) {
-				$rel->parentNode?->removeChild($rel);
-				$changed = true;
-			}
-		}
-
-		if ($changed === true) {
-			$zip->addFromString($relsName, $dom->saveXML());
+		if ($prune->applyTo(dom: $dom) === true) {
+			$zip->addFromString($prune->relsName, $dom->saveXML());
 		}
 	}//end reconcileRels()
 

@@ -181,7 +181,10 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 		$backends[BackendState::METHOD_HYBRID] = $this->buildHybridInfo(backends: $backends);
 
 		$activeMethod = $this->resolveActiveMethod(stored: $stored, backends: $backends);
-		$effectiveMethod = $this->resolveEffectiveMethod(enabled: $enabled, activeMethod: $activeMethod, backends: $backends);
+		$effectiveMethod = BackendState::METHOD_REGEX;
+		if ($enabled === true) {
+			$effectiveMethod = $this->resolveEffectiveMethod(activeMethod: $activeMethod, backends: $backends);
+		}
 
 		return new BackendState(
 			entityRecognitionEnabled: $enabled,
@@ -381,9 +384,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 * unsigned requests, so a plain HTTP call to the internal host would fail —
 	 * routing and auth headers are handled by AppAPI.
 	 *
-	 * @param string $route ExApp route (e.g. `/api/v1/analyze`).
-	 * @param array<string, mixed> $params Request body parameters.
-	 * @param string $method HTTP method (default POST).
+	 * @param AnonymiserCall $call The ExApp route (e.g. `/api/v1/analyze`), the request body parameters and the HTTP method.
 	 *
 	 * @return array<string, mixed>|null Decoded JSON response, or null on failure.
 	 *
@@ -391,7 +392,20 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 *
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
 	 */
-	public function requestOpenAnonymiser(string $route, array $params, string $method = 'POST'): ?array {
+	public function requestOpenAnonymiser(AnonymiserCall $call): ?array {
+		return $this->sendToExApp(call: $call);
+	}//end requestOpenAnonymiser()
+
+	/**
+	 * Issue one signed request to the active OpenAnonymiser ExApp via AppAPI.
+	 *
+	 * @param AnonymiserCall $call The route, body parameters and HTTP method.
+	 *
+	 * @return array<string, mixed>|null Decoded JSON response, or null on failure.
+	 *
+	 * @throws AnalyzeRequestRejectedException When the ExApp answers 4xx: it was reached and refused the request.
+	 */
+	private function sendToExApp(AnonymiserCall $call): ?array {
 		$appId = $this->resolveActiveExAppId();
 		if ($appId === null) {
 			return null;
@@ -407,7 +421,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 		try {
 			// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- Optional AppAPI PublicFunctions: guarded by class_exists and try/catch, absent unless the ExApp stack is installed.
 			$publicFunctions = Server::get($publicFunctionsClass);
-			$response = $publicFunctions->exAppRequest($appId, $route, null, $method, $params);
+			$response = $publicFunctions->exAppRequest($appId, $call->route, null, $call->method, $call->params);
 
 			if (is_array($response) === true) {
 				// ExAppRequest returns an array only to signal an error.
@@ -426,7 +440,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 			$this->logger->error('[AnonymisationBackendService] ExApp request to ' . $appId . ' failed: ' . $e->getMessage());
 			return null;
 		}//end try
-	}//end requestOpenAnonymiser()
+	}//end sendToExApp()
 
 	/**
 	 * Decode an ExApp response, or refuse it when the ExApp rejected the request.
@@ -561,10 +575,8 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	private function buildBackendInfo(string $method, ProbeResult $probe): BackendInfo {
 		return new BackendInfo(
 			name: $method,
-			available: $probe->reachable,
 			configured: $this->isConfigured(method: $method, probe: $probe),
-			lastProbedAt: $probe->probedAt,
-			latencyMs: $probe->latencyMs,
+			probe: $probe,
 		);
 	}//end buildBackendInfo()
 
@@ -585,10 +597,8 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 
 		return new BackendInfo(
 			name: BackendState::METHOD_HYBRID,
-			available: $available,
 			configured: $configured,
-			lastProbedAt: $this->now(),
-			latencyMs: null,
+			probe: new ProbeResult(reachable: $available, latencyMs: null, error: null, probedAt: $this->now()),
 		);
 	}//end buildHybridInfo()
 
@@ -646,19 +656,14 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	}//end resolveActiveMethod()
 
 	/**
-	 * Apply the effectiveMethod precedence rule.
+	 * Apply the effectiveMethod precedence rule while recognition is enabled.
 	 *
-	 * @param bool $enabled Whether recognition is enabled.
 	 * @param string $activeMethod The resolved active method.
 	 * @param array<string, BackendInfo> $backends The per-method availability records.
 	 *
 	 * @return string The method that will actually be used.
 	 */
-	private function resolveEffectiveMethod(bool $enabled, string $activeMethod, array $backends): string {
-		if ($enabled === false) {
-			return BackendState::METHOD_REGEX;
-		}
-
+	private function resolveEffectiveMethod(string $activeMethod, array $backends): string {
 		if ($activeMethod === BackendState::METHOD_REGEX) {
 			return BackendState::METHOD_REGEX;
 		}

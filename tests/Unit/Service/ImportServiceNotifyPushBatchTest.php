@@ -158,15 +158,10 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 			->willReturnCallback(static fn (array $row) => $row);
 
 		$this->service = new ImportService(
-			$this->createMock(SchemaMapper::class),
-			$this->objectService,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IGroupManager::class),
-			$translationCsvCodec,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\MigrationPack\MappingEngine::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class),
-			$container
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->createMock(SchemaMapper::class), $this->objectService, $this->createMock(AuditTrailMapper::class), $this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($translationCsvCodec, $this->createMock(\OCA\OpenRegister\Service\MigrationPack\MappingEngine::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($container, new \OCA\OpenRegister\Listener\NotifyPushBatch(), $this->createMock(LoggerInterface::class)),
+			$this->createMock(IGroupManager::class)
 		);
 
 	}//end setUp()

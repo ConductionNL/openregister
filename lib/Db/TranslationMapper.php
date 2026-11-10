@@ -105,12 +105,23 @@ class TranslationMapper extends QBMapper implements TranslationMapperInterface, 
 			->andWhere($qb->expr()->eq('language', $qb->createNamedParameter($language)))
 			->setMaxResults(1);
 
+		return $this->findOneOrNull(qb: $qb);
+	}//end findOne()
+
+	/**
+	 * The one translation the query selects, or null when there is none.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return Translation|null The translation.
+	 */
+	private function findOneOrNull(IQueryBuilder $qb): ?Translation {
 		try {
 			return $this->findEntity(query: $qb);
 		} catch (DoesNotExistException $e) {
 			return null;
 		}
-	}//end findOne()
+	}//end findOneOrNull()
 
 	/**
 	 * Find all translations for one object — all properties, all languages.

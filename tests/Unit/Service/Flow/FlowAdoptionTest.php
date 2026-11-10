@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -44,6 +45,7 @@ use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Service\Flow\FlowAdoptionRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorStores;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowService;
@@ -217,16 +219,14 @@ class FlowAdoptionTest extends TestCase {
 			$versionMapper->method('findPublished')->willReturn($publishedVersion);
 
 			$locator = new FlowLocator(
-				$flowMapper,
-				$triggerMapper,
+				new FlowLocatorStores($flowMapper, $triggerMapper, $versionMapper),
 				$this->createMock(ObjectService::class),
-				new NullLogger(),
-				$versionMapper
+				new NullLogger()
 			);
 
 			$this->assertSame(
 				$case['expected'],
-				$locator->flowsForTrigger(event: 'object.created', register: 'dossiq', schema: 'case'),
+				$locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'dossiq', schema: 'case')),
 				'the ownerless flow is refused at dispatch; the adopted and enabled one runs'
 			);
 		}

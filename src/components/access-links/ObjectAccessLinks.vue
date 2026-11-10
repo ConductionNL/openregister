@@ -140,6 +140,7 @@ import {
 	revokeAccessLink,
 	setAccessLinkDisabled,
 } from '../../services/accessLinks.js'
+import { refusalMessage } from './refusalMessage.js'
 
 /**
  * Share one object by link with someone who has no account: create a link,
@@ -260,9 +261,7 @@ export default {
 				this.form.label = ''
 				await this.load()
 			} catch (e) {
-				this.error =
-					e?.response?.data?.message
-					|| t('openregister', 'That did not work. Try again later.')
+				this.error = refusalMessage(e)
 			} finally {
 				this.busy = false
 			}

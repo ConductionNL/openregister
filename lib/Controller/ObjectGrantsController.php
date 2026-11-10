@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGateInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantsReportInterface;
 use OCP\AppFramework\Controller;
@@ -107,7 +108,19 @@ class ObjectGrantsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(string $register, string $schema, string $id, ?string $principalTypes = null): JSONResponse {
-		$object = $this->gate->resolve(register: $register, schema: $schema, id: $id);
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), principalTypes: $principalTypes);
+	}//end index()
+
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef   $ref            The object the route names.
+	 * @param string|null $principalTypes Comma list of principal types to keep; all when empty.
+	 *
+	 * @return JSONResponse The rows, 404, 403 or 500.
+	 */
+	private function indexForObject(ObjectRef $ref, ?string $principalTypes = null): JSONResponse {
+		$object = $this->gate->resolve(ref: $ref);
 		if ($object === null) {
 			return ObjectSharingEndpoint::notFound();
 		}
@@ -121,33 +134,32 @@ class ObjectGrantsController extends Controller {
 
 		$types = array_values(array_filter(array_map('trim', explode(',', (string)$principalTypes))));
 
-		return $this->rows(object: $object, id: $id, types: $types);
-	}//end index()
-
-	/**
-	 * The rows of the object, or a 500 when a source could not be read.
-	 *
-	 * @param ObjectEntity  $object The object.
-	 * @param string        $id     Object uuid.
-	 * @param array<string> $types  The principal types to keep; all when empty.
-	 *
-	 * @return JSONResponse The rows, or 500.
-	 */
-	private function rows(ObjectEntity $object, string $id, array $types): JSONResponse {
 		try {
-			return new JSONResponse(
-				$this->report->rowsFor(
-					object: $object,
-					registerRef: $this->objectService->getRegister(),
-					schemaRef: $this->objectService->getSchema(),
-					principalTypes: $types
-				)
-			);
+			return new JSONResponse($this->rows(object: $object, types: $types));
 		} catch (\Throwable $e) {
 			// An empty list means "nobody but the owner", so a source that
 			// could not be read must never turn into one.
-			return $this->unlisted(exception: $e, id: $id);
-		}//end try
+			return $this->unlisted(exception: $e, id: $ref->id);
+		}
+	}//end indexForObject()
+
+	/**
+	 * The rows of the object.
+	 *
+	 * @param ObjectEntity  $object The object.
+	 * @param array<string> $types  The principal types to keep; all when empty.
+	 *
+	 * @return array The rows.
+	 *
+	 * @throws \Throwable When a source could not be read.
+	 */
+	private function rows(ObjectEntity $object, array $types): array {
+		return $this->report->rowsFor(
+			object: $object,
+			registerRef: $this->objectService->getRegister(),
+			schemaRef: $this->objectService->getSchema(),
+			principalTypes: $types
+		);
 	}//end rows()
 
 	/**

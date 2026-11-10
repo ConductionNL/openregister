@@ -196,10 +196,8 @@ class SchemaOrgImporter implements SchemaDialectImporter {
 		];
 
 		return new ImportedSchema(
-			title: $class['label'],
-			description: $class['comment'],
-			properties: $properties,
-			jsonld: $jsonld,
+			heading: new ImportedSchemaHeading(title: $class['label'], description: $class['comment']),
+			definition: new ImportedSchemaDefinition(properties: $properties, jsonld: $jsonld),
 			importSource: $importSource,
 			unknownRequested: $unknownRequested
 		);

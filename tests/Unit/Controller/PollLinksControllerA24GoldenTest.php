@@ -54,7 +54,13 @@ class PollLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->service    = $this->createMock(PollLinkServiceInterface::class);
-		$this->controller = new PollLinksController('openregister', $this->request, $this->service, $this->objectService);
+		$this->controller = new PollLinksController(
+			$this->request,
+			new \OCA\OpenRegister\Controller\Support\PollLinksControllerServices(
+				$this->service,
+				$this->objectService,
+			)
+		);
 	}
 
 	private function link(): PollLink {

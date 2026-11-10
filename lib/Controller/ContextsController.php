@@ -27,11 +27,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ContextsControllerServices;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
@@ -51,18 +51,11 @@ use OCP\IRequest;
  */
 class ContextsController extends Controller {
 	/**
-	 * The register mapper.
+	 * The register and schema mappers.
 	 *
-	 * @var RegisterMapperInterface
+	 * @var SchemaCatalogInterface
 	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * The schema mapper.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
+	private readonly SchemaCatalogInterface $catalog;
 
 	/**
 	 * The JSON-LD context service.
@@ -74,18 +67,15 @@ class ContextsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                        $appName        The application name.
 	 * @param IRequest                      $request        The current request.
 	 * @param ContextsControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ContextsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-		$this->registerMapper = $services->registerMapper;
-		$this->schemaMapper = $services->schemaMapper;
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->catalog = $services->catalog;
 		$this->contextService = $services->contextService;
 	}//end __construct()
 
@@ -107,7 +97,7 @@ class ContextsController extends Controller {
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function register(string $register): DataResponse {
 		try {
-			$registerEntity = $this->registerMapper->find($register);
+			$registerEntity = $this->catalog->registers()->find($register);
 		} catch (DoesNotExistException|\Exception $e) {
 			return new DataResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
 		}
@@ -138,7 +128,7 @@ class ContextsController extends Controller {
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function schema(string $register, string $schema): DataResponse {
 		try {
-			$registerEntity = $this->registerMapper->find($register);
+			$registerEntity = $this->catalog->registers()->find($register);
 		} catch (DoesNotExistException|\Exception $e) {
 			return new DataResponse(['error' => 'Register not found'], Http::STATUS_NOT_FOUND);
 		}
@@ -154,8 +144,8 @@ class ContextsController extends Controller {
 		// single-schema variant.
 		try {
 			$schemaEntity = (RegisterScopedSchemaResolvers::over(
-				registerMapper: $this->registerMapper,
-				schemaMapper: $this->schemaMapper
+				registerMapper: $this->catalog->registers(),
+				schemaMapper: $this->catalog->schemas()
 			))->resolveSchemaWithin(register: $registerEntity, schemaRef: $schema);
 		} catch (DoesNotExistException|\Exception $e) {
 			return new DataResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
@@ -179,7 +169,7 @@ class ContextsController extends Controller {
 		$schemas = [];
 		foreach ($register->getSchemas() as $schemaId) {
 			try {
-				$schemas[] = $this->schemaMapper->find($schemaId);
+				$schemas[] = $this->catalog->schemas()->find($schemaId);
 			} catch (\Throwable $e) {
 				// Skip unresolvable schema references; the context document
 				// covers the schemas that actually exist.
@@ -223,7 +213,7 @@ class ContextsController extends Controller {
 			$parts[] = ((string)$schema->getId()) . '-' . $schemaStamp;
 		}
 
-		return '"' . md5(implode(':', $parts)) . '"';
+		return '"' . hash(algo: 'xxh128', data: implode(':', $parts)) . '"';
 	}//end buildEtag()
 
 	/**

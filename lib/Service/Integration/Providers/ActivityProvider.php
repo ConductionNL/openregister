@@ -44,21 +44,45 @@ class ActivityProvider extends AbstractIntegrationProvider {
 	private const MARKER_PREFIX = '[or:';
 
 	/**
+	 * Database connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * App manager for installation checks.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation service.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Logger for the degraded marker-scan path.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
 	 * Construct the provider with required dependencies.
 	 *
-	 * @param IDBConnection $db Database connection.
-	 * @param IAppManager $appManager App manager for installation checks.
-	 * @param IL10N $l10n Localisation service.
-	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
+	 * @param LeafMarkerScanning $leaf The DB connection, app manager, localisation and marker-scan logger.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
 	 */
-	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private LoggerInterface $logger,
-	) {
+	public function __construct(LeafMarkerScanning $leaf) {
+		$this->db = $leaf->db;
+		$this->appManager = $leaf->appManager;
+		$this->l10n = $leaf->l10n;
+		$this->logger = $leaf->logger;
 	}//end __construct()
 
 	/**
@@ -166,52 +190,68 @@ class ActivityProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->listMarked(objectId: $objectId, filters: $filters);
+	}//end list()
+
+	/**
+	 * The Activity rows marked for an object, narrowed by the caller's filters.
+	 *
+	 * @param string $objectId UUID of the OR object whose rows we want.
+	 * @param array  $filters  Optional filters: `type`, `actor`, `after` (Unix ts), `visibility`.
+	 *
+	 * @return array<int,array<string,mixed>> List of registry leaf rows.
+	 */
+	private function listMarked(string $objectId, array $filters): array {
 		if ($this->isEnabled() === false) {
 			return [];
 		}
 
-		$marker = self::MARKER_PREFIX . $objectId . ']';
-		$rows = $this->findByMarker(
+		$rows = $this->scanMarker(
 			db: $this->db,
-			table: 'activity',
-			markerColumn: 'subject',
-			marker: $marker,
-			extraColumns: ['type', 'affecteduser', 'timestamp', 'object_id'],
-			idColumn: 'activity_id',
+			scan: new MarkerScan(
+				table: 'activity',
+				markerColumn: 'subject',
+				marker: self::MARKER_PREFIX . $objectId . ']',
+				columns: ['activity_id', 'type', 'affecteduser', 'timestamp', 'object_id'],
+			),
 		);
-
-		$rows = $this->applyFilters(rows: $rows, filters: $filters);
 
 		if ($this->wantsPublicOnly(filters: $filters) === true) {
 			return [];
 		}
 
-		return array_map(
-			static function (array $row): array {
-				// Flatten the activity event so CnActivityTab can read
-				// type / timestamp / actor at the row root without
-				// hand-walking `data.*`. `data` is retained for any
-				// generic consumer that still wants the raw row.
-				return [
-					'id' => (string)($row['activity_id'] ?? ''),
-					'title' => (string)($row['subject'] ?? ''),
-					'subject' => (string)($row['subject'] ?? ''),
-					'type' => (string)($row['type'] ?? ''),
-					'timestamp' => (int)($row['timestamp'] ?? 0),
-					'affecteduser' => (string)($row['affecteduser'] ?? ''),
-					'actor_id' => (string)($row['affecteduser'] ?? ''),
-					'object_id' => (string)($row['object_id'] ?? ''),
-					'url' => '/index.php/apps/activity/' . (string)($row['activity_id'] ?? ''),
-					// An NC Activity row is always internal: it is written by
-					// core about what a handler did, never about what a citizen
-					// may read.
-					'visibility' => TimelineVisibilityServiceInterface::INTERNAL,
-					'data' => $row,
-				];
-			},
-			$rows
-		);
-	}//end list()
+		return array_map(self::leafRow(...), $this->applyFilters(rows: $rows, filters: $filters));
+	}//end listMarked()
+
+	/**
+	 * One Activity row in the registry leaf row shape.
+	 *
+	 * Flatten the activity event so CnActivityTab can read type / timestamp /
+	 * actor at the row root without hand-walking `data.*`. `data` is retained
+	 * for any generic consumer that still wants the raw row.
+	 *
+	 * @param array $row The activity row.
+	 *
+	 * @return array<string,mixed> The leaf row.
+	 */
+	private static function leafRow(array $row): array {
+		return [
+			'id' => (string)($row['activity_id'] ?? ''),
+			'title' => (string)($row['subject'] ?? ''),
+			'subject' => (string)($row['subject'] ?? ''),
+			'type' => (string)($row['type'] ?? ''),
+			'timestamp' => (int)($row['timestamp'] ?? 0),
+			'affecteduser' => (string)($row['affecteduser'] ?? ''),
+			'actor_id' => (string)($row['affecteduser'] ?? ''),
+			'object_id' => (string)($row['object_id'] ?? ''),
+			'url' => '/index.php/apps/activity/' . (string)($row['activity_id'] ?? ''),
+			// An NC Activity row is always internal: it is written by
+			// core about what a handler did, never about what a citizen
+			// may read.
+			'visibility' => TimelineVisibilityServiceInterface::INTERNAL,
+			'data' => $row,
+		];
+	}//end leafRow()
 
 	/**
 	 * Whether the caller asked for the public view only.
@@ -245,92 +285,13 @@ class ActivityProvider extends AbstractIntegrationProvider {
 	 * @return array Filtered rows.
 	 */
 	private function applyFilters(array $rows, array $filters): array {
-		$type = self::filterString(filters: $filters, key: 'type');
-		$actor = self::filterString(filters: $filters, key: 'actor');
-		$after = 0;
-		if (isset($filters['after']) === true) {
-			$after = (int)$filters['after'];
-		}
-
-		if ($type === '' && $actor === '' && $after === 0) {
+		$filter = ActivityRowFilter::fromFilters(filters: $filters);
+		if ($filter->isEmpty() === true) {
 			return $rows;
 		}
 
-		return array_values(
-			array_filter(
-				$rows,
-				static fn (array $row): bool => self::rowMatches(row: $row, type: $type, actor: $actor, after: $after)
-			)
-		);
+		return array_values(array_filter($rows, $filter->admits(...)));
 	}//end applyFilters()
-
-	/**
-	 * Whether a row passes all three filters.
-	 *
-	 * @param array  $row   The activity row.
-	 * @param string $type  The type filter ('' for none).
-	 * @param string $actor The actor filter ('' for none).
-	 * @param int    $after The lower time bound (0 or less for none).
-	 *
-	 * @return bool
-	 */
-	private static function rowMatches(array $row, string $type, string $actor, int $after): bool {
-		return self::matchesType(row: $row, type: $type)
-			&& self::matchesActor(row: $row, actor: $actor)
-			&& self::matchesAfter(row: $row, after: $after);
-	}//end rowMatches()
-
-	/**
-	 * A string filter value, or '' when it is not set.
-	 *
-	 * @param array  $filters The filters.
-	 * @param string $key     The filter key.
-	 *
-	 * @return string
-	 */
-	private static function filterString(array $filters, string $key): string {
-		if (isset($filters[$key]) === true) {
-			return (string)$filters[$key];
-		}
-
-		return '';
-	}//end filterString()
-
-	/**
-	 * Whether a row passes the `type` filter ('' passes everything).
-	 *
-	 * @param array  $row  The activity row.
-	 * @param string $type The type filter.
-	 *
-	 * @return bool
-	 */
-	private static function matchesType(array $row, string $type): bool {
-		return $type === '' || (string)($row['type'] ?? '') === $type;
-	}//end matchesType()
-
-	/**
-	 * Whether a row passes the `actor` filter ('' passes everything).
-	 *
-	 * @param array  $row   The activity row.
-	 * @param string $actor The actor filter.
-	 *
-	 * @return bool
-	 */
-	private static function matchesActor(array $row, string $actor): bool {
-		return $actor === '' || (string)($row['affecteduser'] ?? '') === $actor;
-	}//end matchesActor()
-
-	/**
-	 * Whether a row passes the `after` filter (0 or less passes everything).
-	 *
-	 * @param array $row   The activity row.
-	 * @param int   $after The lower time bound.
-	 *
-	 * @return bool
-	 */
-	private static function matchesAfter(array $row, int $after): bool {
-		return $after <= 0 || (int)($row['timestamp'] ?? 0) >= $after;
-	}//end matchesAfter()
 
 	/**
 	 * Return the health descriptor for this provider.

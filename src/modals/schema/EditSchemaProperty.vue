@@ -82,82 +82,12 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				<div class="objectConfigurationTitle">
 					{{ t('openregister', 'Object Configuration:') }}
 				</div>
-				<NcSelect
-					v-model="properties.objectConfiguration.handling"
-					inputLabel="Properties Object Configuration Handling"
-					v-bind="objectConfiguration.handling" />
-				<NcSelect
-					:disabled="loading"
-					:inputLabel="t('openregister', 'Register')"
-					:label="t('openregister', 'Register')"
-					:placeholder="t('openregister', 'Select a register...')"
-					:options="availableRegisters"
-					:modelValue="properties.register"
-					@update:modelValue="handleRegisterChange($event)" />
-				<NcSelect
-					:disabled="loading || !properties.register"
-					:inputLabel="t('openregister', 'Schema reference ($ref)')"
-					:label="t('openregister', 'Schema reference ($ref)')"
-					:placeholder="t('openregister', 'Select a schema...')"
-					:options="availableSchemas"
-					:modelValue="properties.$ref"
-					@update:modelValue="handleSchemaChange($event)" />
-				<NcTextField
-					v-model="properties.objectConfiguration.queryParams"
-					:disabled="loading || !properties.$ref"
-					:label="t('openregister', 'Extra Query Parameters')"
-					placeholder="key1=value1&key2=value2"
-					:helperText="
-						t(
-							'openregister',
-							'Optional: Add query parameters to filter the referenced schema (e.g., status=active&type=public)',
-						)
-					" />
-				<NcSelect
-					:disabled="loading || !properties.$ref"
-					v-bind="inversedByOptions"
-					:inputLabel="
-						t('openregister', 'Property name of inversed relation')
-					"
-					:label="t('openregister', 'Property name of inversed relation')"
-					:modelValue="properties.inversedBy"
-					@update:modelValue="handleInversedByChange" />
-				<NcCheckboxRadioSwitch
-					v-if="properties.inversedBy"
-					v-model="properties.writeBack"
-					:disabled="loading">
-					{{ t('openregister', 'Enable write-back to target objects') }}
-				</NcCheckboxRadioSwitch>
-				<div
-					v-if="properties.inversedBy && !properties.writeBack"
-					class="helper-text">
-					{{
-						t(
-							'openregister',
-							'When enabled, saving this object will also update the target objects to include a reference back to this object.',
-						)
-					}}
-				</div>
-				<NcCheckboxRadioSwitch
-					v-if="properties.inversedBy && properties.writeBack"
-					v-model="properties.removeAfterWriteBack"
-					:disabled="loading">
-					{{ t('openregister', 'Remove property after write-back') }}
-				</NcCheckboxRadioSwitch>
-				<div
-					v-if="
-						properties.inversedBy
-						&& properties.writeBack
-						&& !properties.removeAfterWriteBack
-					"
-					class="helper-text">
-					{{
-						t(
-							'openregister',
-							'When enabled, this property will be removed from the source object after updating the target objects.',
-						)
-					}}
-				</div>
+				<SchemaRelationFields
+					v-bind="relationFieldProps"
+					:relation="properties"
+					:queryConfig="properties.objectConfiguration"
+					:registerDisabled="loading"
+					v-on="relationFieldListeners" />
 			</div>
 
 			<!-- File configuration -->
@@ -842,91 +772,12 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 					<div class="objectConfigurationTitle">
 						{{ t('openregister', 'Array Object Configuration:') }}
 					</div>
-					<NcSelect
-						v-model="properties.objectConfiguration.handling"
-						inputLabel="Properties Object Configuration Handling"
-						v-bind="objectConfiguration.handling" />
-					<NcSelect
-						:disabled="loading || !properties.items.register"
-						:inputLabel="t('openregister', 'Register')"
-						:label="t('openregister', 'Register')"
-						:placeholder="t('openregister', 'Select a register...')"
-						:options="availableRegisters"
-						:modelValue="properties.items.register"
-						@update:modelValue="handleRegisterChange($event)" />
-					<NcSelect
-						:disabled="loading || !properties.items.register"
-						:inputLabel="t('openregister', 'Schema reference ($ref)')"
-						:label="t('openregister', 'Schema reference ($ref)')"
-						:placeholder="t('openregister', 'Select a schema...')"
-						:options="availableSchemas"
-						:modelValue="properties.items.$ref"
-						@update:modelValue="handleSchemaChange($event)" />
-					<NcTextField
-						v-model="properties.items.objectConfiguration.queryParams"
-						:disabled="loading || !properties.items.$ref"
-						:label="t('openregister', 'Extra Query Parameters')"
-						placeholder="key1=value1&key2=value2"
-						:helperText="
-							t(
-								'openregister',
-								'Optional: Add query parameters to filter the referenced schema (e.g., status=active&type=public)',
-							)
-						" />
-					<NcSelect
-						:disabled="loading || !properties.items.$ref"
-						v-bind="inversedByOptions"
-						:inputLabel="
-							t('openregister', 'Property name of inversed relation')
-						"
-						:label="
-							t('openregister', 'Property name of inversed relation')
-						"
-						:modelValue="properties.items.inversedBy"
-						@update:modelValue="handleInversedByChange" />
-					<NcCheckboxRadioSwitch
-						v-if="properties.items.inversedBy"
-						v-model="properties.items.writeBack"
-						:disabled="loading">
-						{{
-							t('openregister', 'Enable write-back to target objects')
-						}}
-					</NcCheckboxRadioSwitch>
-					<div
-						v-if="
-							properties.items.inversedBy
-							&& !properties.items.writeBack
-						"
-						class="helper-text">
-						{{
-							t(
-								'openregister',
-								'When enabled, saving this object will also update the target objects to include a reference back to this object.',
-							)
-						}}
-					</div>
-					<NcCheckboxRadioSwitch
-						v-if="
-							properties.items.inversedBy && properties.items.writeBack
-						"
-						v-model="properties.items.removeAfterWriteBack"
-						:disabled="loading">
-						{{ t('openregister', 'Remove property after write-back') }}
-					</NcCheckboxRadioSwitch>
-					<div
-						v-if="
-							properties.items.inversedBy
-							&& properties.items.writeBack
-							&& !properties.items.removeAfterWriteBack
-						"
-						class="helper-text">
-						{{
-							t(
-								'openregister',
-								'When enabled, this property will be removed from the source object after updating the target objects.',
-							)
-						}}
-					</div>
+					<SchemaRelationFields
+						v-bind="relationFieldProps"
+						:relation="properties.items"
+						:queryConfig="properties.items.objectConfiguration"
+						:registerDisabled="loading || !properties.items.register"
+						v-on="relationFieldListeners" />
 					<NcCheckboxRadioSwitch
 						v-model="properties.items.cascadeDelete"
 						:disabled="loading">
@@ -1033,6 +884,8 @@ import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import SchemaRelationFields from './SchemaRelationFields.vue'
+import { ensureRegisterAndSchemaLists } from '../../composables/registerSchemaLists.js'
 import {
 	codedStoreOptions,
 	emptyCodedConfig,
@@ -1057,6 +910,7 @@ export default {
 		NcLoadingIcon,
 		NcDateTimePicker,
 		NcTextArea,
+		SchemaRelationFields,
 	},
 
 	data() {
@@ -1317,6 +1171,36 @@ export default {
 		/**
 		 * @spec exclude UI display helper — maps available registers to select options.
 		 */
+		/**
+		 * The props both SchemaRelationFields blocks share.
+		 *
+		 * @return {object} The props.
+		 */
+		relationFieldProps() {
+			return {
+				handlingConfig: this.properties.objectConfiguration,
+				handlingOptions: this.objectConfiguration.handling,
+				loading: this.loading,
+				registers: this.availableRegisters,
+				schemas: this.availableSchemas,
+				inversedByOptions: this.inversedByOptions,
+			}
+		},
+
+		/**
+		 * The listeners both SchemaRelationFields blocks share.
+		 *
+		 * @return {object} The listeners.
+		 */
+		relationFieldListeners() {
+			return {
+				set: this.setField,
+				registerChange: this.handleRegisterChange,
+				schemaChange: this.handleSchemaChange,
+				inversedByChange: this.handleInversedByChange,
+			}
+		},
+
 		availableRegisters() {
 			return registerStore.registerList.map((register) => ({
 				id: register.id,
@@ -1616,12 +1500,7 @@ export default {
 				const facetableValue = schemaProperty.facetable
 				if (facetableValue === true) {
 					this.facetableEnabled = true
-					this.facetConfig = {
-						aggregated: true,
-						title: '',
-						description: '',
-						order: '',
-					}
+					this.facetConfig = emptyFacetConfig()
 				} else if (facetableValue && typeof facetableValue === 'object') {
 					this.facetableEnabled = true
 					this.facetConfig = {
@@ -1655,12 +1534,7 @@ export default {
 					}
 				} else {
 					this.facetableEnabled = false
-					this.facetConfig = {
-						aggregated: true,
-						title: '',
-						description: '',
-						order: '',
-					}
+					this.facetConfig = emptyFacetConfig()
 				}
 
 				this.propertyTitle = schemaStore.schemaPropertyKey
@@ -2058,15 +1932,8 @@ export default {
 			this.schemaLoading = true
 
 			try {
-				// Load registers if not already loaded
-				if (!registerStore.registerList.length) {
-					await registerStore.refreshRegisterList()
-				}
-
-				// Load schemas if not already loaded
-				if (!schemaStore.schemaList.length) {
-					await schemaStore.refreshSchemaList()
-				}
+				// Load registers and schemas if not already loaded
+				await ensureRegisterAndSchemaLists()
 			} catch (error) {
 				console.error('Error loading registers and schemas:', error)
 			} finally {
@@ -2107,14 +1974,9 @@ export default {
 			// Clear schema, inversedBy and query parameters when register changes
 			this.properties.$ref = ''
 			this.properties.inversedBy = ''
-			if (this.properties.objectConfiguration) {
-				this.properties.objectConfiguration.queryParams = ''
-			}
 			this.properties.items.$ref = ''
 			this.properties.items.inversedBy = ''
-			if (this.properties.items.objectConfiguration) {
-				this.properties.items.objectConfiguration.queryParams = ''
-			}
+			this.clearQueryParams()
 		},
 
 		/**
@@ -2130,6 +1992,19 @@ export default {
 			// Clear inversedBy and query parameters when schema changes
 			this.properties.inversedBy = ''
 			this.properties.items.inversedBy = ''
+			this.clearQueryParams()
+		},
+
+		/**
+		 * @param {object|string} property
+		 * @spec exclude Form-field binding — sets inversedBy and clears query params.
+		 */
+		/**
+		 * Clear the query parameters of the property and of its items.
+		 *
+		 * @spec exclude Form-field binding — clears query params after a relation change.
+		 */
+		clearQueryParams() {
 			if (this.properties.objectConfiguration) {
 				this.properties.objectConfiguration.queryParams = ''
 			}
@@ -2139,9 +2014,17 @@ export default {
 		},
 
 		/**
-		 * @param {object|string} property
-		 * @spec exclude Form-field binding — sets inversedBy and clears query params.
+		 * Write one field a SchemaRelationFields block changed.
+		 *
+		 * @param {object} target The object that holds the field.
+		 * @param {string} key The field.
+		 * @param {*} value Its new value.
+		 * @spec exclude Form-field binding — writes a relation field into the property form.
 		 */
+		setField(target, key, value) {
+			target[key] = value
+		},
+
 		handleInversedByChange(property) {
 			const propertyName =
 				typeof property === 'object'
@@ -2150,12 +2033,7 @@ export default {
 			this.properties.inversedBy = propertyName
 			this.properties.items.inversedBy = propertyName
 			// Clear query parameters when inversedBy changes
-			if (this.properties.objectConfiguration) {
-				this.properties.objectConfiguration.queryParams = ''
-			}
-			if (this.properties.items.objectConfiguration) {
-				this.properties.items.objectConfiguration.queryParams = ''
-			}
+			this.clearQueryParams()
 		},
 	},
 }

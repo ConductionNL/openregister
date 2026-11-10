@@ -114,18 +114,31 @@ class EdepotTransferService implements EdepotTransferServiceInterface, EdepotTra
 	 *   (Requirement: One job run performs one transport attempt per package)
 	 */
 	public function executeAttempt(array $transferList, TransportInterface $transport, int $attempt): array {
-		$run          = new TransferAttempt(number: $attempt, transport: $transport);
-		$transferList = $this->begin(transferList: $transferList, run: $run);
+		$run = new TransferAttempt(number: $attempt, transport: $transport);
+		$run->transferList = $transferList;
+
+		return $this->runAttempt(run: $run);
+	}//end executeAttempt()
+
+	/**
+	 * Gather the outstanding objects and, when there are any, package and deliver them.
+	 *
+	 * @param TransferAttempt $run The attempt.
+	 *
+	 * @return array<string,mixed> The updated transfer list.
+	 */
+	private function runAttempt(TransferAttempt $run): array {
+		$this->begin(run: $run);
 
 		// Only objects NOT yet confirmed are (re)built/sent — no double ingest.
-		$gatherer         = $this->pipeline->gatherer;
-		$objectsWithFiles = $gatherer->gather(objectRefs: $gatherer->outstanding(transferList: $transferList));
-		if (empty($objectsWithFiles) === true) {
-			return $this->nothingOutstanding(transferList: $transferList, run: $run);
+		$gatherer = $this->pipeline->gatherer;
+		$run->objectsWithFiles = $gatherer->gather(objectRefs: $gatherer->outstanding(transferList: $run->transferList));
+		if (empty($run->objectsWithFiles) === true) {
+			return $this->nothingOutstanding(run: $run);
 		}
 
-		return $this->packageAndDeliver(transferList: $transferList, objectsWithFiles: $objectsWithFiles, run: $run);
-	}//end executeAttempt()
+		return $this->packageAndDeliver(run: $run);
+	}//end runAttempt()
 
 	/**
 	 * Get the transport configuration from app settings.
@@ -171,36 +184,32 @@ class EdepotTransferService implements EdepotTransferServiceInterface, EdepotTra
 	 * Start an attempt: log it, put the list in progress and, on the first
 	 * attempt, audit the initiation.
 	 *
-	 * @param array<string,mixed> $transferList The transfer list data.
-	 * @param TransferAttempt     $run          The attempt.
+	 * @param TransferAttempt $run The attempt; its list is put in progress.
 	 *
-	 * @return array<string,mixed> The transfer list, in progress.
+	 * @return void
 	 */
-	private function begin(array $transferList, TransferAttempt $run): array {
-		$this->logAttempt(transferList: $transferList, run: $run);
-		$transferList['status'] = TransferListService::STATUS_IN_PROGRESS;
+	private function begin(TransferAttempt $run): void {
+		$this->logAttempt(run: $run);
+		$run->transferList['status'] = TransferListService::STATUS_IN_PROGRESS;
 		if ($run->number === 1) {
-			$this->pipeline->auditLog->initiated(transferList: $transferList, transport: $run->transportName());
+			$this->pipeline->auditLog->initiated(transferList: $run->transferList, transport: $run->transportName());
 		}
-
-		return $transferList;
 	}//end begin()
 
 	/**
 	 * Log the start of an attempt.
 	 *
-	 * @param array<string,mixed> $transferList The transfer list data.
-	 * @param TransferAttempt     $run          The attempt.
+	 * @param TransferAttempt $run The attempt.
 	 *
 	 * @return void
 	 */
-	private function logAttempt(array $transferList, TransferAttempt $run): void {
+	private function logAttempt(TransferAttempt $run): void {
 		$this->logger->info(
 			message: '[EdepotTransferService] Transfer attempt',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'transferId' => ($transferList['uuid'] ?? ''),
+				'transferId' => ($run->transferList['uuid'] ?? ''),
 				'transport' => $run->transportName(),
 				'attempt' => $run->number,
 			]
@@ -210,101 +219,96 @@ class EdepotTransferService implements EdepotTransferServiceInterface, EdepotTra
 	/**
 	 * Build the packages and deliver them; a build failure fails the list.
 	 *
-	 * @param array<string,mixed>            $transferList     The transfer list data.
-	 * @param array<int,array<string,mixed>> $objectsWithFiles The objects with files.
-	 * @param TransferAttempt                $run              The attempt.
+	 * @param TransferAttempt $run The attempt.
 	 *
 	 * @return array<string,mixed> The updated transfer list.
 	 */
-	private function packageAndDeliver(array $transferList, array $objectsWithFiles, TransferAttempt $run): array {
+	private function packageAndDeliver(TransferAttempt $run): array {
 		try {
-			$sipFiles = $this->buildPackages(transferList: $transferList, objectsWithFiles: $objectsWithFiles);
+			$sipFiles = $this->buildPackages(run: $run);
 		} catch (\Exception $e) {
-			return $this->buildFailed(transferList: $transferList, error: $e, run: $run);
+			return $this->buildFailed(run: $run, error: $e);
 		}
 
-		return $this->deliver(transferList: $transferList, sipFiles: $sipFiles, objectsWithFiles: $objectsWithFiles, run: $run);
+		return $this->deliver(run: $run, sipFiles: $sipFiles);
 	}//end packageAndDeliver()
 
 	/**
 	 * Nothing outstanding: either everything already confirmed (completed)
 	 * or no loadable objects (failed).
 	 *
-	 * @param array<string,mixed> $transferList The transfer list data.
-	 * @param TransferAttempt     $run          The attempt.
+	 * @param TransferAttempt $run The attempt.
 	 *
 	 * @return array<string,mixed> The transfer list with its terminal status and the attempt.
 	 */
-	private function nothingOutstanding(array $transferList, TransferAttempt $run): array {
-		$transferList['status'] = $this->pipeline->gatherer->terminalStatus(transferList: $transferList);
+	private function nothingOutstanding(TransferAttempt $run): array {
+		$status = $this->pipeline->gatherer->terminalStatus(transferList: $run->transferList);
+		$run->transferList['status'] = $status;
 
-		return $run->appendTo(transferList: $transferList, outcome: $transferList['status'], error: null);
+		return $run->recordOutcome(outcome: $status, error: null);
 	}//end nothingOutstanding()
 
 	/**
 	 * Build the SIP package(s) in the list's chosen format (zip default | bagit).
 	 *
-	 * @param array<string,mixed>            $transferList     The transfer list data.
-	 * @param array<int,array<string,mixed>> $objectsWithFiles The objects with files.
+	 * @param TransferAttempt $run The attempt, with the objects to package.
 	 *
 	 * @return array<int, string> The package paths.
 	 *
 	 * @throws \Exception When a package cannot be built.
 	 */
-	private function buildPackages(array $transferList, array $objectsWithFiles): array {
-		return $this->sipBuilder->build(
-			transferId: (string)$transferList['uuid'],
-			objectsWithFiles: $objectsWithFiles,
-			maxPackageSize: 0,
-			format: TransferContext::formatOf(transferList: $transferList)
+	private function buildPackages(TransferAttempt $run): array {
+		return $this->sipBuilder->package(
+			request: new TransferPackageRequest(
+				transferId: (string)$run->transferList['uuid'],
+				objectsWithFiles: $run->objectsWithFiles,
+				maxPackageSize: 0,
+				format: TransferContext::formatOf(transferList: $run->transferList)
+			)
 		);
 	}//end buildPackages()
 
 	/**
 	 * The package build failed: the list fails and no object is marked.
 	 *
-	 * @param array<string,mixed> $transferList The transfer list data.
-	 * @param \Exception          $error        Why the build failed.
-	 * @param TransferAttempt     $run          The attempt.
+	 * @param TransferAttempt $run   The attempt.
+	 * @param \Exception      $error Why the build failed.
 	 *
 	 * @return array<string,mixed> The failed transfer list with the attempt.
 	 */
-	private function buildFailed(array $transferList, \Exception $error, TransferAttempt $run): array {
+	private function buildFailed(TransferAttempt $run, \Exception $error): array {
+		$message = 'SIP build failed: '.$error->getMessage();
 		$this->logger->error(
 			message: '[EdepotTransferService] SIP package build failed: '.$error->getMessage(),
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-		$transferList['status']         = TransferListService::STATUS_FAILED;
-		$transferList['transferResult'] = [
-			'error' => 'SIP build failed: '.$error->getMessage(),
-			'timestamp' => (new DateTime())->format('c'),
-		];
-		$this->pipeline->auditLog->failed(transferList: $transferList, error: $error->getMessage(), transport: $run->transportName());
+		$run->transferList['status']         = TransferListService::STATUS_FAILED;
+		$run->transferList['transferResult'] = ['error' => $message, 'timestamp' => (new DateTime())->format('c')];
+		$this->pipeline->auditLog->failed(
+			transferList: $run->transferList,
+			failure: new TransferFailure(error: $error->getMessage(), transport: $run->transportName())
+		);
 
-		return $run->appendTo(transferList: $transferList, outcome: TransferListService::STATUS_FAILED, error: 'SIP build failed: '.$error->getMessage());
+		return $run->recordOutcome(outcome: TransferListService::STATUS_FAILED, error: $message);
 	}//end buildFailed()
 
 	/**
 	 * Send every package once, record each object's outcome, append the attempt and notify.
 	 *
-	 * @param array<string,mixed>            $transferList     The transfer list data.
-	 * @param array<int, string>             $sipFiles         The package paths.
-	 * @param array<int,array<string,mixed>> $objectsWithFiles The objects with files.
-	 * @param TransferAttempt                $run              The attempt.
+	 * @param TransferAttempt    $run      The attempt, with the objects sent.
+	 * @param array<int, string> $sipFiles The package paths.
 	 *
 	 * @return array<string,mixed> The updated transfer list.
 	 */
-	private function deliver(array $transferList, array $sipFiles, array $objectsWithFiles, TransferAttempt $run): array {
-		$results      = $this->sendAll(transport: $run->transport, sipFiles: $sipFiles);
-		$context      = TransferContext::now(transferList: $transferList, transportName: $run->transportName());
-		$transferList = $this->pipeline->processor->process(
-			transferList: $transferList,
-			results: $results,
-			objectsWithFiles: $objectsWithFiles,
-			context: $context
+	private function deliver(TransferAttempt $run, array $sipFiles): array {
+		$results  = $this->sendAll(transport: $run->transport, sipFiles: $sipFiles);
+		$context  = TransferContext::now(transferList: $run->transferList, transportName: $run->transportName());
+		$delivery = new TransferDelivery(results: $results, objectsWithFiles: $run->objectsWithFiles, context: $context);
+		$run->transferList = $this->pipeline->processor->process(transferList: $run->transferList, delivery: $delivery);
+		$transferList      = $run->recordOutcome(
+			outcome: (string)$run->transferList['status'],
+			error: TransferResultProcessor::firstError(results: $results)
 		);
-		$error        = TransferResultProcessor::firstError(results: $results);
-		$transferList = $run->appendTo(transferList: $transferList, outcome: (string)$transferList['status'], error: $error);
 		$this->pipeline->auditLog->notifyCompletion(transferList: $transferList);
 
 		return $transferList;

@@ -33,6 +33,8 @@ use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -97,12 +99,13 @@ class FlowRunServiceOutcomesGoldenTest extends TestCase {
 		$this->engine  = $this->createMock(FlowEngine::class);
 		$this->logger  = $this->createMock(LoggerInterface::class);
 		$this->service = new FlowRunService(
-			$mapper,
-			$this->createMock(FlowStateMapper::class),
-			$this->engine,
-			$this->createMock(FlowNodeRegistryInterface::class),
-			$this->logger,
-			$container
+			stores: new FlowRunStores(
+				mapper: $mapper,
+				stateMapper: $this->createMock(FlowStateMapper::class)
+			),
+			walk: new FlowRunWalkServices(engine: $this->engine, registry: $this->createMock(FlowNodeRegistryInterface::class)),
+			logger: $this->logger,
+			container: $container
 		);
 
 	}//end setUp()
@@ -166,7 +169,7 @@ class FlowRunServiceOutcomesGoldenTest extends TestCase {
 		$seen = [];
 		$this->engine->method('run')->willReturnCallback(
 			static function (...$args) use (&$seen): array {
-				$seen = ['items' => $args[5], 'startAt' => $args[6], 'streams' => $args[7]];
+				$seen = ['items' => $args[1]->items, 'startAt' => $args[1]->startAt, 'streams' => $args[0]->streams];
 				return ['status' => FlowRun::STATUS_COMPLETED, 'log' => [], 'context' => [], 'items' => [], 'marking' => []];
 			}
 		);

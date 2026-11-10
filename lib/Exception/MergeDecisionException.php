@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Exception;
 
 use Exception;
-use Throwable;
 
 /**
  * A decision map the merge refuses.
@@ -63,22 +62,20 @@ class MergeDecisionException extends Exception {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $message The sentence naming what was refused.
+	 * The exception always carries HTTP 422.
+	 *
+	 * @param string             $message The sentence naming what was refused.
 	 * @param array<int, string> $properties The property names at fault.
-	 * @param int $code HTTP status carried on the exception (default: 422).
-	 * @param Throwable|null $previous Previous exception, when chained.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $message = 'The decision map does not match the preview.',
-		array $properties = [],
-		int $code = 422,
-		?Throwable $previous = null,
+		string $message='The decision map does not match the preview.',
+		array $properties=[],
 	) {
 		$this->properties = array_values($properties);
 
-		parent::__construct(message: $message, code: $code, previous: $previous);
+		parent::__construct(message: $message, code: 422);
 	}//end __construct()
 
 	/**

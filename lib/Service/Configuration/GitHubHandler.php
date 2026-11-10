@@ -79,25 +79,14 @@ class GitHubHandler implements GitHubClientInterface {
 	];
 
 	/**
-	 * HTTP client for API requests
-	 *
-	 * @var IClient
+	 * The exception message of a failed request, before the failure's own message, by action.
 	 */
-	private IClient $client;
-
-	/**
-	 * Configuration service
-	 *
-	 * @var IAppConfig
-	 */
-	private IAppConfig $appConfig;
-
-	/**
-	 * Logger instance
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
+	private const FAILURE_PREFIXES = [
+		'get branches' => 'Failed to fetch branches: ',
+		'get file content' => 'Failed to fetch file: ',
+		'list files' => 'Failed to list configuration files: ',
+		'get repository info' => 'Failed to fetch repository info: ',
+	];
 
 	/**
 	 * Cache instance for storing enriched configuration data
@@ -105,20 +94,6 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @var ICache
 	 */
 	private ICache $cache;
-
-	/**
-	 * Configuration service for accessing app and user settings
-	 *
-	 * @var IConfig
-	 */
-	private IConfig $config;
-
-	/**
-	 * Attribution formatter for server-PAT-fallback issue submissions.
-	 *
-	 * @var AttributionFormatter
-	 */
-	private AttributionFormatter $attributionFormatter;
 
 	/**
 	 * GitHubHandler constructor
@@ -132,19 +107,14 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @param LoggerInterface $logger Logger instance
 	 */
 	public function __construct(
-		IClient $client,
-		IAppConfig $appConfig,
-		IConfig $config,
+		private readonly IClient $client,
+		private readonly IAppConfig $appConfig,
+		private readonly IConfig $config,
 		ICacheFactory $cacheFactory,
-		AttributionFormatter $attributionFormatter,
-		LoggerInterface $logger,
+		private readonly AttributionFormatter $attributionFormatter,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->client = $client;
-		$this->appConfig = $appConfig;
-		$this->config = $config;
 		$this->cache = $cacheFactory->createDistributed('openregister_github_configs');
-		$this->attributionFormatter = $attributionFormatter;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -218,19 +188,17 @@ class GitHubHandler implements GitHubClientInterface {
 	/**
 	 * Log a failed API request and turn it into an exception for the caller.
 	 *
-	 * @param GuzzleException      $exception The request failure.
-	 * @param string               $action    What failed, as in "GitHub API {action} failed".
-	 * @param string               $prefix    The exception message before the failure's own message.
-	 * @param array<string, mixed> $context   The request's log keys, after the error.
+	 * @param GuzzleException   $exception The request failure.
+	 * @param RepositoryApiCall $call      What failed and the request's log keys, logged after the error.
 	 *
 	 * @return Exception
 	 */
-	private function requestFailure(GuzzleException $exception, string $action, string $prefix, array $context): Exception {
+	private function requestFailure(GuzzleException $exception, RepositoryApiCall $call): Exception {
 		$this->logger->error(
-			message: self::LOG_TAG."GitHub API {$action} failed",
-			context: self::logContext(extra: ['error' => $exception->getMessage()] + $context)
+			message: self::LOG_TAG."GitHub API {$call->action} failed",
+			context: self::logContext(extra: ['error' => $exception->getMessage()] + $call->context)
 		);
-		return new Exception($prefix.$exception->getMessage());
+		return new Exception(self::FAILURE_PREFIXES[$call->action].$exception->getMessage());
 	}//end requestFailure()
 
 	/**
@@ -275,26 +243,40 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function searchConfigurations(string $search = '', int $page = 1, int $perPage = 30): array {
+		return $this->searchPage(search: $search, page: new RepositorySearchPage(page: $page, perPage: $perPage));
+	}//end searchConfigurations()
+
+	/**
+	 * One page of configuration files found by Code Search.
+	 *
+	 * @param string               $search The user's search terms, possibly empty.
+	 * @param RepositorySearchPage $page   The page asked for.
+	 *
+	 * @return array{total_count: mixed, results: list<array<string, mixed>>, page: int, per_page: int}
+	 *
+	 * @throws Exception If the API request fails.
+	 */
+	private function searchPage(string $search, RepositorySearchPage $page): array {
 		try {
 			// One Code Search call per request: search directly for the
 			// `x-openregister` property in JSON files, so the results are
 			// actual configuration files.
 			$this->logger->info(
 				message: self::LOG_TAG.'Searching for OpenRegister configurations',
-				context: self::logContext(extra: ['search_terms' => $search, 'page' => $page, 'per_page' => $perPage])
+				context: self::logContext(extra: ['search_terms' => $search, 'page' => $page->page, 'per_page' => $page->perPage])
 			);
 
 			// GitHub max is 100.
-			$query = ['q' => self::configurationSearchQuery(search: $search), 'page' => $page, 'per_page' => min($perPage, 100)];
+			$query = ['q' => self::configurationSearchQuery(search: $search), 'page' => $page->page, 'per_page' => min($page->perPage, 100)];
 			$data = $this->codeSearchPage(query: $query);
 			$allResults = array_map(fn (array $item): array => $this->configurationSearchResult(item: $item), $data['items'] ?? []);
 			$this->logSearchComplete(data: $data, returned: count($allResults));
 
-			return ['total_count' => $data['total_count'] ?? 0, 'results' => $allResults, 'page' => $page, 'per_page' => $perPage];
+			return ['total_count' => $data['total_count'] ?? 0, 'results' => $allResults, 'page' => $page->page, 'per_page' => $page->perPage];
 		} catch (GuzzleException $e) {
 			throw $this->searchFailure(exception: $e, search: $search);
 		}//end try
-	}//end searchConfigurations()
+	}//end searchPage()
 
 	/**
 	 * Log the end of a configuration search.
@@ -396,19 +378,18 @@ class GitHubHandler implements GitHubClientInterface {
 		$fileSha = $item['sha'] ?? null;
 		$configDetails = $this->getEnrichedConfigDetails(location: $location, fileSha: $fileSha);
 
-		return self::searchResultFields(item: $item, location: $location, fileSha: $fileSha) + ['config' => $configDetails];
+		return self::searchResultFields(item: $item, location: $location) + ['config' => $configDetails];
 	}//end configurationSearchResult()
 
 	/**
 	 * The fields of a search result that come from the Code Search item itself.
 	 *
-	 * @param array<string, mixed> $item     The Code Search item.
+	 * @param array<string, mixed> $item     The Code Search item; its `sha` is the file's blob SHA, if given.
 	 * @param GitHubFileLocation   $location The file the item points at.
-	 * @param string|null          $fileSha  The file's blob SHA, if given.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private static function searchResultFields(array $item, GitHubFileLocation $location, ?string $fileSha): array {
+	private static function searchResultFields(array $item, GitHubFileLocation $location): array {
 		$repository = $item['repository'];
 		$rawUrl = "https://raw.githubusercontent.com/{$location->owner}/{$location->repo}/{$location->branch}/{$location->path}";
 		return [
@@ -419,7 +400,7 @@ class GitHubHandler implements GitHubClientInterface {
 			'name' => basename($location->path, '.json'),
 			'branch' => $location->branch,
 			'raw_url' => $rawUrl,
-			'sha' => $fileSha,
+			'sha' => $item['sha'] ?? null,
 			'organization' => self::searchResultOrganization(owner: $repository['owner']),
 		];
 	}//end searchResultFields()
@@ -538,7 +519,7 @@ class GitHubHandler implements GitHubClientInterface {
 			return $cached;
 		}
 
-		$enriched = $this->enrichConfigurationDetails(owner: $location->owner, repo: $location->repo, path: $location->path, branch: $location->branch);
+		$enriched = $this->enrich(location: $location);
 		if ($enriched === null) {
 			return ['title' => basename($location->path, '.json'), 'description' => '', 'version' => 'v.unknown', 'app' => null, 'type' => 'unknown'];
 		}
@@ -626,21 +607,30 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function enrichConfigurationDetails(string $owner, string $repo, string $path, string $branch = 'main'): ?array {
+		return $this->enrich(location: new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch));
+	}//end enrichConfigurationDetails()
+
+	/**
+	 * The metadata a configuration file describes itself with, or null when it cannot be read.
+	 *
+	 * @param GitHubFileLocation $location The configuration file.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function enrich(GitHubFileLocation $location): ?array {
 		try {
-			$data = $this->getRawConfiguration(location: new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch));
+			$data = $this->getRawConfiguration(location: $location);
 			if ($data === null) {
 				return null;
 			}
 
-			return self::configurationMetadata(data: $data, path: $path);
+			return self::configurationMetadata(data: $data, path: $location->path);
 		} catch (Exception $e) {
-			$this->logger->warning(
-				message: self::LOG_TAG.'Failed to enrich configuration details',
-				context: self::logContext(extra: ['owner' => $owner, 'repo' => $repo, 'path' => $path, 'error' => $e->getMessage()])
-			);
+			$where = ['owner' => $location->owner, 'repo' => $location->repo, 'path' => $location->path, 'error' => $e->getMessage()];
+			$this->logger->warning(message: self::LOG_TAG.'Failed to enrich configuration details', context: self::logContext(extra: $where));
 			return null;
 		}//end try
-	}//end enrichConfigurationDetails()
+	}//end enrich()
 
 	/**
 	 * The metadata a configuration document describes itself with.
@@ -716,7 +706,7 @@ class GitHubHandler implements GitHubClientInterface {
 
 			return array_map(self::branchSummary(...), $branches);
 		} catch (GuzzleException $e) {
-			throw $this->requestFailure(exception: $e, action: 'get branches', prefix: 'Failed to fetch branches: ', context: $where);
+			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'get branches', context: $where));
 		}
 	}//end getBranches()
 
@@ -751,16 +741,30 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function getFileContent(string $owner, string $repo, string $path, string $branch = 'main'): array {
-		$where = ['owner' => $owner, 'repo' => $repo, 'path' => $path, 'branch' => $branch];
+		return $this->fileContent(location: new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch));
+	}//end getFileContent()
+
+	/**
+	 * The decoded JSON content of a file, fetched through the Contents API.
+	 *
+	 * @param GitHubFileLocation $location The file.
+	 *
+	 * @return array The decoded document.
+	 *
+	 * @throws Exception If the file cannot be fetched or parsed.
+	 */
+	private function fileContent(GitHubFileLocation $location): array {
+		$where = ['owner' => $location->owner, 'repo' => $location->repo, 'path' => $location->path, 'branch' => $location->branch];
 		try {
 			$this->logger->info(message: self::LOG_TAG.'Fetching file from GitHub', context: self::logContext(extra: $where));
-			$data = $this->getJson(url: self::API_BASE."/repos/{$owner}/{$repo}/contents/{$path}", options: ['query' => ['ref' => $branch]]);
+			$url = self::API_BASE."/repos/{$location->owner}/{$location->repo}/contents/{$location->path}";
+			$data = $this->getJson(url: $url, options: ['query' => ['ref' => $location->branch]]);
 
 			return self::decodedContent(data: $data);
 		} catch (GuzzleException $e) {
-			throw $this->requestFailure(exception: $e, action: 'get file content', prefix: 'Failed to fetch file: ', context: $where);
+			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'get file content', context: $where));
 		}
-	}//end getFileContent()
+	}//end fileContent()
 
 	/**
 	 * The JSON document inside a Contents API response.
@@ -811,37 +815,47 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function listConfigurationFiles(string $owner, string $repo, string $branch = 'main', string $path = ''): array {
-		$where = ['owner' => $owner, 'repo' => $repo, 'branch' => $branch];
+		return $this->configurationFiles(directory: new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch));
+	}//end listConfigurationFiles()
+
+	/**
+	 * The configuration files Code Search finds in a repository branch.
+	 *
+	 * @param GitHubFileLocation $directory The repository, branch and directory to search.
+	 *
+	 * @return list<array<string, mixed>>
+	 *
+	 * @throws Exception If the API request fails.
+	 */
+	private function configurationFiles(GitHubFileLocation $directory): array {
+		$where = ['owner' => $directory->owner, 'repo' => $directory->repo, 'branch' => $directory->branch];
 		try {
 			$this->logger->info(
 				message: self::LOG_TAG.'Listing configuration files from GitHub',
-				context: self::logContext(extra: $where + ['path' => $path])
+				context: self::logContext(extra: $where + ['path' => $directory->path])
 			);
-			$searchQuery = "repo:{$owner}/{$repo} filename:openregister.json OR filename:*.openregister.json extension:json";
+			$searchQuery = "repo:{$directory->repoPath()} filename:openregister.json OR filename:*.openregister.json extension:json";
 			$data = $this->getJson(url: self::API_BASE.'/search/code', options: ['query' => ['q' => $searchQuery]]);
 
-			return $this->configurationFileEntries(items: $data['items'] ?? [], where: $where);
+			return $this->configurationFileEntries(items: $data['items'] ?? [], directory: $directory);
 		} catch (GuzzleException $e) {
-			throw $this->requestFailure(exception: $e, action: 'list files', prefix: 'Failed to list configuration files: ', context: $where);
+			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'list files', context: $where));
 		}
-	}//end listConfigurationFiles()
+	}//end configurationFiles()
 
 	/**
 	 * The search hits that are valid configuration files, as file entries.
 	 *
-	 * @param array<int, array<string, mixed>>                   $items The Code Search items.
-	 * @param array{owner: string, repo: string, branch: string} $where The repository and branch.
+	 * @param array<int, array<string, mixed>> $items     The Code Search items.
+	 * @param GitHubFileLocation               $directory The repository and branch.
 	 *
 	 * @return list<array<string, mixed>>
 	 */
-	private function configurationFileEntries(array $items, array $where): array {
+	private function configurationFileEntries(array $items, GitHubFileLocation $directory): array {
 		$files = [];
 		foreach ($items as $item) {
 			$configData = $this->parseConfigurationFile(
-				owner: $where['owner'],
-				repo: $where['repo'],
-				path: $item['path'],
-				branch: $where['branch']
+				location: new GitHubFileLocation(owner: $directory->owner, repo: $directory->repo, path: $item['path'], branch: $directory->branch)
 			);
 			if ($configData !== null) {
 				$files[] = self::configurationFileEntry(item: $item, configData: $configData);
@@ -877,10 +891,7 @@ class GitHubHandler implements GitHubClientInterface {
 	/**
 	 * Parse and validate a configuration file
 	 *
-	 * @param string $owner Repository owner
-	 * @param string $repo Repository name
-	 * @param string $path File path
-	 * @param string $branch Branch name (default: main)
+	 * @param GitHubFileLocation $location The file.
 	 *
 	 * @return array|null Parsed configuration or null if invalid
 	 *
@@ -890,9 +901,10 @@ class GitHubHandler implements GitHubClientInterface {
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	private function parseConfigurationFile(string $owner, string $repo, string $path, string $branch = 'main'): ?array {
+	private function parseConfigurationFile(GitHubFileLocation $location): ?array {
+		$path = $location->path;
 		try {
-			$content = $this->getFileContent(owner: $owner, repo: $repo, path: $path, branch: $branch);
+			$content = $this->fileContent(location: $location);
 		} catch (Exception $e) {
 			$context = self::logContext(extra: ['path' => $path, 'error' => $e->getMessage()]);
 			$this->logger->debug(message: self::LOG_TAG.'Failed to parse configuration file', context: $context);
@@ -1053,7 +1065,7 @@ class GitHubHandler implements GitHubClientInterface {
 			$repoData = $this->getJson(url: self::API_BASE."/repos/{$owner}/{$repo}");
 		} catch (GuzzleException $e) {
 			$where = ['owner' => $owner, 'repo' => $repo];
-			throw $this->requestFailure(exception: $e, action: 'get repository info', prefix: 'Failed to fetch repository info: ', context: $where);
+			throw $this->requestFailure(exception: $e, call: new RepositoryApiCall(action: 'get repository info', context: $where));
 		}
 
 		return [
@@ -1099,28 +1111,24 @@ class GitHubHandler implements GitHubClientInterface {
 		string $commitMessage,
 		?string $fileSha = null,
 	): array {
-		$payload = self::publishPayload(content: $content, commitMessage: $commitMessage, branch: $branch, fileSha: $fileSha);
+		$payload = ['message' => $commitMessage, 'content' => base64_encode($content), 'branch' => $branch] + self::shaField(fileSha: $fileSha);
 		return $this->publish(location: new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch), payload: $payload);
 	}//end publishConfiguration()
 
 	/**
-	 * The Contents API body: base64 content, and the file SHA when it updates a file.
+	 * The `sha` field of a Contents API body: present only when the publish updates a file.
 	 *
-	 * @param string      $content       File content.
-	 * @param string      $commitMessage Commit message.
-	 * @param string      $branch        Branch name.
-	 * @param string|null $fileSha       SHA of the existing file, or null for a new file.
+	 * @param string|null $fileSha SHA of the existing file, or null for a new file.
 	 *
 	 * @return array<string, string>
 	 */
-	private static function publishPayload(string $content, string $commitMessage, string $branch, ?string $fileSha): array {
-		$payload = ['message' => $commitMessage, 'content' => base64_encode($content), 'branch' => $branch];
-		if ($fileSha !== null) {
-			$payload['sha'] = $fileSha;
+	private static function shaField(?string $fileSha): array {
+		if ($fileSha === null) {
+			return [];
 		}
 
-		return $payload;
-	}//end publishPayload()
+		return ['sha' => $fileSha];
+	}//end shaField()
 
 	/**
 	 * Publish a file and describe the commit, or turn the failure into a readable exception.
@@ -1232,30 +1240,44 @@ class GitHubHandler implements GitHubClientInterface {
 			return null;
 		}
 
-		return self::publishStatusMessage(statusCode: $response->getStatusCode(), message: $message, location: $location);
+		if ($response->getStatusCode() === 422) {
+			return self::validationMessage(message: $message, location: $location);
+		}
+
+		return self::accessMessage(statusCode: $response->getStatusCode(), location: $location) ?? $message;
 	}//end publishErrorMessage()
 
 	/**
-	 * GitHub's message for a failed publish, with context for a 404, 403 or 422.
+	 * The message for a publish refused with a 404 or 403, or null for any other status.
 	 *
 	 * @param int                $statusCode The HTTP status.
-	 * @param mixed              $message    GitHub's own message.
 	 * @param GitHubFileLocation $location   The file that was being published.
 	 *
-	 * @return mixed
+	 * @return string|null
 	 */
-	private static function publishStatusMessage(int $statusCode, mixed $message, GitHubFileLocation $location): mixed {
+	private static function accessMessage(int $statusCode, GitHubFileLocation $location): ?string {
 		$repoPath = $location->repoPath();
 		return match ($statusCode) {
 			404 => "Not Found - Repository '{$repoPath}', branch '{$location->branch}', "
 				."or path '{$location->path}' may not exist or you may not have access",
 			403 => 'Forbidden - You may not have write access to repository '
 				."'{$repoPath}' or the branch '{$location->branch}' is protected",
-			422 => "Validation Error - {$message}. Check that the branch "
-				."'{$location->branch}' exists and the path '{$location->path}' is valid",
-			default => $message,
+			default => null,
 		};
-	}//end publishStatusMessage()
+	}//end accessMessage()
+
+	/**
+	 * GitHub's message for a publish refused with a 422, with the branch and path to check.
+	 *
+	 * @param mixed              $message  GitHub's own message.
+	 * @param GitHubFileLocation $location The file that was being published.
+	 *
+	 * @return string
+	 */
+	private static function validationMessage(mixed $message, GitHubFileLocation $location): string {
+		return "Validation Error - {$message}. Check that the branch "
+			."'{$location->branch}' exists and the path '{$location->path}' is valid";
+	}//end validationMessage()
 
 	/**
 	 * Get file SHA for a specific file (needed for updates)
@@ -1271,11 +1293,23 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function getFileSha(string $owner, string $repo, string $path, string $branch = 'main'): ?string {
-		// The path is URL-encoded per segment (it may contain slashes, spaces, etc.).
-		$location = new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch);
+		return $this->fileSha(location: new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch));
+	}//end getFileSha()
+
+	/**
+	 * The blob SHA of a file, or null when the file does not exist yet.
+	 *
+	 * @param GitHubFileLocation $location The file.
+	 *
+	 * @return string|null
+	 *
+	 * @throws Exception For every failure but a 404.
+	 */
+	private function fileSha(GitHubFileLocation $location): ?string {
 		try {
-			$url = self::API_BASE."/repos/{$owner}/{$repo}/contents/{$location->encodedPath()}";
-			$response = $this->client->request('GET', $url, ['query' => ['ref' => $branch], 'headers' => $this->getHeaders()]);
+			// The path is URL-encoded per segment (it may contain slashes, spaces, etc.).
+			$url = self::API_BASE."/repos/{$location->owner}/{$location->repo}/contents/{$location->encodedPath()}";
+			$response = $this->client->request('GET', $url, ['query' => ['ref' => $location->branch], 'headers' => $this->getHeaders()]);
 
 			$fileInfo = json_decode($response->getBody(), true);
 			return $fileInfo['sha'] ?? null;
@@ -1284,7 +1318,7 @@ class GitHubHandler implements GitHubClientInterface {
 			$this->requireMissingFile(exception: $e, location: $location);
 			return null;
 		}
-	}//end getFileSha()
+	}//end fileSha()
 
 	/**
 	 * Accept a 404 (the file does not exist yet); log and throw every other failure.
@@ -1428,21 +1462,31 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-10
 	 */
 	public function listIssues(
-		string $owner,
-		string $repo,
-		string $state = 'open',
-		string $sort = 'reactions-+1',
-		int $perPage = 30,
-		?array $labels = null,
+		string $owner, string $repo, string $state='open', string $sort='reactions-+1', int $perPage=30, ?array $labels=null
 	): array {
+		$query = (new GitHubIssueQuery(owner: $owner, repo: $repo))->filteredBy(state: $state, sort: $sort)->pagedBy(perPage: $perPage);
+		return $this->listIssuesFor(query: $query->withLabels(labels: $labels));
+	}//end listIssues()
+
+	/**
+	 * List the GitHub Issues a listing names, as listIssues() does.
+	 *
+	 * @param GitHubIssueQuery $query The repository, filters, page size and labels.
+	 *
+	 * @return array{items: array, hint?: string, github_status?: int, reset_at?: string}
+	 *
+	 * @throws GuzzleException When the HTTP client errors outside the structured mapping.
+	 *
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-1
+	 */
+	public function listIssuesFor(GitHubIssueQuery $query): array {
 		// PAT is optional for reads — GitHub's public Issues API serves anonymous
 		// requests at a lower rate limit (60/hr unauth vs 5000/hr authenticated).
 		// Supersedes the original D23 (add-features-roadmap-menu) decision to gate
 		// reads on a configured PAT.
 		$token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
-		$query = (new GitHubIssueQuery(owner: $owner, repo: $repo))->filteredBy(state: $state, sort: $sort)->pagedBy(perPage: $perPage);
-		return $this->issuesFor(query: $query->withLabels(labels: $labels)->withToken(token: $token));
-	}//end listIssues()
+		return $this->issuesFor(query: $query->withToken(token: $token));
+	}//end listIssuesFor()
 
 	/**
 	 * The issues of a listing: one request, or one per label merged (OR semantics) for two or more labels.
@@ -1495,21 +1539,31 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-8
 	 */
-	public function createIssue(
-		string $owner,
-		string $repo,
-		string $title,
-		string $body,
-		?string $specRef,
-		string $userId,
-	): array {
+	public function createIssue(string $owner, string $repo, string $title, string $body, ?string $specRef, string $userId): array {
 		$submission = new GitHubIssueSubmission(owner: $owner, repo: $repo, userId: $userId, specRef: $specRef);
+		return $this->fileIssue(submission: $submission, text: new GitHubIssueText(title: $title, body: $body));
+	}//end createIssue()
+
+	/**
+	 * Create a GitHub Issue for one submission, as createIssue() does.
+	 *
+	 * @param GitHubIssueSubmission $submission Where the issue goes, who submits it and its capability.
+	 * @param GitHubIssueText       $text       The validated title and body.
+	 *
+	 * @return array{number: int, html_url: string, state: string, specRef?: string, used_server_pat: bool}
+	 *
+	 * @throws \RuntimeException `github_pat_not_configured` when neither PAT is available
+	 * @throws GuzzleException Network errors not covered by structured mapping
+	 *
+	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
+	 */
+	public function fileIssue(GitHubIssueSubmission $submission, GitHubIssueText $text): array {
 		$delivery = $this->resolveCreateIssueDelivery(submission: $submission);
-		$effectiveBody = $this->buildIssueBody(delivery: $delivery, body: $body);
-		$payload = self::withSpecRefLabel(payload: ['title' => $title, 'body' => $effectiveBody], specRef: $specRef);
+		$effectiveBody = $this->buildIssueBody(delivery: $delivery, body: $text->body);
+		$payload = self::withSpecRefLabel(payload: ['title' => $text->title, 'body' => $effectiveBody], specRef: $submission->specRef);
 
 		return $this->dispatchCreateIssue(delivery: $delivery, payload: $payload);
-	}//end createIssue()
+	}//end fileIssue()
 
 	/**
 	 * The structured response shape of a created issue.

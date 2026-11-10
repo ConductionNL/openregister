@@ -41,12 +41,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use DateTime;
 use LogicException;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -212,20 +215,6 @@ class MagicFacetHandler {
 	private array $columnCache = [];
 
 	/**
-	 * Cache handler for UUID to name resolution
-	 *
-	 * @var \OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface|null
-	 */
-	private ?\OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface $cacheHandler = null;
-
-	/**
-	 * Distributed cache factory for persistent label caching
-	 *
-	 * @var ICacheFactory|null
-	 */
-	private ?ICacheFactory $cacheFactory = null;
-
-	/**
 	 * Distributed cache instance for facet labels
 	 *
 	 * @var ICache|null
@@ -233,18 +222,11 @@ class MagicFacetHandler {
 	private ?ICache $distLabelCache = null;
 
 	/**
-	 * Search handler for building filtered queries (single source of truth for filters).
+	 * Whether the distributed label cache has been opened (or its opening tried).
 	 *
-	 * @var MagicSearchHandler|null
+	 * @var boolean
 	 */
-	private ?MagicSearchHandler $searchHandler = null;
-
-	/**
-	 * Container for lazy resolution of CacheHandler (avoids circular DI).
-	 *
-	 * @var ContainerInterface|null
-	 */
-	private ?ContainerInterface $container = null;
+	private bool $labelCacheOpened = false;
 
 	/**
 	 * Whether lazy dependencies have been resolved.
@@ -254,35 +236,59 @@ class MagicFacetHandler {
 	private bool $lazyResolved = false;
 
 	/**
+	 * The object name cache, resolved from the container on first use.
+	 *
+	 * @var \OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface|null
+	 */
+	private ?\OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface $cacheHandler = null;
+
+	/**
+	 * The cache factory, resolved from the container on first use.
+	 *
+	 * @var ICacheFactory|null
+	 */
+	private ?ICacheFactory $cacheFactory = null;
+
+	/**
+	 * The table prefix, read from the system config on first use.
+	 *
+	 * @var string|null
+	 */
+	private ?string $tablePrefix = null;
+
+	/**
 	 * Constructor for MagicFacetHandler
 	 *
-	 * @param IDBConnection $db Database connection for queries
-	 * @param LoggerInterface $logger Logger for debugging and error reporting
-	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface|null $cacheHandler Cache handler for name resolution
-	 * @param ICacheFactory|null $cacheFactory Cache factory for distributed caching
+	 * The object name cache, the cache factory and the system config are
+	 * resolved from the container on first use, which keeps MagicMapper →
+	 * CacheHandler → RegisterMapper → MagicMapper from becoming a cycle.
+	 *
+	 * @param IDBConnection           $db            Database connection for queries
+	 * @param LoggerInterface         $logger        Logger for debugging and error reporting
 	 * @param MagicSearchHandler|null $searchHandler Search handler for shared query building
-	 * @param ContainerInterface|null $container Container for lazy resolution
-	 * @param IConfig|null $config Nextcloud config for reading the table prefix
+	 * @param ContainerInterface|null $container     Container for lazy resolution
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
-		?\OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface $cacheHandler = null,
-		?ICacheFactory $cacheFactory = null,
-		?MagicSearchHandler $searchHandler = null,
-		?ContainerInterface $container = null,
-		private readonly ?IConfig $config = null,
+		private readonly ?MagicSearchHandler $searchHandler = null,
+		private readonly ?ContainerInterface $container = null,
 	) {
-		$this->cacheHandler = $cacheHandler;
-		$this->cacheFactory = $cacheFactory;
-		$this->searchHandler = $searchHandler;
-		$this->container = $container;
+	}//end __construct()
 
-		// Initialize distributed cache for facet labels.
-		if ($this->cacheFactory !== null) {
+	/**
+	 * The distributed facet label cache, opened on first use.
+	 *
+	 * @return ICache|null The cache, or null when there is none.
+	 */
+	private function labelCache(): ?ICache {
+		if ($this->labelCacheOpened === false && $this->cacheFactory !== null) {
+			$this->labelCacheOpened = true;
 			$this->distLabelCache = $this->createLabelCache(cacheFactory: $this->cacheFactory);
 		}
-	}//end __construct()
+
+		return $this->distLabelCache;
+	}//end labelCache()
 
 	/**
 	 * Create the distributed facet label cache; a failure is logged.
@@ -313,12 +319,25 @@ class MagicFacetHandler {
 	 * @return string The configured table prefix (e.g. `oc_`).
 	 */
 	private function getTablePrefix(): string {
-		if ($this->config === null) {
+		if ($this->tablePrefix === null) {
+			$this->tablePrefix = $this->readTablePrefix();
+		}
+
+		return $this->tablePrefix;
+	}//end getTablePrefix()
+
+	/**
+	 * Read `dbtableprefix` from the system config in the container; `oc_` when there is none.
+	 *
+	 * @return string The configured table prefix.
+	 */
+	private function readTablePrefix(): string {
+		if ($this->container === null || $this->container->has(IConfig::class) === false) {
 			return 'oc_';
 		}
 
-		return (string)$this->config->getSystemValue('dbtableprefix', 'oc_');
-	}//end getTablePrefix()
+		return (string)$this->container->get(IConfig::class)->getSystemValue('dbtableprefix', 'oc_');
+	}//end readTablePrefix()
 
 	/**
 	 * Lazily resolve CacheHandler and ICacheFactory from container.
@@ -363,6 +382,7 @@ class MagicFacetHandler {
 		try {
 			$cacheFactory = $this->container->get(ICacheFactory::class);
 			$this->cacheFactory = $cacheFactory;
+			$this->labelCacheOpened = true;
 			$this->distLabelCache = $cacheFactory->createDistributed('openregister_facet_labels');
 		} catch (\Exception $e) {
 			$this->logger->debug(
@@ -389,24 +409,33 @@ class MagicFacetHandler {
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
 	public function getSimpleFacets(string $tableName, array $query, Register $register, Schema $schema): array {
-		$startTime = microtime(true);
+		$table = new TermsFacetTable(tableName: $tableName, baseQuery: $this->withoutFacets(query: $query), register: $register, schema: $schema);
+		return $this->tableFacets(table: $table, facetConfig: $query['_facets'] ?? []);
+	}//end getSimpleFacets()
 
-		$facetConfig = $query['_facets'] ?? [];
+	/**
+	 * The facets of one magic table, with timing metadata.
+	 *
+	 * @param TermsFacetTable $table       The table and its filters, without the facet configuration.
+	 * @param mixed           $facetConfig The facet configuration of the query.
+	 *
+	 * @return array Facet results with buckets; empty when no facet is asked for.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	private function tableFacets(TermsFacetTable $table, mixed $facetConfig): array {
+		$startTime = microtime(true);
 		if (empty($facetConfig) === true) {
 			return [];
 		}
 
-		$run   = new FacetResults(startTime: $startTime, config: $this->normaliseFacetConfig(facetConfig: $facetConfig, schema: $schema));
-		$table = new TermsFacetTable(
-			tableName: $tableName, baseQuery: $this->withoutFacets(query: $query), register: $register, schema: $schema
-		);
-
+		$run = new FacetResults(startTime: $startTime, config: $this->normaliseFacetConfig(facetConfig: $facetConfig, schema: $table->schema));
 		$this->addTableSelfFacets(table: $table, run: $run);
 		$this->addTablePropertyFacets(table: $table, run: $run);
 
 		// Add timing metadata to facets for performance debugging.
 		return $run->withMetrics(metrics: [], labels: $this->cacheStats);
-	}//end getSimpleFacets()
+	}//end tableFacets()
 
 	/**
 	 * The base query of a facet request: the query without its facet configuration.
@@ -1038,10 +1067,8 @@ class MagicFacetHandler {
 		$tableConfigs = $facet->tableConfigs;
 		$firstConfig = reset($tableConfigs);
 		return $this->batchResolveUuidLabels(
-			uuids: $uuidsToResolve,
-			field: $facet->field,
-			schema: $firstConfig['schema'],
-			register: $firstConfig['register']
+			lookup: new FacetLabelLookup(uuids: $uuidsToResolve, field: $facet->field),
+			table: new RegisterSchema(register: $firstConfig['register'], schema: $firstConfig['schema'])
 		);
 	}//end termsUnionLabelMap()
 
@@ -1672,7 +1699,7 @@ class MagicFacetHandler {
 			// whether it is readable on some particular row. A conditional rule
 			// that depends on a record therefore does not admit the facet, which
 			// is the safe direction.
-			return $rbac->canReadProperty(schema: $schema, property: $property, object: []);
+			return $rbac->canReadProperty(property: new SchemaProperty(schema: $schema, name: $property), request: new PropertyAccessRequest(object: []));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[MagicFacetHandler] Could not check the property read rule; omitting the facet',
@@ -1776,7 +1803,7 @@ class MagicFacetHandler {
 	 * @throws \OCP\DB\Exception If a database error occurs.
 	 */
 	private function getTermsFacet(TableTermsFacet $facet): array {
-		$cacheKey = md5(json_encode(value: [$facet->tableName, $facet->field, $facet->baseQuery, $facet->isMetadata]));
+		$cacheKey = hash(algo: 'xxh128', data: json_encode(value: [$facet->tableName, $facet->field, $facet->baseQuery, $facet->isMetadata]));
 		if (isset($this->facetCache[$cacheKey]) === false) {
 			$this->facetCache[$cacheKey] = $this->computeTermsFacet(facet: $facet);
 		}
@@ -1933,12 +1960,17 @@ class MagicFacetHandler {
 		$labelMap  = $this->tableLabelMap(facet: $facet, batchKeys: $batchKeys);
 		return $this->labelledBuckets(
 			buckets: $normalizedBuckets,
-			labelOf: fn (mixed $key): string => $this->resolveBucketLabel(
-				key: $key,
-				labelMap: $labelMap,
-				batchResolved: is_string($key) === true && isset($batchKeys[$key]) === true,
-				field: $facet->field
-			)
+			labelOf: function (mixed $key) use ($labelMap, $batchKeys, $facet): string {
+				if (is_string($key) === true && isset($labelMap[$key]) === true) {
+					return $labelMap[$key];
+				}
+
+				if (is_string($key) === true && isset($batchKeys[$key]) === true) {
+					return $this->unnamedReferenceLabel(key: $key);
+				}
+
+				return $this->getFieldLabel(field: $facet->field, value: $key);
+			}
 		);
 	}//end referenceTermsBuckets()
 
@@ -1972,10 +2004,8 @@ class MagicFacetHandler {
 		}
 
 		return $this->batchResolveUuidLabels(
-			uuids: array_keys($batchKeys),
-			field: $facet->field,
-			schema: $facet->schema,
-			register: $facet->register
+			lookup: new FacetLabelLookup(uuids: array_keys($batchKeys), field: $facet->field),
+			table: new RegisterSchema(register: $facet->register, schema: $facet->schema)
 		);
 	}//end tableLabelMap()
 
@@ -2071,40 +2101,21 @@ class MagicFacetHandler {
 	}//end anyHoldsObjectReferences()
 
 	/**
-	 * Pick the label for one terms bucket.
+	 * The label of a key the batch lookup already asked about and could not name.
 	 *
-	 * A key the batch lookup already asked about is never looked up again on its
-	 * own: a UUID the batch could not name (a dangling reference, or an object the
-	 * caller may not read) would otherwise cost a scan of every magic table per
-	 * bucket.
+	 * Such a key is never looked up again on its own: a UUID the batch could not
+	 * name (a dangling reference, or an object the caller may not read) would
+	 * otherwise cost a scan of every magic table per bucket.
 	 *
-	 * @param mixed                 $key           The bucket key.
-	 * @param array<string, string> $labelMap      Labels from batchResolveUuidLabels().
-	 * @param bool                  $batchResolved Whether the batch lookup already asked about this key.
-	 * @param string                $field         The facet field.
+	 * @param string $key The bucket key.
 	 *
-	 * @return string The bucket label.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 * @return string The shortened key.
 	 *
 	 * @spec exclude performance-only refactor of the facet label loop; output is unchanged
 	 */
-	private function resolveBucketLabel(
-		mixed $key,
-		array $labelMap,
-		bool $batchResolved,
-		string $field,
-	): string {
-		if (is_string($key) === true && isset($labelMap[$key]) === true) {
-			return $labelMap[$key];
-		}
-
-		if ($batchResolved === true) {
-			return substr((string)$key, 0, 8) . '...';
-		}
-
-		return $this->getFieldLabel(field: $field, value: $key);
-	}//end resolveBucketLabel()
+	private function unnamedReferenceLabel(string $key): string {
+		return substr($key, 0, 8) . '...';
+	}//end unnamedReferenceLabel()
 
 	/**
 	 * Order facet groups so the NULL group is always the first row.
@@ -2635,20 +2646,17 @@ class MagicFacetHandler {
 	 * - Subsequent requests: instant lookup from cache
 	 * - Labels rarely change, so long TTL (24h) is safe
 	 *
-	 * @param array $uuids Array of UUIDs to resolve.
-	 * @param string $field The field name for cache key.
-	 * @param Schema $schema The current schema context.
-	 * @param Register $register The current register context.
+	 * @param FacetLabelLookup $lookup The UUIDs to resolve and the field they belong to.
+	 * @param RegisterSchema   $table  The register and schema the field belongs to.
 	 *
 	 * @return array<string, string> Map of UUID to label.
 	 */
-	private function batchResolveUuidLabels(array $uuids, string $field, Schema $schema, Register $register): array {
-		if (empty($uuids) === true) {
+	private function batchResolveUuidLabels(FacetLabelLookup $lookup, RegisterSchema $table): array {
+		if (empty($lookup->uuids) === true) {
 			return [];
 		}
 
-		$lookup = new FacetLabelLookup(uuids: $uuids, field: $field);
-		$lookup->cacheKey = 'facet_labels_' . $register->getId() . '_' . $schema->getId() . '_' . $field;
+		$lookup->cacheKey = 'facet_labels_' . $table->register->getId() . '_' . $table->schema->getId() . '_' . $lookup->field;
 
 		if ($this->labelsFromFieldCache(lookup: $lookup) === true
 			|| $this->labelsFromDistributedCache(lookup: $lookup) === true
@@ -2716,7 +2724,7 @@ class MagicFacetHandler {
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	private function labelsFromDistributedCache(FacetLabelLookup $lookup): bool {
-		if ($this->distLabelCache === null || isset($this->warmedFields[$lookup->cacheKey]) === true) {
+		if ($this->labelCache() === null || isset($this->warmedFields[$lookup->cacheKey]) === true) {
 			return false;
 		}
 
@@ -2839,7 +2847,7 @@ class MagicFacetHandler {
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	private function persistFieldLabels(string $cacheKey): void {
-		if ($this->distLabelCache === null) {
+		if ($this->labelCache() === null) {
 			return;
 		}
 

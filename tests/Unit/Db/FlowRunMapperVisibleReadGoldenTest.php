@@ -27,8 +27,13 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
 use DateTimeZone;
+use OCA\OpenRegister\Db\FlowActivityWindow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunQueueExpiry;
+use OCA\OpenRegister\Db\FlowRunSubjectScope;
+use OCA\OpenRegister\Db\FlowRunViewer;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -75,6 +80,9 @@ final class FlowRunMapperVisibleReadGoldenTest extends TestCase {
 			'active / organisation' => ['findActive', ['organisation' => 'org-1', 'limit' => 3], [[]]],
 			'active / blank organisation' => ['findActive', ['organisation' => ''], [[]]],
 			'active / organisation and subject' => ['findActive', ['organisation' => 'org-1', 'subject' => 's-1'], [[]]],
+			'completed / organisation and subject' => ['findCompletedForSubject', ['organisation' => 'org-1', 'subject' => 's-1', 'limit' => 4], [[$row]]],
+			'completed / blank subject is refused' => ['findCompletedForSubject', ['organisation' => 'org-1', 'subject' => ''], []],
+			'completed / blank organisation is refused' => ['findCompletedForSubject', ['organisation' => '', 'subject' => 's-1'], []],
 			'expire / zero limit' => ['expireQueuedBefore', ['before' => $since, 'reason' => 'stale', 'limit' => 0], []],
 			'expire / skips a run that moved on' => ['expireQueuedBefore', ['before' => $since, 'reason' => 'stale', 'limit' => 2], [[$moved]]],
 			'expire / nothing queued' => ['expireQueuedBefore', ['before' => $since, 'reason' => 'stale'], [[]]],
@@ -130,11 +138,11 @@ final class FlowRunMapperVisibleReadGoldenTest extends TestCase {
 
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->recordingBuilder());
-		$mapper = new FlowRunMapper($db, $this->createMock(IEventDispatcher::class));
+		$mapper = new FlowRunMapper($db, new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)));
 
 		$outcome = [];
 		try {
-			$outcome['result'] = $this->render(value: $mapper->$method(...$args));
+			$outcome['result'] = $this->render(value: $mapper->$method(...$this->valueObjectArgs(method: $method, args: $args)));
 		} catch (\Throwable $e) {
 			$outcome['thrown'] = get_class($e) . ': ' . $e->getMessage();
 		}
@@ -142,6 +150,30 @@ final class FlowRunMapperVisibleReadGoldenTest extends TestCase {
 		$outcome['queries'] = $this->queryLog;
 		return $outcome;
 	}//end outcome()
+
+	/**
+	 * The case tables keep the flat argument names the golden was recorded
+	 * with; the mapper now takes them as value objects. Building those here
+	 * leaves the case names and the recorded fixture untouched, so an
+	 * unchanged fixture proves the queries and the allowed and refused
+	 * outcomes did not change.
+	 *
+	 * @param string               $method The method.
+	 * @param array<string, mixed> $args   Flat named arguments.
+	 *
+	 * @return array<string, mixed> The arguments the mapper takes.
+	 */
+	private function valueObjectArgs(string $method, array $args): array {
+		$viewer = new FlowRunViewer(requesterUid: ($args['requesterUid'] ?? null), ownedFlowIds: ($args['ownedFlowIds'] ?? []));
+		$scope = new FlowRunSubjectScope(organisation: ($args['organisation'] ?? null), subject: ($args['subject'] ?? null));
+		return match ($method) {
+			'findByUuidVisibleTo' => ['uuid' => $args['uuid'], 'viewer' => $viewer],
+			'countSinceByFlow' => ['window' => new FlowActivityWindow(flowIds: $args['flowIds'], since: $args['since']), 'viewer' => $viewer],
+			'latestRunsByFlow' => ['flowIds' => $args['flowIds'], 'viewer' => $viewer],
+			'findActive', 'findCompletedForSubject' => ['scope' => $scope, 'limit' => ($args['limit'] ?? 25)],
+			'expireQueuedBefore' => ['expiry' => new FlowRunQueueExpiry(before: $args['before'], reason: $args['reason'], limit: ($args['limit'] ?? 500))],
+		};
+	}//end valueObjectArgs()
 
 	/**
 	 * A result as plain data.

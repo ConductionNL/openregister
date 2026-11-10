@@ -82,11 +82,37 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
-	public function findRecent(
-		?JobRunFilter $filter = null,
-		int $limit = self::DEFAULT_LIMIT,
-		int $offset = 0,
-	): array {
+	public function findRecent(?JobRunFilter $filter = null, int $limit = self::DEFAULT_LIMIT, int $offset = 0): array {
+		return $this->findPage(filter: $filter ?? new JobRunFilter(), query: new ListQuery(limit: $limit, offset: $offset));
+	}//end findRecent()
+
+	/**
+	 * One page of the most recent runs, narrowed by job, outcome and period.
+	 *
+	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
+	 * @param ListQuery    $query  The page: its limit is capped at MAX_LIMIT, a missing offset reads as zero.
+	 *
+	 * @return array<int, JobRun> The rows, newest first.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function findPage(JobRunFilter $filter, ListQuery $query): array {
+		$qb = $this->newestFirst(limit: $query->limit, offset: ($query->offset ?? 0));
+		$this->narrow(qb: $qb, filter: $filter);
+
+		return $this->findEntities(query: $qb);
+
+	}//end findPage()
+
+	/**
+	 * Every run, newest first (id breaks ties), one page with the limit clamped to 1..MAX_LIMIT.
+	 *
+	 * @param int $limit  The page size asked for.
+	 * @param int $offset The offset asked for; below zero reads as zero.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function newestFirst(int $limit, int $offset): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
@@ -95,11 +121,9 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 			->setMaxResults(max(1, min($limit, self::MAX_LIMIT)))
 			->setFirstResult(max(0, $offset));
 
-		$this->narrow(qb: $qb, filter: $filter ?? new JobRunFilter());
+		return $qb;
 
-		return $this->findEntities(query: $qb);
-
-	}//end findRecent()
+	}//end newestFirst()
 
 	/**
 	 * How many runs match, under the same narrowing.
@@ -113,18 +137,37 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
-	public function countRecent(
-		string|null $jobClass = null,
-		string|null $outcome = null,
-		DateTime|null $since = null,
-		DateTime|null $until = null,
-	): int {
+	public function countRecent(?string $jobClass = null, ?string $outcome = null, ?DateTime $since = null, ?DateTime $until = null): int {
+		return $this->countMatching(filter: new JobRunFilter(jobClass: $jobClass, outcome: $outcome, since: $since, until: $until));
+	}//end countRecent()
+
+	/**
+	 * How many runs match a narrowing.
+	 *
+	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
+	 *
+	 * @return int The number of matching rows.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function countMatching(JobRunFilter $filter): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'total'))->from($this->getTableName());
 
-		$filter = new JobRunFilter(jobClass: $jobClass, outcome: $outcome, since: $since, until: $until);
 		$this->narrow(qb: $qb, filter: $filter);
 
+		return $this->fetchTotal(qb: $qb);
+
+	}//end countMatching()
+
+	/**
+	 * Run a count query and read its `total` column; no row counts as zero.
+	 *
+	 * @param IQueryBuilder $qb The count query.
+	 *
+	 * @return int The count.
+	 */
+	private function fetchTotal(IQueryBuilder $qb): int {
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
@@ -135,7 +178,7 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 
 		return (int)($row['total'] ?? 0);
 
-	}//end countRecent()
+	}//end fetchTotal()
 
 	/**
 	 * The run currently holding a job, when one holds it.

@@ -29,11 +29,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Party;
 
+use Closure;
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -62,27 +61,6 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	public const PRIMARY_REPLACED_ACTION = 'party.primary-replaced';
 
 	/**
-	 * The link rows.
-	 *
-	 * @var ContactLinkMapperInterface
-	 */
-	private readonly ContactLinkMapperInterface $links;
-
-	/**
-	 * Writes one party link.
-	 *
-	 * @var PartyLinkWriter
-	 */
-	private readonly PartyLinkWriter $writer;
-
-	/**
-	 * The audit trail.
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private readonly AuditTrailMapperInterface $audit;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param PartyRoleRecords $records The link rows, the link writer and the audit trail.
@@ -91,14 +69,11 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * @param PersonLinkEvents $events Announces what happened to a link.
 	 */
 	public function __construct(
-		PartyRoleRecords $records,
+		private readonly PartyRoleRecords $records,
 		private readonly TrustedPartyReaderInterface $parties,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly PersonLinkEvents $events,
 	) {
-		$this->links = $records->links;
-		$this->writer = $records->writer;
-		$this->audit = $records->audit;
 	}//end __construct()
 
 	/**
@@ -116,7 +91,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 		$results = [];
 		$byRole = [];
 		$primary = null;
-		foreach ($this->links->findPartiesForObject(objectUuid: $objectUuid) as $link) {
+		foreach ($this->records->links->findPartiesForObject(objectUuid: $objectUuid) as $link) {
 			$row = $link->jsonSerialize();
 			$results[] = $row;
 			$role = (string)($link->getRole() ?? '');
@@ -157,12 +132,14 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function addParty(string $objectUuid, int $registerId, int|string|null $schemaId, array $payload): ContactLink {
-		return $this->linkParty(
-			target: new PartyLinkTarget(objectUuid: $objectUuid, registerId: $registerId, schemaId: self::intOrNull(value: $schemaId)),
-			schemaId: $schemaId,
-			payload: $payload,
-			linkedBy: null
+		$target = new PartyLinkTarget(objectUuid: $objectUuid, registerId: $registerId, schemaId: self::intOrNull(value: $schemaId));
+		$request = new PartyLinkRequest(
+			target: $target,
+			partyUuid: self::partyUuidOf(payload: $payload),
+			role: self::text(value: ($payload['role'] ?? null))
 		);
+		$this->assertAcceptedParty(request: $request, schemaId: $schemaId);
+		return $this->linkParty(request: $request, payload: $payload);
 	}//end addParty()
 
 	/**
@@ -182,50 +159,83 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function importParty(ObjectEntity $object, array $payload, string $linkedBy): ContactLink {
-		$schemaId = $object->getSchema();
-		return $this->linkParty(
-			target: new PartyLinkTarget(
-				objectUuid: (string)$object->getUuid(),
-				registerId: (int)$object->getRegister(),
-				schemaId: self::intOrNull(value: $schemaId)
-			),
-			schemaId: $schemaId,
-			payload: $payload,
+		$request = new PartyLinkRequest(
+			target: self::targetOf(object: $object),
+			partyUuid: self::partyUuidOf(payload: $payload),
+			role: self::text(value: ($payload['role'] ?? null)),
 			linkedBy: $linkedBy
 		);
+		$this->assertAcceptedParty(request: $request, schemaId: $object->getSchema());
+		return $this->linkParty(request: $request, payload: $payload);
 	}//end importParty()
 
 	/**
-	 * Link the party after the kind and role checks, as the signed-in user or the named linker.
+	 * Give a party a role on an object, as the signed-in user, with the kind and role checks.
 	 *
-	 * @param PartyLinkTarget $target The object, register and numeric schema id the link records.
-	 * @param int|string|null $schemaId The object's schema id, uuid or slug, for the accepted kinds.
-	 * @param array<string, mixed> $payload The link fields.
-	 * @param string|null $linkedBy The linker when nobody is signed in.
+	 * @param ObjectEntity         $object  The object; its uuid, register and schema are recorded.
+	 * @param array<string, mixed> $payload `partyUuid`, `role`, `validFrom`, `validUntil`, `note`, `primary`.
 	 *
 	 * @return ContactLink The link as stored.
 	 *
 	 * @throws Exception 400 for an undeclared kind or role, 404 for an unknown party.
 	 */
-	private function linkParty(PartyLinkTarget $target, int|string|null $schemaId, array $payload, ?string $linkedBy): ContactLink {
+	private function addToObject(ObjectEntity $object, array $payload): ContactLink {
+		$request = new PartyLinkRequest(
+			target: self::targetOf(object: $object),
+			partyUuid: self::partyUuidOf(payload: $payload),
+			role: self::text(value: ($payload['role'] ?? null))
+		);
+		$this->assertAcceptedParty(request: $request, schemaId: $object->getSchema());
+		return $this->linkParty(request: $request, payload: $payload);
+	}//end addToObject()
+
+	/**
+	 * The object, register and numeric schema id a link on an object records.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return PartyLinkTarget The target.
+	 */
+	private static function targetOf(ObjectEntity $object): PartyLinkTarget {
+		return new PartyLinkTarget(
+			objectUuid: (string)$object->getUuid(),
+			registerId: (int)$object->getRegister(),
+			schemaId: self::intOrNull(value: $object->getSchema())
+		);
+	}//end targetOf()
+
+	/**
+	 * The party a payload names.
+	 *
+	 * @param array<string, mixed> $payload The link fields.
+	 *
+	 * @return string The party uuid.
+	 *
+	 * @throws Exception 400 when the payload names no party.
+	 */
+	private static function partyUuidOf(array $payload): string {
 		$partyUuid = trim((string)($payload['partyUuid'] ?? ''));
 		if ($partyUuid === '') {
 			throw new Exception('partyUuid is required', 400);
 		}
 
-		$role = self::text(value: ($payload['role'] ?? null));
-		$this->assertAcceptedParty(schemaId: $schemaId, partyUuid: $partyUuid, role: $role, unscoped: ($linkedBy !== null));
+		return $partyUuid;
+	}//end partyUuidOf()
 
-		$link = $this->writer->write(
-			target: $target,
-			partyUuid: $partyUuid,
-			role: $role,
-			linkedBy: $linkedBy
-		);
-
-		$link = $this->applyPeriodAndNote(link: $link, payload: $payload);
+	/**
+	 * Link the party once the kind and role checks passed, as the signed-in user or the named linker.
+	 *
+	 * @param PartyLinkRequest     $request The object, party, role and named linker.
+	 * @param array<string, mixed> $payload The link fields: period, note and primary flag.
+	 *
+	 * @return ContactLink The link as stored.
+	 *
+	 * @throws Exception 404 for an unknown party, 401 when nobody links.
+	 */
+	private function linkParty(PartyLinkRequest $request, array $payload): ContactLink {
+		$link = $this->applyPeriodAndNote(link: $this->records->writer->write(request: $request), payload: $payload);
 		if (($payload['primary'] ?? false) === true) {
-			$link = $this->markPrimary(objectUuid: $target->objectUuid, link: $link);
+			$link = $this->markPrimary(objectUuid: $request->target->objectUuid, link: $link);
 		}
 
 		$this->events->linked(link: $link);
@@ -247,37 +257,44 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function removeParty(string $objectUuid, string $partyUuid, ?string $role = null): int {
-		$targets = $this->linksOfParty(objectUuid: $objectUuid, partyUuid: $partyUuid, role: $role);
+		$links = $this->records->links->findPartiesForObject(objectUuid: $objectUuid);
+		return $this->unlinkAll(targets: array_values(array_filter($links, self::holding(partyUuid: $partyUuid, role: $role))));
+	}//end removeParty()
+
+	/**
+	 * Delete each link and announce it.
+	 *
+	 * @param array<int, ContactLink> $targets The party's links to remove.
+	 *
+	 * @return int How many roles went.
+	 *
+	 * @throws Exception 404 when there is no link to remove.
+	 */
+	private function unlinkAll(array $targets): int {
 		if ($targets === []) {
 			throw new Exception('Party link not found', 404);
 		}
 
 		foreach ($targets as $link) {
-			$this->links->delete($link);
+			$this->records->links->delete($link);
 			$this->events->unlinked(link: $link);
 		}
 
 		return count($targets);
-	}//end removeParty()
+	}//end unlinkAll()
 
 	/**
-	 * The object's links to a party, in one role or in every role.
+	 * Whether a link is the party's, in one role or in every role.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param string $partyUuid The party uuid.
-	 * @param string|null $role The role; null for every role.
+	 * @param string      $partyUuid The party uuid.
+	 * @param string|null $role      The role; null for every role.
 	 *
-	 * @return array<int, ContactLink> The links.
+	 * @return Closure(ContactLink): bool The match.
 	 */
-	private function linksOfParty(string $objectUuid, string $partyUuid, ?string $role): array {
-		return array_values(
-			array_filter(
-				$this->links->findPartiesForObject(objectUuid: $objectUuid),
-				static fn (ContactLink $link): bool => $link->getPartyUuid() === $partyUuid
-					&& ($role === null || $link->getRole() === $role)
-			)
-		);
-	}//end linksOfParty()
+	private static function holding(string $partyUuid, ?string $role): Closure {
+		return static fn (ContactLink $link): bool => $link->getPartyUuid() === $partyUuid
+			&& ($role === null || $link->getRole() === $role);
+	}//end holding()
 
 	/**
 	 * Replace the party the object is filed against, and record it.
@@ -297,29 +314,33 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function replacePrimaryParty(ObjectEntity $object, string $partyUuid, ?string $role = null): ContactLink {
-		$objectUuid = (string)($object->getUuid() ?? '');
-		$previous = $this->links->findPrimaryParty(objectUuid: $objectUuid);
-		$link = $this->addParty(
-			objectUuid: $objectUuid,
-			registerId: (int)($object->getRegister() ?? 0),
-			schemaId: $object->getSchema(),
-			payload: ['partyUuid' => $partyUuid, 'role' => $role, 'primary' => true]
-		);
+		$previous = $this->records->links->findPrimaryParty(objectUuid: (string)($object->getUuid() ?? ''));
+		$link = $this->addToObject(object: $object, payload: ['partyUuid' => $partyUuid, 'role' => $role, 'primary' => true]);
 
-		$this->audit->createAuditTrailEntry(
-			object: $object,
-			action: self::PRIMARY_REPLACED_ACTION,
-			context: [
-				'from' => ($previous?->getPartyUuid() ?? null),
-				'fromName' => ($previous?->getDisplayName() ?? null),
-				'to' => $partyUuid,
-				'toName' => $link->getDisplayName(),
-				'role' => $link->getRole(),
-			]
-		);
+		// The party as the caller named it, exactly as before the link was stored.
+		$context = array_replace(self::replacement(previous: $previous, link: $link), ['to' => $partyUuid]);
+		$this->records->audit->createAuditTrailEntry(object: $object, action: self::PRIMARY_REPLACED_ACTION, context: $context);
 
 		return $link;
 	}//end replacePrimaryParty()
+
+	/**
+	 * The audit context of a primary-party replacement: who went, who came, in which role.
+	 *
+	 * @param ContactLink|null $previous The primary link that went, if any.
+	 * @param ContactLink      $link     The new primary link.
+	 *
+	 * @return array<string, string|null> The context.
+	 */
+	private static function replacement(?ContactLink $previous, ContactLink $link): array {
+		return [
+			'from' => ($previous?->getPartyUuid() ?? null),
+			'fromName' => ($previous?->getDisplayName() ?? null),
+			'to' => $link->getPartyUuid(),
+			'toName' => $link->getDisplayName(),
+			'role' => $link->getRole(),
+		];
+	}//end replacement()
 
 	/**
 	 * Refuse a party kind or a role the schema does not accept, naming it.
@@ -329,10 +350,8 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * trusted import (a named linker, no user) finds the party without RBAC, a
 	 * request with its caller's rights.
 	 *
-	 * @param int|string|null $schemaId  The object's schema.
-	 * @param string          $partyUuid The party being added.
-	 * @param string|null     $role      The role.
-	 * @param bool            $unscoped  Whether to find the party without RBAC.
+	 * @param PartyLinkRequest $request  The party being added and its role; a named linker finds the party without RBAC.
+	 * @param int|string|null  $schemaId The object's schema id, uuid or slug.
 	 *
 	 * @return void
 	 *
@@ -340,15 +359,15 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
-	private function assertAcceptedParty(int|string|null $schemaId, string $partyUuid, ?string $role, bool $unscoped): void {
+	private function assertAcceptedParty(PartyLinkRequest $request, int|string|null $schemaId): void {
 		$kinds = $this->declaredKinds(schemaId: $schemaId);
 		if ($kinds === []) {
 			return;
 		}
 
-		$definition = $this->definitionOfParty(partyUuid: $partyUuid, unscoped: $unscoped);
+		$definition = $this->definitionOfParty(partyUuid: $request->partyUuid, unscoped: $request->namesLinker());
 		$accepted   = self::acceptedKind(kinds: $kinds, kind: $definition->kind());
-		$this->assertRoleOfKind(accepted: $accepted, role: $role);
+		$this->assertRoleOfKind(accepted: $accepted, role: $request->role);
 	}//end assertAcceptedParty()
 
 	/**
@@ -467,7 +486,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * @return ContactLink The stored link.
 	 */
 	private function markPrimary(string $objectUuid, ContactLink $link): ContactLink {
-		foreach ($this->links->findPartiesForObject(objectUuid: $objectUuid) as $other) {
+		foreach ($this->records->links->findPartiesForObject(objectUuid: $objectUuid) as $other) {
 			// The natural key, not the row id: the link that just came back
 			// from the writer may not carry an id the caller can compare, and
 			// an id comparison that matches everything would leave the old
@@ -478,12 +497,12 @@ class PartyRoleService implements PartyRoleServiceInterface {
 			}
 
 			$other->setPrimaryParty(false);
-			$this->links->update($other);
+			$this->records->links->update($other);
 		}
 
 		$link->setPrimaryParty(true);
 
-		return $this->links->update($link);
+		return $this->records->links->update($link);
 	}//end markPrimary()
 
 	/**
@@ -514,7 +533,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 			return $link;
 		}
 
-		return $this->links->update($link);
+		return $this->records->links->update($link);
 	}//end applyPeriodAndNote()
 
 	/**

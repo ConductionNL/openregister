@@ -117,23 +117,22 @@
 			<!-- Filter Section -->
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Objects') }}</h3>
-				<div class="filterGroup">
-					<label for="registerSelect">{{
-						t('openregister', 'Registers')
-					}}</label>
+				<div
+					v-for="picker in scopePickers"
+					:key="picker.id"
+					class="filterGroup">
+					<label :for="picker.id">{{ picker.label }}</label>
 					<NcSelect
-						v-bind="registerOptions"
-						id="registerSelect"
-						:modelValue="selectedRegisters"
-						:loading="registerLoading"
-						:disabled="registerLoading"
-						:inputLabel="t('openregister', 'Registers')"
+						v-bind="picker.bag"
+						:id="picker.id"
+						:modelValue="picker.value"
+						:loading="picker.loading"
+						:disabled="picker.disabled"
+						:inputLabel="picker.label"
 						:multiple="true"
 						:closeOnSelect="false"
-						:placeholder="
-							t('openregister', 'Select one or more registers')
-						"
-						@update:modelValue="handleRegisterChange">
+						:placeholder="picker.placeholder"
+						@update:modelValue="picker.change">
 						<template #option="{ title, description }">
 							<SelectOption
 								:title="title"
@@ -141,36 +140,8 @@
 						</template>
 					</NcSelect>
 					<p class="field-hint">
-						{{ selectedRegisters.length }}
-						{{ t('openregister', 'register(s) selected') }}
-					</p>
-				</div>
-				<div class="filterGroup">
-					<label for="schemaSelect">{{
-						t('openregister', 'Schemas')
-					}}</label>
-					<NcSelect
-						v-bind="schemaOptions"
-						id="schemaSelect"
-						:modelValue="selectedSchemas"
-						:loading="schemaLoading"
-						:disabled="selectedRegisters.length === 0 || schemaLoading"
-						:inputLabel="t('openregister', 'Schemas')"
-						:multiple="true"
-						:closeOnSelect="false"
-						:placeholder="
-							t('openregister', 'Select one or more schemas')
-						"
-						@update:modelValue="handleSchemaChange">
-						<template #option="{ title, description }">
-							<SelectOption
-								:title="title"
-								:description="description" />
-						</template>
-					</NcSelect>
-					<p class="field-hint">
-						{{ selectedSchemas.length }}
-						{{ t('openregister', 'schema(s) selected') }}
+						{{ picker.value.length }}
+						{{ picker.hint }}
 					</p>
 				</div>
 			</div>
@@ -648,6 +619,40 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The register and schema pickers: the same multi-select twice, the
+		 * schema one disabled until a register is picked.
+		 *
+		 * @spec exclude Presentational picker configuration.
+		 * @return {Array<object>} The pickers, registers first
+		 */
+		scopePickers() {
+			return [
+				{
+					id: 'registerSelect',
+					label: t('openregister', 'Registers'),
+					bag: this.registerOptions,
+					value: this.selectedRegisters,
+					loading: this.registerLoading,
+					disabled: this.registerLoading,
+					placeholder: t('openregister', 'Select one or more registers'),
+					change: this.handleRegisterChange,
+					hint: t('openregister', 'register(s) selected'),
+				},
+				{
+					id: 'schemaSelect',
+					label: t('openregister', 'Schemas'),
+					bag: this.schemaOptions,
+					value: this.selectedSchemas,
+					loading: this.schemaLoading,
+					disabled: this.selectedRegisters.length === 0 || this.schemaLoading,
+					placeholder: t('openregister', 'Select one or more schemas'),
+					change: this.handleSchemaChange,
+					hint: t('openregister', 'schema(s) selected'),
+				},
+			]
+		},
+
 		/**
 		 * The facet checkbox groups: metadata (`@self`) fields, then object
 		 * fields. A group's `entries` is null when the schema has none of them.

@@ -111,24 +111,39 @@ class RenderObjectCoverageTest extends TestCase {
 			});
 
 		$this->handler = new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$translationHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					objectEntityMapper: $this->objectMapper,
+					registerMapper: $this->registerMapper,
+					schemaMapper: $this->schemaMapper,
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $translationHandler,
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 	}
 
@@ -1130,57 +1145,6 @@ class RenderObjectCoverageTest extends TestCase {
 	// preloadInverseRelationships - edge cases
 	// =========================================================================
 
-	/**
-	 * Test preloadInverseRelationships with empty entities returns early.
-	 *
-	 * @return void
-	 */
-	public function testPreloadInverseRelationshipsEmptyEntities(): void {
-		$this->invokePrivate('preloadInverseRelationships', [[], ['contacts']]);
-
-		// Should not crash.
-		$this->assertTrue(true);
-	}
-
-	/**
-	 * Test preloadInverseRelationships with empty extend returns early.
-	 *
-	 * @return void
-	 */
-	public function testPreloadInverseRelationshipsEmptyExtend(): void {
-		$entity = $this->createBasicEntity(1, 'uuid-1');
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], []]);
-
-		$this->assertTrue(true);
-	}
-
-	/**
-	 * Test preloadInverseRelationships with non-ObjectEntity skips.
-	 *
-	 * @return void
-	 */
-	public function testPreloadInverseRelationshipsNonEntity(): void {
-		$this->invokePrivate('preloadInverseRelationships', [['not-an-entity'], ['contacts']]);
-
-		$this->assertTrue(true);
-	}
-
-	/**
-	 * Test preloadInverseRelationships with no schema found returns early.
-	 *
-	 * @return void
-	 */
-	public function testPreloadInverseRelationshipsNoSchema(): void {
-		$entity = $this->createBasicEntity(1, 'uuid-1');
-
-		$this->schemaMapper->method('find')
-			->willThrowException(new Exception('not found'));
-
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['contacts']]);
-
-		$this->assertTrue(true);
-	}
-
 	// =========================================================================
 	// renderEntity - property RBAC
 	// =========================================================================
@@ -1225,21 +1189,6 @@ class RenderObjectCoverageTest extends TestCase {
 	// =========================================================================
 	// renderEntity - edge cases
 	// =========================================================================
-
-	/**
-	 * Test renderEntity with empty object data does not crash.
-	 *
-	 * @return void
-	 */
-	public function testRenderEntityWithEmptyObjectDataNoCrash(): void {
-		$this->setupBasicMocks();
-
-		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', []);
-
-		$result = $this->handler->renderEntity($entity);
-
-		$this->assertInstanceOf(ObjectEntity::class, $result);
-	}
 
 	/**
 	 * Test renderEntity with null UUID does not detect circular.

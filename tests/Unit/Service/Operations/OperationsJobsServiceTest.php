@@ -29,6 +29,7 @@ namespace Unit\Service\Operations;
 
 use DateTime;
 use OCA\OpenRegister\Db\JobRun;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCA\OpenRegister\Db\JobRunMapper;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 use OCA\OpenRegister\Service\Operations\JobAlertService;
@@ -240,5 +241,25 @@ final class OperationsJobsServiceTest extends TestCase {
 		$this->assertSame('Acme\\NightlyJob', $answer['filters']['job']);
 		$this->assertSame(JobRun::OUTCOME_FAILED, $answer['filters']['outcome']);
 		$this->assertSame(24, $answer['filters']['windowHours']);
+	}
+
+	public function testTheRunHistoryPagesWithTheLimitAndOffsetItWasGiven(): void {
+		$row = new JobRun();
+		$row->setJobClass('Acme\\NightlyJob');
+		$this->written = [$row];
+		$this->runs->expects($this->once())->method('findRecent')->with($this->anything(), 5, 10);
+		$this->runs->method('countRecent')->willReturn(11);
+
+		$answer = $this->service()->runs(new JobRunFilter(), new \OCA\OpenRegister\Db\ListQuery(limit: 5, offset: 10));
+
+		$this->assertSame(11, $answer['total']);
+		$this->assertCount(1, $answer['results']);
+		$this->assertSame(['results', 'total', 'filters'], array_keys($answer));
+	}
+
+	public function testTheRunHistoryStartsAtTheFirstRowByDefault(): void {
+		$this->runs->expects($this->once())->method('findRecent')->with($this->anything(), JobRunMapperInterface::DEFAULT_LIMIT, 0);
+
+		$this->assertSame([], $this->service()->runs()['results']);
 	}
 }

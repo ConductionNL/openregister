@@ -38,13 +38,11 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
-use OCP\IDBConnection;
-use Psr\Log\LoggerInterface;
 
 /**
  * Statistics and chart data handler for MagicMapper dynamic tables
@@ -119,18 +117,14 @@ class MagicStatisticsHandler {
 	/**
 	 * Constructor for MagicStatisticsHandler
 	 *
-	 * @param IDBConnection $db Database connection for table discovery
-	 * @param LoggerInterface $logger Logger for debugging and error reporting
-	 * @param RegisterMapperInterface $registerMapper Mapper for register lookups
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schema lookups
-	 * @param DateTimeNormalizerInterface $dateTimeNormalizer Normaliser for user-supplied datetime values
+	 * @param MagicTableSql                $sql                 The connection used for table discovery, the table prefix and the logger
+	 * @param SchemaCatalogInterface       $catalog             The register and schema mappers for lookups
+	 * @param DateTimeNormalizerInterface  $dateTimeNormalizer  Normaliser for user-supplied datetime values
 	 * @param SchemaTypeConverterInterface $schemaTypeConverter Schema-driven type converter for row values
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly LoggerInterface $logger,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly MagicTableSql $sql,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly DateTimeNormalizerInterface $dateTimeNormalizer,
 		private readonly SchemaTypeConverterInterface $schemaTypeConverter,
 	) {
@@ -186,7 +180,7 @@ class MagicStatisticsHandler {
 	 */
 	private function findRegisterCached(int $registerId): Register {
 		if (isset($this->registerCache[$registerId]) === false) {
-			$this->registerCache[$registerId] = $this->registerMapper->find(
+			$this->registerCache[$registerId] = $this->catalog->registers()->find(
 				$registerId,
 				_multitenancy: false,
 				_rbac: false
@@ -209,7 +203,7 @@ class MagicStatisticsHandler {
 	 */
 	private function findSchemaCached(int $schemaId): Schema {
 		if (isset($this->schemaCache[$schemaId]) === false) {
-			$this->schemaCache[$schemaId] = $this->schemaMapper->find(
+			$this->schemaCache[$schemaId] = $this->catalog->schemas()->find(
 				$schemaId,
 				_multitenancy: false,
 				_rbac: false
@@ -231,7 +225,7 @@ class MagicStatisticsHandler {
 	 */
 	private function countObjectsInRegisterSchemaTable(Register $register, Schema $schema): int {
 		if ($this->countCallback === null) {
-			$this->logger->warning(
+			$this->sql->logger->warning(
 				message: '[MagicStatisticsHandler] Count callback not set, returning 0',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -259,7 +253,7 @@ class MagicStatisticsHandler {
 		try {
 			$this->magicTablesCache = $this->scanMagicMapperTables();
 		} catch (Exception $e) {
-			$this->logger->error(
+			$this->sql->logger->error(
 				message: '[MagicStatisticsHandler] Failed to get magic mapper tables',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
@@ -279,7 +273,7 @@ class MagicStatisticsHandler {
 	 * @throws Exception When the catalog cannot be read.
 	 */
 	private function scanMagicMapperTables(): array {
-		$stmt = $this->db->prepare($this->magicTablesSql());
+		$stmt = $this->sql->db->prepare($this->magicTablesSql());
 		$stmt->execute();
 		$tables = [];
 
@@ -297,7 +291,7 @@ class MagicStatisticsHandler {
 	 * @return string The SQL.
 	 */
 	private function magicTablesSql(): string {
-		$platform = $this->db->getDatabasePlatform();
+		$platform = $this->sql->db->getDatabasePlatform();
 		if (stripos($platform::class, 'PostgreSQL') !== false) {
 			return "SELECT table_name FROM information_schema.tables
                         WHERE table_schema = current_schema()
@@ -337,21 +331,26 @@ class MagicStatisticsHandler {
 	/**
 	 * Get statistics for objects across all magic tables.
 	 *
-	 * @param int|array|null $registerId Register ID filter
-	 * @param int|array|null $schemaId Schema ID filter
-	 * @param array $exclude Exclusions
+	 * @param StatisticsScope $scope The registers and schemas to cover and the pairs to leave out; every table when omitted.
 	 *
 	 * @return int[] Statistics data
 	 *
 	 * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int}
 	 *
 	 */
-	public function getStatistics(
-		int|array|null $registerId = null,
-		int|array|null $schemaId = null,
-		array $exclude = [],
-	): array {
-		$filter = new StatisticsPairFilter(wanted: ['register' => $registerId, 'schema' => $schemaId], exclude: $exclude);
+	public function getStatistics(StatisticsScope $scope=new StatisticsScope()): array {
+		$wanted = ['register' => $scope->registerId, 'schema' => $scope->schemaId];
+		return $this->pairStatistics(filter: new StatisticsPairFilter(wanted: $wanted, exclude: $scope->exclude));
+	}//end getStatistics()
+
+	/**
+	 * The object count over every register-schema pair the filter keeps.
+	 *
+	 * @param StatisticsPairFilter $filter Which pairs count.
+	 *
+	 * @return array Statistics array with keys: total, size, invalid, deleted, locked.
+	 */
+	private function pairStatistics(StatisticsPairFilter $filter): array {
 		$total = 0;
 		foreach ($this->getAllRegisterSchemaPairs() as $pair) {
 			$ids = [(int)$pair['registerId'], (int)$pair['schemaId']];
@@ -361,7 +360,7 @@ class MagicStatisticsHandler {
 		}
 
 		return ['total' => $total, 'size' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0];
-	}//end getStatistics()
+	}//end pairStatistics()
 
 	/**
 	 * Count one pair's objects, reading its register and schema through the request cache.
@@ -519,8 +518,8 @@ class MagicStatisticsHandler {
 	 */
 	private function countedPair(array $ids): ?array {
 		try {
-			$register = $this->registerMapper->find($ids[0], _multitenancy: false, _rbac: false);
-			$schema = $this->schemaMapper->find($ids[1], _multitenancy: false, _rbac: false);
+			$register = $this->catalog->registers()->find($ids[0], _multitenancy: false, _rbac: false);
+			$schema = $this->catalog->schemas()->find($ids[1], _multitenancy: false, _rbac: false);
 			$count = $this->countObjectsInRegisterSchemaTable(register: $register, schema: $schema);
 		} catch (Exception $e) {
 			return null;
@@ -554,10 +553,24 @@ class MagicStatisticsHandler {
 	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	public function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity {
-		try {
-			$objectEntity = $this->entityInContext(register: $_register, schema: $_schema);
+		return $this->rowToEntity(row: $row, table: new RegisterSchema(register: $_register, schema: $_schema));
+	}//end convertRowToObjectEntity()
 
-			[$metadata, $objectData] = $this->splitRow(row: $row, propertyMap: $this->propertyColumnMap(schema: $_schema));
+	/**
+	 * Convert a row of a magic table to an ObjectEntity; a row that fails is logged and skipped.
+	 *
+	 * @param array          $row   Database row data.
+	 * @param RegisterSchema $table The register and schema the table belongs to.
+	 *
+	 * @return ObjectEntity|null ObjectEntity or null if conversion fails.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 */
+	private function rowToEntity(array $row, RegisterSchema $table): ?ObjectEntity {
+		try {
+			$objectEntity = $this->entityInContext(register: $table->register, schema: $table->schema);
+
+			[$metadata, $objectData] = $this->splitRow(row: $row, propertyMap: $this->propertyColumnMap(schema: $table->schema));
 
 			$this->applyMetadata(objectEntity: $objectEntity, metadata: $metadata);
 			$objectEntity->setObject($objectData);
@@ -568,7 +581,7 @@ class MagicStatisticsHandler {
 			$this->logConversionFailure(exception: $e, row: $row);
 			return null;
 		}
-	}//end convertRowToObjectEntity()
+	}//end rowToEntity()
 
 	/**
 	 * Log a row that could not be converted to an ObjectEntity.
@@ -579,7 +592,7 @@ class MagicStatisticsHandler {
 	 * @return void
 	 */
 	private function logConversionFailure(Exception $exception, array $row): void {
-		$this->logger->error(
+		$this->sql->logger->error(
 			message: '[MagicStatisticsHandler] Failed to convert row to ObjectEntity',
 			context: [
 				'file' => __FILE__,
@@ -797,7 +810,7 @@ class MagicStatisticsHandler {
 	 */
 	private function warnIfIdentityNull(string $field): void {
 		if ($field === 'uuid' || $field === 'id') {
-			$this->logger->warning(
+			$this->sql->logger->warning(
 				message: '[MagicStatisticsHandler] Critical metadata field is null',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
 			);
@@ -838,7 +851,7 @@ class MagicStatisticsHandler {
 		}
 
 		self::$skippedFields[$field] = true;
-		$this->logger->debug(
+		$this->sql->logger->debug(
 			message: '[MagicStatisticsHandler] Skipped a metadata column ObjectEntity has no attribute for',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
 		);

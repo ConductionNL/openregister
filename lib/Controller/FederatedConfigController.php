@@ -27,8 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices;
+use OCA\OpenRegister\Service\Config\ConfigPublishTarget;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccessInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCP\AppFramework\Controller;
@@ -96,16 +98,14 @@ class FederatedConfigController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                          $appName The app id.
 	 * @param IRequest                        $request The request.
 	 * @param FederatedConfigControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FederatedConfigControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->service = $services->service;
 		$this->access = $services->access;
 		$this->config = $services->config;
@@ -264,11 +264,8 @@ class FederatedConfigController extends Controller {
 			$result = $this->service->publish(
 				typeId: $type,
 				selection: (array)$this->request->getParam('selection', []),
-				repo: $repo,
-				path: $path,
-				credentialId: $credentialId,
-				branch: $branch,
-				private: $private
+				target: new ConfigPublishTarget(repo: $repo, path: $path, branch: $branch, private: $private),
+				credentialId: $credentialId
 			);
 		} catch (UnexpectedValueException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);

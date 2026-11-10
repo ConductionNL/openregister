@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\ValidationSettingsControllerServices;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Settings\ValidationSettingsController;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
@@ -104,7 +105,7 @@ class ValidationSettingsControllerGoldenTest extends TestCase {
 	#[DataProvider('cases')]
 	public function testActionMatchesTheRecording(string $action, array $case): void {
 		$this->calls = [];
-		$controller = new ValidationSettingsController('openregister', $this->request($case), $this->settings($case), $this->logger());
+		$controller = new ValidationSettingsController($this->request($case), new ValidationSettingsControllerServices($this->settings($case), $this->logger()));
 
 		$this->serveInput($case['body'] ?? null);
 		try {

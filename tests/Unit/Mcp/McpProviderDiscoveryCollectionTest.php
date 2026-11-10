@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Mcp\McpDiscoveryRun;
+use OCA\OpenRegister\Mcp\McpLeafApp;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -168,7 +170,10 @@ class McpProviderDiscoveryCollectionTest extends TestCase {
 
 		$handWritten = $this->provider(appId: 'pipelinq', toolIds: ['pipelinq.schema1.search']);
 		$providers = [$handWritten, $this->provider(appId: 'other', toolIds: ['other.x'])];
-		$this->invoke('collectSchemaDerivedMcpProviders', [$container, $logger, &$providers]);
+		$run = new McpDiscoveryRun($container, $logger);
+		$run->addAll($providers);
+		$this->invoke('collectSchemaDerivedMcpProviders', [$run]);
+		$providers = $run->providers();
 
 		$this->assertCount(4, $providers);
 		$this->assertInstanceOf(SchemaDerivedToolProvider::class, $providers[2]);
@@ -191,7 +196,10 @@ class McpProviderDiscoveryCollectionTest extends TestCase {
 
 		$existing = $this->provider(appId: 'pipelinq', toolIds: []);
 		$providers = [$existing];
-		$this->invoke('collectSchemaDerivedMcpProviders', [$container, $logger, &$providers]);
+		$run = new McpDiscoveryRun($container, $logger);
+		$run->addAll($providers);
+		$this->invoke('collectSchemaDerivedMcpProviders', [$run]);
+		$providers = $run->providers();
 
 		$this->assertSame([$existing], $providers);
 	}//end testAFailingSchemaEnumerationLeavesProvidersUntouched()
@@ -218,7 +226,10 @@ class McpProviderDiscoveryCollectionTest extends TestCase {
 
 		$container = $this->container([IEventDispatcher::class => $dispatcher]);
 		$providers = [$builtIn];
-		$this->invoke('collectAnnouncedMcpProviders', [$container, $this->createMock(LoggerInterface::class), &$providers]);
+		$run = new McpDiscoveryRun($container, $this->createMock(LoggerInterface::class));
+		$run->addAll($providers);
+		$this->invoke('collectAnnouncedMcpProviders', [$run]);
+		$providers = $run->providers();
 
 		$this->assertSame([$builtIn, $first], $providers);
 	}//end testAnnouncedProvidersAreAddedOncePerApp()
@@ -233,7 +244,10 @@ class McpProviderDiscoveryCollectionTest extends TestCase {
 		$logger->expects($this->once())->method('warning');
 
 		$providers = [];
-		$this->invoke('collectAnnouncedMcpProviders', [$this->container([]), $logger, &$providers]);
+		$run = new McpDiscoveryRun($this->container([]), $logger);
+		$run->addAll($providers);
+		$this->invoke('collectAnnouncedMcpProviders', [$run]);
+		$providers = $run->providers();
 
 		$this->assertSame([], $providers);
 	}//end testAFailingAnnouncementIsLogged()
@@ -251,12 +265,12 @@ class McpProviderDiscoveryCollectionTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('debug');
 
-		$this->assertSame([], $this->invoke('resolveScannableServiceClasses', [$throwing, $logger, 'pipelinq']));
+		$this->assertSame([], $this->invoke('resolveScannableServiceClasses', [new McpLeafApp('pipelinq', $throwing, $logger)]));
 
 		$wrongType = $this->container([$key => new \stdClass()]);
 		$this->assertSame(
 			[],
-			$this->invoke('resolveScannableServiceClasses', [$wrongType, $this->createMock(LoggerInterface::class), 'pipelinq'])
+			$this->invoke('resolveScannableServiceClasses', [new McpLeafApp('pipelinq', $wrongType, $this->createMock(LoggerInterface::class))])
 		);
 	}//end testABrokenOrWrongScannableDeclarationYieldsNoClasses()
 
@@ -276,7 +290,7 @@ class McpProviderDiscoveryCollectionTest extends TestCase {
 
 		$entries = $this->invoke(
 			'resolveAttributeEntries',
-			[$this->container([]), $logger, 'pipelinq', $descriptors, $providers]
+			[new McpLeafApp('pipelinq', $this->container([]), $logger), $descriptors]
 		);
 
 		$this->assertSame([], $entries);

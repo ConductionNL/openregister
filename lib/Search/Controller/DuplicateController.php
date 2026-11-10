@@ -38,6 +38,8 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
 use OCA\OpenRegister\Search\Service\Quality\ReviewedPair;
+use OCA\OpenRegister\Search\Service\Quality\PairDismissal;
+use OCA\OpenRegister\Search\Service\Quality\DedupRun;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Search\Controller\Support\DuplicateControllerServices;
 use OCP\AppFramework\Controller;
@@ -124,10 +126,7 @@ class DuplicateController extends Controller {
 
 		try {
 			$pairs = $this->duplicates->findDuplicates(
-				register: $register,
-				schema: $schema,
-				matchRules: null,
-				threshold: $threshold
+				request: new DedupRun(register: $register, schema: $schema, matchRules: null, threshold: $threshold)
 			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
@@ -194,9 +193,7 @@ class DuplicateController extends Controller {
 				'matches' => $matches,
 				'total' => count($matches),
 				'threshold' => $this->duplicates->effectiveThreshold(
-					register: $register,
-					schema: $schema,
-					threshold: $threshold
+					request: new DedupRun(register: $register, schema: $schema, threshold: $threshold)
 				),
 			]
 		);
@@ -303,12 +300,8 @@ class DuplicateController extends Controller {
 			);
 		}
 
-		$fingerprint = $this->fingerprintOf(
-			register: $register,
-			schema: $schema,
-			objectA: $objectA,
-			objectB: $objectB
-		);
+		$pair = new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema);
+		$fingerprint = $this->fingerprintOf(pair: $pair);
 		if ($fingerprint === null) {
 			return new JSONResponse(
 				['error' => 'One of the objects could not be read.'],
@@ -317,10 +310,12 @@ class DuplicateController extends Controller {
 		}
 
 		$row = $this->dismissals->dismiss(
-			pair: new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema),
-			fingerprint: $fingerprint,
-			reason: $reason,
-			dismissedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
+			pair: $pair,
+			dismissal: new PairDismissal(
+				fingerprint: $fingerprint,
+				reason: $reason,
+				dismissedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
+			)
 		);
 
 		return new JSONResponse($row);
@@ -413,10 +408,7 @@ class DuplicateController extends Controller {
 	 * The fingerprint of the pair being dismissed, computed by the SAME
 	 * function the scorer will later compare against.
 	 *
-	 * @param string $register Register reference.
-	 * @param string $schema Schema reference.
-	 * @param string $objectA One uuid.
-	 * @param string $objectB The other uuid.
+	 * @param ReviewedPair $pair The two uuids and the register and schema references.
 	 *
 	 * @return string|null The fingerprint, or null when either object cannot be read.
 	 *
@@ -424,10 +416,10 @@ class DuplicateController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function fingerprintOf(string $register, string $schema, string $objectA, string $objectB): ?string {
+	private function fingerprintOf(ReviewedPair $pair): ?string {
 		try {
-			$a = WriteCause::asLookup(fn () => $this->objectService->find(id: $objectA));
-			$b = WriteCause::asLookup(fn () => $this->objectService->find(id: $objectB));
+			$a = WriteCause::asLookup(fn () => $this->objectService->find(id: $pair->first));
+			$b = WriteCause::asLookup(fn () => $this->objectService->find(id: $pair->second));
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -437,9 +429,8 @@ class DuplicateController extends Controller {
 		}
 
 		return $this->duplicates->pairFingerprint(
-			dataA: ($a->getObject() ?? []),
-			dataB: ($b->getObject() ?? []),
-			rules: $this->duplicates->effectiveRules(register: $register, schema: $schema)
+			payloads: [($a->getObject() ?? []), ($b->getObject() ?? [])],
+			rules: $this->duplicates->effectiveRules(register: $pair->registerSlug, schema: $pair->schemaSlug)
 		);
 	}//end fingerprintOf()
 }//end class

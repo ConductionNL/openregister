@@ -74,15 +74,10 @@ class ImportServiceRegisterBundleGoldenTest extends TestCase {
 			}
 		);
 		$service = new ImportService(
-			$this->createMock(SchemaMapperInterface::class),
-			$this->createMock(ObjectOperationsInterface::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(TranslationCsvCodec::class),
-			$this->createMock(AuditTrailMapperInterface::class),
-			(new ReflectionClass(MappingEngine::class))->newInstanceWithoutConstructor(),
-			$this->createMock(ValidateObjectInterface::class),
-			$container
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->createMock(SchemaMapperInterface::class), $this->createMock(ObjectOperationsInterface::class), $this->createMock(AuditTrailMapperInterface::class), $this->createMock(ValidateObjectInterface::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($this->createMock(TranslationCsvCodec::class), (new ReflectionClass(MappingEngine::class))->newInstanceWithoutConstructor()),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($container, new \OCA\OpenRegister\Listener\NotifyPushBatch(), $this->createMock(LoggerInterface::class)),
+			$this->createMock(IGroupManager::class)
 		);
 		$method = new ReflectionMethod(ImportService::class, 'registerFromBundle');
 		$method->setAccessible(true);

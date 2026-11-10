@@ -37,12 +37,19 @@ use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Task\TaskAct;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
+use OCA\OpenRegister\Service\Task\TaskCommit;
 use OCA\OpenRegister\Service\Task\TaskForm;
+use OCA\OpenRegister\Service\Task\TaskFormFields;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
+use OCA\OpenRegister\Service\Task\TaskIntake;
+use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTables;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -118,15 +125,23 @@ class TaskServiceTest extends TestCase {
 	 */
 	private function service(): TaskService {
 		return new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->candidates,
-			relations: $this->relations,
-			audits: $this->audits,
 			authorization: $this->authorization,
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->db,
-			logger: new NullLogger(),
-			builder: new TaskBuilder()
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->candidates,
+					relations: $this->relations,
+					audits: $this->audits
+				),
+				commit: new TaskCommit(
+					db: $this->db,
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder()
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 	}//end service()
 
@@ -230,7 +245,7 @@ class TaskServiceTest extends TestCase {
 
 		$this->expectException(TaskValidationException::class);
 		$this->expectExceptionMessage("'rejected'");
-		$this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: '', actor: 'alice');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: ''), actor: 'alice');
 	}//end testARejectionWithoutACommentMovesNothing()
 
 	/**
@@ -248,7 +263,7 @@ class TaskServiceTest extends TestCase {
 		$this->db->expects($this->never())->method('commit');
 
 		$this->expectException(RuntimeException::class);
-		$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'alice');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
 	}//end testAnAuditFailureLeavesTheTaskNotCompleted()
 
 	/**
@@ -498,7 +513,7 @@ class TaskServiceTest extends TestCase {
 		$this->tasks->expects($this->never())->method('updateIfOpen');
 
 		try {
-			$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'mallory');
+			$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'mallory');
 			$this->fail('A denied verb went through.');
 		} catch (TaskAccessDeniedException) {
 			// Expected.
@@ -531,7 +546,7 @@ class TaskServiceTest extends TestCase {
 				}
 			);
 
-			$completed = $this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: 'ok', comment: null, actor: 'alice');
+			$completed = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved', resultText: 'ok'), actor: 'alice');
 			$results[] = [
 				'state' => $completed->getState(),
 				'terminal' => $completed->getIsTerminal(),
@@ -563,7 +578,7 @@ class TaskServiceTest extends TestCase {
 		);
 
 		$this->service()->delegate(uuid: 't-7', delegate: 'dora', mandate: 'Volmacht 2026', actor: 'alice');
-		$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'dora');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'dora');
 
 		$completion = end($entries);
 		$this->assertSame('dora', $completion->getActor());
@@ -652,7 +667,7 @@ class TaskServiceTest extends TestCase {
 		$this->authorization->method('assertMay')->willThrowException(new TaskAccessDeniedException('denied'));
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'mallory');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'mallory');
 	}//end testAuthorizationRunsBeforeTheTerminalityCheck()
 
 	/**
@@ -671,7 +686,7 @@ class TaskServiceTest extends TestCase {
 		$this->db->expects($this->never())->method('commit');
 
 		$this->expectException(TaskConflictException::class);
-		$this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'no', actor: 'alice');
+		$this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'no'), actor: 'alice');
 	}//end testASecondCompletionLosesTheConditionalUpdate()
 
 	/**
@@ -696,7 +711,7 @@ class TaskServiceTest extends TestCase {
 		$this->db->expects($this->never())->method('beginTransaction');
 		$this->tasks->expects($this->never())->method('updateIfOpen');
 
-		$this->service()->recordRefusedCompletion(task: $this->openTask(), reason: 'missing required input field(s): "reason"', actor: 'alice');
+		$this->service()->recordRefusedCompletion(task: $this->openTask(), attempt: new TaskAct(verb: 'complete', actor: 'alice', reason: 'missing required input field(s): "reason"'));
 	}//end testARefusedCompletionIsAuditedDistinctlyFromACompletion()
 
 	/**
@@ -712,7 +727,7 @@ class TaskServiceTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($closed);
 
 		try {
-			$this->service()->authorizedOpenTask(verb: 'complete', uuid: 't-7', actor: 'alice');
+			$this->service()->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: 'alice'), uuid: 't-7');
 			$this->fail('Expected a conflict.');
 		} catch (TaskConflictException $conflict) {
 			$this->assertStringContainsString('completed', $conflict->getMessage());
@@ -722,7 +737,7 @@ class TaskServiceTest extends TestCase {
 		$this->audits->expects($this->once())->method('insert');
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$this->service()->authorizedOpenTask(verb: 'complete', uuid: 't-7', actor: 'mallory');
+		$this->service()->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: 'mallory'), uuid: 't-7');
 	}//end testAuthorizedOpenTaskRefusesATerminalTaskAndAuditsADenial()
 
 	/**
@@ -734,19 +749,27 @@ class TaskServiceTest extends TestCase {
 	public function testCreateRefusesARecordFormTheReaderRefuses(): void {
 		$this->authorization->method('isAdministrator')->willReturn(false);
 		$reader = $this->createMock(TaskFormReader::class);
-		$reader->method('fromRecord')->willReturn(new TaskForm(kind: 'fields', schema: 'case', fields: [['field' => 'reasonn', 'required' => true]]));
+		$reader->method('fromRecord')->willReturn(new TaskForm(kind: 'fields', native: new TaskFormFields(schema: 'case', fields: [['field' => 'reasonn', 'required' => true]])));
 		$reader->method('validate')->willThrowException(new UnexpectedValueException('Field "reasonn" of schema "case" cannot be asked for: the schema has no such property.'));
 		$service = new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->candidates,
-			relations: $this->relations,
-			audits: $this->audits,
 			authorization: $this->authorization,
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->db,
-			logger: new NullLogger(),
-			builder: new TaskBuilder(),
-			forms: $reader
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->candidates,
+					relations: $this->relations,
+					audits: $this->audits
+				),
+				commit: new TaskCommit(
+					db: $this->db,
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder(),
+					forms: $reader
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 		$this->tasks->expects($this->never())->method('insert');
 
@@ -765,16 +788,24 @@ class TaskServiceTest extends TestCase {
 		$reader = $this->createMock(TaskFormReader::class);
 		$reader->expects($this->never())->method('validate');
 		$service = new TaskService(
-			tasks: $this->tasks,
-			candidates: $this->candidates,
-			relations: $this->relations,
-			audits: $this->audits,
 			authorization: $this->authorization,
-			resolver: $this->createMock(TaskPerformerResolver::class),
-			db: $this->db,
-			logger: new NullLogger(),
-			builder: new TaskBuilder(),
-			forms: $reader
+			services: new TaskLifecycleServices(
+				tables: new TaskTables(
+					tasks: $this->tasks,
+					candidates: $this->candidates,
+					relations: $this->relations,
+					audits: $this->audits
+				),
+				commit: new TaskCommit(
+					db: $this->db,
+					logger: new NullLogger()
+				),
+				intake: new TaskIntake(
+					builder: new TaskBuilder(),
+					forms: $reader
+				),
+				resolver: $this->createMock(TaskPerformerResolver::class)
+			)
 		);
 
 		$created = $service->create(data: ['title' => 'Approve'], actor: 'alice');
@@ -1274,7 +1305,7 @@ class TaskServiceTest extends TestCase {
 		$audited = [];
 		$this->setUpAuditRecorder(audited: $audited);
 
-		$completed = $this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'niet akkoord', actor: 'alice');
+		$completed = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'niet akkoord'), actor: 'alice');
 
 		$this->assertSame(Task::STATE_DISABLED, $completed->getState());
 		$this->assertSame('dead_letter', $completed->getOutcome());
@@ -1297,7 +1328,7 @@ class TaskServiceTest extends TestCase {
 			$task->setOnReject($declared);
 			$this->tasks->method('findByUuid')->willReturn($task);
 
-			$completed = $this->service()->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'nee', actor: 'alice');
+			$completed = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'rejected', comment: 'nee'), actor: 'alice');
 
 			$this->assertSame(Task::STATE_COMPLETED, $completed->getState(), var_export($declared, true));
 			$this->assertSame('rejected', $completed->getOutcome(), var_export($declared, true));
@@ -1315,7 +1346,7 @@ class TaskServiceTest extends TestCase {
 		$task->setOnReject('dead_letter');
 		$this->tasks->method('findByUuid')->willReturn($task);
 
-		$completed = $this->service()->complete(uuid: 't-7', outcome: 'approved', resultText: null, comment: null, actor: 'alice');
+		$completed = $this->service()->completeWithAnswer(uuid: 't-7', answer: new TaskAnswer(outcome: 'approved'), actor: 'alice');
 
 		$this->assertSame(Task::STATE_COMPLETED, $completed->getState());
 		$this->assertSame('approved', $completed->getOutcome());

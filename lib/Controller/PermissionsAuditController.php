@@ -55,6 +55,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\PermissionsAuditControllerServices;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -127,16 +128,14 @@ class PermissionsAuditController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string         $appName        Application identifier.
 	 * @param IRequest       $request        Active HTTP request.
 	 * @param PermissionsAuditControllerServices $services The permissions audit controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		PermissionsAuditControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->catalogue = $services->rules->catalogue;
 		$this->enforcement = $services->rules->enforcement;
 		$this->denyResolver = $services->rules->denyResolver;

@@ -30,6 +30,10 @@ use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkChunkRun;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
+use OCA\OpenRegister\Service\Object\SaveObjects\IdentifiedRow;
+use OCA\OpenRegister\Service\Object\SaveObjects\PersistedChunk;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -122,9 +126,11 @@ class SaveObjectsPipelineGoldenTest extends TestCase {
 		return [
 			'transform'                => fn (SaveObjects $h) => $this->call($h, 'transformObjectsToDatabaseFormatInPlace', [&$rows, $schemaCache]),
 			'transform chunk'          => function (SaveObjects $h) use ($rows, $schemaCache): array {
-				$result = $this->call($h, 'emptyChunkResult', []);
-				$valid  = $this->call($h, 'transformChunk', [$rows, $schemaCache, &$result]);
-				return ['valid' => $valid, 'result' => $result];
+				$run   = new BulkSaveRun();
+				$run->schemaCache = $schemaCache;
+				$chunk = new BulkChunkRun($this->call($h, 'emptyChunkResult', []), $run);
+				$valid = $this->call($h, 'transformChunk', [$chunk, $rows]);
+				return ['valid' => $valid, 'result' => $chunk->result];
 			},
 			'extract new structure'    => fn (SaveObjects $h) => $this->call($h, 'extractBusinessData', [['object' => ['k' => 'v'], 'name' => 'n'], null]),
 			'extract legacy declared'  => fn (SaveObjects $h) => $this->call(
@@ -134,10 +140,10 @@ class SaveObjectsPipelineGoldenTest extends TestCase {
 			),
 			'extract legacy no schema' => fn (SaveObjects $h) => $this->call($h, 'extractBusinessData', [['name' => 'n', 'image' => 'i', 'k' => 'v'], 'not a schema']),
 			'required fields'          => fn (SaveObjects $h) => [
-				$this->call($h, 'validateObjectRequiredFields', [['register' => false, 'schema' => 7], ['o' => 1], 0, $schemaCache]),
-				$this->call($h, 'validateObjectRequiredFields', [['register' => 1, 'schema' => false], ['o' => 2], 1, $schemaCache]),
-				$this->call($h, 'validateObjectRequiredFields', [['register' => 1, 'schema' => 5], ['o' => 3], 2, $schemaCache]),
-				$this->call($h, 'validateObjectRequiredFields', [['register' => null, 'schema' => 7], ['o' => 4], 3, $schemaCache]),
+				$this->call($h, 'validateObjectRequiredFields', [new IdentifiedRow(['register' => false, 'schema' => 7], ['o' => 1], 0), $schemaCache]),
+				$this->call($h, 'validateObjectRequiredFields', [new IdentifiedRow(['register' => 1, 'schema' => false], ['o' => 2], 1), $schemaCache]),
+				$this->call($h, 'validateObjectRequiredFields', [new IdentifiedRow(['register' => 1, 'schema' => 5], ['o' => 3], 2), $schemaCache]),
+				$this->call($h, 'validateObjectRequiredFields', [new IdentifiedRow(['register' => null, 'schema' => 7], ['o' => 4], 3), $schemaCache]),
 			],
 			'persist ids'              => fn (SaveObjects $h) => $this->call($h, 'persistChunk', [[['uuid' => 'a']], 10, 7, false]),
 			'persist failing ids'      => fn (SaveObjects $h) => $this->call($h, 'persistChunk', [[['uuid' => 'a']], 404, 404, true]),
@@ -152,9 +158,7 @@ class SaveObjectsPipelineGoldenTest extends TestCase {
 				'reconstructSavedObjects',
 				[
 					[['uuid' => 'a', 'name' => 'A'], ['uuid' => ''], ['uuid' => 'z'], ['name' => 'no uuid']],
-					[$this->entity(uuid: 'u1', object: ['x' => 2]), $this->entity(uuid: 'u2', object: ['y' => 1]), $this->entity(uuid: 'gone', object: [])],
 					['a', 'u1', 'u2', null, ['nested']],
-					['u1' => $this->entity(uuid: 'u1', object: ['x' => 1, 'keep' => true])],
 				]
 			),
 			'result shapes'            => fn (SaveObjects $h) => [$this->call($h, 'initializeSaveResult', [3]), $this->call($h, 'emptyChunkResult', [])],
@@ -162,8 +166,9 @@ class SaveObjectsPipelineGoldenTest extends TestCase {
 				$entity = new ObjectEntity();
 				$entity->setName('N');
 				$entity->setSlug('s-1');
-				$object = ['title' => 't'];
-				$self   = $this->call($h, 'applyHydratedMetadata', [['id' => 'i', 'name' => 'old'], &$object, $entity]);
+				$object = ['title' => 't', '@self' => ['id' => 'i', 'name' => 'old']];
+				$self   = $this->call($h, 'applyHydratedMetadata', [&$object, $entity]);
+				unset($object['@self']);
 				return ['self' => $self, 'object' => $object];
 			},
 			'decision tables off'      => fn (SaveObjects $h) => $this->refuseDecisionTables($h, null),
@@ -182,7 +187,7 @@ class SaveObjectsPipelineGoldenTest extends TestCase {
 	 */
 	private function buildResults(SaveObjects $handler, mixed $bulkResult, array $transformed): array {
 		$result      = $this->call($handler, 'emptyChunkResult', []);
-		$sideEffects = $this->call($handler, 'buildChunkResults', [$bulkResult, $transformed, &$result]);
+		$sideEffects = $this->call($handler, 'buildChunkResults', [new PersistedChunk($transformed, $bulkResult), &$result]);
 
 		return ['sideEffects' => $sideEffects, 'result' => $result];
 	}//end buildResults()
@@ -209,9 +214,13 @@ class SaveObjectsPipelineGoldenTest extends TestCase {
 
 		$result = ['invalid' => [], 'errors' => [], 'statistics' => ['invalid' => 0, 'errors' => 0]];
 		$rows   = [0 => ['a' => 0], 1 => ['a' => 1], 'k' => ['a' => 'k'], 3 => ['a' => 3]];
-		$passed = $this->call($handler, 'refuseInvalidDecisionTables', [$rows, 10, 7, &$result]);
+		$run           = new BulkSaveRun();
+		$run->register = 10;
+		$run->schema   = 7;
+		$run->result   = $result;
+		$passed        = $this->call($handler, 'refuseInvalidDecisionTables', [$run, $rows]);
 
-		return ['passed' => $passed, 'result' => $result];
+		return ['passed' => $passed, 'result' => $run->result];
 	}//end refuseDecisionTables()
 
 	/**

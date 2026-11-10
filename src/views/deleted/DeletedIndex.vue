@@ -163,6 +163,7 @@ import Restore from 'vue-material-design-icons/Restore.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import { ensureRegisterAndSchemaLists } from '../../composables/registerSchemaLists.js'
 import eventBus from '../../eventBus.js'
 import { refreshAction } from '../../services/menuActions.js'
 import { storePaging } from '../storePaging.js'
@@ -373,12 +374,7 @@ export default {
 				await deletedStore.fetchDeleted()
 
 				// Load register and schema data if not already loaded
-				if (!registerStore.registerList.length) {
-					await registerStore.refreshRegisterList()
-				}
-				if (!schemaStore.schemaList.length) {
-					await schemaStore.refreshSchemaList()
-				}
+				await ensureRegisterAndSchemaLists()
 			} catch (error) {
 				console.error('Error loading deleted items:', error)
 			}

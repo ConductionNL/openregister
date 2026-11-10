@@ -30,7 +30,8 @@ namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\FederatedShare;
-use OCA\OpenRegister\Db\FederatedShareMapper;
+use OCA\OpenRegister\Db\FederatedShareMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Federation\ShareGrantor;
 use OCP\Security\ISecureRandom;
@@ -65,13 +66,13 @@ class FederationShareService implements FederationShareServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FederatedShareMapper $shareMapper Federated-share persistence.
+	 * @param FederatedShareMapperInterface $shareMapper Federated-share persistence.
 	 * @param ShareGrantor $grantor The signed-in user granting or managing a share.
 	 * @param ISecureRandom $secureRandom Secure token generator.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly FederatedShareMapper $shareMapper,
+		private readonly FederatedShareMapperInterface $shareMapper,
 		private readonly ShareGrantor $grantor,
 		private readonly ISecureRandom $secureRandom,
 		private readonly LoggerInterface $logger,
@@ -237,7 +238,7 @@ class FederationShareService implements FederationShareServiceInterface {
 
 		return array_map(
 			fn (FederatedShare $share): array => $this->listedRow(share: $share),
-			$this->shareMapper->findAll(limit: null, offset: null, filters: $filters)
+			$this->shareMapper->findAll(query: ListQuery::unbounded(filters: $filters))
 		);
 	}//end listShares()
 

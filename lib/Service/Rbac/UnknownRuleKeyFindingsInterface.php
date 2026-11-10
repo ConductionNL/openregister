@@ -74,11 +74,10 @@ interface UnknownRuleKeyFindingsInterface {
 	 *
 	 * @param array|null $authorization The block.
 	 * @param string     $context       What the block belongs to, for the message.
-	 * @param array|null $stored        The block as stored, when saving over one.
 	 *
 	 * @return array<int, string> The findings.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
-	public function registerFindings(?array $authorization, string $context, ?array $stored = null): array;
+	public function registerFindings(?array $authorization, string $context): array;
 }//end interface

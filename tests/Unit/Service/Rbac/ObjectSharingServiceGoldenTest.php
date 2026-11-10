@@ -27,6 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\LinkProtection;
+use OCA\OpenRegister\Service\Rbac\LinkInvitation;
+use OCA\OpenRegister\Service\Rbac\GrantTerms;
+use OCA\OpenRegister\Service\Rbac\GrantRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
@@ -104,20 +108,21 @@ final class ObjectSharingServiceGoldenTest extends TestCase {
 		$object->setOwner('pjansen');
 
 		$calls = [
-			'grant group' => fn () => $sharing->grant(
+			'grant group' => fn () => $sharing->grantWithTerms(
 				object: $object,
-				type: 'group',
-				shareWith: ' juristen ',
-				permissions: 31,
-				verbs: ['read', '', 'read', 'export']
+				request: new \OCA\OpenRegister\Service\Rbac\GrantRequest(
+					type: 'group',
+					shareWith: ' juristen ',
+					terms: new \OCA\OpenRegister\Service\Rbac\GrantTerms(permissions: 31, verbs: ['read', '', 'read', 'export'])
+				)
 			),
-			'grant user' => fn () => $sharing->grant(object: $object, type: 'user', shareWith: 'tvisser'),
-			'grant bad type' => fn () => $sharing->grant(object: $object, type: 'circle', shareWith: 'x'),
-			'grant no principal' => fn () => $sharing->grant(object: $object, type: 'group', shareWith: '  '),
-			'link' => fn () => $sharing->createLink(object: $object, permissions: 31, password: 'geheim', expiration: '2026-12-01T00:00:00+00:00'),
-			'link bad expiry' => fn () => $sharing->createLink(object: $object, expiration: 'not a date'),
-			'email' => fn () => $sharing->inviteByEmail(object: $object, email: ' a@example.nl ', permissions: 3),
-			'email bad address' => fn () => $sharing->inviteByEmail(object: $object, email: 'nope'),
+			'grant user' => fn () => $sharing->grantWithTerms(object: $object, request: new GrantRequest(type: 'user', shareWith: 'tvisser', terms: new GrantTerms(permissions: 1))),
+			'grant bad type' => fn () => $sharing->grantWithTerms(object: $object, request: new GrantRequest(type: 'circle', shareWith: 'x', terms: new GrantTerms(permissions: 1))),
+			'grant no principal' => fn () => $sharing->grantWithTerms(object: $object, request: new GrantRequest(type: 'group', shareWith: '  ', terms: new GrantTerms(permissions: 1))),
+			'link' => fn () => $sharing->createLink(object: $object, invitation: new LinkInvitation(recipient: null, permissions: 31, protection: new LinkProtection(password: 'geheim', expiration: '2026-12-01T00:00:00+00:00'))),
+			'link bad expiry' => fn () => $sharing->createLink(object: $object, invitation: new LinkInvitation(recipient: null, permissions: 1, protection: new LinkProtection(password: null, expiration: 'not a date'))),
+			'email' => fn () => $sharing->inviteByEmail(object: $object, invitation: new LinkInvitation(recipient: ' a@example.nl ', permissions: 3, protection: new LinkProtection(password: null, expiration: null))),
+			'email bad address' => fn () => $sharing->inviteByEmail(object: $object, invitation: new LinkInvitation(recipient: 'nope', permissions: 1, protection: new LinkProtection(password: null, expiration: null))),
 		];
 
 		$actual = [];
@@ -191,20 +196,13 @@ final class ObjectSharingServiceGoldenTest extends TestCase {
 		);
 
 		return new ObjectSharingService(
-			authorizationWriter: $this->createMock(ObjectAuthorizationWriter::class),
-			userSession: $session,
-			groupManager: $groups,
-			folders: $folders,
-			scopeResolver: new ObjectScopeResolver(),
-			grantResolver: $this->createMock(ObjectGrantResolver::class),
-			shareManager: $shares,
-			logger: new NullLogger(),
-			inheritedGrants: $this->createMock(InheritedGrantLister::class),
+			shares: new \OCA\OpenRegister\Service\Rbac\ObjectShareSurface(folders: $folders, shareManager: $shares),
+			records: new \OCA\OpenRegister\Service\Rbac\ObjectGrantRecords(authorizationWriter: $this->createMock(ObjectAuthorizationWriter::class), scopeResolver: new ObjectScopeResolver(), grantResolver: $this->createMock(ObjectGrantResolver::class), inheritedGrants: $this->createMock(InheritedGrantLister::class)),
+			context: new \OCA\OpenRegister\Service\Rbac\ObjectSharingContext(userSession: $session, groupManager: $groups, logger: new NullLogger(), auditor: $auditor),
 			grantManage: new GrantManageGuard(
 				scopeResolver: new ObjectScopeResolver(),
 				specialRights: $this->createMock(OrganisationSpecialRights::class)
-			),
-			auditor: $auditor
+			)
 		);
 	}
 

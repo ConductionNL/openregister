@@ -24,7 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Activity;
 
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\Activity\IEvent;
+use OCP\L10N\IFactory;
 
 /**
  * Handler for applying activity subject text and rich parameters.
@@ -62,19 +64,32 @@ class ProviderSubjectHandler {
 	];
 
 	/**
+	 * Constructor.
+	 *
+	 * @param IFactory $l10nFactory The l10n factory the subject text is translated with.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	public function __construct(
+		private readonly IFactory $l10nFactory,
+	) {
+	}//end __construct()
+
+	/**
 	 * Apply subject text and rich parameters to the event based on its subject type.
 	 *
-	 * @param IEvent $event The event to modify.
-	 * @param object $l The l10n translator.
-	 * @param array $params The subject parameters.
+	 * @param IEvent $event    The event to modify; its subject parameters carry the title and schema.
+	 * @param string $language The language code to translate the subject into.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
-	public function applySubjectText(IEvent $event, object $l, array $params): void {
-		$title = $params['title'] ?? '';
+	public function applySubjectText(IEvent $event, string $language): void {
+		$l = $this->l10nFactory->get(AppIdentity::APP_ID, $language);
+		$params = $event->getSubjectParameters();
+		$title = $this->subjectTitle(event: $event);
 		$richParams = $this->buildRichParams(
 			event: $event,
 			title: $title
@@ -95,12 +110,7 @@ class ProviderSubjectHandler {
 		}
 
 		if (isset(self::SIMPLE_SUBJECTS[$subject]) === true) {
-			$this->applySimpleSubject(
-				event: $event,
-				l: $l,
-				keys: self::SIMPLE_SUBJECTS[$subject],
-				title: $title
-			);
+			$this->applySimpleSubject(event: $event, l: $l);
 		}
 	}//end applySubjectText()
 
@@ -127,25 +137,33 @@ class ProviderSubjectHandler {
 	/**
 	 * Apply a simple parsed and rich subject to the event.
 	 *
-	 * @param IEvent $event The event.
-	 * @param object $l The l10n translator.
-	 * @param array{0: string, 1: string} $keys The parsed and the rich subject translation key.
-	 * @param string $title The entity title.
+	 * @param IEvent $event The event; its subject picks the translation keys.
+	 * @param object $l     The l10n translator.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
-	private function applySimpleSubject(
-		IEvent $event,
-		object $l,
-		array $keys,
-		string $title,
-	): void {
+	private function applySimpleSubject(IEvent $event, object $l): void {
+		$keys = self::SIMPLE_SUBJECTS[$event->getSubject()];
+		$title = $this->subjectTitle(event: $event);
 		$event->setParsedSubject($l->t($keys[0], [$title]));
 		$event->setRichSubject(
 			$l->t($keys[1]),
 			$this->buildRichParams(event: $event, title: $title)
 		);
 	}//end applySimpleSubject()
+
+	/**
+	 * The entity title the event carries, empty when it carries none.
+	 *
+	 * @param IEvent $event The event.
+	 *
+	 * @return string The title.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	private function subjectTitle(IEvent $event): string {
+		return $event->getSubjectParameters()['title'] ?? '';
+	}//end subjectTitle()
 }//end class

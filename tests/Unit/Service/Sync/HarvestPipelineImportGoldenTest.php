@@ -32,6 +32,8 @@ use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Sync\HarvestImportServices;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
+use OCA\OpenRegister\Service\Sync\HarvestRun;
+use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCA\OpenRegister\Service\Sync\SyncConflictResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -230,7 +232,7 @@ class HarvestPipelineImportGoldenTest extends TestCase {
 			$entities[] = $record;
 		}
 
-		$summary = $pipeline->import($source, $entities, 'exec-1');
+		$summary = $pipeline->import(new HarvestRun($source, $this->createMock(SourceFetcherInterface::class), 'exec-1'), $entities);
 
 		$actual = json_decode((string) json_encode(['summary' => $summary, 'calls' => $calls]), true);
 		$case = (string) $this->dataName();

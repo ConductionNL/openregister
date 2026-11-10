@@ -26,6 +26,8 @@ use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
@@ -126,12 +128,13 @@ class FlowRunAttributionTest extends TestCase {
 		$engine = new FlowEngine(new FlowDefinitionBuilder(), $this->createMock(LoggerInterface::class));
 
 		return new FlowRunService(
-			$runMapper,
-			$this->createMock(FlowStateMapper::class),
-			$engine,
-			$registry,
-			$this->createMock(LoggerInterface::class),
-			$container
+			stores: new FlowRunStores(
+				mapper: $runMapper,
+				stateMapper: $this->createMock(FlowStateMapper::class)
+			),
+			walk: new FlowRunWalkServices(engine: $engine, registry: $registry),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $container
 		);
 	}
 

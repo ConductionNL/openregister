@@ -32,6 +32,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * Three verbs and the subject axis, through the controller a client reaches.
@@ -89,7 +90,6 @@ class NotificationHistoryBellTest extends TestCase {
 		$groups->method('isAdmin')->willReturn(false);
 
 		return new NotificationHistoryController(
-			'openregister',
 			$this->request,
 			new NotificationHistoryControllerServices(mapper: $this->mapper, userSession: $session, groupManager: $groups, clearing: $this->clearing)
 		);
@@ -282,8 +282,8 @@ class NotificationHistoryBellTest extends TestCase {
 
 		$seen = [];
 		$this->mapper->method('findFiltered')->willReturnCallback(
-			static function (array $filters) use (&$seen): array {
-				$seen['find'] = $filters;
+			static function (ListQuery $query) use (&$seen): array {
+				$seen['find'] = $query->filters;
 				return [];
 			}
 		);

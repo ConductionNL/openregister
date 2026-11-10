@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -34,7 +35,9 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
+use OCA\OpenRegister\Service\Query\RelatedRowClauseBatch;
 use OCA\OpenRegister\Service\Query\RelatedRowExistsClause;
 use OCA\OpenRegister\Service\Query\RelatedRowFilter;
 use OCA\OpenRegister\Service\Query\RelatedRowInnerRow;
@@ -42,6 +45,7 @@ use OCA\OpenRegister\Service\Query\RelatedRowLookups;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\Query\RelatedRowSource;
 use OCA\OpenRegister\Service\Query\RelatedRowSqlTarget;
+use OCA\OpenRegister\Service\Query\RelatedRowSubquery;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -64,6 +68,9 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSource
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSqlTarget
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowSubquery
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowField
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowBoundCondition
  */
 class RelatedRowAccessGoldenTest extends TestCase {
 
@@ -146,7 +153,7 @@ class RelatedRowAccessGoldenTest extends TestCase {
 	): array {
 		return (new RelatedRowExistsClause())->render(
 			filter: $filter,
-			target: new RelatedRowSqlTarget(
+			subquery: new RelatedRowSubquery(target: new RelatedRowSqlTarget(
 				engine: $engine,
 				table: 'oc_t',
 				outerAlias: 'o',
@@ -156,7 +163,7 @@ class RelatedRowAccessGoldenTest extends TestCase {
 				alias: 'r0',
 				accessPredicate: $accessPredicate,
 				parameterPrefix: 'rel0'
-			)
+			))
 		);
 	}//end renderOne()
 
@@ -170,13 +177,15 @@ class RelatedRowAccessGoldenTest extends TestCase {
 	 */
 	private function renderMany(array $filters, callable $access): array {
 		return (new RelatedRowExistsClause())->renderAll(
-			filters: $filters,
-			target: new RelatedRowSqlTarget(
-				engine: RelatedRowExistsClause::ENGINE_POSTGRES,
-				table: 'oc_objects',
-				outerAlias: 'o'
-			),
-			accessPredicateFor: $access
+			new RelatedRowClauseBatch(
+				filters: $filters,
+				target: new RelatedRowSqlTarget(
+					engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+					table: 'oc_objects',
+					outerAlias: 'o'
+				),
+				accessPredicateFor: $access(...)
+			)
 		);
 	}//end renderMany()
 
@@ -191,8 +200,7 @@ class RelatedRowAccessGoldenTest extends TestCase {
 	private function predicateFor(IQueryBuilder $qb, array $scope): string {
 		return $this->access()->predicate(
 			qb: $qb,
-			source: new RelatedRowSource(schema: $this->schema(), tableName: 'openregister_table_1_2', alias: 'rel0'),
-			scope: $scope
+			source: new RelatedRowSource(schema: $this->schema(), tableName: 'openregister_table_1_2', alias: 'rel0', scope: $scope)
 		);
 	}//end predicateFor()
 
@@ -262,15 +270,10 @@ class RelatedRowAccessGoldenTest extends TestCase {
 		$register = new Register();
 		$register->setId(1);
 
-		$applied = $applier->apply(
-			qb: $qb,
-			query: $query,
-			register: $register,
-			organisationScopeFor: function (...$args) use ($scope): array {
+		$applied = $applier->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $register, organisationScopeFor: function (...$args) use ($scope): array {
 				$this->scopeCalls[] = $args;
 				return $scope;
-			}
-		);
+			}), query: $query);
 
 		return ['applied' => $applied, 'where' => $where, 'parameters' => $parameters];
 	}//end applyQuery()
@@ -538,7 +541,7 @@ class RelatedRowAccessGoldenTest extends TestCase {
 			$this->assertSame($expectedParameters, $parameters, $label);
 			$this->assertCount(1, $this->rbacCalls, $label);
 			$this->assertSame(2, $this->rbacCalls[0][0]->getId(), $label);
-			$this->assertSame(['rel0', 'read', 'openregister_table_1_2'], array_slice($this->rbacCalls[0], 1), $label);
+			$this->assertEquals([new AliasedRows(alias: 'rel0', action: 'read', tableName: 'openregister_table_1_2')], array_slice($this->rbacCalls[0], 1), $label);
 		}
 	}//end testThePredicateForEveryScope()
 
@@ -572,7 +575,7 @@ class RelatedRowAccessGoldenTest extends TestCase {
 			$this->assertSame($related, $this->scopeCalls[0][0], $label);
 			$this->assertSame(1, $this->scopeCalls[0][1], $label);
 			$this->assertSame($related, $this->rbacCalls[0][0], $label);
-			$this->assertSame(['rel0', 'read', 'openregister_table_1_2'], [$this->rbacCalls[0][1], $this->rbacCalls[0][2], $this->rbacCalls[0][3]], $label);
+			$this->assertEquals(new AliasedRows(alias: 'rel0', action: 'read', tableName: 'openregister_table_1_2'), $this->rbacCalls[0][1], $label);
 		}
 	}//end testTheApplierRendersTheRelatedSchemasPredicateForEveryScope()
 

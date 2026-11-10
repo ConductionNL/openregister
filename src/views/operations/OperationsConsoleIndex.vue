@@ -1,4 +1,5 @@
 <template>
+	<!-- eslint-disable vue/no-undef-components -- registered through pageShellComponents, which the rule cannot follow -->
 	<NcAppContent>
 		<div class="viewContainer">
 			<div class="viewHeader">
@@ -321,14 +322,8 @@ import { CnDataTable } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { n, t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import { pageShellComponents } from '../pageShell.js'
 
 /**
  * The operations console.
@@ -345,11 +340,7 @@ export default {
 	components: {
 		CnDataTable,
 		CogOutline,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 	},
 
 	data() {

@@ -25,7 +25,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Notifications\Controller\Support\AddressedObject;
+use OCA\OpenRegister\Notifications\Controller\Support\NotePath;
 use OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices;
+use OCA\OpenRegister\Notifications\Controller\Support\NoteUpdate;
+use OCA\OpenRegister\Notifications\Controller\Support\ObjectNote;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
@@ -36,6 +41,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Notifications\Service\NoteVisibilityMove;
 
 /**
  * NotesController handles note operations for objects in registers.
@@ -72,18 +78,16 @@ class NotesController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param NotesControllerServices $services The notes controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		NotesControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
 		$this->noteService = $services->noteService;
 		$this->objectService = $services->objectService;
@@ -112,12 +116,23 @@ class NotesController extends Controller {
 		string $schema,
 		string $id,
 	): JSONResponse {
+		return $this->notesAt(path: new NotePath(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * The notes on the object at a route path.
+	 *
+	 * @param NotePath $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function notesAt(NotePath $path): JSONResponse {
 		return $this->onObject(
-			path: [$register, $schema, $id],
+			path: $path,
 			action: fn (ObjectEntity $object): JSONResponse => $this->listNotes(object: $object),
 			failure: $this->failureWith(status: 500)
 		);
-	}//end index()
+	}//end notesAt()
 
 	/**
 	 * Create a new note on a specific object.
@@ -138,12 +153,23 @@ class NotesController extends Controller {
 		string $schema,
 		string $id,
 	): JSONResponse {
+		return $this->createAt(path: new NotePath(register: $register, schema: $schema, id: $id));
+	}//end create()
+
+	/**
+	 * Add a note to the object at a route path.
+	 *
+	 * @param NotePath $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function createAt(NotePath $path): JSONResponse {
 		return $this->onObject(
-			path: [$register, $schema, $id],
-			action: fn (ObjectEntity $object): JSONResponse => $this->createOn(object: $object, register: $register, schema: $schema),
+			path: $path,
+			action: fn (ObjectEntity $object): JSONResponse => $this->createOn(target: new AddressedObject(object: $object, path: $path)),
 			failure: $this->failureWith(status: 400)
 		);
-	}//end create()
+	}//end createAt()
 
 	/**
 	 * Update a note.
@@ -166,12 +192,24 @@ class NotesController extends Controller {
 		string $id,
 		string $noteId,
 	): JSONResponse {
+		return $this->updateAt(path: new NotePath(register: $register, schema: $schema, id: $id), noteId: $noteId);
+	}//end update()
+
+	/**
+	 * Update one note on the object at a route path.
+	 *
+	 * @param NotePath $path   The register, schema and object id from the route.
+	 * @param string   $noteId The note id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function updateAt(NotePath $path, string $noteId): JSONResponse {
 		return $this->onObject(
-			path: [$register, $schema, $id],
+			path: $path,
 			action: fn (ObjectEntity $object): JSONResponse => $this->updateOn(object: $object, noteId: (int)$noteId),
 			failure: fn (Exception $e): JSONResponse => $this->updateFailure(e: $e)
 		);
-	}//end update()
+	}//end updateAt()
 
 	/**
 	 * Update a note, reached over PATCH.
@@ -227,12 +265,24 @@ class NotesController extends Controller {
 		string $id,
 		string $noteId,
 	): JSONResponse {
+		return $this->versionsAt(path: new NotePath(register: $register, schema: $schema, id: $id), noteId: $noteId);
+	}//end versions()
+
+	/**
+	 * The versions of one note on the object at a route path.
+	 *
+	 * @param NotePath $path   The register, schema and object id from the route.
+	 * @param string   $noteId The note id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function versionsAt(NotePath $path, string $noteId): JSONResponse {
 		return $this->onObject(
-			path: [$register, $schema, $id],
+			path: $path,
 			action: fn (ObjectEntity $object): JSONResponse => $this->versionsOf(object: $object, noteId: (int)$noteId),
 			failure: $this->failureWith(status: 400)
 		);
-	}//end versions()
+	}//end versionsAt()
 
 	/**
 	 * Delete a note.
@@ -255,12 +305,24 @@ class NotesController extends Controller {
 		string $id,
 		string $noteId,
 	): JSONResponse {
+		return $this->destroyAt(path: new NotePath(register: $register, schema: $schema, id: $id), noteId: $noteId);
+	}//end destroy()
+
+	/**
+	 * Delete one note on the object at a route path.
+	 *
+	 * @param NotePath $path   The register, schema and object id from the route.
+	 * @param string   $noteId The note id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function destroyAt(NotePath $path, string $noteId): JSONResponse {
 		return $this->onObject(
-			path: [$register, $schema, $id],
+			path: $path,
 			action: fn (ObjectEntity $object): JSONResponse => $this->destroyOn(object: $object, noteId: (int)$noteId),
 			failure: fn (Exception $e): JSONResponse => $this->failureWith(status: $this->statusFor(e: $e))($e)
 		);
-	}//end destroy()
+	}//end destroyAt()
 
 	/**
 	 * Run an action on the object the path names, translating the shared outcomes.
@@ -269,15 +331,15 @@ class NotesController extends Controller {
 	 * before the action runs; any other failure is handed to `$failure`. A
 	 * `DoesNotExistException` raised by the action itself answers the same 404.
 	 *
-	 * @param array{0: string, 1: string, 2: string} $path    The register, schema and object id.
-	 * @param \Closure(ObjectEntity): JSONResponse     $action  What to do with the object.
-	 * @param \Closure(Exception): JSONResponse        $failure How to answer any other failure.
+	 * @param NotePath                             $path    The register, schema and object id.
+	 * @param \Closure(ObjectEntity): JSONResponse $action  What to do with the object.
+	 * @param \Closure(Exception): JSONResponse    $failure How to answer any other failure.
 	 *
 	 * @return JSONResponse The answer.
 	 */
-	private function onObject(array $path, \Closure $action, \Closure $failure): JSONResponse {
+	private function onObject(NotePath $path, \Closure $action, \Closure $failure): JSONResponse {
 		try {
-			$object = $this->validateObject(register: $path[0], schema: $path[1], id: $path[2]);
+			$object = $this->validateObject(path: $path);
 			if ($object === null) {
 				return $this->notFound(what: 'Object');
 			}
@@ -391,13 +453,12 @@ class NotesController extends Controller {
 	/**
 	 * Create a note on the object, refusing a visibility the caller may not set.
 	 *
-	 * @param ObjectEntity $object   The object.
-	 * @param string       $register The register from the path.
-	 * @param string       $schema   The schema from the path.
+	 * @param AddressedObject $target The object, with the path it was addressed by.
 	 *
 	 * @return JSONResponse The created note, or the refusal.
 	 */
-	private function createOn(ObjectEntity $object, string $register, string $schema): JSONResponse {
+	private function createOn(AddressedObject $target): JSONResponse {
+		$object = $target->object;
 		$data = $this->request->getParams();
 		if (empty($data['message']) === true) {
 			return new JSONResponse(data: ['error' => 'Note message is required'], statusCode: 400);
@@ -410,7 +471,7 @@ class NotesController extends Controller {
 
 		$note = $this->noteService->createNote(objectUuid: $object->getUuid(), message: $data['message'], visibility: $this->visibilityOf(data: $data));
 
-		return $this->projected(object: $object, note: $note, register: $register, schema: $schema);
+		return $this->projected(target: $target, note: $note);
 	}//end createOn()
 
 	/**
@@ -453,17 +514,15 @@ class NotesController extends Controller {
 	 * timeline that cannot be searched is worse than none. The projection
 	 * never throws.
 	 *
-	 * @param ObjectEntity         $object   The object.
-	 * @param array<string, mixed> $note     The created note.
-	 * @param string               $register The register from the path.
-	 * @param string               $schema   The schema from the path.
+	 * @param AddressedObject      $target The object, with the path it was addressed by.
+	 * @param array<string, mixed> $note   The created note.
 	 *
 	 * @return JSONResponse The note, with its `entryId` when it got a record.
 	 */
-	private function projected(ObjectEntity $object, array $note, string $register, string $schema): JSONResponse {
+	private function projected(AddressedObject $target, array $note): JSONResponse {
 		$entry = $this->services->timeline->projectNote(
-			object: $object,
-			note: new NoteProjection(note: $note, register: $register, schema: $schema)
+			object: $target->object,
+			note: new NoteProjection(note: $note, register: $target->path->register, schema: $target->path->schema)
 		);
 		if ($entry !== null) {
 			$note['entryId'] = $entry->getUuid();
@@ -483,14 +542,16 @@ class NotesController extends Controller {
 	private function updateOn(ObjectEntity $object, int $noteId): JSONResponse {
 		$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: $noteId);
 
-		$write = $this->resolveNoteWrite(object: $object, data: $this->request->getParams(), noteId: $noteId);
+		$target = new ObjectNote(object: $object, noteId: $noteId);
+		$write = $this->resolveNoteWrite(target: $target, data: $this->request->getParams());
 		if ($write['refusal'] !== null) {
 			return $write['refusal'];
 		}
 
+		$update    = new NoteUpdate(target: $target, message: $write['message'], visibility: $write['visibility'], previous: $write['previous']);
 		$mayManage = $this->services->visibility->mayManageObject(object: $object);
-		$note = $this->noteService->updateNote(noteId: $noteId, message: $write['message'], visibility: $write['visibility'], mayManage: $mayManage);
-		$this->recordUpdate(object: $object, noteId: $noteId, write: $write, note: $note);
+		$note = $this->noteService->updateNote(noteId: $noteId, message: $update->message, visibility: $update->visibility, mayManage: $mayManage);
+		$this->recordUpdate(update: $update, note: $note);
 
 		return new JSONResponse(data: $note);
 	}//end updateOn()
@@ -504,26 +565,27 @@ class NotesController extends Controller {
 	 * text that was just rewritten: an index answering with yesterday's
 	 * sentence is worse than no index, because it looks like a hit.
 	 *
-	 * @param ObjectEntity                                                                    $object The object.
-	 * @param int                                                                             $noteId The note.
-	 * @param array{refusal: null, message: string|null, visibility: string|null, previous: string|null} $write  The write made.
-	 * @param array<string, mixed>                                                            $note   The updated note.
+	 * @param NoteUpdate           $update The edit made.
+	 * @param array<string, mixed> $note   The updated note.
 	 *
 	 * @return void
 	 */
-	private function recordUpdate(ObjectEntity $object, int $noteId, array $write, array $note): void {
-		if ($write['message'] !== null) {
+	private function recordUpdate(NoteUpdate $update, array $note): void {
+		$object = $update->target->object;
+		$noteId = $update->target->noteId;
+		if ($update->message !== null) {
 			$this->noteService->auditEdit(object: $object, noteId: $noteId, versions: (int)($note['versionCount'] ?? 0));
 		}
 
 		$this->services->timeline->rewrite(
 			object: $object,
-			rewrite: new NoteRewrite(commentId: $noteId, message: $write['message'], visibility: $write['visibility'])
+			rewrite: new NoteRewrite(commentId: $noteId, message: $update->message, visibility: $update->visibility)
 		);
 
-		if ($write['previous'] !== null) {
+		if ($update->previous !== null) {
 			$to = (string)($note['visibility'] ?? '');
-			$this->services->visibility->auditVisibilityChange(object: $object, noteId: $noteId, from: $write['previous'], to: $to);
+			$move = new NoteVisibilityMove(noteId: $noteId, from: $update->previous, to: $to);
+			$this->services->visibility->auditNoteMove(object: $object, move: $move);
 		}
 	}//end recordUpdate()
 
@@ -589,20 +651,19 @@ class NotesController extends Controller {
 	 * `previous` is null whenever the caller did not ask to move the flag, so
 	 * the caller audits nothing.
 	 *
-	 * @param ObjectEntity $object The object the note hangs on
-	 * @param array<string,mixed> $data The request payload
-	 * @param int $noteId The note being updated
+	 * @param ObjectNote          $target The note being updated and the object it hangs on
+	 * @param array<string,mixed> $data   The request payload
 	 *
 	 * @return array{refusal: JSONResponse|null, message: string|null, visibility: string|null, previous: string|null}
 	 *         The refusal to return, or the write to make.
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	private function resolveNoteWrite(ObjectEntity $object, array $data, int $noteId): array {
+	private function resolveNoteWrite(ObjectNote $target, array $data): array {
 		$message = $this->messageOf(data: $data);
 		$write = ['refusal' => null, 'message' => $message, 'visibility' => null, 'previous' => null];
 		if (array_key_exists('visibility', $data) === true) {
-			return $this->withVisibility(write: $write, object: $object, requested: $data['visibility'], noteId: $noteId);
+			return array_merge($write, $this->visibilityMove(target: $target, requested: $data['visibility']));
 		}
 
 		if ($message === null) {
@@ -628,28 +689,25 @@ class NotesController extends Controller {
 	}//end messageOf()
 
 	/**
-	 * Add a visibility move to a write, or the refusal of it.
+	 * The visibility move a write adds, or the refusal of it.
 	 *
-	 * @param array{refusal: JSONResponse|null, message: string|null, visibility: string|null, previous: string|null} $write     The write so far.
-	 * @param ObjectEntity                                                                                     $object    The object the note hangs on.
-	 * @param mixed                                                                                            $requested The raw `visibility` value.
-	 * @param int                                                                                              $noteId    The note being updated.
+	 * @param ObjectNote $target    The note being updated and the object it hangs on.
+	 * @param mixed      $requested The raw `visibility` value.
 	 *
-	 * @return array{refusal: JSONResponse|null, message: string|null, visibility: string|null, previous: string|null}
-	 *         The write, with its visibility and the previous one, or with a refusal.
+	 * @return array{refusal: JSONResponse}|array{visibility: string, previous: string}
+	 *         The refusal, or the visibility to write and the previous one.
 	 */
-	private function withVisibility(array $write, ObjectEntity $object, mixed $requested, int $noteId): array {
-		$refusal = $this->refuseVisibility(object: $object, requested: $requested);
+	private function visibilityMove(ObjectNote $target, mixed $requested): array {
+		$refusal = $this->refuseVisibility(object: $target->object, requested: $requested);
 		if ($refusal !== null) {
-			$write['refusal'] = $refusal;
-			return $write;
+			return ['refusal' => $refusal];
 		}
 
-		$write['visibility'] = (string)$requested;
-		$write['previous'] = (string)($this->noteService->getNote(noteId: $noteId)['visibility'] ?? '');
-
-		return $write;
-	}//end withVisibility()
+		return [
+			'visibility' => (string)$requested,
+			'previous'   => (string)($this->noteService->getNote(noteId: $target->noteId)['visibility'] ?? ''),
+		];
+	}//end visibilityMove()
 
 	/**
 	 * Refuse a visibility write the caller may not make, or one it spelled wrong.
@@ -687,9 +745,7 @@ class NotesController extends Controller {
 	/**
 	 * Validate that the object exists and return it.
 	 *
-	 * @param string $register The register slug or identifier
-	 * @param string $schema The schema slug or identifier
-	 * @param string $id The object ID
+	 * @param NotePath $path The register, schema and object id
 	 *
 	 * @return ObjectEntity|null The object or null
 	 *
@@ -700,11 +756,7 @@ class NotesController extends Controller {
 	 *                               Swallowing it here would collapse "no such object" into the same null this method
 	 *                               returns for other reasons, which the caller could no longer tell apart.
 	 */
-	private function validateObject(
-		string $register,
-		string $schema,
-		string $id,
-	): ?ObjectEntity {
+	private function validateObject(NotePath $path): ?ObjectEntity {
 		// REGISTER FIRST. `setSchema()` scopes its slug lookup to whatever
 		// register is currently set, and ObjectService is reused across many
 		// operations in one process — so setting the schema first resolves it
@@ -712,9 +764,9 @@ class NotesController extends Controller {
 		// `/objects/dossiq/case/{id}/notes` threw `Schema slug "case" is not
 		// carried by register "buildiq"`, an app this request never mentioned.
 		// Naming the register first makes the boundary the caller's own.
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+		$this->objectService->setRegister($path->register);
+		$this->objectService->setSchema($path->schema);
+		$this->objectService->setObject($path->id);
 
 		return $this->objectService->getObject();
 	}//end validateObject()

@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Task\VtodoReader;
 use Sabre\VObject\Reader;
 
@@ -64,44 +65,42 @@ final class TaskVtodoDocument {
 	/**
 	 * Parse a VTODO iCalendar string into a JSON-friendly array.
 	 *
-	 * @param string $calendarData The raw iCalendar string
-	 * @param string $calendarId   The calendar ID
-	 * @param string $uri          The calendar object URI
+	 * @param string       $calendarData The raw iCalendar string
+	 * @param TaskLocation $at           The calendar and URI of the calendar object
 	 *
 	 * @return array|null Task array or null if not a VTODO
 	 */
-	public function taskOf(string $calendarData, string $calendarId, string $uri): ?array {
+	public function taskOf(string $calendarData, TaskLocation $at): ?array {
 		$vtodo = Reader::read($calendarData)->VTODO;
 		if ($vtodo === null) {
 			return null;
 		}
 
-		return $this->reader->taskArray(vtodo: $vtodo, calendarId: $calendarId, uri: $uri);
+		return $this->reader->taskArray(vtodo: $vtodo, calendarId: (string)$at->calendarId, uri: $at->uri);
 	}//end taskOf()
 
 	/**
 	 * The document of a new standalone task linked to an object.
 	 *
-	 * @param int    $registerId  The register ID to link
-	 * @param int    $schemaId    The schema ID to link
-	 * @param string $objectUuid  The object UUID to link
-	 * @param string $objectTitle The object title for the LINK label
-	 * @param array  $data        Task data: summary, description, priority, due, status, fields
+	 * @param ObjectRef       $ref   The register ID, schema ID and UUID of the object to link.
+	 * @param LinkedTaskDraft $draft The object title for the LINK label, and the task data.
 	 *
 	 * @return array{uri: string, calendarData: string} The object URI and the iCalendar document.
 	 *
 	 * @throws Exception When the due date cannot be parsed.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function compose(int $registerId, int $schemaId, string $objectUuid, string $objectTitle, array $data): array {
+	public function composeFor(ObjectRef $ref, LinkedTaskDraft $draft): array {
 		$uid = strtoupper(bin2hex(random_bytes(16)));
-		$lines = array_merge(
-			$this->openingLines(uid: $uid, summary: ($data['summary'] ?? 'Untitled task')),
-			$this->detailLines(data: $data),
-			$this->linkLines(link: [$registerId, $schemaId, $objectUuid], objectTitle: $objectTitle, fields: ($data['fields'] ?? null))
-		);
-
-		return ['uri' => $uid . '.ics', 'calendarData' => implode("\r\n", $lines) . "\r\n"];
-	}//end compose()
+		$link = [$ref->register, $ref->schema, $ref->id];
+		return ['uri' => $uid . '.ics', 'calendarData' => implode("\r\n", [
+			...$this->openingLines(uid: $uid, summary: ($draft->data['summary'] ?? 'Untitled task')),
+			...$this->detailLines(data: $draft->data),
+			...$this->propertyLines(link: $link, fields: ($draft->data['fields'] ?? null)),
+			...$this->closingLines(link: $link, objectTitle: $draft->objectTitle),
+		]) . "\r\n"];
+	}//end composeFor()
 
 	/**
 	 * A standalone VTODO's stored document with the provided fields applied.
@@ -222,31 +221,41 @@ final class TaskVtodoDocument {
 	}//end detailLines()
 
 	/**
-	 * The X-OPENREGISTER-* properties, the RFC 9253 LINK and the closing lines of a new task.
+	 * The X-OPENREGISTER-* properties of a new task.
 	 *
 	 * Non-core schema fields (e.g. assignee) are round-tripped as a single
 	 * base64-encoded JSON blob so any field survives the VTODO projection
 	 * (object-source-providers) without iCal escaping concerns.
 	 *
-	 * @param array{0: int, 1: int, 2: string} $link        Register ID, schema ID and object UUID.
-	 * @param string                           $objectTitle The object title for the LINK label.
-	 * @param mixed                            $fields      The non-core schema fields.
+	 * @param array{0: int, 1: int, 2: string} $link   Register ID, schema ID and object UUID.
+	 * @param mixed                            $fields The non-core schema fields.
 	 *
 	 * @return list<string> The iCalendar lines.
 	 */
-	private function linkLines(array $link, string $objectTitle, mixed $fields): array {
-		$path = implode('/', $link);
-		$tail = ['X-OPENREGISTER-REGISTER:' . $link[0], 'X-OPENREGISTER-SCHEMA:' . $link[1], 'X-OPENREGISTER-OBJECT:' . $link[2]];
+	private function propertyLines(array $link, mixed $fields): array {
+		$lines = ['X-OPENREGISTER-REGISTER:' . $link[0], 'X-OPENREGISTER-SCHEMA:' . $link[1], 'X-OPENREGISTER-OBJECT:' . $link[2]];
 		if (empty($fields) === false && is_array($fields) === true) {
-			$tail[] = 'X-OPENREGISTER-DATA:' . base64_encode((string)json_encode($fields));
+			$lines[] = 'X-OPENREGISTER-DATA:' . base64_encode((string)json_encode($fields));
 		}
 
-		$tail[] = 'LINK;LINKREL="related";LABEL="' . $this->escape(text: $objectTitle) . '";VALUE=URI:/apps/openregister/api/objects/' . $path;
-		$tail[] = 'END:VTODO';
-		$tail[] = 'END:VCALENDAR';
+		return $lines;
+	}//end propertyLines()
 
-		return $tail;
-	}//end linkLines()
+	/**
+	 * The RFC 9253 LINK and the closing lines of a new task.
+	 *
+	 * @param array{0: int, 1: int, 2: string} $link        Register ID, schema ID and object UUID.
+	 * @param string                           $objectTitle The object title for the LINK label.
+	 *
+	 * @return list<string> The iCalendar lines.
+	 */
+	private function closingLines(array $link, string $objectTitle): array {
+		return [
+			'LINK;LINKREL="related";LABEL="' . $this->escape(text: $objectTitle) . '";VALUE=URI:/apps/openregister/api/objects/' . implode('/', $link),
+			'END:VTODO',
+			'END:VCALENDAR',
+		];
+	}//end closingLines()
 
 	/**
 	 * Set STATUS, and COMPLETED when the status completes the task.

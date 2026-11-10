@@ -133,50 +133,42 @@ class OAuth2ConnectionWriter {
 	/**
 	 * Store a redeemed token set: in place for a repair, as a new credential otherwise.
 	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param OAuth2FlowClaims $flow The verified state claims.
-	 * @param array<string, mixed>|null $existing The credential a repair targets, or null.
-	 * @param OAuth2TokenSet $tokenSet The token set to store.
+	 * @param RedeemedConnection $connection The provider, flow, repaired credential (or null) and token set.
 	 *
 	 * @return string The credential UUID.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
 	 */
-	public function store(array $provider, OAuth2FlowClaims $flow, ?array $existing, OAuth2TokenSet $tokenSet): string {
+	public function store(RedeemedConnection $connection): string {
+		$flow = $connection->flow;
 		$scope = $flow->string(key: 's', default: 'personal');
 		$credentialId = $flow->string(key: 'cid');
-		$owner = (string)($existing['owner'] ?? $flow->string(key: 'u'));
 
-		if ($existing === null) {
-			$credentialId = $this->mintNew(flow: $flow, scope: $scope, tokenSet: $tokenSet);
+		if ($connection->existing === null) {
+			$credentialId = $this->mintNew(flow: $flow, tokenSet: $connection->tokenSet);
 		}
 
-		if ($existing !== null) {
-			$this->refresh->persist(credentialId: $credentialId, scope: $scope, set: $tokenSet, extraMetadata: ['status' => 'active']);
+		$address = new TokenSetAddress(credentialId: $credentialId, scope: $scope);
+		if ($connection->existing !== null) {
+			$this->refresh->persist(address: $address, set: $connection->tokenSet);
 		}
 
-		$this->identities->record(
-			provider: $provider,
-			address: new TokenSetAddress(credentialId: $credentialId, scope: $scope),
-			set: $tokenSet,
-			owner: $owner
-		);
+		$this->identities->record(connection: $connection, address: $address);
 
 		return $credentialId;
 	}//end store()
 
 	/**
-	 * Mint a brand-new connection.
+	 * Mint a brand-new connection, in the scope the flow names.
 	 *
-	 * @param OAuth2FlowClaims $flow The verified state claims.
-	 * @param string $scope The credential scope.
-	 * @param OAuth2TokenSet $tokenSet The token set to store.
+	 * @param OAuth2FlowClaims $flow     The verified state claims.
+	 * @param OAuth2TokenSet   $tokenSet The token set to store.
 	 *
 	 * @return string The new credential UUID.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
 	 */
-	private function mintNew(OAuth2FlowClaims $flow, string $scope, OAuth2TokenSet $tokenSet): string {
+	private function mintNew(OAuth2FlowClaims $flow, OAuth2TokenSet $tokenSet): string {
 		$providerId = $flow->string(key: 'p');
 		$minted = $this->broker->mint(
 			name: $flow->string(key: 'nm', default: $providerId),
@@ -184,7 +176,7 @@ class OAuth2ConnectionWriter {
 			owner: $flow->string(key: 'u'),
 			allowedApps: $flow->allowedApps(),
 			secret: $tokenSet->toStoredJson(),
-			scope: $scope,
+			scope: $flow->string(key: 's', default: 'personal'),
 			organisation: $flow->organisation(),
 			metadata: $this->metadata(flow: $flow, tokenSet: $tokenSet)
 		);

@@ -43,6 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use JsonSerializable;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ApiSurfaceControllerServices;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesServiceInterface;
@@ -109,18 +110,16 @@ class ApiSurfaceController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The incoming request.
 	 * @param ApiSurfaceControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ApiSurfaceControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->capabilities = $services->capabilities;
 		$this->catalogue = $services->catalogue;
 		$this->contracts = $services->contracts;

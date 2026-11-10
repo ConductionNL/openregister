@@ -49,7 +49,7 @@ use Throwable;
  * Reason: `DateTimeImmutable::createFromFormat` and the `DateTimeImmutable`
  *         constructor are PHP's own date API, which has no instance form.
  */
-class SecurityTxtBuilder {
+class SecurityTxtBuilder implements SecurityTxtBuilderInterface {
 
 	/**
 	 * The app the settings live under.

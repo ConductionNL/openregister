@@ -135,9 +135,8 @@ class JwtValidator {
 	 * key be used as an HMAC secret (algorithm confusion). The header's alg
 	 * must equal the pinned one.
 	 *
-	 * @param string $token         The compact JWS.
-	 * @param array  $header        The decoded header.
-	 * @param array  $configuration The consumer's authorization configuration (algorithm, publicKey).
+	 * @param DecodedJwt $jwt           The compact JWS and its decoded header.
+	 * @param array      $configuration The consumer's authorization configuration (algorithm, publicKey).
 	 *
 	 * @return void
 	 *
@@ -145,7 +144,27 @@ class JwtValidator {
 	 *
 	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
-	public function verifyPinned(string $token, array $header, array $configuration): void {
+	public function verifyPinned(DecodedJwt $jwt, array $configuration): void {
+		$key = new JwsKey(
+			algorithm: $this->pinnedAlgorithm(header: $jwt->header, configuration: $configuration),
+			material: (string)($configuration['publicKey'] ?? '')
+		);
+		$this->verifyWithKey(token: $jwt->token, key: $key);
+	}//end verifyPinned()
+
+	/**
+	 * The algorithm the configuration pins, refused unless the header names the same supported one.
+	 *
+	 * @param array $header        The decoded header.
+	 * @param array $configuration The consumer's authorization configuration.
+	 *
+	 * @return string The pinned algorithm.
+	 *
+	 * @throws AuthenticationException When no algorithm is pinned, the header differs or the algorithm is unsupported.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function pinnedAlgorithm(array $header, array $configuration): string {
 		$algorithm = ($configuration['algorithm'] ?? null);
 		if (is_string($algorithm) === false || $algorithm === '') {
 			throw $this->invalid(reason: 'No verification algorithm configured for issuer');
@@ -162,15 +181,30 @@ class JwtValidator {
 			);
 		}
 
-		$key = (string)($configuration['publicKey'] ?? '');
-		if ($this->hmacKeyTooShort(algorithm: $algorithm, key: $key) === true) {
+		return $algorithm;
+	}//end pinnedAlgorithm()
+
+	/**
+	 * Refuse a token whose signature does not verify with the pinned key.
+	 *
+	 * @param string $token The compact JWS.
+	 * @param JwsKey $key   The pinned algorithm and its key material.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the HMAC secret is too short or the signature fails.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function verifyWithKey(string $token, JwsKey $key): void {
+		if ($this->hmacKeyTooShort(algorithm: $key->algorithm, key: $key->material) === true) {
 			throw $this->invalid(reason: 'The issuer\'s HMAC secret is shorter than the algorithm\'s hash output');
 		}
 
-		if ($this->verifySignature(token: $token, algorithm: $algorithm, key: $key) === false) {
+		if ($this->verifySignature(token: $token, key: $key) === false) {
 			throw $this->invalid(reason: 'The token does not match the public key');
 		}
-	}//end verifyPinned()
+	}//end verifyWithKey()
 
 
 	/**
@@ -208,30 +242,29 @@ class JwtValidator {
 	 * HS* uses the key as the shared secret; RS* and PS* use it as an RSA
 	 * public key: a PEM, or a base64-encoded PEM (the form integriq stores).
 	 *
-	 * @param string $token     The compact JWS.
-	 * @param string $algorithm The pinned algorithm.
-	 * @param string $key       The secret or public key.
+	 * @param string $token The compact JWS.
+	 * @param JwsKey $key   The pinned algorithm and the secret or public key.
 	 *
 	 * @return bool True when the signature is valid.
 	 *
 	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
-	public function verifySignature(string $token, string $algorithm, string $key): bool {
+	public function verifySignature(string $token, JwsKey $key): bool {
 		$parts = explode('.', $token);
 		if (count($parts) !== 3) {
 			return false;
 		}
 
-		if (isset(self::HMAC_MAP[$algorithm]) === true) {
-			if ($this->hmacKeyTooShort(algorithm: $algorithm, key: $key) === true) {
+		if (isset(self::HMAC_MAP[$key->algorithm]) === true) {
+			if ($this->hmacKeyTooShort(algorithm: $key->algorithm, key: $key->material) === true) {
 				return false;
 			}
 
-			$expected = hash_hmac(self::HMAC_MAP[$algorithm], $parts[0] . '.' . $parts[1], $key, true);
+			$expected = hash_hmac(self::HMAC_MAP[$key->algorithm], $parts[0] . '.' . $parts[1], $key->material, true);
 			return hash_equals($expected, (string)base64_decode(strtr($parts[2], '-_', '+/')));
 		}
 
-		return (new RsaJwsVerifier())->verify(token: $token, algorithm: $algorithm, key: $key);
+		return (new RsaJwsVerifier())->verify(token: $token, key: $key);
 	}//end verifySignature()
 
 	/**
@@ -298,7 +331,7 @@ class JwtValidator {
 			);
 		}
 
-		$this->refuseReplay(payload: $payload, expiresAt: $exp->getTimestamp(), now: $now->getTimestamp());
+		$this->refuseReplay(payload: $payload, lifetime: ($exp->getTimestamp() - $now->getTimestamp()));
 	}//end validateClaims()
 
 	/**
@@ -307,15 +340,14 @@ class JwtValidator {
 	 * Fails closed: a token that carries a jti on an instance without a
 	 * distributed cache cannot be checked for replay and is refused.
 	 *
-	 * @param array $payload   The token payload.
-	 * @param int   $expiresAt When the token expires (unix time).
-	 * @param int   $now       Now (unix time).
+	 * @param array $payload  The token payload.
+	 * @param int   $lifetime Seconds until the token expires.
 	 *
 	 * @return void
 	 *
 	 * @throws AuthenticationException When the jti was used before, or cannot be checked.
 	 */
-	private function refuseReplay(array $payload, int $expiresAt, int $now): void {
+	private function refuseReplay(array $payload, int $lifetime): void {
 		if (isset($payload['jti']) === false || $payload['jti'] === '') {
 			return;
 		}
@@ -336,7 +368,7 @@ class JwtValidator {
 			);
 		}
 
-		$cache->set($cacheKey, 1, max(1, ($expiresAt - $now) + self::CLOCK_SKEW_SECONDS));
+		$cache->set($cacheKey, 1, max(1, $lifetime + self::CLOCK_SKEW_SECONDS));
 	}//end refuseReplay()
 
 	/**

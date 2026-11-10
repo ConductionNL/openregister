@@ -70,9 +70,7 @@ final class C01MiscInterfaceBindingsTest extends TestCase {
 	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [
-		AnalyticsSeriesService::class => ['Search/Service/MapsOverviewService.php'],
-	];
+	private const KEPT_CALLERS = [];
 
 	/**
 	 * One case per class.

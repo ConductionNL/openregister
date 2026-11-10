@@ -53,13 +53,15 @@ final class RuleRunMapperQueriesGoldenTest extends TestCase {
 				$v = var_export($verdict, true);
 				$calls["findByRule $v $tag"] = fn (RuleRunMapper $m) => self::ids($m->findByRule('rule-1', $verdict, $from, $to));
 				$calls["countByRule $v $tag"] = fn (RuleRunMapper $m) => $m->countByRule('rule-1', $verdict, $from, $to);
-				$calls["findRecent $v $tag"] = fn (RuleRunMapper $m) => self::ids($m->findRecent($verdict, $from));
+				if ($verdict === null) {
+					$calls["findRecent $tag"] = fn (RuleRunMapper $m) => self::ids($m->findRecent($from));
+				}
 			}
 		}
 
 		foreach ([[0, -5], [1, 0], [50, 10], [501, 3], [-2, 7]] as [$limit, $offset]) {
 			$calls["findByRule paging $limit $offset"] = fn (RuleRunMapper $m) => self::ids($m->findByRule('rule-2', null, null, null, $limit, $offset));
-			$calls["findRecent paging $limit $offset"] = fn (RuleRunMapper $m) => self::ids($m->findRecent(null, null, $limit, $offset));
+			$calls["findRecent paging $limit"] = fn (RuleRunMapper $m) => self::ids($m->findRecent(null, $limit));
 		}
 
 		return $calls;

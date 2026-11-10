@@ -79,6 +79,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\TaskAuditEntry;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -304,40 +305,122 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 			return $items;
 		}
 
+		return $this->pass(round: new PortalTaskRound(items: $items, config: $config), context: $context);
+	}//end execute()
+
+	/**
+	 * One pass over a non-empty branch: ask, wait, place the answer, or re-ask.
+	 *
+	 * @param PortalTaskRound      $round   The ask: its items and configuration.
+	 * @param array<string, mixed> $context Run-level metadata.
+	 *
+	 * @return array The items, each carrying the outcome bag.
+	 *
+	 * @throws FlowSuspension While the task is not terminal.
+	 * @throws RuntimeException When the node has no slot, its task is gone,
+	 *                          the case names nobody, or a re-ask has no reason.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
+	 */
+	private function pass(PortalTaskRound $round, array $context): array {
+		$resume = $this->resumeSlot(context: $context);
+		$round = $round->atNode(nodeId: $resume->nodeId());
+		if ($this->taskUuidIn(resume: $resume) === '') {
+			$resume->merge(values: $this->ask(round: $round, context: $context));
+
+			throw $this->suspension(round: $round);
+		}
+
+		if ($resume->get(key: PortalTaskConfig::SLOT_PASSED_AT, default: null) === null) {
+			return $this->firstPass(round: $round, context: $context);
+		}
+
+		throw $this->reAsk(round: $round, context: $context);
+	}//end pass()
+
+	/**
+	 * The node's resume slot, which a portal task cannot run without.
+	 *
+	 * @param array<string, mixed> $context Run-level metadata.
+	 *
+	 * @return FlowNodeResumeState The slot.
+	 *
+	 * @throws RuntimeException When the run gave the node no slot.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
+	 */
+	private function resumeSlot(array $context): FlowNodeResumeState {
 		$resume = ($context[FlowNodeResumeState::CONTEXT_KEY] ?? null);
 		if ($resume instanceof FlowNodeResumeState === false) {
 			throw new RuntimeException('openregister.portal-task needs a node resume slot; without one every heartbeat would create a task.');
 		}
 
-		$round = (new PortalTaskRound(items: $items, config: $config))->atNode(nodeId: $resume->nodeId());
-		$taskUuid = trim((string)$resume->get(key: FlowTaskBridge::SLOT_TASK_UUID, default: ''));
-		if ($taskUuid === '') {
-			$resume->merge(values: $this->ask(round: $round, context: $context));
+		return $resume;
+	}//end resumeSlot()
 
-			throw $this->suspension(config: $config, items: $items);
-		}
+	/**
+	 * The task uuid this node's slot holds, empty before the first ask.
+	 *
+	 * @param FlowNodeResumeState $resume The node's slot.
+	 *
+	 * @return string The task uuid, or ''.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
+	 */
+	private function taskUuidIn(FlowNodeResumeState $resume): string {
+		return trim((string)$resume->get(key: FlowTaskBridge::SLOT_TASK_UUID, default: ''));
+	}//end taskUuidIn()
 
-		$task = $this->awaitedTask(round: $round, taskUuid: $taskUuid);
+	/**
+	 * The first pass over a terminal task: the answer travels on.
+	 *
+	 * @param PortalTaskRound      $round   The ask, at this node.
+	 * @param array<string, mixed> $context Run-level metadata.
+	 *
+	 * @return array The items, each carrying the outcome bag.
+	 *
+	 * @throws FlowSuspension   While the task is not terminal.
+	 * @throws RuntimeException When the task is gone.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
+	 */
+	private function firstPass(PortalTaskRound $round, array $context): array {
+		$resume = $this->resumeSlot(context: $context);
+		$task = $this->awaitedTask(round: $round, taskUuid: $this->taskUuidIn(resume: $resume));
+		$this->recordRecoveryUnlessSignalled(task: $task, context: $context);
 
-		if ($resume->get(key: PortalTaskConfig::SLOT_PASSED_AT, default: null) === null) {
-			$this->recordRecoveryUnlessSignalled(task: $task, context: $context);
+		// Marked ONCE, so the next firing of this node in this run is a re-entry.
+		$resume->set(key: PortalTaskConfig::SLOT_PASSED_AT, value: (new DateTime())->format('c'));
 
-			// The first pass over a terminal task: the answer travels on. Marked
-			// ONCE, so the next firing of this node in this run is a re-entry.
-			$resume->set(key: PortalTaskConfig::SLOT_PASSED_AT, value: (new DateTime())->format('c'));
+		return $this->placeOutcome(round: $round, task: $task);
+	}//end firstPass()
 
-			return $this->placeOutcome(items: $items, config: $config, task: $task);
-		}
-
-		// Re-entry: the graph routed back into this node after it continued.
+	/**
+	 * Re-entry: the graph routed back into this node after it continued, so
+	 * the party is asked again, with a reason, in the next cycle.
+	 *
+	 * @param PortalTaskRound      $round   The ask, at this node.
+	 * @param array<string, mixed> $context Run-level metadata.
+	 *
+	 * @return FlowSuspension The suspension to throw once the new task is asked.
+	 *
+	 * @throws FlowSuspension   While the previous task is not terminal.
+	 * @throws RuntimeException When the task is gone or the items carry no reason.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-re-ask-creates-a-new-task-carrying-a-mandatory-reason
+	 */
+	private function reAsk(PortalTaskRound $round, array $context): FlowSuspension {
+		$resume = $this->resumeSlot(context: $context);
+		$taskUuid = $this->taskUuidIn(resume: $resume);
+		$this->awaitedTask(round: $round, taskUuid: $taskUuid);
 		$reason = $this->reasonForReAsk(round: $round, taskUuid: $taskUuid);
 
 		$cycle = ((int)$resume->get(key: PortalTaskConfig::SLOT_CYCLE, default: 1) + 1);
 		$round = $round->inCycle(cycle: $cycle, previousTaskUuid: $taskUuid)->because(reason: $reason);
 		$resume->merge(values: $this->ask(round: $round, context: $context));
 
-		throw $this->suspension(config: $config, items: $items);
-	}//end execute()
+		return $this->suspension(round: $round);
+	}//end reAsk()
 
 	/**
 	 * The task this step is waiting on, once it is terminal.
@@ -361,7 +444,7 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 		if ($task->isInTerminalState() === false) {
 			// A heartbeat wake, a reminder, a nudge: none is an answer. Suspend
 			// again and do NOT touch the slot: askedAt stays what it was.
-			throw $this->suspension(config: $round->config, items: $round->items);
+			throw $this->suspension(round: $round);
 		}
 
 		return $task;
@@ -460,10 +543,12 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 		);
 
 		$this->bridge->record(
-			uuid: (string)$task->getUuid(),
-			action: 'match',
-			actor: $actor,
-			reason: sprintf("Matched party role '%s' on case '%s' to '%s' (cycle %d).", $role, $caseUuid, $round->partyReference(), $round->cycle())
+			entry: new TaskAuditEntry(
+				uuid: (string)$task->getUuid(),
+				action: 'match',
+				actor: $actor,
+				reason: sprintf("Matched party role '%s' on case '%s' to '%s' (cycle %d).", $role, $caseUuid, $round->partyReference(), $round->cycle())
+			)
 		);
 
 		$this->deliver(round: $round, task: $task);
@@ -501,15 +586,14 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 	 * cycle, and an explicit `expired` flag so an expiry-terminated ask is
 	 * never read as an answer downstream.
 	 *
-	 * @param array $items The items to pass on.
-	 * @param array $config The step configuration.
-	 * @param Task $task The terminal task.
+	 * @param PortalTaskRound $round The ask: the items to pass on and the configuration.
+	 * @param Task            $task  The terminal task.
 	 *
 	 * @return array The items, each carrying the bag.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
 	 */
-	private function placeOutcome(array $items, array $config, Task $task): array {
+	private function placeOutcome(PortalTaskRound $round, Task $task): array {
 		$bag = FlowTaskBridge::outcomeBagFor(task: $task);
 		$metadata = ($task->getMetadata() ?? []);
 		// `answers` now comes from the bridge, which is where it always
@@ -521,7 +605,8 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 		$bag['reason'] = ($metadata['reaskReason'] ?? null);
 		$bag['expired'] = ($bag['decided'] === false && str_starts_with((string)$bag['outcome'], 'expir') === true);
 
-		$key = $this->config->outcomeKey(config: $config);
+		$key = $this->config->outcomeKey(config: $round->config);
+		$items = $round->items;
 		foreach ($items as $index => $item) {
 			if (is_array($item) === false) {
 				continue;
@@ -540,21 +625,20 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 	 * The suspension this node parks on: a non-null heartbeat, and a reason
 	 * that names what is being waited for.
 	 *
-	 * @param array $config The step configuration.
-	 * @param array $items The input items.
+	 * @param PortalTaskRound $round The ask: its items and configuration.
 	 *
 	 * @return FlowSuspension The suspension to throw.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-suspension-is-heartbeat-safe-and-continues-on-task-terminality
 	 */
-	private function suspension(array $config, array $items): FlowSuspension {
-		$title = $this->config->renderedTitle(config: $config, items: $items);
+	private function suspension(PortalTaskRound $round): FlowSuspension {
+		$title = $this->config->renderedTitle(config: $round->config, items: $round->items);
 		if ($title === '') {
 			$title = 'a portal task';
 		}
 
 		return new FlowSuspension(
-			resumeAt: $this->config->heartbeatAt(config: $config),
+			resumeAt: $this->config->heartbeatAt(config: $round->config),
 			reason: sprintf('waiting for a party outside the organisation: %s', $title)
 		);
 	}//end suspension()

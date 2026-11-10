@@ -409,7 +409,6 @@ class FlowNodeRunCharacterisationTest extends TestCase {
 				$queued,
 				['id' => 'f1', 'nodes' => [['id' => 'n2', 'type' => 'merge', 'config' => ['a' => 1, 'b' => 2]]], 'edges' => []],
 				$object,
-				'n2',
 				['b' => 2]
 			)
 			->willReturn($done);

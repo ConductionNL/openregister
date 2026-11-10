@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Archival;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\RetentionClock;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use Psr\Log\LoggerInterface;
@@ -205,33 +206,62 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	 * The object is mutated and returned; persisting it is the caller's job, so
 	 * a nomination taken during a write joins that write rather than racing it.
 	 *
-	 * @param ObjectEntity $object  The record whose business use has ended.
-	 * @param Schema       $schema  Its schema, holding the archive block.
-	 * @param string       $trigger What caused this: `closure` or `recompute`.
-	 * @param string|null  $actor   Who asked, for a recomputation.
-	 * @param string|null  $reason  Why they asked, for a recomputation.
+	 * The trigger written on the block is `closure`: the record reached the end of its business use.
+	 *
+	 * @param ObjectEntity $object The record whose business use has ended.
+	 * @param Schema       $schema Its schema, holding the archive block.
 	 *
 	 * @return array<string, mixed> The nomination block that was written.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function nominate(ObjectEntity $object, Schema $schema, string $trigger, ?string $actor = null, ?string $reason = null): array {
-		$archive = $this->declarations->read(object: $object, schema: $schema);
-		if ($archive === []) {
+	public function nominate(ObjectEntity $object, Schema $schema): array {
+		return $this->nominateFor(run: new NominationRun(object: $object, schema: $schema), cause: new NominationCause(trigger: 'closure'));
+	}//end nominate()
+
+	/**
+	 * Derive this object's archival future again, on request, and write it down.
+	 *
+	 * The trigger written on the block is `recompute`, with who asked and why.
+	 *
+	 * @param NominationRecompute $request The record, its schema (holding the archive block), who asked and why.
+	 *
+	 * @return array<string, mixed> The nomination block that was written.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	public function recompute(NominationRecompute $request): array {
+		$cause = new NominationCause(trigger: 'recompute', actor: $request->actor, reason: $request->reason);
+		return $this->nominateFor(run: new NominationRun(object: $request->object, schema: $request->schema), cause: $cause);
+	}//end recompute()
+
+	/**
+	 * Derive this object's archival future and write it down, for one cause.
+	 *
+	 * @param NominationRun   $run   The record and its schema.
+	 * @param NominationCause $cause What asked for the nomination, and who and why for a recompute.
+	 *
+	 * @return array<string, mixed> The nomination block that was written.
+	 */
+	private function nominateFor(NominationRun $run, NominationCause $cause): array {
+		$run->archive = $this->declarations->read(object: $run->object, schema: $run->schema);
+		if ($run->archive === []) {
 			return ['status' => self::STATUS_NOT_APPLICABLE, 'unnominatableReason' => self::NOTHING_DECLARES_ARCHIVING];
 		}
 
-		$derived = $this->derive(object: $object, schema: $schema, archive: $archive);
-		$block = $this->openBlock(status: $derived['status'], trigger: $trigger, actor: $actor, reason: $reason);
+		$derived = $this->derive(run: $run);
+		$block = $this->openBlock(status: $derived['status'], cause: $cause);
 		if ($derived['status'] === self::STATUS_UNNOMINATABLE) {
-			return $this->recordUnnominatable(object: $object, block: $block, reason: $derived['reason']);
+			$block['unnominatableReason'] = $derived['reason'];
+			return $this->recordUnnominatable(run: $run, block: $block);
 		}
 
+		$run->derived = $derived;
 		$block = $this->withRule(block: $block, derived: $derived);
-		$this->write(object: $object, derived: $derived, block: $block);
+		$this->write(run: $run, block: $block);
 
 		return $block;
-	}//end nominate()
+	}//end nominateFor()
 
 	/**
 	 * Name the rule that decided, and the selectielijst row when one did.
@@ -253,21 +283,19 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	/**
 	 * The start of a nomination block: what, when, why and by whom.
 	 *
-	 * @param string      $status  The derived status.
-	 * @param string      $trigger What caused this: `closure` or `recompute`.
-	 * @param string|null $actor   Who asked, for a recomputation.
-	 * @param string|null $reason  Why they asked, for a recomputation.
+	 * @param string          $status The derived status.
+	 * @param NominationCause $cause  What caused this, and for a recomputation who asked and why.
 	 *
 	 * @return array<string, mixed> The block so far.
 	 */
-	private function openBlock(string $status, string $trigger, ?string $actor, ?string $reason): array {
+	private function openBlock(string $status, NominationCause $cause): array {
 		$block = [
 			'status' => $status,
 			'at' => (new DateTimeImmutable())->format('c'),
-			'trigger' => $trigger,
+			'trigger' => $cause->trigger,
 		];
 
-		foreach (['actor' => $actor, 'reason' => $reason] as $key => $value) {
+		foreach (['actor' => $cause->actor, 'reason' => $cause->reason] as $key => $value) {
 			if ($value !== null) {
 				$block[$key] = $value;
 			}
@@ -279,21 +307,18 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	/**
 	 * Report and record that a record which reached its end cannot be nominated.
 	 *
-	 * @param ObjectEntity         $object The record.
-	 * @param array<string, mixed> $block  The nomination block so far.
-	 * @param string               $reason Which source was missing.
+	 * @param NominationRun        $run   The record.
+	 * @param array<string, mixed> $block The nomination block, naming its unnominatableReason.
 	 *
 	 * @return array<string, mixed> The nomination block that was written.
 	 */
-	private function recordUnnominatable(ObjectEntity $object, array $block, string $reason): array {
-		$block['unnominatableReason'] = $reason;
-
+	private function recordUnnominatable(NominationRun $run, array $block): array {
 		$this->logger->warning(
-			'[ArchivalNominationService] ' . (string)$object->getUuid()
-			. ' reached a terminal state and cannot be nominated: ' . $reason
+			'[ArchivalNominationService] ' . (string)$run->object->getUuid()
+			. ' reached a terminal state and cannot be nominated: ' . $block['unnominatableReason']
 		);
 
-		$this->write(object: $object, derived: [], block: $block);
+		$this->write(run: $run, block: $block);
 
 		return $block;
 	}//end recordUnnominatable()
@@ -301,21 +326,19 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	/**
 	 * Decide the appraisal, the retention period and where each came from.
 	 *
-	 * @param ObjectEntity         $object  The record.
-	 * @param Schema               $schema  Its schema.
-	 * @param array<string, mixed> $archive The schema's archive block.
+	 * @param NominationRun $run The record, its schema and its archiving declaration; the effective category is noted on it.
 	 *
 	 * @return array<string, mixed> The derivation, or a status of unnominatable with a reason.
 	 *
 	 */
-	private function derive(ObjectEntity $object, Schema $schema, array $archive): array {
+	private function derive(NominationRun $run): array {
 		// The schema's category, unless this record names its own (DECISIONS
 		// row 48). The same resolver decides it at creation, so a record is
 		// created and nominated under one category.
-		$classification = (new ClassificationOverride())->effective(
-			archive: $archive,
-			data: ($object->getObject() ?? [])
-		);
+		$archive = $run->archive;
+		$declaration = new CategoryDeclaration(archive: $archive);
+		$classification = (new ClassificationOverride())->effective(declaration: $declaration, data: ($run->object->getObject() ?? []));
+		$run->classification = $classification;
 
 		$found = $this->fromSelectionList(classification: $classification);
 		if ($found['appraisal'] === null) {
@@ -328,7 +351,7 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 
 		$found = $this->withLocalOverride(found: $found, archive: $archive);
 
-		return $this->dated(object: $object, schema: $schema, found: $found, classification: $classification);
+		return $this->dated(run: $run, found: $found);
 	}//end derive()
 
 	/**
@@ -415,25 +438,25 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	 * A record kept forever has no disposal date to count, and demanding one
 	 * would make every permanently preserved dossier unnominatable.
 	 *
-	 * @param ObjectEntity               $object         The record.
-	 * @param Schema                     $schema         Its schema.
-	 * @param array<string, string|null> $found          The derivation.
-	 * @param string|null                $classification The effective category.
+	 * @param NominationRun        $run   The record, its schema and its effective category.
+	 * @param array<string, mixed> $found What the selectielijst, the schema default and a local override contributed.
 	 *
 	 * @return array<string, mixed> The derivation, or a status of unnominatable with a reason.
 	 */
-	private function dated(ObjectEntity $object, Schema $schema, array $found, ?string $classification): array {
+	private function dated(NominationRun $run, array $found): array {
 		$period = $found['period'];
 		$disposalDate = null;
 		if ($period !== null) {
-			$disposalDate = $this->retentionService->calculateArchiveActionDate(object: $object, schema: $schema, retentionPeriod: $period);
+			$disposalDate = $this->retentionService->calculateArchiveActionDate(
+				clock: new RetentionClock(object: $run->object, schema: $run->schema, retentionPeriod: $period)
+			);
 		}
 
 		if ($this->cannotBeCounted(found: $found, disposalDate: $disposalDate) === true) {
 			return $this->unnominatable(reason: 'the retention period ' . $period . ' could not be counted from any date on this record');
 		}
 
-		return ['status' => self::STATUS_NOMINATED, 'disposalDate' => $disposalDate, 'classification' => $classification] + $found;
+		return ['status' => self::STATUS_NOMINATED, 'disposalDate' => $disposalDate, 'classification' => $run->classification] + $found;
 	}//end dated()
 
 	/**
@@ -521,24 +544,23 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 	 * overwrote the nomination it replaced would take away the one thing that
 	 * explains why a disposal date moved.
 	 *
-	 * @param ObjectEntity         $object  The record.
-	 * @param array<string, mixed> $derived The derivation, empty when unnominatable.
-	 * @param array<string, mixed> $block   The nomination block.
+	 * @param NominationRun        $run   The record, and the derivation to write (empty when nothing was derived).
+	 * @param array<string, mixed> $block The nomination block.
 	 *
 	 * @return void
 	 */
-	private function write(ObjectEntity $object, array $derived, array $block): void {
-		$retention = ($object->getRetention() ?? []);
+	private function write(NominationRun $run, array $block): void {
+		$retention = ($run->object->getRetention() ?? []);
 		if (is_array($retention) === false) {
 			$retention = [];
 		}
 
-		if ($derived !== []) {
-			$retention = $this->withDerivation(retention: $retention, derived: $derived);
+		if ($run->derived !== []) {
+			$retention = $this->withDerivation(retention: $retention, derived: $run->derived);
 		}
 
 		$retention['nomination'] = $block;
-		$object->setRetention($this->withHistory(retention: $retention, block: $block));
+		$run->object->setRetention($this->withHistory(retention: $retention, block: $block));
 	}//end write()
 
 	/**

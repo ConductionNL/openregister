@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\Archival\DestructionInfrastructure;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -52,9 +53,7 @@ class DestructionServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new DestructionService(
-			$this->objectMapper,
-			$this->appConfig,
-			$this->jobList,
+			new DestructionInfrastructure($this->objectMapper, $this->appConfig, $this->jobList),
 			$this->userSession,
 			$this->logger
 		);
@@ -264,7 +263,7 @@ class DestructionServiceTest extends TestCase {
 	 * D2 (openregister#393): the approval MUST be recorded under the canonical
 	 * `userId` key.
 	 *
-	 * Both readers of the approvals list — RetentionService::generateDestructionCertificate()
+	 * Both readers of the approvals list — RetentionService::certify()
 	 * and DestructionExecutionJob — do array_column($approvals, 'userId'). approveList()
 	 * previously wrote `approvedBy`, so the certificate's approver list came out EMPTY:
 	 * a legally worthless "verklaring van vernietiging" that does not record who

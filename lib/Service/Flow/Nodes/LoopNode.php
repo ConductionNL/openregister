@@ -132,11 +132,18 @@ class LoopNode extends ObjectNodeBase implements IFlowNode, LoopNodeInterface, I
 	 * @return array One item per batch.
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		$size = max(1, (int)($config['batchSize'] ?? 1));
-		if ($items === []) {
-			return [];
-		}
+		return $this->batched(items: $items, size: max(1, (int)($config['batchSize'] ?? 1)));
+	}//end execute()
 
+	/**
+	 * One item per batch of `size` input items, each carrying its batch's records.
+	 *
+	 * @param array   $items The input items.
+	 * @param integer $size  The batch size, at least 1.
+	 *
+	 * @return array One item per batch; none for no input.
+	 */
+	private function batched(array $items, int $size): array {
 		$batches = array_chunk($items, $size);
 		$count = count($batches);
 
@@ -159,5 +166,5 @@ class LoopNode extends ObjectNodeBase implements IFlowNode, LoopNodeInterface, I
 		}
 
 		return $out;
-	}//end execute()
+	}//end batched()
 }//end class

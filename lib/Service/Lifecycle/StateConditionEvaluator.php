@@ -66,19 +66,27 @@ class StateConditionEvaluator implements StateConditionEvaluatorInterface {
 	public const CODE_EXIT = 'lifecycle-state-exit-refused';
 
 	/**
+	 * Names the clause that decided a refusal.
+	 *
+	 * @var ConditionTracer
+	 */
+	private readonly ConditionTracer $tracer;
+
+	/**
 	 * Constructor.
 	 *
+	 * The tracer only reads the dialect, so it is built over the same one.
+	 *
 	 * @param StateFieldRuleResolver $resolver Reads the annotation and builds the evaluation document.
-	 * @param ConditionDialect $dialect Decides whether a condition holds, in either dialect.
-	 * @param ConditionTracer $tracer Names the clause that decided a refusal.
+	 * @param ConditionDialect       $dialect  Decides whether a condition holds, in either dialect.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly StateFieldRuleResolver $resolver,
 		private readonly ConditionDialect $dialect,
-		private readonly ConditionTracer $tracer,
 	) {
+		$this->tracer = new ConditionTracer(dialect: $dialect);
 	}//end __construct()
 
 	/**
@@ -89,61 +97,58 @@ class StateConditionEvaluator implements StateConditionEvaluatorInterface {
 	 * ahead of an `entry` one. A move that stays in the same state is not a
 	 * move and is evaluated as neither.
 	 *
-	 * @param array<string, mixed> $annotation The lifecycle annotation.
-	 * @param array<string, mixed> $newData The object as it would be saved.
-	 * @param string|null $from The state being left, null on a create.
-	 * @param string|null $to The state being entered.
+	 * @param StateSave     $save     The lifecycle annotation and the object as it would be saved.
+	 * @param StateCrossing $crossing The state being left (null on a create) and the state being entered.
 	 *
 	 * @return array<string, mixed>|null The structured refusal, or null.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function refusal(array $annotation, array $newData, ?string $from, ?string $to): ?array {
-		if ($from === $to) {
+	public function refusal(StateSave $save, StateCrossing $crossing): ?array {
+		if ($crossing->from === $crossing->to) {
 			return null;
 		}
 
-		$save = ['annotation' => $annotation, 'newData' => $newData];
-		return ($this->check(save: $save, half: ['state' => $from, 'key' => 'exit'])
-			?? $this->check(save: $save, half: ['state' => $to, 'key' => 'entry']));
+		return ($this->check(save: $save, half: ['state' => $crossing->from, 'key' => 'exit'])
+			?? $this->check(save: $save, half: ['state' => $crossing->to, 'key' => 'entry']));
 	}//end refusal()
 
 	/**
 	 * Evaluate one half, and shape its refusal.
 	 *
-	 * @param array{annotation: array<string, mixed>, newData: array<string, mixed>} $save The annotation and the object as it would be saved.
-	 * @param array{state: string|null, key: string}                                 $half The state carrying the condition, and `entry` or `exit`.
+	 * @param StateSave                              $save The annotation and the object as it would be saved.
+	 * @param array{state: string|null, key: string} $half The state carrying the condition, and `entry` or `exit`.
 	 *
 	 * @return array<string, mixed>|null The structured refusal, or null.
 	 */
-	private function check(array $save, array $half): ?array {
+	private function check(StateSave $save, array $half): ?array {
 		$failure = $this->declaredCondition(save: $save, half: $half);
 		if ($failure === null) {
 			return null;
 		}
 
-		$failure['document'] = $this->resolver->document(data: $save['newData'], state: $failure['state']);
+		$failure['document'] = $this->resolver->document(data: $save->newData, state: $failure['state']);
 		if ($this->dialect->holds(node: $failure['condition'], document: $failure['document']) === true) {
 			return null;
 		}
 
-		return $this->refusalFor(failure: $failure, annotation: $save['annotation']);
+		return $this->refusalFor(failure: $failure, annotation: $save->annotation);
 	}//end check()
 
 	/**
 	 * The condition and message a half declares, or null when its state declares none.
 	 *
-	 * @param array{annotation: array<string, mixed>, newData: array<string, mixed>} $save The annotation and the object as it would be saved.
-	 * @param array{state: string|null, key: string}                                 $half The state carrying the condition, and `entry` or `exit`.
+	 * @param StateSave                              $save The annotation and the object as it would be saved.
+	 * @param array{state: string|null, key: string} $half The state carrying the condition, and `entry` or `exit`.
 	 *
 	 * @return array{state: string, key: string, condition: mixed, message: string|null}|null The declaration.
 	 */
-	private function declaredCondition(array $save, array $half): ?array {
+	private function declaredCondition(StateSave $save, array $half): ?array {
 		if ($half['state'] === null || $half['state'] === '') {
 			return null;
 		}
 
-		$block = $this->resolver->blockFor(annotation: $save['annotation'], state: $half['state']);
+		$block = $this->resolver->blockFor(annotation: $save->annotation, state: $half['state']);
 		if ($block === null) {
 			return null;
 		}

@@ -160,7 +160,7 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	private function allFixedFindings(array $fixed, Schema $schema): array {
 		$findings = [];
 		foreach ($fixed as $property => $value) {
-			array_push($findings, ...$this->fixedFindings(property: (string)$property, value: $value, schema: $schema));
+			array_push($findings, ...$this->fixedFindings(fixed: new FixedValue(property: (string)$property, value: $value), schema: $schema));
 		}
 
 		return $findings;
@@ -287,14 +287,14 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	 * @return array{property: string, code: string, message: string}
 	 */
 	private function stagingFinding(string $slug): array {
-		return $this->finding(
+		return (new FormFinding(
 			property: '',
 			code: self::DESTINATION_IS_STAGING,
 			message: $this->l10n->t(
 				'Schema "%1$s" is marked as a staging object. A form submits into the object a person works on, not into a layer before it.',
 				[$slug]
 			)
-		);
+		))->toArray();
 	}//end stagingFinding()
 
 	/**
@@ -306,11 +306,11 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	 * @return array{property: string, code: string, message: string}
 	 */
 	private function closedFinding(string $slug, string $audience): array {
-		return $this->finding(
+		return (new FormFinding(
 			property: '',
 			code: self::DESTINATION_NOT_PUBLIC,
 			message: $this->l10n->t('Schema "%1$s" does not let a %2$s visitor create objects, so this form could never be submitted.', [$slug, $audience])
-		);
+		))->toArray();
 	}//end closedFinding()
 
 	/**
@@ -574,25 +574,25 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	/**
 	 * Findings for one fixed value.
 	 *
-	 * @param string $property The property the value is fixed into.
-	 * @param mixed  $value    The fixed value.
-	 * @param Schema $schema   The destination schema.
+	 * @param FixedValue $fixed  The property and the value fixed into it.
+	 * @param Schema     $schema The destination schema.
 	 *
 	 * @return array<int, array{property: string, code: string, message: string}>
 	 */
-	private function fixedFindings(string $property, mixed $value, Schema $schema): array {
+	private function fixedFindings(FixedValue $fixed, Schema $schema): array {
+		$property = $fixed->property;
 		$properties = $schema->getProperties();
 		if (array_key_exists($property, $properties) === false) {
 			return $this->unknownFixedFindings(property: $property, schema: $schema);
 		}
 
-		if ($this->rules->fixedValueFits(value: $value, property: (array)$properties[$property]) === true) {
+		if ($this->rules->fixedValueFits(value: $fixed->value, property: (array)$properties[$property]) === true) {
 			return [];
 		}
 
 		$message = $this->l10n->t('The fixed value for "%1$s" is one the property does not accept.', [$property]);
 
-		return [$this->finding(property: $property, code: self::FIXED_VALUE_INVALID, message: $message)];
+		return [(new FormFinding(property: $property, code: self::FIXED_VALUE_INVALID, message: $message))->toArray()];
 	}//end fixedFindings()
 
 	/**
@@ -609,11 +609,11 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 		}
 
 		return [
-			$this->finding(
+			(new FormFinding(
 				property: $property,
 				code: self::PROPERTY_UNKNOWN,
 				message: $this->l10n->t('A fixed value writes into "%1$s", which schema "%2$s" does not have.', [$property, (string)$schema->getSlug()])
-			),
+			))->toArray(),
 		];
 	}//end unknownFixedFindings()
 
@@ -633,11 +633,11 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 				continue;
 			}
 
-			$findings[] = $this->finding(
+			$findings[] = (new FormFinding(
 				property: $name,
 				code: self::REQUIRED_UNMAPPED,
 				message: $this->l10n->t('"%1$s" is required, and no field, fixed value or server default fills it.', [$name])
-			);
+			))->toArray();
 		}
 
 		return $findings;
@@ -725,29 +725,6 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 
 		return $fixed;
 	}//end fixedOf()
-
-	/**
-	 * One finding, the field key present only when a field is named.
-	 *
-	 * @param string      $property The property.
-	 * @param string      $code     The finding code.
-	 * @param string      $message  The translated message.
-	 * @param string|null $field    The field, when the finding is about one.
-	 *
-	 * @return array{field?: string, property: string, code: string, message: string}
-	 */
-	private function finding(string $property, string $code, string $message, ?string $field = null): array {
-		$finding = [];
-		if ($field !== null) {
-			$finding['field'] = $field;
-		}
-
-		$finding['property'] = $property;
-		$finding['code'] = $code;
-		$finding['message'] = $message;
-
-		return $finding;
-	}//end finding()
 
 	/**
 	 * A list of values, for a message.

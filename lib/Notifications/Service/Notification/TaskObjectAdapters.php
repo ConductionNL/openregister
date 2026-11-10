@@ -35,13 +35,16 @@ final class TaskObjectAdapters {
 	/**
 	 * The task, presented as an object.
 	 *
-	 * @param Task|null            $task  The task.
-	 * @param array<string, mixed> $row   The task's inbox row.
-	 * @param array<string, mixed> $extra Extra fields the rules read.
+	 * @param Task|null               $task    The task.
+	 * @param TaskAdapterOptions|null $options The task's inbox row and the extra fields the rules read.
 	 *
 	 * @return ObjectEntity
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
 	 */
-	public static function forTask(?Task $task = null, array $row = [], array $extra = []): ObjectEntity {
-		return new TaskObjectAdapter(task: $task, row: $row, extra: $extra);
+	public static function forTask(?Task $task = null, ?TaskAdapterOptions $options = null): ObjectEntity {
+		$options ??= new TaskAdapterOptions();
+
+		return new TaskObjectAdapter(task: $task, row: $options->row, extra: $options->extra);
 	}//end forTask()
 }//end class

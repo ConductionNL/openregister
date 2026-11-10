@@ -27,11 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\BulkAction\ApplyRuleActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
 
 /**
@@ -86,18 +84,14 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RuleInventoryService $inventory Finds the rule as declared.
-	 * @param RuleCeilingService $ceiling Refuses a run above the rule's ceiling.
-	 * @param BulkJobService $jobs Creates and previews the background job.
-	 * @param ObjectOperationsInterface $objects Counts the selection before anything is written.
+	 * @param RuleTargets    $targets Finds the rule as declared and counts the selection before anything is written.
+	 * @param BulkJobService $jobs    Creates and previews the background job.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RuleInventoryService $inventory,
-		private readonly RuleCeilingService $ceiling,
+		private readonly RuleTargets $targets,
 		private readonly BulkJobService $jobs,
-		private readonly ObjectOperationsInterface $objects,
 	) {
 	}//end __construct()
 
@@ -123,56 +117,80 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 */
 	public function preview(Schema $schema, string $ruleId, array $selection, string $actorUid,
 		?string $justification = null, ?int $registerId = null): array {
-		$rule = $this->inventory->find(schema: $schema, ruleId: $ruleId);
-		if ($rule === null || $rule->getKind() !== RuleVocabulary::KIND_CALCULATION) {
-			return $this->ruleRefusal(rule: $rule, schema: $schema, ruleId: $ruleId);
-		}
-
-		return $this->previewJob(
-			rule: $rule,
-			schema: $schema,
-			selection: $selection,
-			by: ['actorUid' => $actorUid, 'justification' => $justification, 'registerId' => $registerId]
-		);
+		$request = new RuleReplayRequest(ruleId: $ruleId, actorUid: $actorUid, justification: $justification);
+		return $this->previewReplay(request: $request, selection: new RuleReplaySelection(schema: $schema, registerId: $registerId, criteria: $selection));
 	}//end preview()
 
 	/**
-	 * The refusal for a rule that is not declared, or that derives nothing to replay.
+	 * Preview a replay of one rule over a selection of existing objects.
 	 *
-	 * @param RuleDescriptor|null $rule   The rule as declared, or null when the schema declares none.
-	 * @param Schema              $schema The schema the rule was looked up on.
-	 * @param string              $ruleId The derived rule id asked for.
+	 * Nothing is written by this call; see preview().
+	 *
+	 * @param RuleReplayRequest   $request   The rule, who asks and why.
+	 * @param RuleReplaySelection $selection The objects, and the schema and register they are scoped to.
+	 *
+	 * @return array<string, mixed> The previewed job, or the refusal.
+	 *
+	 * @throws RuleCeilingException When the selection is larger than the rule's ceiling.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function previewReplay(RuleReplayRequest $request, RuleReplaySelection $selection): array {
+		$rule = $this->targets->rules->find(schema: $selection->schema, ruleId: $request->ruleId);
+		if ($rule === null) {
+			return $this->unknownRule(schema: $selection->schema, ruleId: $request->ruleId);
+		}
+
+		$run = new RuleReplayRun(rule: $rule, selection: $selection, actorUid: $request->actorUid, justification: $request->justification);
+		return $this->previewJob(run: $run);
+	}//end previewReplay()
+
+	/**
+	 * The refusal for a rule the schema does not declare.
+	 *
+	 * @param Schema $schema The schema the rule was looked up on.
+	 * @param string $ruleId The derived rule id asked for.
 	 *
 	 * @return array<string, mixed> The refusal.
 	 */
-	private function ruleRefusal(?RuleDescriptor $rule, Schema $schema, string $ruleId): array {
-		if ($rule === null) {
-			return $this->refusal(
-				code: self::CODE_UNKNOWN_RULE,
-				message: sprintf('Schema "%s" declares no rule "%s".', (string)($schema->getSlug() ?? ''), $ruleId)
-			);
-		}
+	private function unknownRule(Schema $schema, string $ruleId): array {
+		return $this->refusal(
+			code: self::CODE_UNKNOWN_RULE,
+			message: sprintf('Schema "%s" declares no rule "%s".', (string)($schema->getSlug() ?? ''), $ruleId)
+		);
+	}//end unknownRule()
 
+	/**
+	 * The refusal for a rule that derives nothing to replay.
+	 *
+	 * @param RuleDescriptor $rule The rule as declared.
+	 *
+	 * @return array<string, mixed> The refusal.
+	 */
+	private function notReplayable(RuleDescriptor $rule): array {
 		return $this->refusal(
 			code: self::CODE_NOT_REPLAYABLE,
 			message: sprintf('A rule of kind "%s" derives no value for a stored object, so there is nothing to replay.', $rule->getKind())
 		);
-	}//end ruleRefusal()
+	}//end notReplayable()
 
 	/**
-	 * Count the selection, hold it to the ceiling, and create the previewed job.
+	 * Refuse a rule that derives nothing to replay; otherwise count the
+	 * selection, hold it to the ceiling, and create the previewed job.
 	 *
-	 * @param RuleDescriptor $rule The calculation to replay.
-	 * @param Schema $schema The schema the rule is declared on.
-	 * @param array<string, mixed> $selection Either `{"ids": [...]}` or `{"query": {...}}`.
-	 * @param array{actorUid: string, justification: string|null, registerId: int|null} $by Who asks, why, and where.
+	 * @param RuleReplayRun $run The rule, the selection, who asks and why.
 	 *
 	 * @return array<string, mixed> The previewed job, or the refusal.
 	 *
 	 * @throws RuleCeilingException When the selection is larger than the rule's ceiling.
 	 */
-	private function previewJob(RuleDescriptor $rule, Schema $schema, array $selection, array $by): array {
-		$count = $this->countOf(selection: $selection, scope: ['register' => $by['registerId'], 'schema' => $schema->getId()]);
+	private function previewJob(RuleReplayRun $run): array {
+		$rule = $run->rule;
+		if ($rule->getKind() !== RuleVocabulary::KIND_CALCULATION) {
+			return $this->notReplayable(rule: $rule);
+		}
+
+		$count = $this->countOf(selection: $run->selection);
 		if ($count === null) {
 			return $this->refusal(code: self::CODE_NO_SELECTION, message: 'A replay needs a selection: either "ids" or a "query".');
 		}
@@ -180,8 +198,8 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 		// 🔴 BEFORE THE FIRST WRITE, AND BEFORE THE JOB EXISTS. D-4: a ceiling
 		// that stops half way leaves a partial mutation. Nothing below this line
 		// runs when the ceiling refuses, including the preview rows.
-		$this->ceiling->assert(rule: $rule, count: $count);
-		$job = $this->createJob(rule: $rule, schema: $schema, selection: $selection, by: $by);
+		(new RuleCeilingService())->assert(rule: $rule, count: $count);
+		$job = $this->createJob(run: $run);
 
 		return ['ok' => true, 'committed' => false, 'ruleId' => $rule->getId(), 'maxObjects' => $rule->getMaxObjects()]
 			+ ['count' => $count, 'job' => $job->jsonSerialize()];
@@ -190,47 +208,40 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	/**
 	 * Create the background job in its previewed state.
 	 *
-	 * @param RuleDescriptor $rule The calculation to replay.
-	 * @param Schema $schema The schema the rule is declared on.
-	 * @param array<string, mixed> $selection The selection.
-	 * @param array{actorUid: string, justification: string|null, registerId: int|null} $by Who asks, why, and where.
+	 * @param RuleReplayRun $run The calculation, the selection, who asks and why.
 	 *
 	 * @return BulkJob The job.
 	 */
-	private function createJob(RuleDescriptor $rule, Schema $schema, array $selection, array $by): BulkJob {
+	private function createJob(RuleReplayRun $run): BulkJob {
 		return $this->jobs->create(
-			actionId: ApplyRuleActionInterface::ID,
-			parameters: ['schema' => (string)($schema->getSlug() ?? (string)$schema->getId()), 'ruleId' => $rule->getId()],
-			selection: $selection,
-			justification: $by['justification'],
-			actorUid: $by['actorUid'],
-			registerId: $by['registerId'],
-			schemaId: $schema->getId()
+			call: $run->actionCall(),
+			selection: $run->selection->forBulkJob(),
+			actorUid: $run->actorUid,
+			justification: $run->justification
 		);
 	}//end createJob()
 
 	/**
 	 * How many objects the selection stands for, counted not sampled.
 	 *
-	 * @param array<string, mixed> $selection The selection.
-	 * @param array{register: int|null, schema: int|null} $scope The register and schema the selection lives in.
+	 * @param RuleReplaySelection $selection The selection, and the register and schema it lives in.
 	 *
 	 * @return int|null The count, or null when the selection names nothing.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function countOf(array $selection, array $scope): ?int {
-		$ids = ($selection['ids'] ?? null);
+	private function countOf(RuleReplaySelection $selection): ?int {
+		$ids = ($selection->criteria['ids'] ?? null);
 		if (is_array($ids) === true) {
 			return count(array_unique(array_map('strval', $ids)));
 		}
 
-		$query = ($selection['query'] ?? null);
+		$query = ($selection->criteria['query'] ?? null);
 		if (is_array($query) === false) {
 			return null;
 		}
 
-		return $this->countQuery(query: $this->scoped(query: $query, scope: $scope));
+		return $this->countQuery(query: $this->scoped(query: $query, scope: $selection->scope()));
 	}//end countOf()
 
 	/**
@@ -242,7 +253,7 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 */
 	private function countQuery(array $query): ?int {
 		try {
-			return $this->objects->countSearchObjects(query: $query);
+			return $this->targets->objects->countSearchObjects(query: $query);
 		} catch (Throwable $failure) {
 			// A count that cannot be taken is not a count of zero. Answering
 			// null refuses the replay for want of a selection rather than

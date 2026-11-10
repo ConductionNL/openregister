@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Case;
 
 /**
- * What every row of one creation shares: the anchor, the plan settings, the creating identity, the provenance and the origin.
+ * What every row of one creation shares: the anchor, the plan settings, the creating identity and the provenance.
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
@@ -35,15 +35,13 @@ final readonly class CasePlanInsertion {
 	 * @param CaseAnchor $anchor The anchoring object.
 	 * @param array<string, mixed> $settings The plan settings, carried on every row.
 	 * @param string|null $actor The creating identity.
-	 * @param array{flowUuid: string|null, flowVersion: int|null} $provenance The definition's flow and version, when any.
-	 * @param string|null $origin The origin every row gets (`adhoc`), or null to derive it from each node.
+	 * @param CasePlanProvenance $provenance The definition's flow and version, when any, and the origin every row gets.
 	 */
 	public function __construct(
 		public CaseAnchor $anchor,
 		public array $settings,
 		public ?string $actor,
-		public array $provenance = ['flowUuid' => null, 'flowVersion' => null],
-		public ?string $origin = null,
+		public CasePlanProvenance $provenance = new CasePlanProvenance(),
 	) {
 	}//end __construct()
 }//end class

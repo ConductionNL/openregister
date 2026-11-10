@@ -27,8 +27,10 @@ use OCA\OpenRegister\Service\Object\BulkSaveReporting;
 use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -168,16 +170,14 @@ class SaveObjectsSafeguardPrefetchGoldenTest extends TestCase {
 		$schema->setId(7);
 		$schema->setSlug('schema-7');
 		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
-		$passed = $method->invokeArgs(
-			$handler,
-			[
-				$case['rows'],
-				null,
-				$schema,
-				['rbac' => true, 'validation' => false, 'multitenancy' => ($case['multitenancy'] ?? true)],
-				&$result,
-			]
+		$batch  = new SafeguardBatchRun(
+			objects: $case['rows'],
+			defaults: new BulkBatchDefaults(null, $schema),
+			flags: ['rbac' => true, 'validation' => false, 'multitenancy' => ($case['multitenancy'] ?? true)],
+			result: $result
 		);
+		$passed = $method->invokeArgs($handler, [$batch]);
+		$result = $batch->result;
 
 		return ['passed' => $passed, 'result' => $result, 'calls' => $this->calls, 'log' => $logger->lines];
 	}//end runCase()

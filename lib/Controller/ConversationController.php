@@ -28,9 +28,12 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
+use OCA\OpenRegister\Controller\Support\ConversationChange;
 use OCA\OpenRegister\Controller\Support\ConversationFailure;
 use OCA\OpenRegister\Db\FeedbackMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Mcp\Db\Conversation;
@@ -119,13 +122,12 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	/**
 	 * Constructor
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request Request object
 	 * @param ConversationControllerServices $services The conversation controller services.
 	 * @param string $userId User ID
 	 */
-	public function __construct(string $appName, IRequest $request, ConversationControllerServices $services, string $userId) {
-		parent::__construct(appName: $appName, request: $request);
+	public function __construct(IRequest $request, ConversationControllerServices $services, string $userId) {
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->conversationMapper = $services->mappers->conversationMapper;
 		$this->messageMapper = $services->mappers->messageMapper;
 		$this->feedbackMapper = $services->mappers->feedbackMapper;
@@ -165,15 +167,16 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 			$organisationUuid = $this->organisationService->getActiveOrganisation()?->getUuid();
 			$params = $this->request->getParams();
 			$page   = $this->paging(params: $params);
-			$list   = $this->listConversations(
-				organisationUuid: $organisationUuid,
-				showDeleted: filter_var($params['_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN),
-				page: $page
-			);
+			if (filter_var($params['_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN) === true) {
+				$list = $this->listDeletedConversations(organisationUuid: $organisationUuid, page: $page);
+				return new JSONResponse(data: $list + $page, statusCode: 200);
+			}
 
+			$list = $this->listActiveConversations(organisationUuid: $organisationUuid, page: $page);
 			return new JSONResponse(data: $list + $page, statusCode: 200);
 		} catch (\Exception $e) {
-			return $this->failure(log: 'Failed to list conversations', error: 'Failed to fetch conversations', e: $e);
+			$this->logFailure(log: 'Failed to list conversations', e: $e);
+			return $this->failure(error: 'Failed to fetch conversations', e: $e);
 		}
 	}//end index()
 
@@ -193,29 +196,23 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	}//end paging()
 
 	/**
-	 * One page of the current user's conversations in an organisation:
-	 * the archived (soft-deleted) ones or the active ones.
+	 * One page of the current user's archived (soft-deleted) conversations in an organisation.
 	 *
 	 * @param string|null                   $organisationUuid The active organisation
-	 * @param bool                          $showDeleted      Whether to list archived conversations
 	 * @param array{limit: int, offset: int} $page             The page
 	 *
 	 * @return array{results: array, total: int}
 	 */
-	private function listConversations(?string $organisationUuid, bool $showDeleted, array $page): array {
-		if ($showDeleted === true) {
-			$conversations = $this->conversationMapper->findDeletedByUser(
-				userId: $this->userId,
-				organisation: $organisationUuid,
-				limit: $page['limit'],
-				offset: $page['offset']
-			);
-			$total         = $this->conversationMapper->countDeletedByUser(userId: $this->userId, organisation: $organisationUuid);
-			return ['results' => $this->serialized(conversations: $conversations), 'total' => $total];
-		}
-
-		return $this->listActiveConversations(organisationUuid: $organisationUuid, page: $page);
-	}//end listConversations()
+	private function listDeletedConversations(?string $organisationUuid, array $page): array {
+		$conversations = $this->conversationMapper->findDeletedByUser(
+			userId: $this->userId,
+			organisation: $organisationUuid,
+			limit: $page['limit'],
+			offset: $page['offset']
+		);
+		$total         = $this->conversationMapper->countDeletedByUser(userId: $this->userId, organisation: $organisationUuid);
+		return ['results' => $this->serialized(conversations: $conversations), 'total' => $total];
+	}//end listDeletedConversations()
 
 	/**
 	 * One page of the current user's active conversations in an organisation.
@@ -327,8 +324,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 		$page     = $this->paging(params: $this->request->getParams());
 		$messages = $this->messageMapper->findByConversation(
 			conversationId: $conversation->getId(),
-			limit: $page['limit'],
-			offset: $page['offset']
+			page: new ListQuery(limit: $page['limit'], offset: $page['offset'])
 		);
 		$total    = $this->messageMapper->countByConversation($conversation->getId());
 
@@ -365,16 +361,15 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	/**
 	 * Run a write action on a conversation the caller may modify.
 	 *
-	 * @param ConversationFailure $failure       The failure to report when the action throws
-	 * @param string              $deniedMessage The message of the refusal
-	 * @param callable            $action        The action, given the conversation
+	 * @param ConversationChange $change The conversation, the verb its refusal names and the error its failure reports
+	 * @param callable           $action The action, given the conversation
 	 *
 	 * @return JSONResponse The action's response, a refusal (403), not found (404) or the failure (500)
 	 */
-	private function modifying(ConversationFailure $failure, string $deniedMessage, callable $action): JSONResponse {
+	private function modifying(ConversationChange $change, callable $action): JSONResponse {
 		try {
-			$conversation = $this->conversationMapper->findByUuid($failure->uuid);
-			$denied       = $this->modifyDenied(conversation: $conversation, message: $deniedMessage);
+			$conversation = $this->conversationMapper->findByUuid($change->uuid);
+			$denied       = $this->modifyDenied(conversation: $conversation, message: $change->deniedMessage());
 			if ($denied !== null) {
 				return $denied;
 			}
@@ -383,7 +378,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 		} catch (DoesNotExistException $e) {
 			return $this->conversationNotFound();
 		} catch (\Exception $e) {
-			return $this->failed(failure: $failure, e: $e);
+			return $this->failed(failure: $change->failure(), e: $e);
 		}
 	}//end modifying()
 
@@ -432,7 +427,8 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 
 			return new JSONResponse(data: $conversation->jsonSerialize(), statusCode: 201);
 		} catch (\Exception $e) {
-			return $this->failure(log: 'Failed to create conversation', error: 'Failed to create conversation', e: $e);
+			$this->logFailure(log: 'Failed to create conversation', e: $e);
+			return $this->failure(error: 'Failed to create conversation', e: $e);
 		}
 	}//end create()
 
@@ -542,8 +538,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 */
 	public function update(string $uuid): JSONResponse {
 		return $this->modifying(
-			failure: new ConversationFailure(uuid: $uuid, error: 'Failed to update conversation'),
-			deniedMessage: 'You do not have permission to modify this conversation',
+			change: new ConversationChange(uuid: $uuid, verb: 'modify', error: 'Failed to update conversation'),
 			action: fn (Conversation $conversation): JSONResponse => $this->saveUpdate(conversation: $conversation, uuid: $uuid)
 		);
 	}//end update()
@@ -598,8 +593,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 */
 	public function destroy(string $uuid): JSONResponse {
 		return $this->modifying(
-			failure: new ConversationFailure(uuid: $uuid, error: 'Failed to delete conversation'),
-			deniedMessage: 'You do not have permission to delete this conversation',
+			change: new ConversationChange(uuid: $uuid, verb: 'delete', error: 'Failed to delete conversation'),
 			action: function (Conversation $conversation) use ($uuid): JSONResponse {
 				// An already archived (soft-deleted) conversation is deleted permanently.
 				if ($conversation->getDeletedAt() !== null) {
@@ -637,8 +631,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 */
 	public function restore(string $uuid): JSONResponse {
 		return $this->modifying(
-			failure: new ConversationFailure(uuid: $uuid, error: 'Failed to restore conversation'),
-			deniedMessage: 'You do not have permission to restore this conversation',
+			change: new ConversationChange(uuid: $uuid, verb: 'restore', error: 'Failed to restore conversation'),
 			action: function (Conversation $conversation) use ($uuid): JSONResponse {
 				$conversation = $this->conversationMapper->restore($conversation->getId());
 				$this->logged(message: 'Conversation restored', uuid: $uuid);
@@ -669,8 +662,7 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	 */
 	public function destroyPermanent(string $uuid): JSONResponse {
 		return $this->modifying(
-			failure: new ConversationFailure(uuid: $uuid, error: 'Failed to permanently delete conversation'),
-			deniedMessage: 'You do not have permission to delete this conversation',
+			change: new ConversationChange(uuid: $uuid, verb: 'delete', error: 'Failed to permanently delete conversation'),
 			action: fn (Conversation $conversation): JSONResponse => $this->purge(conversation: $conversation, uuid: $uuid)
 		);
 	}//end destroyPermanent()
@@ -835,18 +827,27 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	}//end failed()
 
 	/**
-	 * Log a failed action that has no conversation and return a 500.
+	 * Log a failed action that has no conversation.
 	 *
-	 * @param string     $log   The log message, without the controller prefix
+	 * @param string     $log The log message, without the controller prefix
+	 * @param \Exception $e   The failure
+	 *
+	 * @return void
+	 */
+	private function logFailure(string $log, \Exception $e): void {
+		$context = ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()];
+		$this->logger->error(message: '[ConversationController] ' . $log, context: $context);
+	}//end logFailure()
+
+	/**
+	 * The 500 for a failed action that has no conversation; the caller logged it.
+	 *
 	 * @param string     $error The error of the response
 	 * @param \Exception $e     The failure
 	 *
 	 * @return JSONResponse The error response
 	 */
-	private function failure(string $log, string $error, \Exception $e): JSONResponse {
-		$context = ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()];
-		$this->logger->error(message: '[ConversationController] ' . $log, context: $context);
-
+	private function failure(string $error, \Exception $e): JSONResponse {
 		return new JSONResponse(data: ['error' => $error, 'message' => $e->getMessage()], statusCode: 500);
 	}//end failure()
 }//end class

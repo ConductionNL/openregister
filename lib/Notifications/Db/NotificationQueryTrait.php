@@ -130,40 +130,42 @@ trait NotificationQueryTrait {
 	}//end findFirstOrNull()
 
 	/**
-	 * Narrow to rows scoped to the value or to nothing at all ("mine or nobody's").
+	 * Narrow each scope column to rows scoped to the value or to nothing at all ("mine or nobody's").
 	 *
-	 * @param IQueryBuilder $qb     The query.
-	 * @param string        $column The scope column.
-	 * @param string|null   $value  The scope asked for; null leaves the query alone.
+	 * @param IQueryBuilder              $qb      The query.
+	 * @param array<string, string|null> $columns Scope column to the scope asked for; a null value leaves the query alone.
 	 *
 	 * @return void
 	 */
-	private function whereScopedOrUnscoped(IQueryBuilder $qb, string $column, ?string $value): void {
-		if ($value === null) {
-			return;
-		}
+	private function whereScopedOrUnscoped(IQueryBuilder $qb, array $columns): void {
+		foreach ($columns as $column => $value) {
+			if ($value === null) {
+				continue;
+			}
 
-		$qb->andWhere(
-			$qb->expr()->orX(
-				$qb->expr()->isNull($column),
-				$qb->expr()->eq($column, $qb->createNamedParameter($value))
-			)
-		);
+			$qb->andWhere(
+				$qb->expr()->orX(
+					$qb->expr()->isNull($column),
+					$qb->expr()->eq($column, $qb->createNamedParameter($value))
+				)
+			);
+		}
 
 	}//end whereScopedOrUnscoped()
 
 	/**
-	 * Narrow to a column value when one is given.
+	 * Narrow to each column value that is given.
 	 *
-	 * @param IQueryBuilder $qb     The query.
-	 * @param string        $column The column.
-	 * @param string|null   $value  The value; null leaves the query alone.
+	 * @param IQueryBuilder              $qb      The query.
+	 * @param array<string, string|null> $columns Column to value; a null value leaves the query alone.
 	 *
 	 * @return void
 	 */
-	private function whereEqualsWhenGiven(IQueryBuilder $qb, string $column, ?string $value): void {
-		if ($value !== null) {
-			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+	private function whereEqualsWhenGiven(IQueryBuilder $qb, array $columns): void {
+		foreach ($columns as $column => $value) {
+			if ($value !== null) {
+				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+			}
 		}
 
 	}//end whereEqualsWhenGiven()

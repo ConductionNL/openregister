@@ -231,15 +231,10 @@ class ImportServiceCsvSheetGoldenTest extends TestCase {
 		});
 
 		return new ImportService(
-			$this->createMock(SchemaMapper::class),
-			$objectService,
-			$logger,
-			$this->createMock(IGroupManager::class),
-			$this->createMock(TranslationCsvCodec::class),
-			$audit,
-			$mapping,
-			$validator,
-			$container
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->createMock(SchemaMapper::class), $objectService, $audit, $validator),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($this->createMock(TranslationCsvCodec::class), $mapping),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($container, new \OCA\OpenRegister\Listener\NotifyPushBatch(), $logger),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end buildService()
 

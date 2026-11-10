@@ -54,7 +54,12 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
+use OCA\OpenRegister\Service\Flow\FlowRunCommitRows;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunStreamStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
+use OCA\OpenRegister\Service\Flow\FlowStreamAdvance;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
@@ -279,25 +284,19 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 
 		$commit = new FlowRunCommit(
 			db: $db,
-			runs: $mapper,
-			streams: $streamMapper,
-			claims: $claimMapper,
-			steps: $stepMapper,
+			rows: new FlowRunCommitRows(runs: $mapper, streams: $streamMapper, claims: $claimMapper, steps: $stepMapper),
 			logger: new NullLogger()
 		);
 
 		$this->service = new FlowRunService(
-			$mapper,
-			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
-			$engine,
-			$registry,
-			$this->createMock(LoggerInterface::class),
-			$container,
-			null,
-			null,
-			$streamMapper,
-			new FlowPlaceClaims(claims: $claimMapper, db: $db, logger: new NullLogger()),
-			$commit
+			stores: new FlowRunStores(
+				mapper: $mapper,
+				stateMapper: $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
+				streams: new FlowRunStreamStores(streamMapper: $streamMapper, claims: new FlowPlaceClaims(claims: $claimMapper, db: $db, logger: new NullLogger()), commit: $commit)
+			),
+			walk: new FlowRunWalkServices(engine: $engine, registry: $registry),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $container
 		);
 	}//end setUp()
 
@@ -407,7 +406,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$this->complete(uuid: (string)$slots['askA']['taskUuid'], completedBy: 'bob');
 		$woken = $this->service->signal($run, []);
 		$this->assertNotNull($woken);
-		$run = $this->service->advanceStream($woken, $this->flow(), new HeartbeatSubject(), $this->streamOn('askA'), 'all');
+		$run = $this->service->advanceBranch(new \OCA\OpenRegister\Service\Flow\FlowRunPass(run: $woken, flow: $this->flow(), subject: new HeartbeatSubject()), new FlowStreamAdvance(streamId: $this->streamOn('askA'), budget: 'all'));
 
 		$this->assertSame(FlowRun::STATUS_QUEUED, $run->getStatus());
 		$kept = ($run->getContext()['resumeState'] ?? []);

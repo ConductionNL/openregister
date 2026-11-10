@@ -150,7 +150,7 @@ class ObjectRelationsControllerRouteAddressTest extends TestCase {
 		$row = new ObjectRelation();
 		$row->setUuid('out');
 		$this->relations->expects($this->once())->method('recordProseReference')
-			->with('a', 'b', 'p1', null, $this->anything())
+			->with($this->callback(static fn ($mention): bool => $mention->source->uuid === 'a' && $mention->target->uuid === 'b' && $mention->anchor === 'p1' && $mention->relationType === null))
 			->willReturn([$row]);
 
 		$response = $controller->addLink('r', 's', 'a');

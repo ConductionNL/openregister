@@ -34,14 +34,18 @@ final readonly class RelatedRowSource {
 	/**
 	 * Bundle the source.
 	 *
-	 * @param Schema $schema    The related schema.
-	 * @param string $tableName The bare related table, for the row predicate.
-	 * @param string $alias     The related row's alias.
+	 * @param Schema       $schema    The related schema.
+	 * @param string       $tableName The bare related table, for the row predicate.
+	 * @param string       $alias     The related row's alias.
+	 * @param array<mixed> $scope     The organisation scope the list path decided for that table:
+	 *                                `array{mode: string, uuids: array<int, string>}`. A mode the
+	 *                                predicate does not know matches nothing.
 	 */
 	public function __construct(
 		public Schema $schema,
 		public string $tableName,
 		public string $alias,
+		public array $scope,
 	) {
 	}//end __construct()
 }//end class

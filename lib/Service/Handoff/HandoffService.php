@@ -120,9 +120,7 @@ class HandoffService implements HandoffServiceInterface {
 	 * The object is loaded through `ObjectService::find()` under the caller's
 	 * RBAC (read guard, ADR-005).
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema The schema slug or id.
-	 * @param string $id The object id/uuid.
+	 * @param HandoffSourceRef $ref The register and schema (slug or id) and the object id/uuid.
 	 *
 	 * @return array<int, array<string, mixed>> One availability record per declared handoff.
 	 *
@@ -131,24 +129,22 @@ class HandoffService implements HandoffServiceInterface {
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Requirement: Handoff REST surface)
 	 */
-	public function listAvailability(string $register, string $schema, string $id): array {
-		return $this->availabilityOf(source: $this->loadSource(register: $register, schema: $schema, id: $id));
+	public function listAvailability(HandoffSourceRef $ref): array {
+		return $this->availabilityOf(source: $this->loadSource(ref: $ref));
 	}//end listAvailability()
 
 	/**
 	 * Load a source object under the caller's RBAC (read guard, ADR-005).
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema   The schema slug or id.
-	 * @param string $id       The object id/uuid.
+	 * @param HandoffSourceRef $ref The source object as the caller names it.
 	 *
 	 * @return ObjectEntity The source object.
 	 *
 	 * @throws HandoffException When the object does not exist.
 	 * @throws \Exception       When the object cannot be read by the caller.
 	 */
-	private function loadSource(string $register, string $schema, string $id): ObjectEntity {
-		$source = WriteCause::asLookup(fn () => $this->objects->objectService->find(id: $id, register: $register, schema: $schema));
+	private function loadSource(HandoffSourceRef $ref): ObjectEntity {
+		$source = WriteCause::asLookup(fn () => $this->objects->objectService->find(id: $ref->id, register: $ref->register, schema: $ref->schema));
 		if ($source === null) {
 			throw new HandoffException(errorCode: HandoffException::NOT_DECLARED, message: 'Object not found.');
 		}
@@ -255,16 +251,9 @@ class HandoffService implements HandoffServiceInterface {
 		bool $deferred = false,
 		?string $correlationId = null,
 	): array {
-		return $this->run(
-			request: new HandoffRequest(
-				register: $register,
-				schema: $schema,
-				id: $id,
-				handoffId: $handoffId,
-				deferred: $deferred,
-				correlationId: ($correlationId ?? Uuid::v4()->toRfc4122())
-			)
-		);
+		$source = new HandoffSourceRef(register: $register, schema: $schema, id: $id);
+		$correlationId = ($correlationId ?? Uuid::v4()->toRfc4122());
+		return $this->run(request: new HandoffRequest(source: $source, handoffId: $handoffId, deferred: $deferred, correlationId: $correlationId));
 	}//end execute()
 
 	/**
@@ -326,20 +315,20 @@ class HandoffService implements HandoffServiceInterface {
 			schema: $provider
 		);
 
-		$created = new HandoffTarget(object: $target, register: $targetRegister, schema: $provider);
+		$handoff = new HandoffRun(plan: $plan, target: new HandoffTarget(object: $target, register: $targetRegister, schema: $provider));
 
 		$sourceSnapshot = $plan->source->getObject();
 		try {
 			$this->applyOnSuccess(plan: $plan);
 		} catch (\Throwable $e) {
-			$this->compensate(target: $created);
+			$this->compensate(target: $handoff->target);
 			throw $e;
 		}
 
-		$this->recordProvenance(plan: $plan, target: $created, sourceSnapshot: $sourceSnapshot);
+		$this->recordProvenance(run: $handoff, sourceSnapshot: $sourceSnapshot);
 
 		// 7. Post-commit: dispatch the ADR-041 event (a throwing listener can never roll back the handoff).
-		$this->dispatchExecuted(plan: $plan, target: $target);
+		$this->dispatchExecuted(run: $handoff);
 
 		return [
 			'status' => 'executed',
@@ -362,7 +351,7 @@ class HandoffService implements HandoffServiceInterface {
 	 * @throws HandoffException When the object does not exist or declares no such handoff.
 	 */
 	private function plan(HandoffRequest $request): HandoffPlan {
-		$source = $this->loadSource(register: $request->register, schema: $request->schema, id: $request->id);
+		$source = $this->loadSource(ref: $request->source);
 		$sourceSchema = $this->objects->schemaMapper->find(id: (string)$source->getSchema());
 
 		// The declared entry — `handoff-not-declared` when absent.
@@ -393,41 +382,43 @@ class HandoffService implements HandoffServiceInterface {
 		$provenance = $this->buildProvenance(source: $plan->source, sourceSchema: $plan->sourceSchema);
 		$contractData = $this->providers->mappingEvaluator->evaluate(
 			mapping: (array)($plan->entry['mapping'] ?? []),
-			sourceData: $plan->source->getObject(),
-			provenance: $provenance
+			source: new HandoffMappingSource(data: $plan->source->getObject(), provenance: $provenance)
 		);
 
-		return $this->translateThroughBinding(provider: $provider, kindUri: $plan->kindUri(), contractData: $contractData);
+		return $this->translateThroughBinding(
+			fieldMap: $this->bindingFieldMap(provider: $provider, kindUri: $plan->kindUri()),
+			contractData: $contractData
+		);
 	}//end targetData()
 
 	/**
 	 * Write the provenance relations and audit rows in one DB transaction;
 	 * on failure roll back, remove the target and restore the source.
 	 *
-	 * @param HandoffPlan          $plan           The plan.
-	 * @param HandoffTarget        $target         The created target object.
+	 * @param HandoffRun           $run            The plan and the created target object.
 	 * @param array<string, mixed> $sourceSnapshot The source data before `onSuccess.set`.
 	 *
 	 * @return void
 	 *
 	 * @throws \Throwable The original failure, after rollback and compensation.
 	 */
-	private function recordProvenance(HandoffPlan $plan, HandoffTarget $target, array $sourceSnapshot): void {
+	private function recordProvenance(HandoffRun $run, array $sourceSnapshot): void {
+		$plan = $run->plan;
 		$this->ledger->db->beginTransaction();
 		try {
-			$this->writeProvenanceRelations(plan: $plan, target: $target);
-			$this->writeAuditRows(plan: $plan, target: $target);
+			$this->writeProvenanceRelations(run: $run);
+			$this->writeAuditRows(run: $run);
 
 			$this->ledger->db->commit();
 		} catch (\Throwable $e) {
 			$this->ledger->db->rollBack();
 			$this->compensate(
-				target: $target,
+				target: $run->target,
 				restore: new HandoffSourceRestore(
 					source: $plan->source,
 					snapshot: $sourceSnapshot,
-					registerRef: $plan->request->register,
-					schemaRef: $plan->request->schema
+					registerRef: $plan->request->source->register,
+					schemaRef: $plan->request->source->schema
 				)
 			);
 			throw $e;
@@ -437,12 +428,13 @@ class HandoffService implements HandoffServiceInterface {
 	/**
 	 * Dispatch the ADR-041 handoff-executed event.
 	 *
-	 * @param HandoffPlan  $plan   The plan.
-	 * @param ObjectEntity $target The created target object.
+	 * @param HandoffRun $run The plan and the created target object.
 	 *
 	 * @return void
 	 */
-	private function dispatchExecuted(HandoffPlan $plan, ObjectEntity $target): void {
+	private function dispatchExecuted(HandoffRun $run): void {
+		$plan = $run->plan;
+		$target = $run->target->object;
 		$source = $plan->source;
 		$this->requesters->eventDispatcher->dispatchTyped(
 			new HandoffExecutedEvent(
@@ -707,9 +699,7 @@ class HandoffService implements HandoffServiceInterface {
 		}
 
 		return HandoffContractBindingValidator::isCompleteBinding(
-			kindUri: $kindUri,
-			binding: $binding,
-			properties: ($schema->getProperties() ?? [])
+			kind: new HandoffKindBinding(kindUri: $kindUri, fieldMap: ($binding[$kindUri] ?? null), properties: ($schema->getProperties() ?? []))
 		);
 	}//end hasCompleteBinding()
 
@@ -718,8 +708,7 @@ class HandoffService implements HandoffServiceInterface {
 	 * exclusively through the provider's `handoffContract` binding — the
 	 * emitting schema never names a concrete target property.
 	 *
-	 * @param Schema $provider The resolved provider schema.
-	 * @param string $kindUri The kind URI.
+	 * @param array<string, mixed> $fieldMap     Contract field → provider property, from {@see self::bindingFieldMap()}.
 	 * @param array<string, mixed> $contractData Contract field → evaluated value.
 	 *
 	 * @return array<string, mixed> Provider property → value.
@@ -727,10 +716,7 @@ class HandoffService implements HandoffServiceInterface {
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Requirement: Kind contract binding on the implementing schema)
 	 */
-	private function translateThroughBinding(Schema $provider, string $kindUri, array $contractData): array {
-		$configuration = ($provider->getConfiguration() ?? []);
-		$fieldMap = (array)(($configuration['handoffContract'] ?? [])[$kindUri] ?? []);
-
+	private function translateThroughBinding(array $fieldMap, array $contractData): array {
 		$targetData = [];
 		foreach ($contractData as $contractField => $value) {
 			$ownProperty = ($fieldMap[$contractField] ?? null);
@@ -741,6 +727,20 @@ class HandoffService implements HandoffServiceInterface {
 
 		return $targetData;
 	}//end translateThroughBinding()
+
+	/**
+	 * The provider's `handoffContract` binding for one kind: contract field → provider property.
+	 *
+	 * @param Schema $provider The resolved provider schema.
+	 * @param string $kindUri  The kind URI.
+	 *
+	 * @return array<string, mixed> The field map (empty when the provider binds nothing for the kind).
+	 */
+	private function bindingFieldMap(Schema $provider, string $kindUri): array {
+		$configuration = ($provider->getConfiguration() ?? []);
+
+		return (array)(($configuration['handoffContract'] ?? [])[$kindUri] ?? []);
+	}//end bindingFieldMap()
 
 	/**
 	 * The engine-filled provenance pointer for the `provenance` expression
@@ -854,8 +854,8 @@ class HandoffService implements HandoffServiceInterface {
 		$data = array_merge($plan->source->getObject(), $set);
 		$this->objects->objectService->saveObject(
 			object: $data,
-			register: $plan->request->register,
-			schema: $plan->request->schema,
+			register: $plan->request->source->register,
+			schema: $plan->request->source->schema,
 			uuid: (string)$plan->source->getUuid()
 		);
 
@@ -872,15 +872,17 @@ class HandoffService implements HandoffServiceInterface {
 	 * (`findAcrossAllMagicTables` is prohibitively slow inside the handoff
 	 * transaction on large instances).
 	 *
-	 * @param HandoffPlan $plan The plan (source, source schema as magic-table context, handoff id).
-	 * @param HandoffTarget $target The created target object, in its magic-table context.
+	 * @param HandoffRun $run The plan (source, source schema as magic-table context, handoff id)
+	 *                        and the created target object, in its magic-table context.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Scenario: Successful request-to-case handoff)
 	 */
-	private function writeProvenanceRelations(HandoffPlan $plan, HandoffTarget $target): void {
+	private function writeProvenanceRelations(HandoffRun $run): void {
+		$plan = $run->plan;
+		$target = $run->target;
 		$source = $plan->source;
 		$sourceSchema = $plan->sourceSchema;
 		$handoffId = $plan->request->handoffId;
@@ -920,15 +922,17 @@ class HandoffService implements HandoffServiceInterface {
 	 * One immutable audit row per side (actor, kind, handoff id,
 	 * correlationId, resolved schema, deferred flag).
 	 *
-	 * @param HandoffPlan $plan The plan (source, kind, handoff id, correlation id, deferred flag).
-	 * @param HandoffTarget $target The created target object; its schema is the resolved provider.
+	 * @param HandoffRun $run The plan (source, kind, handoff id, correlation id, deferred flag) and
+	 *                        the created target object; its schema is the resolved provider.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Scenario: Successful request-to-case handoff)
 	 */
-	private function writeAuditRows(HandoffPlan $plan, HandoffTarget $target): void {
+	private function writeAuditRows(HandoffRun $run): void {
+		$plan = $run->plan;
+		$target = $run->target;
 		$source = $plan->source;
 		$context = [
 			'handoffId' => $plan->request->handoffId,

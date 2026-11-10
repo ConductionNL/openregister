@@ -56,27 +56,27 @@ class OAuth2UpstreamRevoker {
 	/**
 	 * Revoke a connection upstream where the provider has a revoke endpoint.
 	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param array<string, mixed> $credential The credential object's serialised data.
-	 * @param string $credentialId The credential UUID.
-	 * @param string $scope The credential scope.
+	 * Best effort by contract: the local disable must happen whether or not the
+	 * provider is reachable, so a network failure here is reported, not fatal.
+	 *
+	 * @param OAuth2Revocation $revocation The provider, the credential and where its token set is held.
 	 *
 	 * @return string An empty string on success, or a secret-free reason the revoke failed.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
 	 */
-	public function revoke(array $provider, array $credential, string $credentialId, string $scope): string {
-		$config = new OAuth2ProviderConfig(provider: $provider);
+	public function revoke(OAuth2Revocation $revocation): string {
+		$config = new OAuth2ProviderConfig(provider: $revocation->provider);
 		if ($config->declares(key: 'revokeEndpoint') === false) {
 			return '';
 		}
 
 		try {
-			$body = $this->body(credential: $credential, credentialId: $credentialId, scope: $scope);
-			$endpoint = $config->endpoint(key: 'revokeEndpoint', instanceBaseUrl: (string)($credential['instanceBaseUrl'] ?? ''));
+			$body = $this->body(revocation: $revocation);
+			$endpoint = $config->endpoint(key: 'revokeEndpoint', instanceBaseUrl: (string)($revocation->credential['instanceBaseUrl'] ?? ''));
 			$this->clientService->newClient()->post($endpoint, ['body' => $body, 'timeout' => 20]);
 		} catch (Throwable $failure) {
-			$this->logger->warning('[OAuth2ConnectService] upstream revoke failed for ' . $credentialId . ': ' . $failure->getMessage());
+			$this->logger->warning('[OAuth2ConnectService] upstream revoke failed for ' . $revocation->address->credentialId . ': ' . $failure->getMessage());
 			return 'revoke_failed';
 		}
 
@@ -86,16 +86,15 @@ class OAuth2UpstreamRevoker {
 	/**
 	 * The revoke request body: the access token and the client.
 	 *
-	 * @param array<string, mixed> $credential The credential object's serialised data.
-	 * @param string $credentialId The credential UUID.
-	 * @param string $scope The credential scope.
+	 * @param OAuth2Revocation $revocation The credential and where its token set is held.
 	 *
 	 * @return array<string, string> The form body.
 	 *
 	 * @spec exclude private request builder with no behaviour of its own
 	 */
-	private function body(array $credential, string $credentialId, string $scope): array {
-		$set = $this->refresh->storedSet(credentialId: $credentialId, scope: $scope);
+	private function body(OAuth2Revocation $revocation): array {
+		$credential = $revocation->credential;
+		$set = $this->refresh->storedSet(credentialId: $revocation->address->credentialId, scope: $revocation->address->scope);
 		$client = $this->clients->resolve(
 			credential: $credential,
 			provider: (string)($credential['provider'] ?? ''),

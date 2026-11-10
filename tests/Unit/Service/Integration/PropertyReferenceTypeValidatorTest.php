@@ -91,13 +91,15 @@ class PropertyReferenceTypeValidatorTest extends TestCase {
 	}//end setUp()
 
 	public function testPropertyWithoutReferenceTypePassesThrough(): void {
-		$this->expectNotToPerformAssertions();
-		$this->validator->validate(['type' => 'string']);
+		// Pair: testNonStringReferenceTypeIsRejected adds a bad referenceType.
+		$this->assertNull($this->refusalOf(fn () => $this->validator->validate(['type' => 'string'])));
 	}//end testPropertyWithoutReferenceTypePassesThrough()
 
 	public function testNullReferenceTypePassesThrough(): void {
-		$this->expectNotToPerformAssertions();
-		$this->validator->validate(['type' => 'string', 'referenceType' => null]);
+		// Pair: testEmptyReferenceTypeIsRejected, '' instead of null.
+		$this->assertNull(
+			$this->refusalOf(fn () => $this->validator->validate(['type' => 'string', 'referenceType' => null]))
+		);
 	}//end testNullReferenceTypePassesThrough()
 
 	public function testNonStringReferenceTypeIsRejected(): void {
@@ -124,18 +126,54 @@ class PropertyReferenceTypeValidatorTest extends TestCase {
 	}//end testUnregisteredReferenceTypeIsRejected()
 
 	public function testRegisteredReferenceTypePasses(): void {
-		$this->expectNotToPerformAssertions();
-		$this->validator->validate(['type' => 'string', 'referenceType' => 'xwiki']);
+		// Pair: testUnregisteredReferenceTypeIsRejected, 'mail' instead of 'xwiki'.
+		$this->assertNull(
+			$this->refusalOf(fn () => $this->validator->validate(['type' => 'string', 'referenceType' => 'xwiki']))
+		);
 	}//end testRegisteredReferenceTypePasses()
 
 	public function testValidateAllWalksEveryProperty(): void {
-		$this->expectNotToPerformAssertions();
-		$this->validator->validateAll([
-			'title' => ['type' => 'string'],
-			'assignedHandler' => ['type' => 'string', 'referenceType' => 'contacts'],
-			'linkedPage' => ['type' => 'string', 'referenceType' => 'xwiki'],
-		]);
+		$refusal = $this->refusalOf(
+			fn () => $this->validator->validateAll([
+				'title' => ['type' => 'string'],
+				'assignedHandler' => ['type' => 'string', 'referenceType' => 'contacts'],
+				'linkedPage' => ['type' => 'string', 'referenceType' => 'xwiki'],
+			])
+		);
+
+		// Pair: testValidateAllReachesTheLastProperty makes only the last one bad.
+		$this->assertNull($refusal);
 	}//end testValidateAllWalksEveryProperty()
+
+	public function testValidateAllReachesTheLastProperty(): void {
+		$refusal = $this->refusalOf(
+			fn () => $this->validator->validateAll([
+				'title' => ['type' => 'string'],
+				'assignedHandler' => ['type' => 'string', 'referenceType' => 'contacts'],
+				'linkedPage' => ['type' => 'string', 'referenceType' => 'mail'],
+			])
+		);
+
+		$this->assertInstanceOf(\InvalidArgumentException::class, $refusal);
+		$this->assertStringContainsString("'mail'", $refusal->getMessage());
+	}//end testValidateAllReachesTheLastProperty()
+
+	/**
+	 * Run a validation and return its refusal, or null when it passed.
+	 *
+	 * @param callable $check The validation.
+	 *
+	 * @return \InvalidArgumentException|null The refusal.
+	 */
+	private function refusalOf(callable $check): ?\InvalidArgumentException {
+		try {
+			$check();
+		} catch (\InvalidArgumentException $refusal) {
+			return $refusal;
+		}
+
+		return null;
+	}//end refusalOf()
 
 	public function testValidateAllStopsAtFirstInvalidProperty(): void {
 		$this->expectException(\InvalidArgumentException::class);

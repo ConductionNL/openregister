@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\CaseItemAudit;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
 use OCA\OpenRegister\Service\Case\CaseAnchor;
+use OCA\OpenRegister\Service\Case\CaseItemsEnsureRequest;
 use OCA\OpenRegister\Service\Case\CasePlanEnsurer;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\CasePlanStore;
@@ -141,12 +142,12 @@ class CasePlanEnsurerTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreatesItemsWithRecordedStatesAndImportsHistory(): void {
-		$result = $this->ensurer()->ensure(
+		$result = $this->ensurer()->ensure(request: new CaseItemsEnsureRequest(
 			anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2),
 			definition: self::migrated(),
 			history: self::history(),
 			actor: 'system:dossiq'
-		);
+		));
 
 		$this->assertSame(['intake', 'check', 'beoordeling', 'volledig', 'besluit'], $result['created']);
 		$this->assertSame([], $result['existing']);
@@ -195,7 +196,7 @@ class CasePlanEnsurerTest extends TestCase {
 			]
 		);
 
-		$first = $this->ensurer()->ensure(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: self::migrated(), history: self::history(), actor: 'system:dossiq');
+		$first = $this->ensurer()->ensure(request: new CaseItemsEnsureRequest(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: self::migrated(), history: self::history(), actor: 'system:dossiq'));
 		$this->assertSame(['beoordeling', 'volledig', 'besluit'], $first['created']);
 		$this->assertSame(['intake', 'check'], $first['existing']);
 		$this->assertSame('active', $this->states()['check'], 'An existing row keeps its state; the recorded one is never written over it.');
@@ -209,7 +210,7 @@ class CasePlanEnsurerTest extends TestCase {
 		}
 
 		$auditCount = count($this->audits->entries);
-		$second = $this->ensurer()->ensure(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: self::migrated(), history: self::history(), actor: 'system:dossiq');
+		$second = $this->ensurer()->ensure(request: new CaseItemsEnsureRequest(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: self::migrated(), history: self::history(), actor: 'system:dossiq'));
 		$this->assertSame([], $second['created']);
 		$this->assertCount(5, $second['items']);
 		$this->assertCount(5, $this->items->findByObject(objectUuid: CaseFixtures::OBJECT));
@@ -249,7 +250,7 @@ class CasePlanEnsurerTest extends TestCase {
 			$this->items->seed($seed);
 			$before = count($this->items->findByObject(objectUuid: CaseFixtures::OBJECT));
 			try {
-				$this->ensurer()->ensure(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: $definition, history: $history, actor: 'system:dossiq');
+				$this->ensurer()->ensure(request: new CaseItemsEnsureRequest(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: $definition, history: $history, actor: 'system:dossiq'));
 				$this->fail('expected a refusal: ' . $expected);
 			} catch (CaseValidationException $refusal) {
 				$this->assertStringContainsString($expected, $refusal->getMessage());
@@ -272,7 +273,7 @@ class CasePlanEnsurerTest extends TestCase {
 
 		$this->expectException(CaseValidationException::class);
 		$this->expectExceptionMessage("'case.item.started'");
-		$this->ensurer()->ensure(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: $bad, history: [], actor: 'system:dossiq');
+		$this->ensurer()->ensure(request: new CaseItemsEnsureRequest(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1), definition: $bad, history: [], actor: 'system:dossiq'));
 	}//end testDefinitionValidationStillApplies()
 
 	/**
@@ -309,7 +310,7 @@ class CasePlanEnsurerTest extends TestCase {
 			],
 		];
 
-		$this->ensurer($timers)->ensure(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2), definition: $definition, history: [], actor: 'system:dossiq');
+		$this->ensurer($timers)->ensure(request: new CaseItemsEnsureRequest(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2), definition: $definition, history: [], actor: 'system:dossiq'));
 
 		$this->assertCount(2, $configs, 'an expiry and a due timer for the active item, none for the enabled one');
 		$byPurpose = [];
@@ -322,7 +323,7 @@ class CasePlanEnsurerTest extends TestCase {
 		$this->assertSame('case-item', $byPurpose['expiry']['subjectType']);
 		$this->assertSame('none', $byPurpose['due']['legalEffect']);
 
-		$this->ensurer($timers)->ensure(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2), definition: $definition, history: [], actor: 'system:dossiq');
+		$this->ensurer($timers)->ensure(request: new CaseItemsEnsureRequest(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2), definition: $definition, history: [], actor: 'system:dossiq'));
 		$this->assertCount(2, $configs, 'a second run creates nothing and arms nothing');
 	}//end testAnItemEnsuredAsActiveArmsItsStatutoryExpiryAndDueTimers()
 
@@ -345,7 +346,7 @@ class CasePlanEnsurerTest extends TestCase {
 			],
 		];
 
-		$result = $this->ensurer($timers)->ensure(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2), definition: $definition, history: [], actor: 'system:dossiq');
+		$result = $this->ensurer($timers)->ensure(request: new CaseItemsEnsureRequest(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2), definition: $definition, history: [], actor: 'system:dossiq'));
 
 		$this->assertSame(['beoordeling'], $result['created']);
 		$row = $this->items->findByObject(objectUuid: CaseFixtures::OBJECT)[0];
@@ -370,12 +371,12 @@ class CasePlanEnsurerTest extends TestCase {
 
 		// The first ensure ran without any marker store: the failed arm was lost.
 		$first = $this->ensurer(new CasePlanItemTimers(timers: $core, logger: new NullLogger()));
-		$first->ensure(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2), definition: $definition, history: [], actor: 'system:dossiq');
+		$first->ensure(request: new CaseItemsEnsureRequest(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2), definition: $definition, history: [], actor: 'system:dossiq'));
 
 		$stored = [];
 		$markers = new UnarmedTimerMarkers(appConfig: CaseFixtures::memoryAppConfig(case: $this, store: $stored));
 		$resumed = $this->ensurer(new CasePlanItemTimers(timers: $core, logger: new NullLogger(), markers: $markers));
-		$result = $resumed->ensure(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2), definition: $definition, history: [], actor: 'system:dossiq');
+		$result = $resumed->ensure(request: new CaseItemsEnsureRequest(anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2), definition: $definition, history: [], actor: 'system:dossiq'));
 
 		$this->assertSame([], $result['created']);
 		$rows = $this->items->findByObject(objectUuid: CaseFixtures::OBJECT);

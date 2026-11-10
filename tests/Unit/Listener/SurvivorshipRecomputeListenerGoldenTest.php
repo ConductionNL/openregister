@@ -18,6 +18,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -212,8 +213,9 @@ class SurvivorshipRecomputeListenerGoldenTest extends TestCase {
 		$seen = [];
 		$this->resolver->expects($this->once())->method('resolveGoldenRecord')
 			->willReturnCallback(
-				function (string $entityType, array $sourceRecords, array $passed, array $trustRows, TrustTierResolver $trust, \DateTimeImmutable $asOf, mixed $overrides) use (&$seen): array {
-					$seen = [$entityType, $sourceRecords, $passed, $trustRows, $overrides];
+				function (array $sourceRecords, array $passed, SurvivorshipTrustLookup $trust, mixed $overrides) use (&$seen): array {
+					$this->assertInstanceOf(TrustTierResolver::class, $trust->trustResolver);
+					$seen = [$trust->entityType, $sourceRecords, $passed, $trust->trustRows, $overrides];
 
 					return self::RESOLUTION;
 				}
@@ -245,8 +247,8 @@ class SurvivorshipRecomputeListenerGoldenTest extends TestCase {
 		$seen = [];
 		$this->resolver->expects($this->once())->method('resolveGoldenRecord')
 			->willReturnCallback(
-				function (string $entityType, array $sourceRecords, array $passed, array $trustRows, TrustTierResolver $trust, \DateTimeImmutable $asOf, mixed $overrides) use (&$seen): array {
-					$seen = [$trustRows, $overrides];
+				function (array $sourceRecords, array $passed, SurvivorshipTrustLookup $trust, mixed $overrides) use (&$seen): array {
+					$seen = [$trust->trustRows, $overrides];
 
 					return self::RESOLUTION;
 				}

@@ -46,6 +46,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationRequestTrait;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationSubscriptionsControllerServices;
+use OCA\OpenRegister\Notifications\Db\SubscriptionKey;
 
 /**
  * DEPRECATED per-user (register, schema) notification subscription surface.
@@ -84,22 +85,28 @@ class NotificationSubscriptionsController extends Controller {
 	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest                                    $request     Request.
-	 * @param NotificationSubscriptionsControllerServices $services    The subscription stores.
-	 * @param IUserSession                                $userSession Current-user session.
+	 * @param IRequest                                    $request  Request.
+	 * @param NotificationSubscriptionsControllerServices $services The subscription stores and the session.
 	 */
 	public function __construct(
 		IRequest $request,
 		NotificationSubscriptionsControllerServices $services,
-		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 
 		$this->mapper         = $services->mapper;
 		$this->registerMapper = $services->registerMapper;
 		$this->schemaMapper   = $services->schemaMapper;
+		$this->userSession    = $services->userSession;
 	}//end __construct()
 
 	/**
@@ -153,7 +160,7 @@ class NotificationSubscriptionsController extends Controller {
 			return $refusal;
 		}
 
-		return $this->subscribe(userId: $userId, registerId: $registerId, schemaId: $schemaId);
+		return $this->subscribe(registerId: $registerId, schemaId: $schemaId);
 	}//end create()
 
 	/**
@@ -168,54 +175,53 @@ class NotificationSubscriptionsController extends Controller {
 	 * @return JSONResponse|null The 404, or null when both are reachable.
 	 */
 	private function refuseScope(?int $registerId, ?int $schemaId): ?JSONResponse {
-		$register = $this->refuseUnreachable(
-			id: $registerId,
-			find: fn (int $id): mixed => $this->registerMapper->find($id, _multitenancy: true),
-			error: 'Register not found or not accessible'
-		);
+		if ($this->isUnreachable(id: $registerId, find: fn (int $id): mixed => $this->registerMapper->find($id, _multitenancy: true)) === true) {
+			return new JSONResponse(data: ['error' => 'Register not found or not accessible'], statusCode: 404);
+		}
 
-		return ($register ?? $this->refuseUnreachable(
-			id: $schemaId,
-			find: fn (int $id): mixed => $this->schemaMapper->find($id, _multitenancy: true),
-			error: 'Schema not found or not accessible'
-		));
+		if ($this->isUnreachable(id: $schemaId, find: fn (int $id): mixed => $this->schemaMapper->find($id, _multitenancy: true)) === true) {
+			return new JSONResponse(data: ['error' => 'Schema not found or not accessible'], statusCode: 404);
+		}
+
+		return null;
 	}//end refuseScope()
 
 	/**
-	 * A 404 when an asked-for id cannot be found; null when none was asked for or it was found.
+	 * Whether an id was asked for and its lookup fails.
 	 *
-	 * @param int|null                $id    The id, or null when none was asked for.
-	 * @param callable(int): mixed    $find  Looks the id up; throws when it is unreachable.
-	 * @param string                  $error The error the 404 carries.
+	 * @param int|null $id   The id asked for, or null.
+	 * @param callable $find The lookup; it throws when the caller cannot reach the id.
 	 *
-	 * @return JSONResponse|null The 404, or null.
+	 * @return boolean True when the id was asked for and cannot be reached.
 	 */
-	private function refuseUnreachable(?int $id, callable $find, string $error): ?JSONResponse {
+	private function isUnreachable(?int $id, callable $find): bool {
 		if ($id === null) {
-			return null;
+			return false;
 		}
 
 		try {
 			$find($id);
 		} catch (\Throwable $e) {
-			return new JSONResponse(data: ['error' => $error], statusCode: 404);
+			return true;
 		}
 
-		return null;
-	}//end refuseUnreachable()
+		return false;
+	}//end isUnreachable()
 
 	/**
 	 * Subscribe the caller, answering 422 when the mapper refuses the scope.
 	 *
-	 * @param string   $userId     The caller.
+	 * The caller is the signed-in user; create() has already refused anyone else.
+	 *
 	 * @param int|null $registerId The register, or null.
 	 * @param int|null $schemaId   The schema, or null.
 	 *
 	 * @return JSONResponse The subscription, or a 422.
 	 */
-	private function subscribe(string $userId, ?int $registerId, ?int $schemaId): JSONResponse {
+	private function subscribe(?int $registerId, ?int $schemaId): JSONResponse {
 		try {
-			$entity = $this->mapper->subscribe(userId: $userId, registerId: $registerId, schemaId: $schemaId);
+			$key    = new SubscriptionKey(userId: (string)$this->resolveUserId(), registerId: $registerId, schemaId: $schemaId);
+			$entity = $this->mapper->subscribeTo(key: $key);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
@@ -244,10 +250,8 @@ class NotificationSubscriptionsController extends Controller {
 		$registerId = $this->coerceNullableInt(value: $this->request->getParam('registerId'));
 		$schemaId = $this->coerceNullableInt(value: $this->request->getParam('schemaId'));
 
-		$deleted = $this->mapper->unsubscribe(
-			userId: $userId,
-			registerId: $registerId,
-			schemaId: $schemaId
+		$deleted = $this->mapper->unsubscribeFrom(
+			key: new SubscriptionKey(userId: $userId, registerId: $registerId, schemaId: $schemaId)
 		);
 
 		return new JSONResponse(data: ['deleted' => $deleted]);

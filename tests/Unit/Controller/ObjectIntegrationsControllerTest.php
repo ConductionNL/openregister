@@ -146,7 +146,6 @@ class ObjectIntegrationsControllerTest extends TestCase {
 	): ObjectIntegrationsController {
 		$request = $request ?? $this->createMock(IRequest::class);
 		return new ObjectIntegrationsController(
-			appName: 'openregister',
 			request: $request,
 			services: new ObjectIntegrationsControllerServices(
 				domain: new ObjectIntegrationsDomain(
@@ -411,6 +410,18 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$this->assertSame(['title' => 'X'], $stub->createCalled['payload']);
 	}//end testCreateReturns201()
 
+	/**
+	 * A create that fails keeps the failure's own status: only a success becomes 201.
+	 *
+	 * @return void
+	 */
+	public function testAFailedCreateKeepsItsStatus(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(new _ControllerStubProvider('stub'));
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->buildController($registry)->create('r', 's', 'o', 'missing')->getStatus());
+	}//end testAFailedCreateKeepsItsStatus()
+
 	public function testAnItemOfAnotherObjectAnswers404(): void {
 		$provider = new class('stub') extends _ControllerStubProvider {
 			public function delete(string $register, string $schema, string $objectId, string $entityId): void {
@@ -494,9 +505,11 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$registry = new IntegrationRegistry(new NullLogger());
 		$registry->addProvider(
 			new \OCA\OpenRegister\Service\Integration\Providers\ContactsProvider(
-				$contacts,
-				$this->createMock(\OCP\App\IAppManager::class),
-				$this->createMock(\OCP\IL10N::class)
+				new \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription(
+					$this->createMock(\OCP\App\IAppManager::class),
+					$this->createMock(\OCP\IL10N::class)
+				),
+				$contacts
 			)
 		);
 		$controller = $this->buildController(registry: $registry, request: $this->buildRequest(['role' => 'x']));

@@ -48,6 +48,7 @@
     "test:l10n": "node tests/l10n/check-l10n.js",
     "test:l10n:parity": "node tests/l10n/check-l10n-parity.js",
     "test:l10n:write": "node tests/l10n/check-l10n.js --write",
+    "test:newman-route-ratchet": "python3 -m unittest discover -s scripts/tests -p test_newman_route_coverage.py && python3 scripts/newman-route-coverage.py . --ci-only --ratchet tests/.newman-route-baseline.json",
     "test-coverage": "jest --silent --coverage",
     "validate-oas": "spectral lint oas-*.json --fail-severity error",
     "watch": "NODE_ENV=development webpack --config webpack.config.js --progress --watch"
@@ -103,7 +104,7 @@
     "@nextcloud/router": "^3.1.0",
     "@nextcloud/vue": "^9.13.1",
     "@vueuse/core": "^14.3.0",
-    "apexcharts": "^7.1.0",
+    "apexcharts": "4.7.0",
     "dexie": "^4.4.6",
     "dompurify": "^3.4.17",
     "gridstack": "^13.2.0",

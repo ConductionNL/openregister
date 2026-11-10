@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -89,11 +88,9 @@ class RelatedRowQueryApplier {
 	 * Does nothing at all when there is no `_related` key, so every existing
 	 * call site is unaffected.
 	 *
-	 * @param IQueryBuilder $qb         The query being built.
-	 * @param array<mixed>  $query      The request query.
-	 * @param Register      $register   The register the related rows live in.
-	 * @param callable      $organisationScopeFor Given the related schema and the register id, the organisation scope
-	 *                                            the list path applies to that table: `array{mode: string, uuids: array<int, string>}`.
+	 * @param RelatedRowFilterTarget $target The query being built, the register the related rows live in and the
+	 *                                       organisation scope of a related table.
+	 * @param array<mixed>           $query  The request query.
 	 *
 	 * The outer object row is joined as `OUTER_ALIAS`, the alias the list path gives it.
 	 *
@@ -104,60 +101,99 @@ class RelatedRowQueryApplier {
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function apply(IQueryBuilder $qb, array $query, Register $register, callable $organisationScopeFor): int {
+	public function apply(RelatedRowFilterTarget $target, array $query): int {
 		$filters = $this->filtersIn(query: $query);
 		if ($filters === []) {
 			return 0;
 		}
 
-		$clause  = new RelatedRowExistsClause();
-		$engine  = $clause->engineFor(db: $this->db, logger: $this->logger);
-		$applied = 0;
-
-		foreach (array_values($filters) as $position => $filter) {
-			$alias   = sprintf('rel%d', $position);
-			$schema  = $this->resolveSchema(name: $filter->schema);
-			$relatedTable = $this->lookups->tableHandler->getTableNameForRegisterSchema(register: $register, schema: $schema);
-
-			// A schema that has never stored an object has no table yet, so no
-			// row can match. Same answer the list path gives for a missing table.
-			if ($this->lookups->tableHandler->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-				$qb->andWhere($qb->createFunction('1 = 0'));
-				$applied++;
-				continue;
-			}
-
-			$this->access->assertReadable(filter: $filter, schema: $schema);
-
-			$target = new RelatedRowSqlTarget(
-				engine: $engine,
-				// Raw SQL gets no automatic table prefix; Nextcloud's connection
-				// replaces `*PREFIX*` with the instance's (`oc_` by default).
-				table: '*PREFIX*'.$relatedTable,
-				outerAlias: self::OUTER_ALIAS,
-				storage: RelatedRowExistsClause::STORAGE_COLUMNS
-			);
-
-			$inner = new RelatedRowInnerRow(
-				alias: $alias,
-				// 🔴 THE ACCESS PREDICATE FOR THE RELATED SCHEMA, NOT THE OUTER
-				// ONE. The two schemas have different authorization blocks, and
-				// reusing the outer query's predicate would decide who may read
-				// case properties by asking who may read cases.
-				accessPredicate: $this->access->predicate(
-					qb: $qb,
-					source: new RelatedRowSource(schema: $schema, tableName: $relatedTable, alias: $alias),
-					scope: $organisationScopeFor($schema, $register->getId())
-				),
-				parameterPrefix: $alias
-			);
-
-			$this->addClause(qb: $qb, rendered: $clause->render(filter: $filter, target: $target, inner: $inner));
-			$applied++;
+		$engine = (new RelatedRowExistsClause())->engineFor(db: $this->db, logger: $this->logger);
+		$run    = new RelatedRowApplyRun(qb: $target->qb, register: $target->register, organisationScopeFor: $target->organisationScopeFor, engine: $engine);
+		foreach ($filters as $filter) {
+			$this->applyOne(run: $run, filter: $filter);
 		}
 
-		return $applied;
+		return $run->applied;
 	}//end apply()
+
+	/**
+	 * Narrow the run's query by one block: no row at all when its table does not exist yet.
+	 *
+	 * @param RelatedRowApplyRun $run    The query, register, scope and engine, and the count so far.
+	 * @param RelatedRowFilter   $filter The block.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the block names a schema that cannot be resolved.
+	 */
+	private function applyOne(RelatedRowApplyRun $run, RelatedRowFilter $filter): void {
+		$alias = sprintf('rel%d', $run->applied);
+		$run->applied++;
+		$schema       = $this->resolveSchema(name: $filter->schema);
+		$relatedTable = $this->lookups->tableHandler->getTableNameForRegisterSchema(register: $run->register, schema: $schema);
+
+		if ($this->matchesNothing(run: $run, schema: $schema) === true) {
+			return;
+		}
+
+		$this->access->assertReadable(filter: $filter, schema: $schema);
+
+		$scope  = ($run->organisationScopeFor)($schema, $run->register->getId());
+		$source = new RelatedRowSource(schema: $schema, tableName: $relatedTable, alias: $alias, scope: $scope);
+		$rendered = (new RelatedRowExistsClause())->render(filter: $filter, subquery: $this->subquery(run: $run, source: $source));
+		$this->addClause(qb: $run->qb, rendered: $rendered);
+	}//end applyOne()
+
+	/**
+	 * Narrow the run's query to no row when the schema has no table in the register yet.
+	 *
+	 * A schema that has never stored an object has no table yet, so no row can
+	 * match. Same answer the list path gives for a missing table.
+	 *
+	 * @param RelatedRowApplyRun $run    The query and register.
+	 * @param Schema             $schema The related schema.
+	 *
+	 * @return bool True when the query was narrowed to nothing.
+	 */
+	private function matchesNothing(RelatedRowApplyRun $run, Schema $schema): bool {
+		if ($this->lookups->tableHandler->existsTableForRegisterSchema(register: $run->register, schema: $schema) === true) {
+			return false;
+		}
+
+		$run->qb->andWhere($run->qb->createFunction('1 = 0'));
+		return true;
+	}//end matchesNothing()
+
+	/**
+	 * The EXISTS subquery over one related table, under that table's own access predicate.
+	 *
+	 * @param RelatedRowApplyRun $run    The query and engine.
+	 * @param RelatedRowSource   $source The related schema, its table, its alias and its organisation scope.
+	 *
+	 * @return RelatedRowSubquery
+	 */
+	private function subquery(RelatedRowApplyRun $run, RelatedRowSource $source): RelatedRowSubquery {
+		$target = new RelatedRowSqlTarget(
+			engine: $run->engine,
+			// Raw SQL gets no automatic table prefix; Nextcloud's connection
+			// replaces `*PREFIX*` with the instance's (`oc_` by default).
+			table: '*PREFIX*'.$source->tableName,
+			outerAlias: self::OUTER_ALIAS,
+			storage: RelatedRowExistsClause::STORAGE_COLUMNS
+		);
+
+		// 🔴 THE ACCESS PREDICATE FOR THE RELATED SCHEMA, NOT THE OUTER ONE.
+		// The two schemas have different authorization blocks, and reusing the
+		// outer query's predicate would decide who may read case properties by
+		// asking who may read cases.
+		$inner = new RelatedRowInnerRow(
+			alias: $source->alias,
+			accessPredicate: $this->access->predicate(qb: $run->qb, source: $source),
+			parameterPrefix: $source->alias
+		);
+
+		return new RelatedRowSubquery(target: $target, inner: $inner);
+	}//end subquery()
 
 	/**
 	 * Every `_related` and `_referenced` block in a query, inverse ones first.

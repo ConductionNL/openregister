@@ -98,17 +98,17 @@ class RetentionSweepService implements RetentionSweepInterface {
 	 * @spec openspec/specs/dsar-retention-sweep/spec.md
 	 */
 	public function runSweep(bool $dryRun = false): array {
-		$now = $this->sources->time->getTime();
-		$summary = $this->openSummary(dryRun: $dryRun);
+		$run = new RetentionSweepRun(now: $this->sources->time->getTime(), dryRun: $dryRun);
+		$run->summary = $this->openSummary(dryRun: $dryRun);
 
 		foreach ($this->sources->accessor->findAllCaseEntities() as $case) {
-			$summary['evaluated']++;
-			$this->sweepCase(case: $case, now: $now, dryRun: $dryRun, summary: $summary);
+			$run->summary['evaluated']++;
+			$this->sweepCase(run: $run, case: $case);
 		}
 
-		$summary['withheldCount'] = count($summary['withheld']);
+		$run->summary['withheldCount'] = count($run->summary['withheld']);
 
-		return $summary;
+		return $run->summary;
 	}//end runSweep()
 
 	/**
@@ -135,43 +135,37 @@ class RetentionSweepService implements RetentionSweepInterface {
 	/**
 	 * Decide one case: untouched, skipped, withheld, or purged (reported only on a dry run).
 	 *
-	 * @param ObjectEntity         $case    The case entity.
-	 * @param int                  $now     Current unix time.
-	 * @param bool                 $dryRun  When true, nothing is scrubbed or deleted.
-	 * @param array<string, mixed> $summary The sweep summary (mutated by reference).
+	 * @param RetentionSweepRun $run  The sweep: clock, dry-run flag and summary.
+	 * @param ObjectEntity      $case The case entity.
 	 *
 	 * @return void
 	 */
-	private function sweepCase(ObjectEntity $case, int $now, bool $dryRun, array &$summary): void {
-		$data = $case->getObject();
-
+	private function sweepCase(RetentionSweepRun $run, ObjectEntity $case): void {
 		// Not yet expired → untouched.
-		if ($this->isExpired(data: $data, now: $now) === false) {
-			$summary['withinWindow']++;
+		if ($this->isExpired(data: $case->getObject(), now: $run->now) === false) {
+			$run->summary['withinWindow']++;
 			return;
 		}
 
-		$this->sweepExpired(case: $case, data: $data, dryRun: $dryRun, summary: $summary);
+		$this->sweepExpired(run: $run, case: $case);
 	}//end sweepCase()
 
 	/**
 	 * An expired case: skipped or withheld when refused, failed when the delete fails, else purged.
 	 *
-	 * @param ObjectEntity         $case    The expired case entity.
-	 * @param array<string, mixed> $data    The case payload.
-	 * @param bool                 $dryRun  When true, nothing is scrubbed or deleted.
-	 * @param array<string, mixed> $summary The sweep summary (mutated by reference).
+	 * @param RetentionSweepRun $run  The sweep: dry-run flag and summary.
+	 * @param ObjectEntity      $case The expired case entity.
 	 *
 	 * @return void
 	 */
-	private function sweepExpired(ObjectEntity $case, array $data, bool $dryRun, array &$summary): void {
+	private function sweepExpired(RetentionSweepRun $run, ObjectEntity $case): void {
 		$refusal = $this->refusalFor(case: $case);
 		if ($refusal !== null) {
-			$summary[$refusal[0]][] = $refusal[1];
+			$run->summary[$refusal[0]][] = $refusal[1];
 			return;
 		}
 
-		$summary[$this->outcomeOf(case: $case, data: $data, dryRun: $dryRun)][] = (string)$case->getUuid();
+		$run->summary[$this->outcomeOf(run: $run, case: $case)][] = (string)$case->getUuid();
 	}//end sweepExpired()
 
 	/**
@@ -179,14 +173,13 @@ class RetentionSweepService implements RetentionSweepInterface {
 	 *
 	 * A dry run destroys nothing and reports the case as `purged`.
 	 *
-	 * @param ObjectEntity         $case   The expired case entity.
-	 * @param array<string, mixed> $data   The case payload.
-	 * @param bool                 $dryRun When true, nothing is scrubbed or deleted.
+	 * @param RetentionSweepRun $run  The sweep: dry-run flag.
+	 * @param ObjectEntity      $case The expired, unprotected case entity.
 	 *
 	 * @return string The summary bucket.
 	 */
-	private function outcomeOf(ObjectEntity $case, array $data, bool $dryRun): string {
-		if ($dryRun === true || $this->purge(case: $case, data: $data) === true) {
+	private function outcomeOf(RetentionSweepRun $run, ObjectEntity $case): string {
+		if ($run->dryRun === true || $this->purge(case: $case, data: $case->getObject()) === true) {
 			return 'purged';
 		}
 

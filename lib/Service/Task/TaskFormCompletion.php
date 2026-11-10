@@ -77,9 +77,7 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 	 * Complete a task, writing its form payload to the subject first.
 	 *
 	 * @param string $uuid The task uuid.
-	 * @param string $outcome The completion outcome.
-	 * @param string|null $resultText Free-text result.
-	 * @param string|null $comment Completion comment.
+	 * @param TaskAnswer $answer The completion outcome, result and comment.
 	 * @param array<string, mixed> $data The declared field values; empty for a form-less completion.
 	 * @param string|null $actor The completing identity.
 	 *
@@ -91,26 +89,46 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
-	public function complete(string $uuid, string $outcome, ?string $resultText, ?string $comment, array $data, ?string $actor): Task {
+	public function complete(string $uuid, TaskAnswer $answer, array $data, ?string $actor): Task {
 		// The task verb's authorization FIRST, fail-closed and audited on
 		// denial, before a single byte reaches the subject object.
-		$task = $this->tasks->authorizedOpenTask(verb: 'complete', uuid: $uuid, actor: $actor);
+		$task = $this->tasks->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: $actor), uuid: $uuid);
+		$this->submit(submission: new TaskFormSubmission(task: $task, data: $data, actor: $actor));
 
+		return $this->tasks->completeWithAnswer(
+			uuid: $uuid,
+			answer: new TaskAnswer(outcome: $answer->outcome, resultText: $answer->resultText, comment: $answer->comment),
+			actor: $actor
+		);
+	}//end complete()
+
+	/**
+	 * Check the form and the checklist, then write the submitted values onto
+	 * the subject; a refusal is audited as a refused completion and rethrown.
+	 *
+	 * @param TaskFormSubmission $submission The opened task, values and actor.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskFormRefusedException When the form, checklist or values are refused.
+	 * @throws TaskSubjectWriteRefusedException When the subject refuses the write.
+	 */
+	private function submit(TaskFormSubmission $submission): void {
+		$task = $submission->task;
 		try {
 			$described = $this->forms->describe(task: $task);
 			$this->refuseUnresolvable(described: $described);
 			$this->refuseUncheckedItems(task: $task, required: $described['requireChecklist']);
-			$this->writer->write(task: $task, form: $described['form'], data: $data);
+			$this->writer->write(submission: $submission, form: $described['form']);
 		} catch (TaskFormRefusedException | TaskSubjectWriteRefusedException $refused) {
 			// A refused attempt, distinguishable from a completion: the task
 			// keeps its pre-call state and the audit says somebody tried.
-			$this->tasks->recordRefusedCompletion(task: $task, reason: $refused->getMessage(), actor: $actor);
+			$attempt = new TaskAct(verb: 'complete', actor: $submission->actor, reason: $refused->getMessage());
+			$this->tasks->recordRefusedCompletion(task: $task, attempt: $attempt);
 
 			throw $refused;
 		}
-
-		return $this->tasks->complete(uuid: $uuid, outcome: $outcome, resultText: $resultText, comment: $comment, actor: $actor);
-	}//end complete()
+	}//end submit()
 
 	/**
 	 * An unresolvable form completes nothing: an empty form would report success for a task that required evidence.

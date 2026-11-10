@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Query;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeResolverInterface;
 use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -88,22 +89,20 @@ class RelatedRowAccess {
 	 * with the outer query); this only renders it for the related alias. A mode
 	 * it does not know matches nothing.
 	 *
-	 * @param IQueryBuilder                                  $qb     The query, which receives the organisation parameters.
-	 * @param RelatedRowSource                               $source The related schema, its bare table (for the row predicate)
-	 *                                                               and the related row's alias.
-	 * @param array{mode: string, uuids: array<int, string>} $scope  The decided organisation scope.
+	 * @param IQueryBuilder    $qb     The query, which receives the organisation parameters.
+	 * @param RelatedRowSource $source The related schema, its bare table (for the row predicate), the related
+	 *                                 row's alias and the decided organisation scope.
 	 *
 	 * @return string The combined predicate.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function predicate(IQueryBuilder $qb, RelatedRowSource $source, array $scope): string {
+	public function predicate(IQueryBuilder $qb, RelatedRowSource $source): string {
+		$scope         = $source->scope;
 		$alias         = $source->alias;
 		$rbacPredicate = $this->rbac->buildRbacPredicateForAlias(
 			schema: $source->schema,
-			alias: $alias,
-			action: 'read',
-			tableName: $source->tableName
+			rows: new AliasedRows(alias: $alias, action: 'read', tableName: $source->tableName)
 		);
 		$column        = $alias . '._organisation';
 		$mode   = ($scope['mode'] ?? null);

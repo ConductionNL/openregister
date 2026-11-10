@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Files\Controller\Support;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 
 /**
  * One copy or move of a file from the object a route names to another object.
@@ -74,13 +73,13 @@ final class FileTransfer {
 	/**
 	 * A copy of the file named by the route.
 	 *
-	 * @param ObjectLinkRoute $route  The source object, as the route names it.
+	 * @param FileObjectRoute $route  The source object, as the route names it.
 	 * @param int             $fileId The file.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
-		public readonly ObjectLinkRoute $route,
+		public readonly FileObjectRoute $route,
 		public readonly int $fileId,
 	) {
 	}//end __construct()

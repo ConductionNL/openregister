@@ -80,42 +80,21 @@ import {
 										>
 									</div>
 									<div
-										v-if="
-											sheetSummary.errors
-											&& sheetSummary.errors.some(
-												(error) =>
-													error.type
-													=== 'MissingIdColumnException',
-											)
-										"
+										v-if="hasErrorType(sheetSummary, 'MissingIdColumnException')"
 										class="errorInfo">
 										<small class="errorText"
 											>Missing required "id" column</small
 										>
 									</div>
 									<div
-										v-else-if="
-											sheetSummary.errors
-											&& sheetSummary.errors.some(
-												(error) =>
-													error.type
-													=== 'InvalidUuidException',
-											)
-										"
+										v-else-if="hasErrorType(sheetSummary, 'InvalidUuidException')"
 										class="errorInfo">
 										<small class="errorText"
 											>Invalid UUID format in ID column</small
 										>
 									</div>
 									<div
-										v-else-if="
-											sheetSummary.errors
-											&& sheetSummary.errors.some(
-												(error) =>
-													error.type
-													=== 'ValidationException',
-											)
-										"
+										v-else-if="hasErrorType(sheetSummary, 'ValidationException')"
 										class="errorInfo">
 										<small class="errorText"
 											>{{
@@ -189,36 +168,20 @@ import {
 									{{ sheetSummary.found || 0 }}
 								</td>
 								<td class="statCell created">
-									{{
-										(sheetSummary.created
-											&& sheetSummary.created.length)
-										|| 0
-									}}
+									{{ countOf(sheetSummary, 'created') }}
 								</td>
 								<td class="statCell updated">
-									{{
-										(sheetSummary.updated
-											&& sheetSummary.updated.length)
-										|| 0
-									}}
+									{{ countOf(sheetSummary, 'updated') }}
 								</td>
 								<td class="statCell unchanged">
-									{{
-										(sheetSummary.unchanged
-											&& sheetSummary.unchanged.length)
-										|| 0
-									}}
+									{{ countOf(sheetSummary, 'unchanged') }}
 								</td>
 								<td class="statCell invalid">
 									{{ getInvalidCount(sheetSummary) }}
 								</td>
 								<td class="statCell errors">
 									<div class="errorCell">
-										<span>{{
-											(sheetSummary.errors
-												&& sheetSummary.errors.length)
-											|| 0
-										}}</span>
+										<span>{{ countOf(sheetSummary, 'errors') }}</span>
 										<button
 											v-if="
 												sheetSummary.errors
@@ -242,19 +205,11 @@ import {
 								</td>
 								<td class="statCell total">
 									{{
-										((sheetSummary.created
-											&& sheetSummary.created.length)
-											|| 0)
-										+ ((sheetSummary.updated
-											&& sheetSummary.updated.length)
-											|| 0)
-										+ ((sheetSummary.unchanged
-											&& sheetSummary.unchanged.length)
-											|| 0)
+										countOf(sheetSummary, 'created')
+										+ countOf(sheetSummary, 'updated')
+										+ countOf(sheetSummary, 'unchanged')
 										+ getInvalidCount(sheetSummary)
-										+ ((sheetSummary.errors
-											&& sheetSummary.errors.length)
-											|| 0)
+										+ countOf(sheetSummary, 'errors')
 									}}
 								</td>
 							</tr>
@@ -453,24 +408,9 @@ import {
 			<div class="fileTypes">
 				<p class="fileTypesTitle">Supported file types:</p>
 				<ul class="fileTypesList">
-					<li>
-						<strong>JSON</strong> - Register configuration and
-						objects.<br />
-						<em
-							>You can create or update objects for multiple schemas at
-							once.</em
-						>
-					</li>
-					<li>
-						<strong>Excel</strong> (.xlsx, .xls) - Objects data.<br />
-						<em
-							>You can create or update objects for multiple schemas at
-							once.</em
-						>
-					</li>
-					<li>
-						<strong>CSV</strong> - Objects data.<br />
-						<em>You can only update one schema within a register.</em>
+					<li v-for="fileType in fileTypesHelp" :key="fileType.name">
+						<strong>{{ fileType.name }}</strong>{{ fileType.text }}<br />
+						<em>{{ fileType.note }}</em>
 					</li>
 				</ul>
 				<div class="importRequirements">
@@ -557,7 +497,8 @@ import {
 
 		<template v-if="!success && !importResults" #actions>
 			<CloseCancelButton label="Cancel" @click="closeModal" />
-			<NcButton
+			<BusyButton
+				:busy="loading"
 				:disabled="
 					loading
 					|| !selectedFile
@@ -567,11 +508,10 @@ import {
 				variant="primary"
 				@click="importRegister">
 				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Import v-else :size="20" />
+					<Import :size="20" />
 				</template>
 				Import
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
@@ -584,13 +524,13 @@ import {
 	NcButton,
 	NcCheckboxRadioSwitch,
 	NcDialog,
-	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import Import from 'vue-material-design-icons/Import.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { freshState } from '../../services/initialState.js'
 import {
@@ -605,6 +545,17 @@ const FILE_TYPE_LABELS = {
 	xls: 'Excel Spreadsheet',
 	csv: 'CSV Data',
 }
+
+const MANY_SCHEMAS = 'You can create or update objects for multiple schemas at once.'
+
+/**
+ * The supported file types the import form lists, with what each can do.
+ */
+const FILE_TYPES_HELP = [
+	{ name: 'JSON', text: ' - Register configuration and objects.', note: MANY_SCHEMAS },
+	{ name: 'Excel', text: ' (.xlsx, .xls) - Objects data.', note: MANY_SCHEMAS },
+	{ name: 'CSV', text: ' - Objects data.', note: 'You can only update one schema within a register.' },
+]
 
 const LARGE_FILE = 500 * 1024
 
@@ -657,11 +608,11 @@ export default {
 	components: {
 		NcDialog,
 		NcButton,
-		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		NcSelect,
 		// Icons
+		BusyButton,
 		CloseCancelButton,
 		Import,
 		Upload,
@@ -698,6 +649,17 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The supported file types the form lists.
+		 *
+		 * @return {Array<object>} Name, text and note of each type
+		 *
+		 * @spec exclude computed display helper for the supported file types list
+		 */
+		fileTypesHelp() {
+			return FILE_TYPES_HELP
+		},
+
 		/**
 		 * Check if the selected file type is valid
 		 *
@@ -784,6 +746,28 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Whether a sheet's import reported an error of the given type.
+		 *
+		 * @param {object} sheetSummary The sheet's import summary
+		 * @param {string} type The error type
+		 * @return {boolean} Whether such an error was reported
+		 */
+		hasErrorType(sheetSummary, type) {
+			return !!sheetSummary.errors && sheetSummary.errors.some((error) => error.type === type)
+		},
+
+		/**
+		 * How many entries a sheet's import summary lists under a key.
+		 *
+		 * @param {object} sheetSummary The sheet's import summary
+		 * @param {string} key The list, such as created or errors
+		 * @return {number} The number of entries, 0 when absent
+		 */
+		countOf(sheetSummary, key) {
+			return (sheetSummary[key] && sheetSummary[key].length) || 0
+		},
+
 		/**
 		 * Get the file extension from a filename
 		 *
@@ -1156,7 +1140,9 @@ export default {
 	color: var(--color-text-light);
 }
 
-.sheetSummaryTable {
+.sheetSummaryTable,
+.errorDetailsTable,
+.errorTable {
 	width: 100%;
 	border-collapse: collapse;
 	border-radius: var(--border-radius);
@@ -1165,13 +1151,16 @@ export default {
 }
 
 .sheetSummaryTable th,
-.sheetSummaryTable td {
+.sheetSummaryTable td,
+.errorTable th,
+.errorTable td {
 	padding: 0.75rem 1rem;
 	text-align: left;
 	border-bottom: 1px solid var(--color-border);
 }
 
-.sheetSummaryTable th {
+.sheetSummaryTable th,
+.errorTable th {
 	background: var(--color-background-dark);
 	font-weight: 600;
 	color: var(--color-text-light);
@@ -1180,11 +1169,13 @@ export default {
 	letter-spacing: 0.5px;
 }
 
-.sheetSummaryTable tbody tr:hover {
+.sheetSummaryTable tbody tr:hover,
+.errorTable tbody tr:hover {
 	background: var(--color-background-hover);
 }
 
-.sheetSummaryTable tbody tr:last-child td {
+.sheetSummaryTable tbody tr:last-child td,
+.errorTable tbody tr:last-child td {
 	border-bottom: none;
 }
 
@@ -1456,46 +1447,6 @@ export default {
 
 .errorDetailsCell {
 	padding: 0.75rem 1rem;
-}
-
-.errorDetailsTable {
-	width: 100%;
-	border-collapse: collapse;
-	border-radius: var(--border-radius);
-	overflow: hidden;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.errorTable {
-	width: 100%;
-	border-collapse: collapse;
-	border-radius: var(--border-radius);
-	overflow: hidden;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.errorTable th,
-.errorTable td {
-	padding: 0.75rem 1rem;
-	text-align: left;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.errorTable th {
-	background: var(--color-background-dark);
-	font-weight: 600;
-	color: var(--color-text-light);
-	font-size: 0.9rem;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-}
-
-.errorTable tbody tr:hover {
-	background: var(--color-background-hover);
-}
-
-.errorTable tbody tr:last-child td {
-	border-bottom: none;
 }
 
 .errorRowNumber {

@@ -51,19 +51,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowNodeCall;
 use OCA\OpenRegister\Controller\Support\FlowNodeRunControllerServices;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
-use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
+use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraphInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowUnattributed;
+use OCA\OpenRegister\Service\Flow\FlowUnattributedInterface;
 use OCA\OpenRegister\Service\Flow\IFlowDirectlyInvokable;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -166,23 +167,21 @@ class FlowNodeRunController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
 	 * @param FlowNodeRunControllerServices $services The flow node run controller services.
 	 *                              {@see FlowRunService::executeNode()}'s
 	 *                              version pin) — NOT used for its
-	 *                              `resolveSubject()`, which loads with RBAC
+	 *                              `resolveObject()`, which loads with RBAC
 	 *                              off and is for background paths only; the
 	 *                              subject here is loaded via `$objects`
 	 *                              instead, under this caller's own RBAC and
 	 *                              multitenancy.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FlowNodeRunControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->userSession = $services->platform->userSession;
 		$this->flows = $services->graph->flows;
 		$this->publishedGraphs = $services->graph->publishedGraphs;
@@ -303,7 +302,6 @@ class FlowNodeRunController extends Controller {
 			run: $run,
 			flow: $flowDocument,
 			subject: $object,
-			nodeId: $nodeId,
 			config: $callerConfig
 		);
 
@@ -328,10 +326,10 @@ class FlowNodeRunController extends Controller {
 				flowId: $call->flowId,
 				subject: $ref,
 				trigger: FlowRunServiceInterface::TRIGGER_DIRECT_NODE,
-				context: ['nodeId' => $call->nodeId],
+				context: [FlowRunServiceInterface::NODE_ID_CONTEXT_KEY => $call->nodeId],
 				user: $callerUid
 			);
-		} catch (FlowLifecycleRefused $e) {
+		} catch (FlowLifecycleRefusedInterface $e) {
 			return new JSONResponse(
 				[
 					'error' => $e->getMessage(),
@@ -341,12 +339,12 @@ class FlowNodeRunController extends Controller {
 				],
 				Http::STATUS_CONFLICT
 			);
-		} catch (FlowDeadEnd $e) {
+		} catch (FlowDeadEndInterface $e) {
 			return new JSONResponse(
 				['error' => $e->getMessage(), 'nodes' => $e->getNodeIds()],
 				Http::STATUS_CONFLICT
 			);
-		} catch (FlowUnattributed|DelegationRefused $e) {
+		} catch (FlowUnattributedInterface|DelegationRefused $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_CONFLICT);
 		}//end try
 	}//end queueRun()

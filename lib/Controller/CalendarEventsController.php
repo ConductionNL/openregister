@@ -26,16 +26,21 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CalendarEventsControllerServices;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\CalendarPickerWindow;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\LinkTarget;
 
 /**
  * CalendarEventsController handles calendar event operations for objects.
@@ -79,18 +84,16 @@ class CalendarEventsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param CalendarEventsControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		CalendarEventsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->permissions = $services->permissions;
 
 		$this->calendarEventService = $services->calendarEventService;
@@ -115,20 +118,7 @@ class CalendarEventsController extends Controller {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$events = $this->calendarLinkService->getLinkedEvents($object->getUuid());
-
-			return new JSONResponse(['results' => $events, 'total' => count($events)]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
-		}
+		return $this->listEvents(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end index()
 
 	/**
@@ -148,37 +138,9 @@ class CalendarEventsController extends Controller {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
-			if ($this->mayUpdate(object: $object) === false) {
-				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its events.'], 403);
-			}
-
-			$data = $this->request->getParams();
-
-			if (empty($data['summary']) === true) {
-				return new JSONResponse(['error' => 'Event summary is required'], 400);
-			}
-
-			$data['objectTitle'] = $object->getName() ?? $object->getUuid();
-
-			$link = $this->calendarLinkService->createAndLinkEvent(
-				objectUuid: $object->getUuid(),
-				registerId: (int)$object->getRegister(),
-				schemaId: (int)$object->getSchema(),
-				eventData: $data
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 400);
-		}//end try
+		return $this->writing(ref: $ref, action: fn (ObjectEntity $object): JSONResponse => $this->createdEvent(object: $object));
 	}//end create()
 
 	/**
@@ -201,41 +163,9 @@ class CalendarEventsController extends Controller {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
-			if ($this->mayUpdate(object: $object) === false) {
-				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its events.'], 403);
-			}
-
-			$data = $this->request->getParams();
-
-			// Prefer the new (calendarUri, eventUid) shape; fall back to the
-			// legacy (calendarId, eventUri) shape for backward compatibility.
-			$calendarUri = (string)($data['calendarUri'] ?? '');
-			$eventUid = (string)($data['eventUid'] ?? '');
-
-			if ($calendarUri === '' || $eventUid === '') {
-				return new JSONResponse(['error' => 'calendarUri and eventUid are required'], 400);
-			}
-
-			$link = $this->calendarLinkService->linkEvent(
-				objectUuid: $object->getUuid(),
-				registerId: (int)$object->getRegister(),
-				schemaId: (int)$object->getSchema(),
-				calendarUri: $calendarUri,
-				eventUid: $eventUid
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 400);
-		}//end try
+		return $this->writing(ref: $ref, action: fn (ObjectEntity $object): JSONResponse => $this->linkedEvent(object: $object));
 	}//end link()
 
 	/**
@@ -258,27 +188,9 @@ class CalendarEventsController extends Controller {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function unlink(string $register, string $schema, string $id, string $eventUid): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 
-			if ($this->mayUpdate(object: $object) === false) {
-				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its events.'], 403);
-			}
-
-			$this->calendarLinkService->unlinkEvent(
-				objectUuid: $object->getUuid(),
-				eventUid: $eventUid
-			);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 400);
-		}
+		return $this->writing(ref: $ref, action: fn (ObjectEntity $object): JSONResponse => $this->unlinkedEvent(object: $object, eventUid: $eventUid));
 	}//end unlink()
 
 	/**
@@ -303,48 +215,73 @@ class CalendarEventsController extends Controller {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function destroy(string $register, string $schema, string $id, string $eventId): JSONResponse {
+		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
+
+		return $this->destroying(ref: $ref, action: fn (ObjectEntity $object): JSONResponse => $this->deletedEvent(object: $object, eventId: $eventId));
+	}//end destroy()
+
+	/**
+	 * The calendar events linked to an object: 404 when it does not exist,
+	 * 500 with the message on any other failure.
+	 *
+	 * @param ObjectRef $ref The register, schema and object id
+	 *
+	 * @return JSONResponse The events and their total
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function listEvents(ObjectRef $ref): JSONResponse {
 		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
+			$object = $this->validateObject(ref: $ref);
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
-			if ($this->mayUpdate(object: $object) === false) {
-				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its events.'], 403);
-			}
-
-			// Find the event in the unioned link list to recover its calendarId.
 			$events = $this->calendarLinkService->getLinkedEvents($object->getUuid());
-			$calendarId = null;
-			$eventUid = null;
-			foreach ($events as $existingEvent) {
-				if ($existingEvent['id'] === $eventId) {
-					$calendarId = $existingEvent['calendarId'];
-					$eventUid = $existingEvent['uid'] ?? null;
-					break;
-				}
-			}
 
-			if ($calendarId === null) {
-				return new JSONResponse(['error' => 'Event not found'], 404);
-			}
+			return new JSONResponse(['results' => $events, 'total' => count($events)]);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Object not found'], 404);
+		} catch (Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 500);
+		}
+	}//end listEvents()
 
-			// Delete the event, which is what this endpoint says it does. It used
-			// to call unlinkEvent() here, which strips the X-OPENREGISTER-*
-			// properties and leaves the meeting on the calendar, so "Delete
-			// meeting" and "Unlink" were the same operation and both answered
-			// {"success": true}. Cancelling a hearing left the hearing in place.
-			$this->calendarEventService->deleteEvent(calendarId: (string)$calendarId, eventUri: $eventId);
+	/**
+	 * Run a write on an object the caller may update; any failure but a
+	 * missing object is a 400 with its message.
+	 *
+	 * @param ObjectRef $ref    The register, schema and object id
+	 * @param callable  $action The write, given the object
+	 *
+	 * @return JSONResponse The write's response, 404, 403 or 400
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function writing(ObjectRef $ref, callable $action): JSONResponse {
+		try {
+			return $this->onWritableObject(ref: $ref, action: $action);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Object not found'], 404);
+		} catch (Exception $e) {
+			return new JSONResponse(['error' => $e->getMessage()], 400);
+		}
+	}//end writing()
 
-			// Also remove the link-table row, if any.
-			if ($eventUid !== null) {
-				$this->calendarLinkService->unlinkEvent(
-					objectUuid: $object->getUuid(),
-					eventUid: (string)$eventUid
-				);
-			}
-
-			return new JSONResponse(['success' => true]);
+	/**
+	 * Run a delete on an object the caller may update; a failure carrying
+	 * code 404 is a 404, any other a 400 with its message.
+	 *
+	 * @param ObjectRef $ref    The register, schema and object id
+	 * @param callable  $action The delete, given the object
+	 *
+	 * @return JSONResponse The delete's response, 404, 403 or 400
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function destroying(ObjectRef $ref, callable $action): JSONResponse {
+		try {
+			return $this->onWritableObject(ref: $ref, action: $action);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		} catch (Exception $e) {
@@ -354,8 +291,151 @@ class CalendarEventsController extends Controller {
 			}
 
 			return new JSONResponse(['error' => $e->getMessage()], $status);
-		}//end try
-	}//end destroy()
+		}
+	}//end destroying()
+
+	/**
+	 * Run an action on an object that exists and that the caller may
+	 * update: 404 when it is not found, 403 without the update right.
+	 *
+	 * @param ObjectRef $ref    The register, schema and object id
+	 * @param callable  $action The action, given the object
+	 *
+	 * @return JSONResponse The action's response, 404 or 403
+	 *
+	 * @throws DoesNotExistException When no such object exists
+	 * @throws Exception             When loading the object or the action fails
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function onWritableObject(ObjectRef $ref, callable $action): JSONResponse {
+		$object = $this->validateObject(ref: $ref);
+		if ($object === null) {
+			return new JSONResponse(['error' => 'Object not found'], 404);
+		}
+
+		if ($this->mayUpdate(object: $object) === false) {
+			return new JSONResponse(['error' => 'You may not change this object, so you cannot change its events.'], 403);
+		}
+
+		return $action($object);
+	}//end onWritableObject()
+
+	/**
+	 * Create an event from the request and link it to the object; the
+	 * summary is required.
+	 *
+	 * @param ObjectEntity $object The object
+	 *
+	 * @return JSONResponse The link, 201, or 400 without a summary
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function createdEvent(ObjectEntity $object): JSONResponse {
+		$data = $this->request->getParams();
+		if (empty($data['summary']) === true) {
+			return new JSONResponse(['error' => 'Event summary is required'], 400);
+		}
+
+		$data['objectTitle'] = $object->getName() ?? $object->getUuid();
+		$target = (new LinkTarget(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister()))->inSchema(schemaId: (int)$object->getSchema());
+		$link = $this->calendarLinkService->createLinkedEvent(target: $target, eventData: $data);
+
+		return new JSONResponse($link->jsonSerialize(), 201);
+	}//end createdEvent()
+
+	/**
+	 * Link the event the request names by calendarUri and eventUid to the object.
+	 *
+	 * @param ObjectEntity $object The object
+	 *
+	 * @return JSONResponse The link, 201, or 400 without calendarUri and eventUid
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function linkedEvent(ObjectEntity $object): JSONResponse {
+		$data = $this->request->getParams();
+		$calendarUri = (string)($data['calendarUri'] ?? '');
+		$eventUid = (string)($data['eventUid'] ?? '');
+		if ($calendarUri === '' || $eventUid === '') {
+			return new JSONResponse(['error' => 'calendarUri and eventUid are required'], 400);
+		}
+
+		$link = $this->calendarLinkService->linkEvent(
+			objectUuid: $object->getUuid(),
+			registerId: (int)$object->getRegister(),
+			schemaId: (int)$object->getSchema(),
+			calendarUri: $calendarUri,
+			eventUid: $eventUid
+		);
+
+		return new JSONResponse($link->jsonSerialize(), 201);
+	}//end linkedEvent()
+
+	/**
+	 * Remove the link between the object and one event.
+	 *
+	 * @param ObjectEntity $object   The object
+	 * @param string       $eventUid The event UID
+	 *
+	 * @return JSONResponse Success
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function unlinkedEvent(ObjectEntity $object, string $eventUid): JSONResponse {
+		$this->calendarLinkService->unlinkEvent(objectUuid: $object->getUuid(), eventUid: $eventUid);
+
+		return new JSONResponse(['success' => true]);
+	}//end unlinkedEvent()
+
+	/**
+	 * Delete one of the object's events and its link-table row.
+	 *
+	 * Deletes the event, which is what the endpoint says it does: it used
+	 * to call unlinkEvent() only, which left the meeting on the calendar,
+	 * so "Delete meeting" and "Unlink" were the same operation.
+	 *
+	 * @param ObjectEntity $object  The object
+	 * @param string       $eventId The event URI
+	 *
+	 * @return JSONResponse Success, or 404 when the object has no such event
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function deletedEvent(ObjectEntity $object, string $eventId): JSONResponse {
+		$event = $this->linkedEventById(object: $object, eventId: $eventId);
+		if ($event === null || $event['calendarId'] === null) {
+			return new JSONResponse(['error' => 'Event not found'], 404);
+		}
+
+		$this->calendarEventService->deleteEvent(calendarId: (string)$event['calendarId'], eventUri: $eventId);
+		if (($event['uid'] ?? null) !== null) {
+			$this->calendarLinkService->unlinkEvent(objectUuid: $object->getUuid(), eventUid: (string)$event['uid']);
+		}
+
+		return new JSONResponse(['success' => true]);
+	}//end deletedEvent()
+
+	/**
+	 * The calendar id and uid of the first of the object's linked events
+	 * (link rows and legacy scan) with the given id.
+	 *
+	 * @param ObjectEntity $object  The object
+	 * @param string       $eventId The event URI
+	 *
+	 * @return array{calendarId: mixed, uid: mixed}|null The event, or null when none has the id
+	 *
+	 * @spec openspec/specs/calendar-integration/spec.md
+	 */
+	private function linkedEventById(ObjectEntity $object, string $eventId): ?array {
+		foreach ($this->calendarLinkService->getLinkedEvents($object->getUuid()) as $event) {
+			if ($event['id'] === $eventId) {
+				return ['calendarId' => $event['calendarId'], 'uid' => ($event['uid'] ?? null)];
+			}
+		}
+
+		return null;
+	}//end linkedEventById()
 
 	/**
 	 * List the user's VEVENT-supporting calendars (picker step 1).
@@ -412,24 +492,26 @@ class CalendarEventsController extends Controller {
 
 			$events = $this->calendarLinkService->getEventsForCalendar(
 				calendarUri: $calendarUri,
-				limit: $limit,
-				after: $after
+				window: new CalendarPickerWindow(after: $after, limit: $limit)
 			);
 
 			return new JSONResponse(['results' => $events, 'total' => count($events)]);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			$status = 500;
+			if ($e->getCode() === 404) {
+				$status = 404;
+			}
+
+			return new JSONResponse(['error' => $e->getMessage()], $status);
 		}//end try
 	}//end listCalendarEvents()
 
 	/**
 	 * Validate that the object exists.
 	 *
-	 * @param string $register The register slug
-	 * @param string $schema The schema slug
-	 * @param string $id The object ID
+	 * @param ObjectRef $ref The register, schema and object id
 	 *
-	 * @return \OCA\OpenRegister\Db\ObjectEntity|null The object or null
+	 * @return ObjectEntity|null The object or null
 	 *
 	 * @spec exclude Private helper: resolves an object from register/schema/id; REST contract is owned by
 	 *              retrofit-2026-05-24-calendar-integration/tasks.md#task-1.
@@ -439,14 +521,10 @@ class CalendarEventsController extends Controller {
 	 *                               Swallowing it here would collapse "no such object" into the same null this method
 	 *                               returns for other reasons, which the caller could no longer tell apart.
 	 */
-	private function validateObject(
-		string $register,
-		string $schema,
-		string $id,
-	): ?\OCA\OpenRegister\Db\ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+	private function validateObject(ObjectRef $ref): ?ObjectEntity {
+		$this->objectService->setRegister($ref->register);
+		$this->objectService->setSchema($ref->schema);
+		$this->objectService->setObject($ref->id);
 
 		return $this->objectService->getObject();
 	}//end validateObject()

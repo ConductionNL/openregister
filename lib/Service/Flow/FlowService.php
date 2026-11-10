@@ -36,10 +36,12 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Exception\FlowRunRefused;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowVersionMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
 
@@ -69,13 +71,6 @@ class FlowService implements FlowServiceInterface {
 	private const DEFAULT_APP = 'openregister';
 
 	/**
-	 * Who is asking, and which flows are theirs.
-	 *
-	 * @var FlowCaller
-	 */
-	private FlowCaller $caller;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param FlowDefinitionStore $definitions The flow table and the trigger index derived from its nodes.
@@ -89,14 +84,21 @@ class FlowService implements FlowServiceInterface {
 		private readonly FlowDeletionSweep $sweep,
 		private readonly FlowServicePlatform $platform,
 	) {
-		$this->caller = new FlowCaller(
-			mapper: $definitions->mapper,
-			userSession: $platform->userSession,
-			container: $platform->container,
-			logger: $platform->logger
-		);
-
 	}//end __construct()
+
+	/**
+	 * Who is asking, and which flows are theirs.
+	 *
+	 * Stateless: every answer is read from the session and the flow table at
+	 * the moment it is asked, so a fresh reader per question answers the same.
+	 *
+	 * @return FlowCaller
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function caller(): FlowCaller {
+		return new FlowCaller(mapper: $this->definitions->mapper, platform: $this->platform);
+	}//end caller()
 
 	/**
 	 * List the caller's flows, newest first.
@@ -109,31 +111,40 @@ class FlowService implements FlowServiceInterface {
 	 *
 	 * @return array<int, Flow> The flows visible to the caller.
 	 *
+	 * Kept for its callers (FlowController, other apps); delegates to listFlows().
+	 *
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
-	public function findAll(
-		?string $app = null,
-		?string $applicationSlug = null,
-		?bool $enabled = null,
-		int $limit = 100,
-		int $offset = 0,
-	): array {
-		$organisation = $this->caller->activeOrganisation();
+	public function findAll(?string $app=null, ?string $applicationSlug=null, ?bool $enabled=null, int $limit=100, int $offset=0): array {
+		$filters = ['app' => $app, 'applicationSlug' => $applicationSlug, 'enabled' => $enabled];
+		return $this->listFlows(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
+	}//end findAll()
+
+	/**
+	 * List the caller's flows in their active organisation, newest first.
+	 *
+	 * @param ListQuery $query The page, and the `app`, `applicationSlug` and `enabled` filters (each null for any).
+	 *
+	 * @return array<int, Flow> The flows visible to the caller.
+	 *
+	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 */
+	public function listFlows(ListQuery $query): array {
+		$organisation = $this->caller()->activeOrganisation();
 		if ($organisation === null) {
 			// No resolvable tenant means no flows, never every tenant's flows.
 			return [];
 		}
 
 		return $this->definitions->mapper->findAllFlows(
-			app: $app,
-			applicationSlug: $applicationSlug,
+			app: $query->filters['app'] ?? null,
+			applicationSlug: $query->filters['applicationSlug'] ?? null,
 			organisation: $organisation,
-			enabled: $enabled,
-			limit: $limit,
-			offset: $offset
+			enabled: $query->filters['enabled'] ?? null,
+			limit: $query->limit,
+			offset: ($query->offset ?? 0)
 		);
-
-	}//end findAll()
+	}//end listFlows()
 
 	/**
 	 * Count the flows visible to the caller.
@@ -146,12 +157,13 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
 	public function count(?string $app = null, ?string $applicationSlug = null): int {
-		$organisation = $this->caller->activeOrganisation();
+		$organisation = $this->caller()->activeOrganisation();
 		if ($organisation === null) {
 			return 0;
 		}
 
-		return $this->definitions->mapper->countFlows(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
+		$selection = new FlowSelection(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
+		return $this->definitions->mapper->countFlows(selection: $selection);
 	}//end count()
 
 	/**
@@ -172,7 +184,7 @@ class FlowService implements FlowServiceInterface {
 	public function find(string $uuid): Flow {
 		$flow = $this->definitions->mapper->findByUuid($uuid);
 
-		if ($flow->belongsTo($this->caller->activeOrganisation()) === false) {
+		if ($flow->belongsTo($this->caller()->activeOrganisation()) === false) {
 			throw new DoesNotExistException('No such flow');
 		}
 
@@ -253,7 +265,7 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function adopt(Flow $flow): Flow {
-		$uid = $this->caller->actingUser();
+		$uid = $this->caller()->actingUser();
 		if ($uid === null) {
 			throw new FlowAdoptionRefused(
 				reason: FlowAdoptionRefused::REASON_NO_ACTING_USER,
@@ -440,7 +452,7 @@ class FlowService implements FlowServiceInterface {
 			return $this->find(uuid: $uuid);
 		}
 
-		['owner' => $owner, 'organisation' => $organisation] = $this->caller->ownership();
+		['owner' => $owner, 'organisation' => $organisation] = $this->caller()->ownership();
 
 		// REFUSE rather than stamp nulls. `Flow::belongsTo()` is fail-closed on
 		// both sides, so a flow with no organisation belongs to nobody: it does
@@ -696,25 +708,79 @@ class FlowService implements FlowServiceInterface {
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	public function run(
-		string $uuid,
-		array $subject = [],
-		array $context = [],
-		bool $sync = false,
-		string $trigger = Flow::TRIGGER_MANUAL
-	): FlowRun {
+	public function run(string $uuid, array $subject=[], array $context=[], bool $sync=false, string $trigger=Flow::TRIGGER_MANUAL): FlowRun {
+		return $this->runFlow(uuid: $uuid, options: new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: $trigger));
+	}//end run()
+
+	/**
+	 * Queue a run of a flow the caller owns, as run() describes it.
+	 *
+	 * The flow is resolved in the caller's organisation and the owner check runs
+	 * before anything is queued.
+	 *
+	 * @param string         $uuid    The flow uuid.
+	 * @param FlowRunOptions $options The subject, run metadata, whether to wait, and the trigger.
+	 *
+	 * @return FlowRun The queued run, or the finished run when the caller waits.
+	 *
+	 * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
+	 * @throws FlowRunRefused When the caller may not run this flow (no owner, not theirs).
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	public function runFlow(string $uuid, FlowRunOptions $options): FlowRun {
 		$flow = $this->find(uuid: $uuid);
 		$this->assertRunnable(flow: $flow);
 
+		return $this->start(flow: $flow, options: $options);
+	}//end runFlow()
+
+	/**
+	 * Run a flow on behalf of a declared action whose right the caller already holds.
+	 *
+	 * For the system-held flow inline `steps` are lowered to
+	 * ({@see \OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow}).
+	 * That flow has no owner and belongs to no person, so the owner check in
+	 * {@see assertRunnable()} would refuse everyone: the action's own right on
+	 * the subject, checked by the caller before this, is the authorisation
+	 * (ADR-023). The run still executes as the acting user, so every write
+	 * inside it is checked against their rights.
+	 *
+	 * @param string         $uuid    The flow uuid.
+	 * @param FlowRunOptions $options The subject (`{uuid, register, schema}`), run-level metadata, whether to
+	 *                                execute inline, and the trigger (manual for an action).
+	 *
+	 * @return FlowRun The queued run, or the finished run when the options ask for a sync run.
+	 *
+	 * @throws DoesNotExistException When no such flow exists.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-inline-steps-are-a-straight-line-lowered-to-the-one-flow-engine
+	 */
+	public function runForAction(string $uuid, FlowRunOptions $options): FlowRun {
+		return $this->start(flow: $this->definitions->mapper->findByUuid($uuid), options: $options);
+	}//end runForAction()
+
+	/**
+	 * Queue a run of a flow already resolved and authorised, attributed to the
+	 * acting user, and advance it inline when the caller asked to wait.
+	 *
+	 * @param Flow           $flow    The flow to run.
+	 * @param FlowRunOptions $options The subject, run metadata, whether to wait, and the trigger.
+	 *
+	 * @return FlowRun The queued run, or the finished run when the caller waits.
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	private function start(Flow $flow, FlowRunOptions $options): FlowRun {
 		$run = $this->dispatch->runner->queue(
 			flowId: (string)$flow->getUuid(),
-			subject: $subject,
-			trigger: $trigger,
-			context: $context,
-			user: $this->caller->actingUser()
+			subject: $options->subject,
+			trigger: $options->trigger,
+			context: $options->context,
+			user: $this->caller()->actingUser()
 		);
 
-		if ($sync === false) {
+		if ($options->sync === false) {
 			return $run;
 		}
 
@@ -728,49 +794,7 @@ class FlowService implements FlowServiceInterface {
 		// run: a caller who asked to wait has earned the error. The worker
 		// swallows for the opposite reason — one bad run must not stop a queue.
 		return $this->dispatch->advancer->advance(run: $run, rethrow: true);
-	}//end run()
-
-	/**
-	 * Run a flow on behalf of a declared action whose right the caller already holds.
-	 *
-	 * For the system-held flow inline `steps` are lowered to
-	 * ({@see \OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow}).
-	 * That flow has no owner and belongs to no person, so the owner check in
-	 * {@see assertRunnable()} would refuse everyone: the action's own right on
-	 * the subject, checked by the caller before this, is the authorisation
-	 * (ADR-023). The run still executes as the acting user, so every write
-	 * inside it is checked against their rights.
-	 *
-	 * @param string               $uuid    The flow uuid.
-	 * @param array<string, mixed> $subject `{uuid, register, schema}` of the object.
-	 * @param array<string, mixed> $context Run-level metadata.
-	 * @param boolean              $sync    Execute inline and return the finished run.
-	 *
-	 * @return FlowRun The queued run, or the finished run when $sync is true.
-	 *
-	 * @throws DoesNotExistException When no such flow exists.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As run(): $sync chooses who advances the run.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-inline-steps-are-a-straight-line-lowered-to-the-one-flow-engine
-	 */
-	public function runForAction(string $uuid, array $subject, array $context, bool $sync): FlowRun {
-		$flow = $this->definitions->mapper->findByUuid($uuid);
-
-		$run = $this->dispatch->runner->queue(
-			flowId: (string)$flow->getUuid(),
-			subject: $subject,
-			trigger: Flow::TRIGGER_MANUAL,
-			context: $context,
-			user: $this->caller->actingUser()
-		);
-
-		if ($sync === false) {
-			return $run;
-		}
-
-		return $this->dispatch->advancer->advance(run: $run, rethrow: true);
-	}//end runForAction()
+	}//end start()
 
 	/**
 	 * Mint a v4 uuid.

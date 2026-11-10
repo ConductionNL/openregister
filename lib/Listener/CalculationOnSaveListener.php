@@ -166,7 +166,11 @@ class CalculationOnSaveListener implements IEventListener {
 	 */
 	private function applyAll(CalculationSaveRun $run, array $calcs): void {
 		foreach ($calcs as $name => $spec) {
-			$this->applyOne(run: $run, name: (string)$name, spec: $spec);
+			$calc = new CalculationApplyRun();
+			$calc->pass = $run;
+			$calc->name = (string)$name;
+			$calc->expression = ($spec['expression'] ?? null);
+			$this->applyOne(calc: $calc, spec: $spec);
 		}
 
 		$data = $this->engine->payloadBuilder->stripSyntheticKeys(data: $run->payload());
@@ -178,24 +182,23 @@ class CalculationOnSaveListener implements IEventListener {
 	/**
 	 * Apply one declared calculation, when it is due.
 	 *
-	 * @param CalculationSaveRun $run  The pass.
-	 * @param string             $name The calculation's name.
-	 * @param mixed              $spec Its declaration.
+	 * @param CalculationApplyRun $calc The calculation in this pass.
+	 * @param mixed               $spec Its declaration.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
-	private function applyOne(CalculationSaveRun $run, string $name, mixed $spec): void {
-		if ($this->isDue(spec: $spec, sequenceContext: $run->sequenceContext) === false) {
+	private function applyOne(CalculationApplyRun $calc, mixed $spec): void {
+		if ($this->isDue(spec: $spec, sequenceContext: $calc->pass->sequenceContext) === false) {
 			return;
 		}
 
-		if ($this->keptForUnresolvedReference(run: $run, name: $name, expression: ($spec['expression'] ?? null)) === true) {
+		if ($this->keptForUnresolvedReference(calc: $calc) === true) {
 			return;
 		}
 
-		$this->evaluateInto(run: $run, name: $name, expression: ($spec['expression'] ?? null));
+		$this->evaluateInto(calc: $calc);
 	}//end applyOne()
 
 	/**
@@ -255,52 +258,49 @@ class CalculationOnSaveListener implements IEventListener {
 	 * would evaluate against nothing and write null over a good stored value.
 	 * The stored value is kept and the rule run log says why.
 	 *
-	 * @param CalculationSaveRun $run        The pass.
-	 * @param string             $name       The calculation's name.
-	 * @param mixed              $expression Its expression.
+	 * @param CalculationApplyRun $calc The calculation in this pass.
 	 *
 	 * @return bool True when the calculation is skipped.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
-	private function keptForUnresolvedReference(CalculationSaveRun $run, string $name, mixed $expression): bool {
+	private function keptForUnresolvedReference(CalculationApplyRun $calc): bool {
 		$unresolved = $this->engine->payloadBuilder->unresolvedReferencesUsedBy(
-			payload: $run->payload(),
-			expression: $expression
+			payload: $calc->pass->payload(),
+			expression: $calc->expression
 		);
 		if ($unresolved === []) {
 			return false;
 		}
 
 		$message = sprintf('Reference %s could not be resolved; the stored value was kept.', implode(', ', $unresolved));
-		$this->recordRun(run: $run, name: $name, trace: new RuleTrace(verdict: RuleVocabulary::VERDICT_ERROR, message: $message));
+		$this->recordRun(calc: $calc, trace: new RuleTrace(verdict: RuleVocabulary::VERDICT_ERROR, message: $message));
 		return true;
 	}//end keptForUnresolvedReference()
 
 	/**
 	 * Evaluate one calculation and write its value into the payload.
 	 *
-	 * @param CalculationSaveRun $run        The pass.
-	 * @param string             $name       The calculation's name.
-	 * @param mixed              $expression Its expression.
+	 * @param CalculationApplyRun $calc The calculation in this pass.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
-	private function evaluateInto(CalculationSaveRun $run, string $name, mixed $expression): void {
+	private function evaluateInto(CalculationApplyRun $calc): void {
+		$run = $calc->pass;
 		try {
-			$value = $this->engine->evaluator->evaluate($run->payload(), $expression, $run->sequenceContext);
+			$value = $this->engine->evaluator->evaluate($run->payload(), $calc->expression, $run->sequenceContext);
 		} catch (EvaluationException $e) {
 			$this->lookups->logger->warning(
-				sprintf('Calculation "%s" failed on %s: %s', $name, (string)$run->object->getUuid(), $e->getMessage())
+				sprintf('Calculation "%s" failed on %s: %s', $calc->name, (string)$run->object->getUuid(), $e->getMessage())
 			);
-			$this->recordRun(run: $run, name: $name, trace: new RuleTrace(verdict: RuleVocabulary::VERDICT_ERROR, message: $e->getMessage()));
+			$this->recordRun(calc: $calc, trace: new RuleTrace(verdict: RuleVocabulary::VERDICT_ERROR, message: $e->getMessage()));
 			return;
 		}
 
-		$this->recordRun(run: $run, name: $name, trace: new RuleTrace(verdict: RuleVocabulary::VERDICT_FIRED));
-		$run->write(name: $name, value: $this->serialise(value: $value));
+		$this->recordRun(calc: $calc, trace: new RuleTrace(verdict: RuleVocabulary::VERDICT_FIRED));
+		$run->write(name: $calc->name, value: $this->serialise(value: $value));
 	}//end evaluateInto()
 
 	/**
@@ -311,9 +311,8 @@ class CalculationOnSaveListener implements IEventListener {
 	 * `no_match` to reach and inventing one would put a verdict in the log
 	 * that the engine can never mean.
 	 *
-	 * @param CalculationSaveRun $run   The pass (object and schema slug).
-	 * @param string             $name  The calculation's name.
-	 * @param RuleTrace          $trace The verdict this evaluation reached.
+	 * @param CalculationApplyRun $calc  The calculation in this pass (object and schema slug).
+	 * @param RuleTrace           $trace The verdict this evaluation reached.
 	 *
 	 * @return void
 	 *
@@ -323,14 +322,15 @@ class CalculationOnSaveListener implements IEventListener {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function recordRun(CalculationSaveRun $run, string $name, RuleTrace $trace): void {
+	private function recordRun(CalculationApplyRun $calc, RuleTrace $trace): void {
+		$run = $calc->pass;
 		if ($run->slug === '') {
 			return;
 		}
 
 		$this->ruleRuns->record(
 			subject: new RuleRunSubject(
-				ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_CALCULATION, schemaSlug: $run->slug, key: $name),
+				ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_CALCULATION, schemaSlug: $run->slug, key: $calc->name),
 				schemaSlug: $run->slug,
 				objectUuid: ($run->object->getUuid() ?? null),
 				registerSlug: ($run->object->getRegister() ?? null)

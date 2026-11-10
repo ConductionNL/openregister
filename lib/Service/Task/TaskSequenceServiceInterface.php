@@ -39,31 +39,46 @@ interface TaskSequenceServiceInterface {
 	 * schema edit or an amount edit cannot re-shape or re-route an approval
 	 * that is already running (design D-3).
 	 *
-	 * @param array<string, mixed> $template The compiled template
-	 *                                       ({@see \OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller::compile()}).
-	 * @param string $anchorObjectUuid The object the approval is about.
-	 * @param string|null $requesterId Who attempted the gated transition.
-	 * @param array<int, array<string, mixed>>|null $tierPositions The resolved
-	 *                                                             amount tier, or
-	 *                                                             null for every
-	 *                                                             declared position.
-	 * @param int|null $registerId The anchor's register.
-	 * @param string|null $runUuid Optional flow-run provenance.
-	 * @param string|null $nodeId Optional node provenance.
+	 * @param ResolvedChain  $chain  The compiled template
+	 *                               ({@see \OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller::compile()})
+	 *                               and the resolved amount tier, or null for every declared position.
+	 * @param SequenceAnchor $anchor The object the approval is about, who attempted the gated transition,
+	 *                               the anchor's register, and optional flow-run and node provenance.
 	 *
 	 * @return TaskSequence The provisioned, running sequence.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
-	public function provision(
-		array $template,
-		string $anchorObjectUuid,
-		?string $requesterId,
-		?array $tierPositions = null,
-		?int $registerId = null,
-		?string $runUuid = null,
-		?string $nodeId = null,
-	): TaskSequence;
+	public function provision(ResolvedChain $chain, SequenceAnchor $anchor): TaskSequence;
+
+	/**
+	 * The approval chain a sequence walks: a compiled template and its resolved tier.
+	 *
+	 * Built here, so callers outside this component never name the chain class.
+	 *
+	 * @param array<string, mixed>                  $template      The compiled template.
+	 * @param array<int, array<string, mixed>>|null $tierPositions The resolved amount tier, or null for every declared position.
+	 *
+	 * @return ResolvedChain The chain, to hand to {@see provision()}.
+	 *
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 */
+	public function chain(array $template, ?array $tierPositions = null): ResolvedChain;
+
+	/**
+	 * What a sequence is about: the object, the requester and the register.
+	 *
+	 * Built here, so callers outside this component never name the anchor class.
+	 *
+	 * @param string      $objectUuid  The object the approval is about.
+	 * @param string|null $requesterId Who attempted the gated transition.
+	 * @param int|null    $registerId  The anchor's register.
+	 *
+	 * @return SequenceAnchor The anchor, to hand to {@see provision()}.
+	 *
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 */
+	public function anchorOf(string $objectUuid, ?string $requesterId, ?int $registerId = null): SequenceAnchor;
 
 	/**
 	 * Progress a sequence after one of its tasks reached a terminal state.

@@ -64,18 +64,16 @@ class LifecycleTransitionResolver implements LifecycleTransitionResolverInterfac
 	 * The (action, spec) pair this change is, or null when none allows it.
 	 *
 	 * @param array<string, mixed> $transitions The annotation's transition map.
-	 * @param string $uuid The object's uuid, for the declared-action lookup.
-	 * @param string $oldValue The lifecycle value being moved away from.
-	 * @param string $newValue The lifecycle value being moved to.
+	 * @param StateMove $move The object, the state it leaves and the state it enters.
 	 *
 	 * @return array{0: string, 1: array<string, mixed>}|null
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function resolve(array $transitions, string $uuid, string $oldValue, string $newValue): ?array {
-		foreach ($this->candidates(transitions: $transitions, uuid: $uuid) as $candidate) {
+	public function resolve(array $transitions, StateMove $move): ?array {
+		foreach ($this->candidates(transitions: $transitions, uuid: $move->uuid) as $candidate) {
 			$spec = $candidate[1];
-			if (is_array($spec) === true && $this->moves(spec: $spec, oldValue: $oldValue, newValue: $newValue) === true) {
+			if (is_array($spec) === true && ($spec['to'] ?? null) === $move->to && self::leaves(spec: $spec, state: $move->from) === true) {
 				return [(string)$candidate[0], $spec];
 			}
 		}
@@ -106,29 +104,24 @@ class LifecycleTransitionResolver implements LifecycleTransitionResolverInterfac
 	}//end candidates()
 
 	/**
-	 * Whether a transition moves the lifecycle value from `old` to `new`.
+	 * Whether a transition may leave the given state.
 	 *
 	 * `from` may be a single state or a list; a string is read as a one-element
 	 * list so both authoring shapes work.
 	 *
-	 * @param array<string, mixed> $spec The transition's spec.
-	 * @param string $oldValue The lifecycle value being moved away from.
-	 * @param string $newValue The lifecycle value being moved to.
+	 * @param array<string, mixed> $spec  The transition's spec.
+	 * @param string               $state The lifecycle value being moved away from.
 	 *
 	 * @return bool
 	 */
-	private function moves(array $spec, string $oldValue, string $newValue): bool {
-		if (($spec['to'] ?? null) !== $newValue) {
-			return false;
-		}
-
+	private static function leaves(array $spec, string $state): bool {
 		$from = ($spec['from'] ?? []);
 		if (is_string($from) === true) {
 			$from = [$from];
 		}
 
-		return is_array($from) === true && in_array($oldValue, $from, true) === true;
-	}//end moves()
+		return is_array($from) === true && in_array($state, $from, true) === true;
+	}//end leaves()
 
 	/**
 	 * Whether the write of this object in flight sets declared state (a seed or example-set refresh).

@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\IconController;
+use OCA\OpenRegister\Service\MdiIconSvg;
 use OCA\OpenRegister\Service\MdiIconRenderer;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\IRequest;
@@ -38,7 +39,7 @@ class IconControllerGoldenTest extends TestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->controller = new IconController('openregister', $this->createMock(IRequest::class));
+		$this->controller = new IconController($this->createMock(IRequest::class), new MdiIconSvg());
 	}
 
 	public function testKnownIcon(): void {

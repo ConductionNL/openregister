@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Service\Notification\TemplateCatalogue;
 use OCP\IConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -79,13 +80,15 @@ class NotificationTemplateRegistryTest extends TestCase {
 	public function testAnEventWithNoTemplateIsNamed(): void {
 		$registry = new NotificationTemplateRegistry(
 			$this->config,
-			[
-				'thing_happened' => ['group' => 'test', 'variables' => ['what' => 'What happened']],
-				'other_thing_happened' => ['group' => 'test', 'variables' => []],
-			],
-			[
-				'thing_happened' => ['en' => ['subject' => '{{what}}', 'body' => '{{what}} happened.']],
-			]
+			new TemplateCatalogue(
+				[
+					'thing_happened' => ['group' => 'test', 'variables' => ['what' => 'What happened']],
+					'other_thing_happened' => ['group' => 'test', 'variables' => []],
+				],
+				[
+					'thing_happened' => ['en' => ['subject' => '{{what}}', 'body' => '{{what}} happened.']],
+				]
+			)
 		);
 
 		$this->assertSame(['other_thing_happened'], $registry->gaps());
@@ -98,13 +101,15 @@ class NotificationTemplateRegistryTest extends TestCase {
 	public function testTheListingReportsWhichEventsHaveATemplate(): void {
 		$registry = new NotificationTemplateRegistry(
 			$this->config,
-			[
-				'thing_happened' => ['group' => 'test', 'variables' => []],
-				'other_thing_happened' => ['group' => 'test', 'variables' => []],
-			],
-			[
-				'thing_happened' => ['en' => ['subject' => 'Something', 'body' => 'Something happened.']],
-			]
+			new TemplateCatalogue(
+				[
+					'thing_happened' => ['group' => 'test', 'variables' => []],
+					'other_thing_happened' => ['group' => 'test', 'variables' => []],
+				],
+				[
+					'thing_happened' => ['en' => ['subject' => 'Something', 'body' => 'Something happened.']],
+				]
+			)
 		);
 
 		$rows = $registry->listAll();

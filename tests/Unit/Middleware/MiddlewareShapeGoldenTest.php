@@ -32,8 +32,10 @@ use OCA\OpenRegister\Middleware\OasValidationFailureException;
 use OCA\OpenRegister\Middleware\OasValidationMiddleware;
 use OCA\OpenRegister\Middleware\UnknownMetadataFieldMiddleware;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
+use OCA\OpenRegister\Service\Oas\ProblemDescription;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
@@ -116,7 +118,7 @@ final class MiddlewareShapeGoldenTest extends TestCase {
 		$request->method('getRequestUri')->willReturn('/api/x');
 		$problems = $this->createMock(ProblemDetailsBuilder::class);
 		$problems->method('validationFailed')->willReturnCallback(
-			fn (array $errors, string $detail = '', string $instance = ''): array => ['errors' => $errors, 'detail' => $detail, 'instance' => $instance]
+			fn (array $errors, ProblemDescription $description = new ProblemDescription()): array => ['errors' => $errors, 'detail' => $description->detail, 'instance' => $description->instance]
 		);
 		return new OasValidationMiddleware($request, $validator, $problems, $logger);
 	}
@@ -167,7 +169,7 @@ final class MiddlewareShapeGoldenTest extends TestCase {
 	}
 
 	public function testAWithdrawnRefusalNamesItsSuccessor(): void {
-		$version = new ApiVersion('1', ApiVersion::STATUS_WITHDRAWN, null, null, '2');
+		$version = new ApiVersion(id: '1', lifecycle: new ApiVersionLifecycle(status: ApiVersion::STATUS_WITHDRAWN, successor: '2'));
 		$response = ApiVersionRefusedException::withdrawn($version, ['2'])->toResponse();
 		$this->assertSame(410, $response->getStatus());
 		$this->assertSame(

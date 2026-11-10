@@ -35,13 +35,12 @@ interface TaskInboxServiceInterface {
 	 * One inbox page: rows with subject context and temporal projection,
 	 * plus the total the same predicates count.
 	 *
-	 * @param TaskInboxCriteria $criteria Scope, filters, sort and identity.
-	 * @param int               $limit    Page size (clamped to 1..500).
-	 * @param int               $offset   Page offset.
+	 * @param TaskInboxCriteria  $criteria Scope, filters, sort and identity.
+	 * @param TaskInboxPage|null $page     The page window; the first 25 when null.
 	 *
 	 * @return array{results: array<int, array<string, mixed>>, total: int, limit: int, offset: int} The page.
 	 */
-	public function inbox(TaskInboxCriteria $criteria, int $limit = 25, int $offset = 0): array;
+	public function inbox(TaskInboxCriteria $criteria, ?TaskInboxPage $page = null): array;
 
 	/**
 	 * One task as an API row, with its subject context resolved.

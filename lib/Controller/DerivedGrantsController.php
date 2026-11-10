@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStoreInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -52,16 +53,14 @@ class DerivedGrantsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string            $appName App identifier.
 	 * @param IRequest          $request Active HTTP request.
 	 * @param DerivedGrantStoreInterface $store   The rules, the claims and the grants.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly DerivedGrantStoreInterface $store,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 	}//end __construct()
 

@@ -30,6 +30,11 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
+use OCA\OpenRegister\Service\User\AccountPropertyChange;
+use OCA\OpenRegister\Service\User\ActivityQuery;
+use OCA\OpenRegister\Service\User\ApiTokenRequest;
+use OCA\OpenRegister\Service\User\AvatarUpload;
+use OCA\OpenRegister\Service\User\PasswordChange;
 use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountManager;
 use OCP\Accounts\PropertyDoesNotExistException;
@@ -123,6 +128,17 @@ class UserService implements UserServiceInterface {
 	private const MAX_AVATAR_SIZE = 5242880;
 
 	/**
+	 * Methods absent from OCP\IUser that some implementations carry, with the value used when absent.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const OPTIONAL_USER_METHODS = [
+		'getEmailVerified' => null,
+		'getAvatarScope' => 'contacts',
+		'canChangeMailAddress' => false,
+	];
+
+	/**
 	 * UserService constructor
 	 *
 	 * @param IUserManager $userManager The user manager service
@@ -186,9 +202,11 @@ class UserService implements UserServiceInterface {
 
 		$additionalInfo = $this->getAdditionalProfileInfo(user: $user);
 
-		$emailVerified = $this->callOptionalUserMethod(user: $user, method: 'getEmailVerified', default: null);
+		$optional = $this->optionalUserValues(user: $user);
 
-		$avatarScope = $this->callOptionalUserMethod(user: $user, method: 'getAvatarScope', default: 'contacts');
+		$emailVerified = $optional['getEmailVerified'];
+
+		$avatarScope = $optional['getAvatarScope'];
 
 		// OCP\IUser declares getLastLogin(), getBackendClassName(),
 		// canChangeDisplayName(), canChangePassword() and canChangeAvatar(), so
@@ -201,7 +219,7 @@ class UserService implements UserServiceInterface {
 		$backend = $user->getBackendClassName();
 		$canChangeDisplayName = $user->canChangeDisplayName();
 
-		$canChangeEmail = $this->callOptionalUserMethod(user: $user, method: 'canChangeMailAddress', default: false);
+		$canChangeEmail = $optional['canChangeMailAddress'];
 
 		$canChangePassword = $user->canChangePassword();
 		$canChangeAvatar = $user->canChangeAvatar();
@@ -247,21 +265,25 @@ class UserService implements UserServiceInterface {
 	}//end buildUserDataArray()
 
 	/**
-	 * Call a method that only some IUser implementations carry.
+	 * The results of the methods only some IUser implementations carry.
 	 *
-	 * @param IUser  $user    The user object
-	 * @param string $method  The optional method (absent from OCP\IUser)
-	 * @param mixed  $default The value when the implementation lacks the method
+	 * Each method absent from the implementation yields its default from
+	 * OPTIONAL_USER_METHODS.
 	 *
-	 * @return mixed The method's result, or $default
+	 * @param IUser $user The user object
+	 *
+	 * @return array<string, mixed> The result (or default) per method name
 	 */
-	private function callOptionalUserMethod(IUser $user, string $method, mixed $default): mixed {
-		if (method_exists($user, $method) === false) {
-			return $default;
+	private function optionalUserValues(IUser $user): array {
+		$values = self::OPTIONAL_USER_METHODS;
+		foreach (array_keys($values) as $method) {
+			if (method_exists($user, $method) === true) {
+				$values[$method] = $user->$method();
+			}
 		}
 
-		return $user->$method();
-	}//end callOptionalUserMethod()
+		return $values;
+	}//end optionalUserValues()
 
 	/**
 	 * The organisation stats of the current user, cached for the request.
@@ -1022,7 +1044,8 @@ class UserService implements UserServiceInterface {
 			}
 
 			$value = (string)$data[$apiField];
-			if ($this->writeAccountProperty(account: $account, accountProperty: $accountProperty, value: $value) === true) {
+			$change = new AccountPropertyChange(property: $accountProperty, value: $value);
+			if ($this->writeAccountProperty(account: $account, change: $change) === true) {
 				$accountUpdated = true;
 			}
 		}
@@ -1035,13 +1058,15 @@ class UserService implements UserServiceInterface {
 	/**
 	 * Set one account property, creating it when the account lacks it.
 	 *
-	 * @param IAccount $account         The account to update
-	 * @param string   $accountProperty The AccountManager property name
-	 * @param string   $value           The new value
+	 * @param IAccount              $account The account to update
+	 * @param AccountPropertyChange $change  The property and its new value
 	 *
 	 * @return bool Whether the account changed
 	 */
-	private function writeAccountProperty(IAccount $account, string $accountProperty, string $value): bool {
+	private function writeAccountProperty(IAccount $account, AccountPropertyChange $change): bool {
+		$accountProperty = $change->property;
+		$value = $change->value;
+
 		// IAccount::getProperty() THROWS PropertyDoesNotExistException when
 		// the property is absent — it never returns null. The `!== null`
 		// test that used to guard this block was therefore always true,
@@ -1116,23 +1141,18 @@ class UserService implements UserServiceInterface {
 	}//end getDefaultPropertyScope()
 
 	/**
-	 * Change password for the current user
+	 * Change the user's password after verifying the current one.
 	 *
-	 * Validates the current password, checks backend capability,
-	 * and sets the new password.
-	 *
-	 * @param IUser $user The user changing their password
-	 * @param string $currentPassword The current password for verification
-	 * @param string $newPassword The new password to set
+	 * @param IUser          $user   The user changing their password.
+	 * @param PasswordChange $change The current password and the new one.
 	 *
 	 * @return array Result array with success status
 	 *
-	 * @throws InvalidArgumentException If inputs are invalid
 	 * @throws RuntimeException If password change fails
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+	 * @spec openspec/specs/profile-actions/spec.md
 	 */
-	public function changePassword(IUser $user, string $currentPassword, string $newPassword): array {
+	public function applyPasswordChange(IUser $user, PasswordChange $change): array {
 		// Check backend capability.
 		if ($user->canChangePassword() === false) {
 			throw new RuntimeException(
@@ -1142,13 +1162,13 @@ class UserService implements UserServiceInterface {
 		}
 
 		// Verify current password.
-		$verifiedUser = $this->userManager->checkPassword($user->getUID(), $currentPassword);
+		$verifiedUser = $this->userManager->checkPassword($user->getUID(), $change->currentPassword);
 		if ($verifiedUser === false) {
 			throw new RuntimeException('Current password is incorrect', 403);
 		}
 
 		// Set new password.
-		$result = $user->setPassword($newPassword);
+		$result = $user->setPassword($change->newPassword);
 		if ($result === false) {
 			throw new RuntimeException(
 				'New password does not meet the password policy requirements',
@@ -1160,25 +1180,21 @@ class UserService implements UserServiceInterface {
 			'success' => true,
 			'message' => 'Password updated successfully',
 		];
-	}//end changePassword()
+	}//end applyPasswordChange()
 
 	/**
-	 * Upload a new avatar for the user
+	 * Store an uploaded image as the user's avatar.
 	 *
-	 * Validates file type and size, then sets via IAvatarManager.
-	 *
-	 * @param IUser $user The user uploading an avatar
-	 * @param string $data The raw image data
-	 * @param string $mimeType The MIME type of the uploaded file
-	 * @param int $size The file size in bytes
+	 * @param IUser        $user   The user uploading an avatar.
+	 * @param AvatarUpload $upload The image, its MIME type and its size.
 	 *
 	 * @return array Result array with success status and avatar URL
 	 *
 	 * @throws RuntimeException If upload fails
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+	 * @spec openspec/specs/profile-actions/spec.md
 	 */
-	public function uploadAvatar(IUser $user, string $data, string $mimeType, int $size): array {
+	public function setAvatar(IUser $user, AvatarUpload $upload): array {
 		// Check backend capability.
 		if ($user->canChangeAvatar() === false) {
 			throw new RuntimeException(
@@ -1188,7 +1204,7 @@ class UserService implements UserServiceInterface {
 		}
 
 		// Validate file type.
-		if (in_array($mimeType, self::ALLOWED_AVATAR_TYPES, true) === false) {
+		if (in_array($upload->mimeType, self::ALLOWED_AVATAR_TYPES, true) === false) {
 			throw new RuntimeException(
 				'Unsupported image format. Allowed: JPEG, PNG, GIF, WebP',
 				400
@@ -1196,19 +1212,19 @@ class UserService implements UserServiceInterface {
 		}
 
 		// Validate file size.
-		if ($size > self::MAX_AVATAR_SIZE) {
+		if ($upload->size > self::MAX_AVATAR_SIZE) {
 			throw new RuntimeException('Avatar image must be smaller than 5 MB', 400);
 		}
 
 		$userId = $user->getUID();
 		$avatar = $this->avatarManager->getAvatar($userId);
-		$avatar->set($data);
+		$avatar->set($upload->data);
 
 		return [
 			'success' => true,
 			'avatarUrl' => '/avatar/' . $userId . '/128',
 		];
-	}//end uploadAvatar()
+	}//end setAvatar()
 
 	/**
 	 * Delete the user's avatar
@@ -1381,77 +1397,97 @@ class UserService implements UserServiceInterface {
 	}//end setNotificationPreferences()
 
 	/**
-	 * Get activity history for the current user
+	 * Get one page of a user's activity.
 	 *
-	 * Queries audit trail entries where the user is the actor.
-	 *
-	 * @param IUser $user The user to get activity for
-	 * @param int $limit Maximum results to return
-	 * @param int $offset Results to skip
-	 * @param string|null $type Optional action type filter
-	 * @param string|null $from Optional start date (Y-m-d)
-	 * @param string|null $to Optional end date (Y-m-d)
+	 * @param IUser         $user  The user to get activity for.
+	 * @param ActivityQuery $query The page, the type filter and the period.
 	 *
 	 * @return array Activity results with total count
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+	 * @spec openspec/specs/profile-actions/spec.md
 	 */
-	public function getUserActivity(
-		IUser $user,
-		int $limit = 25,
-		int $offset = 0,
-		?string $type = null,
-		?string $from = null,
-		?string $to = null,
-	): array {
+	public function activity(IUser $user, ActivityQuery $query): array {
 		$data = $this->auditTrailMapper->findByActor(
 			$user->getUID(),
-			$limit,
-			$offset,
-			$type,
-			$from,
-			$to
-		);
-
-		$results = array_map(
-			function ($entry) {
-				$serialized = $entry->jsonSerialize();
-				return [
-					'id' => $serialized['id'] ?? null,
-					'type' => $serialized['action'] ?? null,
-					'objectUuid' => $serialized['objectUuid'] ?? null,
-					'register' => $serialized['register'] ?? null,
-					'schema' => $serialized['schema'] ?? null,
-					'timestamp' => $serialized['created'] ?? null,
-					'summary' => ($serialized['action'] ?? 'action') . ' on object',
-				];
-			},
-			$data['results']
+			$query->limit,
+			$query->offset,
+			$query->type,
+			$query->period->from,
+			$query->period->to
 		);
 
 		return [
-			'results' => $results,
+			'results' => array_map(fn ($entry): array => $this->activityRow(serialized: $entry->jsonSerialize()), $data['results']),
 			'total' => $data['total'],
 		];
-	}//end getUserActivity()
+	}//end activity()
 
 	/**
-	 * Create a new API token for the user
+	 * One audit-trail entry as the activity listing shows it.
 	 *
-	 * Generates a cryptographically secure token and stores it in IConfig.
+	 * @param array $serialized The serialized audit-trail entry.
 	 *
-	 * @param IUser $user The user creating a token
-	 * @param string $name The token name
-	 * @param string|null $expiresIn Optional expiration (e.g., "90d")
+	 * @return array The activity row.
+	 */
+	private function activityRow(array $serialized): array {
+		return [
+			'id' => $serialized['id'] ?? null,
+			'type' => $serialized['action'] ?? null,
+			'objectUuid' => $serialized['objectUuid'] ?? null,
+			'register' => $serialized['register'] ?? null,
+			'schema' => $serialized['schema'] ?? null,
+			'timestamp' => $serialized['created'] ?? null,
+			'summary' => ($serialized['action'] ?? 'action') . ' on object',
+		];
+	}//end activityRow()
+
+	/**
+	 * Mint a personal API token.
+	 *
+	 * @param IUser           $user    The user creating a token.
+	 * @param ApiTokenRequest $request The token name and its optional lifetime.
 	 *
 	 * @return array The created token data (full value shown only once)
 	 *
 	 * @throws RuntimeException If maximum tokens reached
+	 * @throws InvalidArgumentException If the lifetime is malformed
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
+	 * @spec openspec/specs/profile-actions/spec.md
 	 */
-	public function createApiToken(IUser $user, string $name, ?string $expiresIn = null): array {
+	public function issueApiToken(IUser $user, ApiTokenRequest $request): array {
 		$userId = $user->getUID();
+		$tokens = $this->tokensWithRoom(userId: $userId);
+
+		// Generate a secure token.
+		$tokenValue = $this->secureRandom->generate(64);
+		$tokenId = $this->secureRandom->generate(16);
+		$expires = $this->requestedExpiry(expiresIn: $request->expiresIn);
+		$now = date('c');
+
+		$tokens[$tokenId] = [
+			'id' => $tokenId,
+			'name' => $request->name,
+			'token' => hash('sha256', $tokenValue),
+			'preview' => substr($tokenValue, -4),
+			'created' => $now,
+			'lastUsed' => null,
+			'expires' => $expires,
+		];
+		$this->storeTokens(userId: $userId, tokens: $tokens);
+
+		return ['id' => $tokenId, 'name' => $request->name, 'token' => $tokenValue, 'created' => $now, 'expires' => $expires];
+	}//end issueApiToken()
+
+	/**
+	 * The user's stored tokens, refusing when the maximum is reached.
+	 *
+	 * @param string $userId The user id.
+	 *
+	 * @return array The stored tokens.
+	 *
+	 * @throws RuntimeException If maximum tokens reached
+	 */
+	private function tokensWithRoom(string $userId): array {
 		$tokens = $this->getStoredTokens(userId: $userId);
 
 		if (count($tokens) >= self::MAX_TOKENS) {
@@ -1461,47 +1497,37 @@ class UserService implements UserServiceInterface {
 			);
 		}
 
-		// Generate a secure token.
-		$tokenValue = $this->secureRandom->generate(64);
-		$tokenId = $this->secureRandom->generate(16);
+		return $tokens;
+	}//end tokensWithRoom()
 
-		// Calculate expiration.
-		// SECURITY: a non-matching `expiresIn` (e.g. "5x", "abc") used to
-		// fall through to `$expires = null` → non-expiring token. That is
-		// a perpetual API key minted from malformed input. Reject the
-		// request instead so the caller sees the typo.
-		$expires = null;
-		if ($expiresIn !== null && $expiresIn !== '') {
-			$expires = $this->parseExpiration(expiresIn: $expiresIn);
-			if ($expires === null) {
-				throw new InvalidArgumentException(
-					'Invalid expiresIn value "' . $expiresIn . '" — expected a number followed by d (days), h (hours), or m (minutes), e.g. "90d".'
-				);
-			}
+	/**
+	 * The expiry a requested lifetime gives, null for a token without one.
+	 *
+	 * SECURITY: a non-matching `expiresIn` (e.g. "5x", "abc") used to
+	 * fall through to `$expires = null` → non-expiring token. That is
+	 * a perpetual API key minted from malformed input. Reject the
+	 * request instead so the caller sees the typo.
+	 *
+	 * @param string|null $expiresIn The requested lifetime (e.g. "90d"), or null/empty for none.
+	 *
+	 * @return string|null The ISO 8601 expiry, or null.
+	 *
+	 * @throws InvalidArgumentException If the lifetime is malformed
+	 */
+	private function requestedExpiry(?string $expiresIn): ?string {
+		if ($expiresIn === null || $expiresIn === '') {
+			return null;
 		}
 
-		$now = date('c');
-		$tokenData = [
-			'id' => $tokenId,
-			'name' => $name,
-			'token' => hash('sha256', $tokenValue),
-			'preview' => substr($tokenValue, -4),
-			'created' => $now,
-			'lastUsed' => null,
-			'expires' => $expires,
-		];
+		$expires = $this->parseExpiration(expiresIn: $expiresIn);
+		if ($expires === null) {
+			throw new InvalidArgumentException(
+				'Invalid expiresIn value "' . $expiresIn . '" — expected a number followed by d (days), h (hours), or m (minutes), e.g. "90d".'
+			);
+		}
 
-		$tokens[$tokenId] = $tokenData;
-		$this->storeTokens(userId: $userId, tokens: $tokens);
-
-		return [
-			'id' => $tokenId,
-			'name' => $name,
-			'token' => $tokenValue,
-			'created' => $now,
-			'expires' => $expires,
-		];
-	}//end createApiToken()
+		return $expires;
+	}//end requestedExpiry()
 
 	/**
 	 * List API tokens for the user (masked values)

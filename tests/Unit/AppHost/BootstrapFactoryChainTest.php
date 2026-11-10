@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
+use OCA\OpenRegister\AppHost\Service\AppHostSettingsServices;
 use OCA\OpenRegister\AppHost\Bootstrap;
 use OCA\OpenRegister\AppHost\Controller\GenericDashboardController;
 use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
@@ -117,12 +118,14 @@ class BootstrapFactoryChainTest extends TestCase {
 				if ($id === AppHostSettingsService::class) {
 					return new AppHostSettingsService(
 						'petstore',
-						$container->get('OCP\\IAppConfig'),
-						$container->get('OCP\\App\\IAppManager'),
-						$container,
+						new AppHostSettingsServices(
+							$container->get('OCP\\IAppConfig'),
+							$container->get('OCP\\App\\IAppManager'),
+							$container,
+							$container->get('Psr\\Log\\LoggerInterface')
+						),
 						$container->get('OCP\\IGroupManager'),
-						$container->get('OCP\\IUserSession'),
-						$container->get('Psr\\Log\\LoggerInterface')
+						$container->get('OCP\\IUserSession')
 					);
 				}
 

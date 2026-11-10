@@ -81,7 +81,7 @@ class ConfigurationValueStore {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function read(string $layer, ?string $layerRef, string $configKey): ConfigurationSnapshot {
-		return $this->snapshotAt(address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey));
+		return $this->readAt(address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey));
 
 	}//end read()
 
@@ -91,8 +91,10 @@ class ConfigurationValueStore {
 	 * @param ConfigurationAddress $address The layer, layer reference and key.
 	 *
 	 * @return ConfigurationSnapshot What the address holds, and where it came from.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	private function snapshotAt(ConfigurationAddress $address): ConfigurationSnapshot {
+	public function readAt(ConfigurationAddress $address): ConfigurationSnapshot {
 		$row = $this->values->findAtAddress(
 			layer: $address->layer,
 			layerRef: $address->layerRef,
@@ -107,24 +109,17 @@ class ConfigurationValueStore {
 		// provenance. A key app config does not hold is absent even when a
 		// provenance row survives, because the reader would see nothing.
 		if ($this->appConfig->hasKey($this->appName, $address->configKey) === false) {
-			return ConfigurationSnapshot::absent(
-				layer: $address->layer,
-				layerRef: null,
-				configKey: $address->configKey
-			);
+			return ConfigurationSnapshot::absent(address: new ConfigurationAddress(layer: $address->layer, layerRef: null, configKey: $address->configKey));
 		}
 
 		return new ConfigurationSnapshot(
-			layer: $address->layer,
-			layerRef: null,
-			configKey: $address->configKey,
+			address: new ConfigurationAddress(layer: $address->layer, layerRef: null, configKey: $address->configKey),
 			value: $this->decode(raw: $this->appConfig->getValueString($this->appName, $address->configKey, '')),
 			present: true,
-			deploymentUuid: $row?->getDeploymentUuid(),
-			updatedBy: $row?->getUpdatedBy()
+			provenance: new ConfigurationProvenance(deploymentUuid: $row?->getDeploymentUuid(), updatedBy: $row?->getUpdatedBy())
 		);
 
-	}//end snapshotAt()
+	}//end readAt()
 
 	/**
 	 * Below the instance layer the row is the value.
@@ -136,21 +131,14 @@ class ConfigurationValueStore {
 	 */
 	private function rowSnapshot(ConfigurationAddress $address, ?ConfigurationValue $row): ConfigurationSnapshot {
 		if ($row === null) {
-			return ConfigurationSnapshot::absent(
-				layer: $address->layer,
-				layerRef: $address->layerRef,
-				configKey: $address->configKey
-			);
+			return ConfigurationSnapshot::absent(address: $address);
 		}
 
 		return new ConfigurationSnapshot(
-			layer: $address->layer,
-			layerRef: $address->layerRef,
-			configKey: $address->configKey,
+			address: $address,
 			value: $row->readValue(),
 			present: true,
-			deploymentUuid: $row->getDeploymentUuid(),
-			updatedBy: $row->getUpdatedBy()
+			provenance: new ConfigurationProvenance(deploymentUuid: $row->getDeploymentUuid(), updatedBy: $row->getUpdatedBy())
 		);
 
 	}//end rowSnapshot()
@@ -213,20 +201,34 @@ class ConfigurationValueStore {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function remove(string $layer, ?string $layerRef, string $configKey): array {
-		$undo = $this->undoEntryFor(layer: $layer, configKey: $configKey);
+		return $this->removeAt(address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey));
 
-		$row = $this->values->findAtAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey);
+	}//end remove()
+
+	/**
+	 * Remove one address, returning what it takes to put it back.
+	 *
+	 * @param ConfigurationAddress $address The layer, layer reference and key.
+	 *
+	 * @return array<string, mixed> The undo entry for this removal.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	public function removeAt(ConfigurationAddress $address): array {
+		$undo = $this->undoEntryFor(layer: $address->layer, configKey: $address->configKey);
+
+		$row = $this->values->findAtAddress(layer: $address->layer, layerRef: $address->layerRef, configKey: $address->configKey);
 		if ($row !== null) {
 			$this->values->remove($row);
 		}
 
-		if ($layer === ConfigurationLayer::INSTANCE) {
-			$this->appConfig->deleteKey($this->appName, $configKey);
+		if ($address->layer === ConfigurationLayer::INSTANCE) {
+			$this->appConfig->deleteKey($this->appName, $address->configKey);
 		}
 
 		return $undo;
 
-	}//end remove()
+	}//end removeAt()
 
 	/**
 	 * Put the app-config side of a run of writes back.

@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\TranslationControllerServices;
+use OCA\OpenRegister\Controller\Support\TranslationMappers;
 use OCA\OpenRegister\Controller\TranslationController;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -33,7 +34,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Service\BulkTranslationServiceInterface;
+use OCA\OpenRegister\Service\TranslationSearch;
 use OCA\OpenRegister\Service\TranslationStatusServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
@@ -116,10 +119,12 @@ class TranslationControllerA24GoldenTest extends TestCase {
 		$request->method('getParams')->willReturn($params);
 
 		return new TranslationController(
-			'openregister',
 			$request,
-			new TranslationControllerServices($this->status, $this->translations, $this->schemas, $this->bulk),
-			$this->objects
+			new TranslationControllerServices(
+				$this->status,
+				$this->bulk,
+				new TranslationMappers($this->translations, $this->schemas, $this->objects)
+			)
 		);
 	}//end controller()
 
@@ -132,16 +137,8 @@ class TranslationControllerA24GoldenTest extends TestCase {
 	 */
 	private function recordSearch(string $method): void {
 		$this->status->method($method)->willReturnCallback(
-			static fn (
-				?string $query,
-				?string $language,
-				?string $status,
-				?string $objectUuid,
-				int $limit,
-				?string $sourceLanguage,
-				bool $isOutOfDate
-			): array => [
-				[$method, $query, $language, $status, $objectUuid, $limit, $sourceLanguage, $isOutOfDate],
+			static fn (TranslationSearch $search): array => [
+				[$method, $search->query, $search->filter->language, $search->filter->status, $search->filter->objectUuid, $search->limit, $search->filter->sourceLanguage, $search->isOutOfDate],
 			]
 		);
 	}//end recordSearch()
@@ -259,7 +256,7 @@ class TranslationControllerA24GoldenTest extends TestCase {
 		$row = $this->createMock(Translation::class);
 		$row->method('jsonSerialize')->willReturn(['status' => 'human_reviewed']);
 		$this->status->method('setStatus')->willReturnCallback(
-			function (string $uuid, string $property, string $language, string $status) use ($row): Translation {
+			function (TranslationSlot $slot, string $status) use ($row): Translation {
 				if ($status === 'bogus') {
 					throw new InvalidArgumentException('bad status');
 				}

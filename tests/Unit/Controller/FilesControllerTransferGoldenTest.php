@@ -28,6 +28,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\File\FileTransfer;
 
 /**
  * Golden test for FilesController::copy() and move().
@@ -46,7 +47,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileEditing
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileTransfer
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileAccessCheck
- * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileObjectRoute
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Event\FileCopiedEvent
  * @uses \OCA\OpenRegister\Event\AbstractObjectFileEvent
@@ -108,7 +109,6 @@ class FilesControllerTransferGoldenTest extends TestCase {
 	public function testTransferMatchesTheRecording(string $action, array $case): void {
 		$this->calls = [];
 		$controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request(case: $case),
 			$this->fileService(case: $case),
 			$this->objectService(case: $case),
@@ -261,7 +261,7 @@ class FilesControllerTransferGoldenTest extends TestCase {
 			return $file;
 		};
 		$service->method('copyFile')->willReturnCallback(fn (...$args) => $transfer('copyFile', $args));
-		$service->method('moveFile')->willReturnCallback(fn (...$args) => $transfer('moveFile', $args));
+		$service->method('moveAttachedFile')->willReturnCallback(fn (FileTransfer $move) => $transfer('moveFile', [$move->source, $move->fileId, $move->target]));
 		$service->method('formatFile')->willReturnCallback(function (File $file) {
 			$this->calls[] = ['fileService.formatFile' => $file->getId()];
 			return ['id' => $file->getId(), 'name' => 'copied.pdf'];

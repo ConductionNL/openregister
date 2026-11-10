@@ -51,6 +51,7 @@ namespace OCA\OpenRegister\Mcp\Listener;
 
 use DateTime;
 use OCA\OpenRegister\ContextChat\ContentProviderInterface;
+use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -250,7 +251,10 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 			return false;
 		}
 
-		$this->submitContentItem(object: $object, schema: $schema, audience: $audience);
+		$this->submitContentItem(
+			candidate: new ContextChatCandidate(object: $object, schema: $schema),
+			audience: $audience
+		);
 		return true;
 	}//end submitIfEligible()
 
@@ -386,15 +390,15 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 	/**
 	 * Build and submit a `ContentItem` for an object.
 	 *
-	 * @param ObjectEntity $object The object to submit.
-	 * @param Schema $schema The object's schema.
-	 * @param string[] $audience Non-empty list of user ids granted access.
+	 * @param ContextChatCandidate $candidate The object to submit and its schema.
+	 * @param string[]             $audience  Non-empty list of user ids granted access.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/context-chat-provider/spec.md#requirement-only-opted-in-published-objects-are-submitted-to-context-chat
 	 */
-	private function submitContentItem(ObjectEntity $object, Schema $schema, array $audience): void {
+	private function submitContentItem(ContextChatCandidate $candidate, array $audience): void {
+		$object = $candidate->object;
 		$uuid = $object->getUuid();
 		if ($uuid === null || $uuid === '') {
 			return;
@@ -415,7 +419,7 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 			itemId: $uuid,
 			providerId: ContentProviderInterface::PROVIDER_ID,
 			title: $this->resolveTitle(object: $object),
-			content: $this->renderContent(object: $object, schema: $schema),
+			content: $this->renderContent(candidate: $candidate),
 			documentType: 'text/plain',
 			lastModified: $lastModified,
 			users: $audience
@@ -485,16 +489,15 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 	 * `content`. Richer per-field control is deferred (see design.md Open
 	 * Questions).
 	 *
-	 * @param ObjectEntity $object The object.
-	 * @param Schema $schema The object's schema (for the writeOnly property allow-list).
+	 * @param ContextChatCandidate $candidate The object and its schema (for the writeOnly property allow-list).
 	 *
 	 * @return string The rendered content.
 	 *
 	 * @spec openspec/specs/context-chat-provider/spec.md
 	 */
-	private function renderContent(ObjectEntity $object, Schema $schema): string {
-		$data = ($object->getObject() ?? []);
-		$writeOnly = $schema->getWriteOnlyProperties();
+	private function renderContent(ContextChatCandidate $candidate): string {
+		$data = ($candidate->object->getObject() ?? []);
+		$writeOnly = $candidate->schema->getWriteOnlyProperties();
 		$lines = [];
 
 		foreach ($data as $key => $value) {

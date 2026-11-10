@@ -63,30 +63,42 @@ class CasePlanStateMachine {
 	private array $pending = [];
 
 	/**
+	 * The lifecycle table.
+	 *
+	 * @var CasePlanTransitions
+	 */
+	private readonly CasePlanTransitions $table;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CasePlanStore $store The plan-item table, the audit, the one transaction per transition and the failure log.
-	 * @param CasePlanTransitions $table The lifecycle table.
 	 * @param CaseTransitionEffects $effects The realiser, the write-through and the event dispatcher.
 	 */
 	public function __construct(
 		private readonly CasePlanStore $store,
-		private readonly CasePlanTransitions $table,
 		private readonly CaseTransitionEffects $effects,
 	) {
-
+		$this->table = new CasePlanTransitions();
 	}//end __construct()
 
 	/**
-	 * Move one item, with everything that entails, in one transaction.
+	 * The plan-item table, the audit, the transaction and the failure log this machine writes through.
 	 *
-	 * @param CaseItem $item The item, as read.
-	 * @param string $to The target state.
-	 * @param string $cause sentry | user | realisation | cascade | import.
-	 * @param string|null $causeRef The sentry id, task/run uuid or parent uuid.
-	 * @param string|null $actor The acting identity, or null for the system.
-	 * @param string|null $reason Free text; becomes `terminated_reason` on a termination.
-	 * @param CasePlanTree|null $tree The plan, when the caller has it (for the cascade).
+	 * @return CasePlanStore The store.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 */
+	public function store(): CasePlanStore {
+		return $this->store;
+	}//end store()
+
+	/**
+	 * Move one item, with everything that entails, in one transaction: the
+	 * move as one value. A cause without an actor is recorded as the system
+	 * ({@see SYSTEM_ACTOR}).
+	 *
+	 * @param CasePlanMove $move The item as read, the target state, the cause and the plan when known.
 	 *
 	 * @return CaseItem The item as persisted.
 	 *
@@ -94,73 +106,104 @@ class CasePlanStateMachine {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
-	public function transition(
-		CaseItem $item,
-		string $to,
-		string $cause,
-		?string $causeRef,
-		?string $actor,
-		?string $reason = null,
-		?CasePlanTree $tree = null,
-	): CaseItem {
-		$this->table->assertLegal(item: $item, to: $to);
+	public function commit(CasePlanMove $move): CaseItem {
+		$this->table->assertLegal(item: $move->item, to: $move->to);
 
-		$why = new CaseTransitionCause(cause: $cause, causeRef: $causeRef, actor: ($actor ?? self::SYSTEM_ACTOR), reason: $reason);
+		return $this->commitMove(move: self::attributed(move: $move));
+	}//end commit()
+
+	/**
+	 * The move with its actor defaulted to the system.
+	 *
+	 * @param CasePlanMove $move The move.
+	 *
+	 * @return CasePlanMove The move, naming an actor.
+	 */
+	private static function attributed(CasePlanMove $move): CasePlanMove {
+		$why = $move->why;
+		if ($why->actor !== null) {
+			return $move;
+		}
+
+		$system = new CaseTransitionCause(cause: $why->cause, causeRef: $why->causeRef, actor: self::SYSTEM_ACTOR, reason: $why->reason);
+
+		return new CasePlanMove(item: $move->item, to: $move->to, why: $system, tree: $move->tree);
+	}//end attributed()
+
+	/**
+	 * Apply one legal move in a (possibly nested) transaction; the outermost
+	 * committer dispatches the queued events once the transaction is done.
+	 *
+	 * @param CasePlanMove $move The item, the target state, the cause and the plan when known.
+	 *
+	 * @return CaseItem The item as persisted.
+	 *
+	 * @throws CaseTransitionException When another mover won.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 */
+	private function commitMove(CasePlanMove $move): CaseItem {
 		$outermost = $this->store->db->inTransaction() === false;
-		$persisted = $this->inTransaction(
-			outermost: $outermost,
-			mutation: fn (): CaseItem => $this->apply(item: $item, to: $to, why: $why, tree: $tree)
-		);
+		$persisted = $this->inTransaction(outermost: $outermost, mutation: fn (): CaseItem => $this->apply(move: $move));
 		if ($outermost === true) {
 			$this->flushEvents();
 		}
 
 		return $persisted;
-	}//end transition()
+	}//end commitMove()
 
 	/**
 	 * Record a refused attempt. Mutates nothing; appended outside any verb
-	 * transaction, and a failure to record it is logged, not converted.
+	 * transaction, and a failure to record it is logged, not converted. An
+	 * unsaved item is ignored.
 	 *
-	 * @param CaseItem $item The item acted on.
-	 * @param string $to The requested state (or the verb, for enable/attach).
-	 * @param string|null $actor The acting identity.
-	 * @param string $reason The denial message.
+	 * @param CasePlanMove $attempt The item acted on, the requested state (or the verb) and the denial's cause.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	public function recordDenial(CaseItem $item, string $to, ?string $actor, string $reason): void {
-		if ($item->getId() === null) {
+	public function recordRefusal(CasePlanMove $attempt): void {
+		if ($attempt->item->getId() === null) {
 			return;
 		}
 
+		$this->appendDenial(attempt: $attempt);
+	}//end recordRefusal()
+
+	/**
+	 * Append a refused attempt's audit row; a failure to append it is logged, not converted.
+	 *
+	 * @param CasePlanMove $attempt The item acted on, the requested state and the denial's cause.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	private function appendDenial(CasePlanMove $attempt): void {
 		try {
-			$this->store->audits->insert($this->denialOf(item: $item, to: $to, actor: $actor, reason: $reason));
+			$this->store->audits->insert(self::denialOf(attempt: $attempt));
 		} catch (Throwable $failure) {
 			$this->store->logger->warning(
 				'[CasePlanStateMachine] Could not record an authorization denial: ' . $failure->getMessage(),
-				['item' => $item->getUuid()]
+				['item' => $attempt->item->getUuid()]
 			);
 		}
-	}//end recordDenial()
+	}//end appendDenial()
 
 	/**
 	 * The audit row of a refused attempt.
 	 *
-	 * @param CaseItem $item The item acted on.
-	 * @param string $to The requested state (or the verb, for enable/attach).
-	 * @param string|null $actor The acting identity.
-	 * @param string $reason The denial message.
+	 * @param CasePlanMove $attempt The item acted on, the requested state (or the verb, for enable/attach)
+	 *                              and the user cause carrying the acting identity and the denial message.
 	 *
 	 * @return CaseItemAudit The unsaved row, `authorized: false`.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	private function denialOf(CaseItem $item, string $to, ?string $actor, string $reason): CaseItemAudit {
-		$denial = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $actor, reason: $reason);
-		$entry = $denial->auditFor(item: $item, fromState: (string)$item->getState(), toState: $to);
+	private static function denialOf(CasePlanMove $attempt): CaseItemAudit {
+		$item = $attempt->item;
+		$entry = $attempt->why->auditFor(item: $item, fromState: (string)$item->getState(), toState: $attempt->to);
 		$entry->setAuthorized(false);
 
 		return $entry;
@@ -168,21 +211,21 @@ class CasePlanStateMachine {
 
 	/**
 	 * Audit a row's creation: `from_state` null, `to_state` its initial state.
-	 * Called inside the creator's transaction, right after the insert.
+	 * Called inside the creator's transaction, right after the insert. A cause
+	 * without an actor is recorded as the system.
 	 *
-	 * @param CaseItem $item The inserted item.
-	 * @param string $cause import | user | realisation (a repetition).
-	 * @param string|null $causeRef The definition, the actor's verb, or the previous realisation.
-	 * @param string|null $actor The acting identity.
+	 * @param CaseItem            $item The inserted item.
+	 * @param CaseTransitionCause $why  The cause, its reference and the acting identity.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
-	public function recordCreation(CaseItem $item, string $cause, ?string $causeRef, ?string $actor): void {
-		$why = new CaseTransitionCause(cause: $cause, causeRef: $causeRef, actor: ($actor ?? self::SYSTEM_ACTOR), reason: null);
+	public function recordCreationOf(CaseItem $item, CaseTransitionCause $why): void {
+		$actor = ($why->actor ?? self::SYSTEM_ACTOR);
+		$why = new CaseTransitionCause(cause: $why->cause, causeRef: $why->causeRef, actor: $actor, reason: null);
 		$this->store->audits->insert($why->auditFor(item: $item, fromState: '', toState: (string)$item->getState()));
-	}//end recordCreation()
+	}//end recordCreationOf()
 
 	/**
 	 * Dispatch every committed transition's event. Called by the outermost
@@ -268,10 +311,7 @@ class CasePlanStateMachine {
 	/**
 	 * The body of a transition, inside the transaction.
 	 *
-	 * @param CaseItem $item The item, as read.
-	 * @param string $to The target state.
-	 * @param CaseTransitionCause $why The cause, its reference, the acting identity and the reason.
-	 * @param CasePlanTree|null $tree The plan, when known.
+	 * @param CasePlanMove $move The item as read, the target state, the cause and the plan when known.
 	 *
 	 * @return CaseItem The persisted item.
 	 *
@@ -279,9 +319,11 @@ class CasePlanStateMachine {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
-	private function apply(CaseItem $item, string $to, CaseTransitionCause $why, ?CasePlanTree $tree): CaseItem {
+	private function apply(CasePlanMove $move): CaseItem {
+		$item = $move->item;
+		$to = $move->to;
 		$from = (string)$item->getState();
-		$this->stamp(item: $item, to: $to, why: $why);
+		$this->stamp(move: $move);
 
 		// THE one place `state` and `is_terminal` change, in the same statement.
 		$item->setState($to);
@@ -293,7 +335,7 @@ class CasePlanStateMachine {
 			);
 		}
 
-		$this->afterUpdate(item: $item, from: $from, why: $why, tree: $tree);
+		$this->afterUpdate(move: $move, from: $from);
 
 		return $item;
 	}//end apply()
@@ -302,23 +344,23 @@ class CasePlanStateMachine {
 	 * What follows a won update inside the transaction: the audit row, the
 	 * effects outside the row, the queued event and a stage's cascade.
 	 *
-	 * @param CaseItem $item The item, already in its new state.
+	 * @param CasePlanMove $move The move; its item already in its new state.
 	 * @param string $from The state before.
-	 * @param CaseTransitionCause $why The cause.
-	 * @param CasePlanTree|null $tree The plan, when known.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
-	private function afterUpdate(CaseItem $item, string $from, CaseTransitionCause $why, ?CasePlanTree $tree): void {
+	private function afterUpdate(CasePlanMove $move, string $from): void {
+		$item = $move->item;
+		$why = $move->why;
 		$this->store->audits->insert($why->auditFor(item: $item, fromState: $from, toState: (string)$item->getState()));
 		$this->closeRealisation(item: $item, why: $why);
 		$this->mirrorMilestone(item: $item);
 		$this->pending[] = new CaseItemTransitionedEvent(item: $item, fromState: $from);
 
 		if ($item->getPlanItemType() === CaseItem::TYPE_STAGE && $item->isInTerminalState() === true) {
-			$this->cascade(stage: $item, tree: $tree);
+			$this->cascade(stage: $item, tree: $move->tree);
 		}
 	}//end afterUpdate()
 
@@ -327,15 +369,16 @@ class CasePlanStateMachine {
 	 * activation, stamp `entered_at` on a milestone's completion, record the
 	 * reason on a termination.
 	 *
-	 * @param CaseItem $item The item.
-	 * @param string $to The target state.
-	 * @param CaseTransitionCause $why Its reason, and the acting identity the realisation is created by.
+	 * @param CasePlanMove $move The item, the target state, and the cause carrying its reason and the acting identity the realisation is created by.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
-	private function stamp(CaseItem $item, string $to, CaseTransitionCause $why): void {
+	private function stamp(CasePlanMove $move): void {
+		$item = $move->item;
+		$to = $move->to;
+		$why = $move->why;
 		if ($to === CaseItem::STATE_ACTIVE) {
 			$this->effects->realiser->realise(item: $item, actor: (string)$why->actor);
 			$item->setEnteredAt(new DateTime());
@@ -407,7 +450,7 @@ class CasePlanStateMachine {
 		$why = self::cascadeCause(stage: $stage);
 		foreach ($tree->children(parentId: (int)$stage->getId()) as $child) {
 			if ($child->isInTerminalState() === false) {
-				$this->apply(item: $child, to: self::cascadeTarget(child: $child), why: $why, tree: $tree);
+				$this->apply(move: new CasePlanMove(item: $child, to: self::cascadeTarget(child: $child), why: $why, tree: $tree));
 			}
 		}
 	}//end cascade()

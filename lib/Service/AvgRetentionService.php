@@ -43,7 +43,7 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -63,7 +63,7 @@ class AvgRetentionService implements AvgRetentionPassInterface {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db DB for audit-trail aggregation.
-	 * @param VerwerkingsactiviteitMapper $vrwMapper Catalog reader.
+	 * @param VerwerkingsactiviteitMapperInterface $vrwMapper Catalog reader.
 	 * @param MagicMapperInterface $objectMapper Object loader.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ArchivalRetentionGuard $archivalGuard Refuses erasure of a held or legally retained record.
@@ -73,7 +73,7 @@ class AvgRetentionService implements AvgRetentionPassInterface {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly VerwerkingsactiviteitMapper $vrwMapper,
+		private readonly VerwerkingsactiviteitMapperInterface $vrwMapper,
 		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ArchivalRetentionGuard $archivalGuard,

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\RunObjectLock;
 use OCA\OpenRegister\Db\RunObjectLockMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\DraftCaller;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
 use OCA\OpenRegister\Service\Object\ConflictReport;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
@@ -41,6 +42,8 @@ use OCA\OpenRegister\Service\Object\GroupRuleEntries;
 use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\OrphanDeletionGuard;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\LockRunStep;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCP\IAppConfig;
 use OCP\IUser;
@@ -103,7 +106,7 @@ class LockGuardUnitsGoldenTest extends TestCase {
 			$store = new AdvisoryLockStore(appConfig: $config, userSession: $this->session('anna'), logger: $this->createMock(LoggerInterface::class));
 
 			try {
-				$answer = $store->acquire(identifier: 'id-1', process: 'proc', duration: 60);
+				$answer = $store->acquire(request: new LockRequest(identifier: 'id-1', process: 'proc', duration: 60, runStep: new LockRunStep(null, null)));
 				$this->assertSame('ok', $expected, $label);
 				$this->assertSame('id-1', $answer['uuid']);
 				$this->assertSame(['anna', 'proc', 60, true], [$answer['locked']['user'], $answer['locked']['process'], $answer['locked']['duration'], $answer['locked']['advisory']]);
@@ -132,23 +135,18 @@ class LockGuardUnitsGoldenTest extends TestCase {
 			}
 		);
 		$logger = $this->createMock(LoggerInterface::class);
-		$registry = new RunLockRegistry(
-			registry: $mapper,
-			magicMapper: $this->createMock(MagicMapper::class),
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			logger: $logger
-		);
+		$registry = new RunLockRegistry(registry: $mapper, recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->createMock(MagicMapper::class), $this->createMock(AuditTrailMapper::class), $logger, $this->createStub(\OCP\EventDispatcher\IEventDispatcher::class)));
 		$object = new ObjectEntity();
 		$object->setUuid('o-1');
 		$object->setRegister('3');
 		$object->setSchema('4');
 		$object->setLocked(['expiration' => '2030-01-02T03:04:05+00:00']);
 
-		$registry->record(object: $object, runUuid: null, nodeId: 'n');
-		$registry->record(object: $object, runUuid: '  ', nodeId: 'n');
+		$registry->record(object: $object, step: new LockRunStep(null, 'n'));
+		$registry->record(object: $object, step: new LockRunStep('  ', 'n'));
 		$this->assertSame([], $rows);
 
-		$registry->record(object: $object, runUuid: ' run-1 ', nodeId: 'n-1');
+		$registry->record(object: $object, step: new LockRunStep(' run-1 ', 'n-1'));
 		$this->assertCount(1, $rows);
 		$this->assertSame(
 			['run-1', 'o-1', '3', '4', 'n-1', '2030-01-02T03:04:05+00:00'],
@@ -156,14 +154,14 @@ class LockGuardUnitsGoldenTest extends TestCase {
 		);
 
 		$object->setLocked([]);
-		$registry->record(object: $object, runUuid: 'run-2', nodeId: null);
+		$registry->record(object: $object, step: new LockRunStep('run-2', null));
 		$this->assertNull($rows[1]->getExpiresAt());
 
 		$object->setLocked(['expiration' => 'not a date at all']);
 		$logger->expects($this->once())->method('warning')->with(
 			'[RunLockRegistry] Could not record a run lock; the lock itself stands'
 		);
-		$registry->record(object: $object, runUuid: 'run-3', nodeId: null);
+		$registry->record(object: $object, step: new LockRunStep('run-3', null));
 		$this->assertCount(2, $rows);
 	}//end testRunLockRecord()
 
@@ -238,7 +236,7 @@ class LockGuardUnitsGoldenTest extends TestCase {
 
 		$analysis = new \OCA\OpenRegister\Dto\DeletionAnalysis(
 			deletable: $case['deletable'],
-			cascadeTargets: ($case['dependants'] === true ? ['x'] : []),
+			effects: new \OCA\OpenRegister\Dto\DeletionEffects(cascadeTargets: ($case['dependants'] === true ? ['x'] : []))
 		);
 		$deleter = $this->createMock(\OCA\OpenRegister\Service\Object\DeleteObject::class);
 		$deleter->method('canDelete')->willReturn($analysis);
@@ -292,12 +290,20 @@ class LockGuardUnitsGoldenTest extends TestCase {
 		$active = new ObjectEntity();
 		$active->setStatus(ObjectEntity::STATUS_ACTIVE);
 
-		$this->assertFalse($rule->keptFromCaller(object: $active, schema: $schema, userId: 'bob', isAdmin: false));
-		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, userId: 'anna', isAdmin: false));
-		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, userId: 'bob', isAdmin: true));
-		$this->assertTrue($rule->keptFromCaller(object: $draft, schema: $schema, userId: 'bob', isAdmin: false));
-		$this->assertTrue($rule->keptFromCaller(object: $draft, schema: $schema, userId: null, isAdmin: false, commandLine: false));
-		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, userId: null, isAdmin: false, commandLine: true));
+		$this->assertFalse($rule->keptFromCaller(object: $active, schema: $schema, caller: new DraftCaller(userId: 'bob', isAdmin: false)));
+		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, caller: new DraftCaller(userId: 'anna', isAdmin: false)));
+		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, caller: new DraftCaller(userId: 'bob', isAdmin: true)));
+		$this->assertTrue($rule->keptFromCaller(object: $draft, schema: $schema, caller: new DraftCaller(userId: 'bob', isAdmin: false)));
+		$this->assertTrue($rule->keptFromCaller(
+			object: $draft,
+			schema: $schema,
+			caller: new DraftCaller(userId: null, isAdmin: false, commandLine: false)
+		));
+		$this->assertFalse($rule->keptFromCaller(
+			object: $draft,
+			schema: $schema,
+			caller: new DraftCaller(userId: null, isAdmin: false, commandLine: true)
+		));
 	}//end testOverrideClauseAndDraftCallerRule()
 
 	/**

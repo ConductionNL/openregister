@@ -16,6 +16,7 @@ use Countable;
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
 use OCA\OpenRegister\Mcp\Attribute\McpToolTitle;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
+use OCA\OpenRegister\Mcp\ToolScanSubject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Stringable;
@@ -139,7 +140,7 @@ class AttributeToolScannerSchemaGoldenTest extends TestCase
             }
         };
 
-        $descriptors = (new AttributeToolScanner())->scanClass('demo', AttributeToolScannerSchemaFixture::class, $logger);
+        $descriptors = (new AttributeToolScanner())->scanClass(new ToolScanSubject('demo', AttributeToolScannerSchemaFixture::class, $logger));
         $actual      = json_decode((string) json_encode(['descriptors' => $descriptors, 'log' => $logger->records]), true);
 
         if (getenv('UPDATE_GOLDEN') === '1') {

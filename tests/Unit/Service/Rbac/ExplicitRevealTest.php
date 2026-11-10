@@ -29,10 +29,12 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
+use OCA\OpenRegister\Service\Audit\ReadableObject;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
 use OCA\OpenRegister\Service\Rbac\RevealRecording;
@@ -46,6 +48,10 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitReveal
@@ -115,14 +121,7 @@ class ExplicitRevealTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 		$groupManager->method('isAdmin')->willReturn(in_array('admin', $groups, true));
 
-		$handler = new PropertyRbacHandler(
-			$session,
-			$groupManager,
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($session, $groupManager),
-			$reveals
-		);
+		$handler = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($session, $groupManager)), logger: $this->createMock(LoggerInterface::class), reveals: $reveals);
 
 		return [$handler, $session];
 	}//end rules()
@@ -317,7 +316,7 @@ class ExplicitRevealTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setObject(['citizenServiceNumber' => self::BSN]);
 
-		$rows = (new HistoryEntryRedactor($properties))->redact(rows: [$entry], schema: $schema, object: $object);
+		$rows = (new HistoryEntryRedactor($properties))->redact(rows: [$entry], readable: new ReadableObject(object: $object, schema: $schema));
 
 		$this->assertSame(['old' => '*****0000', 'new' => self::MASK], $rows[0]['changed']['citizenServiceNumber']);
 		$this->assertNull($rows[0]['changed']['@self']['new']['name']);
@@ -339,13 +338,14 @@ class ExplicitRevealTest extends TestCase {
 
 		$service = (new ReflectionClass(McpResourcesService::class))->newInstanceWithoutConstructor();
 		$reflection = new ReflectionClass($service);
-		foreach (['schemaMapper' => $schemas, 'objectService' => $objects] as $name => $value) {
+		$catalog = new SchemaCatalog($this->createMock(RegisterMapper::class), $schemas, $this->createMock(MagicMapperInterface::class));
+		foreach (['catalog' => $catalog, 'objectService' => $objects] as $name => $value) {
 			$property = $reflection->getProperty($name);
 			$property->setValue($service, $value);
 		}
 
 		$method = $reflection->getMethod('readObjects');
-		$read = $method->invoke($service, 1, 7, '11111111-1111-4111-8111-111111111111');
+		$read = $method->invoke($service, new RegisterSchemaRef(1, 7), '11111111-1111-4111-8111-111111111111');
 
 		$this->assertSame(self::MASK, $read['citizenServiceNumber']);
 	}//end testAnMcpResourceReadsItMasked()
@@ -358,7 +358,7 @@ class ExplicitRevealTest extends TestCase {
 	public function testAWriteSendingTheMaskKeepsTheValue(): void {
 		$stored = ['citizenServiceNumber' => self::BSN];
 
-		$this->assertSame(self::BSN, ExplicitReveal::restoreMasked(schema: $this->schema(), incoming: ['citizenServiceNumber' => self::MASK], stored: $stored)['citizenServiceNumber']);
-		$this->assertSame('999990000', ExplicitReveal::restoreMasked(schema: $this->schema(), incoming: ['citizenServiceNumber' => '999990000'], stored: $stored)['citizenServiceNumber']);
+		$this->assertSame(self::BSN, ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $this->schema(), incoming: ['citizenServiceNumber' => self::MASK], stored: $stored))['citizenServiceNumber']);
+		$this->assertSame('999990000', ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $this->schema(), incoming: ['citizenServiceNumber' => '999990000'], stored: $stored))['citizenServiceNumber']);
 	}//end testAWriteSendingTheMaskKeepsTheValue()
 }//end class

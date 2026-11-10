@@ -27,7 +27,6 @@ namespace OCA\OpenRegister\Mcp\Service\Chat;
 use LLPhant\Chat\FunctionInfo\FunctionInfo;
 use LLPhant\Chat\FunctionInfo\Parameter;
 use OCA\OpenRegister\Mcp\Db\Agent;
-use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCA\OpenRegister\Mcp\Tool\ToolInterface;
 use Psr\Log\LoggerInterface;
@@ -48,45 +47,19 @@ use Psr\Log\LoggerInterface;
 class ToolManagementHandler {
 
 	/**
-	 * Agent mapper
-	 *
-	 * @var AgentMapper
-	 */
-	private AgentMapper $agentMapper;
-
-	/**
-	 * Tool registry
-	 *
-	 * @var ToolRegistry
-	 */
-	private ToolRegistry $toolRegistry;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Constructor
 	 *
-	 * @param AgentMapper $agentMapper Agent mapper.
-	 * @param ToolRegistry $toolRegistry Tool registry.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ToolRegistry    $toolRegistry Tool registry.
+	 * @param LoggerInterface $logger       Logger.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		AgentMapper $agentMapper,
-		ToolRegistry $toolRegistry,
-		LoggerInterface $logger,
+		private readonly ToolRegistry $toolRegistry,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->agentMapper = $agentMapper;
-		$this->toolRegistry = $toolRegistry;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**

@@ -42,8 +42,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
-use OCA\OpenRegister\Service\CalendarEventService;
-use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -64,20 +63,6 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'calendar';
 
 	/**
-	 * Legacy X-OR-* CalDAV service.
-	 *
-	 * @var CalendarEventService
-	 */
-	private CalendarEventService $calendarEventService;
-
-	/**
-	 * Tier-2 link-table service (UNION read path).
-	 *
-	 * @var CalendarLinkService
-	 */
-	private CalendarLinkService $calendarLinkService;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param CalendarProviderServices $calendar   The calendar event and link services.
@@ -88,13 +73,11 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		CalendarProviderServices $calendar,
+		private CalendarProviderServices $calendar,
 		private IAppManager $appManager,
 		private IL10N $l10n,
 		private LoggerInterface $logger,
 	) {
-		$this->calendarEventService = $calendar->calendarEventService;
-		$this->calendarLinkService = $calendar->calendarLinkService;
 	}//end __construct()
 
 	/**
@@ -174,9 +157,20 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->linkedEventsOf(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId));
+	}//end list()
+
+	/**
+	 * The object's linked events; none, logged, when the calendar cannot be read.
+	 *
+	 * @param ObjectRef $ref The owning object; register and schema only name it in the log line.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function linkedEventsOf(ObjectRef $ref): array {
 		try {
 			// Tier-2: UNION read across link-table + legacy X-OR-* scan.
-			return $this->calendarLinkService->getLinkedEvents(objectUuid: $objectId);
+			return $this->calendar->calendarLinkService->getLinkedEvents(objectUuid: $ref->id);
 		} catch (Throwable $e) {
 			// CalDAV failures (no user, no VEVENT calendar) degrade to
 			// an empty list rather than breaking the tab — AD-23 covers
@@ -184,14 +178,14 @@ class CalendarProvider extends AbstractIntegrationProvider {
 			// for link-table providers) but does NOT mandate silent
 			// failure: surface the cause so an empty Meetings tab can
 			// be diagnosed from nextcloud.log instead of guessing.
-			$scope = ['objectId' => $objectId, 'register' => $register, 'schema' => $schema, 'exception' => $e];
+			$scope = ['objectId' => $ref->id, 'register' => $ref->register, 'schema' => $ref->schema, 'exception' => $e];
 			$this->logger->warning(
 				'CalendarProvider::list() failed; degrading to empty list',
 				['app' => 'openregister', 'provider' => self::class, 'method' => 'list'] + $scope
 			);
 			return [];
 		}//end try
-	}//end list()
+	}//end linkedEventsOf()
 
 	/**
 	 * Unlink a VEVENT.
@@ -210,6 +204,18 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+		$this->unlinkEventOf(objectId: $objectId, entityId: $entityId);
+	}//end delete()
+
+	/**
+	 * Unlink one of an object's events, in either entity-id shape.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 * @param string $entityId `{calendarId}/{eventUri}` (legacy) or a bare event uid.
+	 *
+	 * @return void
+	 */
+	private function unlinkEventOf(string $objectId, string $entityId): void {
 		// New shape: simple eventUid (Tier-2 link-table). Legacy shape:
 		// "{calendarId}/{eventUri}" (CalendarProvider Phase B-2). We accept
 		// both — if the entityId contains a slash, treat as legacy and
@@ -217,14 +223,14 @@ class CalendarProvider extends AbstractIntegrationProvider {
 		$parts = explode('/', $entityId, 2);
 		if (count($parts) === 2) {
 			[$calendarId, $eventUri] = $parts;
-			$this->calendarEventService->requireEventOf(objectUuid: $objectId, calendarId: $calendarId, eventUri: $eventUri);
-			$this->calendarEventService->unlinkEvent(calendarId: $calendarId, eventUri: $eventUri);
+			$this->calendar->calendarEventService->requireEventOf(objectUuid: $objectId, calendarId: $calendarId, eventUri: $eventUri);
+			$this->calendar->calendarEventService->unlinkEvent(calendarId: $calendarId, eventUri: $eventUri);
 			return;
 		}
 
 		// EntityId is a bare eventUid — Tier-2 link-only removal.
-		$this->calendarLinkService->unlinkEvent(objectUuid: $objectId, eventUid: $entityId);
-	}//end delete()
+		$this->calendar->calendarLinkService->unlinkEvent(objectUuid: $objectId, eventUid: $entityId);
+	}//end unlinkEventOf()
 
 	/**
 	 * Health descriptor.

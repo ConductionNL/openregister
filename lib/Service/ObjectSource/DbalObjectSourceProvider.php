@@ -476,63 +476,68 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function aggregate(
-		Register $register,
-		Schema $schema,
-		string $metric,
-		?string $field,
-		array $filter,
-		?array $groupBy,
-		?array $dateBucket,
-		array $config = [],
+		Register $register, Schema $schema, string $metric, ?string $field, array $filter, ?array $groupBy, ?array $dateBucket, array $config=[]
 	): ?array {
-		if (in_array($metric, ['count', 'sum', 'avg', 'min', 'max'], true) === false) {
+		$shape   = new DbalAggregationShape(groupBy: $groupBy, dateBucket: $dateBucket);
+		$request = new DbalMetricRequest(metric: $metric, field: $field, filter: $filter, shape: $shape);
+		return $this->aggregateMetric(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config), request: $request);
+	}//end aggregate()
+
+	/**
+	 * Compute one metric live against the external table a reference's schema projects.
+	 *
+	 * @param DbalObjectRef     $ref     The register, schema and dbal-source configuration.
+	 * @param DbalMetricRequest $request The metric, field, filter and result shape.
+	 *
+	 * @return array{value: int|float|null}|array{groups: array<int, array{key: mixed, value: int|float|null}>}|null
+	 *
+	 * @throws DbalObjectSourceException On an unreachable DB (503) or query error (502).
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function aggregateMetric(DbalObjectRef $ref, DbalMetricRequest $request): ?array {
+		if (in_array($request->metric, ['count', 'sum', 'avg', 'min', 'max'], true) === false) {
 			return null;
 		}
 
-		$context = $this->resolveContext(config: $config, schema: $schema);
+		$context = $this->resolveContext(config: $ref->config, schema: $ref->schema);
 		if ($context === null) {
 			return null;
 		}
 
-		$aggregation = new DbalAggregation(metric: $metric, field: $field, filter: $filter, columns: $context[1]);
-		$query       = $this->boundAggregation(source: $context[0], config: $config, aggregation: $aggregation);
-		if ($query === null) {
-			return null;
-		}
-
-		return $this->aggregator->run(query: $query, shape: new DbalAggregationShape(groupBy: $groupBy, dateBucket: $dateBucket));
-	}//end aggregate()
-
-	/**
-	 * Bind the aggregation to a connection, once its value field is known to be a column.
-	 *
-	 * The value field is checked before connecting, so a misconfigured field
-	 * answers null without touching the external database.
-	 *
-	 * @param Source               $source      The backing database source.
-	 * @param array<string, mixed> $config      The schema's dbal-source configuration.
-	 * @param DbalAggregation      $aggregation The metric, field, filter and columns.
-	 *
-	 * @return DbalAggregationQuery|null Null when the field is not a column or the driver is missing.
-	 *
-	 * @throws DbalObjectSourceException When the external database is unreachable.
-	 */
-	private function boundAggregation(Source $source, array $config, DbalAggregation $aggregation): ?DbalAggregationQuery {
-		if ($aggregation->lacksValueField() === true) {
-			return null;
-		}
-
-		$connection = $this->connectUnlessDriverMissing(source: $source);
+		$aggregation = new DbalAggregation(metric: $request->metric, field: $request->field, filter: $request->filter, columns: $context[1]);
+		$connection  = $this->aggregationConnection(source: $context[0], aggregation: $aggregation);
 		if ($connection === null) {
 			return null;
 		}
 
-		return $this->aggregator->query(
-			connection: $connection,
-			table: $this->fromExpression(connection: $connection, config: $config),
-			aggregation: $aggregation
-		);
-	}//end boundAggregation()
+		$table = $this->fromExpression(connection: $connection, config: $ref->config);
+
+		$query = $this->aggregator->query(from: new DbalFromClause(connection: $connection, table: $table), aggregation: $aggregation);
+
+		return $this->aggregator->run(query: $query, shape: $request->shape);
+	}//end aggregateMetric()
+
+	/**
+	 * The connection an aggregation runs on, once its value field is known to be a column.
+	 *
+	 * The value field is checked before connecting, so a misconfigured field
+	 * answers null without touching the external database.
+	 *
+	 * @param Source          $source      The backing database source.
+	 * @param DbalAggregation $aggregation The metric, field, filter and columns.
+	 *
+	 * @return Connection|null Null when the field is not a column or the driver is missing.
+	 *
+	 * @throws DbalObjectSourceException When the external database is unreachable.
+	 */
+	private function aggregationConnection(Source $source, DbalAggregation $aggregation): ?Connection {
+		if ($aggregation->lacksValueField() === true) {
+			return null;
+		}
+
+		return $this->connectUnlessDriverMissing(source: $source);
+	}//end aggregationConnection()
 
 	/**
 	 * Open the connection an aggregation runs on, or null when the source's driver is not installed.

@@ -23,9 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Support\PermissionBit;
-use OCP\IGroupManager;
-use OCP\IUserManager;
 use OCP\Share\IShare;
 
 /**
@@ -59,67 +56,31 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 	private const SHARE_BIT_VERBS = ['read', 'update', 'create', 'delete'];
 
 	/**
-	 * The rules in play and the deny mode, as `/permissions` reads them.
+	 * The owning group; stateless, so it is built in place.
 	 *
-	 * @var ObjectAccessReport
+	 * @var ObjectScopeResolver
 	 */
-	private readonly ObjectAccessReport $accessReport;
+	private readonly ObjectScopeResolver $scopeResolver;
 
 	/**
-	 * The shares on the object's own folder.
+	 * Extension verbs and the inheritable flag of a share; stateless, so it is built in place.
 	 *
-	 * @var ObjectShareReader
+	 * @var ShareGrantAttributes
 	 */
-	private readonly ObjectShareReader $shares;
-
-	/**
-	 * The shares on its ancestors' folders.
-	 *
-	 * @var InheritedGrantLister
-	 */
-	private readonly InheritedGrantLister $inherited;
-
-	/**
-	 * How a rule entry fits this record, and whom it names.
-	 *
-	 * @var GrantRuleFit
-	 */
-	private readonly GrantRuleFit $rules;
-
-	/**
-	 * User display names.
-	 *
-	 * @var IUserManager
-	 */
-	private readonly IUserManager $userManager;
-
-	/**
-	 * Group display names.
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
+	private readonly ShareGrantAttributes $attributes;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param GrantReportSources   $sources       The access report, the object's shares, its ancestors' shares and the rule fit.
-	 * @param ObjectScopeResolver  $scopeResolver The owning group.
-	 * @param PrincipalDirectory   $directory     User and group display names.
-	 * @param ShareGrantAttributes $attributes    Extension verbs and the inheritable flag of a share.
+	 * @param GrantReportSources $sources   The access report, the object's shares, its ancestors' shares and the rule fit.
+	 * @param PrincipalDirectory $directory User and group display names.
 	 */
 	public function __construct(
-		GrantReportSources $sources,
-		private readonly ObjectScopeResolver $scopeResolver,
-		PrincipalDirectory $directory,
-		private readonly ShareGrantAttributes $attributes = new ShareGrantAttributes(),
+		private readonly GrantReportSources $sources,
+		private readonly PrincipalDirectory $directory,
 	) {
-		$this->accessReport = $sources->accessReport;
-		$this->shares = $sources->shares;
-		$this->inherited = $sources->inherited;
-		$this->rules = $sources->rules;
-		$this->userManager = $directory->userManager;
-		$this->groupManager = $directory->groupManager;
+		$this->scopeResolver = new ObjectScopeResolver();
+		$this->attributes = new ShareGrantAttributes();
 	}//end __construct()
 
 	/**
@@ -138,19 +99,46 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 	 * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
 	 */
 	public function rowsFor(ObjectEntity $object, mixed $registerRef, mixed $schemaRef, array $principalTypes = []): array {
-		$set = $this->accessReport->setFor(object: $object, registerRef: $registerRef, schemaRef: $schemaRef);
-		$envelope = $object->getMatchEnvelope();
+		$set = $this->sources->accessReport->setFor(object: $object, registerRef: $registerRef, schemaRef: $schemaRef);
 
-		$rows = [];
-		$rows = $this->ownerRows(object: $object, rows: $rows);
-		$rows = $this->sharedRows(object: $object, rows: $rows);
-		$rows = $this->inheritedRows(object: $object, rows: $rows);
-		$rows = $this->ruleRows(holders: $set['holders'], envelope: $envelope, rows: $rows);
+		return [
+			'object' => $object->getUuid(),
+			'results' => $this->named(rows: $this->rowSetFor(object: $object, set: $set)->rows(), principalTypes: $principalTypes),
+			'denyEnforcement' => $set['denyEnforcement'],
+		];
+	}//end rowsFor()
+
+	/**
+	 * Every grant row of one object, folded, with what an enforcing deny removes taken out.
+	 *
+	 * @param ObjectEntity         $object The object.
+	 * @param array<string, mixed> $set    The holders, the denied rules and the deny mode, as `/permissions` reports them.
+	 *
+	 * @return GrantRowSet The rows.
+	 */
+	private function rowSetFor(ObjectEntity $object, array $set): GrantRowSet {
+		$rows = new GrantRowSet(envelope: $object->getMatchEnvelope());
+		$this->ownerRows(object: $object, rows: $rows);
+		$this->sharedRows(object: $object, rows: $rows);
+		$this->inheritedRows(object: $object, rows: $rows);
+		$this->ruleRows(holders: $set['holders'], rows: $rows);
 
 		if ($set['denyEnforcement'] === DenyEnforcementMode::MODE_ENFORCING) {
-			$rows = $this->withoutDenied(rows: $rows, denied: $set['denied'], envelope: $envelope);
+			$this->withoutDenied(rows: $rows, denied: $set['denied']);
 		}
 
+		return $rows;
+	}//end rowSetFor()
+
+	/**
+	 * The rows of the asked principal types, each with its principal's display name.
+	 *
+	 * @param array<string, array<string, mixed>> $rows           The rows.
+	 * @param string[]                            $principalTypes Keep only these principal types; empty keeps all.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 */
+	private function named(array $rows, array $principalTypes): array {
 		$results = [];
 		foreach ($rows as $row) {
 			if ($principalTypes !== [] && in_array($row['principal']['type'], $principalTypes, true) === false) {
@@ -164,115 +152,101 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 			$results[] = $row;
 		}
 
-		return [
-			'object' => $object->getUuid(),
-			'results' => $results,
-			'denyEnforcement' => $set['denyEnforcement'],
-		];
-	}//end rowsFor()
+		return $results;
+	}//end named()
 
 	/**
 	 * The owner and the owning group.
 	 *
-	 * @param ObjectEntity                        $object The object.
-	 * @param array<string, array<string, mixed>> $rows   The rows so far.
+	 * @param ObjectEntity $object The object.
+	 * @param GrantRowSet  $rows   The rows so far.
 	 *
-	 * @return array<string, array<string, mixed>> The rows.
+	 * @return void
 	 */
-	private function ownerRows(ObjectEntity $object, array $rows): array {
+	private function ownerRows(ObjectEntity $object, GrantRowSet $rows): void {
 		$verbs = array_keys(PermissionCatalogue::CANONICAL);
 
 		$owner = $object->getOwner();
 		if (is_string($owner) === true && $owner !== '') {
-			$rows = $this->fold(rows: $rows, row: $this->row(origin: self::ORIGIN_OWNER, type: 'user', principalId: $owner, verbs: $verbs));
+			$rows->fold(row: $this->row(origin: self::ORIGIN_OWNER, holder: new GrantHolder(type: 'user', principalId: $owner, verbs: $verbs)));
 		}
 
 		$ownerGroup = $this->scopeResolver->ownerGroup(authorization: $object->getAuthorization());
 		if ($ownerGroup !== null) {
-			$rows = $this->fold(rows: $rows, row: $this->row(origin: self::ORIGIN_OWNER, type: 'group', principalId: $ownerGroup, verbs: $verbs));
+			$holder = new GrantHolder(type: 'group', principalId: $ownerGroup, verbs: $verbs);
+			$rows->fold(row: $this->row(origin: self::ORIGIN_OWNER, holder: $holder));
 		}
-
-		return $rows;
 	}//end ownerRows()
 
 	/**
 	 * The shares on the object's own folder, link shares left out.
 	 *
-	 * @param ObjectEntity                        $object The object.
-	 * @param array<string, array<string, mixed>> $rows   The rows so far.
+	 * @param ObjectEntity $object The object.
+	 * @param GrantRowSet  $rows   The rows so far.
 	 *
-	 * @return array<string, array<string, mixed>> The rows.
+	 * @return void
 	 */
-	private function sharedRows(ObjectEntity $object, array $rows): array {
-		$found = $this->shares->sharesOn(object: $object, sharers: [(string)$object->getOwner()], complete: true);
+	private function sharedRows(ObjectEntity $object, GrantRowSet $rows): void {
+		$found = $this->sources->shares->completeSharesOn(object: $object, sharers: [(string)$object->getOwner()]);
 		foreach ($found as $share) {
 			if ($share['type'] === 'link') {
 				continue;
 			}
 
-			$rows = $this->fold(rows: $rows, row: $this->shareRow(origin: self::ORIGIN_SHARED, type: $share['type'], share: $share['share']));
+			$rows->fold(row: $this->shareRow(origin: self::ORIGIN_SHARED, found: $share));
 		}
-
-		return $rows;
 	}//end sharedRows()
 
 	/**
 	 * The shares an ancestor confers, link shares and local-only shares left out.
 	 *
-	 * @param ObjectEntity                        $object The object.
-	 * @param array<string, array<string, mixed>> $rows   The rows so far.
+	 * @param ObjectEntity $object The object.
+	 * @param GrantRowSet  $rows   The rows so far.
 	 *
-	 * @return array<string, array<string, mixed>> The rows.
+	 * @return void
 	 */
-	private function inheritedRows(ObjectEntity $object, array $rows): array {
-		foreach ($this->inherited->inheritedSharesFor(object: $object, complete: true) as $found) {
+	private function inheritedRows(ObjectEntity $object, GrantRowSet $rows): void {
+		foreach ($this->sources->inherited->inheritedSharesFor(object: $object, complete: true) as $found) {
 			if ($found['type'] === 'link' || $this->attributes->inheritableOf(share: $found['share']) === false) {
 				continue;
 			}
 
-			$row = $this->shareRow(origin: self::ORIGIN_INHERITED, type: $found['type'], share: $found['share']);
+			$row = $this->shareRow(origin: self::ORIGIN_INHERITED, found: $found);
 			$row['inheritedFrom'] = [
 				'uuid' => $found['ancestor']->getUuid(),
 				'register' => $found['ancestor']->getRegister(),
 				'schema' => $found['ancestor']->getSchema(),
 			];
-			$rows = $this->fold(rows: $rows, row: $row);
+			$rows->fold(row: $row);
 		}
-
-		return $rows;
 	}//end inheritedRows()
 
 	/**
 	 * The rules that reach this record, conditional ones evaluated against it.
 	 *
-	 * @param array<int, array<string, mixed>>    $holders  The holders `/permissions` reports.
-	 * @param array<string, mixed>                $envelope The record as the matcher reads it.
-	 * @param array<string, array<string, mixed>> $rows     The rows so far.
+	 * @param array<int, array<string, mixed>> $holders The holders `/permissions` reports.
+	 * @param GrantRowSet                      $rows    The rows so far, and the record as the matcher reads it.
 	 *
-	 * @return array<string, array<string, mixed>> The rows.
+	 * @return void
 	 */
-	private function ruleRows(array $holders, array $envelope, array $rows): array {
+	private function ruleRows(array $holders, GrantRowSet $rows): void {
 		foreach ($holders as $holder) {
 			foreach (($holder['rules'] ?? []) as $rule) {
-				$fit = $this->rules->fitOf(entry: $rule['rule'], role: $rule['role'], envelope: $envelope);
+				$fit = $this->sources->rules->fitOf(rule: new HeldRule(entry: $rule['rule'], role: $rule['role']), envelope: $rows->envelope);
 				if ($fit === null) {
 					continue;
 				}
 
-				[$type, $principalId] = $this->rules->principalOf(principal: (string)$rule['principal'], entry: $rule['rule']);
-				$row = $this->row(origin: self::ORIGIN_RULE, type: $type, principalId: $principalId, verbs: [(string)$rule['action']]);
+				[$type, $principalId] = $this->sources->rules->principalOf(principal: (string)$rule['principal'], entry: $rule['rule']);
+				$row = $this->row(origin: self::ORIGIN_RULE, holder: new GrantHolder(type: $type, principalId: $principalId, verbs: [(string)$rule['action']]));
 				$row['level'] = (string)$rule['level'];
 				$row['role'] = $rule['role'];
 				$row['matchedOn'] = $fit['matchedOn'];
 				$row['relative'] = $fit['relative'];
-				$rows = $this->fold(rows: $rows, row: $row);
+				$rows->fold(row: $row);
 			}
 		}
-
-		return $rows;
 	}//end ruleRows()
-
-
 
 	/**
 	 * Take the verbs an enforcing deny removes out of the rows, and drop rows left empty.
@@ -281,45 +255,35 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 	 * not fit this record removes nothing; one that reads the caller cannot be
 	 * known to apply and removes nothing either.
 	 *
-	 * @param array<string, array<string, mixed>> $rows     The rows.
-	 * @param array<int, array<string, mixed>>    $denied   The deny rules `/permissions` reports.
-	 * @param array<string, mixed>                $envelope The record as the matcher reads it.
+	 * @param GrantRowSet                      $rows   The rows, and the record as the matcher reads it.
+	 * @param array<int, array<string, mixed>> $denied The deny rules `/permissions` reports.
 	 *
-	 * @return array<string, array<string, mixed>> The rows.
+	 * @return void
 	 */
-	private function withoutDenied(array $rows, array $denied, array $envelope): array {
+	private function withoutDenied(GrantRowSet $rows, array $denied): void {
 		foreach ($denied as $deny) {
-			$fit = $this->rules->fitOf(entry: $deny['rule'], role: $deny['role'], envelope: $envelope);
+			$fit = $this->sources->rules->fitOf(rule: new HeldRule(entry: $deny['rule'], role: $deny['role']), envelope: $rows->envelope);
 			if ($fit === null || $fit['relative'] === true) {
 				continue;
 			}
 
-			[$type, $principalId] = $this->rules->principalOf(principal: (string)$deny['principal'], entry: $deny['rule']);
-			foreach ($rows as $key => $row) {
-				if ($row['principal']['type'] !== $type || $row['principal']['id'] !== $principalId) {
-					continue;
-				}
-
-				$rows[$key]['verbs'] = array_values(array_diff($row['verbs'], [(string)$deny['action']]));
-				if ($rows[$key]['verbs'] === []) {
-					unset($rows[$key]);
-				}
-			}
+			$rows->strip(
+				principal: $this->sources->rules->principalOf(principal: (string)$deny['principal'], entry: $deny['rule']),
+				action: (string)$deny['action']
+			);
 		}
-
-		return $rows;
 	}//end withoutDenied()
 
 	/**
 	 * One row for one share.
 	 *
-	 * @param string $origin `shared` or `inherited`.
-	 * @param string $type   The share's type label.
-	 * @param IShare $share  The share.
+	 * @param string                                $origin `shared` or `inherited`.
+	 * @param array{type: string, share: IShare}    $found  The share's type label and the share, as its reader found it.
 	 *
 	 * @return array<string, mixed> The row.
 	 */
-	private function shareRow(string $origin, string $type, IShare $share): array {
+	private function shareRow(string $origin, array $found): array {
+		$share = $found['share'];
 		$verbs = [];
 		foreach (self::SHARE_BIT_VERBS as $verb) {
 			$bit = (int)PermissionBit::forAction(action: $verb);
@@ -330,13 +294,15 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 
 		$row = $this->row(
 			origin: $origin,
-			type: $type,
-			principalId: (string)$share->getSharedWith(),
-			verbs: array_values(array_unique(array_merge($verbs, $this->attributes->verbsOf(share: $share))))
+			holder: new GrantHolder(
+				type: $found['type'],
+				principalId: (string)$share->getSharedWith(),
+				verbs: array_values(array_unique(array_merge($verbs, $this->attributes->verbsOf(share: $share))))
+			)
 		);
 		$row['id'] = $origin . ':' . $share->getFullId();
 		$sharer = (string)$share->getSharedBy();
-		$row['sharedBy'] = ['id' => $sharer, 'displayName' => $this->userManager->getDisplayName($sharer)];
+		$row['sharedBy'] = ['id' => $sharer, 'displayName' => $this->directory->userManager->getDisplayName($sharer)];
 		$row['expiresAt'] = $share->getExpirationDate()?->format('c');
 		$row['sharedAt'] = $share->getShareTime()?->format('c');
 
@@ -346,18 +312,18 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 	/**
 	 * A row with every field set to its empty value.
 	 *
-	 * @param string   $origin      The origin.
-	 * @param string   $type        The principal type.
-	 * @param string   $principalId The principal id.
-	 * @param string[] $verbs       The verbs.
+	 * @param string      $origin The origin.
+	 * @param GrantHolder $holder The principal type, the principal id and the verbs.
 	 *
 	 * @return array<string, mixed> The row.
 	 */
-	private function row(string $origin, string $type, string $principalId, array $verbs): array {
+	private function row(string $origin, GrantHolder $holder): array {
+		$type = $holder->type;
+		$principalId = $holder->principalId;
 		return [
 			'id' => $origin . ':' . $type . ':' . $principalId,
 			'principal' => ['type' => $type, 'id' => $principalId, 'displayName' => null],
-			'verbs' => $verbs,
+			'verbs' => $holder->verbs,
 			'origin' => $origin,
 			'level' => 'object',
 			'role' => null,
@@ -369,47 +335,6 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 			'sharedAt' => null,
 		];
 	}//end row()
-
-	/**
-	 * Fold a row into the one with the same principal, origin, level, role and ancestor.
-	 *
-	 * The verbs and the matched properties are merged. A folded row is relative
-	 * only when every entry behind it is.
-	 *
-	 * @param array<string, array<string, mixed>> $rows The rows so far.
-	 * @param array<string, mixed>                $row  The row to fold in.
-	 *
-	 * @return array<string, array<string, mixed>> The rows.
-	 */
-	private function fold(array $rows, array $row): array {
-		$key = implode(
-			"\0",
-			[
-				$row['origin'],
-				$row['level'],
-				(string)$row['role'],
-				$row['principal']['type'],
-				$row['principal']['id'],
-				(string)($row['inheritedFrom']['uuid'] ?? ''),
-			]
-		);
-
-		if ($row['origin'] === self::ORIGIN_RULE) {
-			$parts = ['rule', $row['level'], $row['principal']['type'], $row['principal']['id'], $row['role']];
-			$row['id'] = implode(':', array_filter($parts, static fn ($part) => $part !== null));
-		}
-
-		if (isset($rows[$key]) === false) {
-			$rows[$key] = $row;
-			return $rows;
-		}
-
-		$rows[$key]['verbs'] = array_values(array_unique(array_merge($rows[$key]['verbs'], $row['verbs'])));
-		$rows[$key]['matchedOn'] = array_values(array_unique(array_merge($rows[$key]['matchedOn'], $row['matchedOn'])));
-		$rows[$key]['relative'] = ($rows[$key]['relative'] === true && $row['relative'] === true);
-
-		return $rows;
-	}//end fold()
 
 
 	/**
@@ -426,8 +351,8 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 	 */
 	private function displayNameOf(string $type, string $principalId): ?string {
 		return match ($type) {
-			'user' => $this->userManager->getDisplayName($principalId),
-			'group' => $this->groupManager->get($principalId)?->getDisplayName(),
+			'user' => $this->directory->userManager->getDisplayName($principalId),
+			'group' => $this->directory->groupManager->get($principalId)?->getDisplayName(),
 			'remote', 'remote_group', 'email' => $principalId,
 			default => null,
 		};

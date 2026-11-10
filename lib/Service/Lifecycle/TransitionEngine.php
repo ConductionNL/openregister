@@ -84,41 +84,93 @@ class TransitionEngine {
 	public const SLUG_CONTRACT_FLAG = 'transition_event_slug_contract';
 
 	/**
+	 * Reads and saves the object.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Resolves the object's schema and its lifecycle.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Dispatches ObjectTransitionedEvent.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Resolves the acting user.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Resolves the object's register.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * App config, for the slug-contract opt-in.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger for post-commit listener failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Names the transition for the listeners and wraps the automatic-transition pass.
+	 *
+	 * @var LifecycleWriteBoundary
+	 */
+	private readonly LifecycleWriteBoundary $writeBoundary;
+
+	/**
+	 * Resolves a provider-mode annotation's provider tag.
+	 *
+	 * @var LifecycleActionProviderRegistry
+	 */
+	private readonly LifecycleActionProviderRegistry $providerRegistry;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objectService Object CRUD service used to load + save the entity.
-	 * @param SchemaMapperInterface $schemaMapper Mapper to resolve the entity's schema.
-	 * @param IEventDispatcher $eventDispatcher Dispatcher used to fire ObjectTransitionedEvent.
-	 * @param IUserSession $userSession Current user session, for actor attribution.
-	 * @param PermissionHandlerInterface $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
-	 * @param RegisterMapperInterface $registerMapper Mapper used to resolve the register slug.
-	 * @param IAppConfig $appConfig App config, for the slug-contract opt-in.
-	 * @param LoggerInterface $logger Logger for post-commit listener failures.
-	 * @param LifecycleWriteBoundary $writeBoundary Names the transition for the listeners and wraps
-	 *                               the request-scoped automatic-transition pass.
-	 * @param LifecycleActionProviderRegistry $providerRegistry Resolves a provider-mode annotation's
-	 *                               `provider` tag to the app service that answers available actions.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Ten collaborators, all
-	 * constructor-injected because Nextcloud's DI offers no other route. The
-	 * tenth is the provider registry; folding it into an existing collaborator
-	 * would hide a lifecycle dependency inside something that is not about
-	 * lifecycles, which reads worse than the count.
+	 * @param TransitionSubjects         $subjects          The object service and the schema and register mappers.
+	 * @param TransitionDispatch         $dispatch          The event dispatcher, the write boundary and the action providers.
+	 * @param TransitionPlatform         $platform          The caller's session, the app config and the logger.
+	 * @param PermissionHandlerInterface $permissionHandler The access guard every transition passes.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly IUserSession $userSession,
+		TransitionSubjects $subjects,
+		TransitionDispatch $dispatch,
+		TransitionPlatform $platform,
 		private readonly PermissionHandlerInterface $permissionHandler,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-		private readonly LifecycleWriteBoundary $writeBoundary,
-		private readonly LifecycleActionProviderRegistry $providerRegistry,
 	) {
+		$this->objectService = $subjects->objectService;
+		$this->schemaMapper = $subjects->schemaMapper;
+		$this->eventDispatcher = $dispatch->eventDispatcher;
+		$this->userSession = $platform->userSession;
+		$this->registerMapper = $subjects->registerMapper;
+		$this->appConfig = $platform->appConfig;
+		$this->logger = $platform->logger;
+		$this->writeBoundary = $dispatch->writeBoundary;
+		$this->providerRegistry = $dispatch->providerRegistry;
 	}//end __construct()
 
 	/**
@@ -242,6 +294,13 @@ class TransitionEngine {
 			}
 		} catch (\Throwable $e) {
 			// Keep the id; a missing slug must not break the transition.
+			$this->logger->debug(
+				message: '[TransitionEngine] Register slug not resolved, keeping the id',
+				context: [
+					'register' => $registerRef,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		try {
@@ -252,6 +311,13 @@ class TransitionEngine {
 			}
 		} catch (\Throwable $e) {
 			// Keep the id; a missing slug must not break the transition.
+			$this->logger->debug(
+				message: '[TransitionEngine] Schema slug not resolved, keeping the id',
+				context: [
+					'schema' => $schemaRef,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return [

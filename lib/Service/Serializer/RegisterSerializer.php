@@ -55,7 +55,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/register-service-extensions/spec.md
  */
-final class RegisterSerializer {
+final class RegisterSerializer implements RegisterSerializerInterface {
 
 	/**
 	 * Schemas already fetched this request, keyed by identifier.
@@ -78,31 +78,30 @@ final class RegisterSerializer {
 	}//end __construct()
 
 	/**
-	 * Serialize a single Register entity with optional extensions.
+	 * Serialize a single Register entity with the expansion it asks for.
 	 *
-	 * @param Register $register The Register entity to serialize.
-	 * @param array $extend Extension keys to apply (`schemas`, `@self.stats`).
-	 * @param array<int,array{total:int}>|null $schemaStats Pre-computed per-schema object counts (id → ['total' => int]).
+	 * @param Register          $register  The Register entity to serialize.
+	 * @param RegisterExpansion $expansion Whether schemas expand, and the counts they carry.
 	 *
 	 * @return array Serialized register payload, with extensions applied.
 	 *
 	 * @spec openspec/specs/register-service-extensions/spec.md
 	 *   (Requirement: schemas extension SHALL replace schema IDs with full schema objects)
 	 */
-	public function serialize(Register $register, array $extend = [], ?array $schemaStats = null): array {
+	public function serializeExpanded(Register $register, RegisterExpansion $expansion): array {
 		$data = $register->jsonSerialize();
-		$wantSchemas = in_array('schemas', $extend, true);
-		$wantStats = in_array('@self.stats', $extend, true);
-
-		if ($wantSchemas === true) {
-			$data['schemas'] = $this->expandSchemas(ids: ($data['schemas'] ?? []), attachStats: $wantStats, schemaStats: $schemaStats);
+		if ($expansion->schemas === true) {
+			$data['schemas'] = $this->expandSchemas(ids: ($data['schemas'] ?? []), counts: $expansion->counts);
 		}
 
 		return $data;
-	}//end serialize()
+	}//end serializeExpanded()
 
 	/**
 	 * Serialize a collection of Register entities.
+	 *
+	 * Kept for RegisterService::findAllSerialized(), whose call an open change rewrites;
+	 * builds the extension and delegates to {@see self::serializePage()}.
 	 *
 	 * @param Register[] $registers Registers to serialize.
 	 * @param array $extend Extension keys to apply.
@@ -114,34 +113,38 @@ final class RegisterSerializer {
 	 *
 	 * @spec openspec/specs/register-service-extensions/spec.md
 	 */
-	public function serializeMany(
-		array $registers,
-		array $extend = [],
-		?array $schemaStatsByRegisterId = null,
-	): array {
+	public function serializeMany(array $registers, array $extend = [], ?array $schemaStatsByRegisterId = null): array {
+		return $this->serializePage(registers: $registers, extension: new RegisterListExtension(extend: $extend, schemaStatsByRegisterId: $schemaStatsByRegisterId));
+	}//end serializeMany()
+
+	/**
+	 * Serialize a collection of Register entities.
+	 *
+	 * @param Register[]            $registers Registers to serialize.
+	 * @param RegisterListExtension $extension The extension keys and the per-register schema counts.
+	 *
+	 * @return array<int,array> Serialized payload for each register.
+	 *
+	 * @spec openspec/specs/register-service-extensions/spec.md
+	 */
+	public function serializePage(array $registers, RegisterListExtension $extension=new RegisterListExtension()): array {
 		// PERF (N+1): expandSchemas() resolves each schema id through
 		// findSchemaCached() → SchemaMapper::find(), i.e. ONE query per schema.
 		// With `_extend[]=schemas` over every register that is one query per
 		// register-schema pair (~1,200 on the dev instance) on a single page
 		// load. Warm the cache with one batched lookup up front; the per-id path
 		// below then only runs for ids the batch could not resolve.
-		$this->warmSchemaCache(registers: $registers, extend: $extend);
+		$this->warmSchemaCache(registers: $registers, extend: $extension->extend);
 
 		$out = [];
 		foreach ($registers as $register) {
-			$registerId = (int)$register->getId();
-			$stats = null;
-			if ($schemaStatsByRegisterId !== null
-				&& isset($schemaStatsByRegisterId[$registerId]) === true
-			) {
-				$stats = $schemaStatsByRegisterId[$registerId];
-			}
-
-			$out[] = $this->serialize(register: $register, extend: $extend, schemaStats: $stats);
+			$stats     = ($extension->schemaStatsByRegisterId[(int)$register->getId()] ?? null);
+			$expansion = RegisterExpansion::fromExtend(extend: $extension->extend, schemaStats: $stats);
+			$out[]     = $this->serializeExpanded(register: $register, expansion: $expansion);
 		}
 
 		return $out;
-	}//end serializeMany()
+	}//end serializePage()
 
 	/**
 	 * Expand a `schemas` ID array to schema objects, optionally annotating with stats.
@@ -150,65 +153,72 @@ final class RegisterSerializer {
 	 * retained in their original position with their original PHP type
 	 * preserved. The serializer logs a warning for each orphan.
 	 *
-	 * @param array $ids Schema ID array (int|string).
-	 * @param bool $attachStats Whether to attach per-schema stats to expanded entries.
-	 * @param array<int,array{total:int}>|null $schemaStats Pre-computed per-schema stats (id → ['total'
-	 *                                                      => int]).
+	 * @param array                   $ids    Schema ID array (int|string).
+	 * @param SchemaObjectCounts|null $counts The counts to attach to expanded entries, or null to attach none.
 	 *
 	 * @return array Heterogeneous array of schema objects + retained orphan IDs.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles three branches per ID (resolved/orphan/stats-on)
-	 * which produce the smallest combined surface; splitting them duplicates the loop scaffold.
 	 */
-	private function expandSchemas(array $ids, bool $attachStats, ?array $schemaStats): array {
+	private function expandSchemas(array $ids, ?SchemaObjectCounts $counts): array {
 		$expanded = [];
 		foreach ($ids as $schemaId) {
-			try {
-				// Match the original controller's call shape: bypass
-				// multitenancy when expanding schemas for registers (a
-				// register may legitimately reference a schema that is
-				// not directly visible in the caller's tenant — the
-				// expansion is read-only metadata).
-				$schema = $this->findSchemaCached(schemaId: $schemaId);
-				$schemaJson = $schema->jsonSerialize();
-			} catch (DoesNotExistException $e) {
-				// Preserve the orphan ID at its original position +
-				// original type so typed JSON clients can still see it
-				// even if they have to switch decoder shape on the
-				// edge case. Log warning and continue.
-				$this->logger->warning(
-					message: '[RegisterSerializer] Schema not found for expansion — retaining orphan ID',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'schemaId' => $schemaId,
-					]
-				);
-				$expanded[] = $schemaId;
-				continue;
-			}//end try
-
-			if ($attachStats === true) {
-				$idForLookup = $schemaJson['id'] ?? null;
-				$count = 0;
-				if ($idForLookup !== null
-					&& $schemaStats !== null
-					&& isset($schemaStats[$idForLookup]) === true
-					&& isset($schemaStats[$idForLookup]['total']) === true
-				) {
-					$count = (int)$schemaStats[$idForLookup]['total'];
-				}
-
-				$schemaJson['stats'] = [
-					'objects' => ['total' => $count],
-				];
-			}
-
-			$expanded[] = $schemaJson;
-		}//end foreach
+			$expanded[] = $this->expandOne(schemaId: $schemaId, counts: $counts);
+		}
 
 		return $expanded;
 	}//end expandSchemas()
+
+	/**
+	 * Expand one schema id to its schema object, or retain it when it is an orphan.
+	 *
+	 * @param int|string              $schemaId The schema id.
+	 * @param SchemaObjectCounts|null $counts   The counts to attach, or null to attach none.
+	 *
+	 * @return array|int|string The schema object, or the orphan id with its original type.
+	 */
+	private function expandOne(int|string $schemaId, ?SchemaObjectCounts $counts): array|int|string {
+		try {
+			// Match the original controller's call shape: bypass
+			// multitenancy when expanding schemas for registers (a
+			// register may legitimately reference a schema that is
+			// not directly visible in the caller's tenant — the
+			// expansion is read-only metadata).
+			$schemaJson = $this->findSchemaCached(schemaId: $schemaId)->jsonSerialize();
+		} catch (DoesNotExistException $e) {
+			return $this->retainOrphan(schemaId: $schemaId);
+		}
+
+		if ($counts !== null) {
+			$schemaJson['stats'] = [
+				'objects' => ['total' => $counts->totalFor(schemaId: ($schemaJson['id'] ?? null))],
+			];
+		}
+
+		return $schemaJson;
+	}//end expandOne()
+
+	/**
+	 * Log an orphan schema id and hand it back unchanged.
+	 *
+	 * The orphan ID stays at its original position with its original type so
+	 * typed JSON clients can still see it, even if they have to switch decoder
+	 * shape on the edge case.
+	 *
+	 * @param int|string $schemaId The schema id no schema matches.
+	 *
+	 * @return int|string The same id.
+	 */
+	private function retainOrphan(int|string $schemaId): int|string {
+		$this->logger->warning(
+			message: '[RegisterSerializer] Schema not found for expansion — retaining orphan ID',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $schemaId,
+			]
+		);
+
+		return $schemaId;
+	}//end retainOrphan()
 
 	/**
 	 * Find a Schema, reusing the entity within this request.

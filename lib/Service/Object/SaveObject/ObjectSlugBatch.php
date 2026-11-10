@@ -33,17 +33,29 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 class ObjectSlugBatch {
 
 	/**
+	 * Slug state queries.
+	 *
+	 * @var ObjectSlugStore
+	 */
+	private readonly ObjectSlugStore $store;
+
+	/**
+	 * Receives the warnings.
+	 *
+	 * @var ObjectSlugLog
+	 */
+	private readonly ObjectSlugLog $log;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectSlugHandler $handler The single-save rules this batch reuses.
-	 * @param ObjectSlugStore   $store   Slug state queries.
-	 * @param ObjectSlugLog     $log     Receives the warnings.
+	 * @param ObjectSlugHandler $handler The single-save rules this batch reuses, with its slug store and log.
 	 */
 	public function __construct(
 		private readonly ObjectSlugHandler $handler,
-		private readonly ObjectSlugStore $store,
-		private readonly ObjectSlugLog $log,
 	) {
+		$this->store = $handler->store;
+		$this->log   = $handler->log;
 	}//end __construct()
 
 	/**
@@ -86,8 +98,10 @@ class ObjectSlugBatch {
 
 		return $this->store->state(
 			scope: $scope,
-			slugs: array_values(array_unique(array_merge($candidates, array_values($suffixed)))),
-			uuids: array_values($uuids)
+			claims: new ObjectSlugClaims(
+				slugs: array_values(array_unique(array_merge($candidates, array_values($suffixed)))),
+				uuids: array_values($uuids)
+			)
 		);
 	}//end state()
 
@@ -184,9 +198,12 @@ class ObjectSlugBatch {
 		}
 
 		$decided = $this->handler->decide(
-			want: new ObjectSlugWant(slug: $row['candidate'], scope: $run->scope, objectUuid: (string)($row['uuid'] ?? '?'), path: 'bulk'),
-			holderOf: static fn (string $slug): string|null => $run->otherHolder(slug: $slug, uuid: $row['uuid']),
-			suffixed: $row['suffixed']
+			decision: new ObjectSlugDecision(
+				want: new ObjectSlugWant(slug: $row['candidate'], scope: $run->scope, objectUuid: (string)($row['uuid'] ?? '?'), path: 'bulk'),
+				holderOf: static fn (string $slug): string|null => $run->otherHolder(slug: $slug, uuid: $row['uuid']),
+				log: true,
+				suffixed: $row['suffixed']
+			)
 		);
 		$run->claim(row: $row, slug: $decided);
 

@@ -72,7 +72,10 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
+use OCA\OpenRegister\Service\Sharing\ShareGrantee;
+use OCA\OpenRegister\Service\Sharing\ShareListCheck;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
@@ -357,18 +360,49 @@ class CredentialBrokerService {
 		?string $actingUserId = null,
 		?string $actingOrganisationId = null,
 	): ?string {
+		return $this->resolveInjectableFor(
+			request: new InjectableSecretRequest($credentialId, $appId, $actingUserId, $actingOrganisationId)
+		);
+	}//end resolveInjectable()
+
+	/**
+	 * Resolve the raw secret of an inject-only credential; see {@see resolveInjectable()} for the contract.
+	 *
+	 * @param InjectableSecretRequest $request The credential, the calling app and the identities a sessionless caller asserts.
+	 *
+	 * @return string|null The raw secret for an inject-only credential, or null when the credential is a proxy credential.
+	 *
+	 * @throws CredentialAccessDeniedException When Guard 1 or 2 fails, or an inject-only credential has no stored secret.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-a-token-set-is-never-resolved-app-side
+	 */
+	public function resolveInjectableFor(InjectableSecretRequest $request): ?string {
 		// Guard 1 — access (per-object IDOR): scope-dispatched owner/membership check.
 		$credential = $this->loadAdmittedCredential(
-			credentialId: $credentialId,
-			actingUserId: $actingUserId,
-			actingOrganisationId: $actingOrganisationId
+			credentialId: $request->credentialId,
+			actingUserId: $request->actingUserId,
+			actingOrganisationId: $request->actingOrganisationId
 		);
 		$data = $credential->jsonSerialize();
-		$scope = $this->scopeOf(data: $data);
 
 		// Guard 2 — allowed app.
-		$this->assertAppAllowed(data: $data, appId: $appId, credentialId: $credentialId);
+		$this->assertAppAllowed(data: $data, appId: $request->appId, credentialId: $request->credentialId);
 
+		return $this->injectableSecret(data: $data, credentialId: $request->credentialId);
+	}//end resolveInjectableFor()
+
+	/**
+	 * The stored secret of an admitted credential, or null when its provider keeps it inside OpenRegister.
+	 *
+	 * @param array<string, mixed> $data         The admitted credential's data.
+	 * @param string               $credentialId The `credential` object UUID.
+	 *
+	 * @return string|null The raw secret for an inject-only credential, or null for a proxy credential or a token set.
+	 *
+	 * @throws CredentialAccessDeniedException When the provider is unknown or an inject-only credential has no stored secret.
+	 */
+	private function injectableSecret(array $data, string $credentialId): ?string {
 		// Only inject-only credentials may be resolved app-side; a proxy credential's secret
 		// stays inside OR — signal that with null so the caller routes to request() instead.
 		$provider = $this->resolveProvider(data: $data, credentialId: $credentialId);
@@ -394,13 +428,13 @@ class CredentialBrokerService {
 			return null;
 		}
 
-		$secret = $this->credentialStore->get($credentialId, $scope);
+		$secret = $this->credentialStore->get($credentialId, $this->scopeOf(data: $data));
 		if ($secret === null) {
 			$this->deny(reason: 'no secret stored for inject-only credential', credentialId: $credentialId);
 		}
 
 		return (string)$secret;
-	}//end resolveInjectable()
+	}//end injectableSecret()
 
 	/**
 	 * Mint a credential: persist its metadata object and store its secret to the vault.
@@ -466,10 +500,29 @@ class CredentialBrokerService {
 		?string $organisation = null,
 		array $metadata = [],
 	): ObjectEntity {
-		$name = trim($name);
-		if ($name === '' || trim($provider) === '') {
-			throw new InvalidArgumentException(message: 'A credential requires a name and a provider');
-		}
+		return $this->mintCredential(
+			mint: new CredentialMint(name: $name, provider: $provider, owner: $owner, metadata: $metadata),
+			options: new CredentialMintOptions(allowedApps: $allowedApps, secret: $secret, scope: $scope, organisation: $organisation)
+		);
+	}//end mint()
+
+	/**
+	 * Mint a credential from its required half and its options; see {@see mint()} for the contract.
+	 *
+	 * @param CredentialMint        $mint    The name, provider, owner and connection metadata.
+	 * @param CredentialMintOptions $options The allowed apps, the secret, the resolved scope and the organisation.
+	 *
+	 * @return ObjectEntity The persisted credential entity (its `getUuid()` is the credential id / credentialRef).
+	 *
+	 * @throws \InvalidArgumentException When the name is empty, an organisation-scoped mint carries no organisation,
+	 *                                   or the supplied instance host is not a safe public https origin.
+	 * @throws Throwable When the object save or the vault write fails (the orphaned object is removed first).
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 */
+	public function mintCredential(CredentialMint $mint, #[\SensitiveParameter] CredentialMintOptions $options): ObjectEntity {
+		$data = $this->mintData(mint: $mint, options: $options);
 
 		// Garbage-in prevention: a copy-pasted secret can carry a trailing
 		// newline or stray whitespace that later fails header injection at
@@ -478,34 +531,7 @@ class CredentialBrokerService {
 		// stores the same normalised value. An all-whitespace secret trims
 		// to '', which the empty-secret branch below already treats as
 		// "metadata only, no vault write".
-		$secret = $this->trimmedSecret(secret: $secret);
-
-		$data = array_merge(
-			[
-				'name' => $name,
-				'provider' => $provider,
-				'owner' => $owner,
-				'allowedApps' => array_values($allowedApps),
-				'createdAt' => (new DateTimeImmutable())->format(DATE_ATOM),
-			],
-			self::connectionMetadata(metadata: $metadata)
-		);
-
-		// Only an organisation-scoped credential carries scope/organisation — a personal
-		// credential's property bag stays byte-for-byte what it has always been (design D1).
-		if ($scope !== self::SCOPE_ORGANISATION) {
-			$scope = self::SCOPE_PERSONAL;
-		}
-
-		if ($scope === self::SCOPE_ORGANISATION) {
-			$organisation = trim((string)$organisation);
-			if ($organisation === '') {
-				throw new InvalidArgumentException(message: 'An organisation-scoped credential requires an organisation');
-			}
-
-			$data['scope'] = self::SCOPE_ORGANISATION;
-			$data['organisation'] = $organisation;
-		}
+		$secret = $this->trimmedSecret(secret: $options->secret());
 
 		// Persist the credential-metadata object in system context. Mint is a trusted,
 		// caller-authorized operation ("authorization is the caller's" — the controller
@@ -529,14 +555,77 @@ class CredentialBrokerService {
 		}
 
 		try {
-			$this->credentialStore->put($uuid, $secret, $scope);
+			$this->credentialStore->put($uuid, $secret, self::mintScope(options: $options));
 		} catch (Throwable $e) {
 			$this->discardOrphanedCredential(uuid: $uuid);
 			throw $e;
 		}
 
 		return $saved;
-	}//end mint()
+	}//end mintCredential()
+
+	/**
+	 * The credential object a mint persists, validated.
+	 *
+	 * Only an organisation-scoped credential carries scope/organisation: a personal
+	 * credential's property bag stays byte-for-byte what it has always been (design D1).
+	 *
+	 * @param CredentialMint        $mint    The name, provider, owner and connection metadata.
+	 * @param CredentialMintOptions $options The allowed apps, the resolved scope and the organisation.
+	 *
+	 * @return array<string, mixed> The object data.
+	 *
+	 * @throws InvalidArgumentException When the name or provider is empty, an organisation-scoped mint carries
+	 *                                  no organisation, or the supplied instance host is not a safe public https origin.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function mintData(CredentialMint $mint, #[\SensitiveParameter] CredentialMintOptions $options): array {
+		$name = trim($mint->name);
+		if ($name === '' || trim($mint->provider) === '') {
+			throw new InvalidArgumentException(message: 'A credential requires a name and a provider');
+		}
+
+		$data = array_merge(
+			[
+				'name' => $name,
+				'provider' => $mint->provider,
+				'owner' => $mint->owner,
+				'allowedApps' => array_values($options->allowedApps),
+				'createdAt' => (new DateTimeImmutable())->format(DATE_ATOM),
+			],
+			self::connectionMetadata(metadata: $mint->metadata)
+		);
+
+		if (self::mintScope(options: $options) === self::SCOPE_ORGANISATION) {
+			$organisation = trim((string)$options->organisation);
+			if ($organisation === '') {
+				throw new InvalidArgumentException(message: 'An organisation-scoped credential requires an organisation');
+			}
+
+			$data['scope'] = self::SCOPE_ORGANISATION;
+			$data['organisation'] = $organisation;
+		}
+
+		return $data;
+	}//end mintData()
+
+	/**
+	 * The scope a mint stores under: organisation when asked for, personal for anything else.
+	 *
+	 * @param CredentialMintOptions $options The mint options.
+	 *
+	 * @return string `organisation` or `personal`.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private static function mintScope(#[\SensitiveParameter] CredentialMintOptions $options): string {
+		if ($options->scope === self::SCOPE_ORGANISATION) {
+			return self::SCOPE_ORGANISATION;
+		}
+
+		return self::SCOPE_PERSONAL;
+	}//end mintScope()
 
 	/**
 	 * Reduce caller-supplied connection metadata to the properties a mint may set.
@@ -858,10 +947,8 @@ class CredentialBrokerService {
 		// applied to stored data, so an entry that omits `permission` is treated
 		// as the default here rather than being silently dropped.
 		return $deriver->grants(
-			sharedWith: $sharedWith,
-			userId: $uid,
-			userGroups: $this->groupsOf(uid: $uid),
-			permissions: ['use', null]
+			grantee: new ShareGrantee(userId: $uid, groups: $this->groupsOf(uid: $uid)),
+			check: new ShareListCheck(sharedWith: $sharedWith, permissions: ['use', null])
 		);
 	}//end sharedPrincipalAdmits()
 
@@ -905,11 +992,7 @@ class CredentialBrokerService {
 			return false;
 		}
 
-		return $this->objectGrants->grantCarriesVerb(
-			userId: $this->userSession->getUser()?->getUID(),
-			objectUuid: $uuid,
-			verb: 'use'
-		);
+		return $this->objectGrants->grantCarriesVerb(lookup: new GrantLookup(userId: $this->userSession->getUser()?->getUID(), objectUuid: $uuid), verb: 'use');
 	}//end objectGrantAdmits()
 
 	/**
@@ -1196,12 +1279,10 @@ class CredentialBrokerService {
 			$this->deny(reason: 'oauth2 refresh service is unavailable', credentialId: $credentialId);
 		}
 
+		$address = new TokenSetAddress(credentialId: $credentialId, scope: $scope);
+
 		return $this->oauth2Refresh->accessTokenFor(
-			credential: $data,
-			provider: $provider,
-			credentialId: $credentialId,
-			scope: $scope,
-			actingUserId: $actingUserId
+			target: new OAuth2RefreshTarget(credential: $data, provider: $provider, address: $address, actingUserId: $actingUserId)
 		);
 	}//end injectionSecret()
 

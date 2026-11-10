@@ -10,6 +10,7 @@
   SPDX-FileCopyrightText: 2026 Conduction B.V.
 -->
 <template>
+	<!-- eslint-disable vue/no-undef-components -- registered through pageShellComponents, which the rule cannot follow -->
 	<NcAppContent>
 		<div class="agents">
 			<h2>{{ t('openregister', 'Agents') }}</h2>
@@ -93,25 +94,15 @@ import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
 import EditAgentLimits from '../../modals/agent/EditAgentLimits.vue'
+import { pageShellComponents } from '../pageShell.js'
 
 export default {
 	name: 'AgentsIndex',
 	components: {
 		CnDataTable,
 		EditAgentLimits,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 	},
 
 	data() {

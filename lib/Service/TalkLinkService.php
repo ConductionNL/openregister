@@ -43,9 +43,16 @@ use Exception;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapperInterface;
+use OCA\OpenRegister\Service\TalkLink\ExternalInvitation;
+use OCA\OpenRegister\Service\TalkLink\LinkedObject;
+use OCA\OpenRegister\Service\TalkLink\RoomCreation;
+use OCA\OpenRegister\Service\TalkLink\RoomPickerQuery;
+use OCA\OpenRegister\Service\TalkLink\RoomRefreshRun;
 use OCA\OpenRegister\Service\TalkLink\TalkGateway;
 use OCA\OpenRegister\Service\TalkLink\TalkLinkFactory;
 use OCA\OpenRegister\Service\TalkLink\TalkRoomFields;
+use OCA\OpenRegister\Service\TalkLink\TalkSession;
+use OCA\OpenRegister\Service\TalkLink\TalkViewer;
 use OCP\IL10N;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -110,7 +117,7 @@ class TalkLinkService implements TalkLinkServiceInterface {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LinkServiceRuntime $runtime,
 	) {
-		$this->talk = new TalkGateway(container: $container, appManager: $runtime->appManager(), logger: $runtime->logger());
+		$this->talk = new TalkGateway(container: $container, runtime: $runtime);
 		$this->roomFields = new TalkRoomFields(l10n: $l10n);
 		$this->linkFactory = new TalkLinkFactory();
 	}//end __construct()
@@ -130,34 +137,26 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	/**
 	 * Link an existing Talk room to an OR object.
 	 *
-	 * The link row carries room_id/room_name/room_type/subtitle/
-	 * participantCount/lastMessageData/lastActivity harvested from the
-	 * Talk room so subsequent reads don't need to hit Talk. Idempotent:
-	 * a duplicate link raises a 409 Exception.
+	 * @param LinkedObject $object    The object to link the room to.
+	 * @param string       $roomToken Talk room token.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id (Tier-2 column).
-	 * @param string $roomToken Talk room token.
+	 * @return TalkLink The inserted link row.
 	 *
-	 * @return TalkLink The persisted link row.
+	 * @throws Exception On 401/404/409/503.
 	 *
-	 * @throws Exception On missing user, missing room (404), duplicate (409),
-	 *                   Talk unavailable (503).
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
+	 * @spec openspec/specs/integration-talk/spec.md
 	 */
-	public function linkRoom(string $objectUuid, int $registerId, int $schemaId, string $roomToken): TalkLink {
+	public function linkRoom(LinkedObject $object, string $roomToken): TalkLink {
 		$userUid = $this->requireUserUid();
-		if ($this->talkLinkMapper->findByObjectAndRoom($objectUuid, $roomToken) !== null) {
+		if ($this->talkLinkMapper->findByObjectAndRoom($object->objectUuid, $roomToken) !== null) {
 			throw new Exception('Room already linked to this object', 409);
 		}
 
 		$room = $this->requireRoom(roomToken: $roomToken, userUid: $userUid);
-		$cache = $this->extractRoomFields(room: $room, userUid: $userUid);
-		$object = ['objectUuid' => $objectUuid, 'registerId' => $registerId, 'schemaId' => $schemaId];
+		$link = $this->linkFactory->newLink(object: $object->fields(), roomToken: $roomToken);
+		$this->linkFactory->applyCache(link: $link, cache: $this->extractRoomFields(room: $room, userUid: $userUid));
 
-		return $this->talkLinkMapper->insert($this->linkFactory->newLink(object: $object, roomToken: $roomToken, cache: $cache, userUid: $userUid));
+		return $this->talkLinkMapper->insert($this->linkFactory->linkedBy(link: $link, userUid: $userUid));
 	}//end linkRoom()
 
 	/**
@@ -203,7 +202,7 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	 * @throws Exception When Talk is unavailable (503) or the room is not found (404).
 	 */
 	private function requireRoom(string $roomToken, string $userUid): object {
-		$room = $this->talk->findRoom(manager: $this->requireManager(), roomToken: $roomToken, userUid: $userUid);
+		$room = $this->talk->findRoom(session: new TalkSession(manager: $this->requireManager(), userUid: $userUid), roomToken: $roomToken);
 		if ($room === null) {
 			throw new Exception('Talk room not found', 404);
 		}
@@ -245,46 +244,38 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	 * UI or {@see linkRoom()}) are entirely unaffected either way — this
 	 * only widens who this platform endpoint may invite.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param string $roomToken Talk room token (must already be linked to `$objectUuid`).
-	 * @param string $email External participant's email address.
-	 * @param string|null $displayName Optional display name (defaults to the email).
+	 * @param ExternalInvitation $invitation Who is invited (email, optional display name) into which linked room.
 	 *
-	 * @return array{invited: bool, unavailable?: bool, cause?: string, actorType?: string, actorId?: string}
-	 *     Degrades to `{invited: false, unavailable: true, cause: ...}` (AD-23)
-	 *     when Talk's participant API is unavailable — never throws for that.
+	 * @return array<string, mixed> The invite result; degrades to `{invited: false, unavailable: true, cause: ...}`
+	 *     (AD-23) when Talk's participant API is unavailable — never throws for that.
 	 *
 	 * @throws Exception When the room is not linked to the object (404), the
 	 *                   object's schema does not opt in (403), the email is
 	 *                   malformed (400), or no user is logged in.
 	 *
 	 * @spec openspec/specs/guardian-participant-messaging-leaf/spec.md
+	 * @spec openspec/specs/integration-talk/spec.md
 	 */
-	public function inviteExternalParticipant(string $objectUuid, string $roomToken, string $email, ?string $displayName = null): array {
-		$link = $this->talkLinkMapper->findByObjectAndRoom($objectUuid, $roomToken);
+	public function invite(ExternalInvitation $invitation): array {
+		$link = $this->talkLinkMapper->findByObjectAndRoom($invitation->objectUuid, $invitation->roomToken);
 		if ($link === null) {
 			throw new Exception('Talk link not found', 404);
 		}
 
-		$this->assertInviteAllowed(link: $link, email: $email);
+		$this->assertInviteAllowed(link: $link, email: $invitation->email);
 
 		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
 
-		$targets = $this->resolveInviteTargets(roomToken: $roomToken, userUid: $user->getUID());
+		$targets = $this->resolveInviteTargets(roomToken: $invitation->roomToken, userUid: $user->getUID());
 		if ($targets['degraded'] === true) {
 			return ['invited' => false, 'unavailable' => true, 'cause' => $targets['cause']];
 		}
 
-		return $this->sendInvite(
-			participantService: $targets['participantService'],
-			room: $targets['room'],
-			email: $email,
-			displayName: $displayName
-		);
-	}//end inviteExternalParticipant()
+		return $this->sendInvite(targets: $targets, invitation: $invitation);
+	}//end invite()
 
 	/**
 	 * Refuse an invite whose schema has not opted in, or whose email is malformed.
@@ -342,7 +333,7 @@ class TalkLinkService implements TalkLinkServiceInterface {
 			return 'talk-not-available';
 		}
 
-		$room = $this->talk->findRoom(manager: $manager, roomToken: $roomToken, userUid: $userUid);
+		$room = $this->talk->findRoom(session: new TalkSession(manager: $manager, userUid: $userUid), roomToken: $roomToken);
 		if ($room === null) {
 			return 'room-not-found';
 		}
@@ -351,23 +342,22 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	}//end inviteRoom()
 
 	/**
-	 * Send the actual Talk invite, degrading (never throwing) when Talk's own call fails.
+	 * Add the e-mail guest to the room and shape the result.
 	 *
-	 * @param object $participantService Talk's `ParticipantService`.
-	 * @param object $room The target Talk room.
-	 * @param string $email External participant's email address.
-	 * @param string|null $displayName Optional display name (defaults to the email).
+	 * @param array<string, mixed> $targets    The resolved room and participant service.
+	 * @param ExternalInvitation   $invitation Who is invited.
 	 *
-	 * @return array{invited: bool, unavailable?: bool, cause?: string, actorType?: string, actorId?: string}
+	 * @return array<string, mixed> The invite result, or the degraded shape on failure.
 	 */
-	private function sendInvite(object $participantService, object $room, string $email, ?string $displayName): array {
-		$resolvedDisplayName = $displayName;
+	private function sendInvite(array $targets, ExternalInvitation $invitation): array {
+		$email = $invitation->email;
+		$resolvedDisplayName = $invitation->displayName;
 		if ($resolvedDisplayName === null || $resolvedDisplayName === '') {
 			$resolvedDisplayName = $email;
 		}
 
 		try {
-			$participantService->addUsers($room, [
+			$targets['participantService']->addUsers($targets['room'], [
 				['actorType' => 'emails', 'actorId' => $email, 'displayName' => $resolvedDisplayName],
 			]);
 		} catch (Throwable $e) {
@@ -416,57 +406,69 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	 */
 	public function getLinkedRooms(string $objectUuid): array {
 		$links = $this->talkLinkMapper->findByObjectUuid($objectUuid);
-		$manager = $this->talk->manager();
-		$user = $this->runtime->userSession()->getUser();
+		$run = $this->refreshRun();
 
 		$results = [];
 		foreach ($links as $link) {
-			$results[] = $this->linkedRoomRow(link: $link, manager: $manager, userUid: $user?->getUID());
+			$results[] = $this->linkedRoomRow(link: $link, run: $run);
 		}
 
 		return $results;
 	}//end getLinkedRooms()
 
 	/**
-	 * A link row as returned, refreshed first when Talk can be asked and the row is stale.
+	 * The Talk manager and current user to refresh stale rows with, or null when either is missing.
 	 *
-	 * @param TalkLink    $link    The stored link.
-	 * @param object|null $manager Talk Manager, when available.
-	 * @param string|null $userUid The session user, when logged in.
-	 *
-	 * @return array<string,mixed>
+	 * @return RoomRefreshRun|null The run, or null when rows are returned as cached.
 	 */
-	private function linkedRoomRow(TalkLink $link, ?object $manager, ?string $userUid): array {
-		$row = $link->jsonSerialize();
+	private function refreshRun(): ?RoomRefreshRun {
+		$manager = $this->talk->manager();
+		$userUid = $this->runtime->userSession()->getUser()?->getUID();
 		if ($manager === null || $userUid === null) {
-			return $row;
+			return null;
 		}
 
-		return $this->refreshedRow(link: $link, manager: $manager, userUid: $userUid, cachedRow: $row);
+		return new RoomRefreshRun(manager: $manager, userUid: $userUid);
+	}//end refreshRun()
+
+	/**
+	 * One link row: as cached, or refreshed from Talk when the run allows it.
+	 *
+	 * @param TalkLink            $link The link row.
+	 * @param RoomRefreshRun|null $run  The manager and user, or null when Talk or the user is missing.
+	 *
+	 * @return array<string, mixed> The serialized row.
+	 */
+	private function linkedRoomRow(TalkLink $link, ?RoomRefreshRun $run): array {
+		if ($run === null) {
+			return $link->jsonSerialize();
+		}
+
+		return $this->refreshedRow(link: $link, run: $run);
 	}//end linkedRoomRow()
 
 	/**
-	 * Refresh a link's cached fields from Talk and persist them, when the link is stale.
+	 * Serialize a link row, refreshing its cached room fields first when stale.
 	 *
-	 * @param TalkLink $link    The stored link.
-	 * @param object   $manager Talk Manager.
-	 * @param string   $userUid The session user.
-	 * @param array<string,mixed> $cachedRow The row as stored, returned when the refresh cannot happen.
+	 * @param TalkLink       $link The link row.
+	 * @param RoomRefreshRun $run  The manager and user to read the room with.
 	 *
-	 * @return array<string,mixed> The refreshed row, or the cached row when the room is gone or the refresh failed.
+	 * @return array<string, mixed> The refreshed row, or the cached row when not stale or unreachable.
 	 */
-	private function refreshedRow(TalkLink $link, object $manager, string $userUid, array $cachedRow): array {
+	private function refreshedRow(TalkLink $link, RoomRefreshRun $run): array {
+		$cachedRow = $link->jsonSerialize();
 		if ($this->isStale(link: $link) === false) {
 			return $cachedRow;
 		}
 
 		try {
-			$room = $this->talk->findRoom(manager: $manager, roomToken: $link->getRoomToken(), userUid: $userUid);
+			$session = new TalkSession(manager: $run->manager, userUid: $run->userUid);
+			$room = $this->talk->findRoom(session: $session, roomToken: $link->getRoomToken());
 			if ($room === null) {
 				return $cachedRow;
 			}
 
-			return $this->cacheRoom(link: $link, room: $room, userUid: $userUid);
+			return $this->cacheRoom(link: $link, cache: $this->extractRoomFields(room: $room, userUid: $run->userUid));
 		} catch (Throwable $e) {
 			// Stale link — keep cached row as-is.
 			$this->runtime->logger()->debug('Stale talk link for room ' . $link->getRoomToken() . ': ' . $e->getMessage());
@@ -475,95 +477,65 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	}//end refreshedRow()
 
 	/**
-	 * Copy a room's fields onto its link, persist it and return the new row.
+	 * Write freshly read room fields onto the link row and persist it.
 	 *
-	 * @param TalkLink $link    The stored link.
-	 * @param object   $room    Talk Room entity.
-	 * @param string   $userUid The session user.
+	 * @param TalkLink             $link  The link row.
+	 * @param array<string, mixed> $cache The room fields just read from Talk.
 	 *
-	 * @return array<string,mixed> The refreshed row.
+	 * @return array<string, mixed> The serialized, refreshed row.
 	 */
-	private function cacheRoom(TalkLink $link, object $room, string $userUid): array {
-		$this->linkFactory->applyCache(link: $link, cache: $this->extractRoomFields(room: $room, userUid: $userUid));
+	private function cacheRoom(TalkLink $link, array $cache): array {
+		$this->linkFactory->applyCache(link: $link, cache: $cache);
 		$this->talkLinkMapper->update($link);
 
 		return $link->jsonSerialize();
 	}//end cacheRoom()
 
 	/**
-	 * Create a new Talk room and link it to an object in one
-	 * transaction.
+	 * Create a fresh Talk room and link it to an object.
 	 *
-	 * Uses Talk's `Manager::createRoom` for the create then invites
-	 * the current user as participant (so the room is visible in
-	 * Talk's UI). The link row carries the new room's token + cached
-	 * metadata.
+	 * @param RoomCreation $creation The object, room name, description and room type.
 	 *
-	 * Room type maps to Talk Room::TYPE_*:
-	 *   1 → one2one  (rejected — pickers exclude it)
-	 *   2 → group    (default)
-	 *   3 → public
+	 * @return TalkLink The inserted link row.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param string $roomName Room display name (required).
-	 * @param string|null $description Room description (optional).
-	 * @param int $roomType Talk room type (default 2 = group).
+	 * @throws Exception On 400/401/500/503.
 	 *
-	 * @return TalkLink The persisted link row.
-	 *
-	 * @throws Exception On missing user, Talk unavailable, invalid
-	 *                   type, or create failure.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
+	 * @spec openspec/specs/integration-talk/spec.md
 	 */
-	public function createAndLinkRoom(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $roomName,
-		?string $description,
-		int $roomType = 2,
-	): TalkLink {
+	public function createAndLinkRoom(RoomCreation $creation): TalkLink {
 		$userUid = $this->requireUserUid();
-		if (in_array($roomType, [2, 3], true) === false) {
+		if (in_array($creation->roomType, [2, 3], true) === false) {
 			throw new Exception('Invalid room type (must be 2=group or 3=public)', 400);
 		}
 
-		$room = $this->createTaggedRoom(objectUuid: $objectUuid, roomName: $roomName, roomType: $roomType, userUid: $userUid);
-		$this->talk->setDescription(room: $room, description: $description);
+		$room = $this->createTaggedRoom(creation: $creation, userUid: $userUid);
+		$this->talk->setDescription(room: $room, description: $creation->description);
 		$this->talk->addOwner(room: $room, userUid: $userUid);
 		$roomToken = $this->createdRoomToken(room: $room);
 		$cache = $this->extractRoomFields(room: $room, userUid: $userUid);
-		$cache = $this->withRequestedFallbacks(cache: $cache, roomName: $roomName, roomType: $roomType);
-		$object = ['objectUuid' => $objectUuid, 'registerId' => $registerId, 'schemaId' => $schemaId];
+		$cache = $this->withRequestedFallbacks(cache: $cache, creation: $creation);
 
-		return $this->talkLinkMapper->insert($this->linkFactory->newLink(object: $object, roomToken: $roomToken, cache: $cache, userUid: $userUid));
+		$link = $this->linkFactory->newLink(object: $creation->object->fields(), roomToken: $roomToken);
+		$this->linkFactory->applyCache(link: $link, cache: $cache);
+
+		return $this->talkLinkMapper->insert($this->linkFactory->linkedBy(link: $link, userUid: $userUid));
 	}//end createAndLinkRoom()
 
 	/**
-	 * Create a Talk room through the Manager, its name tagged with the OR marker.
+	 * Create the Talk room, tagged with the object uuid.
 	 *
-	 * The `[or:{uuid}]` tag lets the legacy reverse lookup still find the room
-	 * until that code path is removed. Talk Manager::createRoom(type, name, owner):
-	 * the exact signature varies across Talk releases, so this passes the three
-	 * canonical args and trusts the manager to ignore extras.
+	 * @param RoomCreation $creation The object, room name and room type.
+	 * @param string       $userUid  The creating user.
 	 *
-	 * @param string $objectUuid The object the room is for.
-	 * @param string $roomName   Room display name.
-	 * @param int    $roomType   Talk room type.
-	 * @param string $userUid    The owner.
+	 * @return object The created room.
 	 *
-	 * @return object The new Talk room.
-	 *
-	 * @throws Exception When Talk is unavailable (503) or the create fails (500).
+	 * @throws Exception When Talk is missing or the room could not be created.
 	 */
-	private function createTaggedRoom(string $objectUuid, string $roomName, int $roomType, string $userUid): object {
+	private function createTaggedRoom(RoomCreation $creation, string $userUid): object {
 		$manager = $this->requireManager();
-		$taggedName = $roomName . ' ' . self::ROOM_TAG . $objectUuid . ']';
+		$taggedName = $creation->roomName . ' ' . self::ROOM_TAG . $creation->object->objectUuid . ']';
 		try {
-			$room = $manager->createRoom($roomType, $taggedName, $userUid);
+			$room = $manager->createRoom($creation->roomType, $taggedName, $userUid);
 		} catch (Throwable $e) {
 			$this->runtime->logger()->warning('Failed to create Talk room: ' . $e->getMessage());
 			throw new Exception('Failed to create Talk room: ' . $e->getMessage(), 500);
@@ -595,20 +567,19 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	}//end createdRoomToken()
 
 	/**
-	 * A new room's cached fields, with the requested name and type where Talk reported none.
+	 * Fill the name and type the room did not report with the requested ones.
 	 *
-	 * @param array  $cache    The room's cached fields.
-	 * @param string $roomName The requested room name.
-	 * @param int    $roomType The requested room type.
+	 * @param array<string, mixed> $cache    The room fields read from Talk.
+	 * @param RoomCreation         $creation The requested name and type.
 	 *
-	 * @return array The cached fields.
+	 * @return array<string, mixed> The fields with fallbacks applied.
 	 */
-	private function withRequestedFallbacks(array $cache, string $roomName, int $roomType): array {
+	private function withRequestedFallbacks(array $cache, RoomCreation $creation): array {
 		if (in_array($cache['roomName'], [null, ''], true) === true) {
-			$cache['roomName'] = $roomName;
+			$cache['roomName'] = $creation->roomName;
 		}
 
-		$cache['roomType'] = ($cache['roomType'] ?? $roomType);
+		$cache['roomType'] = ($cache['roomType'] ?? $creation->roomType);
 
 		return $cache;
 	}//end withRequestedFallbacks()
@@ -641,9 +612,9 @@ class TalkLinkService implements TalkLinkServiceInterface {
 			return [];
 		}
 
-		$participantService = $this->talk->participantService();
+		$viewer = new TalkViewer(userUid: $userUid, participantService: $this->talk->participantService());
 
-		return $this->roomFields->pickerRows(rooms: $rooms, userUid: $userUid, search: $search, participantService: $participantService);
+		return $this->roomFields->pickerRows(rooms: $rooms, query: new RoomPickerQuery(viewer: $viewer, search: $search));
 	}//end getAvailableRoomsForUser()
 
 	/**
@@ -740,11 +711,9 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	 *
 	 */
 	private function extractRoomFields(object $room, string $userUid): array {
-		return $this->roomFields->cacheFields(
-			room: $room,
-			userUid: $userUid,
-			participantService: $this->talk->participantService()
-		);
+		$viewer = new TalkViewer(userUid: $userUid, participantService: $this->talk->participantService());
+
+		return $this->roomFields->cacheFields(room: $room, viewer: $viewer);
 	}//end extractRoomFields()
 
 }//end class

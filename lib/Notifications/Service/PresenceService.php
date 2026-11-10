@@ -88,23 +88,30 @@ class PresenceService implements PresenceServiceInterface {
 	/**
 	 * Say that a reader is still looking at an object.
 	 *
-	 * @param string                 $userId     The reader.
-	 * @param string                 $objectUuid The object.
-	 * @param DateTimeInterface|null $now        The clock, for tests.
+	 * @param PresenceBeat $beat The reader, the object and the moment.
 	 *
 	 * @return array{arrived: bool, presence: ObjectPresence|null} Whether this was an ARRIVAL.
 	 *
 	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
 	 */
-	public function heartbeat(string $userId, string $objectUuid, ?DateTimeInterface $now = null): array {
-		$userId = trim($userId);
-		$objectUuid = trim($objectUuid);
-		if ($userId === '' || $objectUuid === '') {
+	public function heartbeat(PresenceBeat $beat): array {
+		$beat = $beat->trimmed();
+		if ($beat->userId === '' || $beat->objectUuid === '') {
 			return ['arrived' => false, 'presence' => null];
 		}
 
-		$now = ($now ?? new DateTimeImmutable());
-		$existing = $this->presence->findOne(userId: $userId, objectUuid: $objectUuid);
+		return $this->recordBeat(beat: $beat);
+	}//end heartbeat()
+
+	/**
+	 * Record one beat: renew the reader's row, or start it when they arrive.
+	 *
+	 * @param PresenceBeat $beat The reader, the object and the moment.
+	 *
+	 * @return array{arrived: bool, presence: ObjectPresence|null} Whether this was an ARRIVAL.
+	 */
+	private function recordBeat(PresenceBeat $beat): array {
+		$existing = $this->presence->findOne(userId: $beat->userId, objectUuid: $beat->objectUuid);
 
 		// 🔴 AN EXPIRED ROW IS AN ARRIVAL, NOT A RENEWAL. A reader whose laptop
 		// slept for an hour comes back as somebody arriving, because to every
@@ -112,19 +119,48 @@ class PresenceService implements PresenceServiceInterface {
 		// from the list, and they are now on it again. Treating it as a renewal
 		// would leave them permanently invisible to everybody who was pushed
 		// their departure.
-		$arrived = ($existing === null || $this->isStale(row: $existing, now: $now) === true);
+		$arrived = ($existing === null || $this->isStale(row: $existing, now: $beat->now) === true);
 
-		$row = ($existing ?? new ObjectPresence());
-		$row->setUserId($userId);
-		$row->setObjectUuid($objectUuid);
+		$row = $this->stamped(beat: $beat, row: ($existing ?? new ObjectPresence()));
 		if ($arrived === true) {
-			$row->setArrivedAt($this->asMutable(moment: $now));
+			$row->setArrivedAt($this->asMutable(moment: $beat->now));
 		}
 
-		$row->setLastSeen($this->asMutable(moment: $now));
+		$saved = $this->storeBeat(row: $row, isNew: ($existing === null));
+		if ($saved === null) {
+			return ['arrived' => false, 'presence' => null];
+		}
 
+		return ['arrived' => $arrived, 'presence' => $saved];
+	}//end recordBeat()
+
+	/**
+	 * The row with the beat's reader, object and moment of last sight on it.
+	 *
+	 * @param PresenceBeat   $beat The reader, the object and the moment.
+	 * @param ObjectPresence $row  The reader's row, stored or new.
+	 *
+	 * @return ObjectPresence The same row.
+	 */
+	private function stamped(PresenceBeat $beat, ObjectPresence $row): ObjectPresence {
+		$row->setUserId($beat->userId);
+		$row->setObjectUuid($beat->objectUuid);
+		$row->setLastSeen($this->asMutable(moment: $beat->now));
+
+		return $row;
+	}//end stamped()
+
+	/**
+	 * Write a beat's row, or report that it could not be written.
+	 *
+	 * @param ObjectPresence $row   The row to write.
+	 * @param boolean        $isNew Whether there was no row before.
+	 *
+	 * @return ObjectPresence|null The stored row, or null when the write failed.
+	 */
+	private function storeBeat(ObjectPresence $row, bool $isNew): ?ObjectPresence {
 		try {
-			$saved = $this->store(row: $row, isNew: ($existing === null));
+			return $this->store(row: $row, isNew: $isNew);
 		} catch (Throwable $e) {
 			// A beat that could not be written is not worth failing a page
 			// over: the reader simply drops off the list in 90 seconds, which
@@ -132,14 +168,12 @@ class PresenceService implements PresenceServiceInterface {
 			// that is refusing every write is visible.
 			$this->logger->warning(
 				message: '[PresenceService] a heartbeat could not be written: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'object' => $objectUuid]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'object' => $row->getObjectUuid()]
 			);
 
-			return ['arrived' => false, 'presence' => null];
+			return null;
 		}
-
-		return ['arrived' => $arrived, 'presence' => $saved];
-	}//end heartbeat()
+	}//end storeBeat()
 
 	/**
 	 * Write the row, as an insert or an update.
@@ -193,19 +227,29 @@ class PresenceService implements PresenceServiceInterface {
 	/**
 	 * Who is present on an object right now.
 	 *
-	 * @param string                 $objectUuid The object.
-	 * @param string                 $exceptUser A reader to leave out, usually the caller.
-	 * @param DateTimeInterface|null $now        The clock, for tests.
+	 * @param PresenceLookup $lookup The object, a reader to leave out, and the clock for tests.
 	 *
 	 * @return array<int, array<string, mixed>> The readers, oldest arrival first.
 	 *
 	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
 	 */
-	public function present(string $objectUuid, string $exceptUser = '', ?DateTimeInterface $now = null): array {
-		$now = ($now ?? new DateTimeImmutable());
+	public function present(PresenceLookup $lookup): array {
+		$rows = $this->presentRows(objectUuid: $lookup->objectUuid, now: ($lookup->now ?? new DateTimeImmutable()));
 
+		return $this->readersOtherThan(rows: $rows, exceptUser: $lookup->exceptUser);
+	}//end present()
+
+	/**
+	 * The rows of the readers whose last beat is inside the window.
+	 *
+	 * @param string            $objectUuid The object.
+	 * @param DateTimeInterface $now        The clock.
+	 *
+	 * @return array<int, ObjectPresence> The rows, or none when they could not be read.
+	 */
+	private function presentRows(string $objectUuid, DateTimeInterface $now): array {
 		try {
-			$rows = $this->presence->findPresent(
+			return $this->presence->findPresent(
 				objectUuid: $objectUuid,
 				notBefore: $this->asMutable(moment: $this->cutoff(now: $now))
 			);
@@ -217,7 +261,17 @@ class PresenceService implements PresenceServiceInterface {
 
 			return [];
 		}
+	}//end presentRows()
 
+	/**
+	 * The rows as readers, leaving one reader out.
+	 *
+	 * @param array<int, ObjectPresence> $rows       The rows.
+	 * @param string                     $exceptUser A reader to leave out, or '' for none.
+	 *
+	 * @return array<int, array<string, mixed>> The readers, in row order.
+	 */
+	private function readersOtherThan(array $rows, string $exceptUser): array {
 		$present = [];
 		foreach ($rows as $row) {
 			if ($exceptUser !== '' && (string)$row->getUserId() === $exceptUser) {
@@ -228,7 +282,7 @@ class PresenceService implements PresenceServiceInterface {
 		}
 
 		return $present;
-	}//end present()
+	}//end readersOtherThan()
 
 	/**
 	 * Drop every reader whose beats stopped, answering who went.

@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\BackgroundJob\Support;
 
 use OCA\OpenRegister\Db\SchemaRunStoreInterface;
 use OCA\OpenRegister\Service\Schema\SchemaBatchMigratorInterface;
-use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
+use OCA\OpenRegister\Service\Schema\SchemaRevalidatorInterface;
 
 /**
  * The run store and the revalidation and migration passes a schema run drives.
@@ -36,14 +36,14 @@ final readonly class SchemaRunServices {
 	 * Bundle the services.
 	 *
 	 * @param SchemaRunStoreInterface      $runMapper           Run store.
-	 * @param SchemaRevalidationService    $revalidationService Revalidation pass.
+	 * @param SchemaRevalidatorInterface   $revalidationService Revalidation pass.
 	 * @param SchemaBatchMigratorInterface $migrationService    Migration pass.
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function __construct(
 		public SchemaRunStoreInterface $runMapper,
-		public SchemaRevalidationService $revalidationService,
+		public SchemaRevalidatorInterface $revalidationService,
 		public SchemaBatchMigratorInterface $migrationService,
 	) {
 	}//end __construct()

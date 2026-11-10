@@ -29,6 +29,7 @@ use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Serializer\RegisterExpansion;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\Files\Node;
 use OCP\IDBConnection;
@@ -256,15 +257,28 @@ class RegisterService implements RegisterServiceInterface {
 	 *   (Requirement: RegisterService SHALL expose serialized query methods that honor `_extend`)
 	 */
 	public function findSerialized(int|string $id, array $_extend = [], bool $_multitenancy = true): array {
-		$register = $this->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy);
+		return $this->serializeOne(register: $this->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy), _extend: $_extend);
+	}//end findSerialized()
 
+	/**
+	 * Serialize one register with `_extend` applied, with its per-schema counts when both `schemas` and `@self.stats` are asked.
+	 *
+	 * @param Register      $register The register.
+	 * @param array<string> $_extend  Extension keys to apply.
+	 *
+	 * @return array Serialized register payload.
+	 */
+	private function serializeOne(Register $register, array $_extend): array {
 		$stats = null;
 		if ($this->wantsSchemaStats(_extend: $_extend) === true) {
 			$stats = $this->statsFor(register: $register);
 		}
 
-		return $this->registerSerializer->serialize($register, $_extend, $stats);
-	}//end findSerialized()
+		return $this->registerSerializer->serializeExpanded(
+			$register,
+			RegisterExpansion::fromExtend(extend: $_extend, schemaStats: $stats)
+		);
+	}//end serializeOne()
 
 	/**
 	 * Whether `_extend` asks for both `schemas` and `@self.stats`, the case that needs per-schema counts.
@@ -603,61 +617,63 @@ class RegisterService implements RegisterServiceInterface {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function getSchemaObjectCounts(int $registerId, array $schemas): array {
-		$result = [];
 		if (empty($schemas) === true) {
-			return $result;
+			return [];
 		}
 
+		$tally = new SchemaObjectTally(registerId: $registerId);
 		try {
-			$this->countSchemaObjects(registerId: $registerId, schemas: $schemas, result: $result);
+			$this->countSchemaObjects(tally: $tally, schemas: $schemas);
 		} catch (\Exception $e) {
 			// Log the error but don't fail: the counts gathered so far are returned.
 			$this->logCountFailure(e: $e);
 		}
 
-		return $result;
+		return $tally->result;
 	}//end getSchemaObjectCounts()
 
 	/**
 	 * Fill `$result` with the counts of every schema, as far as it gets before a failure.
 	 *
-	 * @param int                                  $registerId The register id.
-	 * @param array                                $schemas    The schemas, in any accepted shape.
-	 * @param array<array-key, array<string, int>> $result     Schema id to counts, filled in place.
+	 * @param SchemaObjectTally $tally   The register counted, and the counts filled in place.
+	 * @param array             $schemas The schemas, in any accepted shape.
 	 *
 	 * @return void
 	 */
-	private function countSchemaObjects(int $registerId, array $schemas, array &$result): void {
+	private function countSchemaObjects(SchemaObjectTally $tally, array $schemas): void {
+		$registerId  = $tally->registerId;
 		$schemaCount = count($schemas);
 		$this->logger->debug(
 			message: "[RegisterService] GetSchemaObjectCounts: Processing $schemaCount schemas for register $registerId",
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		$unionQueries = $this->schemaCountQueries(registerId: $registerId, schemas: $schemas, result: $result);
+		$unionQueries = $this->schemaCountQueries(tally: $tally, schemas: $schemas);
 		if (empty($unionQueries) === true) {
 			return;
 		}
 
-		$this->runCountQueries(unionQueries: $unionQueries, result: $result);
+		$this->runCountQueries(unionQueries: $unionQueries, result: $tally->result);
 	}//end countSchemaObjects()
 
 	/**
 	 * The count query of every schema whose magic table exists; missing tables count zero.
 	 *
-	 * @param int                                  $registerId The register id.
-	 * @param array                                $schemas    The schemas, in any accepted shape.
-	 * @param array<array-key, array<string, int>> $result     Schema id to counts, filled in place for missing tables.
+	 * @param SchemaObjectTally $tally   The register counted; missing tables count zero in it.
+	 * @param array             $schemas The schemas, in any accepted shape.
 	 *
 	 * @return array<int, string> The SELECTs to union.
 	 */
-	private function schemaCountQueries(int $registerId, array $schemas, array &$result): array {
+	private function schemaCountQueries(SchemaObjectTally $tally, array $schemas): array {
 		$schemaIdFormat = $this->schemaIdSqlFormat();
 		$unionQueries   = [];
 		foreach ($schemas as $schema) {
-			$query = $this->schemaCountQuery(registerId: $registerId, schema: $schema, format: $schemaIdFormat, result: $result);
-			if ($query !== null) {
-				$unionQueries[] = $query;
+			$schemaId = $this->countableSchemaId(tally: $tally, schema: $schema);
+			if ($schemaId !== null) {
+				$unionQueries[] = $this->schemaCountSql(
+					schemaIdExpr: sprintf($schemaIdFormat, $schemaId),
+					tableName: $tally->tableName(schemaId: $schemaId)
+				);
 			}
 		}
 
@@ -665,30 +681,27 @@ class RegisterService implements RegisterServiceInterface {
 	}//end schemaCountQueries()
 
 	/**
-	 * The count query of one schema, or null when it has no id or no magic table.
+	 * The id of one schema whose magic table exists, or null when it has no id or no magic table.
 	 *
-	 * @param int                                  $registerId The register id.
-	 * @param mixed                                $schema     The schema in any accepted shape.
-	 * @param string                               $format     The sprintf format rendering the id as SQL text.
-	 * @param array<array-key, array<string, int>> $result     Schema id to counts; a missing table counts zero.
+	 * @param SchemaObjectTally $tally  The register counted; a missing table counts zero in it.
+	 * @param mixed             $schema The schema in any accepted shape.
 	 *
-	 * @return string|null The SELECT, or null.
+	 * @return mixed The schema id to count, or null.
 	 */
-	private function schemaCountQuery(int $registerId, mixed $schema, string $format, array &$result): ?string {
+	private function countableSchemaId(SchemaObjectTally $tally, mixed $schema): mixed {
 		$schemaId = $this->schemaIdOf(schema: $schema);
 		if ($schemaId === null) {
 			$this->warnSchemaWithoutId();
 			return null;
 		}
 
-		$tableName = 'openregister_table_' . $registerId . '_' . $schemaId;
-		if ($this->magicTableExists(tableName: $tableName) !== true) {
-			$result[$schemaId] = $this->getZeroCountStats();
+		if ($this->magicTableExists(tableName: $tally->tableName(schemaId: $schemaId)) !== true) {
+			$tally->result[$schemaId] = $this->getZeroCountStats();
 			return null;
 		}
 
-		return $this->schemaCountSql(schemaIdExpr: sprintf($format, $schemaId), tableName: $tableName);
-	}//end schemaCountQuery()
+		return $schemaId;
+	}//end countableSchemaId()
 
 	/**
 	 * Log a schema that carries no id.

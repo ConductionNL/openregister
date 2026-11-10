@@ -301,11 +301,8 @@ final class PropertyDefaults {
 			return ($context->twigContext[$matches[1]] ?? null);
 		}
 
-		return $this->hydration->processTwigLikeTemplate(
-			data: $context->twigContext,
-			template: $default,
-			schemaProperties: $context->schemaProperties
-		);
+		$source = new TemplateSource(data: $context->twigContext, schemaProperties: $context->schemaProperties);
+		return $this->hydration->renderTemplate(template: $default, source: $source);
 	}//end render()
 
 	/**

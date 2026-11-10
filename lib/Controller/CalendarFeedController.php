@@ -32,7 +32,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CalendarFeedControllerServices;
+use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeServiceInterface;
 use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenServiceInterface;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
@@ -112,16 +114,14 @@ class CalendarFeedController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by Nextcloud).
 	 * @param IRequest $request Current request.
 	 * @param CalendarFeedControllerServices $services The calendar feed controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		CalendarFeedControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->tokens = $services->domain->tokens;
 		$this->feed = $services->domain->feed;
 		$this->attendees = $services->domain->attendees;
@@ -191,14 +191,13 @@ class CalendarFeedController extends Controller {
 			return new JSONResponse(['message' => 'Not Found'], Http::STATUS_NOT_FOUND);
 		}
 
+		$draft = new CalendarFeedToken();
+		$draft->setScopeType((string)$this->request->getParam('scopeType', ''));
+		$draft->setScopeId((string)$this->request->getParam('scopeId', ''));
+		$draft->setLabel($this->stringParam(name: 'label'));
+
 		try {
-			$minted = $this->tokens->mint(
-				userId: $user->getUID(),
-				scopeType: (string)$this->request->getParam('scopeType', ''),
-				scopeId: (string)$this->request->getParam('scopeId', ''),
-				label: $this->stringParam(name: 'label'),
-				ttlSeconds: $this->intParam(name: 'ttlSeconds')
-			);
+			$minted = $this->tokens->mint(userId: $user->getUID(), draft: $draft, ttlSeconds: $this->intParam(name: 'ttlSeconds'));
 		} catch (InvalidArgumentException $refused) {
 			return new JSONResponse(['message' => $refused->getMessage()], Http::STATUS_BAD_REQUEST);
 		}

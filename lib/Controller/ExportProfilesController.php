@@ -29,8 +29,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ExportProfilesControllerServices;
 use OCA\OpenRegister\Db\ExportProfile;
+use OCA\OpenRegister\Service\Export\ExportProfileCaller;
 use OCA\OpenRegister\Service\Export\ExportProfileServiceInterface;
 use OCA\OpenRegister\Service\Export\ExportProfileWriterInterface;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
@@ -92,18 +94,16 @@ class ExportProfilesController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string               $appName      Application name.
 	 * @param IRequest             $request      HTTP request.
 	 * @param ExportProfilesControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ExportProfilesControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->service = $services->service;
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;
@@ -156,11 +156,7 @@ class ExportProfilesController extends Controller {
 
 		try {
 			$profile = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(
-				profile: $profile,
-				callerUid: $userId,
-				callerIsAdmin: $this->isCurrentUserAdmin()
-			);
+			$this->service->assertOwnerOrAdmin(profile: $profile, caller: $this->profileCaller(userId: $userId));
 		} catch (DoesNotExistException $e) {
 			return $this->notFoundResponse();
 		} catch (ExportRefusedException $e) {
@@ -219,11 +215,7 @@ class ExportProfilesController extends Controller {
 
 		try {
 			$profile = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(
-				profile: $profile,
-				callerUid: $userId,
-				callerIsAdmin: $this->isCurrentUserAdmin()
-			);
+			$this->service->assertOwnerOrAdmin(profile: $profile, caller: $this->profileCaller(userId: $userId));
 			$profile = $this->service->update(profile: $profile, data: $this->submitted());
 		} catch (DoesNotExistException $e) {
 			return $this->notFoundResponse();
@@ -258,11 +250,7 @@ class ExportProfilesController extends Controller {
 
 		try {
 			$profile = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(
-				profile: $profile,
-				callerUid: $userId,
-				callerIsAdmin: $this->isCurrentUserAdmin()
-			);
+			$this->service->assertOwnerOrAdmin(profile: $profile, caller: $this->profileCaller(userId: $userId));
 			$this->service->delete(profile: $profile);
 		} catch (DoesNotExistException $e) {
 			return $this->notFoundResponse();
@@ -299,11 +287,7 @@ class ExportProfilesController extends Controller {
 
 		try {
 			$profile = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(
-				profile: $profile,
-				callerUid: $userId,
-				callerIsAdmin: $this->isCurrentUserAdmin()
-			);
+			$this->service->assertOwnerOrAdmin(profile: $profile, caller: $this->profileCaller(userId: $userId));
 			$written = $this->service->run(profile: $profile, actorUid: $userId);
 		} catch (DoesNotExistException $e) {
 			return $this->notFoundResponse();
@@ -315,7 +299,7 @@ class ExportProfilesController extends Controller {
 		// straight to the caller, so there is no file for a sweep to delete
 		// and the retention is null: the row is the record, and it is the
 		// register handing the copy over, which is what the count counts.
-		$this->recordRun(profile: $profile, actorUid: $userId, written: $written);
+		$this->recordRun(profile: $profile, written: $written);
 
 		$contentType = 'text/csv';
 		if (($profile->getFormat() ?? 'csv') === 'json') {
@@ -349,20 +333,21 @@ class ExportProfilesController extends Controller {
 	 * of one, because the bytes went straight out rather than into a file. A
 	 * download served from the register is exactly what the count counts.
 	 *
-	 * @param mixed  $profile  The export profile.
-	 * @param string $actorUid Who asked for it.
-	 * @param array  $written  The rendered export.
+	 * The actor is the signed-in caller, who asked for it.
+	 *
+	 * @param mixed $profile The export profile.
+	 * @param array $written The rendered export.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
 	 */
-	private function recordRun($profile, string $actorUid, array $written): void {
+	private function recordRun($profile, array $written): void {
 		try {
 			$this->exportRuns->record(
 				origin: new ExportRunOrigin(
 					source: 'export-profile',
-					actor: $actorUid,
+					actor: (string)$this->resolveUserId(),
 					profile: (string)($written['metadata']['profileUuid'] ?? ''),
 					status: \OCA\OpenRegister\Db\ExportRun::STATUS_SERVED
 				),
@@ -449,6 +434,17 @@ class ExportProfilesController extends Controller {
 
 		return $this->groupManager->isAdmin($user->getUID());
 	}//end isCurrentUserAdmin()
+
+	/**
+	 * The signed-in caller as the ownership check reads them.
+	 *
+	 * @param string $userId The caller's uid.
+	 *
+	 * @return ExportProfileCaller The uid, and whether they are an administrator.
+	 */
+	private function profileCaller(string $userId): ExportProfileCaller {
+		return new ExportProfileCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin());
+	}//end profileCaller()
 
 	/**
 	 * The 401 an anonymous caller gets.

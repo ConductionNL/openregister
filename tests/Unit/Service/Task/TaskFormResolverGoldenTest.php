@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCA\OpenRegister\Service\Task\TaskForm;
+use OCA\OpenRegister\Service\Task\TaskFormFields;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
 use OCA\OpenRegister\Service\Task\TaskFormResolverServices;
@@ -268,7 +269,7 @@ class TaskFormResolverGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testRunlessNativeForms(): void {
-		$this->form = new TaskForm(kind: TaskForm::KIND_FIELDS, schema: 'person', action: 'approve', fields: [['field' => 'name', 'required' => true], ['field' => 'gone', 'required' => false]], requireChecklist: true);
+		$this->form = new TaskForm(kind: TaskForm::KIND_FIELDS, native: new TaskFormFields(schema: 'person', action: 'approve', fields: [['field' => 'name', 'required' => true], ['field' => 'gone', 'required' => false]]), requireChecklist: true);
 		$schema     = ['id' => 12, 'uuid' => 'schema-uuid', 'slug' => 'person', 'title' => 'Person'];
 
 		$this->assertSame(
@@ -294,7 +295,7 @@ class TaskFormResolverGoldenTest extends TestCase {
 			$this->calls
 		);
 
-		$this->form  = new TaskForm(kind: TaskForm::KIND_FIELDS, schema: 'person', fields: [['field' => 'name', 'required' => false]]);
+		$this->form  = new TaskForm(kind: TaskForm::KIND_FIELDS, native: new TaskFormFields(schema: 'person', fields: [['field' => 'name', 'required' => false]]));
 		$this->calls = [];
 		$described   = $this->resolver()->describe(self::task('  '));
 		$this->assertSame(TaskFormResolver::STATE_READY, $described['form']['state']);
@@ -309,7 +310,7 @@ class TaskFormResolverGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testUnreadableNativeForm(): void {
-		$this->form        = new TaskForm(kind: TaskForm::KIND_FIELDS, schema: 'ghost', action: 'x');
+		$this->form        = new TaskForm(kind: TaskForm::KIND_FIELDS, native: new TaskFormFields(schema: 'ghost', action: 'x'));
 		$this->schemaFails = true;
 
 		$this->assertSame(

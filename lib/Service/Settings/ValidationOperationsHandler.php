@@ -48,35 +48,19 @@ use Psr\Log\LoggerInterface;
 class ValidationOperationsHandler {
 
 	/**
-	 * Container for lazy loading ObjectService to break circular dependency.
-	 *
-	 * @var IAppContainer
-	 */
-	private IAppContainer $container;
-
-	/**
-	 * Lazily loaded ValidateObject to break circular dependency.
-	 *
-	 * @var ObjectValidatorInterface|null
-	 */
-	private ?ObjectValidatorInterface $validateHandler = null;
-
-	/**
 	 * Constructor for ValidationOperationsHandler.
 	 *
-	 * @param ObjectValidatorInterface|null $validateHandler Handler for validation operations (nullable for lazy loading)
+	 * @param ObjectValidatorInterface|null $validateHandler Validation handler; null loads ValidateObject lazily (circular dependency)
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema entities
 	 * @param LoggerInterface $logger Logger for logging operations
-	 * @param IAppContainer $container Application container
+	 * @param IAppContainer $container Application container, for lazy loading to break a circular dependency
 	 */
 	public function __construct(
-		?ObjectValidatorInterface $validateHandler,
+		private ?ObjectValidatorInterface $validateHandler,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
-		IAppContainer $container,
+		private readonly IAppContainer $container,
 	) {
-		$this->validateHandler = $validateHandler;
-		$this->container = $container;
 	}//end __construct()
 
 	/**

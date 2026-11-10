@@ -36,6 +36,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\CaseTokenMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\CaseTokenIssuance;
 use OCA\OpenRegister\Service\CaseTokenService;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -114,10 +115,8 @@ class CaseTokenServiceGoldenTest extends TestCase {
 		);
 
 		return new CaseTokenService(
-			$this->mapper,
-			$rng,
+			new CaseTokenIssuance($this->mapper, $rng, $url),
 			$session,
-			$url,
 			$this->createMock(LoggerInterface::class),
 			$container
 		);

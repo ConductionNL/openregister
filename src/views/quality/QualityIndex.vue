@@ -1,54 +1,16 @@
 <template>
 	<NcAppContent>
 		<div class="viewContainer">
-			<div class="viewHeader">
-				<h1>{{ t('openregister', 'Data Quality') }}</h1>
-				<p>
-					{{
-						t(
-							'openregister',
-							'Review score distribution and the lowest-quality objects for a register and schema.',
-						)
-					}}
-				</p>
-			</div>
-
-			<RegisterSchemaSelector />
-
-			<NcEmptyContent
-				v-if="!hasSelection"
-				:name="t('openregister', 'Select a register and schema')"
-				:description="
-					t(
-						'openregister',
-						'Choose a register and schema above to see its quality statistics.',
-					)
-				">
+			<QualityPageFrame
+				:title="t('openregister', 'Data Quality')"
+				:description="t('openregister', 'Review score distribution and the lowest-quality objects for a register and schema.')"
+				:selectDescription="t('openregister', 'Choose a register and schema above to see its quality statistics.')"
+				:empty="isEmpty"
+				:emptyName="t('openregister', 'No scored objects for this schema')"
+				:emptyDescription="t('openregister', 'This schema has no objects with a materialised quality score yet.')">
 				<template #icon>
 					<ChartBoxOutline :size="64" />
 				</template>
-			</NcEmptyContent>
-
-			<template v-else-if="loading">
-				<NcLoadingIcon :size="32" />
-			</template>
-
-			<template v-else-if="isEmpty">
-				<NcEmptyContent
-					:name="t('openregister', 'No scored objects for this schema')"
-					:description="
-						t(
-							'openregister',
-							'This schema has no objects with a materialised quality score yet.',
-						)
-					">
-					<template #icon>
-						<ChartBoxOutline :size="64" />
-					</template>
-				</NcEmptyContent>
-			</template>
-
-			<template v-else>
 				<!-- KPI cards -->
 				<div class="kpiRow">
 					<div class="kpiCard">
@@ -118,7 +80,7 @@
 						@previous="previousPage"
 						@next="nextPage" />
 				</section>
-			</template>
+			</QualityPageFrame>
 		</div>
 	</NcAppContent>
 </template>
@@ -126,28 +88,25 @@
 <script>
 import { CnChartWidget, CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
-import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent } from '@nextcloud/vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
-import RangePager from './RangePager.vue'
-import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import { qualityStore } from '../../store/store.js'
-import { qualitySelection } from './qualitySelection.js'
+import { qualityListPage, QualityPageFrame, RangePager } from './qualityListPage.js'
 
 export default {
 	name: 'QualityIndex',
 
 	components: {
-		RangePager,
 		NcAppContent,
 		NcEmptyContent,
-		NcLoadingIcon,
 		CnChartWidget,
 		CnDataTable,
 		ChartBoxOutline,
-		RegisterSchemaSelector,
+		QualityPageFrame,
+		RangePager,
 	},
 
-	mixins: [qualitySelection],
+	mixins: [qualityListPage('fetchLowQualityObjects', 'lowQuality')],
 
 	data() {
 		return {
@@ -287,30 +246,6 @@ export default {
 					{ limit: 20, offset: 0 },
 				),
 			])
-		},
-
-		/**
-		 * @spec exclude UI pagination handler — delegates to fetchLowQualityObjects
-		 */
-		async previousPage() {
-			const offset = Math.max(0, this.lowQualityOffset - this.lowQualityLimit)
-			await qualityStore.fetchLowQualityObjects(
-				qualityStore.selectedRegister,
-				qualityStore.selectedSchema,
-				{ limit: this.lowQualityLimit, offset },
-			)
-		},
-
-		/**
-		 * @spec exclude UI pagination handler — delegates to fetchLowQualityObjects
-		 */
-		async nextPage() {
-			const offset = this.lowQualityOffset + this.lowQualityLimit
-			await qualityStore.fetchLowQualityObjects(
-				qualityStore.selectedRegister,
-				qualityStore.selectedSchema,
-				{ limit: this.lowQualityLimit, offset },
-			)
 		},
 	},
 }

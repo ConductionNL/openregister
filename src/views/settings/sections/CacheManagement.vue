@@ -706,6 +706,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@use './sectionStyles.scss' as *;
 @use '../../../styles/views.scss' as *;
 
 /* SettingsSection handles all action button positioning and spacing */
@@ -846,46 +847,7 @@ export default {
 	color: var(--color-text-light);
 }
 
-.performance-table-container {
-	overflow-x: auto;
-}
-
-.performance-table {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: 14px;
-}
-
-.performance-table-header {
-	text-align: left;
-	padding: 12px 8px;
-	border-bottom: 2px solid var(--color-border);
-	background: var(--color-background-hover);
-	font-weight: 600;
-	color: var(--color-text-light);
-}
-
-.performance-table-row {
-	border-bottom: 1px solid var(--color-border-dark);
-}
-
-.performance-table-row:hover {
-	background: var(--color-background-hover);
-}
-
-.performance-table-label {
-	padding: 12px 8px;
-	color: var(--color-text-light);
-	font-weight: 500;
-}
-
-.performance-table-value {
-	padding: 12px 8px;
-	color: var(--color-text-maxcontrast);
-	text-align: right;
-	font-family: monospace;
-	font-size: 13px;
-}
+@include figures-table('.performance-table');
 
 .cache-warmup h4 {
 	margin: 0 0 8px 0;

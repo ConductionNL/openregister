@@ -57,6 +57,7 @@ class ExampleSetOwnRowKindsTest extends TestCase {
 	 */
 	public function testEachWriterUnderItsPart(): void {
 		$views = $this->createMock(ExampleSetViews::class);
+		$views->method('rows')->willReturn($views);
 		$flows = $this->createMock(ExampleSetFlows::class);
 		$casePlans = $this->createMock(ExampleSetCasePlans::class);
 		$bundle = new ExampleSetOwnRowKinds(

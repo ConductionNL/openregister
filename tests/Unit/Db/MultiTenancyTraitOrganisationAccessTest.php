@@ -398,9 +398,19 @@ class MultiTenancyTraitOrganisationAccessTest extends TestCase {
 			protected ?string $label = null;
 		};
 
-		$host = new TenancyGuardHost('org-b');
-		$host->verify($entity);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method($this->anything());
+		$host = new TenancyGuardHost('org-b', $logger);
 
-		$this->addToAssertionCount(1);
+		$thrown = null;
+		try {
+			$host->verify($entity);
+		} catch (\Throwable $e) {
+			$thrown = get_class($e) . ': ' . $e->getMessage();
+		}
+
+		// The pair is testCrossOrganisationRefusalIsAudited: an entity that DOES
+		// carry an organisation, foreign to the active one, is refused and logged.
+		$this->assertNull($thrown, 'An entity without an organisation column must be waved through.');
 	}//end testEntityWithoutAnOrganisationPropertyIsWavedThrough()
 }//end class

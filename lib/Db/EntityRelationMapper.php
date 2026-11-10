@@ -21,15 +21,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
+use OCA\OpenRegister\Files\Db\EntityMention;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -102,15 +102,15 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * @param IDBConnection $db Database connection.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit-trail persistence (used by updateDecisionMetadata).
 	 * @param IUserSession $userSession Session user lookup for audit-trail actor.
-	 * @param IEventDispatcher $eventDispatcher Symfony event dispatcher (used by updateDecisionMetadata
-	 *                                          to notify listeners after a decision-metadata write).
+	 * @param EntityEventsInterface $entityEvents Announces the decision-metadata write to listeners
+	 *                                           (used by updateDecisionMetadata).
 	 * @param LoggerInterface $logger Structured log sink.
 	 */
 	public function __construct(
 		IDBConnection $db,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserSession $userSession,
-		private readonly IEventDispatcher $eventDispatcher,
+		private readonly EntityEventsInterface $entityEvents,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_entity_relations', entityClass: EntityRelation::class);
@@ -414,36 +414,27 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * 142 has both `"Jan Jansen"` PERSON and `"Jansen"` PERSON entities)
 	 * are legitimately distinct rows.
 	 *
-	 * @param int $fileId Nextcloud file id.
-	 * @param int $entityId Catalogue entity id.
-	 * @param int $chunkId Chunk row id the position is relative to.
-	 * @param int $positionStart Position of the first byte of the match within the chunk.
-	 * @param int $positionEnd Position one past the last byte of the match within the chunk.
+	 * @param int           $fileId  Nextcloud file id.
+	 * @param EntityMention $mention The entity, chunk and span within the chunk.
 	 *
 	 * @return bool True when a row with exactly these five values exists.
 	 */
-	public function existsForFileAtPosition(
-		int $fileId,
-		int $entityId,
-		int $chunkId,
-		int $positionStart,
-		int $positionEnd,
-	): bool {
+	public function existsForFileAtPosition(int $fileId, EntityMention $mention): bool {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('id')
 			->from($this->getTableName())
 			->where(
 				$qb->expr()->andX(
 					$qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)),
-					$qb->expr()->eq('entity_id', $qb->createNamedParameter($entityId, IQueryBuilder::PARAM_INT)),
-					$qb->expr()->eq('chunk_id', $qb->createNamedParameter($chunkId, IQueryBuilder::PARAM_INT)),
+					$qb->expr()->eq('entity_id', $qb->createNamedParameter($mention->entityId, IQueryBuilder::PARAM_INT)),
+					$qb->expr()->eq('chunk_id', $qb->createNamedParameter($mention->chunkId, IQueryBuilder::PARAM_INT)),
 					$qb->expr()->eq(
 						'position_start',
-						$qb->createNamedParameter($positionStart, IQueryBuilder::PARAM_INT)
+						$qb->createNamedParameter($mention->positionStart, IQueryBuilder::PARAM_INT)
 					),
 					$qb->expr()->eq(
 						'position_end',
-						$qb->createNamedParameter($positionEnd, IQueryBuilder::PARAM_INT)
+						$qb->createNamedParameter($mention->positionEnd, IQueryBuilder::PARAM_INT)
 					)
 				)
 			)
@@ -519,8 +510,8 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		$relation = new EntityRelation();
 		$relation->setEntityId((int)$row['entityId']);
 		// phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
-		foreach (self::ROW_FIELDS as $field => [$setter, $cast, $nullSkips]) {
-			if ($this->rowFieldIsSkipped(row: $row, field: $field, nullSkips: $nullSkips) === true) {
+		foreach (self::ROW_FIELDS as $field => [$setter, $cast]) {
+			if ($this->rowFieldIsSkipped(row: $row, field: $field) === true) {
 				continue;
 			}
 
@@ -537,16 +528,15 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	}//end buildRelationFromRow()
 
 	/**
-	 * Whether a row field is left unset: it is absent, or null where null means "skip".
+	 * Whether a row field is left unset: it is absent, or null where ROW_FIELDS says null means "skip".
 	 *
 	 * @param array<string, mixed> $row Field values keyed by camelCase setter name.
-	 * @param string $field The field.
-	 * @param bool $nullSkips Whether a null value skips the field.
+	 * @param string $field A ROW_FIELDS key.
 	 *
 	 * @return bool True when the setter is not called.
 	 */
-	private function rowFieldIsSkipped(array $row, string $field, bool $nullSkips): bool {
-		return array_key_exists($field, $row) === false || ($nullSkips === true && $row[$field] === null);
+	private function rowFieldIsSkipped(array $row, string $field): bool {
+		return array_key_exists($field, $row) === false || (self::ROW_FIELDS[$field][2] === true && $row[$field] === null);
 	}//end rowFieldIsSkipped()
 
 	/**
@@ -744,72 +734,94 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	public function updateDecisionMetadata(EntityRelation $relation, array $fields, ?IUser $actingUser = null): EntityRelation {
 		self::assertDecisionFieldsValid(fields: $fields);
 		$changedFields = self::applyDecisionChanges(relation: $relation, fields: $fields);
-
 		if (count($changedFields) === 0) {
 			return $relation;
 		}
 
-		// Audit-invariant: every persisted state change MUST have an
-		// audit-trail entry. Both writes go in a single transaction so a
-		// failed audit-INSERT rolls back the row UPDATE — clients see
-		// HTTP 500 instead of an undetectable audit gap. The downstream
-		// event dispatch stays OUTSIDE the transaction (post-commit,
-		// informational; listener failures must not roll back).
+		$actingUser = ($actingUser ?? $this->userSession->getUser());
+		$change     = new DecisionMetadataChange(relation: $relation, changedFields: $changedFields, actingUser: $actingUser);
+		return $this->recordDecisionChange(change: $change);
+	}//end updateDecisionMetadata()
+
+	/**
+	 * Store a decision-metadata change with its audit entry, then notify listeners.
+	 *
+	 * Audit-invariant: every persisted state change MUST have an audit-trail
+	 * entry. Both writes go in a single transaction so a failed audit INSERT
+	 * rolls back the row UPDATE: clients see HTTP 500 instead of an
+	 * undetectable audit gap. The event dispatch stays OUTSIDE the
+	 * transaction (post-commit, informational; listener failures must not
+	 * roll back).
+	 *
+	 * @param DecisionMetadataChange $change The relation, its changed fields and the acting user.
+	 *
+	 * @return EntityRelation The stored relation.
+	 */
+	private function recordDecisionChange(DecisionMetadataChange $change): EntityRelation {
 		$this->db->beginTransaction();
 		try {
-			$relation = $this->update(entity: $relation);
-			$relationId = (int)$relation->getId();
-			$this->emitDecisionMetadataAuditEntry(
-				relationId: $relationId,
-				changedFields: $changedFields,
-				actingUser: $actingUser
-			);
+			$relation = $this->update(entity: $change->relation);
+			$this->emitDecisionMetadataAuditEntry(relation: $relation, change: $change);
 			$this->db->commit();
 		} catch (\Throwable $writeError) {
 			$this->db->rollBack();
-			$this->logger->error(
-				message: '[EntityRelationMapper] Transactional decision-metadata write failed, rolled back',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'relation_id' => (int)$relation->getId(),
-					'changedKeys' => array_keys($changedFields),
-					'error' => $writeError->getMessage(),
-				]
-			);
+			$message = '[EntityRelationMapper] Transactional decision-metadata write failed, rolled back';
+			$this->logDecisionFailure(message: $message, change: $change, error: $writeError);
 			throw $writeError;
-		}//end try
+		}
 
-		// Notify listeners (downstream apps — e.g. DocuDesk's
-		// publication-clearance-via-anonymise change subscribes here to
-		// create a publicationConsent record whenever skipAnonymization
-		// flips false → true, so the 28-day Woo clock starts ticking at
-		// decision time rather than at anonymise time). Failure to
-		// dispatch / listener failure MUST NOT roll back the persisted
-		// state change — log and continue, same contract as audit.
+		$this->notifyDecisionUpdated(relation: $relation, change: $change);
+		return $relation;
+	}//end recordDecisionChange()
+
+	/**
+	 * Tell listeners a relation's decision metadata changed.
+	 *
+	 * Downstream apps subscribe here (DocuDesk's publication-clearance-via-
+	 * anonymise change creates a publicationConsent record whenever
+	 * skipAnonymization flips false to true, so the 28-day Woo clock starts at
+	 * decision time). A dispatch or listener failure MUST NOT roll back the
+	 * persisted change: it is logged and the write stands, same contract as audit.
+	 *
+	 * @param EntityRelation         $relation The stored relation.
+	 * @param DecisionMetadataChange $change   The change that was stored.
+	 *
+	 * @return void
+	 */
+	private function notifyDecisionUpdated(EntityRelation $relation, DecisionMetadataChange $change): void {
 		try {
-			$this->eventDispatcher->dispatchTyped(
-				new EntityRelationDecisionUpdatedEvent(
-					relation: $relation,
-					changedFields: $changedFields,
-					actingUser: ($actingUser ?? $this->userSession->getUser())
-				)
+			$this->entityEvents->entityRelationDecisionUpdated(
+				relation: $relation,
+				changedFields: $change->changedFields,
+				actingUser: $change->actingUser
 			);
 		} catch (\Throwable $dispatchError) {
-			$this->logger->error(
-				message: '[EntityRelationMapper] Failed to dispatch EntityRelationDecisionUpdatedEvent',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'relation_id' => $relationId,
-					'changedKeys' => array_keys($changedFields),
-					'error' => $dispatchError->getMessage(),
-				]
-			);
-		}//end try
+			$message = '[EntityRelationMapper] Failed to dispatch EntityRelationDecisionUpdatedEvent';
+			$this->logDecisionFailure(message: $message, change: $change, error: $dispatchError);
+		}
+	}//end notifyDecisionUpdated()
 
-		return $relation;
-	}//end updateDecisionMetadata()
+	/**
+	 * Log a failed decision-metadata write or dispatch with the relation and the changed keys.
+	 *
+	 * @param string                 $message The log message.
+	 * @param DecisionMetadataChange $change  The change being stored.
+	 * @param \Throwable             $error   The failure.
+	 *
+	 * @return void
+	 */
+	private function logDecisionFailure(string $message, DecisionMetadataChange $change, \Throwable $error): void {
+		$this->logger->error(
+			message: $message,
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'relation_id' => (int)$change->relation->getId(),
+				'changedKeys' => array_keys($change->changedFields),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logDecisionFailure()
 
 	/**
 	 * Reject decision-metadata fields outside the whitelist or of the wrong shape.
@@ -945,18 +957,13 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * encode the subject (table + row id) inside the `changed` JSON
 	 * payload alongside the per-field diff.
 	 *
-	 * @param int $relationId The EntityRelation row id.
-	 * @param array $changedFields Map of field name → { previous, new }.
-	 * @param IUser|null $actingUser Optional explicit acting user.
+	 * @param EntityRelation         $relation The relation as stored now.
+	 * @param DecisionMetadataChange $change   The changed fields and the acting user (already resolved to the session user).
 	 *
 	 * @return void
 	 */
-	private function emitDecisionMetadataAuditEntry(
-		int $relationId,
-		array $changedFields,
-		?IUser $actingUser = null,
-	): void {
-		$user = $actingUser ?? $this->userSession->getUser();
+	private function emitDecisionMetadataAuditEntry(EntityRelation $relation, DecisionMetadataChange $change): void {
+		$user = $change->actingUser;
 		$userId = 'system';
 		if ($user !== null) {
 			$userId = $user->getUID();
@@ -973,8 +980,8 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		$auditTrail->setChanged(
 			[
 				'subjectType' => 'openregister_entity_relations',
-				'subjectId' => $relationId,
-				'fields' => $changedFields,
+				'subjectId' => (int)$relation->getId(),
+				'fields' => $change->changedFields,
 			]
 		);
 
@@ -1013,21 +1020,48 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		bool $guarded = false,
 	): EntityRelation {
 		if ($guarded === true) {
-			$qb = $this->db->getQueryBuilder();
-			$qb->update($this->getTableName())
-				->set('decision_uuid', $qb->createNamedParameter($decisionUuid))
-				->where($qb->expr()->eq('id', $qb->createNamedParameter($relation->getId(), IQueryBuilder::PARAM_INT)));
-			$qb->andWhere($this->storedLinkIs(qb: $qb, expectedUuid: $expectedUuid));
-
-			if ($qb->executeStatement() === 0) {
-				throw new DecisionConflictException(message: 'The relation was decided by somebody else in the meantime.');
-			}
+			$this->swapStoredLink(qb: $this->decisionLinkUpdate(relation: $relation, decisionUuid: $decisionUuid), expectedUuid: $expectedUuid);
 		}
 
 		$relation->setDecisionUuid($decisionUuid);
 
 		return $this->update(entity: $relation);
 	}//end linkDecision()
+
+	/**
+	 * The update that points one relation at a decision, before its guard.
+	 *
+	 * @param EntityRelation $relation     The relation.
+	 * @param string         $decisionUuid The decision's uuid.
+	 *
+	 * @return IQueryBuilder The update.
+	 */
+	private function decisionLinkUpdate(EntityRelation $relation, string $decisionUuid): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('decision_uuid', $qb->createNamedParameter($decisionUuid))
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($relation->getId(), IQueryBuilder::PARAM_INT)));
+
+		return $qb;
+	}//end decisionLinkUpdate()
+
+	/**
+	 * Run a link update only while the stored link is still the expected one.
+	 *
+	 * @param IQueryBuilder $qb           The link update.
+	 * @param string|null   $expectedUuid The link the caller read before deciding (null: none).
+	 *
+	 * @return void
+	 *
+	 * @throws DecisionConflictException When the stored link changed in the meantime.
+	 */
+	private function swapStoredLink(IQueryBuilder $qb, ?string $expectedUuid): void {
+		$qb->andWhere($this->storedLinkIs(qb: $qb, expectedUuid: $expectedUuid));
+
+		if ($qb->executeStatement() === 0) {
+			throw new DecisionConflictException(message: 'The relation was decided by somebody else in the meantime.');
+		}
+	}//end swapStoredLink()
 
 	/**
 	 * The condition "the stored decision link is still what the caller read".

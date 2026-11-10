@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Object\UserDraftActivation;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectDraftControllerFactory;
 use OCA\OpenRegister\Controller\ObjectDraftController;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -29,11 +30,13 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
+use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\OCSController;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -177,7 +180,8 @@ class ObjectDraftControllerTest extends TestCase {
 			activation: $this->activation,
 			session: $this->session,
 			l10n: $l10n,
-			logger: $this->logger
+			logger: $this->logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 	}//end setUp()
 
@@ -211,8 +215,9 @@ class ObjectDraftControllerTest extends TestCase {
 	 */
 	private function activationAnswers(ObjectEntity|\Throwable $answer): void {
 		$this->activation->method('activateAsUser')->willReturnCallback(
-			function (Register $register, Schema $schema, string $draftId, IUser $user, array $changes = []) use ($answer): ObjectEntity {
-				$this->activations[] = ['register' => $register, 'schema' => $schema, 'draftId' => $draftId, 'user' => $user, 'changes' => $changes];
+			function (UserDraftActivation $activation) use ($answer): ObjectEntity {
+				$address             = $activation->address;
+				$this->activations[] = ['register' => $address->register, 'schema' => $address->schema, 'draftId' => $address->draftId, 'user' => $activation->user, 'changes' => $activation->changes];
 				if ($answer instanceof \Throwable) {
 					throw $answer;
 				}
@@ -443,7 +448,8 @@ class ObjectDraftControllerTest extends TestCase {
 			activation: $this->activation,
 			session: $this->session,
 			l10n: $l10n,
-			logger: $this->logger
+			logger: $this->logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 
 		$response = $controller->activate(register: '27', schema: '43', id: 'd1');
@@ -479,7 +485,8 @@ class ObjectDraftControllerTest extends TestCase {
 			activation: $this->activation,
 			session: $this->session,
 			l10n: $l10n,
-			logger: $this->logger
+			logger: $this->logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 
 		$this->assertSame(404, $controller->activate(register: 'service', schema: 'ticket', id: 'd1')->getStatus());

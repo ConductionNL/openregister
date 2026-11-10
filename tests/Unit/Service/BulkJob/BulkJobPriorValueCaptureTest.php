@@ -47,6 +47,8 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobExecutor;
 use OCA\OpenRegister\Service\BulkJob\BulkJobPass;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
+use OCA\OpenRegister\Service\BulkJob\BulkJobActionCall;
+use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -300,7 +302,7 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 			$objects[$uuid] = $this->object($uuid, ['status' => str_repeat('x', 200)]);
 		}
 
-		$this->resolver->method('resolveUuids')->willReturn($uuids);
+		$this->resolver->method('idsOf')->willReturn($uuids);
 		$this->resolver->method('hydrate')->willReturn($objects);
 		$this->registry->method('get')->willReturn($this->reversibleAction());
 		$this->jobMapper->expects($this->never())->method('createFromArray');
@@ -336,7 +338,7 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 		);
 
 		try {
-			$service->create('openregister:set-properties', [], ['ids' => $uuids], null, 'coordinator', 1, 2);
+			$service->create(new BulkJobActionCall('openregister:set-properties', []), new BulkJobSelection(['ids' => $uuids], 1, 2), 'coordinator', null);
 			$this->fail('The undo ceiling should have refused this job.');
 		} catch (BulkJobRefusedException $exception) {
 			$this->assertSame('undo-ceiling', $exception->getReason());

@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -142,9 +143,7 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		$this->service = new SchemaDeletionService(
 			$this->db,
 			new SchemaDeletionStores(
-				$this->magicMapper,
-				$this->createMock(RegisterMapper::class),
-				$this->schemaMapper,
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->schemaMapper, tables: $this->magicMapper),
 				$this->auditTrailMapper
 			),
 			$this->createMock(LoggerInterface::class)
@@ -375,7 +374,7 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 
 		$this->expectException(ObjectStateWriteException::class);
 
-		$this->service->deleteObjectsBySchema(registerId: self::REGISTER_ID, schemaId: 42);
+		$this->service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: 42));
 	}//end testOneFrozenRowRefusesTheSchemaWideDelete()
 
 	/**

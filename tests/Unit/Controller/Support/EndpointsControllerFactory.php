@@ -18,7 +18,7 @@ final class EndpointsControllerFactory {
 	/**
 	 * The constructor arguments of EndpointsController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param EndpointMapperInterface $endpointMapper Constructor argument.
 	 * @param EndpointLogMapperInterface $endpointLogMapper Constructor argument.
@@ -36,7 +36,6 @@ final class EndpointsControllerFactory {
 		\OCA\OpenRegister\Controller\Support\ControllerSession $session,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\EndpointsControllerServices(
 				endpointMapper: $endpointMapper,

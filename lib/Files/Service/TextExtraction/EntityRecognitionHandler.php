@@ -117,62 +117,6 @@ class EntityRecognitionHandler {
 	public const CATEGORY_TEMPORAL_DATA = 'temporal_data';
 
 	/**
-	 * Chunk mapper.
-	 *
-	 * @var ChunkSourceReaderInterface
-	 */
-	private readonly ChunkSourceReaderInterface $chunkMapper;
-
-	/**
-	 * Entity mapper.
-	 *
-	 * @var GdprEntityMapperInterface
-	 */
-	private readonly GdprEntityMapperInterface $entityMapper;
-
-	/**
-	 * Entity relation mapper.
-	 *
-	 * @var EntityRelationMapperInterface
-	 */
-	private readonly EntityRelationMapperInterface $entityRelationMapper;
-
-	/**
-	 * Database connection.
-	 *
-	 * @var IDBConnection
-	 */
-	private readonly IDBConnection $db;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Settings service.
-	 *
-	 * @var SettingsServiceInterface
-	 */
-	private readonly SettingsServiceInterface $settingsService;
-
-	/**
-	 * Backend state + ExApp client.
-	 *
-	 * @var AnonymiserRequestInterface
-	 */
-	private readonly AnonymiserRequestInterface $anonymisationBackendService;
-
-	/**
-	 * App container, consulted lazily for the object mapper.
-	 *
-	 * @var ContainerInterface|null
-	 */
-	private readonly ?ContainerInterface $container;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param EntityRecognitionStores   $stores   Chunk, entity and relation stores plus the DB connection.
@@ -180,18 +124,10 @@ class EntityRecognitionHandler {
 	 * @param LoggerInterface           $logger   Logger.
 	 */
 	public function __construct(
-		EntityRecognitionStores $stores,
-		EntityRecognitionBackends $backends,
-		LoggerInterface $logger,
+		private readonly EntityRecognitionStores $stores,
+		private readonly EntityRecognitionBackends $backends,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->chunkMapper = $stores->chunkMapper;
-		$this->entityMapper = $stores->entityMapper;
-		$this->entityRelationMapper = $stores->entityRelationMapper;
-		$this->db = $stores->db;
-		$this->logger = $logger;
-		$this->settingsService = $backends->settingsService;
-		$this->anonymisationBackendService = $backends->anonymisationBackendService;
-		$this->container = $backends->container;
 	}//end __construct()
 
 	/**
@@ -213,11 +149,31 @@ class EntityRecognitionHandler {
 	 *
 	 * @psalm-return array{chunks_processed: int<0, max>, entities_found: int<0, max>, relations_created: int<0, max>}
 	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-14
+	 */
+	public function processSourceChunks(string $sourceType, int $sourceId, array $options = []): array {
+		return $this->extractEntities(request: new EntityExtractionRequest(sourceType: $sourceType, sourceId: $sourceId, options: $options));
+	}//end processSourceChunks()
+
+	/**
+	 * Extract the entities of every content chunk of one source.
+	 *
+	 * @param EntityExtractionRequest $request The source and the processing options.
+	 *
+	 * @return int[]
+	 *
+	 * @throws Exception When processing fails.
+	 *
+	 * @psalm-return array{chunks_processed: int<0, max>, entities_found: int<0, max>, relations_created: int<0, max>}
+	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Chunk processing requires multiple condition checks
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-14
 	 */
-	public function processSourceChunks(string $sourceType, int $sourceId, array $options = []): array {
+	public function extractEntities(EntityExtractionRequest $request): array {
+		$sourceType = $request->sourceType;
+		$sourceId = $request->sourceId;
+		$options = $request->options;
 		$this->logger->info(
 			message: '[EntityRecognitionHandler] Processing chunks for entity extraction',
 			context: [
@@ -229,7 +185,7 @@ class EntityRecognitionHandler {
 		);
 
 		// Get all chunks for this source (excluding metadata chunks).
-		$chunks = $this->chunkMapper->findBySource(sourceType: $sourceType, sourceId: $sourceId);
+		$chunks = $this->stores->chunkMapper->findBySource(sourceType: $sourceType, sourceId: $sourceId);
 
 		// Filter out metadata chunks (chunk_index = -1).
 		$chunks = array_filter(
@@ -280,7 +236,7 @@ class EntityRecognitionHandler {
 			'entities_found' => $totalEntities,
 			'relations_created' => $totalRelations,
 		];
-	}//end processSourceChunks()
+	}//end extractEntities()
 
 	/**
 	 * Extract entities from a text chunk.
@@ -415,15 +371,8 @@ class EntityRecognitionHandler {
 	private function storeDetectedEntity(array $detected, ChunkEntityScan $scan): array {
 		$chunk = $scan->chunk;
 
-		// Find or create entity. Scrub the value to valid UTF-8: text
-		// extracted from some PDFs contains ill-formed byte sequences
-		// (e.g. a stray 0xC3 lead byte) that PostgreSQL (UTF8) rejects
-		// with SQLSTATE[22021], aborting the insert and losing the entity.
-		$entity = $this->findOrCreateEntity(
-			type: $detected['type'],
-			value: $this->sanitizeUtf8(value: trim((string)($detected['value'] ?? ''))),
-			category: $detected['category'] ?? self::getCategoryForType(type: $detected['type'])
-		);
+		// Find or create entity.
+		$entity = $this->findOrCreateEntity(detected: $detected);
 
 		// Create entity relation.
 		$relation = new EntityRelation();
@@ -433,18 +382,13 @@ class EntityRecognitionHandler {
 		$relation->setPositionEnd($detected['position_end']);
 		$relation->setConfidence($detected['confidence']);
 		$relation->setDetectionMethod($scan->method);
-		$context = $this->extractContext(
-			text: $scan->text,
-			positionStart: $detected['position_start'],
-			positionEnd: $detected['position_end'],
-			window: $scan->contextWindow
-		);
+		$context = $this->extractContext(detected: $detected, scan: $scan);
 		$relation->setContext($this->sanitizeUtf8(value: $context));
 		$relation->setCreatedAt(new DateTime());
 
 		$this->setRelationSource(relation: $relation, chunk: $chunk);
 
-		$this->entityRelationMapper->insert($relation);
+		$this->stores->entityRelationMapper->insert($relation);
 
 		return [
 			'type' => $detected['type'],
@@ -521,7 +465,7 @@ class EntityRecognitionHandler {
 		}
 
 		try {
-			return $this->anonymisationBackendService->getState()->effectiveMethod;
+			return $this->backends->anonymisationBackendService->getState()->effectiveMethod;
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[EntityRecognitionHandler] Could not resolve method "' . $method . '", falling back to regex: ' . $e->getMessage(),
@@ -731,7 +675,7 @@ class EntityRecognitionHandler {
 	 */
 	private function runPresidio(EntityDetectionQuery $query): array {
 		// Get Presidio settings.
-		$fileSettings = $this->settingsService->getFileSettingsOnly();
+		$fileSettings = $this->backends->settingsService->getFileSettingsOnly();
 		// Strip a trailing slash to avoid a double-slash "//analyze" URL
 		// (some servers 404, silently sending the run to the regex fallback).
 		$presidioEndpoint = rtrim(trim((string)($fileSettings['presidioApiEndpoint'] ?? '')), '/');
@@ -744,18 +688,21 @@ class EntityRecognitionHandler {
 			return $this->detectWithRegex(query: $query);
 		}
 
-		$dialect = new AnalyzeDialect(
-			language: 'en',
-			nameMap: null,
-			method: self::METHOD_PRESIDIO,
-			defaultConfidence: 0
+		$request = new AnalyzeRequest(
+			query: $query,
+			dialect: new AnalyzeDialect(
+				language: 'en',
+				nameMap: null,
+				method: self::METHOD_PRESIDIO,
+				defaultConfidence: 0
+			)
 		);
 
 		// Make HTTP request and parse response.
 		$apiResults = $this->postAnalyzeRequest(
 			call: new AnalyzeCall(
 				url: $presidioEndpoint . '/analyze',
-				requestBody: $this->buildAnalyzeRequestBody(query: $query, dialect: $dialect),
+				requestBody: $this->buildAnalyzeRequestBody(request: $request),
 				serviceName: 'Presidio'
 			)
 		);
@@ -770,7 +717,7 @@ class EntityRecognitionHandler {
 		);
 
 		// Convert results to our format.
-		return $this->convertApiResultsToEntities(apiResults: $apiResults, query: $query, dialect: $dialect);
+		return $this->convertApiResultsToEntities(apiResults: $apiResults, request: $request);
 	}//end runPresidio()
 
 	/**
@@ -819,7 +766,7 @@ class EntityRecognitionHandler {
 	 */
 	private function runOpenAnonymiser(EntityDetectionQuery $query): array {
 		// Get OpenAnonymiser settings.
-		$fileSettings = $this->settingsService->getFileSettingsOnly();
+		$fileSettings = $this->backends->settingsService->getFileSettingsOnly();
 		// Strip a trailing slash: a configured endpoint like
 		// "https://host/" would otherwise build "https://host//api/v1/analyze"
 		// (double slash), which some servers 404 — sending the run silently
@@ -828,16 +775,19 @@ class EntityRecognitionHandler {
 		// Source: 'internal' (AppAPI ExApp, default) or 'external' (operator-entered URL).
 		$useExternal = (($fileSettings['openAnonymiserSource'] ?? 'internal') === 'external');
 
-		$dialect = new AnalyzeDialect(
-			language: 'nl',
-			nameMap: self::OPENANONYMISER_ENTITY_NAMES,
-			method: self::METHOD_OPENANONYMISER,
-			defaultConfidence: 0.85
+		$request = new AnalyzeRequest(
+			query: $query,
+			dialect: new AnalyzeDialect(
+				language: 'nl',
+				nameMap: self::OPENANONYMISER_ENTITY_NAMES,
+				method: self::METHOD_OPENANONYMISER,
+				defaultConfidence: 0.85
+			)
 		);
 
 		// Build request body (shared by both transports), in anonymiq's
 		// own entity names: it rejects Presidio's (or#4115).
-		$requestBody = $this->buildAnalyzeRequestBody(query: $query, dialect: $dialect);
+		$requestBody = $this->buildAnalyzeRequestBody(request: $request);
 
 		// A filter anonymiq knows none of asks it for nothing. Sending no
 		// `entities` list would ask it for EVERY type instead.
@@ -874,7 +824,7 @@ class EntityRecognitionHandler {
 		// Convert results to our format.
 		// OpenAnonymiser may return null score for NLP-detected entities (e.g. PERSON).
 		// Treat null as high confidence (0.85) since these are spaCy NER detections.
-		return $this->convertApiResultsToEntities(apiResults: $anonymiserResults, query: $query, dialect: $dialect);
+		return $this->convertApiResultsToEntities(apiResults: $anonymiserResults, request: $request);
 	}//end runOpenAnonymiser()
 
 	/**
@@ -894,9 +844,8 @@ class EntityRecognitionHandler {
 	private function sendOpenAnonymiserRequest(array $requestBody, OpenAnonymiserTransport $transport): ?array {
 		$responseData = null;
 		if ($transport->useExternal === false) {
-			$responseData = $this->anonymisationBackendService->requestOpenAnonymiser(
-				route: '/api/v1/analyze',
-				params: $requestBody
+			$responseData = $this->backends->anonymisationBackendService->requestOpenAnonymiser(
+				call: new \OCA\OpenRegister\Service\Anonymisation\AnonymiserCall(route: '/api/v1/analyze', params: $requestBody, method: 'POST')
 			);
 		}
 
@@ -954,7 +903,7 @@ class EntityRecognitionHandler {
 			return [];
 		}
 
-		$password = $this->settingsService->getOpenAnonymiserPassword();
+		$password = $this->backends->settingsService->getOpenAnonymiserPassword();
 
 		return ['Authorization: Basic '.base64_encode($username.':'.$password)];
 	}//end openAnonymiserAuthHeaders()
@@ -964,12 +913,13 @@ class EntityRecognitionHandler {
 	 *
 	 * Constructs the JSON request payload with text, language, and optional entity type filters.
 	 *
-	 * @param EntityDetectionQuery $query   Text and entity filter (null = all).
-	 * @param AnalyzeDialect       $dialect Language and the backend's entity names.
+	 * @param AnalyzeRequest $request Text and entity filter (null = all), language and the backend's entity names.
 	 *
 	 * @return array The request body array ready for JSON encoding.
 	 */
-	private function buildAnalyzeRequestBody(EntityDetectionQuery $query, AnalyzeDialect $dialect): array {
+	private function buildAnalyzeRequestBody(AnalyzeRequest $request): array {
+		$query   = $request->query;
+		$dialect = $request->dialect;
 		$requestBody = [
 			'text' => $query->text,
 			'language' => $dialect->language,
@@ -1054,7 +1004,8 @@ class EntityRecognitionHandler {
 			return null;
 		}
 
-		$this->refuseRequestError(serviceName: $serviceName, httpCode: $httpCode, response: $response);
+		$reply = new AnalyzeResponse(status: $httpCode, body: $response);
+		$this->refuseRequestError(serviceName: $serviceName, response: $reply);
 
 		if ($httpCode !== 200) {
 			$this->logger->error(
@@ -1064,28 +1015,28 @@ class EntityRecognitionHandler {
 			return null;
 		}
 
-		return $this->decodeAnalyzeResponse(serviceName: $serviceName, response: $response);
+		return $this->decodeAnalyzeResponse(serviceName: $serviceName, response: $reply);
 	}//end postAnalyzeRequest()
 
 	/**
 	 * Throw when the service answered with a request (4xx) error.
 	 *
-	 * @param string $serviceName Human-readable service name.
-	 * @param mixed  $httpCode    The HTTP status curl reported.
-	 * @param mixed  $response    The raw response body.
+	 * @param string          $serviceName Human-readable service name.
+	 * @param AnalyzeResponse $response    The HTTP status curl reported and the raw response body.
 	 *
 	 * @return void
 	 *
 	 * @throws AnalyzeRequestRejectedException When the status is a request error.
 	 */
-	private function refuseRequestError(string $serviceName, mixed $httpCode, mixed $response): void {
+	private function refuseRequestError(string $serviceName, AnalyzeResponse $response): void {
+		$httpCode = $response->status;
 		if (is_int($httpCode) === false || AnalyzeRequestRejectedException::isRequestError(status: $httpCode) === false) {
 			return;
 		}
 
 		$detail = '';
-		if (is_string($response) === true) {
-			$detail = $response;
+		if (is_string($response->body) === true) {
+			$detail = $response->body;
 		}
 
 		throw new AnalyzeRequestRejectedException(service: $serviceName, status: $httpCode, detail: $detail);
@@ -1094,13 +1045,14 @@ class EntityRecognitionHandler {
 	/**
 	 * Decode a 200 analyze response body.
 	 *
-	 * @param string $serviceName Human-readable service name for log messages.
-	 * @param mixed  $response    The raw response body.
+	 * @param string          $serviceName Human-readable service name for log messages.
+	 * @param AnalyzeResponse $response    The raw response body.
 	 *
 	 * @return array|null The decoded array, or null when the body is not a JSON array.
 	 */
-	private function decodeAnalyzeResponse(string $serviceName, mixed $response): ?array {
-		if (is_string($response) === false) {
+	private function decodeAnalyzeResponse(string $serviceName, AnalyzeResponse $response): ?array {
+		$body = $response->body;
+		if (is_string($body) === false) {
 			$this->logger->error(
 				message: "[EntityRecognitionHandler] {$serviceName} returned non-string response",
 				context: ['file' => __FILE__, 'line' => __LINE__]
@@ -1108,7 +1060,7 @@ class EntityRecognitionHandler {
 			return null;
 		}
 
-		$decoded = json_decode($response, true);
+		$decoded = json_decode($body, true);
 		if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
 			$this->logger->error(
 				message: "[EntityRecognitionHandler] Failed to parse {$serviceName} response",
@@ -1126,13 +1078,15 @@ class EntityRecognitionHandler {
 	 * Handles both Presidio-style and OpenAnonymiser-style result arrays, extracting
 	 * entity type, value, position, and confidence for each detected entity.
 	 *
-	 * @param array                $apiResults Array of entity detection results from the API.
-	 * @param EntityDetectionQuery $query      The analysed text and the minimum confidence to include.
-	 * @param AnalyzeDialect       $dialect    The detection method and the default confidence for a missing score.
+	 * @param array          $apiResults Array of entity detection results from the API.
+	 * @param AnalyzeRequest $request    The analysed text, the minimum confidence to include, the detection
+	 *                                   method and the default confidence for a missing score.
 	 *
 	 * @return array Array of entities in our internal format.
 	 */
-	private function convertApiResultsToEntities(array $apiResults, EntityDetectionQuery $query, AnalyzeDialect $dialect): array {
+	private function convertApiResultsToEntities(array $apiResults, AnalyzeRequest $request): array {
+		$query    = $request->query;
+		$dialect  = $request->dialect;
 		$entities = [];
 
 		foreach ($apiResults as $result) {
@@ -1258,9 +1212,7 @@ class EntityRecognitionHandler {
 	/**
 	 * Find or create an entity.
 	 *
-	 * @param string $type Entity type.
-	 * @param string $value Entity value.
-	 * @param string $category Entity category.
+	 * @param array $detected One detected entity: its type, value and (optional) category.
 	 *
 	 * @return GdprEntity Entity instance.
 	 *
@@ -1268,10 +1220,18 @@ class EntityRecognitionHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 */
-	private function findOrCreateEntity(string $type, string $value, string $category): GdprEntity {
+	private function findOrCreateEntity(array $detected): GdprEntity {
+		$type = $detected['type'];
+		// Scrub the value to valid UTF-8: text extracted from some PDFs
+		// contains ill-formed byte sequences (e.g. a stray 0xC3 lead byte)
+		// that PostgreSQL (UTF8) rejects with SQLSTATE[22021], aborting the
+		// insert and losing the entity.
+		$value    = $this->sanitizeUtf8(value: trim((string)($detected['value'] ?? '')));
+		$category = ($detected['category'] ?? self::getCategoryForType(type: $type));
+
 		// Try to find existing entity by value and type.
 		try {
-			$qb = $this->db->getQueryBuilder();
+			$qb = $this->stores->db->getQueryBuilder();
 			$qb->select('*')
 				->from('openregister_entities')
 				->where($qb->expr()->eq('type', $qb->createNamedParameter($type)))
@@ -1282,12 +1242,12 @@ class EntityRecognitionHandler {
 			 * @psalm-suppress InaccessibleMethod - findEntities is accessible via inheritance.
 			 */
 
-			$existingEntities = $this->entityMapper->findEntitiesPublic($qb);
+			$existingEntities = $this->stores->entityMapper->findEntitiesPublic($qb);
 			if (empty($existingEntities) === false) {
 				$existing = $existingEntities[0];
 				// Update timestamp.
 				$existing->setUpdatedAt(new DateTime());
-				$this->entityMapper->update($existing);
+				$this->stores->entityMapper->update($existing);
 				return $existing;
 			}
 
@@ -1303,7 +1263,7 @@ class EntityRecognitionHandler {
 			$entity->setDetectedAt(new DateTime());
 			$entity->setUpdatedAt(new DateTime());
 
-			return $this->entityMapper->insert($entity);
+			return $this->stores->entityMapper->insert($entity);
 		}//end try
 	}//end findOrCreateEntity()
 
@@ -1339,18 +1299,16 @@ class EntityRecognitionHandler {
 	/**
 	 * Extract context around entity position.
 	 *
-	 * @param string $text Full text.
-	 * @param int $positionStart Start position.
-	 * @param int $positionEnd End position.
-	 * @param int $window Context window size.
+	 * @param array           $detected One detected entity: its start and end position.
+	 * @param ChunkEntityScan $scan     The full text and the context window size.
 	 *
 	 * @return string Context string.
 	 */
-	private function extractContext(string $text, int $positionStart, int $positionEnd, int $window): string {
-		$start = max(0, $positionStart - $window);
-		$end = min(strlen($text), $positionEnd + $window);
+	private function extractContext(array $detected, ChunkEntityScan $scan): string {
+		$start = max(0, $detected['position_start'] - $scan->contextWindow);
+		$end = min(strlen($scan->text), $detected['position_end'] + $scan->contextWindow);
 
-		return substr($text, $start, $end - $start);
+		return substr($scan->text, $start, $end - $start);
 	}//end extractContext()
 
 	/**
@@ -1409,12 +1367,12 @@ class EntityRecognitionHandler {
 		// graph reaches back into this service's collaborators), never through
 		// `\OC::$server`: outside a booted Nextcloud that autowires an unbounded
 		// cycle and eats all memory (19 GB on 2026-09-08).
-		if ($this->container === null) {
+		if ($this->backends->container === null) {
 			return;
 		}
 
 		try {
-			$objectMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
+			$objectMapper = $this->backends->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 			$object = $objectMapper->find(
 				$objectId,
 				_rbac: false,

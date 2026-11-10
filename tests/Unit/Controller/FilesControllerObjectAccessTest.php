@@ -39,6 +39,7 @@ use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Files\Service\File\OfficeSession;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionToken;
+use OCA\OpenRegister\Files\Service\File\OfficeOpenRequest;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -189,7 +190,6 @@ class FilesControllerObjectAccessTest extends TestCase {
 		);
 
 		return FilesControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->fileService,
 			$this->objectService,
@@ -317,8 +317,9 @@ class FilesControllerObjectAccessTest extends TestCase {
 		$this->fileService->method('getFile')->willReturn($file);
 
 		$service = $this->createMock(OfficeSessionService::class);
-		$service->method('open')->willReturnCallback(
-			static function (File $file, string $editorUid, string $displayName, bool $canWrite) use (&$issued): OfficeSession {
+		$service->method('openSession')->willReturnCallback(
+			static function (OfficeOpenRequest $request) use (&$issued): OfficeSession {
+				$canWrite = $request->canWrite;
 				$issued[] = $canWrite;
 				return new OfficeSession(
 					urlSrc: 'https://office.test/browser/cool.html?',

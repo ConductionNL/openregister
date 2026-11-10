@@ -103,39 +103,36 @@ class AnonymisationRun {
 	/**
 	 * Why this record may not be anonymised now, if it may not.
 	 *
-	 * @param array<string, mixed> $marker          Its anonymisation marker, if any.
-	 * @param bool                 $hasLegalHold    Whether a hold is active.
-	 * @param string               $holdReason      The hold's reason, for the refusal.
-	 * @param string               $saltFingerprint The salt this run would use.
+	 * @param AnonymisationClearance $clearance Its marker, its legal hold and the salt this run would use.
 	 *
 	 * @return string|null The refusal, or null when it may run.
 	 *
 	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
-	public function refuse(array $marker, bool $hasLegalHold, string $holdReason, string $saltFingerprint): ?string {
-		if ($hasLegalHold === true) {
-			return $this->heldRefusal(holdReason: $holdReason);
+	public function refuse(AnonymisationClearance $clearance): ?string {
+		if ($clearance->hasLegalHold === true) {
+			return $this->heldRefusal(holdReason: $clearance->holdReason);
 		}
 
-		$state = (string)($marker['state'] ?? '');
+		$state = (string)($clearance->marker['state'] ?? '');
 		if ($state === self::COMPLETE) {
-			return $this->finishedRefusal(marker: $marker);
+			return $this->finishedRefusal(marker: $clearance->marker);
 		}
 
-		return $this->resaltedRefusal(state: $state, marker: $marker, saltFingerprint: $saltFingerprint);
+		return $this->resaltedRefusal(state: $state, clearance: $clearance);
 	}//end refuse()
 
 	/**
 	 * The refusal for a record left half anonymised under another salt, or null.
 	 *
-	 * @param string               $state           The marker's state.
-	 * @param array<string, mixed> $marker          Its anonymisation marker.
-	 * @param string               $saltFingerprint The salt this run would use.
+	 * @param string                 $state     The marker's state.
+	 * @param AnonymisationClearance $clearance Its marker and the salt this run would use.
 	 *
 	 * @return string|null The refusal, or null when it may run.
 	 */
-	private function resaltedRefusal(string $state, array $marker, string $saltFingerprint): string|null {
-		if ($state === self::IN_PROGRESS && (string)($marker['saltFingerprint'] ?? '') !== $saltFingerprint) {
+	private function resaltedRefusal(string $state, AnonymisationClearance $clearance): string|null {
+		$recorded = (string)($clearance->marker['saltFingerprint'] ?? '');
+		if ($state === self::IN_PROGRESS && $recorded !== $clearance->saltFingerprint) {
 			return 'This record was left half anonymised under a different salt. Finishing it now would '
 				.'leave one record carrying two families of pseudonym, so it needs the original salt '
 				.'or a decision to start again.';
@@ -185,11 +182,8 @@ class AnonymisationRun {
 	/**
 	 * Build the plan for one record, or refuse it.
 	 *
-	 * @param string               $objectUuid      The record.
-	 * @param array<string, mixed> $payload         Its properties.
-	 * @param array<string, mixed> $annotation      Its schema's archival annotation.
-	 * @param string               $salt            The instance salt.
-	 * @param string               $profileName     What to call the profile in the report.
+	 * @param AnonymisationSubject $subject The record: its uuid, payload, archival annotation and profile name.
+	 * @param string               $salt    The instance salt.
 	 *
 	 * @return AnonymisationPlan The plan.
 	 *
@@ -197,15 +191,19 @@ class AnonymisationRun {
 	 *
 	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
-	public function plan(string $objectUuid, array $payload, array $annotation, string $salt, string $profileName = ''): AnonymisationPlan {
+	public function plan(AnonymisationSubject $subject, string $salt): AnonymisationPlan {
+		[$objectUuid, $payload, $annotation, $profileName] = [$subject->objectUuid, $subject->payload, $subject->annotation, $subject->profileName];
 		$this->planner->assertSound(annotation: $annotation, declaredProperties: array_keys($payload));
 
-		$after = $this->service->apply(payload: $payload, profile: $this->planner->profileOf(annotation: $annotation), salt: $salt);
-		$report = $this->service->report(before: $payload, after: $after, profileName: $profileName);
+		$profile = new SaltedProfile(rules: $this->planner->profileOf(annotation: $annotation), salt: $salt);
+		$after = $this->service->apply(payload: $payload, profile: $profile);
+		$report = $this->service->report(change: new PayloadChange(before: $payload, after: $after), profileName: $profileName);
 
+		$change = new AnonymisedPayload(
+			before: $payload, after: $after, changedProperties: array_keys($report['changed']), keptProperties: $report['kept']
+		);
 		$plan = new AnonymisationPlan(
-			objectUuid: $objectUuid, profileName: $profileName, before: $payload, after: $after,
-			changedProperties: array_keys($report['changed']), keptProperties: $report['kept'], saltFingerprint: $this->fingerprint(salt: $salt)
+			objectUuid: $objectUuid, profileName: $profileName, payload: $change, saltFingerprint: $this->fingerprint(salt: $salt)
 		);
 
 		if ($plan->touchesAnything() === false) {
@@ -245,10 +243,10 @@ class AnonymisationRun {
 			$this->prepareTarget(plan: $plan, target: $target);
 		}
 
-		$applied = [];
+		$write = new TargetWriteRun(plan: $plan);
 		foreach ($targets as $target) {
-			$this->applyTarget(plan: $plan, target: $target, applied: $applied);
-			$applied[] = $target->name();
+			$this->applyTarget(write: $write, target: $target);
+			$write->applied[] = $target->name();
 		}
 
 		return $this->marker(plan: $plan, state: self::COMPLETE);
@@ -289,20 +287,19 @@ class AnonymisationRun {
 	 * record is marked in_progress with this salt, so a resume re-derives the
 	 * same plan and re-applies every target.
 	 *
-	 * @param AnonymisationPlan   $plan    The plan.
-	 * @param AnonymisationTarget $target  The target.
-	 * @param string[]            $applied The targets already written.
+	 * @param TargetWriteRun      $write  The plan and the targets already written.
+	 * @param AnonymisationTarget $target The target.
 	 *
 	 * @return void
 	 *
 	 * @throws AnonymisationRefusedException When the write fails.
 	 */
-	private function applyTarget(AnonymisationPlan $plan, AnonymisationTarget $target, array $applied): void {
+	private function applyTarget(TargetWriteRun $write, AnonymisationTarget $target): void {
 		try {
-			$target->apply(plan: $plan);
+			$target->apply(plan: $write->plan);
 		} catch (Throwable $error) {
 			throw new AnonymisationRefusedException(
-				message: $this->interruptedMessage(plan: $plan, target: $target, applied: $applied, error: $error),
+				message: $this->interruptedMessage(write: $write, target: $target).$error->getMessage(),
 				previous: $error
 			);
 		}
@@ -311,27 +308,26 @@ class AnonymisationRun {
 	/**
 	 * What an interrupted run says: how far it got, and that it is not finished.
 	 *
-	 * @param AnonymisationPlan   $plan    The plan.
-	 * @param AnonymisationTarget $target  The target that failed.
-	 * @param string[]            $applied The targets already written.
-	 * @param Throwable           $error   The failure.
+	 * The failure's own message follows it.
 	 *
-	 * @return string The message.
+	 * @param TargetWriteRun      $write  The plan and the targets already written.
+	 * @param AnonymisationTarget $target The target that failed.
+	 *
+	 * @return string The message, up to the failure's own.
 	 */
-	private function interruptedMessage(AnonymisationPlan $plan, AnonymisationTarget $target, array $applied, Throwable $error): string {
+	private function interruptedMessage(TargetWriteRun $write, AnonymisationTarget $target): string {
 		$written = 'no store was written';
-		if ($applied !== []) {
-			$written = 'writing '.implode(', ', $applied);
+		if ($write->applied !== []) {
+			$written = 'writing '.implode(', ', $write->applied);
 		}
 
 		return sprintf(
 			'Anonymising %s was interrupted after %s. The record is marked in progress and '
 			.'can be finished by running it again with the same salt; it must not be '
-			.'treated as anonymised until it is. %s failed: %s',
-			$plan->objectUuid,
+			.'treated as anonymised until it is. %s failed: ',
+			$write->plan->objectUuid,
 			$written,
-			$target->name(),
-			$error->getMessage()
+			$target->name()
 		);
 	}//end interruptedMessage()
 

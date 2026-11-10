@@ -28,6 +28,8 @@ namespace Unit\Service\Import;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
 use OCA\OpenRegister\Db\ImportPreviewRow;
@@ -228,7 +230,11 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$this->service = new ImportPreviewService(
 			new ImportPreviewStore($previewMapper, $rowMapper, new SourceRowReader(), new NullLogger()),
 			new ImportPreviewMatching($this->matchResolver, $this->mappingEngine, $this->packService, $this->importService),
-			new ImportPreviewTargets($this->registerMapper, $this->schemaMapper, $this->validateObject, $this->objectService)
+			new ImportPreviewTargets(
+				new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)),
+				$this->validateObject,
+				$this->objectService
+			)
 		);
 	}
 
@@ -274,7 +280,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 	}
 
 	private function transformAsIs(): void {
-		$this->importService->method('transformCsvRowToObject')->willReturnCallback(
+		$this->importService->method('transformCsvRow')->willReturnCallback(
 			static fn (array $rowData): array => $rowData
 		);
 	}
@@ -357,7 +363,11 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 				new NullLogger()
 			),
 			new ImportPreviewMatching($this->matchResolver, $this->mappingEngine, $this->packService, $this->importService),
-			new ImportPreviewTargets($this->registerMapper, $throwing, $this->validateObject, $this->objectService)
+			new ImportPreviewTargets(
+				new SchemaCatalog($this->registerMapper, $throwing, $this->createMock(MagicMapperInterface::class)),
+				$this->validateObject,
+				$this->objectService
+			)
 		);
 
 		$this->expectException(InvalidArgumentException::class);
@@ -412,7 +422,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 				],
 			]
 		);
-		$this->importService->expects($this->never())->method('transformCsvRowToObject');
+		$this->importService->expects($this->never())->method('transformCsvRow');
 
 		$preview = $this->service->preview($this->params($path, ['packSlug' => 'zaken-v1']));
 
@@ -430,7 +440,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$this->mappingEngine->method('mapRow')->willReturn(['data' => ['bsn' => 'mapped'], 'errors' => []]);
 		$this->transformAsIs();
 		$this->valid();
-		$this->matchResolver->method('resolve')->willReturn(['object-1']);
+		$this->matchResolver->method('matchesOf')->willReturn(['object-1']);
 
 		$this->service->preview($this->params($path, ['packSlug' => 'zaken-v1']));
 
@@ -442,7 +452,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 
 	public function testATransformThatThrowsRefusesTheRow(): void {
 		$path = $this->file("bsn\n1\n");
-		$this->importService->method('transformCsvRowToObject')->willThrowException(new RuntimeException('bad date'));
+		$this->importService->method('transformCsvRow')->willThrowException(new RuntimeException('bad date'));
 
 		$this->service->preview($this->params($path));
 
@@ -458,7 +468,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$result->method('isValid')->willReturn(false);
 		$this->validateObject->method('validateObject')->willReturn($result);
 		$this->validateObject->method('generateErrorMessage')->willReturn('bsn must be 9 digits');
-		$this->matchResolver->expects($this->never())->method('resolve');
+		$this->matchResolver->expects($this->never())->method('matchesOf');
 
 		$this->service->preview($this->params($path));
 
@@ -474,7 +484,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$path = $this->file("bsn\n1\n");
 		$this->transformAsIs();
 		$this->valid();
-		$this->matchResolver->method('resolve')->willThrowException(
+		$this->matchResolver->method('matchesOf')->willThrowException(
 			new MatchLookupFailedException('The match key could not be resolved: db down')
 		);
 
@@ -491,7 +501,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$path = $this->file("bsn\n1\n");
 		$this->transformAsIs();
 		$this->valid();
-		$this->matchResolver->method('resolve')->willReturn([]);
+		$this->matchResolver->method('matchesOf')->willReturn([]);
 
 		$this->service->preview($this->params($path, ['policy' => ConflictPolicy::UPDATE_ONLY]));
 
@@ -503,7 +513,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$path = $this->file("bsn\n1\n2\n");
 		$this->transformAsIs();
 		$this->valid();
-		$this->matchResolver->method('resolve')->willReturn([]);
+		$this->matchResolver->method('matchesOf')->willReturn([]);
 		$preview = $this->service->preview($this->params($path));
 
 		$user = $this->createMock(IUser::class);
@@ -542,7 +552,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$path = $this->file("bsn\n1\n");
 		$this->transformAsIs();
 		$this->valid();
-		$this->matchResolver->method('resolve')->willReturn([]);
+		$this->matchResolver->method('matchesOf')->willReturn([]);
 		$preview = $this->service->preview($this->params($path));
 		$id = $this->rows[0]->getPayload()['@self']['id'];
 
@@ -583,7 +593,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$path = $this->file("bsn\n1\n");
 		$this->transformAsIs();
 		$this->valid();
-		$this->matchResolver->method('resolve')->willReturn([]);
+		$this->matchResolver->method('matchesOf')->willReturn([]);
 		$preview = $this->service->preview($this->params($path));
 
 		$this->objectService->method('saveObjects')->willReturn(['saved' => []]);
@@ -598,7 +608,11 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 				new NullLogger()
 			),
 			new ImportPreviewMatching($this->matchResolver, $this->mappingEngine, $this->packService, $this->importService),
-			new ImportPreviewTargets($this->registerMapper, $this->schemaMapper, $this->validateObject, $this->objectService)
+			new ImportPreviewTargets(
+				new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)),
+				$this->validateObject,
+				$this->objectService
+			)
 		);
 
 		try {

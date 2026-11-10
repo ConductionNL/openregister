@@ -27,7 +27,9 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Rules\ConditionRefusedException;
+use OCA\OpenRegister\Service\Rules\RelativeTimeCheck;
 use OCA\OpenRegister\Service\Rules\RelativeTimeCondition;
+use OCA\OpenRegister\Service\Rules\RelativeTimeMoment;
 use OCA\OpenRegister\Tests\Unit\Service\Flow\Timer\WorkingCalendarTest;
 use PHPUnit\Framework\TestCase;
 
@@ -88,9 +90,7 @@ class RelativeTimeConditionTest extends TestCase {
 		$this->assertTrue(
 			$this->condition->holds(
 				node: $this->threeWorkingHoursOld(),
-				document: ['createdAt' => '2026-09-11T16:30:00+02:00'],
-				now: new DateTimeImmutable('2026-09-14T09:30:00+02:00'),
-				calendar: $this->calendar
+				check: new RelativeTimeCheck(document: ['createdAt' => '2026-09-11T16:30:00+02:00'], moment: new RelativeTimeMoment(now: new DateTimeImmutable('2026-09-14T09:30:00+02:00'), calendar: $this->calendar))
 			),
 			'Friday afternoon to Monday morning is more than three working hours'
 		);
@@ -110,9 +110,7 @@ class RelativeTimeConditionTest extends TestCase {
 		$this->assertFalse(
 			$this->condition->holds(
 				node: $this->threeWorkingHoursOld(),
-				document: ['createdAt' => '2026-09-11T16:30:00+02:00'],
-				now: new DateTimeImmutable('2026-09-12T09:30:00+02:00'),
-				calendar: $this->calendar
+				check: new RelativeTimeCheck(document: ['createdAt' => '2026-09-11T16:30:00+02:00'], moment: new RelativeTimeMoment(now: new DateTimeImmutable('2026-09-12T09:30:00+02:00'), calendar: $this->calendar))
 			),
 			'seventeen wall-clock hours have passed, but not three working ones'
 		);
@@ -133,9 +131,7 @@ class RelativeTimeConditionTest extends TestCase {
 		$this->assertTrue(
 			$this->condition->holds(
 				node: $node,
-				document: ['createdAt' => '2026-09-11T16:30:00+02:00'],
-				now: new DateTimeImmutable('2026-09-12T09:30:00+02:00'),
-				calendar: $this->calendar
+				check: new RelativeTimeCheck(document: ['createdAt' => '2026-09-11T16:30:00+02:00'], moment: new RelativeTimeMoment(now: new DateTimeImmutable('2026-09-12T09:30:00+02:00'), calendar: $this->calendar))
 			),
 			'the control: in wall-clock hours the weekend counts, and that is the difference the unit makes'
 		);
@@ -149,8 +145,7 @@ class RelativeTimeConditionTest extends TestCase {
 	public function testTheComparisonCompilesToOneIndexedComparison(): void {
 		$compiled = $this->condition->compile(
 			node: $this->threeWorkingHoursOld(),
-			now: new DateTimeImmutable('2026-09-14T09:30:00+02:00'),
-			calendar: $this->calendar
+			moment: new RelativeTimeMoment(now: new DateTimeImmutable('2026-09-14T09:30:00+02:00'), calendar: $this->calendar)
 		);
 
 		$this->assertSame('createdAt', $compiled['property']);
@@ -184,17 +179,14 @@ class RelativeTimeConditionTest extends TestCase {
 
 		$compiled = $this->condition->compile(
 			node: $node,
-			now: new DateTimeImmutable('2026-09-14T09:30:00+02:00'),
-			calendar: $this->calendar
+			moment: new RelativeTimeMoment(now: new DateTimeImmutable('2026-09-14T09:30:00+02:00'), calendar: $this->calendar)
 		);
 
 		$this->assertSame('>', $compiled['operator']);
 		$this->assertTrue(
 			$this->condition->holds(
 				node: $node,
-				document: ['createdAt' => '2026-09-14T09:00:00+02:00'],
-				now: new DateTimeImmutable('2026-09-14T09:30:00+02:00'),
-				calendar: $this->calendar
+				check: new RelativeTimeCheck(document: ['createdAt' => '2026-09-14T09:00:00+02:00'], moment: new RelativeTimeMoment(now: new DateTimeImmutable('2026-09-14T09:30:00+02:00'), calendar: $this->calendar))
 			),
 			'half an hour old is younger than three hours'
 		);
@@ -230,9 +222,7 @@ class RelativeTimeConditionTest extends TestCase {
 
 		$this->condition->holds(
 			node: $this->threeWorkingHoursOld(),
-			document: ['createdAt' => '2026-09-11T16:30:00+02:00'],
-			now: new DateTimeImmutable('2026-09-14T09:30:00+02:00'),
-			calendar: null
+			check: new RelativeTimeCheck(document: ['createdAt' => '2026-09-11T16:30:00+02:00'], moment: new RelativeTimeMoment(now: new DateTimeImmutable('2026-09-14T09:30:00+02:00'), calendar: null))
 		);
 	}//end testABusinessUnitWithNoCalendarIsNotDowngradedAtEvaluation()
 
@@ -255,9 +245,7 @@ class RelativeTimeConditionTest extends TestCase {
 		$this->assertTrue(
 			$this->condition->holds(
 				node: $node,
-				document: ['createdAt' => '2026-09-10T09:00:00+02:00'],
-				now: new DateTimeImmutable('2026-09-14T09:00:00+02:00'),
-				calendar: null
+				check: new RelativeTimeCheck(document: ['createdAt' => '2026-09-10T09:00:00+02:00'], moment: new RelativeTimeMoment(now: new DateTimeImmutable('2026-09-14T09:00:00+02:00'), calendar: null))
 			)
 		);
 	}//end testAWallClockUnitNeedsNoCalendar()
@@ -329,9 +317,7 @@ class RelativeTimeConditionTest extends TestCase {
 			try {
 				$this->condition->holds(
 					node: $this->threeWorkingHoursOld(),
-					document: $document,
-					now: new DateTimeImmutable('2026-09-14T09:30:00+02:00'),
-					calendar: $this->calendar
+					check: new RelativeTimeCheck(document: $document, moment: new RelativeTimeMoment(now: new DateTimeImmutable('2026-09-14T09:30:00+02:00'), calendar: $this->calendar))
 				);
 				$this->fail('an object the rule cannot judge must not be silently excluded from every sweep');
 			} catch (ConditionRefusedException $e) {
@@ -350,16 +336,14 @@ class RelativeTimeConditionTest extends TestCase {
 	 */
 	public function testThePhpVerdictAndTheCompiledComparisonAgree(): void {
 		$now = new DateTimeImmutable('2026-09-14T09:30:00+02:00');
-		$compiled = $this->condition->compile(node: $this->threeWorkingHoursOld(), now: $now, calendar: $this->calendar);
+		$compiled = $this->condition->compile(node: $this->threeWorkingHoursOld(), moment: new RelativeTimeMoment(now: $now, calendar: $this->calendar));
 		$threshold = new DateTimeImmutable($compiled['value']);
 
 		foreach (['2026-09-11T16:30:00+02:00', '2026-09-14T09:29:00+02:00', '2026-09-14T00:30:00+02:00'] as $created) {
 			$byQuery = ((new DateTimeImmutable($created))->getTimestamp() <= $threshold->getTimestamp());
 			$byPhp = $this->condition->holds(
 				node: $this->threeWorkingHoursOld(),
-				document: ['createdAt' => $created],
-				now: $now,
-				calendar: $this->calendar
+				check: new RelativeTimeCheck(document: ['createdAt' => $created], moment: new RelativeTimeMoment(now: $now, calendar: $this->calendar))
 			);
 
 			$this->assertSame($byQuery, $byPhp, sprintf('the two verdicts differ for %s', $created));
@@ -375,7 +359,7 @@ class RelativeTimeConditionTest extends TestCase {
 		$this->assertFalse($this->condition->isRelativeTime(node: ['==' => [['var' => 'status'], 'open']]));
 		$this->assertNull($this->condition->refusalFor(node: ['==' => []], calendar: null));
 		$this->assertNull(
-			$this->condition->compile(node: ['==' => []], now: new DateTimeImmutable(), calendar: null)
+			$this->condition->compile(node: ['==' => []], moment: new RelativeTimeMoment(now: new DateTimeImmutable(), calendar: null))
 		);
 	}//end testAnOrdinaryNodeIsLeftAlone()
 }//end class

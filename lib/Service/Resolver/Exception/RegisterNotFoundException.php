@@ -45,10 +45,9 @@ class RegisterNotFoundException extends UnresolvedValueException {
 	 */
 	public function __construct(string $appId, string $configKey, string $resolvedValue, ?Exception $previous = null) {
 		parent::__construct(
-			appId: $appId,
-			configKey: $configKey,
+			config: new ResolverConfigKey(appId: $appId, configKey: $configKey),
 			resolvedValue: $resolvedValue,
-			message: self::notInTenant(kind: 'Register', appId: $appId, configKey: $configKey, resolvedValue: $resolvedValue),
+			message: (new ResolverConfigKey(appId: $appId, configKey: $configKey))->notInTenant(kind: 'Register', resolvedValue: $resolvedValue),
 			previous: $previous
 		);
 	}//end __construct()

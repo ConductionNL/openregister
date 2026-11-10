@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calendar;
 
-use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\WriteCause;
 
@@ -65,7 +64,6 @@ interface AppointmentAttendeeServiceInterface {
 	 * @param string $attendee The invitee identifier, as the object stores it.
 	 * @param string $status One of STATUSES.
 	 * @param string|null $respondedBy The principal that submitted the answer.
-	 * @param DateTimeInterface|null $respondedAt When the answer arrived; defaults to now.
 	 *
 	 * @return array<int, array<string, mixed>> The full response list after the write.
 	 *
@@ -80,8 +78,20 @@ interface AppointmentAttendeeServiceInterface {
 		string $attendee,
 		string $status,
 		?string $respondedBy = null,
-		?DateTimeInterface $respondedAt = null,
 	): array;
+
+	/**
+	 * Record one invitee's answer on the object, as recordResponse() does.
+	 *
+	 * @param AttendeeResponse $response The answer as submitted.
+	 *
+	 * @return array<int, array<string, mixed>> The full response list after the write.
+	 *
+	 * @throws InvalidArgumentException When the status is not an answer, or the object is unknown.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	public function recordAttendeeResponse(AttendeeResponse $response): array;
 
 	/**
 	 * The answers recorded on an object, as stored.

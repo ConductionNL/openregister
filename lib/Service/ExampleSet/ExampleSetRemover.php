@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use Closure;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Removes an installed example set.
@@ -62,23 +63,37 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	];
 
 	/**
+	 * Accounts and groups.
+	 *
+	 * @var ExampleSetAccounts
+	 */
+	private readonly ExampleSetAccounts $accounts;
+
+	/**
+	 * Deletes the tasks and saved views the set wrote; null names them as failed.
+	 *
+	 * @var ExampleSetEngineKinds|null
+	 */
+	private readonly ?ExampleSetEngineKinds $engineRows;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ExampleSetRemoverObjects   $objects    Register access, the record, files and changes.
-	 * @param ExampleSetRemoverSettings  $settings   App config, user preferences, register imports and organisations.
-	 * @param ExampleSetAccounts         $accounts   Accounts and groups.
-	 * @param ExampleSetEngineKinds|null $engineRows Deletes the tasks and saved views the set wrote; null names them as failed.
-	 * @param ExampleSetLock|null        $lock       One install or removal of a set at a time; null holds nothing.
+	 * @param ExampleSetRemoverObjects  $objects  Register access, the record, files and changes.
+	 * @param ExampleSetRemoverSettings $settings App config, user preferences, register imports and organisations.
+	 * @param ExampleSetRemoverRows     $rows     The accounts and the engine rows.
+	 * @param ExampleSetLock|null       $lock     One install or removal of a set at a time; null holds nothing.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ExampleSetRemoverObjects $objects,
 		private readonly ExampleSetRemoverSettings $settings,
-		private readonly ExampleSetAccounts $accounts,
-		private readonly ?ExampleSetEngineKinds $engineRows=null,
+		ExampleSetRemoverRows $rows,
 		private readonly ?ExampleSetLock $lock=null,
 	) {
+		$this->accounts   = $rows->accounts;
+		$this->engineRows = $rows->engineRows;
 	}//end __construct()
 
 	/**
@@ -116,136 +131,140 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
 	private function removeHeld(string $set): array {
-		$record = $this->objects->record->read(set: $set);
-		$report = ['installed' => ($this->objects->record->isEmpty(record: $record) === false), 'removed' => self::REMOVED, 'left' => [], 'failed' => []];
+		$run         = new ExampleSetRemovalRun(set: $set, record: $this->objects->record->read(set: $set));
+		$run->report = [
+			'installed' => ($this->objects->record->isEmpty(record: $run->record) === false),
+			'removed'   => self::REMOVED,
+			'left'      => [],
+			'failed'    => [],
+		];
 
 		// First: a task is on an object the set wrote, and goes before it.
 		($this->engineRows ?? new ExampleSetEngineKinds())->delete(
-			record: $record,
-			report: $report,
+			record: $run->record,
+			report: $run->report,
 			written: fn (array $now) => $this->objects->record->write(set: $set, record: $now)
 		);
 
-		$record = $this->deleteObjects(set: $set, record: $record, report: $report);
-		$record = $this->revertChanges(set: $set, record: $record, report: $report);
-		$record = $this->restoreAppConfig(set: $set, record: $record, report: $report);
+		$this->deleteObjects(run: $run);
+		$this->revertChanges(run: $run);
+		$appConfig = fn (array $entry): string => $this->settings->appConfig->revert(entry: $entry);
+		$this->restore(run: $run, part: new ExampleSetRestorePart(part: 'appConfig', revert: $appConfig));
 		// Before the accounts: an account the set created goes, an adopted one keeps its own values.
-		$record = $this->restoreUserPreferences(set: $set, record: $record, report: $report);
-		$record = $this->removeMemberships(set: $set, record: $record, report: $report);
+		$preferences = fn (array $entry): string => $this->settings->userPreferences->revert(entry: $entry);
+		$this->restore(run: $run, part: new ExampleSetRestorePart(part: 'userPreferences', revert: $preferences));
+		$this->removeMemberships(run: $run);
+		$this->removeAccountsAndLast(run: $run);
 
-		return $this->removeAccountsAndLast(set: $set, record: $record, report: $report);
+		return $run->report;
 	}//end removeHeld()
 
 	/**
 	 * Delete the groups and accounts, then (last: the set's own objects may point into a register it imported, and
 	 * may belong to an organisation it created) the register imports and the organisations.
 	 *
-	 * @param string               $set    The set id.
-	 * @param array<string, mixed> $record The record.
-	 * @param array<string, mixed> $report The report; counts, accounts left and failures are added.
+	 * @param ExampleSetRemovalRun $run The remove; its record and report change.
 	 *
-	 * @return array{installed: bool, removed: array<string, int>, left: array<int, string>, failed: array<int, string>}
-	 *         The report.
+	 * @return void
 	 */
-	private function removeAccountsAndLast(string $set, array $record, array $report): array {
-		$accounts = array_map('strval', array_keys($record['users']));
-		$record   = $this->removeGroupsAndAccounts(set: $set, record: $record, report: $report);
-		$this->objects->record->write(set: $set, record: $record);
+	private function removeAccountsAndLast(ExampleSetRemovalRun $run): void {
+		$run->accounts = array_map('strval', array_keys($run->record['users']));
+		$this->removeGroupsAndAccounts(run: $run);
+		$this->written(run: $run);
 
-		$record = $this->removeImports(set: $set, record: $record, report: $report);
-		$this->removeOrganisations(set: $set, record: $record, report: $report, accounts: $accounts);
-
-		return $report;
+		$this->removeImports(run: $run);
+		$this->removeOrganisations(run: $run);
 	}//end removeAccountsAndLast()
+
+	/**
+	 * Write the record as the run holds it now.
+	 *
+	 * @param ExampleSetRemovalRun $run The remove.
+	 *
+	 * @return void
+	 */
+	private function written(ExampleSetRemovalRun $run): void {
+		$this->objects->record->write(set: $run->set, record: $run->record);
+	}//end written()
 
 	/**
 	 * Delete the objects the set wrote, newest first, each with its files; one refused stays in the record.
 	 *
-	 * @param string               $set    The set id.
-	 * @param array<string, mixed> $record The record.
-	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 * @param ExampleSetRemovalRun $run The remove; loses the deleted objects, counts and failures are added.
 	 *
-	 * @return array<string, mixed> The record without the deleted objects.
+	 * @return void
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
-	private function deleteObjects(string $set, array $record, array &$report): array {
-		foreach (array_reverse($record['objects'], true) as $name => $held) {
-			$why = $this->deleteObject(set: $set, name: $name, held: $held, record: $record, report: $report);
+	private function deleteObjects(ExampleSetRemovalRun $run): void {
+		foreach (array_reverse($run->record['objects'], true) as $name => $held) {
+			$why = $this->deleteObject(run: $run, held: new ExampleSetRecordedObject(name: (string) $name, entry: $held));
 			if ($why !== '') {
-				$report['failed'][] = $held['register'].' '.$held['schema'].' '.$name.' ('.$held['id'].'): '.$why;
+				$run->report['failed'][] = $held['register'].' '.$held['schema'].' '.$name.' ('.$held['id'].'): '.$why;
 				continue;
 			}
 
-			unset($record['objects'][$name]);
-			$report['removed']['objects']++;
-			$this->objects->record->write(set: $set, record: $record);
+			unset($run->record['objects'][$name]);
+			$run->report['removed']['objects']++;
+			$this->written(run: $run);
 		}
-
-		return $record;
 	}//end deleteObjects()
 
 	/**
 	 * Delete one object the set wrote, its files first; why it stays, or ''.
 	 *
-	 * @param string               $set    The set id.
-	 * @param string               $name   The object's record key.
-	 * @param array<string, mixed> $held   The record entry: register, schema, id.
-	 * @param array<string, mixed> $record The record; loses the deleted files.
-	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 * @param ExampleSetRemovalRun     $run  The remove; loses the deleted files, counts and failures are added.
+	 * @param ExampleSetRecordedObject $held The object's record key and entry: register, schema, id.
 	 *
 	 * @return string
 	 */
-	private function deleteObject(string $set, string $name, array $held, array &$record, array &$report): string {
-		if ($this->deleteFiles(set: $set, name: $name, objectId: (string) $held['id'], record: $record, report: $report) === false) {
+	private function deleteObject(ExampleSetRemovalRun $run, ExampleSetRecordedObject $held): string {
+		if ($this->deleteFiles(run: $run, held: $held) === false) {
 			return 'a file of it stays';
 		}
 
-		return $this->objects->store->deleteRecorded(register: $held['register'], schema: $held['schema'], id: $held['id']);
+		$entry = $held->entry;
+		return $this->objects->store->deleteRecorded(ref: new ObjectRef(register: $entry['register'], schema: $entry['schema'], id: $entry['id']));
 	}//end deleteObject()
 
 	/**
 	 * Revert the recorded changes, newest first.
 	 *
-	 * @param string               $set    The set id.
-	 * @param array<string, mixed> $record The record.
-	 * @param array<string, mixed> $report The report; counts, paths left as somebody changed them, and failures.
+	 * @param ExampleSetRemovalRun $run The remove; loses the reverted changes; counts, paths left as somebody changed
+	 *                                  them, and failures are added.
 	 *
-	 * @return array<string, mixed> The record without the reverted changes.
+	 * @return void
 	 */
-	private function revertChanges(string $set, array $record, array &$report): array {
-		foreach (array_reverse($record['changes'], true) as $name => $entry) {
-			if ($this->reverted(name: (string) $name, entry: $entry, report: $report) === false) {
+	private function revertChanges(ExampleSetRemovalRun $run): void {
+		foreach (array_reverse($run->record['changes'], true) as $name => $entry) {
+			if ($this->reverted(run: $run, change: new ExampleSetRecordedObject(name: (string) $name, entry: $entry)) === false) {
 				continue;
 			}
 
-			unset($record['changes'][$name]);
-			$report['removed']['changes']++;
-			$this->objects->record->write(set: $set, record: $record);
+			unset($run->record['changes'][$name]);
+			$run->report['removed']['changes']++;
+			$this->written(run: $run);
 		}
-
-		return $record;
 	}//end revertChanges()
 
 	/**
 	 * Revert one recorded change; false when it could not be (named under `failed`). A path somebody changed after
 	 * the install is left and named under `left`.
 	 *
-	 * @param string               $name   The change's record key.
-	 * @param array<string, mixed> $entry  The record entry.
-	 * @param array<string, mixed> $report The report.
+	 * @param ExampleSetRemovalRun     $run    The remove; its report is added to.
+	 * @param ExampleSetRecordedObject $change The change's record key and entry.
 	 *
 	 * @return bool
 	 */
-	private function reverted(string $name, array $entry, array &$report): bool {
-		$reverted = $this->objects->changes->revert(entry: $entry);
+	private function reverted(ExampleSetRemovalRun $run, ExampleSetRecordedObject $change): bool {
+		$reverted = $this->objects->changes->revert(entry: $change->entry);
 		if ($reverted['ok'] === false) {
-			$report['failed'][] = $this->changeOn(name: $name, entry: $entry);
+			$run->report['failed'][] = $this->changeOn(change: $change);
 			return false;
 		}
 
 		foreach ($reverted['left'] as $path) {
-			$report['left'][] = $this->changeOn(name: $name, entry: $entry).', path '.$path.', which somebody changed after the install';
+			$run->report['left'][] = $this->changeOn(change: $change).', path '.$path.', which somebody changed after the install';
 		}
 
 		return true;
@@ -254,13 +273,13 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	/**
 	 * A recorded change as the report names it.
 	 *
-	 * @param string               $name  The change's record key.
-	 * @param array<string, mixed> $entry The record entry: register, schema, id.
+	 * @param ExampleSetRecordedObject $change The change's record key and entry: register, schema, id.
 	 *
 	 * @return string
 	 */
-	private function changeOn(string $name, array $entry): string {
-		return 'change '.$name.' on '.$entry['register'].' '.$entry['schema'].' ('.$entry['id'].')';
+	private function changeOn(ExampleSetRecordedObject $change): string {
+		$entry = $change->entry;
+		return 'change '.$change->name.' on '.$entry['register'].' '.$entry['schema'].' ('.$entry['id'].')';
 	}//end changeOn()
 
 	/**
@@ -270,43 +289,38 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	 * data; the record keeps the slug without jobs so that an install imports
 	 * the register's data again (REQ-EXS-009).
 	 *
-	 * @param string               $set    The set id.
-	 * @param array<string, mixed> $record The record.
-	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 * @param ExampleSetRemovalRun $run The remove; loses the removed imports, counts and failures are added.
 	 *
-	 * @return array<string, mixed> The record without the removed imports.
+	 * @return void
 	 */
-	private function removeImports(string $set, array $record, array &$report): array {
-		foreach ($record['registers'] as $slug => $jobs) {
+	private function removeImports(ExampleSetRemovalRun $run): void {
+		foreach (array_keys($run->record['registers']) as $slug) {
 			// A slug whose jobs are all gone stays with no jobs: the register and its schemas remain on the instance, but
 			// the data the import made does not, and the next install must import it again.
-			$record['registers'][$slug] = $this->removeJobs(slug: (string) $slug, jobs: $jobs, report: $report);
+			$run->record['registers'][$slug] = $this->removeJobs(run: $run, slug: (string) $slug);
 
-			$this->objects->record->write(set: $set, record: $record);
+			$this->written(run: $run);
 		}
-
-		return $record;
 	}//end removeImports()
 
 	/**
 	 * Remove the import jobs of one register; the jobs that stay.
 	 *
-	 * @param string                           $slug   The register's slug.
-	 * @param array<int, array<string, mixed>> $jobs   The import jobs the set made.
-	 * @param array<string, mixed>             $report The report; counts and failures are added.
+	 * @param ExampleSetRemovalRun $run  The remove; counts and failures are added.
+	 * @param string               $slug The register's slug.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	private function removeJobs(string $slug, array $jobs, array &$report): array {
+	private function removeJobs(ExampleSetRemovalRun $run, string $slug): array {
 		$left = [];
-		foreach ($jobs as $job) {
+		foreach ($run->record['registers'][$slug] as $job) {
 			if ($this->settings->registers->removeImport(appId: (string) $job['appId'], jobId: (string) $job['jobId']) === false) {
-				$report['failed'][] = 'register '.$slug.' import job '.$job['jobId'];
-				$left[]             = $job;
+				$run->report['failed'][] = 'register '.$slug.' import job '.$job['jobId'];
+				$left[] = $job;
 				continue;
 			}
 
-			$report['removed']['register imports']++;
+			$run->report['removed']['register imports']++;
 		}
 
 		return $left;
@@ -317,24 +331,22 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	 *
 	 * Every file that stays is named in the report with the reason.
 	 *
-	 * @param string               $set      The set id.
-	 * @param string               $name     The object's record key.
-	 * @param string               $objectId The object's id.
-	 * @param array<string, mixed> $record   The record; loses the deleted files.
-	 * @param array<string, mixed> $report   The report; counts and failures are added.
+	 * @param ExampleSetRemovalRun     $run  The remove; loses the deleted files, counts and failures are added.
+	 * @param ExampleSetRecordedObject $held The object's record key and entry.
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
-	private function deleteFiles(string $set, string $name, string $objectId, array &$record, array &$report): bool {
-		$left = $this->deleteFilesOf(name: $name, objectId: $objectId, files: ($record['files'][$name] ?? []), report: $report);
-		unset($record['files'][$name]);
+	private function deleteFiles(ExampleSetRemovalRun $run, ExampleSetRecordedObject $held): bool {
+		$name = $held->name;
+		$left = $this->deleteFilesOf(run: $run, held: $held);
+		unset($run->record['files'][$name]);
 		if ($left !== []) {
-			$record['files'][$name] = $left;
+			$run->record['files'][$name] = $left;
 		}
 
-		$this->objects->record->write(set: $set, record: $record);
+		$this->written(run: $run);
 
 		return $left === [];
 	}//end deleteFiles()
@@ -342,187 +354,132 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	/**
 	 * Delete the files of one object; the files that stay.
 	 *
-	 * @param string                           $name     The object's record key.
-	 * @param string                           $objectId The object's id.
-	 * @param array<int, array<string, mixed>> $files    The files the set attached.
-	 * @param array<string, mixed>             $report   The report; counts and failures are added.
+	 * @param ExampleSetRemovalRun     $run  The remove; counts and failures are added.
+	 * @param ExampleSetRecordedObject $held The object's record key and entry: its id.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	private function deleteFilesOf(string $name, string $objectId, array $files, array &$report): array {
+	private function deleteFilesOf(ExampleSetRemovalRun $run, ExampleSetRecordedObject $held): array {
 		$left = [];
-		foreach ($files as $file) {
-			$why = $this->objects->files->delete(fileId: (string) $file['id'], name: (string) $file['name'], objectId: $objectId);
+		foreach (($run->record['files'][$held->name] ?? []) as $file) {
+			$why = $this->objects->files->delete(fileId: (string) $file['id'], name: (string) $file['name'], objectId: (string) $held->entry['id']);
 			if ($why !== '') {
-				$report['failed'][] = 'file '.$file['name'].' on '.$name.': '.$why;
-				$left[]             = $file;
+				$run->report['failed'][] = 'file '.$file['name'].' on '.$held->name.': '.$why;
+				$left[] = $file;
 				continue;
 			}
 
-			$report['removed']['files']++;
+			$run->report['removed']['files']++;
 		}
 
 		return $left;
 	}//end deleteFilesOf()
 
 	/**
-	 * Restore the app config the set wrote, newest first, while it still holds what the set wrote.
+	 * Restore the entries of one part the set wrote (app config, user preferences), newest first: an entry that still
+	 * holds what the set wrote is put back, one somebody changed since is left (and named), one that cannot be
+	 * restored stays in the record (and is named as failed).
 	 *
-	 * @param string               $set    The set id.
-	 * @param array<string, mixed> $record The record.
-	 * @param array<string, mixed> $report The report; counts, keys left as somebody changed them, and failures.
+	 * @param ExampleSetRemovalRun  $run  The remove; loses the restored entries, counts, entries left and failures.
+	 * @param ExampleSetRestorePart $part The record part and how an entry of it is reverted.
 	 *
-	 * @return array<string, mixed> The record without the restored entries.
-	 */
-	private function restoreAppConfig(string $set, array $record, array &$report): array {
-		$run = [
-			'set'    => $set,
-			'part'   => 'appConfig',
-			'count'  => 'app config',
-			'revert' => fn (array $entry): string => $this->settings->appConfig->revert(entry: $entry),
-			'label'  => static fn (string $name, array $entry): string => 'app config '.$entry['app'].' '.$entry['key'],
-		];
-
-		return $this->restore(run: $run, record: $record, report: $report);
-	}//end restoreAppConfig()
-
-	/**
-	 * Restore the user preferences the set wrote, newest first, while they still hold what the set wrote.
-	 *
-	 * @param string               $set    The set id.
-	 * @param array<string, mixed> $record The record.
-	 * @param array<string, mixed> $report The report; counts, preferences left as somebody changed them, and failures.
-	 *
-	 * @return array<string, mixed> The record without the restored entries.
+	 * @return void
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
-	private function restoreUserPreferences(string $set, array $record, array &$report): array {
-		$run = [
-			'set'    => $set,
-			'part'   => 'userPreferences',
-			'count'  => 'user preferences',
-			'revert' => fn (array $entry): string => $this->settings->userPreferences->revert(entry: $entry),
-			'label'  => static fn (string $name, array $entry): string => 'user preference '.$name,
-		];
-
-		return $this->restore(run: $run, record: $record, report: $report);
-	}//end restoreUserPreferences()
-
-	/**
-	 * Restore the entries of one part the set wrote, newest first: an entry that still holds what the set wrote is
-	 * put back, one somebody changed since is left (and named), one that cannot be restored stays in the record.
-	 *
-	 * @param array{set: string, part: string, count: string, revert: Closure, label: Closure} $run    The set, the
-	 *        record part, the report count, how an entry is reverted (`removed`, `left` or `failed`) and how it is named.
-	 * @param array<string, mixed>                                                            $record The record.
-	 * @param array<string, mixed>                                                            $report The report.
-	 *
-	 * @return array<string, mixed> The record without the restored entries.
-	 */
-	private function restore(array $run, array $record, array &$report): array {
-		foreach (array_reverse($record[$run['part']], true) as $name => $entry) {
-			if ($this->restored(run: $run, name: (string) $name, entry: $entry, report: $report) === false) {
+	private function restore(ExampleSetRemovalRun $run, ExampleSetRestorePart $part): void {
+		foreach (array_reverse($run->record[$part->part], true) as $name => $entry) {
+			$outcome = ($part->revert)($entry);
+			$held    = new ExampleSetRecordedObject(name: (string) $name, entry: $entry);
+			if ($outcome === 'failed') {
+				$run->report['failed'][] = $this->restoreLabel(part: $part, entry: $held);
 				continue;
 			}
 
-			unset($record[$run['part']][$name]);
-			$report['removed'][$run['count']]++;
-			$this->objects->record->write(set: $run['set'], record: $record);
-		}
+			if ($outcome === 'left') {
+				$run->report['left'][] = $this->restoreLabel(part: $part, entry: $held).', which somebody changed after the install';
+			}
 
-		return $record;
+			unset($run->record[$part->part][$name]);
+			$run->report['removed'][$part->count()]++;
+			$this->written(run: $run);
+		}
 	}//end restore()
 
 	/**
-	 * Restore one entry; false when it could not be (named under `failed`). One somebody changed since is left as it
-	 * is and named under `left`.
+	 * A restored entry as the report names it.
 	 *
-	 * @param array{set: string, part: string, count: string, revert: Closure, label: Closure} $run    As restore() takes it.
-	 * @param string                                                                          $name   The entry's record key.
-	 * @param array<string, mixed>                                                            $entry  The record entry.
-	 * @param array<string, mixed>                                                            $report The report.
+	 * @param ExampleSetRestorePart    $part  The record part.
+	 * @param ExampleSetRecordedObject $entry The entry's record key and entry.
 	 *
-	 * @return bool
+	 * @return string
 	 */
-	private function restored(array $run, string $name, array $entry, array &$report): bool {
-		$outcome = ($run['revert'])($entry);
-		if ($outcome === 'failed') {
-			$report['failed'][] = ($run['label'])($name, $entry);
-			return false;
+	private function restoreLabel(ExampleSetRestorePart $part, ExampleSetRecordedObject $entry): string {
+		if ($part->part === 'appConfig') {
+			return 'app config '.$entry->entry['app'].' '.$entry->entry['key'];
 		}
 
-		if ($outcome === 'left') {
-			$report['left'][] = ($run['label'])($name, $entry).', which somebody changed after the install';
-		}
-
-		return true;
-	}//end restored()
+		return 'user preference '.$entry->name;
+	}//end restoreLabel()
 
 	/**
 	 * Take the sub-admins and the members the set added out of their groups, and keep the record.
 	 *
-	 * @param string               $set    The set id.
-	 * @param array<string, mixed> $record The record.
-	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 * @param ExampleSetRemovalRun $run The remove; loses what was taken out, counts and failures are added.
 	 *
-	 * @return array<string, mixed> The record without what was taken out.
+	 * @return void
 	 */
-	private function removeMemberships(string $set, array $record, array &$report): array {
-		$removal               = new ExampleSetAccountsRemoval(accounts: $this->accounts);
-		$record['subAdmins']   = $removal->removeSubAdmins(pairs: $record['subAdmins'], report: $report);
-		$record['memberships'] = $removal->removeMembers(pairs: $record['memberships'], report: $report);
-		$this->objects->record->write(set: $set, record: $record);
-
-		return $record;
+	private function removeMemberships(ExampleSetRemovalRun $run): void {
+		$removal = new ExampleSetAccountsRemoval(accounts: $this->accounts);
+		$run->record['subAdmins']   = $removal->removeSubAdmins(pairs: $run->record['subAdmins'], report: $run->report);
+		$run->record['memberships'] = $removal->removeMembers(pairs: $run->record['memberships'], report: $run->report);
+		$this->written(run: $run);
 	}//end removeMemberships()
 
 	/**
 	 * Delete the OpenRegister organisations the set created.
 	 *
-	 * @param string               $set      The set id.
-	 * @param array<string, mixed> $record   The record.
-	 * @param array<string, mixed> $report   The report; counts, organisations kept and failures are added.
-	 * @param array<int, string>   $accounts The accounts the record held before remove deleted them; they, and any
-	 *                                       member that is no account any more, do not keep an organisation.
+	 * The accounts the record held before remove deleted them, and any member that is no account any more, do not
+	 * keep an organisation.
+	 *
+	 * @param ExampleSetRemovalRun $run The remove; counts, organisations kept and failures are added.
 	 *
 	 * @return void
 	 */
-	private function removeOrganisations(string $set, array $record, array &$report, array $accounts): void {
+	private function removeOrganisations(ExampleSetRemovalRun $run): void {
 		$left = [];
-		foreach ($record['organisations'] as $uuid) {
-			if ($this->keepsOrganisation(uuid: $uuid, accounts: $accounts, report: $report) === true) {
+		foreach ($run->record['organisations'] as $uuid) {
+			if ($this->keepsOrganisation(run: $run, uuid: $uuid) === true) {
 				$left[] = $uuid;
 			}
 		}
 
-		$record['organisations'] = $left;
-		$this->objects->record->write(set: $set, record: $record);
+		$run->record['organisations'] = $left;
+		$this->written(run: $run);
 	}//end removeOrganisations()
 
 	/**
 	 * Delete one organisation the set created; true when it stays (it could not be deleted, or has members the set
 	 * did not add), which the report names.
 	 *
-	 * @param string             $uuid     The organisation's uuid.
-	 * @param array<int, string> $accounts The accounts the record held before remove deleted them.
-	 * @param array<string, mixed> $report The report; counts, organisations kept and failures are added.
+	 * @param ExampleSetRemovalRun $run  The remove; counts, organisations kept and failures are added.
+	 * @param string               $uuid The organisation's uuid.
 	 *
 	 * @return bool
 	 */
-	private function keepsOrganisation(string $uuid, array $accounts, array &$report): bool {
-		$outcome = $this->settings->instance->delete(uuid: $uuid, ignorable: $this->ignorable(accounts: $accounts));
+	private function keepsOrganisation(ExampleSetRemovalRun $run, string $uuid): bool {
+		$outcome = $this->settings->instance->delete(uuid: $uuid, ignorable: $this->ignorable(accounts: $run->accounts));
 		if ($outcome === ExampleSetInstance::FAILED) {
-			$report['failed'][] = 'OpenRegister organisation '.$uuid;
+			$run->report['failed'][] = 'OpenRegister organisation '.$uuid;
 			return true;
 		}
 
 		if ($outcome === ExampleSetInstance::LEFT) {
-			$report['left'][] = 'OpenRegister organisation '.$uuid.', which has members the set did not add';
+			$run->report['left'][] = 'OpenRegister organisation '.$uuid.', which has members the set did not add';
 			return true;
 		}
 
-		$report['removed']['organisations']++;
+		$run->report['removed']['organisations']++;
 
 		return false;
 	}//end keepsOrganisation()
@@ -544,21 +501,17 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	/**
 	 * Delete created groups and created accounts; forget adopted accounts.
 	 *
-	 * @param string               $set    The set id.
-	 * @param array<string, mixed> $record The record.
-	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 * @param ExampleSetRemovalRun $run The remove; loses what is gone, counts and failures are added.
 	 *
-	 * @return array<string, mixed> The record without what is gone.
+	 * @return void
 	 */
-	private function removeGroupsAndAccounts(string $set, array $record, array &$report): array {
-		$removal              = new ExampleSetAccountsRemoval(accounts: $this->accounts);
-		$record['groupNames'] = $removal->restoreGroupNames(names: $record['groupNames']);
-		$record['groups']     = $removal->deleteGroups(groups: $record['groups'], report: $report);
-		$this->objects->record->write(set: $set, record: $record);
+	private function removeGroupsAndAccounts(ExampleSetRemovalRun $run): void {
+		$removal = new ExampleSetAccountsRemoval(accounts: $this->accounts);
+		$run->record['groupNames'] = $removal->restoreGroupNames(names: $run->record['groupNames']);
+		$run->record['groups']     = $removal->deleteGroups(groups: $run->record['groups'], report: $run->report);
+		$this->written(run: $run);
 
-		$record['users'] = $removal->removeUsers(users: $record['users'], report: $report);
-
-		return $record;
+		$run->record['users'] = $removal->removeUsers(users: $run->record['users'], report: $run->report);
 	}//end removeGroupsAndAccounts()
 
 }//end class

@@ -35,35 +35,6 @@ use DateTime;
  * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
  */
 final class JobRunFilter {
-
-	/**
-	 * Narrow to one job class.
-	 *
-	 * @var string|null
-	 */
-	public readonly ?string $jobClass;
-
-	/**
-	 * Narrow to one JobRun OUTCOME_ constant.
-	 *
-	 * @var string|null
-	 */
-	public readonly ?string $outcome;
-
-	/**
-	 * Lower bound on `started`.
-	 *
-	 * @var DateTime|null
-	 */
-	public readonly ?DateTime $since;
-
-	/**
-	 * Upper bound on `started`.
-	 *
-	 * @var DateTime|null
-	 */
-	public readonly ?DateTime $until;
-
 	/**
 	 * Constructor.
 	 *
@@ -73,15 +44,10 @@ final class JobRunFilter {
 	 * @param DateTime|null $until    Upper bound on `started`.
 	 */
 	public function __construct(
-		?string $jobClass = null,
-		?string $outcome = null,
-		?DateTime $since = null,
-		?DateTime $until = null,
+		public readonly ?string $jobClass = null,
+		public readonly ?string $outcome = null,
+		public readonly ?DateTime $since = null,
+		public readonly ?DateTime $until = null,
 	) {
-		$this->jobClass = $jobClass;
-		$this->outcome  = $outcome;
-		$this->since    = $since;
-		$this->until    = $until;
-
 	}//end __construct()
 }//end class

@@ -32,7 +32,6 @@ use DateTime;
 use DateTimeZone;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * Transforms OpenRegister objects into VEVENT-compatible arrays
@@ -57,20 +56,17 @@ class CalendarEventTransformer {
 	/**
 	 * Transform an ObjectEntity into a VEVENT-compatible array
 	 *
-	 * @param ObjectEntity $object The object to transform
-	 * @param Schema $schema The schema this object belongs to
-	 * @param array $calendarConfig The calendar provider configuration
+	 * @param ObjectEntity       $object   The object to transform
+	 * @param CalendarDefinition $calendar The schema this object belongs to and its calendar configuration
 	 *
 	 * @return array|null The VEVENT array, or null if the object lacks required date data
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
-	public function transform(
-		ObjectEntity $object,
-		Schema $schema,
-		array $calendarConfig,
-	): ?array {
+	public function transform(ObjectEntity $object, CalendarDefinition $calendar): ?array {
+		$schema = $calendar->schema;
+		$calendarConfig = $calendar->config;
 		$objectData = $object->getObject();
 		$dtstartField = $calendarConfig['dtstart'] ?? null;
 
@@ -90,18 +86,13 @@ class CalendarEventTransformer {
 		$calendarKey = 'openregister-schema-' . $schemaId;
 
 		// Determine allDay mode.
-		$allDay = $this->determineAllDay(calendarConfig: $calendarConfig, schema: $schema, dtstartField: $dtstartField);
+		$allDay = $calendar->allDay();
 
 		// Build DTSTART.
 		$dtstart = $this->formatDateValue(value: $dtstartValue, allDay: $allDay);
 
 		// Build DTEND.
-		$dtend = $this->buildDtend(
-			objectData: $objectData,
-			calendarConfig: $calendarConfig,
-			dtstartValue: $dtstartValue,
-			allDay: $allDay
-		);
+		$dtend = $this->buildDtend(objectData: $objectData, calendar: $calendar);
 
 		// Interpolate title.
 		$summary = $this->interpolateTemplate(
@@ -165,45 +156,6 @@ class CalendarEventTransformer {
 
 		return $properties;
 	}//end optionalProperties()
-
-	/**
-	 * Determine if events should be all-day based on config and schema property format
-	 *
-	 * @param array $calendarConfig The calendar configuration
-	 * @param Schema $schema The schema entity
-	 * @param string $dtstartField The dtstart field name
-	 *
-	 * @return bool True if events should be all-day
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function determineAllDay(array $calendarConfig, Schema $schema, string $dtstartField): bool {
-		// Explicit allDay setting takes precedence.
-		if (isset($calendarConfig['allDay']) === true) {
-			return (bool)$calendarConfig['allDay'];
-		}
-
-		// Auto-detect from schema property format.
-		$properties = $schema->getProperties() ?? [];
-		foreach ($properties as $propName => $propDef) {
-			if (is_array($propDef) === true
-				&& ($propName === $dtstartField || ($propDef['title'] ?? null) === $dtstartField)
-			) {
-				$format = $propDef['format'] ?? null;
-				if ($format === 'date') {
-					return true;
-				}
-
-				if ($format === 'date-time') {
-					return false;
-				}
-			}
-		}
-
-		// Default: treat as all-day.
-		return true;
-	}//end determineAllDay()
 
 	/**
 	 * Format a date value into iCalendar format
@@ -335,21 +287,17 @@ class CalendarEventTransformer {
 	/**
 	 * Build DTEND value from configuration
 	 *
-	 * @param array $objectData The object data
-	 * @param array $calendarConfig The calendar configuration
-	 * @param string $dtstartValue The DTSTART raw value
-	 * @param bool $allDay Whether this is an all-day event
+	 * @param array              $objectData The object data
+	 * @param CalendarDefinition $calendar   The calendar configuration (dtstart/dtend fields, all-day mode)
 	 *
 	 * @return array The formatted [value, params] array for DTEND
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
-	private function buildDtend(
-		array $objectData,
-		array $calendarConfig,
-		string $dtstartValue,
-		bool $allDay,
-	): array {
+	private function buildDtend(array $objectData, CalendarDefinition $calendar): array {
+		$calendarConfig = $calendar->config;
+		$dtstartValue = $objectData[$calendar->dtstartField()];
+		$allDay = $calendar->allDay();
 		// Check if dtend field is configured and has a value.
 		if (empty($calendarConfig['dtend']) === false) {
 			$dtendValue = $objectData[$calendarConfig['dtend']] ?? null;

@@ -144,6 +144,17 @@ class FilesProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-12
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->readableFilesOf(objectId: $objectId);
+	}//end list()
+
+	/**
+	 * The files of an object the file-restriction guard lets the caller read.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function readableFilesOf(string $objectId): array {
 		try {
 			$object = $this->resolveObject(objectId: $objectId);
 			if ($object === null) {
@@ -157,7 +168,7 @@ class FilesProvider extends AbstractIntegrationProvider {
 		} catch (\Throwable $e) {
 			return [];
 		}//end try
-	}//end list()
+	}//end readableFilesOf()
 
 	/**
 	 * Resolve an ObjectEntity-shaped value by uuid via whichever mapper

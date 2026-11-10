@@ -79,6 +79,16 @@ interface FlowRunServiceInterface {
 	public const TRIGGER_DIRECT_NODE = 'direct-node';
 
 	/**
+	 * The run-context key under which a direct-node run names the node it runs.
+	 *
+	 * The caller puts it there when it queues the run, and executeNode() reads it
+	 * back, so the node that was authorised is the node that is dispatched.
+	 *
+	 * @var string
+	 */
+	public const NODE_ID_CONTEXT_KEY = 'nodeId';
+
+	/**
 	 * Advance ONE stream of a run in the calling request, within a budget.
 	 *
 	 * ADR-098 D9's advance budget follows the token: completing a task on one
@@ -90,17 +100,14 @@ interface FlowRunServiceInterface {
 	 * `$budget` is `0` (nothing; the run is left queued), a count, or `"all"`
 	 * (bounded by the same three things a worker is).
 	 *
-	 * @param FlowRun $run The run, already resolved and pinned.
-	 * @param array $flow The pinned flow document.
-	 * @param object $subject The subject.
-	 * @param string $streamId The completing branch.
-	 * @param int|string $budget `0`, `N`, or `"all"`.
+	 * @param FlowRunPass       $pass    The run, already resolved and pinned, its flow document and subject.
+	 * @param FlowStreamAdvance $advance The completing branch and its budget (`0`, `N`, or `"all"`).
 	 *
 	 * @return FlowRun The run as it stands after the advance.
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-completions-advance-budget-must-apply-to-the-completing-branch
 	 */
-	public function advanceStream(FlowRun $run, array $flow, object $subject, string $streamId, int|string $budget): FlowRun;
+	public function advanceBranch(FlowRunPass $pass, FlowStreamAdvance $advance): FlowRun;
 
 	/**
 	 * Queue a run without executing it.
@@ -280,10 +287,12 @@ interface FlowRunServiceInterface {
 	 * direct-invoked node still needs to know WHOSE rights it writes with and
 	 * WHICH published graph it belongs to.
 	 *
+	 * The node to run is the one the run was queued for, named in its context
+	 * under {@see self::NODE_ID_CONTEXT_KEY}.
+	 *
 	 * @param FlowRun $run The queued run.
 	 * @param array $flow The flow document (used only to resolve the published pin).
 	 * @param object $subject The subject object the node acts on.
-	 * @param string $nodeId The node to run.
 	 * @param array $config The caller's config, overlaid on the published step's config after
 	 *                      pinning (caller keys win). The pin replaces the graph's nodes, so
 	 *                      this is the only way a picker's choice reaches the node.
@@ -300,5 +309,19 @@ interface FlowRunServiceInterface {
 	 * suppression reasoning already given there: injecting a factory to call
 	 * them would add a dependency without removing any coupling.
 	 */
-	public function executeNode(FlowRun $run, array $flow, object $subject, string $nodeId, array $config = []): FlowRun;
+	public function executeNode(FlowRun $run, array $flow, object $subject, array $config = []): FlowRun;
+
+	/**
+	 * The items a run starts from, read from a seed exactly as a caller sent it.
+	 *
+	 * A test run may be seeded by hand; what arrives is whatever the request
+	 * carried. Anything that is not an item list (or one item) yields none.
+	 *
+	 * @param mixed $value The seed as sent.
+	 *
+	 * @return array<int, array<string, mixed>> The well-formed items.
+	 *
+	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 */
+	public function seedItemsFrom(mixed $value): array;
 }//end interface

@@ -44,27 +44,6 @@ use Psr\Log\LoggerInterface;
 class FileVectorizationStrategy implements FileVectorizationStrategyInterface {
 
 	/**
-	 * Chunk mapper
-	 *
-	 * @var ChunkMapperInterface
-	 */
-	private ChunkMapperInterface $chunkMapper;
-
-	/**
-	 * Database connection
-	 *
-	 * @var IDBConnection
-	 */
-	private IDBConnection $db;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Constructor
 	 *
 	 * @param ChunkMapperInterface $chunkMapper Chunk mapper
@@ -72,13 +51,11 @@ class FileVectorizationStrategy implements FileVectorizationStrategyInterface {
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		ChunkMapperInterface $chunkMapper,
-		IDBConnection $db,
-		LoggerInterface $logger,
+		private readonly ChunkMapperInterface $chunkMapper,
+		private readonly IDBConnection $db,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->chunkMapper = $chunkMapper;
-		$this->db = $db;
-		$this->logger = $logger;
+
 	}//end __construct()
 
 	/**

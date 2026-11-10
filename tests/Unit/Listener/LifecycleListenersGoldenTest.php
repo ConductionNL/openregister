@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
+use OCA\OpenRegister\Service\Object\TransitionGate;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -53,6 +54,8 @@ use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\SystemOperationContext;
+use OCA\OpenRegister\Service\Task\ResolvedChain;
+use OCA\OpenRegister\Service\Task\SequenceAnchor;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCP\EventDispatcher\Event;
 use OCP\IGroupManager;
@@ -68,6 +71,7 @@ use RuntimeException;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
 use OCA\OpenRegister\Listener\Support\ApprovalChainSequences;
+use OCA\OpenRegister\Service\Lifecycle\TransitionPayload;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ApprovalChainGateListener
@@ -126,6 +130,12 @@ class LifecycleListenersGoldenTest extends TestCase {
 		$this->executor        = $this->createMock(LifecycleActionExecutor::class);
 		$this->sequenceMapper  = $this->createMock(TaskSequenceMapper::class);
 		$this->sequenceService = $this->createMock(TaskSequenceService::class);
+		$this->sequenceService->method('chain')->willReturnCallback(
+			static fn (array $template, ?array $tierPositions = null): ResolvedChain => new ResolvedChain(template: $template, tierPositions: $tierPositions)
+		);
+		$this->sequenceService->method('anchorOf')->willReturnCallback(
+			static fn (string $objectUuid, ?string $requesterId, ?int $registerId = null): SequenceAnchor => new SequenceAnchor(objectUuid: $objectUuid, requesterId: $requesterId, registerId: $registerId)
+		);
 		$this->references      = $this->createMock(ReferenceResolver::class);
 		$this->permission      = $this->createMock(PermissionHandler::class);
 		$this->ruleRuns        = $this->createMock(RuleRunRecorder::class);
@@ -139,7 +149,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 	private function actionListener(): LifecycleActionListener {
 		return new LifecycleActionListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger),
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), $this->resolver()),
 			$this->executor,
 			$this->logger
 		);
@@ -147,7 +157,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 	private function gateListener(): ApprovalChainGateListener {
 		return new ApprovalChainGateListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger),
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), $this->resolver()),
 			new ApprovalChainSequences($this->sequenceMapper, $this->sequenceService, new ApprovalChainAnnotationInstaller(logger: $this->logger)),
 			$this->userSession,
 			$this->logger
@@ -156,7 +166,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 	private function initialListener(): LifecycleInitialStateListener {
 		return new LifecycleInitialStateListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $this->logger),
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())),
 			$this->references,
 			$this->logger
 		);
@@ -175,8 +185,8 @@ class LifecycleListenersGoldenTest extends TestCase {
 		);
 
 		return new LifecycleValidationListener(
-			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger), $this->userSession, $this->permission),
-			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guards, $server, $this->logger), new LifecycleConditionEvaluator($this->userSession, $groups, new LifecycleConditionReporting($l10n, $this->logger), $dialect), new ConditionTracer(dialect: $dialect)),
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), $this->resolver()), $this->userSession, $this->permission),
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->guards, $server, $this->logger)), new LifecycleConditionEvaluator($this->userSession, $groups, new LifecycleConditionReporting($l10n, $this->logger), $dialect), new ConditionTracer(dialect: $dialect)),
 			$this->ruleRuns
 		);
 	}//end validationListener()
@@ -441,7 +451,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 			]
 		);
 		$this->executor->expects($this->once())->method('run')
-			->with($actions, ['id' => 'obj-1', 'status' => 'sent'], ['id' => 'obj-1', 'status' => 'draft'], 'submit')
+			->with($actions, new TransitionPayload('submit', ['id' => 'obj-1', 'status' => 'sent'], ['id' => 'obj-1', 'status' => 'draft']))
 			->willReturn(['id' => 'obj-1', 'status' => 'sent', 'stamped' => true]);
 
 		$event = $this->update(['status' => 'draft'], ['status' => 'sent']);
@@ -512,7 +522,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 			)
 		);
 		$this->actions->declare(uuid: 'obj-1', action: 'named');
-		$this->executor->method('run')->willReturnArgument(1);
+		$this->executor->method('run')->willReturnCallback(static fn (array $actions, TransitionPayload $payload): array => $payload->objectData);
 		$this->logger->expects($this->once())->method('debug')
 			->with('[LifecycleActionListener] executed 2 action(s) for transition "named".');
 
@@ -586,11 +596,11 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 		$this->gateListener()->handle($event);
 
-		$this->assertSame('obj-1', $captured[1]);
-		$this->assertSame('alice', $captured[2]);
-		$this->assertNull($captured[3]);
-		$this->assertSame(12, $captured[4]);
-		$this->assertSame('pay', $captured[0]['name']);
+		$this->assertSame('obj-1', $captured[1]->objectUuid);
+		$this->assertSame('alice', $captured[1]->requesterId);
+		$this->assertNull($captured[0]->tierPositions);
+		$this->assertSame(12, $captured[1]->registerId);
+		$this->assertSame('pay', $captured[0]->template['name']);
 		$this->assertSame(
 			['code' => 'approval-chain-pending', 'message' => 'Transition requires approval via chain "pay".'],
 			$event->getErrors()
@@ -614,8 +624,8 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 		$this->gateListener()->handle($event);
 
-		$this->assertNull($captured[2]);
-		$this->assertNull($captured[4]);
+		$this->assertNull($captured[1]->requesterId);
+		$this->assertNull($captured[1]->registerId);
 	}//end testAnAnonymousAttemptOnASlugRegisterProvisionsWithoutEither()
 
 	/**
@@ -695,15 +705,15 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 		$this->gateListener()->handle($this->update(['status' => 'draft'], ['status' => 'sent', 'amount' => $amount]));
 
-		$this->assertArrayHasKey(3, $captured);
+		$this->assertArrayHasKey(0, $captured);
 		if ($role === null) {
-			$this->assertNull($captured[3]);
+			$this->assertNull($captured[0]->tierPositions);
 			return;
 		}
 
-		$this->assertCount(1, $captured[3]);
-		$this->assertSame($role, $captured[3][0]['role']);
-		$this->assertSame(1, $captured[3][0]['order']);
+		$this->assertCount(1, $captured[0]->tierPositions);
+		$this->assertSame($role, $captured[0]->tierPositions[0]['role']);
+		$this->assertSame(1, $captured[0]->tierPositions[0]['order']);
 	}//end testTheHighestTierAtOrBelowTheAmountIsProvisioned()
 
 	/**
@@ -738,8 +748,8 @@ class LifecycleListenersGoldenTest extends TestCase {
 		$this->assertFalse($below->isPropagationStopped());
 
 		$this->gateListener()->handle($this->update(['status' => 'draft'], ['status' => 'sent', 'amount' => 500]));
-		$this->assertSame(['clerks', 'heads-too', 'heads'], array_column($captured[3], 'role'));
-		$this->assertSame([1, 2, 3], array_column($captured[3], 'order'));
+		$this->assertSame(['clerks', 'heads-too', 'heads'], array_column($captured[0]->tierPositions, 'role'));
+		$this->assertSame([1, 2, 3], array_column($captured[0]->tierPositions, 'order'));
 	}//end testCumulativeTiers()
 
 	/**
@@ -1039,7 +1049,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 			$this->lifecycle(['transitions' => ['submit' => ['from' => 'draft', 'to' => 'sent', 'authorization' => ['admins'], 'requires' => 'tag']]])
 		);
 		$this->permission->expects($this->once())->method('isTransitionAuthorized')
-			->with(['admins'], 'alice', $schema)->willReturn(false);
+			->with(new TransitionGate(authorizationList: ['admins'], schema: $schema), 'alice')->willReturn(false);
 		$this->guards->expects($this->never())->method('get');
 		$event = $this->update(['status' => 'draft'], ['status' => 'sent']);
 
@@ -1072,7 +1082,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 			)
 		);
 		$this->permission->expects($this->once())->method('isTransitionAuthorized')
-			->with(['admins'], null, $this->anything())->willReturn(true);
+			->with($this->callback(static fn (TransitionGate $gate): bool => $gate->authorizationList === ['admins']), null)->willReturn(true);
 
 		foreach ([['draft', 'sent'], ['a', 'b'], ['c', 'd']] as [$from, $to]) {
 			$event = $this->update(['status' => $from], ['status' => $to]);

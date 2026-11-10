@@ -25,6 +25,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Coverage-focused unit tests for SchemaService
@@ -74,8 +76,7 @@ class SchemaServiceCoverageTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new SchemaService(
-			$this->schemaMapper,
-			$this->objectMapper,
+			new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemaMapper, tables: $this->objectMapper),
 			$this->logger
 		);
 	}
@@ -196,7 +197,7 @@ class SchemaServiceCoverageTest extends TestCase {
 		$result = $this->invokeMethod('analyzeStringPattern', ['_report.pdf']);
 		// The filename pattern checks for file-like names; verify the function runs without error
 		// and returns some patterns (the exact match depends on regex specifics).
-		$this->assertIsArray($result);
+		$this->assertSame(['filename'], $result);
 	}
 
 	public function testAnalyzeStringPatternPath(): void {
@@ -777,17 +778,17 @@ class SchemaServiceCoverageTest extends TestCase {
 
 	public function testAnalyzePropertyValueListArray(): void {
 		$result = $this->invokeMethod('analyzePropertyValue', [['a', 'b', 'c']]);
-		$this->assertNotNull($result['array_structure']);
+		$this->assertSame(['type' => 'list', 'length' => 3, 'item_types' => ['string' => 3], 'sample_item' => 'a'], $result['array_structure']);
 	}
 
 	public function testAnalyzePropertyValueAssocArray(): void {
 		$result = $this->invokeMethod('analyzePropertyValue', [['key' => 'value']]);
-		$this->assertNotNull($result['object_structure']);
+		$this->assertSame(['type' => 'object', 'keys' => ['key'], 'key_count' => 1], $result['object_structure']);
 	}
 
 	public function testAnalyzePropertyValueObject(): void {
 		$result = $this->invokeMethod('analyzePropertyValue', [(object)['name' => 'test']]);
-		$this->assertNotNull($result['object_structure']);
+		$this->assertSame(['type' => 'object', 'keys' => ['name'], 'key_count' => 1], $result['object_structure']);
 	}
 
 	// =========================================================================

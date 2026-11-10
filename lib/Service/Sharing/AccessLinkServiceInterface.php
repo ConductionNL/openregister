@@ -69,17 +69,11 @@ interface AccessLinkServiceInterface {
 	/**
 	 * Mint a link over one subject.
 	 *
-	 * The minting principal is an argument rather than something this service
-	 * reaches for, so the identity behind a published link is decided at the
-	 * HTTP boundary and is visible there.
+	 * The minting principal travels in the request rather than being something
+	 * this service reaches for, so the identity behind a published link is
+	 * decided at the HTTP boundary and is visible there.
 	 *
-	 * @param string $userId The principal minting the link.
-	 * @param string $subjectType `object`, `view` or `file`.
-	 * @param string $subjectId The object uuid, view uuid, or file id.
-	 * @param array<int, string> $capabilities The declared capabilities; empty means read only.
-	 * @param string|null $expiresAt The end date, in any format DateTime parses. Required.
-	 * @param string|null $password Optional password, checked at use.
-	 * @param string|null $label Optional human label.
+	 * @param LinkMintRequest $request The minting principal, the subject and the terms.
 	 *
 	 * @return array<string, mixed> The link row plus the URL a holder opens.
 	 *
@@ -87,15 +81,7 @@ interface AccessLinkServiceInterface {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
-	public function mint(
-		string $userId,
-		string $subjectType,
-		string $subjectId,
-		array $capabilities = [],
-		?string $expiresAt = null,
-		?string $password = null,
-		?string $label = null,
-	): array;
+	public function mint(LinkMintRequest $request): array;
 
 	/**
 	 * Whether the password presented opens this link.
@@ -164,19 +150,26 @@ interface AccessLinkServiceInterface {
 	public function revoke(int $id, string $userId): bool;
 
 	/**
-	 * Switch a link off, or back on, without revoking it.
+	 * Switch a link off without revoking it; a switched-off link answers the same 404 as a revoked one.
 	 *
-	 * Switching off is the reversible half of revocation, and it is what the
-	 * spec means by a link that grants nothing while it is off. A switched-off
-	 * link answers the same 404 as a revoked one.
-	 *
-	 * @param int $id The link row id.
+	 * @param int    $id     The link row id.
 	 * @param string $userId The principal asking.
-	 * @param bool $disabled True to switch the link off.
 	 *
 	 * @return array<string, mixed>|null The updated link, or null when there is none.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
 	 */
-	public function setDisabled(int $id, string $userId, bool $disabled): ?array;
+	public function disable(int $id, string $userId): ?array;
+
+	/**
+	 * Switch a link the caller minted back on.
+	 *
+	 * @param int    $id     The link row id.
+	 * @param string $userId The principal asking.
+	 *
+	 * @return array<string, mixed>|null The updated link, or null when there is none.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
+	 */
+	public function enable(int $id, string $userId): ?array;
 }//end interface

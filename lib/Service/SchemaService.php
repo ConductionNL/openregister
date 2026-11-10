@@ -27,10 +27,9 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -102,41 +101,15 @@ class SchemaService implements SchemaExplorationInterface {
 	];
 
 	/**
-	 * Schema mapper for schema operations
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Object entity mapper for object queries
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private MagicMapperInterface $objectEntityMapper;
-
-	/**
-	 * Logger for debugging and monitoring
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * SchemaService constructor
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations.
-	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper for object queries.
-	 * @param LoggerInterface $logger Logger for debugging and monitoring.
+	 * @param SchemaCatalogInterface $catalog The schema mapper (schema operations) and the magic mapper (object queries).
+	 * @param LoggerInterface        $logger  Logger for debugging and monitoring.
 	 */
 	public function __construct(
-		SchemaMapperInterface $schemaMapper,
-		MagicMapperInterface $objectEntityMapper,
-		LoggerInterface $logger,
+		private readonly SchemaCatalogInterface $catalog,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->schemaMapper = $schemaMapper;
-		$this->objectEntityMapper = $objectEntityMapper;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -168,7 +141,7 @@ class SchemaService implements SchemaExplorationInterface {
 
 		// Get the schema to validate it exists.
 		try {
-			$schema = $this->schemaMapper->find($schemaId);
+			$schema = $this->catalog->schemas()->find($schemaId);
 		} catch (\Exception $e) {
 			throw new Exception('Schema not found with ID: ' . $schemaId);
 		}
@@ -176,7 +149,7 @@ class SchemaService implements SchemaExplorationInterface {
 		// Sample a bounded set of objects for this schema. Exploration is
 		// statistical, so a capped sample avoids loading the full (potentially
 		// huge) object set into memory (bound-unbounded-query-memory).
-		$objects = $this->objectEntityMapper->findBySchema($schemaId, self::SCHEMA_EXPLORE_SAMPLE_SIZE);
+		$objects = $this->catalog->tables()->findBySchema($schemaId, self::SCHEMA_EXPLORE_SAMPLE_SIZE);
 
 		$this->logger->info(
 			message: '[SchemaService] Analyzing a sample of ' . count($objects) . ' objects (cap ' . self::SCHEMA_EXPLORE_SAMPLE_SIZE . ')',
@@ -206,8 +179,7 @@ class SchemaService implements SchemaExplorationInterface {
 		);
 		$existPropSuggestions = $this->analyzeExistingProperties(
 			existingProperties: $schema->getProperties(),
-			discoveredProperties: $propertyAnalysis['discovered'],
-			_usageStats: $propertyAnalysis['usage_stats']
+			discoveredProperties: $propertyAnalysis['discovered']
 		);
 
 		return [
@@ -250,8 +222,7 @@ class SchemaService implements SchemaExplorationInterface {
 	 *     data_types: array<never, never>}
 	 */
 	private function analyzeObjectProperties(array $objects, array $_existingProperties = []): array {
-		$discoveredProperties = [];
-		$usageStats = [];
+		$run = new PropertyDiscoveryRun();
 		$dataTypes = [];
 
 		foreach ($objects as $object) {
@@ -260,12 +231,11 @@ class SchemaService implements SchemaExplorationInterface {
 			// Skip the '@self' metadata field in analysis.
 			unset($objectData['@self']);
 
-			$this->recordObjectProperties(
-				objectData: $objectData,
-				discoveredProperties: $discoveredProperties,
-				usageStats: $usageStats
-			);
+			$this->recordObjectProperties(run: $run, objectData: $objectData);
 		}//end foreach
+
+		$discoveredProperties = $run->discovered;
+		$usageStats = $run->usageStats;
 
 		// Calculate usage percentages.
 		$totalObjects = count($objects);
@@ -287,40 +257,38 @@ class SchemaService implements SchemaExplorationInterface {
 	/**
 	 * Count and analyse the properties of one object's data.
 	 *
-	 * @param array $objectData           The object's data, without '@self'
-	 * @param array $discoveredProperties Discovered properties; extended in place
-	 * @param array $usageStats           Usage counts; extended in place
+	 * @param PropertyDiscoveryRun $run        The pass: discovered properties and usage counts, extended in place
+	 * @param array                $objectData The object's data, without '@self'
 	 *
 	 * @return void
 	 */
-	private function recordObjectProperties(array $objectData, array &$discoveredProperties, array &$usageStats): void {
+	private function recordObjectProperties(PropertyDiscoveryRun $run, array $objectData): void {
 		foreach ($objectData as $propertyName => $propertyValue) {
 			// Track usage count.
-			$usageStats['counts'][$propertyName] = (($usageStats['counts'][$propertyName] ?? 0) + 1);
+			$run->usageStats['counts'][$propertyName] = (($run->usageStats['counts'][$propertyName] ?? 0) + 1);
 
 			// Skip if null or empty.
 			if ($propertyValue === null || $propertyValue === '') {
 				continue;
 			}
 
-			$this->recordPropertyValue(
-				discoveredProperties: $discoveredProperties,
-				propertyName: $propertyName,
-				propertyValue: $propertyValue
-			);
+			$run->property = $propertyName;
+			$this->recordPropertyValue(run: $run, propertyValue: $propertyValue);
 		}
 	}//end recordObjectProperties()
 
 	/**
 	 * Analyse one non-empty property value and merge it into the discovered properties.
 	 *
-	 * @param array      $discoveredProperties Discovered properties; extended in place
-	 * @param int|string $propertyName         The property name
-	 * @param mixed      $propertyValue        The value
+	 * @param PropertyDiscoveryRun $run           The pass, on the property being recorded; its discoveries are extended in place
+	 * @param mixed                $propertyValue The value
 	 *
 	 * @return void
 	 */
-	private function recordPropertyValue(array &$discoveredProperties, int|string $propertyName, mixed $propertyValue): void {
+	private function recordPropertyValue(PropertyDiscoveryRun $run, mixed $propertyValue): void {
+		$propertyName = $run->property;
+		$discoveredProperties = &$run->discovered;
+
 		// Analyze data type and characteristics.
 		$propertyAnalysis = $this->analyzePropertyValue(value: $propertyValue);
 
@@ -1180,15 +1148,10 @@ class SchemaService implements SchemaExplorationInterface {
 	 *
 	 * @param array $existingProperties Current schema properties
 	 * @param array $discoveredProperties Properties found in object analysis
-	 * @param array $_usageStats Usage statistics for all properties
 	 *
 	 * @return array List of property improvements
 	 */
-	private function analyzeExistingProperties(
-		array $existingProperties,
-		array $discoveredProperties,
-		array $_usageStats,
-	): array {
+	private function analyzeExistingProperties(array $existingProperties, array $discoveredProperties): array {
 		$improvements = [];
 		foreach ($existingProperties as $propertyName => $propertyConfig) {
 			// Skip if we don't have analysis data for this property.
@@ -1995,7 +1958,7 @@ class SchemaService implements SchemaExplorationInterface {
 
 		try {
 			// Get existing schema.
-			$schema = $this->schemaMapper->find($schemaId);
+			$schema = $this->catalog->schemas()->find($schemaId);
 			$existingProperties = $schema->getProperties();
 
 			// Merge new properties with existing ones.
@@ -2010,7 +1973,7 @@ class SchemaService implements SchemaExplorationInterface {
 			$schema->regenerateFacetsFromProperties();
 
 			// Save updated schema.
-			$updatedSchema = $this->schemaMapper->update($schema);
+			$updatedSchema = $this->catalog->schemas()->update($schema);
 
 			$this->logger->info(
 				message: '[SchemaService] Schema ' . $schemaId . ' successfully updated with exploration results',

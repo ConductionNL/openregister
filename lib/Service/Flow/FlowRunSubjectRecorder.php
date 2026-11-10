@@ -89,13 +89,7 @@ class FlowRunSubjectRecorder {
 		}
 
 		try {
-			$this->subjects->record(
-				run: $run,
-				role: $role,
-				uuid: $claim->uuid,
-				register: $claim->register,
-				schema: $claim->schema
-			);
+			$this->subjects->record(run: $run, claim: $claim);
 			$this->runs->update($run);
 		} catch (Throwable $e) {
 			// See the class docblock: the work already landed.

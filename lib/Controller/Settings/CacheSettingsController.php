@@ -20,11 +20,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CacheSettingsControllerServices;
-use OC\Files\AppData\Factory;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Files\AppData\IAppDataFactory;
 use OCP\Files\GenericFileException;
 use OCP\Files\NotFoundException;
 use OCP\Files\SimpleFS\ISimpleFolder;
@@ -67,23 +68,27 @@ class CacheSettingsController extends Controller {
 	private readonly IAppConfig $appConfig;
 
 	/**
+	 * App data factory.
+	 *
+	 * @var IAppDataFactory
+	 */
+	private readonly IAppDataFactory $appDataFactory;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param CacheSettingsControllerServices $services The controller's collaborators.
-	 * @param Factory $appDataFactory App data factory.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
 		CacheSettingsControllerServices $services,
-		private readonly Factory $appDataFactory,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->settingsService = $services->settingsService;
 		$this->logger = $services->logger;
 		$this->appConfig = $services->appConfig;
+		$this->appDataFactory = $services->appDataFactory;
 	}//end __construct()
 
 	/**

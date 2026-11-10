@@ -20,11 +20,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -90,9 +92,11 @@ final class MapperWiring {
 			schemaMapper: $container->get(SchemaMapperInterface::class),
 			eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
 			container: $container,
-			organisationMapper: $container->get(OrganisationMapperInterface::class),
-			userSession: $container->get('OCP\IUserSession'),
-			groupManager: $container->get('OCP\IGroupManager'),
+			tenancy: new TenancyServices(
+				organisationMapper: $container->get(OrganisationMapperInterface::class),
+				userSession: $container->get('OCP\IUserSession'),
+				groupManager: $container->get('OCP\IGroupManager')
+			),
 			appConfig: $container->get('OCP\IAppConfig'),
 			// Explicitly wired: this factory overrides autowiring, so an
 			// argument omitted here is never supplied at all. That is how
@@ -112,9 +116,11 @@ final class MapperWiring {
 	private static function webhookMapper(ContainerInterface $container): WebhookMapper {
 		return new WebhookMapper(
 			db: $container->get('OCP\IDBConnection'),
-			organisationMapper: $container->get(OrganisationMapperInterface::class),
-			userSession: $container->get('OCP\IUserSession'),
-			groupManager: $container->get('OCP\IGroupManager'),
+			tenancy: new TenancyServices(
+				organisationMapper: $container->get(OrganisationMapperInterface::class),
+				userSession: $container->get('OCP\IUserSession'),
+				groupManager: $container->get('OCP\IGroupManager')
+			),
 			appConfig: $container->get('OCP\IAppConfig')
 		);
 	}//end webhookMapper()
@@ -167,7 +173,7 @@ final class MapperWiring {
 			db: $container->get('OCP\IDBConnection'),
 			auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
 			userSession: $container->get('OCP\IUserSession'),
-			eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+			entityEvents: $container->get(EntityEventsInterface::class),
 			logger: $container->get('Psr\Log\LoggerInterface')
 		);
 	}//end entityRelationMapper()

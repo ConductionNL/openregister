@@ -92,25 +92,37 @@ final class ConditionTracer implements ConditionTracerInterface {
 	 *
 	 * @return RuleTrace The verdict with its deciding operand, when one decided.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) RuleTrace::renderValue is a pure rendering
-	 *   function on an immutable value object, not a collaborator: injecting the value
-	 *   object's own formatter would be a seam with exactly one possible implementation.
-	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function trace(mixed $condition, array $document, string $verdict, ?string $message = null): RuleTrace {
-		$deciding = null;
-		if ($this->wantsOperand(condition: $condition, verdict: $verdict) === true) {
-			$deciding = $this->tryDecidingOperand(node: $condition, document: $document);
+		$trace = new RuleTrace(verdict: $verdict, message: $message);
+		if ($this->wantsOperand(condition: $condition, verdict: $verdict) === false) {
+			return $trace;
 		}
 
+		return $this->withOperand(trace: $trace, deciding: $this->tryDecidingOperand(node: $condition, document: $document));
+	}//end trace()
+
+	/**
+	 * The trace with its deciding operand, when the walk found one.
+	 *
+	 * @param RuleTrace                                  $trace    The verdict and the engine's sentence.
+	 * @param array{operand: string, value: mixed}|null $deciding The deciding operand and its value, or null.
+	 *
+	 * @return RuleTrace The trace.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) RuleTrace::renderValue is a pure rendering
+	 *   function on an immutable value object, not a collaborator: injecting the value
+	 *   object's own formatter would be a seam with exactly one possible implementation.
+	 */
+	private function withOperand(RuleTrace $trace, ?array $deciding): RuleTrace {
 		if ($deciding === null) {
-			return new RuleTrace(verdict: $verdict, message: $message);
+			return $trace;
 		}
 
 		$rendered = RuleTrace::renderValue(value: $deciding['value']);
-		return new RuleTrace(verdict: $verdict, operand: $deciding['operand'], operandValue: $rendered, message: $message);
-	}//end trace()
+		return new RuleTrace(verdict: $trace->getVerdict(), operand: $deciding['operand'], operandValue: $rendered, message: $trace->getMessage());
+	}//end withOperand()
 
 	/**
 	 * Whether a verdict on a condition is explained by a deciding operand.

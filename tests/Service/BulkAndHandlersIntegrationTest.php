@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Object\SaveObject\TemplateSource;
 
 /**
  * Integration tests for bulk operations and save-object handlers.
@@ -355,16 +356,13 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testProcessTwigLikeTemplateWithFallbacks(): void {
 		$data = ['ggm_naam' => 'Alt Name', 'type' => 'gemeente'];
-		$result = $this->metadataHandler->processTwigLikeTemplate(
-			$data,
-			'{{ name | ggm_naam }} - {{ type }}'
-		);
+		$result = $this->metadataHandler->renderTemplate(template: '{{ name | ggm_naam }} - {{ type }}', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Alt Name - gemeente', $result);
 	}
 
 	public function testProcessTwigLikeTemplateNoMatches(): void {
 		$data = ['x' => 'y'];
-		$result = $this->metadataHandler->processTwigLikeTemplate($data, 'no-template-here');
+		$result = $this->metadataHandler->renderTemplate(template: 'no-template-here', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertNull($result);
 	}
 
@@ -432,19 +430,13 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testProcessTwigLikeTemplateWithMapFilter(): void {
 		$data = ['richting' => 'AnaarB', 'name' => 'Route 1'];
-		$result = $this->metadataHandler->processTwigLikeTemplate(
-			$data,
-			'{{ name }} {{ richting | map: AnaarB=>, BnaarA=< }}'
-		);
+		$result = $this->metadataHandler->renderTemplate(template: '{{ name }} {{ richting | map: AnaarB=>, BnaarA=< }}', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Route 1 >', $result);
 	}
 
 	public function testProcessTwigLikeTemplateWithIfFilledFilter(): void {
 		$data = ['extern' => 'ja', 'name' => 'Service'];
-		$result = $this->metadataHandler->processTwigLikeTemplate(
-			$data,
-			'{{ name }} ({{ extern | ifFilled: extern, intern }})'
-		);
+		$result = $this->metadataHandler->renderTemplate(template: '{{ name }} ({{ extern | ifFilled: extern, intern }})', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Service (extern)', $result);
 	}
 
@@ -453,11 +445,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 		// resolveRelationValue returns null for non-string values.
 		// Provide schemaProperties to skip resolveRelationValue for non-relation fields.
 		$data = ['tags' => ['a', 'b', 'c']];
-		$result = $this->metadataHandler->processTwigLikeTemplate(
-			$data,
-			'{{ tags }}',
-			['tags' => ['type' => 'array', 'items' => ['type' => 'string']]]
-		);
+		$result = $this->metadataHandler->renderTemplate(template: '{{ tags }}', source: new TemplateSource(data: $data, schemaProperties: ['tags' => ['type' => 'array', 'items' => ['type' => 'string']]]));
 		// With schemaProperties provided but 'tags' not a relation, resolveRelationValue
 		// returns null for arrays. The template replaces it with empty string.
 		// This is expected behavior — arrays are not meaningful as template values
@@ -580,38 +568,38 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testIsFilePropertyDataUri(): void {
 		$this->assertTrue(
-			$this->fileHandler->isFileProperty('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB')
+			$this->fileHandler->isFileValue('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB')
 		);
 	}
 
 	public function testIsFilePropertyUrlWithFileExtension(): void {
 		$this->assertTrue(
-			$this->fileHandler->isFileProperty('https://example.com/files/document.pdf')
+			$this->fileHandler->isFileValue('https://example.com/files/document.pdf')
 		);
 	}
 
 	public function testIsFilePropertyUrlWithoutExtension(): void {
 		$this->assertFalse(
-			$this->fileHandler->isFileProperty('https://example.com/page')
+			$this->fileHandler->isFileValue('https://example.com/page')
 		);
 	}
 
 	public function testIsFilePropertyBase64Long(): void {
 		// Generate a valid base64 string > 100 chars.
 		$longBase64 = base64_encode(str_repeat('A', 200));
-		$this->assertTrue($this->fileHandler->isFileProperty($longBase64));
+		$this->assertTrue($this->fileHandler->isFileValue($longBase64));
 	}
 
 	public function testIsFilePropertyPlainStringNotFile(): void {
-		$this->assertFalse($this->fileHandler->isFileProperty('just a normal string'));
+		$this->assertFalse($this->fileHandler->isFileValue('just a normal string'));
 	}
 
 	public function testIsFilePropertyNullValue(): void {
-		$this->assertFalse($this->fileHandler->isFileProperty(null));
+		$this->assertFalse($this->fileHandler->isFileValue(null));
 	}
 
 	public function testIsFilePropertyIntValue(): void {
-		$this->assertFalse($this->fileHandler->isFileProperty(42));
+		$this->assertFalse($this->fileHandler->isFileValue(42));
 	}
 
 	public function testIsFilePropertySchemaBasedFileType(): void {
@@ -620,7 +608,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			'photo' => ['type' => 'file'],
 		]);
 
-		$this->assertTrue($this->fileHandler->isFileProperty('any-value', $schema, 'photo'));
+		$this->assertTrue($this->fileHandler->isFileInSchema($schema, 'photo'));
 	}
 
 	public function testIsFilePropertySchemaBasedArrayFileType(): void {
@@ -632,7 +620,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			],
 		]);
 
-		$this->assertTrue($this->fileHandler->isFileProperty('any-value', $schema, 'photos'));
+		$this->assertTrue($this->fileHandler->isFileInSchema($schema, 'photos'));
 	}
 
 	public function testIsFilePropertySchemaBasedNonFileType(): void {
@@ -641,7 +629,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->assertFalse($this->fileHandler->isFileProperty('any-value', $schema, 'name'));
+		$this->assertFalse($this->fileHandler->isFileInSchema($schema, 'name'));
 	}
 
 	public function testIsFilePropertySchemaBasedMissingProperty(): void {
@@ -650,33 +638,33 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			'name' => ['type' => 'string'],
 		]);
 
-		$this->assertFalse($this->fileHandler->isFileProperty('any-value', $schema, 'nonexistent'));
+		$this->assertFalse($this->fileHandler->isFileInSchema($schema, 'nonexistent'));
 	}
 
 	public function testIsFilePropertyFileObject(): void {
 		$fileObj = ['id' => 123, 'title' => 'test.pdf', 'path' => '/files/test.pdf'];
-		$this->assertTrue($this->fileHandler->isFileProperty($fileObj));
+		$this->assertTrue($this->fileHandler->isFileValue($fileObj));
 	}
 
 	public function testIsFilePropertyArrayOfDataUris(): void {
 		$arr = ['data:image/png;base64,abc123'];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFilePropertyArrayOfUrls(): void {
 		$arr = ['https://example.com/files/doc.pdf'];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFilePropertyArrayOfBase64(): void {
 		$longBase64 = base64_encode(str_repeat('B', 200));
 		$arr = [$longBase64];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFilePropertyArrayOfFileObjects(): void {
 		$arr = [['id' => 1, 'title' => 'file1.pdf', 'path' => '/a']];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFileObjectValid(): void {
@@ -744,7 +732,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 		];
 
 		// Should not throw.
-		$this->fileHandler->validateFileAgainstConfig($fileData, ['type' => 'file'], 'testProp');
+		$this->fileHandler->validateFileAgainstConfig($fileData, new \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest(new ObjectEntity(), 'testProp', ['type' => 'file'], null));
 		$this->assertTrue(true); // Passed without exception.
 	}
 
@@ -763,7 +751,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 		$this->expectException(\Exception::class);
 		$this->expectExceptionMessage('invalid type');
-		$this->fileHandler->validateFileAgainstConfig($fileData, $config, 'photo');
+		$this->fileHandler->validateFileAgainstConfig($fileData, new \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest(new ObjectEntity(), 'photo', $config, null));
 	}
 
 	public function testValidateFileAgainstConfigBlocksOversize(): void {
@@ -781,7 +769,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 		$this->expectException(\Exception::class);
 		$this->expectExceptionMessage('exceeds maximum size');
-		$this->fileHandler->validateFileAgainstConfig($fileData, $config, 'doc');
+		$this->fileHandler->validateFileAgainstConfig($fileData, new \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest(new ObjectEntity(), 'doc', $config, null));
 	}
 
 	public function testValidateFileAgainstConfigWithIndex(): void {
@@ -796,7 +784,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 		$this->expectException(\Exception::class);
 		$this->expectExceptionMessage('testProp[2]');
-		$this->fileHandler->validateFileAgainstConfig($fileData, $config, 'testProp', 2);
+		$this->fileHandler->validateFileAgainstConfig($fileData, new \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest(new ObjectEntity(), 'testProp', $config, 2));
 	}
 
 	public function testBlockExecutableFilesByExtension(): void {
@@ -895,24 +883,24 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testIsFilePropertyUrlWithImageExtension(): void {
 		$this->assertTrue(
-			$this->fileHandler->isFileProperty('https://cdn.example.com/photo.jpg')
+			$this->fileHandler->isFileValue('https://cdn.example.com/photo.jpg')
 		);
 	}
 
 	public function testIsFilePropertyUrlWithDocxExtension(): void {
 		$this->assertTrue(
-			$this->fileHandler->isFileProperty('https://example.com/report.docx')
+			$this->fileHandler->isFileValue('https://example.com/report.docx')
 		);
 	}
 
 	public function testIsFilePropertyArrayWithUrlInside(): void {
 		$arr = ['https://example.com/image.png'];
-		$this->assertTrue($this->fileHandler->isFileProperty($arr));
+		$this->assertTrue($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testIsFilePropertyArrayWithNonFiles(): void {
 		$arr = ['just a string', 'another string'];
-		$this->assertFalse($this->fileHandler->isFileProperty($arr));
+		$this->assertFalse($this->fileHandler->isFileValue($arr));
 	}
 
 	public function testBlockExecutableFilesPhpTag(): void {
@@ -939,7 +927,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 			'allowedTypes' => ['image/png', 'image/jpeg'],
 		];
 
-		$this->fileHandler->validateFileAgainstConfig($fileData, $config, 'photo');
+		$this->fileHandler->validateFileAgainstConfig($fileData, new \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest(new ObjectEntity(), 'photo', $config, null));
 		$this->assertTrue(true);
 	}
 
@@ -953,7 +941,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 		$config = ['type' => 'file', 'maxSize' => 500];
 
-		$this->fileHandler->validateFileAgainstConfig($fileData, $config, 'doc');
+		$this->fileHandler->validateFileAgainstConfig($fileData, new \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest(new ObjectEntity(), 'doc', $config, null));
 		$this->assertTrue(true);
 	}
 }

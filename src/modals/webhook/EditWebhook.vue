@@ -8,7 +8,7 @@
 		"
 		size="large"
 		:open="true"
-		@update:open="handleDialogClose">
+		@update:open="closeModal">
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
@@ -370,12 +370,7 @@
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<CloseCancelButton @click="closeModal" />
 			<NcButton
 				:disabled="loading || !isValid"
 				variant="primary"
@@ -404,12 +399,12 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import Tune from 'vue-material-design-icons/Tune.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import FormCheckboxField from '../../components/shared/FormCheckboxField.vue'
 import FormSelectField from '../../components/shared/FormSelectField.vue'
 import SelectOption from '../../components/shared/SelectOption.vue'
@@ -421,6 +416,7 @@ import {
 	webhookPayload,
 } from '../../services/webhookForm.js'
 import { navigationStore, webhookStore } from '../../store/store.js'
+import { defaultWebhookConfiguration, defaultWebhookItem } from './webhookDefaults.js'
 
 export default {
 	name: 'EditWebhook',
@@ -437,7 +433,7 @@ export default {
 		FormSelectField,
 		SelectOption,
 		AppTab,
-		Cancel,
+		CloseCancelButton,
 		ContentSave,
 		Cog,
 		Database,
@@ -461,13 +457,7 @@ export default {
 			preview: null,
 			previewError: null,
 			previewing: false,
-			configuration: {
-				sendCloudEvent: true,
-				waitForResponse: false,
-				allowPrivateTargets: false,
-				eventProperty: null,
-				responseMapping: {},
-			},
+			configuration: defaultWebhookConfiguration(),
 
 			availableEvents: [],
 			eventOptions: [],
@@ -636,26 +626,7 @@ export default {
 				this.webhookItem = { ...transferData.webhook }
 				this.loadExistingSelections()
 			} else {
-				this.webhookItem = {
-					name: '',
-					url: '',
-					method: 'POST',
-					enabled: true,
-					events: [],
-					maxRetries: 3,
-					timeout: 30,
-					retryPolicy: 'exponential',
-					secret: null,
-					headers: {},
-					filters: {},
-					configuration: {
-						sendCloudEvent: true,
-						waitForResponse: false,
-						allowPrivateTargets: false,
-						eventProperty: null,
-						responseMapping: {},
-					},
-				}
+				this.webhookItem = defaultWebhookItem()
 				// Default to POST (find it in options since GET is now first).
 				this.selectedMethod = defaultMethodOption(this.httpMethodOptions)
 				this.selectedRetryPolicy = this.retryPolicyOptions[0] // 'exponential'
@@ -738,13 +709,7 @@ export default {
 		 * @spec exclude Form-field binding — sets the selected event property.
 		 */
 		updateEventProperty(value) {
-			if (!this.webhookItem) {
-				this.webhookItem = {}
-			}
-			if (!this.webhookItem.configuration) {
-				this.webhookItem.configuration = {}
-			}
-			this.webhookItem.configuration.eventProperty = value ? value.value : null
+			this.ensureConfiguration().eventProperty = value ? value.value : null
 			this.selectedEventProperty = value
 		},
 
@@ -753,14 +718,7 @@ export default {
 		 * @spec exclude Form-field binding — sets the sendCloudEvent configuration flag.
 		 */
 		updateSendCloudEvent(value) {
-			if (!this.webhookItem) {
-				this.webhookItem = {}
-			}
-			if (!this.webhookItem.configuration) {
-				this.webhookItem.configuration = {}
-			}
-			this.configuration.sendCloudEvent = value
-			this.webhookItem.configuration.sendCloudEvent = value
+			this.setConfigurationFlag('sendCloudEvent', value)
 		},
 
 		/**
@@ -768,14 +726,7 @@ export default {
 		 * @spec exclude Form-field binding — sets the waitForResponse configuration flag.
 		 */
 		updateWaitForResponse(value) {
-			if (!this.webhookItem) {
-				this.webhookItem = {}
-			}
-			if (!this.webhookItem.configuration) {
-				this.webhookItem.configuration = {}
-			}
-			this.configuration.waitForResponse = value
-			this.webhookItem.configuration.waitForResponse = value
+			this.setConfigurationFlag('waitForResponse', value)
 		},
 
 		/**
@@ -783,14 +734,33 @@ export default {
 		 * @spec exclude Form-field binding — sets the allowPrivateTargets configuration flag.
 		 */
 		updateAllowPrivateTargets(value) {
+			this.setConfigurationFlag('allowPrivateTargets', value)
+		},
+
+		/**
+		 * @param {string} key The configuration flag.
+		 * @param {boolean} value Its new value.
+		 * @spec exclude Form-field binding — sets one flag on both copies of the configuration.
+		 */
+		setConfigurationFlag(key, value) {
+			this.configuration[key] = value
+			this.ensureConfiguration()[key] = value
+		},
+
+		/**
+		 * The stored webhook's configuration, created when the form has none yet.
+		 *
+		 * @return {object} The webhook item's configuration.
+		 * @spec exclude Form-field binding — makes sure the webhook item has a configuration.
+		 */
+		ensureConfiguration() {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			if (!this.webhookItem.configuration) {
 				this.webhookItem.configuration = {}
 			}
-			this.configuration.allowPrivateTargets = value
-			this.webhookItem.configuration.allowPrivateTargets = value
+			return this.webhookItem.configuration
 		},
 
 		/**
@@ -1001,13 +971,6 @@ export default {
 		},
 
 		/**
-		 * @spec exclude UI event handler — closes the modal on dialog dismiss.
-		 */
-		handleDialogClose() {
-			this.closeModal()
-		},
-
-		/**
 		 * @spec exclude Modal close plumbing — resets the webhook form and closes the modal.
 		 */
 		closeModal() {
@@ -1019,13 +982,7 @@ export default {
 			this.selectedEvent = null
 			this.selectedEventProperty = null
 			this.selectedRetryPolicy = null
-			this.configuration = {
-				sendCloudEvent: true,
-				waitForResponse: false,
-				allowPrivateTargets: false,
-				eventProperty: null,
-				responseMapping: {},
-			}
+			this.configuration = defaultWebhookConfiguration()
 		},
 
 		/**

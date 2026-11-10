@@ -63,13 +63,6 @@ use Throwable;
 class WebhookService {
 
 	/**
-	 * Webhook mapper
-	 *
-	 * @var WebhookMapperInterface
-	 */
-	private WebhookMapperInterface $webhookMapper;
-
-	/**
 	 * HTTP client
 	 *
 	 * @var GuzzleClient
@@ -91,90 +84,19 @@ class WebhookService {
 	private ?WebhookDeliveryRecorder $deliveryRecorder = null;
 
 	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
-	 * Webhook log mapper
-	 *
-	 * @var WebhookLogMapperInterface
-	 */
-	private WebhookLogMapperInterface $webhookLogMapper;
-
-	/**
-	 * CloudEvent formatter
-	 *
-	 * @var CloudEventFormatterInterface|null
-	 */
-	private ?CloudEventFormatterInterface $cloudEventFormatter;
-
-	/**
-	 * Job list used to enqueue asynchronous webhook delivery.
-	 *
-	 * @var IJobList
-	 */
-	private IJobList $jobList;
-
-	/**
-	 * Mapping service for payload transformation
-	 *
-	 * @var MappingService
-	 */
-	private MappingService $mappingService;
-
-	/**
-	 * Mapping mapper for loading mapping entities
-	 *
-	 * @var MappingMapperInterface
-	 */
-	private MappingMapperInterface $mappingMapper;
-
-	/**
-	 * Cache of the "has interception webhooks" flag per event type.
-	 *
-	 * Nullable so the service stays constructible without a cache backend
-	 * (unit tests, degraded environments); the fast path then falls back to
-	 * the direct lookup.
-	 *
-	 * @var WebhookInterceptionCacheInterface|null
-	 */
-	private ?WebhookInterceptionCacheInterface $interceptionCache;
-
-	/**
 	 * Constructor
 	 *
-	 * @param WebhookMapperInterface $webhookMapper Webhook mapper
-	 * @param LoggerInterface $logger Logger
-	 * @param WebhookLogMapperInterface $webhookLogMapper Webhook log mapper
-	 * @param MappingService $mappingService Mapping service
-	 * @param MappingMapperInterface $mappingMapper Mapping mapper
-	 * @param IJobList $jobList Background job list for async delivery
-	 * @param CloudEventFormatterInterface|null $cloudEventFormatter CloudEvent formatter (optional)
-	 * @param WebhookInterceptionCacheInterface|null $interceptionCache Interception-flag cache (optional)
+	 * @param WebhookStores           $stores           Webhook, log and mapping stores
+	 * @param WebhookDispatchServices $dispatch         Job list, CloudEvent formatter and interception cache
+	 * @param LoggerInterface         $logger           Logger
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		WebhookMapperInterface $webhookMapper,
-		LoggerInterface $logger,
-		WebhookLogMapperInterface $webhookLogMapper,
-		MappingService $mappingService,
-		MappingMapperInterface $mappingMapper,
-		IJobList $jobList,
-		?CloudEventFormatterInterface $cloudEventFormatter = null,
-		?WebhookInterceptionCacheInterface $interceptionCache = null,
+		private readonly WebhookStores $stores,
+		private readonly WebhookDispatchServices $dispatch,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->webhookMapper = $webhookMapper;
-		$this->logger = $logger;
-		$this->webhookLogMapper = $webhookLogMapper;
-		$this->mappingService = $mappingService;
-		$this->mappingMapper = $mappingMapper;
-		$this->jobList = $jobList;
-		$this->cloudEventFormatter = $cloudEventFormatter;
-		$this->interceptionCache = $interceptionCache;
 		$this->initializeHttpClient();
 	}//end __construct()
 
@@ -569,8 +491,8 @@ class WebhookService {
 	private function deliveryRecorder(): WebhookDeliveryRecorder {
 		$this->deliveryRecorder ??= new WebhookDeliveryRecorder(
 			logger: $this->logger,
-			webhookMapper: $this->webhookMapper,
-			webhookLogMapper: $this->webhookLogMapper,
+			webhookMapper: $this->stores->webhookMapper,
+			webhookLogMapper: $this->stores->webhookLogMapper,
 			previewBody: $this->previewResponseBody(...)
 		);
 
@@ -590,6 +512,21 @@ class WebhookService {
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function dispatchEvent(Event $_event, string $eventName, array $payload): void {
+		$this->dispatch(event: new WebhookEvent(name: $eventName, payload: $payload));
+	}//end dispatchEvent()
+
+	/**
+	 * Enqueue one delivery job per webhook subscribed to an event (value-object form of dispatchEvent()).
+	 *
+	 * @param WebhookEvent $event The event name and payload.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
+	 */
+	public function dispatch(WebhookEvent $event): void {
+		$eventName = $event->name;
+		$payload = $event->payload;
 		$webhooks = $this->webhooksForEvent(eventName: $eventName);
 		if ($webhooks === []) {
 			return;
@@ -612,7 +549,7 @@ class WebhookService {
 		// ADR-009 Rule 5). WebhookDeliveryJob performs the same delivery + logging.
 		foreach ($webhooks as $webhook) {
 			try {
-				$this->jobList->add(
+				$this->dispatch->jobList->add(
 					WebhookDeliveryJob::class,
 					[
 						'webhook_id' => $webhook->getId(),
@@ -640,7 +577,7 @@ class WebhookService {
 				);
 			}
 		}
-	}//end dispatchEvent()
+	}//end dispatch()
 
 	/**
 	 * The webhooks subscribed to an event; none (logged) when there are none or the webhook
@@ -652,7 +589,7 @@ class WebhookService {
 	 */
 	private function webhooksForEvent(string $eventName): array {
 		try {
-			$webhooks = $this->webhookMapper->findForEvent($eventName);
+			$webhooks = $this->stores->webhookMapper->findForEvent($eventName);
 		} catch (\Exception $e) {
 			$this->logger->debug(
 				message: '[WebhookService] Webhook table does not exist yet, skipping webhook delivery',
@@ -673,29 +610,18 @@ class WebhookService {
 	}//end webhooksForEvent()
 
 	/**
-	 * Deliver webhook to target URL
+	 * Deliver one event to one webhook and log the outcome.
 	 *
-	 * @param Webhook $webhook Webhook configuration
-	 * @param string $eventName Event name
-	 * @param array $payload Payload data
-	 * @param int $attempt Current attempt number (for retries)
-	 * @param int|null $timeoutCapSeconds Optional hard cap on connect + total timeout;
-	 *                                    used by the synchronous interception path
-	 *                                    (INTERCEPTION_TIMEOUT_SECONDS). Null keeps the
-	 *                                    per-webhook timeout (async deliveries).
+	 * @param WebhookDelivery $delivery The webhook, event, attempt number and optional timeout cap.
 	 *
 	 * @return bool Success status
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function deliverWebhook(
-		Webhook $webhook,
-		string $eventName,
-		array $payload,
-		int $attempt = 1,
-		?int $timeoutCapSeconds = null,
-	): bool {
-		$skipReason = $this->deliverySkipReason(webhook: $webhook, payload: $payload);
+	public function deliverWebhook(WebhookDelivery $delivery): bool {
+		$webhook = $delivery->webhook;
+		$eventName = $delivery->event->name;
+		$skipReason = $this->deliverySkipReason(webhook: $webhook, payload: $delivery->event->payload);
 		if ($skipReason !== null) {
 			$this->logger->debug(
 				message: $skipReason,
@@ -704,20 +630,20 @@ class WebhookService {
 			return false;
 		}
 
-		$webhookPayload = $this->buildPayload(webhook: $webhook, eventName: $eventName, payload: $payload, attempt: $attempt);
+		$webhookPayload = $this->buildPayload(delivery: $delivery);
 		$recorder = $this->deliveryRecorder();
 		$webhookLog = $recorder->startDeliveryLog(webhook: $webhook, webhookPayload: $webhookPayload);
 		$webhookLog->setEventClass($eventName);
-		$webhookLog->setAttempt($attempt);
-		$delivery = new WebhookDeliveryAttempt(webhook: $webhook, log: $webhookLog);
+		$webhookLog->setAttempt($delivery->attempt);
+		$attempt = new WebhookDeliveryAttempt(webhook: $webhook, log: $webhookLog);
 
 		try {
-			$response = $this->sendRequest(webhook: $webhook, payload: $webhookPayload, timeoutCapSeconds: $timeoutCapSeconds);
-			return $recorder->recordResponse(delivery: $delivery, response: $response);
+			$response = $this->sendRequest(delivery: $delivery, payload: $webhookPayload);
+			return $recorder->recordResponse(delivery: $attempt, response: $response);
 		} catch (RequestException $e) {
-			return $recorder->recordRequestFailure(delivery: $delivery, exception: $e);
+			return $recorder->recordRequestFailure(delivery: $attempt, exception: $e);
 		} catch (\Exception $e) {
-			return $recorder->recordUnexpectedFailure(delivery: $delivery, exception: $e);
+			return $recorder->recordUnexpectedFailure(delivery: $attempt, exception: $e);
 		}
 	}//end deliverWebhook()
 
@@ -807,28 +733,23 @@ class WebhookService {
 	 * shaped it: a delivery whose mapping is missing or fails falls back to the
 	 * standard payload, and the preview must not show that fallback as mapped.
 	 *
-	 * @param Webhook $webhook   The webhook, saved or as the dialog holds it.
-	 * @param string  $eventName The event class the payload is for.
-	 * @param array   $payload   The event payload.
+	 * @param Webhook      $webhook The webhook, saved or as the dialog holds it.
+	 * @param WebhookEvent $event   The event name and payload.
 	 *
 	 * @return array{payload: array, mapped: bool}
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function previewPayload(Webhook $webhook, string $eventName, array $payload): array {
+	public function previewPayload(Webhook $webhook, WebhookEvent $event): array {
+		$delivery = new WebhookDelivery(webhook: $webhook, event: $event);
 		$mapped = false;
 		$mappingId = $webhook->getMapping();
 		if ($mappingId !== null) {
-			$mapped = $this->applyMappingTransformation(
-				mappingId: $mappingId,
-				eventName: $eventName,
-				payload: $payload,
-				webhook: $webhook
-			) !== null;
+			$mapped = $this->applyMappingTransformation(delivery: $delivery, mappingId: $mappingId) !== null;
 		}
 
 		return [
-			'payload' => $this->buildPayload(webhook: $webhook, eventName: $eventName, payload: $payload, attempt: 1),
+			'payload' => $this->buildPayload(delivery: $delivery),
 			'mapped' => $mapped,
 		];
 	}//end previewPayload()
@@ -841,10 +762,7 @@ class WebhookService {
 	 * 2. CloudEvents format — if configured via useCloudEvents
 	 * 3. Standard format — default
 	 *
-	 * @param Webhook $webhook Webhook configuration
-	 * @param string $eventName Event name
-	 * @param array $payload Event payload
-	 * @param int $attempt Delivery attempt number
+	 * @param WebhookDelivery $delivery The webhook, the event and the delivery attempt number
 	 *
 	 * @return array Webhook payload in mapped, CloudEvents, or standard format.
 	 *
@@ -852,16 +770,16 @@ class WebhookService {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-entity-must-support-an-optional-mapping-reference-for-payload-transformation
 	 */
-	private function buildPayload(Webhook $webhook, string $eventName, array $payload, int $attempt): array {
+	private function buildPayload(WebhookDelivery $delivery): array {
+		$webhook = $delivery->webhook;
+		$eventName = $delivery->event->name;
+		$payload = $delivery->event->payload;
+		$attempt = $delivery->attempt;
+
 		// Strategy 1: Apply mapping transformation if webhook references a Mapping entity.
 		$mappingId = $webhook->getMapping();
 		if ($mappingId !== null) {
-			$mappedPayload = $this->applyMappingTransformation(
-				mappingId: $mappingId,
-				eventName: $eventName,
-				payload: $payload,
-				webhook: $webhook
-			);
+			$mappedPayload = $this->applyMappingTransformation(delivery: $delivery, mappingId: $mappingId);
 
 			if ($mappedPayload !== null) {
 				return $mappedPayload;
@@ -874,7 +792,7 @@ class WebhookService {
 		$config = $webhook->getConfigurationArray();
 		$useCloudEvents = ($config['useCloudEvents'] ?? false) === true;
 
-		if ($useCloudEvents === true && $this->cloudEventFormatter !== null) {
+		if ($useCloudEvents === true && $this->dispatch->cloudEventFormatter !== null) {
 			// Add webhook metadata to payload.
 			$enrichedPayload = array_merge(
 				$payload,
@@ -887,7 +805,7 @@ class WebhookService {
 				]
 			);
 
-			return $this->cloudEventFormatter->formatAsCloudEvent(
+			return $this->dispatch->cloudEventFormatter->formatAsCloudEvent(
 				eventType: $eventName,
 				payload: $enrichedPayload,
 				source: $config['cloudEventSource'] ?? null,
@@ -915,23 +833,17 @@ class WebhookService {
 	 * MappingService.executeMapping(). Returns null on failure so the caller
 	 * can fall back to other formats.
 	 *
-	 * @param int $mappingId Mapping entity ID
-	 * @param string $eventName Event class name
-	 * @param array $payload Raw event payload
-	 * @param Webhook $webhook Webhook entity (for context)
+	 * @param WebhookDelivery $delivery  The webhook (for context) and the raw event
+	 * @param int             $mappingId Mapping entity ID
 	 *
 	 * @return array|null Transformed payload, or null on failure
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-entity-must-support-an-optional-mapping-reference-for-payload-transformation
 	 */
-	private function applyMappingTransformation(
-		int $mappingId,
-		string $eventName,
-		array $payload,
-		Webhook $webhook,
-	): ?array {
+	private function applyMappingTransformation(WebhookDelivery $delivery, int $mappingId): ?array {
+		$webhook = $delivery->webhook;
 		try {
-			$mapping = $this->mappingMapper->find($mappingId);
+			$mapping = $this->stores->mappingMapper->find($mappingId);
 		} catch (DoesNotExistException $e) {
 			$this->logger->warning(
 				message: '[WebhookService] Webhook references missing mapping, falling back to raw payload',
@@ -959,15 +871,15 @@ class WebhookService {
 
 		// Build the mapping input with full event context.
 		$mappingInput = array_merge(
-			$payload,
+			$delivery->event->payload,
 			[
-				'event' => $this->getShortEventName(eventName: $eventName),
+				'event' => $this->getShortEventName(eventName: $delivery->event->name),
 				'timestamp' => date('c'),
 			]
 		);
 
 		try {
-			return $this->mappingService->executeMapping(mapping: $mapping, input: $mappingInput);
+			return $this->stores->mappingService->executeMapping(mapping: $mapping, input: $mappingInput);
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[WebhookService] Mapping transformation failed, falling back to raw payload',
@@ -1001,10 +913,9 @@ class WebhookService {
 	/**
 	 * Send HTTP request to webhook URL
 	 *
-	 * @param Webhook $webhook Webhook configuration
-	 * @param array $payload Payload to send
-	 * @param int|null $timeoutCapSeconds Optional hard cap on connect + total timeout
-	 *                                    (request-blocking interception deliveries)
+	 * @param WebhookDelivery $delivery The webhook and the optional hard cap on connect + total timeout
+	 *                                  (request-blocking interception deliveries)
+	 * @param array           $payload  Payload to send
 	 *
 	 * @return (int|string)[] Response data
 	 *
@@ -1016,7 +927,8 @@ class WebhookService {
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function sendRequest(Webhook $webhook, array $payload, ?int $timeoutCapSeconds = null): array {
+	private function sendRequest(WebhookDelivery $delivery, array $payload): array {
+		$webhook = $delivery->webhook;
 		// Per-hook opt-in (admin-set) to allow private/loopback targets for
 		// local testing. Defaults to false (full SSRF blocking) when the key
 		// is absent. See configuration.allowPrivateTargets.
@@ -1027,7 +939,7 @@ class WebhookService {
 		// in $options below, which honours the same per-hook flag.
 		$this->assertSafeWebhookUri(uri: $webhook->getUrl(), allowPrivate: $allowPrivate);
 
-		$request = new WebhookRequestOptions(webhook: $webhook, timeoutCapSeconds: $timeoutCapSeconds);
+		$request = new WebhookRequestOptions(webhook: $webhook, timeoutCapSeconds: $delivery->timeoutCapSeconds);
 		$options = ['headers' => $request->headers(payload: $payload)] + $request->timeouts();
 		$options['allow_redirects'] = $request->redirects(
 			assertSafe: function (string $uri) use ($allowPrivate): void {
@@ -1105,8 +1017,8 @@ class WebhookService {
 			'path' => $request->getPathInfo(),
 			'body' => $request->getParams(),
 		];
-		if ($this->cloudEventFormatter !== null) {
-			$cloudEvent = $this->cloudEventFormatter->formatRequestAsCloudEvent(
+		if ($this->dispatch->cloudEventFormatter !== null) {
+			$cloudEvent = $this->dispatch->cloudEventFormatter->formatRequestAsCloudEvent(
 				request: $request,
 				eventType: $eventType
 			);
@@ -1128,12 +1040,9 @@ class WebhookService {
 
 				// Deliver webhook. Interception blocks the object write, so the
 				// delivery timeout is capped hard — see INTERCEPTION_TIMEOUT_SECONDS.
+				$event = new WebhookEvent(name: $eventType, payload: $webhookPayload);
 				$success = $this->deliverWebhook(
-					webhook: $webhook,
-					eventName: $eventType,
-					payload: $webhookPayload,
-					attempt: 1,
-					timeoutCapSeconds: self::INTERCEPTION_TIMEOUT_SECONDS
+					delivery: new WebhookDelivery(webhook: $webhook, event: $event, timeoutCapSeconds: self::INTERCEPTION_TIMEOUT_SECONDS)
 				);
 
 				// Process response if webhook is configured to handle responses.
@@ -1191,7 +1100,7 @@ class WebhookService {
 	 */
 	private function findWebhooksForInterception(string $eventType): array {
 		// Get all enabled webhooks (organisation-filtered).
-		$allWebhooks = $this->webhookMapper->findEnabled();
+		$allWebhooks = $this->stores->webhookMapper->findEnabled();
 
 		// Filter webhooks that match this event type and are configured for interception.
 		$matchingWebhooks = [];
@@ -1257,7 +1166,7 @@ class WebhookService {
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-must-support-pre-event-webhooks
 	 */
 	private function hasInterceptionWebhooks(string $eventType): bool {
-		$cached = $this->interceptionCache?->get(eventType: $eventType);
+		$cached = $this->dispatch->interceptionCache?->get(eventType: $eventType);
 		if ($cached !== null) {
 			return $cached;
 		}
@@ -1266,14 +1175,14 @@ class WebhookService {
 		// tenant-agnostic scan so the cached answer is valid for every
 		// organisation.
 		$hasWebhooks = false;
-		foreach ($this->webhookMapper->findEnabledForInterceptionScan() as $webhook) {
+		foreach ($this->stores->webhookMapper->findEnabledForInterceptionScan() as $webhook) {
 			if ($this->matchesInterception(webhook: $webhook, eventType: $eventType) === true) {
 				$hasWebhooks = true;
 				break;
 			}
 		}
 
-		$this->interceptionCache?->set(eventType: $eventType, hasWebhooks: $hasWebhooks);
+		$this->dispatch->interceptionCache?->set(eventType: $eventType, hasWebhooks: $hasWebhooks);
 
 		return $hasWebhooks;
 	}//end hasInterceptionWebhooks()

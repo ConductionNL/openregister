@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+
 /**
  * Writes a kept object's declared values over its stored row.
  *
@@ -39,30 +41,8 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 class ExampleSetRewriter {
 
 	/**
-	 * A kept object: on `--refresh` (the plan's `refresh`) rewritten to today's declared values, otherwise pointed
-	 * at the objects it references now.
-	 *
-	 * @param array<string, mixed>                $plan       The plan.
-	 * @param array<string, mixed>                $run        The `store`, the `fragment`, the declared `object` and the stored `row`.
-	 * @param callable(): array<string, mixed>    $resolve    Resolves the declaration today.
-	 * @param callable(): array<string, mixed>    $references Refreshes only the references, when not refreshing.
-	 * @param array<string, mixed>                $report     The report.
-	 * @param array<string, array<string, mixed>> $written    Collects what this run sent, by record key.
-	 *
-	 * @return array<string, mixed> The object as stored afterwards.
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
-	 */
-	public function keep(array $plan, array $run, callable $resolve, callable $references, array &$report, array &$written): array {
-		if (($plan['refresh'] ?? false) !== true) {
-			return $references();
-		}
-
-		return $this->rewrite(run: $run, resolved: $resolve(), report: $report, written: $written);
-	}//end keep()
-
-	/**
-	 * Rewrite one kept object; the object as stored afterwards, or the row as it was when it could not be written.
+	 * Rewrite one kept object on `--refresh` (the plan's `refresh`) to today's declared values; the object as stored
+	 * afterwards, or the row as it was when it could not be written.
 	 *
 	 * @param array<string, mixed>                $run      The `store`, the `fragment`, the declared `object` and the stored `row`.
 	 * @param array<string, mixed>                $resolved The declaration resolved today: `refusal`, `data`, `sent`, and maybe `owner`.
@@ -73,10 +53,24 @@ class ExampleSetRewriter {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
 	 */
-	private function rewrite(array $run, array $resolved, array &$report, array &$written): array {
+	public function rewrite(array $run, array $resolved, array &$report, array &$written): array {
+		$tally = new RewriteTally(report: $report, written: $written);
+		return $this->rewriteDeclared(rewrite: new RewriteRun(run: $run, resolved: $resolved, tally: $tally));
+	}//end rewrite()
+
+	/**
+	 * Rewrite one kept object unless its declaration is refused today or its schema is append-only.
+	 *
+	 * @param RewriteRun $rewrite The run of rewrite(), the declaration resolved today, and the report and what this
+	 *                            run sent.
+	 *
+	 * @return array<string, mixed> The object as stored afterwards, or the row as it was when it was not written.
+	 */
+	private function rewriteDeclared(RewriteRun $rewrite): array {
+		$run   = $rewrite->run;
 		$where = $run['fragment']['file'].': object "'.$run['object']['key'].'"';
-		if ($resolved['refusal'] !== '') {
-			$report['dropped'][] = $where.': not refreshed: '.$resolved['refusal'];
+		if ($rewrite->resolved['refusal'] !== '') {
+			$rewrite->tally->report['dropped'][] = $where.': not refreshed: '.$rewrite->resolved['refusal'];
 			return $run['row'];
 		}
 
@@ -86,36 +80,37 @@ class ExampleSetRewriter {
 			return $run['row'];
 		}
 
-		return $this->rewriteWritable(run: [...$run, 'where' => $where, 'rules' => $rules], resolved: $resolved, report: $report, written: $written);
-	}//end rewrite()
+		$run = [...$run, 'where' => $where, 'rules' => $rules];
+		return $this->rewriteWritable(rewrite: new RewriteRun(run: $run, resolved: $rewrite->resolved, tally: $rewrite->tally));
+	}//end rewriteDeclared()
 
 	/**
 	 * Rewrite a kept object its schema lets a write change: send the update, hand it to its owner, record what was
 	 * written and count it.
 	 *
-	 * @param array<string, mixed>                $run      The run of rewrite(), with the object's `where` and the schema's `rules`.
-	 * @param array<string, mixed>                $resolved The declaration resolved today.
-	 * @param array<string, mixed>                $report   The report.
-	 * @param array<string, array<string, mixed>> $written  Collects what this run sent, by record key.
+	 * @param RewriteRun $rewrite The run of rewrite(), with the object's `where` and the schema's `rules`, the
+	 *                            declaration resolved today, and the report and what this run sent.
 	 *
 	 * @return array<string, mixed> The object as stored afterwards, or the row as it was when it could not be written.
 	 */
-	private function rewriteWritable(array $run, array $resolved, array &$report, array &$written): array {
-		$sent = $this->send(run: $run, resolved: $resolved);
+	private function rewriteWritable(RewriteRun $rewrite): array {
+		$run   = $rewrite->run;
+		$tally = $rewrite->tally;
+		$sent  = $this->send(rewrite: $rewrite);
 		if ($sent['error'] !== '') {
-			$report['dropped'][] = $run['where'].': not refreshed: '.$sent['error'];
+			$tally->report['dropped'][] = $run['where'].': not refreshed: '.$sent['error'];
 			return $run['row'];
 		}
 
-		$error = $this->handOver(store: $run['store'], object: $run['object'], id: $sent['id'], owner: ($resolved['owner'] ?? null));
+		$error = $this->handOver(rewrite: $rewrite, id: $sent['id']);
 		if ($error !== '') {
-			$report['dropped'][] = $run['where'].': not handed to its owner: '.$error;
+			$tally->report['dropped'][] = $run['where'].': not handed to its owner: '.$error;
 		}
 
 		// A kept field still holds what it held and a lens is no stored value: neither is what this run wrote.
-		$written[$run['fragment']['app'].'/'.$run['object']['key']] = $this->wrote(data: $resolved['data'], rules: $run['rules']);
+		$tally->written[$run['fragment']['app'].'/'.$run['object']['key']] = $this->wrote(data: $rewrite->resolved['data'], rules: $run['rules']);
 
-		return $this->counted(run: $run, sent: $sent, report: $report);
+		return $this->counted(rewrite: $rewrite, sent: $sent);
 	}//end rewriteWritable()
 
 	/**
@@ -133,22 +128,22 @@ class ExampleSetRewriter {
 	/**
 	 * Send the update a schema lets through, unless the stored row already holds it.
 	 *
-	 * @param array<string, mixed> $run      The run of rewriteWritable().
-	 * @param array<string, mixed> $resolved The declaration resolved today.
+	 * @param RewriteRun $rewrite The run of rewriteWritable() and the declaration resolved today.
 	 *
 	 * @return array{id: string, unchanged: bool, error: string} The object's id, whether nothing was sent, and why the update failed or ''.
 	 */
-	private function send(array $run, array $resolved): array {
+	private function send(RewriteRun $rewrite): array {
+		$run = $rewrite->run;
 		$row = $run['row'];
 		$id  = (string) ($row['id'] ?? ($row['@self']['id'] ?? ''));
 		// A field read back as null was never set: sending it would ask the schema to accept a null it may refuse.
 		$set  = array_filter($row, static fn (mixed $value): bool => $value !== null);
-		$data = $this->writable(data: array_merge($set, $resolved['sent']), row: $row, rules: $run['rules']);
+		$data = $this->writable(rewrite: $rewrite, data: array_merge($set, $rewrite->resolved['sent']));
 		if ($this->holds(row: $row, data: $data) === true) {
 			return ['id' => $id, 'unchanged' => true, 'error' => ''];
 		}
 
-		$error = $run['store']->update(register: $run['object']['register'], schema: $run['object']['schema'], id: $id, data: $data);
+		$error = $run['store']->update(ref: new ObjectRef(register: $run['object']['register'], schema: $run['object']['schema'], id: $id), data: $data);
 
 		return ['id' => $id, 'unchanged' => false, 'error' => $error];
 	}//end send()
@@ -156,13 +151,15 @@ class ExampleSetRewriter {
 	/**
 	 * Count a rewritten object as unchanged or refreshed; the object as stored afterwards.
 	 *
-	 * @param array<string, mixed>                              $run    The run of rewriteWritable().
-	 * @param array{id: string, unchanged: bool, error: string} $sent   What send() did.
-	 * @param array<string, mixed>                              $report The report; `types` gains the count.
+	 * @param RewriteRun                                        $rewrite The run of rewriteWritable(); its report's `types`
+	 *                                                                   gains the count.
+	 * @param array{id: string, unchanged: bool, error: string} $sent    What send() did.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function counted(array $run, array $sent, array &$report): array {
+	private function counted(RewriteRun $rewrite, array $sent): array {
+		$run    = $rewrite->run;
+		$report = &$rewrite->tally->report;
 		$object = $run['object'];
 		$type   = $object['register'].' '.$object['schema'];
 		if ($sent['unchanged'] === true) {
@@ -172,7 +169,7 @@ class ExampleSetRewriter {
 
 		$report['types'][$type]['refreshed'] = (($report['types'][$type]['refreshed'] ?? 0) + 1);
 
-		return ($run['store']->get(register: $object['register'], schema: $object['schema'], id: $sent['id']) ?? $run['row']);
+		return ($run['store']->row(ref: new ObjectRef(register: $object['register'], schema: $object['schema'], id: $sent['id'])) ?? $run['row']);
 	}//end counted()
 
 	/**
@@ -220,17 +217,19 @@ class ExampleSetRewriter {
 	/**
 	 * Hand a rewritten object to the owner its declaration names, when another account owns it; '' when done or not needed.
 	 *
-	 * @param ExampleSetStore      $store  Register access.
-	 * @param array<string, mixed> $object The declared object.
-	 * @param string               $id     The object's id.
-	 * @param string|null          $owner  The declared owner, a cast account; null when it names none.
+	 * @param RewriteRun $rewrite The run: register access (`store`), the declared object, and the declared owner (a
+	 *                            cast account; none when the declaration names none).
+	 * @param string     $id      The object's id.
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
-	private function handOver(ExampleSetStore $store, array $object, string $id, ?string $owner): string {
-		if ($owner === null || $store->ownerOf(register: $object['register'], schema: $object['schema'], id: $id) === $owner) {
+	private function handOver(RewriteRun $rewrite, string $id): string {
+		$store  = $rewrite->run['store'];
+		$object = $rewrite->run['object'];
+		$owner  = ($rewrite->resolved['owner'] ?? null);
+		if ($owner === null || $store->ownerOf(ref: new ObjectRef(register: $object['register'], schema: $object['schema'], id: $id)) === $owner) {
 			return '';
 		}
 
@@ -241,15 +240,16 @@ class ExampleSetRewriter {
 	 * The update a schema lets through: a field kept as first written carries its stored value (or is left out when
 	 * nothing is stored), and a lens, read from another object, is left out.
 	 *
-	 * @param array<string, mixed>                                                            $data  The update.
-	 * @param array<string, mixed>                                                            $row   The object as stored.
-	 * @param array{appendOnly: bool, kept: array<int, string>, lenses: array<int, string>} $rules The schema's write rules.
+	 * @param RewriteRun           $rewrite The run: the object as stored (`row`) and the schema's write rules (`rules`).
+	 * @param array<string, mixed> $data    The update.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
 	 */
-	private function writable(array $data, array $row, array $rules): array {
+	private function writable(RewriteRun $rewrite, array $data): array {
+		$row   = $rewrite->run['row'];
+		$rules = $rewrite->run['rules'];
 		foreach ($rules['kept'] as $field) {
 			unset($data[$field]);
 			if (array_key_exists($field, $row) === true) {
@@ -280,27 +280,37 @@ class ExampleSetRewriter {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
 	 */
 	public function follow(array &$record, string $name, array $written, callable $save): void {
-		if (isset($written[$name]) === false) {
-			return;
-		}
-
-		$refs       = $this->followRefs(record: $record, name: $name, data: $written[$name]);
-		$references = $this->followReferences(record: $record, name: $name, data: $written[$name]);
-		if ($refs === true || $references === true) {
+		if (isset($written[$name]) === true && $this->followed(record: $record, object: new RewrittenObject(name: $name, data: $written[$name])) === true) {
 			$save($record);
 		}
 	}//end follow()
 
 	/**
-	 * Move the record's reference values of an object to what the rewrite wrote.
+	 * Move the record's reference values and `#references` change of a rewritten object to what the rewrite wrote.
 	 *
 	 * @param array<string, mixed> $record The record; updated.
-	 * @param string               $name   The record key of the object.
-	 * @param array<string, mixed> $data   What this run wrote for it.
+	 * @param RewrittenObject      $object The record key of the object and what this run wrote for it.
 	 *
 	 * @return bool Whether the record changed.
 	 */
-	private function followRefs(array &$record, string $name, array $data): bool {
+	private function followed(array &$record, RewrittenObject $object): bool {
+		$refs       = $this->followRefs(record: $record, object: $object);
+		$references = $this->followReferences(record: $record, object: $object);
+
+		return $refs === true || $references === true;
+	}//end followed()
+
+	/**
+	 * Move the record's reference values of an object to what the rewrite wrote.
+	 *
+	 * @param array<string, mixed> $record The record; updated.
+	 * @param RewrittenObject      $object The record key of the object and what this run wrote for it.
+	 *
+	 * @return bool Whether the record changed.
+	 */
+	private function followRefs(array &$record, RewrittenObject $object): bool {
+		$name    = $object->name;
+		$data    = $object->data;
 		$changed = false;
 		foreach (array_keys((array) ($record['objects'][$name]['refs'] ?? [])) as $field) {
 			if (array_key_exists($field, $data) === true && $record['objects'][$name]['refs'][$field] !== $data[$field]) {
@@ -316,12 +326,13 @@ class ExampleSetRewriter {
 	 * Move the new values of an object's `#references` change to what the rewrite wrote.
 	 *
 	 * @param array<string, mixed> $record The record; updated.
-	 * @param string               $name   The record key of the object.
-	 * @param array<string, mixed> $data   What this run wrote for it.
+	 * @param RewrittenObject      $object The record key of the object and what this run wrote for it.
 	 *
 	 * @return bool Whether the record changed.
 	 */
-	private function followReferences(array &$record, string $name, array $data): bool {
+	private function followReferences(array &$record, RewrittenObject $object): bool {
+		$name    = $object->name;
+		$data    = $object->data;
 		$changed = false;
 		foreach ((array) ($record['changes'][$name.'#references']['set'] ?? []) as $index => $set) {
 			$path = (string) $set['path'];

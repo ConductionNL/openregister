@@ -184,7 +184,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	 */
 	public function testAttachingFillsTheTasksOwnObjectFields(): void {
 		$run = $this->aRun();
-		(new FlowRunSubjects())->record(run: $run, role: 'case', uuid: 'obj-1', register: '3', schema: '7');
+		(new FlowRunSubjects())->record(run: $run, claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1', register: '3', schema: '7'));
 
 		$anchor = $this->recorder($run)->anchorFor(context: $this->context(), role: 'case');
 
@@ -203,7 +203,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	 */
 	public function testAnUnheldRoleRefusesNamingWhatIsHeld(): void {
 		$run = $this->aRun();
-		(new FlowRunSubjects())->record(run: $run, role: 'case', uuid: 'obj-1');
+		(new FlowRunSubjects())->record(run: $run, claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1'));
 
 		try {
 			$this->recorder($run)->anchorFor(context: $this->context(), role: 'besluit');
@@ -248,7 +248,7 @@ final class FlowRunSubjectRecorderTest extends TestCase {
 	 */
 	public function testASubjectWithoutNumericIdsStillAttaches(): void {
 		$run = $this->aRun();
-		(new FlowRunSubjects())->record(run: $run, role: 'case', uuid: 'obj-1', register: 'cases', schema: 'case');
+		(new FlowRunSubjects())->record(run: $run, claim: new FlowSubjectClaim(role: 'case', uuid: 'obj-1', register: 'cases', schema: 'case'));
 
 		$anchor = $this->recorder($run)->anchorFor(context: $this->context(), role: 'case');
 

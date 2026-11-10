@@ -309,29 +309,25 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 	 * declaring it on the schema is how one case type or party definition is
 	 * shared across the registers that carry it.
 	 *
-	 * @param integer|null $registerId The register being read, when known.
-	 * @param integer|null $schemaId The schema being read, when known.
+	 * @param DeclaredPair       $pair             The register and schema being read, each when known.
 	 * @param array<int, string> $consumerOrgUuids The reading organisation and its parents.
 	 *
 	 * @return array<int, string> The holder organisation UUIDs to widen by.
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	public function holdersForResource(?int $registerId, ?int $schemaId, array $consumerOrgUuids): array {
-		if ($consumerOrgUuids === []) {
-			return [];
-		}
-
+	public function holdersForResource(DeclaredPair $pair, array $consumerOrgUuids): array {
 		// The register first, then the schema; an unknown one asks nothing.
 		return $this->holdersAcross(
-			idsByTable: [self::REGISTERS => $registerId, self::SCHEMAS => $schemaId],
+			idsByTable: [self::REGISTERS => $pair->registerId, self::SCHEMAS => $pair->schemaId],
 			consumerOrgUuids: $consumerOrgUuids
 		);
-
 	}//end holdersForResource()
 
 	/**
 	 * The holders the reader consumes across the given rows, deduplicated in order.
+	 *
+	 * No reading organisation consumes nothing, and asks nothing.
 	 *
 	 * @param array<string, integer|null> $idsByTable       The row id per table; null when not known.
 	 * @param array<int, string>          $consumerOrgUuids The reading organisation and its parents.
@@ -339,12 +335,16 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 	 * @return array<int, string> The holder organisation UUIDs.
 	 */
 	private function holdersAcross(array $idsByTable, array $consumerOrgUuids): array {
+		if ($consumerOrgUuids === []) {
+			return [];
+		}
+
 		$holders = [];
 		foreach ($idsByTable as $table => $id) {
 			if ($id !== null) {
 				$holders = array_merge(
 					$holders,
-					$this->holdersOf(table: $table, id: $id, consumerOrgUuids: $consumerOrgUuids)
+					$this->holdersOf(row: new DeclaredRow(table: $table, id: $id), consumerOrgUuids: $consumerOrgUuids)
 				);
 			}
 		}
@@ -356,14 +356,13 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 	/**
 	 * The holder of one row, when the given organisations consume it.
 	 *
-	 * @param string $table Either {@see REGISTERS} or {@see SCHEMAS}.
-	 * @param integer $id The row id.
+	 * @param DeclaredRow        $row              The register or schema row.
 	 * @param array<int, string> $consumerOrgUuids The reading organisation and its parents.
 	 *
 	 * @return array<int, string> Zero or one holder UUID.
 	 */
-	private function holdersOf(string $table, int $id, array $consumerOrgUuids): array {
-		$declaration = $this->consumedDeclaration(table: $table, id: $id, orgUuids: $consumerOrgUuids);
+	private function holdersOf(DeclaredRow $row, array $consumerOrgUuids): array {
+		$declaration = $this->consumedDeclaration(row: $row, orgUuids: $consumerOrgUuids);
 
 		if ($declaration === null) {
 			return [];
@@ -386,17 +385,16 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 	 * filter already lets them read it, and it must keep letting them write it),
 	 * or the caller was never named a consumer.
 	 *
-	 * @param string $table Either {@see REGISTERS} or {@see SCHEMAS}.
-	 * @param integer $id The row id.
+	 * @param DeclaredRow        $row      The register or schema row.
 	 * @param array<int, string> $orgUuids The acting organisation and its parents.
 	 *
 	 * @return array{id: int, holder: string, consumers: array<int, string>, title: ?string}|null The declaration.
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	private function consumedDeclaration(string $table, int $id, array $orgUuids): ?array {
-		foreach (($this->declarations()[$table] ?? []) as $declaration) {
-			if ($declaration['id'] !== $id) {
+	private function consumedDeclaration(DeclaredRow $row, array $orgUuids): ?array {
+		foreach (($this->declarations()[$row->table] ?? []) as $declaration) {
+			if ($declaration['id'] !== $row->id) {
 				continue;
 			}
 
@@ -436,8 +434,10 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 	 * refusal belongs, and the message names the holder so the caller knows who
 	 * to ask rather than only that they were told no.
 	 *
-	 * @param string $table Either {@see REGISTERS} or {@see SCHEMAS}.
-	 * @param integer|null $id The row being written.
+	 * No acting organisation consumes nothing, and a row whose id is not known
+	 * asks nothing; neither is refused here.
+	 *
+	 * @param DeclaredRow        $row            The register or schema row being written.
 	 * @param array<int, string> $activeOrgUuids The acting organisation and its parents.
 	 *
 	 * @return void
@@ -446,12 +446,12 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	public function assertWritable(string $table, ?int $id, array $activeOrgUuids): void {
-		if ($id === null || $activeOrgUuids === []) {
-			return;
+	public function assertWritable(DeclaredRow $row, array $activeOrgUuids): void {
+		$declaration = null;
+		if ($row->id !== null && $activeOrgUuids !== []) {
+			$declaration = $this->consumedDeclaration(row: $row, orgUuids: $activeOrgUuids);
 		}
 
-		$declaration = $this->consumedDeclaration(table: $table, id: $id, orgUuids: $activeOrgUuids);
 		if ($declaration === null) {
 			return;
 		}
@@ -459,10 +459,9 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 		throw new SharedMasterDataWriteException(
 			holderUuid: $declaration['holder'],
 			holderName: $this->holderName(uuid: $declaration['holder']),
-			resourceType: $this->resourceTypeOf(table: $table),
+			resourceType: $this->resourceTypeOf(table: $row->table),
 			resourceTitle: $declaration['title']
 		);
-
 	}//end assertWritable()
 
 	/**

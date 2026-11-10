@@ -106,6 +106,7 @@ import Close from 'vue-material-design-icons/Close.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import RemoveConnectionDialog from '../../dialogs/mail/RemoveConnectionDialog.vue'
+import { mailMessageTab } from '../composables/mailMessageTab.js'
 import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
 import { schemaIconComponent } from '../icons.js'
 
@@ -121,10 +122,7 @@ export default {
 		RemoveConnectionDialog,
 	},
 
-	props: {
-		accountId: { type: Number, default: null },
-		messageId: { type: Number, default: null },
-	},
+	mixins: [mailMessageTab('loadObjects')],
 
 	data() {
 		return {
@@ -135,19 +133,6 @@ export default {
 			removeTarget: null,
 			removing: false,
 		}
-	},
-
-	watch: {
-		/**
-		 * @spec openspec/specs/mail-sidebar/spec.md
-		 */
-		messageId() {
-			this.loadObjects()
-		},
-	},
-
-	created() {
-		this.loadObjects()
 	},
 
 	methods: {

@@ -38,27 +38,25 @@ use Exception;
 final class VeventCodec {
 
 	/**
-	 * The iCalendar text of a new event.
+	 * The iCalendar text of a new event, as calendarData() builds it.
 	 *
-	 * @param string   $uid     The event UID.
-	 * @param DateTime $dtstart The start time.
-	 * @param array    $data    Event data: summary, dtend, location, description, attendees.
-	 * @param array    $link    The linked object: registerId, schemaId, objectUuid, objectTitle.
+	 * @param VeventDraft $draft The UID, start, event data and linked object.
 	 *
 	 * @return string The CRLF-terminated iCalendar text.
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
-	public function calendarData(string $uid, DateTime $dtstart, array $data, array $link): string {
+	public function calendarDataOf(VeventDraft $draft): string {
 		$lines = array_merge(
-			$this->eventHeaderLines(uid: $uid, summary: ($data['summary'] ?? 'Untitled event'), dtstart: $dtstart),
-			$this->eventDetailLines(data: $data),
-			$this->eventLinkLines(link: $link),
+			$this->eventOpeningLines(uid: $draft->uid),
+			$this->eventStartLines(summary: ($draft->data['summary'] ?? 'Untitled event'), dtstart: $draft->dtstart),
+			$this->eventDetailLines(data: $draft->data),
+			$this->eventLinkLines(link: $draft->link),
 			['END:VEVENT', 'END:VCALENDAR']
 		);
 
 		return implode("\r\n", $lines) . "\r\n";
-	}//end calendarData()
+	}//end calendarDataOf()
 
 	/**
 	 * Read the start time an event must have, or refuse to build one.
@@ -97,15 +95,13 @@ final class VeventCodec {
 	}//end requiredStart()
 
 	/**
-	 * The opening lines of a new event, up to and including DTSTART.
+	 * The opening lines of a new event, up to and including DTSTAMP.
 	 *
-	 * @param string   $uid     The event UID.
-	 * @param string   $summary The unescaped summary.
-	 * @param DateTime $dtstart The start time.
+	 * @param string $uid The event UID.
 	 *
 	 * @return list<string> The iCalendar lines.
 	 */
-	private function eventHeaderLines(string $uid, string $summary, DateTime $dtstart): array {
+	private function eventOpeningLines(string $uid): array {
 		return [
 			'BEGIN:VCALENDAR',
 			'VERSION:2.0',
@@ -113,10 +109,23 @@ final class VeventCodec {
 			'BEGIN:VEVENT',
 			'UID:' . $uid,
 			'DTSTAMP:' . gmdate('Ymd\THis\Z'),
+		];
+	}//end eventOpeningLines()
+
+	/**
+	 * The SUMMARY and DTSTART lines of a new event.
+	 *
+	 * @param string   $summary The unescaped summary.
+	 * @param DateTime $dtstart The start time.
+	 *
+	 * @return list<string> The iCalendar lines.
+	 */
+	private function eventStartLines(string $summary, DateTime $dtstart): array {
+		return [
 			'SUMMARY:' . $this->escapeIcalText(text: $summary),
 			'DTSTART:' . $dtstart->format('Ymd\THis\Z'),
 		];
-	}//end eventHeaderLines()
+	}//end eventStartLines()
 
 	/**
 	 * The optional DTEND, LOCATION, DESCRIPTION and ATTENDEE lines of a new event.
@@ -192,27 +201,26 @@ final class VeventCodec {
 		return $text;
 	}//end escapeIcalText()
 	/**
-	 * The event array of a VEVENT.
+	 * The event array of a VEVENT stored at one calendar object address.
 	 *
-	 * @param mixed  $vevent     The VEVENT component.
-	 * @param string $calendarId The calendar ID.
-	 * @param string $uri        The calendar object URI.
+	 * @param mixed                 $vevent  The VEVENT component.
+	 * @param CalendarObjectAddress $address The calendar and object URI the VEVENT is stored under.
 	 *
 	 * @return array<string, mixed> The event.
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
-	public function eventArray(mixed $vevent, string $calendarId, string $uri): array {
+	public function eventArrayAt(mixed $vevent, CalendarObjectAddress $address): array {
 		return array_merge(
 			[
-				'id' => $uri,
+				'id' => $address->uri,
 				'uid' => $this->veventText(vevent: $vevent, property: 'UID'),
-				'calendarId' => $calendarId,
+				'calendarId' => $address->calendarId,
 			],
 			$this->veventFields(vevent: $vevent),
 			$this->extractOpenRegisterProperties(vevent: $vevent)
 		);
-	}//end eventArray()
+	}//end eventArrayAt()
 
 	/**
 	 * The descriptive fields of a VEVENT, in the order the event array lists them.

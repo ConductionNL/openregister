@@ -27,8 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\Command;
 
 use OCA\OpenRegister\ContextChat\ContentProviderInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -76,8 +75,7 @@ class ContextChatReindexCommand extends Command {
 	 * safe; only `get()`ing it is not, and that now happens at execute() time.
 	 *
 	 * @param ContainerInterface $container Container, for the lazy ContentProvider resolve.
-	 * @param RegisterMapperInterface $registerMapper Register lookup mapper, for the `--register` option.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper, for the `--schema` option.
+	 * @param SchemaCatalogInterface $catalog The register and schema mappers, for the `--register` and `--schema` options.
 	 *
 	 * @return void
 	 *
@@ -85,8 +83,7 @@ class ContextChatReindexCommand extends Command {
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly SchemaCatalogInterface $catalog,
 	) {
 		parent::__construct();
 	}//end __construct()
@@ -133,7 +130,7 @@ class ContextChatReindexCommand extends Command {
 		$registerRef = $input->getOption('register');
 		if ($registerRef !== null) {
 			try {
-				$registerId = (int)$this->registerMapper->find(id: $registerRef, _rbac: false, _multitenancy: false)->getId();
+				$registerId = (int)$this->catalog->registers()->find(id: $registerRef, _rbac: false, _multitenancy: false)->getId();
 			} catch (Throwable $e) {
 				$output->writeln('<error>Register not found: ' . $e->getMessage() . '</error>');
 				return Command::FAILURE;
@@ -144,7 +141,7 @@ class ContextChatReindexCommand extends Command {
 		$schemaRef = $input->getOption('schema');
 		if ($schemaRef !== null) {
 			try {
-				$schemaId = (int)$this->schemaMapper->find(id: $schemaRef, _rbac: false, _multitenancy: false)->getId();
+				$schemaId = (int)$this->catalog->schemas()->find(id: $schemaRef, _rbac: false, _multitenancy: false)->getId();
 			} catch (Throwable $e) {
 				$output->writeln('<error>Schema not found: ' . $e->getMessage() . '</error>');
 				return Command::FAILURE;

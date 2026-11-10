@@ -41,7 +41,6 @@ namespace OCA\OpenRegister\Service\Flow;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\FlowRun;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Workflow\MarkingStore\MarkingStoreInterface;
 use Symfony\Component\Workflow\Workflow;
 use Throwable;
 
@@ -124,26 +123,8 @@ class FlowEngine {
 	 */
 	private readonly FlowHopRouting $routing;
 
-	/**
-	 * Decides which exit a token takes.
-	 *
-	 * @var FlowTokenRouter
-	 */
-	private readonly FlowTokenRouter $router;
 
-	/**
-	 * Decides which items sit on which place.
-	 *
-	 * @var FlowItemPlacement
-	 */
-	private readonly FlowItemPlacement $placement;
 
-	/**
-	 * The ambient attribution stack, when there is one.
-	 *
-	 * @var FlowRunContext|null
-	 */
-	private readonly ?FlowRunContext $runContext;
 
 	/**
 	 * Constructor.
@@ -165,16 +146,9 @@ class FlowEngine {
 		private readonly FlowDefinitionBuilder $builder,
 		private readonly LoggerInterface $logger,
 		private readonly ?FlowOversightRegistry $oversight = null,
-		FlowEngineServices $services=new FlowEngineServices(),
+		private readonly FlowEngineServices $services=new FlowEngineServices(),
 	) {
-		$this->router     = $services->router;
-		$this->placement  = $services->placement;
-		$this->runContext = $services->runContext;
-		$this->routing    = new FlowHopRouting(
-			router: $services->router,
-			placement: $services->placement,
-			mootness: $services->mootness
-		);
+		$this->routing = new FlowHopRouting(router: $services->router, placement: $services->placement, mootness: $services->mootness);
 	}//end __construct()
 
 	/**
@@ -196,10 +170,12 @@ class FlowEngine {
 	 */
 	private function enterHop(FlowWalkHop|FlowStreamHop $hop): void {
 		$context = $hop->pass->context;
-		$this->runContext?->push(
-			runUuid: ($context[FlowRunContext::CONTEXT_RUN] ?? null),
-			nodeId: $hop->name(),
-			sequence: ((int)($context[FlowRunContext::CONTEXT_BASE] ?? 0) + count($hop->pass->log))
+		$this->services->runContext?->push(
+			frame: new FlowRunFrame(
+				runUuid: ($context[FlowRunContext::CONTEXT_RUN] ?? null),
+				nodeId: $hop->name(),
+				sequence: ((int)($context[FlowRunContext::CONTEXT_BASE] ?? 0) + count($hop->pass->log))
+			)
 		);
 	}//end enterHop()
 
@@ -281,42 +257,24 @@ class FlowEngine {
 	 * so a resume — whose marking is already mid-graph and comes from the store —
 	 * is unaffected.
 	 *
-	 * @param array $flow The flow document.
-	 * @param MarkingStoreInterface $store Where the marking lives (an OR object, in production).
-	 * @param object $subject The object the run is about; holds the marking.
-	 * @param FlowStepDispatcher $dispatcher Performs each step's side effect.
-	 * @param array $context Run-level metadata handed to every step.
-	 * @param array|null $items Seed items; defaults to one item from the subject.
-	 * @param string|null $startAt Node to start from; defaults to the flow's own start.
-	 * @param FlowStreamWalk|null $streams The per-run stream collaborator: claims before each
-	 *                                     firing, a locked delta commit after it, stream-scoped
-	 *                                     suspension. Null walks a single in-memory stream
-	 *                                     exactly as before — a flow with one stream IS the run.
+	 * The flow, the marking store, the subject, the dispatcher, the run-level
+	 * context and the per-run stream collaborator travel together in
+	 * `$start` ({@see FlowRunStart}); a null stream collaborator walks a single
+	 * in-memory stream exactly as before — a flow with one stream IS the run.
+	 *
+	 * @param FlowRunStart       $start  The flow, its collaborators, the context and the streams.
+	 * @param FlowRunOrigin|null $origin Seed items (default: one item from the subject) and the node to start
+	 *                                   from (default: the flow's own start).
 	 *
 	 * @return array The run result: `{status, log: [], context: [], items: []}`.
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	public function run(
-		array $flow,
-		MarkingStoreInterface $store,
-		object $subject,
-		FlowStepDispatcher $dispatcher,
-		array $context = [],
-		?array $items = null,
-		?string $startAt = null,
-		?FlowStreamWalk $streams = null,
-	): array {
-		if (($startAt ?? '') !== '') {
-			$flow['initial'] = $startAt;
-		}
+	public function run(FlowRunStart $start, ?FlowRunOrigin $origin=null): array {
+		$begun = $start->startingAt(node: $origin?->startAt);
+		$begun->items = ($origin->items ?? FlowItems::fromSubject(subject: $start->subject));
 
-		$start = new FlowRunStart(flow: $flow, store: $store, subject: $subject, dispatcher: $dispatcher);
-		$start->context = $context;
-		$start->items = ($items ?? FlowItems::fromSubject(subject: $subject));
-		$start->streams = $streams;
-
-		return $this->startRun(start: $start);
+		return $this->startRun(start: $begun);
 	}//end run()
 
 	/**
@@ -478,7 +436,7 @@ class FlowEngine {
 	 */
 	private function runSingleHop(FlowWalkHop $hop): array|null {
 		$pass = $hop->pass;
-		$pinned = $this->placement->pinnedItems(pass: $pass, transitionName: $hop->name());
+		$pinned = $this->services->placement->pinnedItems(pass: $pass, transitionName: $hop->name());
 		if ($pinned !== null) {
 			$pass->items = $pinned;
 			$pass->log[] = $hop->pinnedEntry();
@@ -522,7 +480,7 @@ class FlowEngine {
 			$pass->log[] = $hop->failedEntry(error: $e);
 			return $this->outcomeForFailedStep(hop: $hop, error: $e);
 		} finally {
-			$this->runContext?->pop();
+			$this->services->runContext?->pop();
 		}//end try
 
 		return null;
@@ -672,7 +630,7 @@ class FlowEngine {
 		$pass = $hop->pass;
 		$pass->items = $hop->itemsIn;
 
-		$pinned = $this->placement->pinnedItems(pass: $pass, transitionName: $hop->name());
+		$pinned = $this->services->placement->pinnedItems(pass: $pass, transitionName: $hop->name());
 		if ($pinned === null) {
 			return $this->dispatchOnStream(hop: $hop);
 		}
@@ -716,7 +674,7 @@ class FlowEngine {
 		} catch (Throwable $e) {
 			return $this->failOnStream(hop: $hop, error: $e);
 		} finally {
-			$this->runContext?->pop();
+			$this->services->runContext?->pop();
 		}//end try
 
 		$this->fireOnStream(hop: $hop, entry: $entry);
@@ -896,7 +854,7 @@ class FlowEngine {
 		$fallback = null;
 
 		foreach ($enabled as $transition) {
-			$condition = $this->router->conditionReaching(flow: $pass->flow, nodeId: $transition->getName());
+			$condition = $this->services->router->conditionReaching(flow: $pass->flow, nodeId: $transition->getName());
 
 			if (empty($condition) === true) {
 				// Remember the first default edge; keep looking for a match.
@@ -923,8 +881,11 @@ class FlowEngine {
 	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
 	 */
 	private function conditionData(object $transition, FlowWalkPass|FlowStreamPass $pass): array {
-		$items = $this->placement->itemsForTransition(transition: $transition, placeItems: $pass->placeItems);
+		$items = $this->services->placement->itemsForTransition(transition: $transition, placeItems: $pass->placeItems);
 
-		return FlowExpression::dataFor(item: ($items[0] ?? []), itemCount: count($items), context: $pass->context);
+		return FlowExpression::documentFor(
+			item: ($items[0] ?? []),
+			options: new FlowExpressionDataOptions(itemCount: count($items), context: $pass->context)
+		);
 	}//end conditionData()
 }//end class

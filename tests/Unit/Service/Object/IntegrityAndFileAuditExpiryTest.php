@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\AuditRetentionResolver;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
@@ -61,6 +62,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
@@ -127,9 +130,7 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$this->createMock(IDBConnection::class),
-					$this->createMock(IUserSession::class),
-					$this->createMock(IRequest::class),
-					new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class)),
+					new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class), $this->createMock(IUserSession::class), $this->createMock(IRequest::class)),
 				]
 			)
 			->onlyMethods(['insert'])
@@ -157,9 +158,9 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($this->createMock(ICache::class));
 
 		return new ReferentialIntegrityService(
-			index: new IntegrityRelationIndex(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), cacheFactory: $cacheFactory),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $cacheFactory),
 			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
-			controls: new IntegrityCascadeControls(auditTrailMapper: $this->mapper(), archivalGuard: new ArchivalRetentionGuard($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class))),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->mapper(), archivalGuard: new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class)))),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 
@@ -233,14 +234,16 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 		$service->applyDeletionActions(
 			analysis: new DeletionAnalysis(
 				deletable: true,
-				nullifyTargets: [
-					[
-						'objectUuid' => '11111111-1111-4111-8111-111111111111',
-						'property' => 'parent',
-						'schema' => '2',
-						'sourceUuid' => '22222222-2222-4222-8222-222222222222',
-					],
-				]
+				effects: new DeletionEffects(
+					nullifyTargets: [
+						[
+							'objectUuid' => '11111111-1111-4111-8111-111111111111',
+							'property' => 'parent',
+							'schema' => '2',
+							'sourceUuid' => '22222222-2222-4222-8222-222222222222',
+						],
+					]
+				)
 			),
 			userId: 'alice',
 			cascadeSource: '22222222-2222-4222-8222-222222222222'

@@ -233,4 +233,15 @@ final class SchemaDeclarationValidators {
 	public static function consent(): ConsentAnnotationValidatorInterface {
 		return new ConsentAnnotationValidator();
 	}//end consent()
+
+	/**
+	 * A fresh extending-form declaration validator.
+	 *
+	 * @return ExtendingFormValidatorInterface
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	public static function extendingForm(): ExtendingFormValidatorInterface {
+		return new ExtendingFormDeclaration();
+	}//end extendingForm()
 }//end class

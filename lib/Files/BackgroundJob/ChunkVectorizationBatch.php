@@ -26,14 +26,11 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactoryInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject;
 
 /**
  * Embeds one batch of unvectorized chunks, stores their vectors and marks them vectorized
@@ -70,6 +67,13 @@ final class ChunkVectorizationBatch {
 	private readonly VectorStorageHandlerInterface $storageHandler;
 
 	/**
+	 * Builds the vector row of a chunk
+	 *
+	 * @var ChunkVectorFactoryInterface
+	 */
+	private readonly ChunkVectorFactoryInterface $vectors;
+
+	/**
 	 * Logger
 	 *
 	 * @var LoggerInterface
@@ -94,6 +98,7 @@ final class ChunkVectorizationBatch {
 		$this->chunkMapper    = $container->get(ChunkStoreInterface::class);
 		$this->embeddings     = $container->get(EmbeddingGeneratorInterface::class);
 		$this->storageHandler = $container->get(VectorStorageHandlerInterface::class);
+		$this->vectors        = $container->get(ChunkVectorFactoryInterface::class);
 		$this->logger         = $container->get(LoggerInterface::class);
 	}//end __construct()
 
@@ -187,23 +192,10 @@ final class ChunkVectorizationBatch {
 	 */
 	private function storeVector(Chunk $chunk, array $embeddingData): void {
 		$this->storageHandler->storeVector(
-			vector: new StoredVector(
-				subject: new VectorSubject(entityType: (string)$chunk->getSourceType(), entityId: (string)$chunk->getSourceId()),
-				payload: new VectorPayload(
-					embedding: $embeddingData['embedding'],
-					model: (string)$embeddingData['model'],
-					dimensions: (int)$embeddingData['dimensions']
-				),
-				position: new VectorChunkPosition(
-					chunkIndex: (int)$chunk->getChunkIndex(),
-					totalChunks: max(1, $this->totalChunksOf(chunk: $chunk)),
-					chunkText: substr((string)$chunk->getTextContent(), 0, 500)
-				),
-				metadata: [
-					'source_id' => $chunk->getSourceId(),
-					'start_offset' => $chunk->getStartOffset(),
-					'end_offset' => $chunk->getEndOffset(),
-				]
+			vector: $this->vectors->forChunk(
+				source: new ChunkAsVectorSource(chunk: $chunk),
+				embeddingData: $embeddingData,
+				totalChunks: $this->totalChunksOf(chunk: $chunk)
 			)
 		);
 	}//end storeVector()

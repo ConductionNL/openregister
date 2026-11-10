@@ -41,27 +41,6 @@ use Psr\Log\LoggerInterface;
 class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterface {
 
 	/**
-	 * Object service
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private ObjectOperationsInterface $objectService;
-
-	/**
-	 * Settings service
-	 *
-	 * @var SettingsServiceInterface
-	 */
-	private SettingsServiceInterface $settingsService;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Constructor
 	 *
 	 * @param ObjectOperationsInterface $objectService Object service
@@ -69,13 +48,11 @@ class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterfac
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		ObjectOperationsInterface $objectService,
-		SettingsServiceInterface $settingsService,
-		LoggerInterface $logger,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly SettingsServiceInterface $settingsService,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->objectService = $objectService;
-		$this->settingsService = $settingsService;
-		$this->logger = $logger;
+
 	}//end __construct()
 
 	/**

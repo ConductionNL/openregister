@@ -159,7 +159,7 @@ class DedupeSharedSchemasCommand extends Command {
 			return Command::FAILURE;
 		}
 
-		return $this->applyPlan(output: $output, plan: $plan, strict: $strict);
+		return $this->applyPlan(run: new SharedSchemaSplitRun(output: $output, strict: $strict), plan: $plan);
 	}//end execute()
 
 	/**
@@ -225,50 +225,67 @@ class DedupeSharedSchemasCommand extends Command {
 	/**
 	 * Execute every planned split.
 	 *
-	 * @param OutputInterface           $output The console output.
-	 * @param array<int, array<string, mixed>> $plan   The inspection plan.
-	 * @param bool                      $strict Whether unmapped columns refuse the move.
+	 * @param SharedSchemaSplitRun             $run  The split pass.
+	 * @param array<int, array<string, mixed>> $plan The inspection plan.
 	 *
 	 * @return int The exit code.
 	 */
-	private function applyPlan(OutputInterface $output, array $plan, bool $strict): int {
-		$split  = 0;
-		$failed = 0;
-
-		$output->writeln('');
+	private function applyPlan(SharedSchemaSplitRun $run, array $plan): int {
+		$run->output->writeln('');
 		foreach ($plan as $entry) {
 			foreach (array_keys($entry['splits']) as $registerId) {
-				try {
-					$result = $this->dedupe->applySplit(
-						entry: $entry,
-						target: (int)$registerId,
-						strict: $strict
-					);
-					$output->writeln($this->describeSplit(entry: $entry, registerId: (int)$registerId, result: $result));
-					$split++;
-				} catch (Throwable $e) {
-					$output->writeln(
-						sprintf(
-							'  <error>failed</error> register %d / schema %d: %s',
-							$registerId,
-							$entry['schemaId'],
-							$e->getMessage()
-						)
-					);
-					$failed++;
-				}//end try
+				$this->applySplit(run: $run, split: new PlannedSchemaSplit(entry: $entry, registerId: (int)$registerId));
 			}
-		}//end foreach
+		}
 
-		$output->writeln('');
-		$output->writeln(sprintf('<info>%d split(s) applied; %d failure(s).</info>', $split, $failed));
+		return $this->reportSplits(run: $run);
+	}//end applyPlan()
 
-		if ($failed === 0) {
+	/**
+	 * Apply one split and print its outcome; a failure is counted, not thrown.
+	 *
+	 * @param SharedSchemaSplitRun $run   The split pass.
+	 * @param PlannedSchemaSplit   $split The register to split off.
+	 *
+	 * @return void
+	 */
+	private function applySplit(SharedSchemaSplitRun $run, PlannedSchemaSplit $split): void {
+		try {
+			$result = ($run->strict === true)
+				? $this->dedupe->applySplitStrictly(entry: $split->entry, target: $split->registerId)
+				: $this->dedupe->applySplit(entry: $split->entry, target: $split->registerId);
+			$run->output->writeln($this->describeSplit(split: $split, result: $result));
+			$run->split++;
+		} catch (Throwable $e) {
+			$run->output->writeln(
+				sprintf(
+					'  <error>failed</error> register %d / schema %d: %s',
+					$split->registerId,
+					$split->entry['schemaId'],
+					$e->getMessage()
+				)
+			);
+			$run->failed++;
+		}
+	}//end applySplit()
+
+	/**
+	 * Print the totals of the split pass.
+	 *
+	 * @param SharedSchemaSplitRun $run The split pass.
+	 *
+	 * @return int The exit code.
+	 */
+	private function reportSplits(SharedSchemaSplitRun $run): int {
+		$run->output->writeln('');
+		$run->output->writeln(sprintf('<info>%d split(s) applied; %d failure(s).</info>', $run->split, $run->failed));
+
+		if ($run->failed === 0) {
 			return Command::SUCCESS;
 		}
 
 		return Command::FAILURE;
-	}//end applyPlan()
+	}//end reportSplits()
 
 	/**
 	 * Render one applied split.
@@ -276,17 +293,16 @@ class DedupeSharedSchemasCommand extends Command {
 	 * The backup table is named explicitly because it is the operator's only
 	 * route back to a column the mapping could not carry across.
 	 *
-	 * @param array<string, mixed> $entry      The plan entry.
-	 * @param int                  $registerId The register that was split off.
-	 * @param array<string, mixed> $result     The service's outcome.
+	 * @param PlannedSchemaSplit   $split  The register that was split off.
+	 * @param array<string, mixed> $result The service's outcome.
 	 *
 	 * @return string The line to print.
 	 */
-	private function describeSplit(array $entry, int $registerId, array $result): string {
+	private function describeSplit(PlannedSchemaSplit $split, array $result): string {
 		$line = sprintf(
 			'  <info>split</info> register %d: schema %d -> %d (%d row(s) moved)',
-			$registerId,
-			$entry['schemaId'],
+			$split->registerId,
+			$split->entry['schemaId'],
 			$result['newSchemaId'],
 			$result['rows']
 		);

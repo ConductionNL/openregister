@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -153,62 +154,6 @@ class ReferentialIntegrityService {
 	private ?array $schemaRegisterMap = null;
 
 	/**
-	 * Schema data mapper.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Register data mapper.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Object entity data mapper.
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private readonly MagicMapperInterface $objectEntityMapper;
-
-	/**
-	 * Audit trail mapper for integrity action logging.
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private readonly AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * Logger for debugging.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Database connection for raw SQL queries.
-	 *
-	 * @var IDBConnection
-	 */
-	private readonly IDBConnection $db;
-
-	/**
-	 * Distributed cache for the relation index.
-	 *
-	 * @var ICacheFactory
-	 */
-	private readonly ICacheFactory $cacheFactory;
-
-	/**
-	 * Decides whether a cascade target is legally retained.
-	 *
-	 * @var ArchivalRetentionGuard
-	 */
-	private readonly ArchivalRetentionGuard $archivalGuard;
-
-	/**
 	 * Constructor for ReferentialIntegrityService.
 	 *
 	 * @param IntegrityRelationIndex   $index    Builds and caches the relation index.
@@ -218,15 +163,12 @@ class ReferentialIntegrityService {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function __construct(IntegrityRelationIndex $index, IntegrityStorage $storage, IntegrityCascadeControls $controls, LoggerInterface $logger) {
-		$this->schemaMapper = $index->schemaMapper;
-		$this->registerMapper = $index->registerMapper;
-		$this->cacheFactory = $index->cacheFactory;
-		$this->objectEntityMapper = $storage->objectEntityMapper;
-		$this->db = $storage->db;
-		$this->auditTrailMapper = $controls->auditTrailMapper;
-		$this->archivalGuard = $controls->archivalGuard;
-		$this->logger = $logger;
+	public function __construct(
+		private readonly IntegrityRelationIndex $index,
+		private readonly IntegrityStorage $storage,
+		private readonly IntegrityCascadeControls $controls,
+		private readonly LoggerInterface $logger,
+	) {
 	}//end __construct()
 
 	/**
@@ -331,8 +273,13 @@ class ReferentialIntegrityService {
 		foreach ($analysis->nullifyTargets as $target) {
 			$updated = $this->applySetNull(target: $target);
 			$changed = ['property' => $target['property'], 'previousValue' => $target['sourceUuid'] ?? null, 'newValue' => null];
-			$entry   = $this->rewriteEntry(action: 'referential_integrity.set_null', target: $target, changed: $changed, origin: $origin);
-			$this->logIntegrityAction(entry: $entry->about(object: $updated));
+			$entry   = new IntegrityAuditEntry(
+				action: 'referential_integrity.set_null',
+				objectUuid: $target['objectUuid'],
+				changed: $changed + self::triggerOf(origin: $origin),
+				userId: $origin->userId
+			);
+			$this->logIntegrityAction(entry: $entry->within(schemaId: $target['schema'] ?? null, registerId: null)->about(object: $updated));
 		}
 	}//end applySetNullTargets()
 
@@ -350,29 +297,26 @@ class ReferentialIntegrityService {
 		foreach ($analysis->defaultTargets as $target) {
 			$updated = $this->applySetDefault(target: $target);
 			$changed = ['property' => $target['property'], 'previousValue' => $origin->cascadeSource, 'defaultValue' => $target['defaultValue'] ?? null];
-			$entry   = $this->rewriteEntry(action: 'referential_integrity.set_default', target: $target, changed: $changed, origin: $origin);
-			$this->logIntegrityAction(entry: $entry->about(object: $updated));
+			$entry   = new IntegrityAuditEntry(
+				action: 'referential_integrity.set_default',
+				objectUuid: $target['objectUuid'],
+				changed: $changed + self::triggerOf(origin: $origin),
+				userId: $origin->userId
+			);
+			$this->logIntegrityAction(entry: $entry->within(schemaId: $target['schema'] ?? null, registerId: null)->about(object: $updated));
 		}
 	}//end applySetDefaultTargets()
 
 	/**
-	 * The audit entry of a reference rewritten in a dependent, naming the deleted object that triggered it.
+	 * What the audit entry of a reference rewritten in a dependent says about the deleted object that triggered it.
 	 *
-	 * @param string              $action  The integrity action.
-	 * @param array               $target  The rewritten dependent.
-	 * @param array               $changed What changed in the dependent.
-	 * @param CascadeDeleteOrigin $origin  The deleting user and the root object.
+	 * @param CascadeDeleteOrigin $origin The deleting user and the root object.
 	 *
-	 * @return IntegrityAuditEntry The entry, scoped to the dependent's schema.
+	 * @return array{triggerObject: string, triggerSchema: string|null}
 	 */
-	private function rewriteEntry(string $action, array $target, array $changed, CascadeDeleteOrigin $origin): IntegrityAuditEntry {
-		return (new IntegrityAuditEntry(
-			action: $action,
-			objectUuid: $target['objectUuid'],
-			changed: $changed + ['triggerObject' => $origin->cascadeSource, 'triggerSchema' => $origin->triggerSchemaSlug],
-			userId: $origin->userId
-		))->within(schemaId: $target['schema'] ?? null, registerId: null);
-	}//end rewriteEntry()
+	private static function triggerOf(CascadeDeleteOrigin $origin): array {
+		return ['triggerObject' => $origin->cascadeSource, 'triggerSchema' => $origin->triggerSchemaSlug];
+	}//end triggerOf()
 
 	/**
 	 * Split cascade targets into the ones that may be deleted and the ones the law keeps.
@@ -398,35 +342,22 @@ class ReferentialIntegrityService {
 		$reported = [];
 
 		foreach ($cascadeTargets as $target) {
-			$this->partitionTarget(target: $target, proceed: $proceed, reported: $reported);
+			$uuid = (string)($target['objectUuid'] ?? '');
+			if (isset($reported[$uuid]) === true) {
+				continue;
+			}
+
+			$refusal = $this->retentionRefusal(uuid: $uuid, target: $target);
+			if ($refusal === null) {
+				$proceed[] = $target;
+				continue;
+			}
+
+			$reported[$uuid] = $refusal;
 		}
 
 		return [$proceed, array_values($reported)];
 	}//end partitionRetainedTargets()
-
-	/**
-	 * Put one cascade target among the ones to delete, or report it as retained once per uuid.
-	 *
-	 * @param array<string, mixed>                $target   The cascade target.
-	 * @param array<int, array<string, mixed>>    $proceed  Targets the cascade may delete, by reference.
-	 * @param array<string, array<string, mixed>> $reported Retained records by uuid, by reference.
-	 *
-	 * @return void
-	 */
-	private function partitionTarget(array $target, array &$proceed, array &$reported): void {
-		$uuid = (string)($target['objectUuid'] ?? '');
-		if (isset($reported[$uuid]) === true) {
-			return;
-		}
-
-		$refusal = $this->retentionRefusal(uuid: $uuid, target: $target);
-		if ($refusal === null) {
-			$proceed[] = $target;
-			return;
-		}
-
-		$reported[$uuid] = $refusal;
-	}//end partitionTarget()
 
 	/**
 	 * Why the archival obligation keeps one cascade target, or null when it may go.
@@ -443,7 +374,7 @@ class ReferentialIntegrityService {
 			return null;
 		}
 
-		$refusal = $this->archivalGuard->cascadeRefusal(uuid: $uuid, schemaIdentifier: ($target['schema'] ?? null));
+		$refusal = $this->controls->archivalGuard->cascadeRefusal(uuid: $uuid, schemaIdentifier: ($target['schema'] ?? null));
 		if ($refusal !== null) {
 			$this->logger->info(
 				message: '[ReferentialIntegrity] Kept a retained record out of a cascade',
@@ -470,20 +401,32 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function logRestrictBlock(string $objectUuid, ?string $schemaId, DeletionAnalysis $analysis, string $userId): void {
-		$this->logIntegrityAction(
-			entry: (new IntegrityAuditEntry(
-				action: 'referential_integrity.restrict_blocked',
-				objectUuid: $objectUuid,
-				changed: [
-					'blockerCount' => count($analysis->blockers),
-					'blockerSchema' => self::firstBlockerValue(blockers: $analysis->blockers, key: 'schema'),
-					'blockerProperty' => self::firstBlockerValue(blockers: $analysis->blockers, key: 'property'),
-					'reason' => 'RESTRICT constraint prevents deletion',
-				],
-				userId: $userId
-			))->within(schemaId: $schemaId, registerId: null)
+		$entry = new IntegrityAuditEntry(
+			action: 'referential_integrity.restrict_blocked',
+			objectUuid: $objectUuid,
+			changed: self::restrictBlockChange(analysis: $analysis),
+			userId: $userId
 		);
+		$this->logIntegrityAction(entry: $entry->within(schemaId: $schemaId, registerId: null));
 	}//end logRestrictBlock()
+
+	/**
+	 * What a RESTRICT block records: how many blockers, the first blocker's schema and property, and why.
+	 *
+	 * @param DeletionAnalysis $analysis The analysis containing blocker information.
+	 *
+	 * @return array{blockerCount: int, blockerSchema: mixed, blockerProperty: mixed, reason: string}
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function restrictBlockChange(DeletionAnalysis $analysis): array {
+		return [
+			'blockerCount' => count($analysis->blockers),
+			'blockerSchema' => self::firstBlockerValue(blockers: $analysis->blockers, key: 'schema'),
+			'blockerProperty' => self::firstBlockerValue(blockers: $analysis->blockers, key: 'property'),
+			'reason' => 'RESTRICT constraint prevents deletion',
+		];
+	}//end restrictBlockChange()
 
 	/**
 	 * The value the first blocker holds under a key, or 'unknown'.
@@ -551,7 +494,7 @@ class ReferentialIntegrityService {
 		// is deliberately asymmetric. A missed cache hit costs milliseconds; a
 		// missed RESTRICT destroys data the user asked the system to protect.
 		$version = $this->schemaCatalogueVersion();
-		$cache = $this->cacheFactory->createDistributed(self::CACHE_PREFIX);
+		$cache = $this->index->cacheFactory->createDistributed(self::CACHE_PREFIX);
 		$this->relationIndex = self::cachedRelationIndex(cached: $this->cachedIndexEntry(cache: $cache, version: $version), version: $version);
 		if ($this->relationIndex !== null) {
 			return;
@@ -635,7 +578,7 @@ class ReferentialIntegrityService {
 	 */
 	private function allSchemasOrNull(string $purpose): ?array {
 		try {
-			return $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+			return $this->index->schemaMapper->findAll(_rbac: false, _multitenancy: false);
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Failed to load schemas for ' . $purpose,
@@ -708,7 +651,7 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function catalogueRows(): array {
-		$qb = $this->db->getQueryBuilder();
+		$qb = $this->storage->db->getQueryBuilder();
 		$qb->select('id', 'version', 'updated')->from('openregister_schemas');
 		$result = $qb->executeQuery();
 		$rows = $result->fetchAll();
@@ -769,7 +712,7 @@ class ReferentialIntegrityService {
 		);
 		sort($parts);
 
-		return count($parts) . '|' . md5(implode("\n", $parts));
+		return count($parts) . '|' . hash(algo: 'xxh128', data: implode("\n", $parts));
 	}//end catalogueHash()
 
 	/**
@@ -838,7 +781,7 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function magicTableNames(): array {
-		$stmt = $this->db->prepare(
+		$stmt = $this->storage->db->prepare(
 			"SELECT table_name FROM information_schema.tables WHERE table_name LIKE '*PREFIX*openregister_table_%' "
 			. "AND table_schema = {$this->currentSchemaFunction()}"
 		);
@@ -861,7 +804,7 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function currentSchemaFunction(): string {
-		if (stripos(get_debug_type($this->db->getDatabasePlatform()), 'PostgreSQL') !== false) {
+		if (stripos(get_debug_type($this->storage->db->getDatabasePlatform()), 'PostgreSQL') !== false) {
 			return 'current_schema()';
 		}
 
@@ -877,7 +820,7 @@ class ReferentialIntegrityService {
 	 */
 	private function registersById(): array {
 		$registers = [];
-		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+		foreach ($this->index->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
 			$registers[(string)$register->getId()] = $register;
 		}
 
@@ -1498,7 +1441,7 @@ class ReferentialIntegrityService {
 	 */
 	private function relationCandidates(string $uuid): ?array {
 		try {
-			return $this->objectEntityMapper->findByRelation(uuid: $uuid);
+			return $this->storage->objectEntityMapper->findByRelation(uuid: $uuid);
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] findByRelation failed, so the delete is refused',
@@ -1575,7 +1518,7 @@ class ReferentialIntegrityService {
 	private function hasBuiltTable(array $dep): bool {
 		$register = $this->schemaRegisterMap[$dep['sourceSchemaId']];
 		$schema = $this->schemaCache[$dep['sourceSchemaId']];
-		return $this->db->tableExists('openregister_table_' . $register->getId() . '_' . $schema->getId());
+		return $this->storage->db->tableExists('openregister_table_' . $register->getId() . '_' . $schema->getId());
 	}//end hasBuiltTable()
 
 	/**
@@ -1625,7 +1568,7 @@ class ReferentialIntegrityService {
 		// Raw SQL: QueryBuilder cannot express the platform-specific JSON-array
 		// containment operators required here — `JSON_CONTAINS(... JSON_QUOTE(?))`
 		// for MariaDB and `column::jsonb @> to_jsonb(?::text)` for PostgreSQL.
-		$stmt = $this->db->prepare($this->referenceSql(dep: $dep));
+		$stmt = $this->storage->db->prepare($this->referenceSql(dep: $dep));
 		$stmt->execute([$targetUuid]);
 		$rows = $stmt->fetchAll();
 
@@ -1649,7 +1592,7 @@ class ReferentialIntegrityService {
 	private function referenceSql(array $dep): string {
 		$register = $this->schemaRegisterMap[$dep['sourceSchemaId']];
 		$schema = $this->schemaCache[$dep['sourceSchemaId']];
-		$platform = $this->db->getDatabasePlatform();
+		$platform = $this->storage->db->getDatabasePlatform();
 
 		// The table with the instance's prefix, and the column the way the table
 		// was built (the schema's column map, collision suffixes included).
@@ -1663,8 +1606,8 @@ class ReferentialIntegrityService {
 		// compared the text 'code' with the value, matched nothing and let the
 		// delete through. Null-safe via get_debug_type() (a mocked IDBConnection
 		// returns a bare platform double in unit tests).
-		$bareTable = $this->objectEntityMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$quotedTable = $this->db->getQueryBuilder()->getTableName($bareTable);
+		$bareTable = $this->storage->objectEntityMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$quotedTable = $this->storage->db->getQueryBuilder()->getTableName($bareTable);
 		$quotedCol = $platform->quoteIdentifier($this->columnOf(schema: $schema, propertyName: $dep['property']));
 
 		$isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
@@ -1786,7 +1729,7 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function columnOf(Schema $schema, string $propertyName): string {
-		$column = ($this->objectEntityMapper->buildTableColumnsFromSchema(schema: $schema)[$propertyName]['name'] ?? null);
+		$column = ($this->storage->objectEntityMapper->buildTableColumnsFromSchema(schema: $schema)[$propertyName]['name'] ?? null);
 		if (is_string($column) === false || $column === '') {
 			throw new RuntimeException('The table of schema ' . $schema->getId() . ' has no column for property ' . $propertyName);
 		}
@@ -1878,11 +1821,11 @@ class ReferentialIntegrityService {
 	 */
 	private function storeIntegrityRow(IntegrityAuditEntry $entry): void {
 		$auditTrail = self::integrityAuditRow(entry: $entry);
-		$this->auditTrailMapper->applyRetentionExpiry(
+		$this->controls->auditTrailMapper->applyRetentionExpiry(
 			auditTrail: $auditTrail,
 			objectEntity: ($entry->object ?? $this->findIntegrityAuditObject(objectUuid: $entry->objectUuid))
 		);
-		$this->auditTrailMapper->insert($auditTrail);
+		$this->controls->auditTrailMapper->insert($auditTrail);
 	}//end storeIntegrityRow()
 
 	/**
@@ -1940,7 +1883,12 @@ class ReferentialIntegrityService {
 	 */
 	private function findIntegrityAuditObject(string $objectUuid): ?ObjectEntity {
 		try {
-			$found = $this->objectEntityMapper->findAcrossAllSources(identifier: $objectUuid, includeDeleted: true, _rbac: false, _multitenancy: false);
+			$found = $this->storage->objectEntityMapper->findAcrossAllSources(
+				identifier: $objectUuid,
+				includeDeleted: true,
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -2017,7 +1965,7 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function rewriteDependent(array $target, \Closure $rewrite): ObjectEntity {
-		$context = $this->objectEntityMapper->findAcrossAllSources(
+		$context = $this->storage->objectEntityMapper->findAcrossAllSources(
 			identifier: $target['objectUuid'],
 			includeDeleted: false,
 			_rbac: false,
@@ -2025,7 +1973,7 @@ class ReferentialIntegrityService {
 		);
 		$object  = $context['object'];
 		$object->setObject($rewrite($object->getObject()));
-		$this->objectEntityMapper->update(entity: $object, register: $context['register'], schema: $context['schema']);
+		$this->storage->objectEntityMapper->update(entity: $object, register: $context['register'], schema: $context['schema']);
 
 		return $object;
 	}//end rewriteDependent()
@@ -2097,14 +2045,17 @@ class ReferentialIntegrityService {
 	private function applyBatchCascadeDelete(array $cascadeTargets, CascadeDeleteOrigin $origin): void {
 		$resolved = $this->resolveCascadeTargets(cascadeTargets: $cascadeTargets);
 		foreach ($resolved as $target) {
-			$this->objectEntityMapper->assertDeletable(entity: $target);
+			$this->storage->objectEntityMapper->assertDeletable(entity: $target);
 		}
 
+		$run = new BatchCascadeRun(cascadeTargets: $cascadeTargets, origin: $origin);
 		[$handled, $deleted] = $this->batchCascadeSoftDelete(targets: $resolved, origin: $origin);
-		$this->writeBatchCascadeAuditTrails(cascadeTargets: $cascadeTargets, deleted: $deleted, origin: $origin);
+		$run->handled = $handled;
+		$run->deleted = $deleted;
+		$this->writeBatchCascadeAuditTrails(run: $run);
 
 		$fallbackTargets = array_values(
-			array_filter($cascadeTargets, static fn (array $target): bool => isset($handled[$target['objectUuid']]) === false)
+			array_filter($cascadeTargets, static fn (array $target): bool => isset($run->handled[$target['objectUuid']]) === false)
 		);
 		if (empty($fallbackTargets) === false) {
 			$this->applyPerObjectCascadeDelete(cascadeTargets: $fallbackTargets, origin: $origin);
@@ -2126,7 +2077,7 @@ class ReferentialIntegrityService {
 	private function resolveCascadeTargets(array $cascadeTargets): array {
 		$uuids = array_values(array_unique(array_map(static fn (array $target): string => (string) $target['objectUuid'], $cascadeTargets)));
 		try {
-			return $this->objectEntityMapper->findStoredAcrossAllMagicTables(uuids: $uuids, includeDeleted: false);
+			return $this->storage->objectEntityMapper->findStoredAcrossAllMagicTables(uuids: $uuids, includeDeleted: false);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Batched cascade lookup failed; falling back to per-object deletes',
@@ -2190,7 +2141,7 @@ class ReferentialIntegrityService {
 	 */
 	private function softDeleteBatch(array $targets, array $oldEntities): array|null {
 		try {
-			return $this->objectEntityMapper->softDeleteMultipleObjectEntities(entities: $targets, oldEntities: $oldEntities);
+			return $this->storage->objectEntityMapper->softDeleteMultipleObjectEntities(entities: $targets, oldEntities: $oldEntities);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[ReferentialIntegrity] Batched cascade soft delete failed',
@@ -2226,26 +2177,25 @@ class ReferentialIntegrityService {
 	 *
 	 * One row per analysis target (a target referenced through two properties
 	 * gets two rows, matching the per-object path), each pre-built through
-	 * AuditTrailMapper::buildAuditTrail() with action
+	 * AuditTrailMapper::buildEntry() with action
 	 * `referential_integrity.cascade_delete` and the canonical cascade-context
 	 * fold (triggerObject/triggerSchema/action_type/property). Audit failures
 	 * are logged but never abort the cascade — parity with the per-object
 	 * path's fail-soft logIntegrityAction().
 	 *
-	 * @param array $cascadeTargets All cascade targets (already reversed).
-	 * @param array<string, ObjectEntity> $deleted Batch-deleted entities keyed by uuid.
-	 * @param CascadeDeleteOrigin $origin The root object and its schema slug.
+	 * @param BatchCascadeRun $run All cascade targets (already reversed), the batch-deleted entities
+	 *                             keyed by uuid, and the root object and its schema slug.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	private function writeBatchCascadeAuditTrails(array $cascadeTargets, array $deleted, CascadeDeleteOrigin $origin): void {
+	private function writeBatchCascadeAuditTrails(BatchCascadeRun $run): void {
 		$rows = [];
-		foreach ($cascadeTargets as $target) {
-			$entity = ($deleted[$target['objectUuid']] ?? null);
+		foreach ($run->cascadeTargets as $target) {
+			$entity = ($run->deleted[$target['objectUuid']] ?? null);
 			if ($entity !== null) {
-				$rows[] = $this->cascadeAuditRow(entity: $entity, cascadeContext: $origin->auditContext(target: $target));
+				$rows[] = $this->cascadeAuditRow(entity: $entity, cascadeContext: $run->origin->auditContext(target: $target));
 			}
 		}
 
@@ -2264,7 +2214,9 @@ class ReferentialIntegrityService {
 	 */
 	private function cascadeAuditRow(ObjectEntity $entity, array $cascadeContext): mixed {
 		try {
-			return $this->auditTrailMapper->buildAuditTrail(old: $entity, new: null, action: self::CASCADE_DELETE, cascadeContext: $cascadeContext);
+			return $this->controls->auditTrailMapper->buildEntry(
+				change: new AuditedChange(old: $entity, new: null, action: self::CASCADE_DELETE, cascadeContext: $cascadeContext)
+			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Could not build cascade audit row',
@@ -2290,7 +2242,7 @@ class ReferentialIntegrityService {
 		}
 
 		try {
-			$this->auditTrailMapper->insertAuditTrails(entries: $rows);
+			$this->controls->auditTrailMapper->insertAuditTrails(entries: $rows);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Bulk cascade audit insert failed',
@@ -2362,7 +2314,7 @@ class ReferentialIntegrityService {
 	private function deleteCascadeGroup(array $targets, CascadeDeleteOrigin $origin): void {
 		$uuids = array_map(static fn (array $t): string => $t['objectUuid'], $targets);
 		try {
-			$this->objectEntityMapper->deleteObjects(uuids: $uuids, hardDelete: false);
+			$this->storage->objectEntityMapper->deleteObjects(uuids: $uuids, hardDelete: false);
 		} catch (HookStoppedException $refusal) {
 			throw $refusal;
 		} catch (\Exception $e) {

@@ -19,7 +19,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\DisposalSweep;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
+use OCA\OpenRegister\Service\Archival\DestructionInfrastructure;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -48,6 +51,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 /**
  * Golden outcomes of the destruction workflow.
@@ -145,9 +149,7 @@ class DestructionGoldenTest extends TestCase {
 		);
 
 		return new DestructionService(
-			objectMapper: $this->mapper(),
-			appConfig: $config,
-			jobList: $jobs,
+			infrastructure: new DestructionInfrastructure(objectMapper: $this->mapper(), appConfig: $config, jobList: $jobs),
 			userSession: $session,
 			logger: $this->createMock(LoggerInterface::class),
 		);
@@ -402,10 +404,10 @@ class DestructionGoldenTest extends TestCase {
 
 		$retention = $this->createMock(RetentionServiceInterface::class);
 		$retention->method('getObjectsOnPendingDestructionLists')->willReturn(['on-list']);
-		$retention->method('destructionRefusal')->willReturnCallback(
-			function (ObjectEntity $object, string $today, array $excludeUuids): ?string {
-				$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $today);
-				$this->assertSame(['on-list'], $excludeUuids);
+		$retention->method('destructionRefusalIn')->willReturnCallback(
+			function (ObjectEntity $object, DisposalSweep $sweep): ?string {
+				$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $sweep->today);
+				$this->assertSame(['on-list'], $sweep->excludeUuids);
 				return ($object->getUuid() === 'held') ? 'legal_hold' : null;
 			}
 		);
@@ -439,7 +441,7 @@ class DestructionGoldenTest extends TestCase {
 		$this->object('held', []);
 		$retention = $this->createMock(RetentionServiceInterface::class);
 		$retention->method('getObjectsOnPendingDestructionLists')->willReturn([]);
-		$retention->method('destructionRefusal')->willReturn('not_due');
+		$retention->method('destructionRefusalIn')->willReturn('not_due');
 		$retention->expects($this->never())->method('createDestructionList');
 		$save = $this->createMock(SaveObjectInterface::class);
 		$save->expects($this->never())->method('saveObject');
@@ -452,7 +454,7 @@ class DestructionGoldenTest extends TestCase {
 
 	public function testCreatingAListRefusesWithoutConfigurationOrABuildableList(): void {
 		$retention = $this->createMock(RetentionServiceInterface::class);
-		$retention->expects($this->never())->method('destructionRefusal');
+		$retention->expects($this->never())->method('destructionRefusalIn');
 		$save = $this->createMock(SaveObjectInterface::class);
 		$save->expects($this->never())->method('saveObject');
 
@@ -466,7 +468,7 @@ class DestructionGoldenTest extends TestCase {
 		$this->object('ok', []);
 		$builder = $this->createMock(RetentionServiceInterface::class);
 		$builder->method('getObjectsOnPendingDestructionLists')->willReturn([]);
-		$builder->method('destructionRefusal')->willReturn(null);
+		$builder->method('destructionRefusalIn')->willReturn(null);
 		$builder->method('createDestructionList')->willReturn(null);
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('The destruction list could not be built from the archival settings.');
@@ -759,9 +761,9 @@ class DestructionGoldenTest extends TestCase {
 		}
 
 		$mapper = $this->mapper();
-		$mapper->method('findAll')->willReturnCallback(
-			function (...$args) use ($lists): array {
-				$this->assertSame(['status' => ['executed']], $args[2]);
+		$mapper->method('findAllListed')->willReturnCallback(
+			function (MagicListRequest $request) use ($lists): array {
+				$this->assertSame(['status' => ['executed']], $request->query->filters);
 				return $lists;
 			}
 		);
@@ -773,7 +775,7 @@ class DestructionGoldenTest extends TestCase {
 		$schemas->method('find')->willReturn(new Schema());
 
 		$repository = new DestructionListRepository(
-			mappers: new ArchivalRegisterMappers(registerMapper: $registers, schemaMapper: $schemas, objectMapper: $mapper),
+			mappers: new ArchivalRegisterMappers(new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $mapper)),
 			settingsHandler: $handler,
 			logger: $this->createMock(LoggerInterface::class)
 		);

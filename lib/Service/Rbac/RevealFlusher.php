@@ -52,7 +52,6 @@ namespace OCA\OpenRegister\Service\Rbac;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
@@ -76,14 +75,12 @@ class RevealFlusher implements RevealFlusherInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RevealCollector $collector What the read path collected.
-	 * @param AuditTrailMapperInterface $mapper The trail, which owns the chain.
-	 * @param LoggerInterface $logger The logger.
+	 * @param RevealRecording           $recording What the read path collected, and the logger.
+	 * @param AuditTrailMapperInterface $mapper    The trail, which owns the chain.
 	 */
 	public function __construct(
-		private readonly RevealCollector $collector,
+		private readonly RevealRecording $recording,
 		private readonly AuditTrailMapperInterface $mapper,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -95,13 +92,18 @@ class RevealFlusher implements RevealFlusherInterface {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function flush(): int {
-		$overflowed = $this->collector->overflowed();
+		$collector = $this->recording->reveals;
+		if ($collector === null) {
+			return 0;
+		}
+
+		$overflowed = $collector->overflowed();
 
 		// TAKEN BEFORE ANYTHING CAN FAIL. `take()` empties the collector, so a
 		// flush that threw halfway after reading without taking would try the
 		// same rows again on the next flush of the same request and write the
 		// ones that did land a second time.
-		$pending = $this->collector->take();
+		$pending = $collector->take();
 		if ($pending === []) {
 			return 0;
 		}
@@ -110,7 +112,7 @@ class RevealFlusher implements RevealFlusherInterface {
 			// Said out loud rather than inferred from a count nobody compares.
 			// A trail that is quietly incomplete is worse than one that names
 			// where it stopped.
-			$this->logger->error(
+			$this->recording->logger->error(
 				message: '[RevealFlusher] More reveals happened this request than the collector records; the trail for it is incomplete',
 				context: [
 					'file' => __FILE__,
@@ -131,7 +133,7 @@ class RevealFlusher implements RevealFlusherInterface {
 			// See the class docblock: the reads have already happened, so a
 			// failure here is a recording problem and must not become an
 			// availability one.
-			$this->logger->error(
+			$this->recording->logger->error(
 				message: '[RevealFlusher] Could not write the reveal entries; they are lost for this request',
 				context: [
 					'file' => __FILE__,

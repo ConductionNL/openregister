@@ -26,10 +26,12 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SearchTrailPageLinks;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapperInterface;
+use OCA\OpenRegister\Service\SearchPeriod;
 use OCA\OpenRegister\Service\SearchTrailServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -117,16 +119,14 @@ class SearchTrailController extends Controller {
 	/**
 	 * Constructor for SearchTrailController
 	 *
-	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param SearchTrailControllerServices $services The services, bundled.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		SearchTrailControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->searchTrailService = $services->searchTrailService;
 		$this->searchTrailMapper = $services->searchTrailMapper;
 		$this->userSession = $services->userSession;
@@ -136,15 +136,13 @@ class SearchTrailController extends Controller {
 	/**
 	 * An error response.
 	 *
-	 * @param string               $message The error message.
-	 * @param int                  $status  The HTTP status.
-	 * @param array<string, mixed> $fields  Fields that precede the error in the body.
+	 * @param string $message The error message.
+	 * @param int    $status  The HTTP status.
 	 *
 	 * @return JSONResponse The error response.
 	 */
-	private function failure(string $message, int $status = 500, array $fields = []): JSONResponse {
-		$fields['error'] = $message;
-		return new JSONResponse(data: $fields, statusCode: $status);
+	private function failure(string $message, int $status = 500): JSONResponse {
+		return new JSONResponse(data: ['error' => $message], statusCode: $status);
 	}//end failure()
 
 	/**
@@ -177,24 +175,52 @@ class SearchTrailController extends Controller {
 	/**
 	 * The response with the data a builder returns, or the error response when it throws.
 	 *
-	 * @param callable             $build    Builds the response data.
-	 * @param string               $failure  The error message prefix, followed by the exception message.
-	 * @param string|null          $notFound The 404 error message when the builder hits a missing row.
-	 * @param array<string, mixed> $fields   Fields that precede the error in the error body.
+	 * @param callable $build   Builds the response data.
+	 * @param string   $failure The error message prefix, followed by the exception message.
 	 *
 	 * @return JSONResponse The response.
 	 */
-	private function respond(callable $build, string $failure, ?string $notFound = null, array $fields = []): JSONResponse {
+	private function respond(callable $build, string $failure): JSONResponse {
 		try {
 			return new JSONResponse(data: $build());
 		} catch (\Exception $e) {
-			if ($notFound !== null && $e instanceof DoesNotExistException) {
-				return $this->failure(message: $notFound, status: 404);
-			}
-
-			return $this->failure(message: $failure . $e->getMessage(), fields: $fields);
+			return $this->failure(message: $failure . $e->getMessage());
 		}
 	}//end respond()
+
+	/**
+	 * The response with the data a builder returns, 404 when it hits a missing search trail, or the error response.
+	 *
+	 * @param callable $build   Builds the response data.
+	 * @param string   $failure The error message prefix, followed by the exception message.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function respondOrNotFound(callable $build, string $failure): JSONResponse {
+		try {
+			return new JSONResponse(data: $build());
+		} catch (DoesNotExistException $e) {
+			return $this->failure(message: 'Search trail not found', status: 404);
+		} catch (\Exception $e) {
+			return $this->failure(message: $failure . $e->getMessage());
+		}
+	}//end respondOrNotFound()
+
+	/**
+	 * The response with the data a builder returns, or an unsuccessful error response when it throws.
+	 *
+	 * @param callable $build   Builds the response data.
+	 * @param string   $failure The error message prefix, followed by the exception message.
+	 *
+	 * @return JSONResponse The response, with `success: false` before the error when the builder throws.
+	 */
+	private function respondUnsuccessful(callable $build, string $failure): JSONResponse {
+		try {
+			return new JSONResponse(data: $build());
+		} catch (\Exception $e) {
+			return new JSONResponse(data: ['success' => false, 'error' => $failure . $e->getMessage()], statusCode: 500);
+		}
+	}//end respondUnsuccessful()
 
 	/**
 	 * Extract pagination, filter, and search parameters from request
@@ -393,38 +419,33 @@ class SearchTrailController extends Controller {
 	}//end paginate()
 
 	/**
-	 * A statistics list paged with the page size and position of its query.
+	 * The paging window of a statistics list: its total with the page size and position of its query.
 	 *
-	 * @param array<int, mixed>    $items The statistics list.
 	 * @param mixed                $total The total number of entries.
 	 * @param array<string, mixed> $query The statistics query.
 	 *
-	 * @return array<string, mixed> The paging envelope.
+	 * @return ResultWindow The paging window.
 	 */
-	private function statsPage(array $items, mixed $total, array $query): array {
-		return $this->paginate(
-			results: $items,
-			window: new ResultWindow(
-				total: $total,
-				limit: $query['statsLimit'],
-				offset: $query['offset'] ?? 0,
-				page: $query['page'] ?? 1
-			)
+	private function statsWindow(mixed $total, array $query): ResultWindow {
+		return new ResultWindow(
+			total: $total,
+			limit: $query['statsLimit'],
+			offset: $query['offset'] ?? 0,
+			page: $query['page'] ?? 1
 		);
-	}//end statsPage()
+	}//end statsWindow()
 
 	/**
 	 * A paged statistics list with the search count and period of the service result.
 	 *
 	 * @param array<string, mixed> $envelope      The paging envelope.
-	 * @param mixed                $totalSearches The number of searches.
-	 * @param mixed                $period        The period of the statistics.
+	 * @param array<string, mixed> $serviceResult The service result; a missing count is 0, a missing period null.
 	 *
 	 * @return array<string, mixed> The envelope with total_searches and period.
 	 */
-	private function withSearchMeta(array $envelope, mixed $totalSearches, mixed $period): array {
-		$envelope['total_searches'] = $totalSearches;
-		$envelope['period'] = $period;
+	private function withSearchMeta(array $envelope, array $serviceResult): array {
+		$envelope['total_searches'] = $serviceResult['total_searches'] ?? 0;
+		$envelope['period'] = $serviceResult['period'] ?? null;
 		return $envelope;
 	}//end withSearchMeta()
 
@@ -494,10 +515,9 @@ class SearchTrailController extends Controller {
 			return $denial;
 		}
 
-		return $this->respond(
+		return $this->respondOrNotFound(
 			build: fn (): SearchTrail => $this->searchTrailService->getSearchTrail($id),
-			failure: 'Failed to retrieve search trail: ',
-			notFound: 'Search trail not found'
+			failure: 'Failed to retrieve search trail: '
 		);
 	}//end show()
 
@@ -552,15 +572,16 @@ class SearchTrailController extends Controller {
 	 */
 	private function popularTermsPage(array $query): array {
 		$serviceResult = $this->searchTrailService->getPopularSearchTerms(
-			limit: (int)$query['statsLimit'],
-			from: $query['from'],
-			to: $query['to']
+			period: new SearchPeriod(from: $query['from'], to: $query['to']),
+			limit: (int)$query['statsLimit']
 		);
 
 		return $this->withSearchMeta(
-			envelope: $this->statsPage(items: $serviceResult['terms'] ?? [], total: $serviceResult['total_unique_terms'] ?? 0, query: $query),
-			totalSearches: $serviceResult['total_searches'] ?? 0,
-			period: $serviceResult['period'] ?? null
+			envelope: $this->paginate(
+				results: $serviceResult['terms'] ?? [],
+				window: $this->statsWindow(total: $serviceResult['total_unique_terms'] ?? 0, query: $query)
+			),
+			serviceResult: $serviceResult
 		);
 	}//end popularTermsPage()
 
@@ -591,7 +612,7 @@ class SearchTrailController extends Controller {
 		$period = $this->period();
 		$interval = $this->request->getParam(key: 'interval', default: 'day');
 
-		return $this->searchTrailService->getSearchActivity(interval: $interval, from: $period['from'], to: $period['to']);
+		return $this->searchTrailService->getSearchActivity(period: new SearchPeriod(from: $period['from'], to: $period['to']), interval: $interval);
 	}//end activityResult()
 
 	/**
@@ -626,9 +647,11 @@ class SearchTrailController extends Controller {
 		$serviceResult = $this->searchTrailService->getRegisterSchemaStatistics(from: $query['from'], to: $query['to']);
 
 		return $this->withSearchMeta(
-			envelope: $this->statsPage(items: $serviceResult['statistics'] ?? [], total: $serviceResult['total_combinations'] ?? 0, query: $query),
-			totalSearches: $serviceResult['total_searches'] ?? 0,
-			period: $serviceResult['period'] ?? null
+			envelope: $this->paginate(
+				results: $serviceResult['statistics'] ?? [],
+				window: $this->statsWindow(total: $serviceResult['total_combinations'] ?? 0, query: $query)
+			),
+			serviceResult: $serviceResult
 		);
 	}//end registerSchemaPage()
 
@@ -662,9 +685,8 @@ class SearchTrailController extends Controller {
 	 */
 	private function userAgentPage(array $query): array {
 		$serviceResult = $this->searchTrailService->getUserAgentStatistics(
-			limit: (int)$query['statsLimit'],
-			from: $query['from'],
-			to: $query['to']
+			period: new SearchPeriod(from: $query['from'], to: $query['to']),
+			limit: (int)$query['statsLimit']
 		);
 		if (($serviceResult['user_agents'] ?? null) !== null) {
 			return $this->structuredUserAgentPage(serviceResult: $serviceResult, query: $query);
@@ -672,7 +694,7 @@ class SearchTrailController extends Controller {
 
 		// A simple array is the user agents list itself, possibly associative.
 		$userAgents = array_values($serviceResult);
-		return $this->statsPage(items: $userAgents, total: count($userAgents), query: $query);
+		return $this->paginate(results: $userAgents, window: $this->statsWindow(total: count($userAgents), query: $query));
 	}//end userAgentPage()
 
 	/**
@@ -691,9 +713,11 @@ class SearchTrailController extends Controller {
 
 		// The service does not return a search count.
 		$envelope = $this->withSearchMeta(
-			envelope: $this->statsPage(items: $userAgents, total: $serviceResult['total_user_agents'] ?? 0, query: $query),
-			totalSearches: 0,
-			period: $serviceResult['period'] ?? null
+			envelope: $this->paginate(
+				results: $userAgents,
+				window: $this->statsWindow(total: $serviceResult['total_user_agents'] ?? 0, query: $query)
+			),
+			serviceResult: ['period' => $serviceResult['period'] ?? null]
 		);
 
 		return $this->withBrowserBreakdown(envelope: $envelope, browserStats: $serviceResult['browser_distribution'] ?? null);
@@ -892,10 +916,9 @@ class SearchTrailController extends Controller {
 			return $denial;
 		}
 
-		return $this->respond(
+		return $this->respondOrNotFound(
 			build: fn (): array => $this->deletionOutcome(id: $id),
-			failure: 'Deletion failed: ',
-			notFound: 'Search trail not found'
+			failure: 'Deletion failed: '
 		);
 	}//end destroy()
 
@@ -999,10 +1022,9 @@ class SearchTrailController extends Controller {
 			return $denial;
 		}
 
-		return $this->respond(
+		return $this->respondUnsuccessful(
 			build: fn (): array => $this->clearAllOutcome(cleared: $this->searchTrailMapper->clearAllLogs() === true),
-			failure: 'Failed to clear search trails: ',
-			fields: ['success' => false]
+			failure: 'Failed to clear search trails: '
 		);
 	}//end clearAll()
 

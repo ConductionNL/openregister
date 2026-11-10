@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
-use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrategyInterface;
+use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use PHPUnit\Framework\TestCase;

@@ -29,9 +29,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Rbac\GrantRequest;
+use OCA\OpenRegister\Service\Rbac\GrantTerms;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
@@ -156,35 +157,49 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
 	protected function refusalIn(array $data, array $users, array $context): string {
-		$why = $this->refusal(data: $data, users: $users);
-		if ($why !== '') {
-			return $why;
-		}
-
-		if ($this->isObjectOfSet(uuid: ($data['object'] ?? null), context: $context) === false) {
-			return 'object '.(string) json_encode($data['object'] ?? null).' is not an object the set writes';
-		}
-
-		$why = $this->principalRefusal(data: $data, users: $users, context: $context);
-		if ($why !== '') {
-			return $why;
-		}
-
-		return $this->datesRefusal(data: $data, context: $context);
+		return $this->refusalOf(row: new FilledRow(data: $data, users: $users), context: $context);
 	}//end refusalIn()
+
+	/**
+	 * Why a filled grant cannot be made in this run, or '': refusal(), then the object, the principal and the dates.
+	 *
+	 * @param FilledRow            $row     The filled grant fields and the account ids the set creates or adopts.
+	 * @param array<string, mixed> $context The context: the set's `objects`, the groups it created (`setGroups`) and
+	 *                                      the install day.
+	 *
+	 * @return string
+	 */
+	private function refusalOf(FilledRow $row, array $context): string {
+		$why = $this->refusal(data: $row->data, users: $row->users);
+		if ($why !== '') {
+			return $why;
+		}
+
+		if ($this->isObjectOfSet(uuid: ($row->data['object'] ?? null), context: $context) === false) {
+			return 'object '.(string) json_encode($row->data['object'] ?? null).' is not an object the set writes';
+		}
+
+		$why = $this->principalRefusal(row: $row, context: $context);
+		if ($why !== '') {
+			return $why;
+		}
+
+		return $this->datesRefusal(data: $row->data, context: $context);
+	}//end refusalOf()
 
 	/**
 	 * Why the grant's principal is no account of the set (a user grant) or no group the set created (a group
 	 * grant), or ''.
 	 *
-	 * @param array<string, mixed> $data    The filled grant fields; `type` is user or group.
-	 * @param array<int, string>   $users   The account ids the set creates or adopts.
+	 * @param FilledRow            $row     The filled grant fields (`type` is user or group) and the account ids the
+	 *                                      set creates or adopts.
 	 * @param array<string, mixed> $context The context; `setGroups` holds the groups the set created.
 	 *
 	 * @return string
 	 */
-	private function principalRefusal(array $data, array $users, array $context): string {
-		$principals = $users;
+	private function principalRefusal(FilledRow $row, array $context): string {
+		$data       = $row->data;
+		$principals = $row->users;
 		if ($data['type'] === 'group') {
 			$principals = array_values(array_filter((array) ($context['setGroups'] ?? []), 'is_string'));
 		}
@@ -257,14 +272,16 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 * @return array<string, mixed> The share the service made.
 	 */
 	private function grant(ObjectEntity $object, array $data): array {
-		return $this->sharing()->grant(
+		return $this->sharing()->grantWithTerms(
 			object: $object,
-			type: (string) $data['type'],
-			shareWith: (string) $data['shareWith'],
-			permissions: (int) ($data['permissions'] ?? 1),
-			verbs: array_values((array) ($data['verbs'] ?? [])),
-			expiresAt: $this->moment(value: ($data['expiresAt'] ?? null)),
-			sharedAt: $this->moment(value: ($data['sharedAt'] ?? null))
+			request: new GrantRequest(
+				type: (string) $data['type'],
+				shareWith: (string) $data['shareWith'],
+				terms: (new GrantTerms(
+					permissions: (int) ($data['permissions'] ?? 1),
+					verbs: array_values((array) ($data['verbs'] ?? []))
+				))->dated(expiresAt: ($data['expiresAt'] ?? null), sharedAt: ($data['sharedAt'] ?? null))
+			)
 		);
 	}//end grant()
 
@@ -352,21 +369,6 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 
 		return 'removed';
 	}//end deleteShare()
-
-	/**
-	 * A checked date as a moment, or null when it is not declared.
-	 *
-	 * @param mixed $value The filled value.
-	 *
-	 * @return DateTime|null
-	 */
-	private function moment(mixed $value): ?DateTime {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		return new DateTime($value);
-	}//end moment()
 
 	/**
 	 * The object sharing service, which holds the guard.

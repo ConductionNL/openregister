@@ -29,7 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\ProcessingFlag;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -42,16 +44,14 @@ class DataSubjectRequestController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param DataSubjectRequestServiceInterface $service The consumable DSR service.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly DataSubjectRequestServiceInterface $service,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -205,8 +205,10 @@ class DataSubjectRequestController extends Controller {
 
 		$result = $this->service->setRestriction(
 			objectIdentifier: $objectId,
-			restricted: filter_var($this->request->getParam(key: 'restricted'), FILTER_VALIDATE_BOOLEAN),
-			reason: (string)($this->request->getParam(key: 'reason') ?? '')
+			flag: new ProcessingFlag(
+				active: filter_var($this->request->getParam(key: 'restricted'), FILTER_VALIDATE_BOOLEAN),
+				reason: (string)($this->request->getParam(key: 'reason') ?? '')
+			)
 		);
 		if ($result === null) {
 			return new JSONResponse(data: ['error' => 'Object not found, not authorised, or immutable'], statusCode: Http::STATUS_NOT_FOUND);
@@ -237,8 +239,10 @@ class DataSubjectRequestController extends Controller {
 
 		$result = $this->service->setObjection(
 			objectIdentifier: $objectId,
-			objected: filter_var($this->request->getParam(key: 'objected'), FILTER_VALIDATE_BOOLEAN),
-			reason: (string)($this->request->getParam(key: 'reason') ?? '')
+			flag: new ProcessingFlag(
+				active: filter_var($this->request->getParam(key: 'objected'), FILTER_VALIDATE_BOOLEAN),
+				reason: (string)($this->request->getParam(key: 'reason') ?? '')
+			)
 		);
 		if ($result === null) {
 			return new JSONResponse(data: ['error' => 'Object not found, not authorised, or immutable'], statusCode: Http::STATUS_NOT_FOUND);

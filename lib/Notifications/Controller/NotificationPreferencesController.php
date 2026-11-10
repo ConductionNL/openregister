@@ -44,6 +44,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Controller;
 
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationPreferencesControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -54,20 +56,33 @@ class NotificationPreferencesController extends Controller {
 	use NotificationRequestTrait;
 
 	/**
+	 * The three-layer preference resolver.
+	 *
+	 * @var NotificationPreferencesInterface
+	 */
+	private readonly NotificationPreferencesInterface $preferenceService;
+
+	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
-	 * @param NotificationPreferencesInterface $preferenceService Override-only preference resolver.
-	 * @param IUserSession $userSession Current-user session.
+	 * @param IRequest                                   $request  Request.
+	 * @param NotificationPreferencesControllerServices $services The preference resolver and the session.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly NotificationPreferencesInterface $preferenceService,
-		private readonly IUserSession $userSession,
+		NotificationPreferencesControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+
+		$this->preferenceService = $services->preferenceService;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**
@@ -133,7 +148,7 @@ class NotificationPreferencesController extends Controller {
 		// Absent means global, which is what every stored preference is.
 		$scope = $this->stringParam(params: $params, key: 'scope');
 
-		return $this->writeOverride(userId: $userId, target: ['schema' => $schema, 'notification' => $notification, 'scope' => $scope], params: $params);
+		return $this->writeOverride(userId: $userId, target: ['schema' => $schema, 'notification' => $notification, 'scope' => $scope]);
 	}//end update()
 
 	/**
@@ -145,13 +160,12 @@ class NotificationPreferencesController extends Controller {
 	 *
 	 * @param string                                                      $userId The current user.
 	 * @param array{schema: string, notification: string, scope: ?string} $target What the override is for.
-	 * @param array<string, mixed>                                        $params The request payload.
 	 *
 	 * @return JSONResponse The stored override.
 	 */
-	private function writeOverride(string $userId, array $target, array $params): JSONResponse {
+	private function writeOverride(string $userId, array $target): JSONResponse {
 		[$schema, $notification, $scope] = [$target['schema'], $target['notification'], $target['scope']];
-		$override = $this->requestedSetting(params: $params);
+		$override = $this->requestedSetting(params: $this->request->getParams());
 		$this->preferenceService->setOverride(userId: $userId, schemaSlug: $schema, notificationKey: $notification, override: $override, scope: $scope);
 
 		$stored = null;
@@ -159,6 +173,6 @@ class NotificationPreferencesController extends Controller {
 			$stored = $this->preferenceService->getOverride(userId: $userId, schemaSlug: $schema, notificationKey: $notification, scope: $scope);
 		}
 
-		return $this->settingResponse(target: $target, key: 'override', stored: $stored);
+		return $this->settingResponse(target: $target, stored: ['override' => $stored]);
 	}//end writeOverride()
 }//end class

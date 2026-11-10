@@ -26,9 +26,9 @@ declare(strict_types=1);
 namespace Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionWrite;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
-use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleWrite;
+use OCA\OpenRegister\Service\Lifecycle\TransitionAttempt;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCP\IGroupManager;
 use OCP\IL10N;
@@ -113,14 +113,9 @@ class AutoTransitionSelectorTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheOneHoldingTransitionIsSelected(): void {
-		$candidate = $this->selector->select(
-			annotation: $this->annotation(
+		$candidate = $this->selector->select(annotation: $this->annotation(
 				['beslissen' => ['from' => ['in-behandeling'], 'to' => 'besloten', 'autoWhen' => self::HOLDS]]
-			),
-			objectData: ['status' => 'in-behandeling', 'motivering' => 'Ongegrond.'],
-			previous: ['status' => 'in-behandeling'],
-			schemaSlug: 'bezwaar'
-		);
+			), write: new AutoTransitionWrite(objectData: ['status' => 'in-behandeling', 'motivering' => 'Ongegrond.'], previous: ['status' => 'in-behandeling'], schemaSlug: 'bezwaar'));
 
 		$this->assertNotNull($candidate);
 		$this->assertSame('beslissen', $candidate->action);
@@ -134,14 +129,9 @@ class AutoTransitionSelectorTest extends TestCase {
 	 */
 	public function testARuleThatDoesNotHoldSelectsNothing(): void {
 		$this->assertNull(
-			$this->selector->select(
-				annotation: $this->annotation(
+			$this->selector->select(annotation: $this->annotation(
 					['beslissen' => ['from' => ['in-behandeling'], 'to' => 'besloten', 'autoWhen' => self::HOLDS]]
-				),
-				objectData: ['status' => 'in-behandeling', 'motivering' => ''],
-				previous: [],
-				schemaSlug: 'bezwaar'
-			)
+				), write: new AutoTransitionWrite(objectData: ['status' => 'in-behandeling', 'motivering' => ''], previous: [], schemaSlug: 'bezwaar'))
 		);
 	}//end testARuleThatDoesNotHoldSelectsNothing()
 
@@ -150,14 +140,9 @@ class AutoTransitionSelectorTest extends TestCase {
 	 */
 	public function testATransitionWithoutAutoWhenIsNeverSelected(): void {
 		$this->assertNull(
-			$this->selector->select(
-				annotation: $this->annotation(
+			$this->selector->select(annotation: $this->annotation(
 					['beslissen' => ['from' => ['in-behandeling'], 'to' => 'besloten']]
-				),
-				objectData: ['status' => 'in-behandeling', 'motivering' => 'Ongegrond.'],
-				previous: [],
-				schemaSlug: 'bezwaar'
-			)
+				), write: new AutoTransitionWrite(objectData: ['status' => 'in-behandeling', 'motivering' => 'Ongegrond.'], previous: [], schemaSlug: 'bezwaar'))
 		);
 	}//end testATransitionWithoutAutoWhenIsNeverSelected()
 
@@ -166,8 +151,7 @@ class AutoTransitionSelectorTest extends TestCase {
 	 */
 	public function testAMoveToTheCurrentValueIsNeverSelected(): void {
 		$this->assertNull(
-			$this->selector->select(
-				annotation: $this->annotation(
+			$this->selector->select(annotation: $this->annotation(
 					[
 						'herbevestigen' => [
 							'from' => ['ontvangen', 'in-behandeling'],
@@ -175,11 +159,7 @@ class AutoTransitionSelectorTest extends TestCase {
 							'autoWhen' => self::HOLDS,
 						],
 					]
-				),
-				objectData: ['status' => 'in-behandeling', 'motivering' => 'Ongegrond.'],
-				previous: [],
-				schemaSlug: 'bezwaar'
-			)
+				), write: new AutoTransitionWrite(objectData: ['status' => 'in-behandeling', 'motivering' => 'Ongegrond.'], previous: [], schemaSlug: 'bezwaar'))
 		);
 	}//end testAMoveToTheCurrentValueIsNeverSelected()
 
@@ -197,17 +177,12 @@ class AutoTransitionSelectorTest extends TestCase {
 			);
 
 		$this->assertNull(
-			$this->selector->select(
-				annotation: $this->annotation(
+			$this->selector->select(annotation: $this->annotation(
 					[
 						'toewijzen' => ['from' => ['ontvangen'], 'to' => 'in-behandeling', 'autoWhen' => self::HOLDS],
 						'afwijzen' => ['from' => ['ontvangen'], 'to' => 'afgewezen', 'autoWhen' => self::HOLDS],
 					]
-				),
-				objectData: ['status' => 'ontvangen', 'motivering' => 'Ongegrond.'],
-				previous: [],
-				schemaSlug: 'bezwaar'
-			)
+				), write: new AutoTransitionWrite(objectData: ['status' => 'ontvangen', 'motivering' => 'Ongegrond.'], previous: [], schemaSlug: 'bezwaar'))
 		);
 	}//end testTwoHoldingRulesSelectNothingAndNameBoth()
 
@@ -215,8 +190,7 @@ class AutoTransitionSelectorTest extends TestCase {
 	 * @return void
 	 */
 	public function testOneHoldingBesideOneThatDoesNotIsSelected(): void {
-		$candidate = $this->selector->select(
-			annotation: $this->annotation(
+		$candidate = $this->selector->select(annotation: $this->annotation(
 				[
 					'toewijzen' => [
 						'from' => ['ontvangen'],
@@ -225,11 +199,7 @@ class AutoTransitionSelectorTest extends TestCase {
 					],
 					'afwijzen' => ['from' => ['ontvangen'], 'to' => 'afgewezen', 'autoWhen' => self::HOLDS],
 				]
-			),
-			objectData: ['status' => 'ontvangen', 'motivering' => 'Ongegrond.'],
-			previous: [],
-			schemaSlug: 'bezwaar'
-		);
+			), write: new AutoTransitionWrite(objectData: ['status' => 'ontvangen', 'motivering' => 'Ongegrond.'], previous: [], schemaSlug: 'bezwaar'));
 
 		$this->assertNotNull($candidate);
 		$this->assertSame('afwijzen', $candidate->action);
@@ -250,17 +220,12 @@ class AutoTransitionSelectorTest extends TestCase {
 			);
 
 		$this->assertNull(
-			$this->selector->select(
-				annotation: $this->annotation(
+			$this->selector->select(annotation: $this->annotation(
 					[
 						'starten' => ['from' => ['ontvangen'], 'to' => 'in-behandeling'],
 						'toewijzen' => ['from' => ['ontvangen'], 'to' => 'in-behandeling', 'autoWhen' => self::HOLDS],
 					]
-				),
-				objectData: ['status' => 'ontvangen', 'motivering' => 'Ongegrond.'],
-				previous: [],
-				schemaSlug: 'bezwaar'
-			)
+				), write: new AutoTransitionWrite(objectData: ['status' => 'ontvangen', 'motivering' => 'Ongegrond.'], previous: [], schemaSlug: 'bezwaar'))
 		);
 	}//end testAShadowedTransitionIsNotSelectedAndBothAreNamed()
 
@@ -270,17 +235,12 @@ class AutoTransitionSelectorTest extends TestCase {
 	public function testALaterTwinDoesNotShadowTheCandidate(): void {
 		// Shadowing is about an EARLIER declaration only: the save path takes
 		// the first match, so a twin declared after the candidate cannot win.
-		$candidate = $this->selector->select(
-			annotation: $this->annotation(
+		$candidate = $this->selector->select(annotation: $this->annotation(
 				[
 					'toewijzen' => ['from' => ['ontvangen'], 'to' => 'in-behandeling', 'autoWhen' => self::HOLDS],
 					'starten' => ['from' => ['ontvangen'], 'to' => 'in-behandeling'],
 				]
-			),
-			objectData: ['status' => 'ontvangen', 'motivering' => 'Ongegrond.'],
-			previous: [],
-			schemaSlug: 'bezwaar'
-		);
+			), write: new AutoTransitionWrite(objectData: ['status' => 'ontvangen', 'motivering' => 'Ongegrond.'], previous: [], schemaSlug: 'bezwaar'));
 
 		$this->assertNotNull($candidate);
 		$this->assertSame('toewijzen', $candidate->action);
@@ -298,8 +258,7 @@ class AutoTransitionSelectorTest extends TestCase {
 			);
 
 		$this->assertNull(
-			$this->selector->select(
-				annotation: $this->annotation(
+			$this->selector->select(annotation: $this->annotation(
 					[
 						'beslissen' => [
 							'from' => ['in-behandeling'],
@@ -308,11 +267,7 @@ class AutoTransitionSelectorTest extends TestCase {
 							'executionMode' => 'background',
 						],
 					]
-				),
-				objectData: ['status' => 'in-behandeling', 'motivering' => 'Ongegrond.'],
-				previous: [],
-				schemaSlug: 'bezwaar'
-			)
+				), write: new AutoTransitionWrite(objectData: ['status' => 'in-behandeling', 'motivering' => 'Ongegrond.'], previous: [], schemaSlug: 'bezwaar'))
 		);
 	}//end testAnUnrecognisedExecutionModeSelectsNothingAndWarns()
 
@@ -320,8 +275,7 @@ class AutoTransitionSelectorTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAsyncModeIsCarriedOnTheCandidate(): void {
-		$candidate = $this->selector->select(
-			annotation: $this->annotation(
+		$candidate = $this->selector->select(annotation: $this->annotation(
 				[
 					'beslissen' => [
 						'from' => ['in-behandeling'],
@@ -330,11 +284,7 @@ class AutoTransitionSelectorTest extends TestCase {
 						'executionMode' => 'async',
 					],
 				]
-			),
-			objectData: ['status' => 'in-behandeling', 'motivering' => 'Ongegrond.'],
-			previous: [],
-			schemaSlug: 'bezwaar'
-		);
+			), write: new AutoTransitionWrite(objectData: ['status' => 'in-behandeling', 'motivering' => 'Ongegrond.'], previous: [], schemaSlug: 'bezwaar'));
 
 		$this->assertNotNull($candidate);
 		$this->assertSame('async', $candidate->mode);
@@ -347,14 +297,9 @@ class AutoTransitionSelectorTest extends TestCase {
 		// The runtime does not trust save-time validation. A scalar written by
 		// a path that skipped the mapper counts as not holding.
 		$this->assertNull(
-			$this->selector->select(
-				annotation: $this->annotation(
+			$this->selector->select(annotation: $this->annotation(
 					['beslissen' => ['from' => ['in-behandeling'], 'to' => 'besloten', 'autoWhen' => true]]
-				),
-				objectData: ['status' => 'in-behandeling'],
-				previous: [],
-				schemaSlug: 'bezwaar'
-			)
+				), write: new AutoTransitionWrite(objectData: ['status' => 'in-behandeling'], previous: [], schemaSlug: 'bezwaar'))
 		);
 	}//end testAStoredScalarAutoWhenSelectsNothing()
 
@@ -384,20 +329,18 @@ class AutoTransitionSelectorTest extends TestCase {
 			 * Answer true for every rule, without evaluating it.
 			 *
 			 * @param mixed $rule The rule.
-			 * @param LifecycleWrite $write The object, the previous object, the schema slug and the field.
-			 * @param TransitionMove $move The transition name and the states it moves between.
+			 * @param TransitionAttempt $attempt The write and the transition it attempts.
 			 *
 			 * @return bool Always true.
 			 */
-			public function holds(mixed $rule, LifecycleWrite $write, TransitionMove $move): bool {
+			public function holds(mixed $rule, TransitionAttempt $attempt): bool {
 				$this->asked[] = $rule;
 				return true;
 			}
 		};
 
 		$selector = new AutoTransitionSelector($evaluator, $this->logger);
-		$candidate = $selector->select(
-			annotation: $this->annotation(
+		$candidate = $selector->select(annotation: $this->annotation(
 				[
 					'beslissen' => [
 						'from' => ['in-behandeling'],
@@ -405,11 +348,7 @@ class AutoTransitionSelectorTest extends TestCase {
 						'autoWhen' => 'not a rule object at all',
 					],
 				]
-			),
-			objectData: ['status' => 'in-behandeling'],
-			previous: [],
-			schemaSlug: 'bezwaar'
-		);
+			), write: new AutoTransitionWrite(objectData: ['status' => 'in-behandeling'], previous: [], schemaSlug: 'bezwaar'));
 
 		$this->assertNotNull($candidate);
 		$this->assertSame('beslissen', $candidate->action);

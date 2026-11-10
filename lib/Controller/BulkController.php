@@ -28,8 +28,11 @@ namespace OCA\OpenRegister\Controller;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\BulkControllerServices;
 use OCA\OpenRegister\Controller\Support\BulkSaveBatch;
+use OCA\OpenRegister\Controller\Support\BulkSaveCounts;
+use OCA\OpenRegister\Controller\Support\BulkSaveReport;
 use OCA\OpenRegister\Controller\Support\BulkSaveSummary;
 use OCA\OpenRegister\Controller\Support\BulkStore;
 use OCA\OpenRegister\Db\Register;
@@ -45,6 +48,7 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
 use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
@@ -135,18 +139,16 @@ class BulkController extends Controller {
 	/**
 	 * Constructor for the BulkController
 	 *
-	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param BulkControllerServices $services The bulk controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		BulkControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->store = $services->store;
 		$this->objectService = $services->store->objectService;
 		$this->registerMapper = $services->store->registerMapper;
@@ -277,9 +279,8 @@ class BulkController extends Controller {
 	 * `404 Register not found: '19'` for the same register. openregister#2820
 	 * had survived its own fix, in the copy nobody edited.
 	 *
-	 * @param string        $register      Register slug, uuid or numeric id.
-	 * @param string        $schema        Schema slug, uuid or numeric id.
-	 * @param ObjectOperationsInterface $objectService The request's object service.
+	 * @param string $register Register slug, uuid or numeric id.
+	 * @param string $schema   Schema slug, uuid or numeric id.
 	 *
 	 * @return array The resolved ids.
 	 *
@@ -288,17 +289,16 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
-	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectOperationsInterface $objectService): array {
-		$resolved = $this->resolveRegisterAndSchema(
-			register: $register,
-			schema: $schema,
-			objectService: $objectService
+	private function resolveRegisterSchemaIds(string $register, string $schema): array {
+		$resolved = $this->resolveRegisterSchemaRef(
+			ref: new RegisterSchemaRef(register: $register, schema: $schema),
+			objectService: $this->objectService
 		);
 
 		// Re-anchor on the resolved NUMERIC ids, as this controller did before:
 		// downstream bulk handlers read the service's current register/schema
 		// rather than the returned array.
-		$objectService->setRegister(register: (string)$resolved['register'])
+		$this->objectService->setRegister(register: (string)$resolved['register'])
 			->setSchema(schema: (string)$resolved['schema']);
 
 		return ['register' => $resolved['register'], 'schema' => $resolved['schema']];
@@ -344,11 +344,7 @@ class BulkController extends Controller {
 	 */
 	private function resolveOrNotFound(string $register, string $schema): array|JSONResponse {
 		try {
-			return $this->resolveRegisterSchemaIds(
-				register: $register,
-				schema: $schema,
-				objectService: $this->objectService
-			);
+			return $this->resolveRegisterSchemaIds(register: $register, schema: $schema);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
 		}
@@ -594,16 +590,16 @@ class BulkController extends Controller {
 
 		$summary = new BulkSaveSummary(
 			successMessage: 'Bulk save operation completed (streaming)',
-			savedCount: $savedCount,
-			requestedCount: $requestedCount,
-			extra: ['saved_objects' => $status->toArray()],
-			accountedCount: $accounted
+			counts: new BulkSaveCounts(requested: $requestedCount, saved: $savedCount, accounted: $accounted),
+			extra: ['saved_objects' => $status->toArray()]
 		);
 
 		return $this->bulkSaveResponse(
-			summary: $summary,
-			outcome: $this->saveOutcome(result: $status, summary: $summary),
-			partial: $batch->partial
+			report: new BulkSaveReport(
+				summary: $summary,
+				outcome: $this->saveOutcome(result: $status, summary: $summary),
+				partial: $batch->partial
+			)
 		);
 	}//end writeStreamedBatch()
 
@@ -639,16 +635,16 @@ class BulkController extends Controller {
 
 		$summary = new BulkSaveSummary(
 			successMessage: 'Bulk save operation completed successfully',
-			savedCount: $savedCount,
-			requestedCount: $requestedCount,
-			extra: ['saved_objects' => $savedObjects],
-			accountedCount: $accounted
+			counts: new BulkSaveCounts(requested: $requestedCount, saved: $savedCount, accounted: $accounted),
+			extra: ['saved_objects' => $savedObjects]
 		);
 
 		return $this->bulkSaveResponse(
-			summary: $summary,
-			outcome: $this->saveOutcome(result: $savedObjects, summary: $summary),
-			partial: $batch->partial
+			report: new BulkSaveReport(
+				summary: $summary,
+				outcome: $this->saveOutcome(result: $savedObjects, summary: $summary),
+				partial: $batch->partial
+			)
 		);
 	}//end writeCheckedBatch()
 
@@ -685,71 +681,16 @@ class BulkController extends Controller {
 	}//end saveOutcome()
 
 	/**
-	 * Build the bulk-save response so a shortfall can never read as a success.
+	 * Answer one bulk save; see BulkSaveReport for why a shortfall never reads as a success.
 	 *
-	 * The rule this enforces (issue #2778): `success` is true only when EVERY
-	 * submitted object was written. It used to be the constant `true` on the
-	 * non-streaming path, so a batch where 27 of 58 rows were refused for
-	 * failing schema validation answered "completed successfully" and only
-	 * `saved_count` — which the caller had to think to compare against its own
-	 * request size — carried the loss. A caller that trusts `success` has
-	 * already moved on by then, and `events: false` on this path means nothing
-	 * downstream notices either.
-	 *
-	 * `success` is therefore unconditional and never softened by `partial`:
-	 * making the flag mean "some rows landed" would re-create exactly the shape
-	 * this fixes. What `partial` changes is only the HTTP status — an opted-in
-	 * caller gets 200 with an honest `success: false` plus the failures, rather
-	 * than a 422 its client library would raise on.
-	 *
-	 * 422 (not 500) matches the sibling `save()` catch for a unique-constraint
-	 * collision: the request was understood, and the server refused the content
-	 * of specific rows. Rows that DID write are not rolled back — this endpoint
-	 * has never been transactional — which is why `saved_count` stays in the
-	 * body of the failure response: it is what the caller must reconcile against.
-	 *
-	 * @param BulkSaveSummary          $summary What the path wrote, and its success message and payload.
-	 * @param BulkSaveOutcomeInterface $outcome What the save path lost, and why.
-	 * @param bool                     $partial Whether the caller opted into best-effort semantics.
+	 * @param BulkSaveReport $report What the path wrote and lost, and whether partial was asked.
 	 *
 	 * @return JSONResponse The batch outcome.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function bulkSaveResponse(BulkSaveSummary $summary, BulkSaveOutcomeInterface $outcome, bool $partial): JSONResponse {
-		$failedCount = $outcome->failedCount();
-		$complete = $outcome->isComplete();
-
-		$message = $summary->successMessage;
-		if ($complete === false) {
-			$message = sprintf(
-				'Bulk save incomplete: %d of %d objects were rejected and NOT written. See "failures" for the reason per object.',
-				$failedCount,
-				$summary->requestedCount
-			);
-		}
-
-		$status = Http::STATUS_UNPROCESSABLE_ENTITY;
-		if ($complete === true || $partial === true) {
-			$status = Http::STATUS_OK;
-		}
-
-		return new JSONResponse(
-			data: array_merge(
-				[
-					'success' => $complete,
-					'message' => $message,
-					'saved_count' => $summary->savedCount,
-					'failed_count' => $failedCount,
-					'requested_count' => $summary->requestedCount,
-					'failures' => $outcome->failures(),
-					'partial' => $partial,
-				],
-				$summary->extra
-			),
-			statusCode: $status
-		);
-
+	private function bulkSaveResponse(BulkSaveReport $report): JSONResponse {
+		return new JSONResponse(data: $report->body(), statusCode: $report->status());
 	}//end bulkSaveResponse()
 
 	/**

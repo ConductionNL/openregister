@@ -64,6 +64,18 @@ interface RuleRunMapperInterface {
 	): array;
 
 	/**
+	 * One rule's runs, newest first, narrowed by the selection's filter.
+	 *
+	 * @param RuleRunSelection $selection The rule and its filter.
+	 * @param ListQuery        $page      The limit (capped at MAX_LIMIT) and offset; other fields are ignored.
+	 *
+	 * @return array<int, RuleRun> The rows.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function findRuns(RuleRunSelection $selection, ListQuery $page): array;
+
+	/**
 	 * The most recent runs across every rule.
 	 *
 	 * The per-rule listing answers "how is this rule doing"; an operations
@@ -75,21 +87,14 @@ interface RuleRunMapperInterface {
 	 * column the ordering and the window both use, so the console never
 	 * scans the run log (ADR-009).
 	 *
-	 * @param string|null   $verdict Narrow to one verdict.
-	 * @param DateTime|null $since   Only runs at or after this moment.
-	 * @param int           $limit   How many rows to return, capped at MAX_LIMIT.
-	 * @param int           $offset  Where to start.
+	 * @param DateTime|null $since Only runs at or after this moment.
+	 * @param int           $limit How many rows to return, capped at MAX_LIMIT.
 	 *
 	 * @return array<int, RuleRun> The rows, newest first.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
-	public function findRecent(
-		?string $verdict = null,
-		?DateTime $since = null,
-		int $limit = self::DEFAULT_LIMIT,
-		int $offset = 0,
-	): array;
+	public function findRecent(?DateTime $since = null, int $limit = self::DEFAULT_LIMIT): array;
 
 	/**
 	 * How many runs one rule has in the log, under the same filters.
@@ -109,6 +114,17 @@ interface RuleRunMapperInterface {
 		?DateTime $since = null,
 		?DateTime $until = null,
 	): int;
+
+	/**
+	 * How many runs one rule has in the log, under the selection's filter.
+	 *
+	 * @param RuleRunSelection $selection The rule and its filter.
+	 *
+	 * @return int The number of matching rows.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function countRuns(RuleRunSelection $selection): int;
 
 	/**
 	 * Delete detail rows older than a cut-off, in bounded batches.

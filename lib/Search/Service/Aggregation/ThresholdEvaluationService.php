@@ -43,6 +43,8 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 
 /**
  * Evaluates threshold-typed notifications declared on a schema.
@@ -77,12 +79,23 @@ class ThresholdEvaluationService {
 		private readonly LoggerInterface $logger,
 		ICacheFactory $cacheFactory,
 	) {
-		try {
-			$this->stateCache = $cacheFactory->createDistributed('openregister_threshold_state');
-		} catch (\Throwable $e) {
-			$this->stateCache = null;
-		}
+		$this->stateCache = $this->openStateCache(cacheFactory: $cacheFactory);
 	}//end __construct()
+
+	/**
+	 * The distributed state cache, or null when no backend is available.
+	 *
+	 * @param ICacheFactory $cacheFactory Distributed-cache factory.
+	 *
+	 * @return ICache|null
+	 */
+	private function openStateCache(ICacheFactory $cacheFactory): ?ICache {
+		try {
+			return $cacheFactory->createDistributed('openregister_threshold_state');
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end openStateCache()
 
 	/**
 	 * Whether a schema declares at least one threshold-typed notification.
@@ -126,7 +139,10 @@ class ThresholdEvaluationService {
 			}
 
 			try {
-				$this->evaluate(schema: $schema, notificationName: (string)$name, trigger: $trigger, object: $object);
+				$this->evaluate(
+					run: new ThresholdRun(schema: $schema, object: $object, notificationName: (string)$name),
+					trigger: $trigger
+				);
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					sprintf(
@@ -179,87 +195,83 @@ class ThresholdEvaluationService {
 	/**
 	 * Evaluate one notification spec and dispatch on rising-edge crossings.
 	 *
-	 * @param Schema $schema Schema declaring the notification.
-	 * @param string $notificationName Notification key in the schema config.
+	 * @param ThresholdRun         $run     The schema, the object that just changed and the notification name.
 	 * @param array<string, mixed> $trigger Trigger configuration block.
-	 * @param ObjectEntity $object Object that just changed.
 	 *
 	 * @return void
 	 */
-	private function evaluate(Schema $schema, string $notificationName, array $trigger, ObjectEntity $object): void {
-		$parsed = $this->readTrigger(trigger: $trigger);
+	private function evaluate(ThresholdRun $run, array $trigger): void {
+		$parsed = ThresholdTrigger::fromConfig(trigger: $trigger);
 		if ($parsed === null) {
 			return;
 		}
 
-		$value = $this->aggregationValue(schema: $schema, object: $object, aggregationName: $parsed['aggregation']);
+		$value = $this->aggregationValue(run: $run, aggregationName: $parsed->aggregation);
 		if ($value === null) {
 			return;
 		}
 
 		$newState = self::STATE_BELOW;
-		if ($this->compare(actual: $value, op: $parsed['op'], expected: $parsed['threshold']) === true) {
+		if ($parsed->isMetBy(actual: $value) === true) {
 			$newState = self::STATE_ABOVE;
 		}
 
-		$stateKey = sprintf('threshold:%d:%s', $schema->getId(), $notificationName);
-
-		if ($this->isRisingEdge(stateKey: $stateKey, newState: $newState) === true) {
-			$this->dispatcher->dispatch(
-				$object,
-				'threshold',
-				[
-					'notificationName' => $notificationName,
-					'aggregation' => $parsed['aggregation'],
-					'value' => $value,
-					'threshold' => $parsed['threshold'],
-					'op' => $parsed['op'],
-				]
-			);
+		if ($this->isRisingEdge(stateKey: $run->stateKey(), newState: $newState) === true) {
+			$this->notify(run: $run, payload: $this->breachPayload(trigger: $parsed, value: $value));
 		}
 
-		$this->storeState(stateKey: $stateKey, newState: $newState);
+		$this->storeState(stateKey: $run->stateKey(), newState: $newState);
 	}//end evaluate()
 
 	/**
-	 * Read the aggregation name, operator and threshold from a trigger block.
+	 * What a breach notification carries.
 	 *
-	 * @param array<string, mixed> $trigger Trigger configuration block.
+	 * @param ThresholdTrigger $trigger The trigger that was met.
+	 * @param int|float        $value   The aggregation value that met it.
 	 *
-	 * @return array{aggregation: string, op: string, threshold: mixed}|null Null when any is missing.
+	 * @return array<string, mixed> Without the notification name, which notify() adds.
 	 */
-	private function readTrigger(array $trigger): ?array {
-		$aggregationName = (string)($trigger['aggregation'] ?? '');
-		$op = (string)($trigger['op'] ?? '');
-		$threshold = ($trigger['value'] ?? null);
-		if ($aggregationName === '' || $op === '' || $threshold === null) {
-			return null;
-		}
-
-		return ['aggregation' => $aggregationName, 'op' => $op, 'threshold' => $threshold];
-	}//end readTrigger()
+	private function breachPayload(ThresholdTrigger $trigger, int|float $value): array {
+		return [
+			'aggregation' => $trigger->aggregation,
+			'value' => $value,
+			'threshold' => $trigger->threshold,
+			'op' => $trigger->op,
+		];
+	}//end breachPayload()
 
 	/**
-	 * Run the named aggregation for the object's register and the schema.
+	 * Dispatch the threshold notification of a run.
 	 *
-	 * BypassRbac: threshold evaluation is a system reaction to a write
-	 * event, not a user-driven request. The write itself already passed
-	 * RBAC; the threshold evaluation's authoritative reason is "this object
-	 * just changed", independent of the active session's `list` permission
-	 * on the schema.
+	 * @param ThresholdRun         $run     The run whose notification fires.
+	 * @param array<string, mixed> $payload The breach payload.
 	 *
-	 * @param Schema $schema Schema declaring the notification.
-	 * @param ObjectEntity $object Object that just changed.
-	 * @param string $aggregationName Aggregation to run.
+	 * @return void
+	 */
+	private function notify(ThresholdRun $run, array $payload): void {
+		$this->dispatcher->dispatch(
+			$run->object,
+			'threshold',
+			array_merge(['notificationName' => $run->notificationName], $payload)
+		);
+	}//end notify()
+
+	/**
+	 * Run the aggregation a trigger names and return its numeric value.
+	 *
+	 * @param ThresholdRun $run             The schema and the object that just changed.
+	 * @param string       $aggregationName Aggregation to run.
 	 *
 	 * @return int|float|null The numeric value, or null when it is not numeric.
 	 */
-	private function aggregationValue(Schema $schema, ObjectEntity $object, string $aggregationName): int|float|null {
+	private function aggregationValue(ThresholdRun $run, string $aggregationName): int|float|null {
 		$result = $this->aggregationRunner->run(
-			registerRef: (string)$object->getRegister(),
-			schemaRef: (string)$schema->getSlug(),
-			name: $aggregationName,
-			bypassRbac: true
+			ref: new NamedAggregationRef(
+				register: (string)$run->object->getRegister(),
+				schema: (string)$run->schema->getSlug(),
+				name: $aggregationName
+			),
+			options: new NamedAggregationOptions(bypassRbac: true)
 		);
 		$value = ($result['value'] ?? null);
 		if (is_int($value) === false && is_float($value) === false) {
@@ -297,34 +309,14 @@ class ThresholdEvaluationService {
 			// still has continuity across maintenance restarts.
 			$this->stateCache?->set($stateKey, $newState, (60 * 60 * 24 * 30));
 		} catch (\Throwable $e) {
-			// Don't escalate.
+			// A lost state write can repeat a crossing notification; not escalated.
+			$this->logger->warning(
+				message: '[ThresholdEvaluationService] Could not store the threshold state',
+				context: [
+					'stateKey' => $stateKey,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end storeState()
-
-	/**
-	 * Compare two values with the configured operator.
-	 *
-	 * @param int|float $actual Numeric value computed from the aggregation.
-	 * @param string $op Comparison operator (gt|gte|lt|lte|eq|ne).
-	 * @param mixed $expected Threshold value, must be numeric.
-	 *
-	 * @return bool True when the comparison is satisfied, false otherwise.
-	 */
-	private function compare($actual, string $op, $expected): bool {
-		if (is_numeric($expected) === false) {
-			return false;
-		}
-
-		$rhs = (float)$expected;
-		$lhs = (float)$actual;
-		return match ($op) {
-			'gt' => $lhs > $rhs,
-			'gte' => $lhs >= $rhs,
-			'lt' => $lhs < $rhs,
-			'lte' => $lhs <= $rhs,
-			'eq' => $lhs === $rhs,
-			'ne' => $lhs !== $rhs,
-			default => false,
-		};
-	}//end compare()
 }//end class

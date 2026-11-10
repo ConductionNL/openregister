@@ -15,6 +15,8 @@ use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -222,12 +224,13 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 		);
 
 		$this->service = new FlowRunService(
-			$this->mapper,
-			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
-			$engine,
-			$registry,
-			$this->createMock(LoggerInterface::class),
-			$container
+			stores: new FlowRunStores(
+				mapper: $this->mapper,
+				stateMapper: $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class)
+			),
+			walk: new FlowRunWalkServices(engine: $engine, registry: $registry),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $container
 		);
 	}//end setUp()
 
@@ -236,9 +239,9 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 	}//end flowDoc()
 
 	public function testExecuteNodeRunsOnlyTheNamedNodeAndCompletes(): void {
-		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, context: [FlowRunService::NODE_ID_CONTEXT_KEY => 'target'], user: 'alice');
 
-		$result = $this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject(), nodeId: 'target');
+		$result = $this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject());
 
 		$this->assertSame(FlowRun::STATUS_COMPLETED, $result->getStatus());
 		$this->assertSame(1, $this->target->calls);
@@ -252,27 +255,27 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 	 * `downstream`'s counter goes from 0 to 1.
 	 */
 	public function testExecuteNodeDoesNotRunDownstreamNodes(): void {
-		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, context: [FlowRunService::NODE_ID_CONTEXT_KEY => 'target'], user: 'alice');
 
-		$this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject(), nodeId: 'target');
+		$this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject());
 
 		$this->assertSame(1, $this->target->calls, 'the named node must run exactly once');
 		$this->assertSame(0, $this->downstream->calls, 'nothing downstream of it may run');
 	}//end testExecuteNodeDoesNotRunDownstreamNodes()
 
 	public function testExecuteNodeFailsWhenTheNodeThrows(): void {
-		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, context: [FlowRunService::NODE_ID_CONTEXT_KEY => 'boom'], user: 'alice');
 
-		$result = $this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject(), nodeId: 'boom');
+		$result = $this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject());
 
 		$this->assertSame(FlowRun::STATUS_FAILED, $result->getStatus());
 		$this->assertStringContainsString('the node refused', (string)$result->getError());
 	}//end testExecuteNodeFailsWhenTheNodeThrows()
 
 	public function testExecuteNodeMarksAnUnsupportedSuspensionAsFailed(): void {
-		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, context: [FlowRunService::NODE_ID_CONTEXT_KEY => 'wait'], user: 'alice');
 
-		$result = $this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject(), nodeId: 'wait');
+		$result = $this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject());
 
 		$this->assertSame(FlowRun::STATUS_FAILED, $result->getStatus());
 		$this->assertStringContainsString('does not support', (string)$result->getError());
@@ -286,9 +289,9 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 	 * draft-only id, and either way it is the run's problem to report.
 	 */
 	public function testExecuteNodeFailsWhenTheNodeIdIsNotInThePublishedGraph(): void {
-		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, context: [FlowRunService::NODE_ID_CONTEXT_KEY => 'ghost'], user: 'alice');
 
-		$result = $this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject(), nodeId: 'ghost');
+		$result = $this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject());
 
 		$this->assertSame(FlowRun::STATUS_FAILED, $result->getStatus());
 		$this->assertSame(0, $this->target->calls);
@@ -302,10 +305,10 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 	 * and this reddens — the node runs a second time.
 	 */
 	public function testExecuteNodeDoesNothingWhenTheRunIsNotQueued(): void {
-		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, context: [FlowRunService::NODE_ID_CONTEXT_KEY => 'target'], user: 'alice');
 		$run->setStatus(FlowRun::STATUS_RUNNING);
 
-		$result = $this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject(), nodeId: 'target');
+		$result = $this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject());
 
 		$this->assertSame(FlowRun::STATUS_RUNNING, $result->getStatus());
 		$this->assertSame(0, $this->target->calls);
@@ -318,9 +321,9 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testExecuteNodeRunsWithThePublishedConfigByDefault(): void {
-		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, context: [FlowRunService::NODE_ID_CONTEXT_KEY => 'target'], user: 'alice');
 
-		$this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject(), nodeId: 'target');
+		$this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject());
 
 		$this->assertSame(['templateId' => 'authored', 'folder' => 'Besluiten'], $this->target->lastConfig);
 	}//end testExecuteNodeRunsWithThePublishedConfigByDefault()
@@ -334,13 +337,12 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheCallersConfigOverlaysThePublishedStep(): void {
-		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, context: [FlowRunService::NODE_ID_CONTEXT_KEY => 'target'], user: 'alice');
 
 		$this->service->executeNode(
 			run: $run,
 			flow: $this->flowDoc(),
 			subject: new ExecuteNodeSubject(),
-			nodeId: 'target',
 			config: ['templateId' => 'picked']
 		);
 
@@ -354,13 +356,12 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testACallerKeyOutsideTheNodesVocabularyDoesNotReachIt(): void {
-		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, context: [FlowRunService::NODE_ID_CONTEXT_KEY => 'target'], user: 'alice');
 
 		$this->service->executeNode(
 			run: $run,
 			flow: $this->flowDoc(),
 			subject: new ExecuteNodeSubject(),
-			nodeId: 'target',
 			config: ['templateId' => 'picked', 'webhookUrl' => 'https://example.invalid/', 'folder' => 'Elders']
 		);
 
@@ -373,13 +374,12 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testANodeThatDeclaresNoKeysTakesNothingFromTheCaller(): void {
-		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, context: [FlowRunService::NODE_ID_CONTEXT_KEY => 'downstream'], user: 'alice');
 
 		$this->service->executeNode(
 			run: $run,
 			flow: $this->flowDoc(),
 			subject: new ExecuteNodeSubject(),
-			nodeId: 'downstream',
 			config: ['anything' => 'x']
 		);
 
@@ -395,8 +395,8 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 	public function testEachOutcomeAppendsItsLogEntryKeyForKey(): void {
 		$entries = [];
 		foreach (['target', 'boom', 'wait'] as $nodeId) {
-			$run    = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
-			$result = $this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject(), nodeId: $nodeId);
+			$run    = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, context: [FlowRunService::NODE_ID_CONTEXT_KEY => $nodeId], user: 'alice');
+			$result = $this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject());
 			$log    = (array)$result->getLog();
 			$entry  = end($log);
 			$this->assertIsInt($entry['durationMs']);

@@ -67,6 +67,10 @@ use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
 use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesStore;
+use OCA\OpenRegister\Service\ExampleSet\CollectivePageText;
+use OCA\OpenRegister\Service\ExampleSet\CollectiveSeat;
+use OCA\OpenRegister\Service\ExampleSet\CollectiveTeam;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkRoom;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
@@ -74,6 +78,7 @@ use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppAndHistoryRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetHistoryRowKinds;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds;
@@ -120,6 +125,7 @@ use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Search\Service\ViewAudience;
 use OCA\OpenRegister\Search\Service\ViewDefinition;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
@@ -133,6 +139,10 @@ use OCP\IConfig;
 use OCP\Security\ISecureRandom;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerObjects;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerSetup;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerWriters;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverRows;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites;
@@ -396,82 +406,89 @@ abstract class ExampleSetTestCase extends TestCase {
 		$this->catalogue = new ExampleSetCatalogue(appManager: $appManager, order: new ExampleSetOrder());
 		$people          = new ExampleSetPeople(accounts: $this->accounts, record: $this->record);
 		$this->installer = new ExampleSetInstaller(
-			store: $this->store,
-			people: $people,
-			values: new ExampleSetValues(),
-			record: $this->record,
-			proof: new ExampleSetProof(),
-			prerequisites: new ExampleSetPrerequisites(registers: $this->registers, instance: $instance, record: $this->record, people: $people),
-			changes: $changes,
-			files: $files,
-			appConfig: $setConfig,
-			userPreferences: $preferences,
-			engineRows: new ExampleSetEngineKinds(
-				work: new ExampleSetWorkRowKinds(
-					tasks: new ExampleSetTasks(container: $container),
-					notes: new ExampleSetNotes(container: $container),
-					readStates: new ExampleSetReadStates(container: $container),
-					watchers: new ExampleSetWatchers(container: $container)
+			objects: new ExampleSetInstallerObjects(store: $this->store, values: new ExampleSetValues(), record: $this->record, proof: new ExampleSetProof()),
+			setup: new ExampleSetInstallerSetup(
+				people: $people,
+				prerequisites: new ExampleSetPrerequisites(registers: $this->registers, instance: $instance, record: $this->record, people: $people),
+				appConfig: $setConfig,
+				userPreferences: $preferences
+			),
+			writers: new ExampleSetInstallerWriters(
+				changes: $changes,
+				files: $files,
+				engineRows: new ExampleSetEngineKinds(
+					work: new ExampleSetWorkRowKinds(
+						tasks: new ExampleSetTasks(container: $container),
+						notes: new ExampleSetNotes(container: $container),
+						readStates: new ExampleSetReadStates(container: $container),
+						watchers: new ExampleSetWatchers(container: $container)
+					),
+					own: new ExampleSetOwnRowKinds(
+						views: new ExampleSetViews(container: $container),
+						flows: new ExampleSetFlows(container: $container),
+						casePlans: new ExampleSetCasePlans(container: $container)
+					),
+					links: new ExampleSetLinkRowKinds(
+						parties: new ExampleSetParties(container: $container),
+						emailLinks: new ExampleSetEmailLinks(container: $container),
+						accessLinks: new ExampleSetAccessLinks(container: $container),
+						grants: new ExampleSetGrants(container: $container)
+					),
+					elsewhere: new ExampleSetAppAndHistoryRowKinds(
+						apps: new ExampleSetAppRowKinds(
+							deckCards: new ExampleSetDeckCards(container: $container),
+							appointments: new ExampleSetAppointments(container: $container),
+							collectivesPages: new ExampleSetCollectivesPages(container: $container),
+							talkConversations: new ExampleSetTalkConversations(container: $container)
+						),
+						history: new ExampleSetHistoryRowKinds(
+							exportRuns: new ExampleSetExportRuns(container: $container),
+							archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
+							auditEntries: new ExampleSetAuditEntries(container: $container),
+							timelineEntries: new ExampleSetTimelineEntries(container: $container)
+						)
+					)
 				),
-				own: new ExampleSetOwnRowKinds(
-					views: new ExampleSetViews(container: $container),
-					flows: new ExampleSetFlows(container: $container),
-					casePlans: new ExampleSetCasePlans(container: $container)
-				),
-				links: new ExampleSetLinkRowKinds(
-					parties: new ExampleSetParties(container: $container),
-					emailLinks: new ExampleSetEmailLinks(container: $container),
-					accessLinks: new ExampleSetAccessLinks(container: $container),
-					grants: new ExampleSetGrants(container: $container)
-				),
-				apps: new ExampleSetAppRowKinds(
-					deckCards: new ExampleSetDeckCards(container: $container),
-					appointments: new ExampleSetAppointments(container: $container),
-					collectivesPages: new ExampleSetCollectivesPages(container: $container),
-					talkConversations: new ExampleSetTalkConversations(container: $container)
-				),
-				history: new ExampleSetHistoryRowKinds(
-					exportRuns: new ExampleSetExportRuns(container: $container),
-					archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
-					auditEntries: new ExampleSetAuditEntries(container: $container),
-					timelineEntries: new ExampleSetTimelineEntries(container: $container)
-				)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
 		$this->remover   = new ExampleSetRemover(
 			objects: new ExampleSetRemoverObjects(store: $this->store, record: $this->record, files: $files, changes: $changes),
 			settings: new ExampleSetRemoverSettings(appConfig: $setConfig, userPreferences: $preferences, registers: $this->registers, instance: $instance),
-			accounts: $this->accounts,
-			engineRows: new ExampleSetEngineKinds(
-				work: new ExampleSetWorkRowKinds(
-					tasks: new ExampleSetTasks(container: $container),
-					notes: new ExampleSetNotes(container: $container),
-					readStates: new ExampleSetReadStates(container: $container),
-					watchers: new ExampleSetWatchers(container: $container)
-				),
-				own: new ExampleSetOwnRowKinds(
-					views: new ExampleSetViews(container: $container),
-					flows: new ExampleSetFlows(container: $container),
-					casePlans: new ExampleSetCasePlans(container: $container)
-				),
-				links: new ExampleSetLinkRowKinds(
-					parties: new ExampleSetParties(container: $container),
-					emailLinks: new ExampleSetEmailLinks(container: $container),
-					accessLinks: new ExampleSetAccessLinks(container: $container),
-					grants: new ExampleSetGrants(container: $container)
-				),
-				apps: new ExampleSetAppRowKinds(
-					deckCards: new ExampleSetDeckCards(container: $container),
-					appointments: new ExampleSetAppointments(container: $container),
-					collectivesPages: new ExampleSetCollectivesPages(container: $container),
-					talkConversations: new ExampleSetTalkConversations(container: $container)
-				),
-				history: new ExampleSetHistoryRowKinds(
-					exportRuns: new ExampleSetExportRuns(container: $container),
-					archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
-					auditEntries: new ExampleSetAuditEntries(container: $container),
-					timelineEntries: new ExampleSetTimelineEntries(container: $container)
+			rows: new ExampleSetRemoverRows(
+				accounts: $this->accounts,
+				engineRows: new ExampleSetEngineKinds(
+					work: new ExampleSetWorkRowKinds(
+						tasks: new ExampleSetTasks(container: $container),
+						notes: new ExampleSetNotes(container: $container),
+						readStates: new ExampleSetReadStates(container: $container),
+						watchers: new ExampleSetWatchers(container: $container)
+					),
+					own: new ExampleSetOwnRowKinds(
+						views: new ExampleSetViews(container: $container),
+						flows: new ExampleSetFlows(container: $container),
+						casePlans: new ExampleSetCasePlans(container: $container)
+					),
+					links: new ExampleSetLinkRowKinds(
+						parties: new ExampleSetParties(container: $container),
+						emailLinks: new ExampleSetEmailLinks(container: $container),
+						accessLinks: new ExampleSetAccessLinks(container: $container),
+						grants: new ExampleSetGrants(container: $container)
+					),
+					elsewhere: new ExampleSetAppAndHistoryRowKinds(
+						apps: new ExampleSetAppRowKinds(
+							deckCards: new ExampleSetDeckCards(container: $container),
+							appointments: new ExampleSetAppointments(container: $container),
+							collectivesPages: new ExampleSetCollectivesPages(container: $container),
+							talkConversations: new ExampleSetTalkConversations(container: $container)
+						),
+						history: new ExampleSetHistoryRowKinds(
+							exportRuns: new ExampleSetExportRuns(container: $container),
+							archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
+							auditEntries: new ExampleSetAuditEntries(container: $container),
+							timelineEntries: new ExampleSetTimelineEntries(container: $container)
+						)
+					)
 				)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
@@ -607,14 +624,14 @@ abstract class ExampleSetTestCase extends TestCase {
 				return $view;
 			}
 		);
-		$service->method('update')->willReturnCallback(
-			function (int|string $id, string $name, string $description, string $owner, bool $isPublic, bool $isDefault, array $query, ?array $favoredBy = null, ?array $presentation = null, ?array $sharedWith = null, ?array $alert = null): View {
+		$service->method('revise')->willReturnCallback(
+			function (int|string $id, ViewEdit $edit): View {
 				$view = ($this->savedViews[(string) $id] ?? throw new DoesNotExistException('no view '.$id));
-				$view->setName($name);
-				$view->setIsPublic($isPublic);
-				$view->setQuery($query);
-				$view->setAlert($alert);
-				$view->setSharedWith($sharedWith ?? []);
+				$view->setName($edit->definition->name);
+				$view->setIsPublic($edit->audience->isPublic);
+				$view->setQuery($edit->definition->query);
+				$view->setAlert($edit->alert);
+				$view->setSharedWith($edit->audience->sharedWith ?? []);
 				return $view;
 			}
 		);
@@ -728,7 +745,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function collectivesStore(): ExampleSetCollectivesStore {
 		$store = $this->createMock(ExampleSetCollectivesStore::class);
 		$store->method('available')->willReturnCallback(fn (): bool => $this->collectivesInstalled);
-		$store->method('collective')->willReturnCallback(function (string $owner, string $name, array $groups): array {
+		$store->method('collectiveOf')->willReturnCallback(function (CollectiveTeam $team, string $name): array {
+			[$owner, $groups] = [$team->owner, $team->groups];
 			foreach ($this->collectives['collectives'] as $id => $row) {
 				if ($row['name'] === $name) {
 					return ['id' => $id, 'created' => false];
@@ -739,7 +757,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			$this->collectives['collectives'][$id] = ['name' => $name, 'owner' => $owner, 'groups' => $groups];
 			return ['id' => $id, 'created' => true];
 		});
-		$store->method('page')->willReturnCallback(function (int $collective, string $owner, string $title, string $content): array {
+		$store->method('page')->willReturnCallback(function (CollectiveSeat $seat, CollectivePageText $text): array {
+			[$collective, $owner, $title, $content] = [$seat->collective, $seat->owner, $text->title, $text->content];
 			foreach ($this->collectives['pages'] as $id => $row) {
 				if ($row['collective'] === $collective && $row['title'] === $title) {
 					return ['id' => $id, 'created' => false];
@@ -750,8 +769,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			$this->collectives['pages'][$id] = ['collective' => $collective, 'title' => $title, 'content' => $content, 'owner' => $owner];
 			return ['id' => $id, 'created' => true];
 		});
-		$store->method('pageExists')->willReturnCallback(fn (int $collective, int $page, string $owner): bool => isset($this->collectives['pages'][$page]));
-		$store->method('deletePage')->willReturnCallback(function (int $collective, int $page, string $owner): void {
+		$store->method('pageFound')->willReturnCallback(fn (CollectiveSeat $seat, int $page): bool => isset($this->collectives['pages'][$page]));
+		$store->method('deletePage')->willReturnCallback(function (CollectiveSeat $seat, int $page): void {
 			unset($this->collectives['pages'][$page]);
 		});
 		$store->method('deleteCollective')->willReturnCallback(function (int $collective, string $owner): void {
@@ -838,7 +857,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function talkStore(): ExampleSetTalkStore {
 		$store = $this->createMock(ExampleSetTalkStore::class);
 		$store->method('available')->willReturnCallback(fn (): bool => $this->talkInstalled);
-		$store->method('room')->willReturnCallback(function (string $owner, string $name, array $participants): array {
+		$store->method('openRoom')->willReturnCallback(function (ExampleSetTalkRoom $room): array {
+			[$owner, $name, $participants] = [$room->owner, $room->name, $room->participants];
 			foreach ($this->talk['rooms'] as $token => $room) {
 				if ($room['name'] === $name && $room['owner'] === $owner) {
 					return ['token' => $token, 'id' => $room['id'], 'created' => false];
@@ -849,9 +869,11 @@ abstract class ExampleSetTestCase extends TestCase {
 			$this->talk['rooms'][$token] = ['id' => (count($this->talk['rooms']) + 1), 'name' => $name, 'owner' => $owner, 'participants' => $participants];
 			return ['token' => $token, 'id' => $this->talk['rooms'][$token]['id'], 'created' => true];
 		});
-		$store->method('heldCall')->willReturnCallback(function (string $token, string $owner, \DateTime $start, \DateTime $end, array $joined): void {
-			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_started', 'at' => $start->format('c')];
-			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_ended', 'at' => $end->format('c'), 'users' => $joined, 'duration' => ($end->getTimestamp() - $start->getTimestamp())];
+		$store->method('heldCall')->willReturnCallback(function (\OCA\OpenRegister\Service\ExampleSet\HeldTalkCall $held): void {
+			$start = new \DateTime((string) $held->call['start']);
+			$end   = new \DateTime((string) $held->call['end']);
+			$this->talk['messages'][] = ['room' => $held->token, 'message' => 'call_started', 'at' => $start->format('c')];
+			$this->talk['messages'][] = ['room' => $held->token, 'message' => 'call_ended', 'at' => $end->format('c'), 'users' => $held->joined, 'duration' => ($end->getTimestamp() - $start->getTimestamp())];
 		});
 		$store->method('roomExists')->willReturnCallback(fn (string $token): bool => isset($this->talk['rooms'][$token]));
 		$store->method('deleteRoom')->willReturnCallback(function (string $token): void {
@@ -918,9 +940,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			return null;
 		};
 		$store->method('available')->willReturnCallback(fn (): bool => $this->deckInstalled);
-		$store->method('board')->willReturnCallback(function (string $owner, string $title, string $color, array $groups) use ($find, $add): array {
-			$found = $find('boards', 'owner', $owner, $title);
-			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('boards', ['owner' => $owner, 'title' => $title, 'groups' => $groups]), 'created' => true];
+		$store->method('board')->willReturnCallback(function (\OCA\OpenRegister\Service\ExampleSet\DeckBoardRequest $board) use ($find, $add): array {
+			$found = $find('boards', 'owner', $board->owner, $board->title);
+			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('boards', ['owner' => $board->owner, 'title' => $board->title, 'groups' => $board->groups]), 'created' => true];
 		});
 		$store->method('stack')->willReturnCallback(function (int $board, string $title) use ($find, $add): array {
 			$found = $find('stacks', 'board', $board, $title);

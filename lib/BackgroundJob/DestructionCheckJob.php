@@ -161,7 +161,7 @@ class DestructionCheckJob extends TimedJob {
 			);
 
 			// Step 4: Notify archivaris group.
-			$this->sendReviewNotification(listUuid: $savedList->getUuid(), objectCount: count($eligible), logger: $logger);
+			$this->sendReviewNotification(listUuid: $savedList->getUuid(), objectCount: count($eligible));
 		} catch (Exception $e) {
 			$logger->error('[DestructionCheckJob] Error: ' . $e->getMessage(), ['exception' => $e]);
 		}//end try
@@ -241,27 +241,7 @@ class DestructionCheckJob extends TimedJob {
 					continue;
 				}
 
-				$subject = 'Object approaching destruction date';
-				if (in_array(($retention['archiefnominatie'] ?? null), AppraisalInterface::RETAIN_PERMANENTLY_ALIASES, true) === true) {
-					$subject = 'Object requires e-Depot transfer';
-				}
-
-				$this->sendObjectNotification(
-					uuid: $uuid,
-					subject: $subject,
-					// 🔴 NOT `getTitle()`. `ObjectEntity` HAS NO `title`
-					// PROPERTY, so Entity's magic accessor threw
-					// "title is not a valid attribute" on the first object it
-					// reached. Inside this try that aborted the entire
-					// notification pass; in `createDestructionList()` the same
-					// call took down the whole job. `name` is the property that
-					// exists, and `getObjectArray()` already falls back to the
-					// uuid the same way.
-					title: $object->getName() ?? $uuid,
-					actionDate: (string)($retention['archiefactiedatum'] ?? ''),
-					classification: $retention['classification'] ?? null,
-					logger: $logger
-				);
+				$this->sendObjectNotification(object: $object, logger: $logger);
 
 				$newNotified[$uuid] = true;
 				$newCount++;
@@ -287,13 +267,12 @@ class DestructionCheckJob extends TimedJob {
 	}//end sendPreDestructionNotifications()
 
 	/**
-	 * Send a notification about a specific object.
+	 * Send a notification about one approaching object to every archivist.
 	 *
-	 * @param string $uuid Object UUID
-	 * @param string $subject Notification subject
-	 * @param string $title Object title
-	 * @param string $actionDate Archiefactiedatum
-	 * @param string|null $classification Selectielijst category
+	 * The subject is a destruction warning, or an e-Depot transfer for a
+	 * permanently retained record. The title is the object's name, else its uuid.
+	 *
+	 * @param ObjectEntity $object The approaching object.
 	 * @param LoggerInterface $logger Logger
 	 *
 	 * @return void
@@ -301,14 +280,24 @@ class DestructionCheckJob extends TimedJob {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	private function sendObjectNotification(
-		string $uuid,
-		string $subject,
-		string $title,
-		string $actionDate,
-		?string $classification,
-		LoggerInterface $logger,
-	): void {
+	private function sendObjectNotification(ObjectEntity $object, LoggerInterface $logger): void {
+		$retention = ($object->getRetention() ?? []);
+		$uuid = $object->getUuid();
+		$parameters = [
+			'subject' => self::subjectOf(retention: $retention),
+			// 🔴 NOT `getTitle()`. `ObjectEntity` HAS NO `title`
+			// PROPERTY, so Entity's magic accessor threw
+			// "title is not a valid attribute" on the first object it
+			// reached. Inside this try that aborted the entire
+			// notification pass; in `createDestructionList()` the same
+			// call took down the whole job. `name` is the property that
+			// exists, and `getObjectArray()` already falls back to the
+			// uuid the same way.
+			'title' => self::titleOf(name: $object->getName(), uuid: $uuid),
+			'actieDate' => (string)($retention['archiefactiedatum'] ?? ''),
+			'classification' => (self::classificationOf(retention: $retention) ?? ''),
+		];
+
 		try {
 			$notificationManager = $this->container->get(INotificationManager::class);
 			$groupManager = $this->container->get(IGroupManager::class);
@@ -324,15 +313,7 @@ class DestructionCheckJob extends TimedJob {
 					->setUser($user->getUID())
 					->setDateTime(new DateTime())
 					->setObject('retention', $uuid)
-					->setSubject(
-						'retention_approaching',
-						[
-							'subject' => $subject,
-							'title' => $title,
-							'actieDate' => $actionDate,
-							'classification' => $classification ?? '',
-						]
-					);
+					->setSubject('retention_approaching', $parameters);
 				$notificationManager->notify($notification);
 			}
 		} catch (Exception $e) {
@@ -341,21 +322,56 @@ class DestructionCheckJob extends TimedJob {
 	}//end sendObjectNotification()
 
 	/**
+	 * The subject an approaching object is announced with.
+	 *
+	 * @param array<string, mixed> $retention The object's retention block.
+	 *
+	 * @return string An e-Depot transfer for a permanently retained record, else a destruction warning.
+	 */
+	private static function subjectOf(array $retention): string {
+		if (in_array(($retention['archiefnominatie'] ?? null), AppraisalInterface::RETAIN_PERMANENTLY_ALIASES, true) === true) {
+			return 'Object requires e-Depot transfer';
+		}
+
+		return 'Object approaching destruction date';
+	}//end subjectOf()
+
+	/**
+	 * The title an approaching object is announced with.
+	 *
+	 * @param string|null $name The object's name.
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return string The name, else the uuid.
+	 */
+	private static function titleOf(?string $name, string $uuid): string {
+		return ($name ?? $uuid);
+	}//end titleOf()
+
+	/**
+	 * The selectielijst category of an approaching object, typed as the payload requires.
+	 *
+	 * @param array<string, mixed> $retention The object's retention block.
+	 *
+	 * @return string|null The category, or null when none is recorded.
+	 */
+	private static function classificationOf(array $retention): ?string {
+		return ($retention['classification'] ?? null);
+	}//end classificationOf()
+
+	/**
 	 * Send review notification for new destruction list.
+	 *
+	 * A failure is logged as a warning on the app logger and never fails the run.
 	 *
 	 * @param string $listUuid Destruction list UUID
 	 * @param int $objectCount Number of objects
-	 * @param LoggerInterface $logger Logger
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	private function sendReviewNotification(
-		string $listUuid,
-		int $objectCount,
-		LoggerInterface $logger,
-	): void {
+	private function sendReviewNotification(string $listUuid, int $objectCount): void {
 		try {
 			$notificationManager = $this->container->get(INotificationManager::class);
 			$groupManager = $this->container->get(IGroupManager::class);
@@ -381,7 +397,7 @@ class DestructionCheckJob extends TimedJob {
 				$notificationManager->notify($notification);
 			}
 		} catch (Exception $e) {
-			$logger->warning('[DestructionCheckJob] Review notification error: ' . $e->getMessage());
+			$this->container->get(LoggerInterface::class)->warning('[DestructionCheckJob] Review notification error: ' . $e->getMessage());
 		}//end try
 	}//end sendReviewNotification()
 }//end class

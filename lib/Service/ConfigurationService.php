@@ -30,7 +30,7 @@ use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -78,9 +78,9 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	/**
 	 * Configuration mapper instance for handling configuration operations.
 	 *
-	 * @var ConfigurationMapper The configuration mapper instance.
+	 * @var ConfigurationMapperInterface The configuration mapper instance.
 	 */
-	private ConfigurationMapper $configurationMapper;
+	private ConfigurationMapperInterface $configurationMapper;
 
 	/**
 	 * App manager for checking installed apps
@@ -173,7 +173,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 *
 	 * Initializes service with required dependencies for configuration operations.
 	 *
-	 * @param ConfigurationMapper           $configurationMapper Configuration mapper for configuration operations
+	 * @param ConfigurationMapperInterface           $configurationMapper Configuration mapper for configuration operations
 	 * @param ConfigurationServicePlatform  $platform            App manager, container, app config and logger
 	 * @param ConfigurationGitHosts         $gitHosts            The GitHub and GitLab handlers
 	 * @param ConfigurationTransferHandlers $transfer            The cache, preview, export and upload handlers
@@ -181,7 +181,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		ConfigurationMapper $configurationMapper,
+		ConfigurationMapperInterface $configurationMapper,
 		ConfigurationServicePlatform $platform,
 		ConfigurationGitHosts $gitHosts,
 		// NOTE: ImportHandler is lazy-loaded via getImportHandler() to prevent circular dependency.
@@ -401,7 +401,23 @@ class ConfigurationService implements ConfigurationServiceInterface {
 		?string $version = null,
 		bool $force = false,
 	): array {
+		$this->enableOpenConnectorFor(data: $data);
+		return $this->getImportHandler()->importFromJson(
+			data: $data, configuration: $configuration, owner: $owner,
+			appId: $appId, version: $version, force: $force
+		);
+	}//end importFromJson()
 
+	/**
+	 * Enable installing OpenConnector resources when the data carries an OpenConnector-specific component.
+	 *
+	 * @param array $data The configuration JSON content.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
+	 */
+	private function enableOpenConnectorFor(array $data): void {
 		// If a OpenConnector specific object is in the data, enable installing OpenConnector resources.
 		$openConnectorResources = ['mappings', 'jobs', 'synchronizations', 'rules', 'sources'];
 		if (count(array_intersect(array_keys($data['components']), $openConnectorResources)) > 0
@@ -409,16 +425,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 		) {
 			$this->getImportHandler()->setOpenConnectorConfigurationService($this->openConnectorConfigurationService);
 		}
-
-		return $this->getImportHandler()->importFromJson(
-			data: $data,
-			configuration: $configuration,
-			owner: $owner,
-			appId: $appId,
-			version: $version,
-			force: $force
-		);
-	}//end importFromJson()
+	}//end enableOpenConnectorFor()
 
 	/**
 	 * Import configuration from a file path.
@@ -461,12 +468,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
 	 */
 	public function importFromFilePath(string $appId, string $filePath, string $version, bool $force = false): array {
-		return $this->getImportHandler()->importFromFilePath(
-			appId: $appId,
-			filePath: $filePath,
-			version: $version,
-			force: $force
-		);
+		return $this->getImportHandler()->importFromFilePath(appId: $appId, filePath: $filePath, version: $version, force: $force);
 	}//end importFromFilePath()
 
 	/**
@@ -509,12 +511,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 		// one. Run them as a scoped system operation so RBAC treats them like
 		// the CLI cron path instead of denying them as anonymous every boot.
 		return SystemOperationContext::run(
-			fn (): array => $this->getImportHandler()->importFromApp(
-				appId: $appId,
-				data: $data,
-				version: $version,
-				force: $force
-			)
+			fn (): array => $this->getImportHandler()->importFromApp(appId: $appId, data: $data, version: $version, force: $force)
 		);
 	}//end importFromApp()
 
@@ -944,11 +941,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @spec exclude Facade plumbing: thin delegation to GitHubHandler::searchConfigurations, no standalone behavioral contract.
 	 */
 	public function searchGitHub(string $search = '', int $page = 1, int $perPage = 30): array {
-		return $this->githubHandler->searchConfigurations(
-			search: $search,
-			page: $page,
-			perPage: $perPage
-		);
+		return $this->githubHandler->searchConfigurations(search: $search, page: $page, perPage: $perPage);
 	}//end searchGitHub()
 
 	/**
@@ -967,11 +960,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @spec exclude Facade plumbing: thin delegation to GitLabHandler::searchConfigurations, no standalone behavioral contract.
 	 */
 	public function searchGitLab(string $search = '', int $page = 1, int $perPage = 30): array {
-		return $this->gitlabHandler->searchConfigurations(
-			search: $search,
-			page: $page,
-			perPage: $perPage
-		);
+		return $this->gitlabHandler->searchConfigurations(search: $search, page: $page, perPage: $perPage);
 	}//end searchGitLab()
 
 	/**

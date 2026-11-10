@@ -29,6 +29,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Unit tests for SchemaService.
@@ -92,8 +94,7 @@ class SchemaServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new SchemaService(
-			$this->schemaMapper,
-			$this->objectMapper,
+			new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemaMapper, tables: $this->objectMapper),
 			$this->logger
 		);
 	}
@@ -1507,7 +1508,7 @@ class SchemaServiceTest extends TestCase {
 			],
 		];
 
-		$result = $this->invokePrivate('analyzeExistingProperties', [$existingProperties, $discoveredProperties, []]);
+		$result = $this->invokePrivate('analyzeExistingProperties', [$existingProperties, $discoveredProperties]);
 
 		$this->assertNotEmpty($result);
 		$this->assertEquals('age', $result[0]['property_name']);
@@ -1524,7 +1525,7 @@ class SchemaServiceTest extends TestCase {
 		$discoveredProperties = [];
 		// name not discovered.
 
-		$result = $this->invokePrivate('analyzeExistingProperties', [$existingProperties, $discoveredProperties, []]);
+		$result = $this->invokePrivate('analyzeExistingProperties', [$existingProperties, $discoveredProperties]);
 
 		$this->assertEmpty($result);
 	}

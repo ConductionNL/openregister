@@ -134,12 +134,13 @@ class SchemaSaveGovernsScopedPropertiesTest extends TestCase {
 	 * @return void
 	 */
 	public function testAMemberOfTheScopeSavesIt(): void {
-		$this->govern(
+		$refusal = $this->refusalOf(
 			$this->mapperFor('alice', ['team-a']),
 			['salary' => ['type' => 'number', 'scope' => 'team-a']]
 		);
 
-		$this->expectNotToPerformAssertions();
+		// Pair: testSavingAScopeYouAreNotInIsRefused flips only the caller's group.
+		$this->assertNull($refusal, 'a member of the scope was refused');
 	}//end testAMemberOfTheScopeSavesIt()
 
 	/**
@@ -151,12 +152,46 @@ class SchemaSaveGovernsScopedPropertiesTest extends TestCase {
 	 * @return void
 	 */
 	public function testASchemaWithoutScopesIsUntouched(): void {
-		$this->govern(
+		$refusal = $this->refusalOf(
 			$this->mapperFor(null),
 			['name' => ['type' => 'string'], 'age' => ['type' => 'number']]
 		);
 
-		$this->expectNotToPerformAssertions();
+		// Pair: testAScopedPropertySavedWithoutACallerIsRefused adds one scope.
+		$this->assertNull($refusal, 'a schema without scopes was gated');
+	}
+
+	/**
+	 * Refusal pair for testASchemaWithoutScopesIsUntouched: the same anonymous
+	 * save is refused as soon as one property carries a scope.
+	 *
+	 * @return void
+	 */
+	public function testAScopedPropertySavedWithoutACallerIsRefused(): void {
+		$refusal = $this->refusalOf(
+			$this->mapperFor(null),
+			['name' => ['type' => 'string'], 'salary' => ['type' => 'number', 'scope' => 'team-a']]
+		);
+
+		$this->assertInstanceOf(ScopedPropertyException::class, $refusal);
+	}
+
+	/**
+	 * Run the guard and return the refusal it raised, or null when it let the save through.
+	 *
+	 * @param SchemaMapper         $mapper     The mapper.
+	 * @param array<string, mixed> $properties The schema's properties.
+	 *
+	 * @return ScopedPropertyException|null The refusal.
+	 */
+	private function refusalOf(SchemaMapper $mapper, array $properties): ?ScopedPropertyException {
+		try {
+			$this->govern($mapper, $properties);
+		} catch (ScopedPropertyException $refusal) {
+			return $refusal;
+		}
+
+		return null;
 	}//end testASchemaWithoutScopesIsUntouched()
 
 	/**

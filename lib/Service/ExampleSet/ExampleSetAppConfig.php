@@ -52,14 +52,6 @@ class ExampleSetAppConfig {
 	private const GENERATED_LENGTH = 40;
 
 	/**
-	 * The kind of an entry, by whether it is generated and then whether it is a floor; generating wins.
-	 */
-	private const KINDS = [
-		[ExampleSetConfigValue::KIND_EXACT, ExampleSetConfigValue::KIND_FLOOR],
-		[ExampleSetConfigValue::KIND_GENERATED, ExampleSetConfigValue::KIND_GENERATED],
-	];
-
-	/**
 	 * Reads and writes typed keys.
 	 *
 	 * @var ExampleSetConfigStore
@@ -84,43 +76,36 @@ class ExampleSetAppConfig {
 	/**
 	 * Why an entry cannot be written, or ''.
 	 *
-	 * @param string $app      The app.
-	 * @param string $key      The key.
-	 * @param bool   $generate Whether the set generates the value.
+	 * @param ExampleSetConfigKey $at       The app and the key.
+	 * @param bool                $generate Whether the set generates the value.
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-config-and-undo-exactly-that-req-exs-015
 	 */
-	public function refusal(string $app, string $key, bool $generate): string {
-		if ($generate === true || $this->sensitive(app: $app, key: $key) === false) {
+	public function refusal(ExampleSetConfigKey $at, bool $generate): string {
+		if ($generate === true || $this->sensitive(app: $at->app, key: $at->key) === false) {
 			return '';
 		}
 
-		return 'app config '.$app.' '.$key.' is kept as sensitive; a set may only generate such a value, never write one from a file';
+		return 'app config '.$at->app.' '.$at->key.' is kept as sensitive; a set may only generate such a value, never write one from a file';
 	}//end refusal()
 
 	/**
 	 * Write an entry when the key does not hold that value yet.
 	 *
-	 * @param string $app      The app.
-	 * @param string $key      The key.
-	 * @param string $value    The filled value; ignored when generating.
-	 * @param bool   $generate Whether to generate a value instead.
-	 * @param string $type     `string`, or `int` for a key the app reads as an integer.
-	 * @param bool   $atLeast  Whether the value is a floor: an integer key already at or above it is left as it is.
+	 * @param ExampleSetConfigValue $target The key, the filled value (ignored when generating), its type, and its kind:
+	 *                                      exact, generated, or a floor that an integer key already at or above it
+	 *                                      leaves as it is.
 	 *
 	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (null when nothing had to be
 	 *                                                                 written), or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-config-and-undo-exactly-that-req-exs-015
 	 * @spec openspec/changes/example-set-app-config-at-least/specs/example-sets/spec.md#requirement-an-integer-app-config-entry-may-be-a-floor
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Generating and being a floor are the entry's own facts.
 	 */
-	public function apply(string $app, string $key, string $value, bool $generate, string $type='string', bool $atLeast=false): array {
-		$target = new ExampleSetConfigValue(app: $app, key: $key, value: $value, type: $type, kind: self::KINDS[(int) $generate][(int) $atLeast]);
-		$had    = $this->store->has(app: $app, key: $key);
+	public function apply(ExampleSetConfigValue $target): array {
+		$had    = $this->store->has(app: $target->app, key: $target->key);
 		$old    = $this->store->read(target: $target);
 		if ($had === true && $this->alreadyThere(old: $old, target: $target) === true) {
 			return ['error' => '', 'entry' => null];
@@ -197,7 +182,7 @@ class ExampleSetAppConfig {
 			return ['entry' => null, 'written' => false];
 		}
 
-		$target  = new ExampleSetConfigValue(app: (string) $entry['app'], key: (string) $entry['key'], value: $value, type: 'int');
+		$target  = new ExampleSetConfigValue(at: self::keyOf(entry: $entry), value: $value, type: 'int');
 		$current = $this->store->read(target: $target);
 		$written = ($current === '' || (int) $current < (int) $value);
 		if ($written === true && $this->store->tryWrite(target: $target) === false) {
@@ -284,7 +269,7 @@ class ExampleSetAppConfig {
 	 * @return ExampleSetConfigValue
 	 */
 	private function targetOf(array $entry, string $type): ExampleSetConfigValue {
-		return new ExampleSetConfigValue(app: (string) $entry['app'], key: (string) $entry['key'], type: $type);
+		return new ExampleSetConfigValue(at: self::keyOf(entry: $entry), type: $type);
 	}//end targetOf()
 
 	/**
@@ -331,7 +316,8 @@ class ExampleSetAppConfig {
 		$key = (string) $entry['key'];
 		$generated = (($entry['generated'] ?? false) === true);
 		if ($entry['had'] === true && ($generated === false || isset($entry['fingerprint']) === true)) {
-			$this->store->write(target: new ExampleSetConfigValue(app: $app, key: $key, value: (string) $entry['old'], type: $this->typeOf(entry: $entry)));
+			$old = new ExampleSetConfigValue(at: self::keyOf(entry: $entry), value: (string) $entry['old'], type: $this->typeOf(entry: $entry));
+			$this->store->write(target: $old);
 			return;
 		}
 
@@ -406,4 +392,15 @@ class ExampleSetAppConfig {
 	private function typeOf(array $entry): string {
 		return (string) ($entry['type'] ?? 'string');
 	}//end typeOf()
+
+	/**
+	 * The app config address a recorded entry names.
+	 *
+	 * @param array<string, mixed> $entry The record entry.
+	 *
+	 * @return ExampleSetConfigKey
+	 */
+	private static function keyOf(array $entry): ExampleSetConfigKey {
+		return new ExampleSetConfigKey(app: (string) $entry['app'], key: (string) $entry['key']);
+	}//end keyOf()
 }//end class

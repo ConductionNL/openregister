@@ -6,7 +6,7 @@
  * Parsing only: no mapping, no validation, no decision, no write. The
  * decisive steps a previewed import takes are the ones the import path
  * already owns — {@see \OCA\OpenRegister\Service\MigrationPack\MappingEngine}
- * maps a row, {@see \OCA\OpenRegister\Service\ImportService::transformCsvRowToObject()}
+ * maps a row, {@see \OCA\OpenRegister\Service\ImportService::transformCsvRow()}
  * turns it into an object, {@see \OCA\OpenRegister\Service\ObjectService::saveObjects()}
  * writes it. This class only gets the bytes into the shape all three already
  * take, so CSV, Excel and JSON reach them by one road.
@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Import;
 
+use Closure;
 use InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
@@ -187,7 +188,10 @@ class SourceRowReader implements SourceRowReaderInterface {
 		$highestRow = $sheet->getHighestRow();
 
 		for ($rowNumber = 2; $rowNumber <= $highestRow; $rowNumber++) {
-			$data = self::rowData(sheet: $sheet, headers: $headers, rowNumber: $rowNumber);
+			$data = self::rowData(
+				headers: $headers,
+				cell: static fn (string $column): mixed => $sheet->getCell($column.$rowNumber)->getValue()
+			);
 
 			if ($data === []) {
 				continue;
@@ -224,16 +228,15 @@ class SourceRowReader implements SourceRowReaderInterface {
 	/**
 	 * One sheet row as header => value, leaving out blank cells.
 	 *
-	 * @param Worksheet $sheet The sheet.
 	 * @param array<string, string> $headers The headers, column letter => name.
-	 * @param int $rowNumber The row number.
+	 * @param Closure               $cell    The value of this row's cell in a column letter.
 	 *
 	 * @return array<string, mixed> The row's data, empty when every cell is blank.
 	 */
-	private static function rowData(Worksheet $sheet, array $headers, int $rowNumber): array {
+	private static function rowData(array $headers, Closure $cell): array {
 		$data = [];
 		foreach ($headers as $column => $header) {
-			$value = $sheet->getCell($column.$rowNumber)->getValue();
+			$value = $cell((string)$column);
 			if ($value === null || $value === '') {
 				continue;
 			}

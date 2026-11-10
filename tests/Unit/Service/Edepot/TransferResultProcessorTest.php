@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\TransferAuditLog;
 use OCA\OpenRegister\Service\Edepot\TransferContext;
+use OCA\OpenRegister\Service\Edepot\TransferDelivery;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCA\OpenRegister\Service\Edepot\TransferOutcomeRecorder;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
@@ -79,14 +80,9 @@ class TransferResultProcessorTest extends TestCase {
 		);
 
 		$logger   = new NullLogger();
-		$auditLog = new TransferAuditLog(
-			$this->createMock(AuditTrailMapperInterface::class),
-			new TransferSettings($this->createMock(IAppConfig::class), $logger),
-			$this->createMock(INotificationManager::class),
-			$logger
-		);
+		$auditLog = new TransferAuditLog(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->createMock(AuditTrailMapperInterface::class), $logger), new TransferSettings($this->createMock(IAppConfig::class), $logger), $this->createMock(INotificationManager::class));
 
-		return new TransferResultProcessor(new TransferOutcomeRecorder($mapper, $records, $auditLog, $logger), $auditLog);
+		return new TransferResultProcessor(new TransferOutcomeRecorder(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $mapper, records: $records, settings: $this->createMock(\OCP\IAppConfig::class), logger: $logger), $auditLog), $auditLog);
 	}//end processor()
 
 	/**
@@ -108,7 +104,7 @@ class TransferResultProcessorTest extends TestCase {
 		$context = new TransferContext(transferUuid: 'l', packageFormat: 'zip', transportName: 'sftp', confirmedAt: 'T');
 		$results = [new TransportResult(objectResults: ['a' => ['accepted' => true, 'reference' => 'r'], 'b' => ['accepted' => false, 'error' => 'no']])];
 
-		$list = $this->processor()->process(['uuid' => 'l', 'objectReferences' => []], $results, [self::item(uuid: 'a'), self::item(uuid: 'b')], $context);
+		$list = $this->processor()->process(['uuid' => 'l', 'objectReferences' => []], new TransferDelivery($results, [self::item(uuid: 'a'), self::item(uuid: 'b')], $context));
 
 		$this->assertSame(TransferListService::STATUS_PARTIALLY_FAILED, $list['status']);
 		$this->assertSame(['completedAt' => 'T', 'objectResults' => $results[0]->getObjectResults()], $list['transferResult']);
@@ -132,7 +128,7 @@ class TransferResultProcessorTest extends TestCase {
 
 		$results = [new TransportResult(transferReference: 'ref')];
 
-		$list = $this->processor()->process(['uuid' => 'l', 'objectReferences' => []], $results, [self::item(uuid: 'a')], $context);
+		$list = $this->processor()->process(['uuid' => 'l', 'objectReferences' => []], new TransferDelivery($results, [self::item(uuid: 'a')], $context));
 
 		$this->assertSame(TransferListService::STATUS_COMPLETED, $list['status']);
 		$this->assertSame(['a' => ['accepted' => true, 'reference' => 'ref', 'error' => null]], $list['transferResult']['objectResults']);
@@ -143,7 +139,7 @@ class TransferResultProcessorTest extends TestCase {
 		$context = new TransferContext(transferUuid: 'l', packageFormat: 'zip', transportName: 'rest', confirmedAt: 'T');
 		$results = [(new TransportResult())->failed('down'), (new TransportResult())->failed('still down')];
 
-		$list = $this->processor()->process(['uuid' => 'l', 'objectReferences' => []], $results, [self::item(uuid: 'a')], $context);
+		$list = $this->processor()->process(['uuid' => 'l', 'objectReferences' => []], new TransferDelivery($results, [self::item(uuid: 'a')], $context));
 
 		$this->assertSame(TransferListService::STATUS_FAILED, $list['status']);
 		$this->assertSame(['a' => ['accepted' => false, 'reference' => null, 'error' => 'down']], $list['transferResult']['objectResults']);

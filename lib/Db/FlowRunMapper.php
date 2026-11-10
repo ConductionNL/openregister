@@ -24,11 +24,10 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Event\FlowRunTerminalEvent;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 
 /**
@@ -61,8 +60,8 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database connection.
-	 * @param IEventDispatcher|null $dispatcher Publishes run terminality
-	 *                                          ({@see FlowRunTerminalEvent}).
+	 * @param EntityEventsInterface|null $entityEvents Publishes run terminality
+	 *                                                (FlowRunTerminalEvent).
 	 *                                          Nullable so the mapper stays
 	 *                                          constructible without a
 	 *                                          container; absent, terminality
@@ -70,7 +69,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		private readonly ?IEventDispatcher $dispatcher = null,
+		private readonly ?EntityEventsInterface $entityEvents = null,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_flow_runs', entityClass: FlowRun::class);
 
@@ -102,13 +101,8 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 
 		$updated = parent::update(entity: $entity);
 
-		if ($this->dispatcher !== null && $updated->isTerminal() === true) {
-			$this->dispatcher->dispatchTyped(
-				new FlowRunTerminalEvent(
-					runUuid: (string)$updated->getUuid(),
-					status: (string)$updated->getStatus()
-				)
-			);
+		if ($this->entityEvents !== null && $updated->isTerminal() === true) {
+			$this->entityEvents->flowRunTerminal(runUuid: (string)$updated->getUuid(), status: (string)$updated->getStatus());
 		}
 
 		return $updated;
@@ -209,16 +203,10 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * rather than silently dropping the whole disjunction and matching nothing —
 	 * or, worse, matching everything.
 	 *
-	 * @param string|null $flowId Restrict to one flow.
-	 * @param string|null $status Restrict to one status.
-	 * @param integer $limit Page size.
-	 * @param integer $offset Page offset.
-	 * @param string|null $requesterUid The caller, or null to apply NO scoping
-	 *                                  (administrators and system reads only).
-	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns; runs of these
-	 *                                         are visible regardless of who triggered them.
-	 * @param DateTime|null $since Only runs created at or after this moment.
-	 * @param array<int, string> $flowIds Restrict to any of these flows; empty means no restriction.
+	 * @param FlowRunListing $listing The filters and the paging window.
+	 * @param FlowRunViewer  $viewer  The caller and the flows they own; a null
+	 *                                requester applies NO scoping (administrators
+	 *                                and system reads only).
 	 *
 	 * @return array<int, FlowRun> The runs.
 	 *
@@ -226,31 +214,47 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
 	 */
-	public function findAllRuns(
-		?string $flowId = null,
-		?string $status = null,
-		int $limit = 50,
-		int $offset = 0,
-		?string $requesterUid = null,
-		array $ownedFlowIds = [],
-		?DateTime $since = null,
-		array $flowIds = [],
-	): array {
+	public function findAllRuns(FlowRunListing $listing, FlowRunViewer $viewer): array {
+		$qb = $this->listingPage(listing: $listing);
+
+		$this->narrowToFilter(qb: $qb, filter: $listing->filter);
+		$this->scopeToVisible(qb: $qb, viewer: $viewer);
+
+		return $this->findEntities(query: $qb);
+	}//end findAllRuns()
+
+	/**
+	 * The newest-first page of a run history, before narrowing and scoping.
+	 *
+	 * @param FlowRunListing $listing The paging window.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function listingPage(FlowRunListing $listing): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->orderBy('id', 'DESC')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+			->setMaxResults($listing->limit)
+			->setFirstResult($listing->offset);
 
-		$this->narrowToFlow(qb: $qb, flowId: $flowId);
-		$this->narrowToFlowSet(qb: $qb, flowIds: $flowIds);
-		$this->narrowToSince(qb: $qb, since: $since);
-		$this->narrowToStatus(qb: $qb, status: $status);
-		$this->scopeToVisible(qb: $qb, viewer: new FlowRunViewer(requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds));
+		return $qb;
+	}//end listingPage()
 
-		return $this->findEntities(query: $qb);
-	}//end findAllRuns()
+	/**
+	 * Narrow a run list by every filter of a run history read.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param FlowRunFilter $filter The filters.
+	 *
+	 * @return void
+	 */
+	private function narrowToFilter(IQueryBuilder $qb, FlowRunFilter $filter): void {
+		$this->narrowToFlow(qb: $qb, flowId: $filter->flowId);
+		$this->narrowToFlowSet(qb: $qb, flowIds: $filter->flowIds);
+		$this->narrowToSince(qb: $qb, since: $filter->since);
+		$this->narrowToStatus(qb: $qb, status: $filter->status);
+	}//end narrowToFilter()
 
 	/**
 	 * Narrow a run list to one flow.
@@ -317,22 +321,15 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * requested flow gets an entry, a flow with no visible run included, so a
 	 * caller can tell "never ran" from "not asked".
 	 *
-	 * @param array<int, string> $flowIds      The flows to summarise.
-	 * @param DateTime           $since        Count runs created at or after this.
-	 * @param string|null        $requesterUid The caller, or null for no scoping.
-	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 * @param FlowActivityWindow $window The flows to summarise and the moment to count from.
+	 * @param FlowRunViewer      $viewer The caller and the flows they own; a null requester means no scoping.
 	 *
 	 * @return array<string, array{lastRun: array<string, mixed>|null, runsSince: int}> Keyed by flow id.
 	 *
 	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
 	 */
-	public function summarizeByFlow(
-		array $flowIds,
-		DateTime $since,
-		?string $requesterUid = null,
-		array $ownedFlowIds = [],
-	): array {
-		$summary = $this->emptySummaries(flowIds: $flowIds);
+	public function summarizeByFlow(FlowActivityWindow $window, FlowRunViewer $viewer): array {
+		$summary = $this->emptySummaries(flowIds: $window->flowIds);
 		if ($summary === []) {
 			return [];
 		}
@@ -340,10 +337,10 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		$ids = array_keys($summary);
 		$ids = array_map(static fn ($id): string => (string)$id, $ids);
 
-		$counts = $this->countSinceByFlow(flowIds: $ids, since: $since, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+		$counts = $this->countSinceByFlow(window: new FlowActivityWindow(flowIds: $ids, since: $window->since), viewer: $viewer);
 		$summary = $this->withRunCounts(summary: $summary, counts: $counts);
 
-		$runs = $this->latestRunsByFlow(flowIds: $ids, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+		$runs = $this->latestRunsByFlow(flowIds: $ids, viewer: $viewer);
 		return $this->withLatestRuns(summary: $summary, runs: $runs);
 	}//end summarizeByFlow()
 
@@ -426,18 +423,16 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	/**
 	 * How many visible runs each flow started since a moment.
 	 *
-	 * @param array<int, string> $flowIds      The flows to count.
-	 * @param DateTime           $since        Count runs created at or after this.
-	 * @param string|null        $requesterUid The caller, or null for no scoping.
-	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 * @param FlowActivityWindow $window The flows to count and the moment to count from.
+	 * @param FlowRunViewer      $viewer The caller and the flows they own; a null requester means no scoping.
 	 *
 	 * @return array<string, int> Run count keyed by flow id; flows without runs are absent.
 	 *
 	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
 	 */
-	public function countSinceByFlow(array $flowIds, DateTime $since, ?string $requesterUid, array $ownedFlowIds): array {
-		$qb = $this->runsSinceCountQuery(flowIds: $flowIds, since: $since);
-		$this->scopeToVisible(qb: $qb, viewer: new FlowRunViewer(requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds));
+	public function countSinceByFlow(FlowActivityWindow $window, FlowRunViewer $viewer): array {
+		$qb = $this->runsSinceCountQuery(window: $window);
+		$this->scopeToVisible(qb: $qb, viewer: $viewer);
 
 		return $this->countsByFlow(qb: $qb);
 	}//end countSinceByFlow()
@@ -445,18 +440,17 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	/**
 	 * The per-flow count of runs created since a moment, before scoping.
 	 *
-	 * @param array<int, string> $flowIds The flows to count.
-	 * @param DateTime           $since   Count runs created at or after this.
+	 * @param FlowActivityWindow $window The flows to count and the moment to count from.
 	 *
 	 * @return IQueryBuilder The query.
 	 */
-	private function runsSinceCountQuery(array $flowIds, DateTime $since): IQueryBuilder {
+	private function runsSinceCountQuery(FlowActivityWindow $window): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('flow_id')
 			->selectAlias($qb->func()->count('id'), 'total')
 			->from($this->getTableName())
-			->where($qb->expr()->in('flow_id', $qb->createNamedParameter($flowIds, IQueryBuilder::PARAM_STR_ARRAY)))
-			->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->where($qb->expr()->in('flow_id', $qb->createNamedParameter($window->flowIds, IQueryBuilder::PARAM_STR_ARRAY)))
+			->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($window->since, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->groupBy('flow_id');
 
 		return $qb;
@@ -489,22 +483,21 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * because how a stopped run ended is written only there; the summary serves
 	 * the outcome, never the log.
 	 *
-	 * @param array<int, string> $flowIds      The flows to read.
-	 * @param string|null        $requesterUid The caller, or null for no scoping.
-	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 * @param array<int, string> $flowIds The flows to read.
+	 * @param FlowRunViewer      $viewer  The caller and the flows they own; a null requester means no scoping.
 	 *
 	 * @return array<int, FlowRun> At most one run per flow.
 	 *
 	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
 	 */
-	public function latestRunsByFlow(array $flowIds, ?string $requesterUid, array $ownedFlowIds): array {
+	public function latestRunsByFlow(array $flowIds, FlowRunViewer $viewer): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectAlias($qb->func()->max('id'), 'latest')
 			->from($this->getTableName())
 			->where($qb->expr()->in('flow_id', $qb->createNamedParameter($flowIds, IQueryBuilder::PARAM_STR_ARRAY)))
 			->groupBy('flow_id');
 
-		$this->scopeToVisible(qb: $qb, viewer: new FlowRunViewer(requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds));
+		$this->scopeToVisible(qb: $qb, viewer: $viewer);
 
 		return $this->summaryRowsFor(latest: $this->latestIds(qb: $qb));
 	}//end latestRunsByFlow()
@@ -635,22 +628,21 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * of a run and the absence of permission look identical from outside, which
 	 * is what stops the endpoint being a probe for which runs exist.
 	 *
-	 * @param string             $uuid         The run uuid.
-	 * @param string|null        $requesterUid The caller, or null for an administrator.
-	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 * @param string        $uuid   The run uuid.
+	 * @param FlowRunViewer $viewer The caller and the flows they own; a null requester is an administrator.
 	 *
 	 * @return FlowRun|null The run, or null when it does not exist or is not visible.
 	 *
 	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
 	 */
-	public function findByUuidVisibleTo(string $uuid, ?string $requesterUid, array $ownedFlowIds = []): ?FlowRun {
+	public function findByUuidVisibleTo(string $uuid, FlowRunViewer $viewer): ?FlowRun {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)))
 			->setMaxResults(1);
 
-		$this->scopeToVisible(qb: $qb, viewer: new FlowRunViewer(requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds));
+		$this->scopeToVisible(qb: $qb, viewer: $viewer);
 
 		return ($this->findEntities(query: $qb)[0] ?? null);
 	}//end findByUuidVisibleTo()
@@ -859,16 +851,16 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * the total honest: a caller that filtered a bounded page client-side would
 	 * silently drop every matching run the page did not contain.
 	 *
-	 * @param string|null $organisation Restrict to one organisation uuid.
-	 * @param integer $limit Page size.
-	 * @param string|null $subject Restrict to runs anchored to one subject object uuid.
+	 * @param FlowRunSubjectScope $scope The organisation to restrict to and, optionally, the
+	 *                                   subject object the runs must be anchored to.
+	 * @param integer             $limit Page size.
 	 *
 	 * @return array<int, FlowRun> The non-terminal runs.
 	 *
 	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
 	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
-	public function findActive(?string $organisation = null, int $limit = 25, ?string $subject = null): array {
+	public function findActive(FlowRunSubjectScope $scope, int $limit = 25): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
@@ -881,8 +873,8 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			->orderBy('id', 'DESC')
 			->setMaxResults($limit);
 
-		$this->narrowToOrganisation(qb: $qb, organisation: $organisation);
-		$this->narrowToSubject(qb: $qb, subject: $subject);
+		$this->narrowToOrganisation(qb: $qb, organisation: $scope->organisation);
+		$this->narrowToSubject(qb: $qb, subject: $scope->subject);
 
 		return $this->findEntities(query: $qb);
 	}//end findActive()
@@ -1028,16 +1020,15 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * returns nothing without a query rather than dropping the predicate and
 	 * answering a wider question than was asked.
 	 *
-	 * @param string $organisation The caller's organisation uuid.
-	 * @param string $subject The subject object uuid.
-	 * @param integer $limit Page size.
+	 * @param FlowRunSubjectScope $scope The caller's organisation and the subject object uuid; both required.
+	 * @param integer             $limit Page size.
 	 *
 	 * @return array<int, FlowRun> The terminal runs, newest first.
 	 *
 	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
-	public function findCompletedForSubject(string $organisation, string $subject, int $limit = 25): array {
-		if ($organisation === '' || $subject === '') {
+	public function findCompletedForSubject(FlowRunSubjectScope $scope, int $limit = 25): array {
+		if (($scope->organisation ?? '') === '' || ($scope->subject ?? '') === '') {
 			return [];
 		}
 
@@ -1047,7 +1038,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			->orderBy('id', 'DESC')
 			->setMaxResults($limit);
 
-		$this->whereTerminalForSubject(qb: $qb, organisation: $organisation, subject: $subject);
+		$this->whereTerminalForSubject(qb: $qb, scope: $scope);
 
 		return $this->findEntities(query: $qb);
 	}//end findCompletedForSubject()
@@ -1074,7 +1065,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		$qb->select($qb->createFunction('COUNT(*) AS `total`'))
 			->from($this->getTableName());
 
-		$this->whereTerminalForSubject(qb: $qb, organisation: $organisation, subject: $subject);
+		$this->whereTerminalForSubject(qb: $qb, scope: new FlowRunSubjectScope(organisation: $organisation, subject: $subject));
 
 		return $this->fetchTotal(qb: $qb);
 	}//end countCompletedForSubject()
@@ -1124,23 +1115,22 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * predicate is unconditional, so a guessed subject uuid from another
 	 * tenant matches zero rows rather than leaking one.
 	 *
-	 * @param IQueryBuilder $qb The query being built.
-	 * @param string $organisation The caller's organisation uuid.
-	 * @param string $subject The subject object uuid.
+	 * @param IQueryBuilder       $qb    The query being built.
+	 * @param FlowRunSubjectScope $scope The caller's organisation and the subject object uuid, both non-empty.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
-	private function whereTerminalForSubject(IQueryBuilder $qb, string $organisation, string $subject): void {
+	private function whereTerminalForSubject(IQueryBuilder $qb, FlowRunSubjectScope $scope): void {
 		$qb->where(
 			$qb->expr()->in(
 				'status',
 				$qb->createNamedParameter(FlowRun::TERMINAL, IQueryBuilder::PARAM_STR_ARRAY)
 			)
 		)
-			->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)))
-			->andWhere($qb->expr()->eq('subject_uuid', $qb->createNamedParameter($subject)));
+			->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($scope->organisation)))
+			->andWhere($qb->expr()->eq('subject_uuid', $qb->createNamedParameter($scope->subject)));
 	}//end whereTerminalForSubject()
 
 	/**
@@ -1473,20 +1463,18 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * flow ({@see FlowScheduleService}) — one stuck run silently stops the
 	 * whole schedule. Expiring it lets the next tick fire.
 	 *
-	 * @param DateTime $before Runs queued before this moment are stale.
-	 * @param string $reason The error recorded on each expired run.
-	 * @param integer $limit Maximum runs to expire in one pass.
+	 * @param FlowRunQueueExpiry $expiry The cut-off, the recorded reason and the batch cap.
 	 *
 	 * @return array<int, FlowRun> The runs that were expired.
 	 *
 	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
-	public function expireQueuedBefore(DateTime $before, string $reason, int $limit = 500): array {
-		if ($limit < 1) {
+	public function expireQueuedBefore(FlowRunQueueExpiry $expiry): array {
+		if ($expiry->limit < 1) {
 			return [];
 		}
 
-		return $this->expireStillQueued(runs: $this->queuedBefore(before: $before, limit: $limit), reason: $reason);
+		return $this->expireStillQueued(runs: $this->queuedBefore(expiry: $expiry), reason: $expiry->reason);
 	}//end expireQueuedBefore()
 
 	/**
@@ -1520,14 +1508,13 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	/**
 	 * Queued runs created before a cut-off, oldest first.
 	 *
-	 * @param DateTime $before The cut-off.
-	 * @param integer $limit Maximum runs to return.
+	 * @param FlowRunQueueExpiry $expiry The cut-off and the batch cap.
 	 *
 	 * @return array<int, FlowRun> The runs.
 	 *
 	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
-	protected function queuedBefore(DateTime $before, int $limit): array {
+	protected function queuedBefore(FlowRunQueueExpiry $expiry): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
@@ -1535,11 +1522,11 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			->andWhere(
 				$qb->expr()->lt(
 					'created',
-					$qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)
+					$qb->createNamedParameter($expiry->before, IQueryBuilder::PARAM_DATETIME_MUTABLE)
 				)
 			)
 			->orderBy('id', 'ASC')
-			->setMaxResults($limit);
+			->setMaxResults($expiry->limit);
 
 		return $this->findEntities(query: $qb);
 	}//end queuedBefore()

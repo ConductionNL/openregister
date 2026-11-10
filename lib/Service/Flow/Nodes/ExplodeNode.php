@@ -149,9 +149,6 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$context` is part of the
 	 *   IFlowNode contract; this node needs no run metadata to fan out a list.
-	 * @SuppressWarnings(PHPMD.StaticAccess)          `FlowItems::item()` is the item
-	 *   constructor every node uses; injecting a factory for it would add a
-	 *   dependency to describe a shape.
 	 *
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
@@ -162,29 +159,63 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 		// exactly like a list of one.
 		$this->validateConfig(config: $config);
 
-		$path = trim((string)$config['path']);
-		$under = (string)($config['as'] ?? 'item');
-		$keep = (($config['keepRecord'] ?? true) !== false);
+		return $this->explode(items: $items, config: $config);
+	}//end execute()
 
+	/**
+	 * One item per element of the named list, across all input items.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array The exploded items.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `FlowItems::item()` is the item
+	 *   constructor every node uses; injecting a factory for it would add a
+	 *   dependency to describe a shape.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function explode(array $items, array $config): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-
-			$base = [];
-			if ($keep === true) {
-				$base = $json;
-			}
-
-			foreach ($this->listAt(json: $json, path: $path) as $entry) {
-				$record = $base;
-				$record[$under] = $entry;
-
+			foreach ($this->recordsFrom(json: $json, config: $config) as $record) {
 				$out[] = FlowItems::item(json: $record, fromItemIndex: $index);
 			}
 		}
 
 		return $out;
-	}//end execute()
+	}//end explode()
+
+	/**
+	 * The records one item explodes into: a copy of it (or nothing) with the element under `as`.
+	 *
+	 * @param array $json   The item's record.
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array<int, array> One record per list element, possibly none.
+	 *
+	 * @throws UnexpectedValueException When the path holds a scalar.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function recordsFrom(array $json, array $config): array {
+		$under = (string)($config['as'] ?? 'item');
+		$base = [];
+		if (($config['keepRecord'] ?? true) !== false) {
+			$base = $json;
+		}
+
+		$records = [];
+		foreach ($this->listAt(json: $json, path: trim((string)$config['path'])) as $entry) {
+			$record = $base;
+			$record[$under] = $entry;
+			$records[] = $record;
+		}
+
+		return $records;
+	}//end recordsFrom()
 
 	/**
 	 * The list at the path: empty when the path is absent, refused when it is not a list.

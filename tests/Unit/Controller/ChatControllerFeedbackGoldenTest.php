@@ -145,7 +145,6 @@ class ChatControllerFeedbackGoldenTest extends TestCase {
 		});
 
 		$controller = ChatControllerFactory::create(
-			'openregister',
 			$request,
 			$this->createMock(ChatService::class),
 			$conversationMapper,

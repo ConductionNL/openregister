@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Command;
 
 use OCA\OpenRegister\Command\EncryptFieldCommand;
 use OCA\OpenRegister\Command\MagicTableSelection;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -177,7 +178,7 @@ class EncryptFieldCommandTest extends TestCase {
 		$fieldEncryptionHandler = new FieldEncryptionHandler($this->crypto, $logger);
 
 		return new EncryptFieldCommand(
-			selection: new MagicTableSelection($this->registerMapper, $this->schemaMapper, $this->magicMapper),
+			selection: new MagicTableSelection(new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->magicMapper)),
 			fieldEncryptionHandler: $fieldEncryptionHandler,
 			db: $this->buildDb()
 		);

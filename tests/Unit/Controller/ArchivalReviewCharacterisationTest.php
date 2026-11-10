@@ -48,6 +48,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Archival\NominationRecompute;
 
 /**
  * Characterisation of ArchivalController's review and recompute writes.
@@ -331,8 +332,8 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 		$object = $this->recordUnderNomination();
 		$this->recordWrites();
 
-		$this->nominations->expects($this->once())->method('nominate')
-			->with($object, $this->anything(), 'recompute', 'archivaris', 'New selectielijst')
+		$this->nominations->expects($this->once())->method('recompute')
+			->with($this->callback(static fn (NominationRecompute $request): bool => $request->object === $object && $request->actor === 'archivaris' && $request->reason === 'New selectielijst'))
 			->willReturn(['status' => ArchivalNominationService::STATUS_NOMINATED, 'rule' => 'r-1']);
 		$this->objectMapper->expects($this->once())->method('update')
 			->willReturnCallback(
@@ -363,7 +364,7 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 		$this->withParams(['reason' => 'Trying']);
 		$this->recordUnderNomination();
 		$this->audit->expects($this->never())->method('createAuditTrailEntry');
-		$this->nominations->method('nominate')->willReturn(
+		$this->nominations->method('recompute')->willReturn(
 			['status' => ArchivalNominationService::STATUS_NOT_APPLICABLE, 'unnominatableReason' => 'no archive block']
 		);
 

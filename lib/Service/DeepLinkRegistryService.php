@@ -88,20 +88,6 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	private static bool $appsAsked = false;
 
 	/**
-	 * Container for lazy resolution of mappers (avoids circular DI).
-	 *
-	 * @var ContainerInterface
-	 */
-	private readonly ContainerInterface $container;
-
-	/**
-	 * Logger for debugging registry operations.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor for DeepLinkRegistryService.
 	 *
 	 * Uses ContainerInterface instead of direct mapper injection to avoid
@@ -113,49 +99,48 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		ContainerInterface $container,
-		LoggerInterface $logger,
+		private readonly ContainerInterface $container,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->container = $container;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
-	 * Register a deep link pattern for a (register, schema) combination.
+	 * Add a deep link registration for its (register, schema) combination.
 	 *
-	 * @param string $appId The consuming app ID (e.g., "procest")
-	 * @param string $registerSlug The register slug
-	 * @param string $schemaSlug The schema slug
-	 * @param string $urlTemplate URL template with placeholders (e.g., "/apps/procest/#/cases/{uuid}")
-	 * @param string $icon Optional icon identifier (defaults to "icon-{appId}")
-	 * @param string|null $displayName Optional human-readable label for the app's
-	 *                                 unified-search results (defaults to null → app id)
+	 * The first registration for a combination wins; a later one is ignored.
+	 * A registration without an icon gets `icon-{appId}`.
+	 *
+	 * @param DeepLinkRegistration $registration The app, slugs, URL template, icon and label.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
-	 * @spec openspec/specs/deep-link-registry/spec.md
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
-	public function register(
-		string $appId,
-		string $registerSlug,
-		string $schemaSlug,
-		string $urlTemplate,
-		string $icon = '',
-		?string $displayName = null,
-	): void {
-		$this->store(
-			registration: new DeepLinkRegistration(
-				appId: $appId,
-				registerSlug: $registerSlug,
-				schemaSlug: $schemaSlug,
-				urlTemplate: $urlTemplate,
-				icon: $this->effectiveIcon(appId: $appId, icon: $icon),
-				displayName: $displayName,
-			)
+	public function add(DeepLinkRegistration $registration): void {
+		$this->store(registration: $this->withEffectiveIcon(registration: $registration));
+	}//end add()
+
+	/**
+	 * The registration, with `icon-{appId}` as its icon when it names none.
+	 *
+	 * @param DeepLinkRegistration $registration The registration as the app gave it.
+	 *
+	 * @return DeepLinkRegistration The registration to store.
+	 */
+	private function withEffectiveIcon(DeepLinkRegistration $registration): DeepLinkRegistration {
+		if ($registration->icon !== '') {
+			return $registration;
+		}
+
+		return new DeepLinkRegistration(
+			appId: $registration->appId,
+			registerSlug: $registration->registerSlug,
+			schemaSlug: $registration->schemaSlug,
+			urlTemplate: $registration->urlTemplate,
+			icon: $this->effectiveIcon(appId: $registration->appId, icon: ''),
+			displayName: $registration->displayName
 		);
-	}//end register()
+	}//end withEffectiveIcon()
 
 	/**
 	 * Keep a registration unless its (register, schema) pair is claimed already: first registration wins.
@@ -272,16 +257,9 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
-	public function resolveUrl(
-		int $registerId,
-		int $schemaId,
-		array $objectData,
-		array $contactContext = [],
-	): ?string {
-		return $this->resolve(registerId: $registerId, schemaId: $schemaId)?->resolveUrl(
-			objectData: $objectData,
-			contactContext: $contactContext
-		);
+	public function resolveUrl(int $registerId, int $schemaId, array $objectData, array $contactContext = []): ?string {
+		$registration = $this->resolve(registerId: $registerId, schemaId: $schemaId);
+		return $registration?->resolveUrl(objectData: $objectData, contactContext: $contactContext);
 	}//end resolveUrl()
 
 	/**

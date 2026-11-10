@@ -32,20 +32,39 @@ use OCA\OpenRegister\Db\Schema;
  * Carries a native aggregation request through AggregationRunner.
  *
  * The spec holds metric, field, filter, the group spec, dateBucket, metrics,
- * cumulative and rowRbac, exactly as AggregationRunner::tryNativeAggregation()
- * received them.
+ * cumulative and rowRbac; a key the caller leaves out takes its DEFAULTS value.
  *
  * @spec openspec/specs/aggregation-api/spec.md
  */
 final class NativeAggregationRequest {
 
 	/**
+	 * The values a spec key takes when the caller does not ask for it.
+	 */
+	public const DEFAULTS = [
+		'field'      => null,
+		'filter'     => [],
+		'groupBy'    => null,
+		'dateBucket' => null,
+		'metrics'    => null,
+		'cumulative' => false,
+		'rowRbac'    => true,
+	];
+
+	/**
+	 * The aggregation asked: metric, field, filter, group spec, dateBucket,
+	 * metrics, cumulative, rowRbac, every key present.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public readonly array $spec;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Register             $register The register the schema belongs to.
 	 * @param Schema               $schema   The schema being aggregated.
-	 * @param array<string, mixed> $spec     The aggregation asked: metric, field, filter, group spec,
-	 *                                       dateBucket, metrics, cumulative, rowRbac.
+	 * @param array<string, mixed> $spec     The aggregation asked: metric plus any of the DEFAULTS keys.
 	 *
 	 * @return void
 	 *
@@ -54,7 +73,8 @@ final class NativeAggregationRequest {
 	public function __construct(
 		public readonly Register $register,
 		public readonly Schema $schema,
-		public readonly array $spec,
+		array $spec,
 	) {
+		$this->spec = $spec + self::DEFAULTS;
 	}//end __construct()
 }//end class

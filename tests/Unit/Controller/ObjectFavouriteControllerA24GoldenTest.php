@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Db\Watcher;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -76,9 +77,11 @@ class ObjectFavouriteControllerA24GoldenTest extends TestCase {
 
 		return new ObjectFavouriteController(
 			request: $this->createMock(IRequest::class),
-			objectService: $objects,
-			favourites: $this->favourites,
-			logger: $this->logger
+			services: new \OCA\OpenRegister\Controller\Support\ObjectFavouriteControllerServices(
+				objectService: $objects,
+				favourites: $this->favourites,
+				logger: $this->logger,
+			)
 		);
 	}
 
@@ -111,7 +114,7 @@ class ObjectFavouriteControllerA24GoldenTest extends TestCase {
 	public function testStarOutcomes(): void {
 		$watcher = $this->createMock(Watcher::class);
 		$watcher->method('jsonSerialize')->willReturn(['id' => 3, 'favourite' => false]);
-		$this->favourites->method('star')->with($this->anything(), 'my reg', 's/x')->willReturnOnConsecutiveCalls(
+		$this->favourites->method('star')->with($this->callback(static fn (AddressedObject $target): bool => $target->register === 'my reg' && $target->schema === 's/x'))->willReturnOnConsecutiveCalls(
 			$watcher,
 			$this->throwException(new NotAuthorizedException('Sign in first')),
 			$this->throwException(new \InvalidArgumentException('bad'))

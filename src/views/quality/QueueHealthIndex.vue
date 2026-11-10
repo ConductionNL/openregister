@@ -1,38 +1,16 @@
 <template>
 	<NcAppContent>
 		<div class="viewContainer">
-			<div class="viewHeader">
-				<h1>{{ t('openregister', 'Queue / sync health') }}</h1>
-				<p>
-					{{
-						t(
-							'openregister',
-							'Read-only webhook delivery telemetry: per-webhook delivered / failed / pending-retry counts and recent failures.',
-						)
-					}}
-				</p>
-			</div>
-
-			<template v-if="loading">
-				<NcLoadingIcon :size="32" />
-			</template>
-
-			<template v-else-if="webhooks.length === 0">
-				<NcEmptyContent
-					:name="t('openregister', 'No webhooks configured')"
-					:description="
-						t(
-							'openregister',
-							'Configure a webhook to see its delivery health here.',
-						)
-					">
-					<template #icon>
-						<Webhook :size="64" />
-					</template>
-				</NcEmptyContent>
-			</template>
-
-			<template v-else>
+			<QualityPageFrame
+				:title="t('openregister', 'Queue / sync health')"
+				:description="t('openregister', 'Read-only webhook delivery telemetry: per-webhook delivered / failed / pending-retry counts and recent failures.')"
+				noSelector
+				:empty="webhooks.length === 0"
+				:emptyName="t('openregister', 'No webhooks configured')"
+				:emptyDescription="t('openregister', 'Configure a webhook to see its delivery health here.')">
+				<template #icon>
+					<Webhook :size="64" />
+				</template>
 				<section class="webhookHealthSection">
 					<h2>{{ t('openregister', 'Per-webhook health') }}</h2>
 					<CnDataTable :columns="healthColumns" :rows="healthRows">
@@ -67,7 +45,7 @@
 						</template>
 					</CnDataTable>
 				</section>
-			</template>
+			</QualityPageFrame>
 		</div>
 	</NcAppContent>
 </template>
@@ -75,8 +53,9 @@
 <script>
 import { CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
-import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent } from '@nextcloud/vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
+import QualityPageFrame from './QualityPageFrame.vue'
 import { qualityStore } from '../../store/store.js'
 
 export default {
@@ -86,18 +65,11 @@ export default {
 		CnDataTable,
 		NcAppContent,
 		NcEmptyContent,
-		NcLoadingIcon,
+		QualityPageFrame,
 		Webhook,
 	},
 
 	computed: {
-		/**
-		 * @spec exclude UI plumbing — proxies the store's loading flag, no backend contract of its own
-		 */
-		loading() {
-			return qualityStore.isLoading
-		},
-
 		/**
 		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
@@ -175,22 +147,18 @@ export default {
 		},
 	},
 
+	/**
+	 * Load the webhook list, per-webhook stats, and recent failures.
+	 * When no webhooks are configured, no per-webhook stats requests are
+	 * issued (the store short-circuits on an empty list).
+	 *
+	 * @spec exclude UI data-loading orchestration — delegates to fetchWebhookHealth which carries the @spec tag
+	 */
 	mounted() {
-		this.loadData()
+		qualityStore.fetchWebhookHealth()
 	},
 
 	methods: {
-		/**
-		 * Load the webhook list, per-webhook stats, and recent failures.
-		 * When no webhooks are configured, no per-webhook stats requests are
-		 * issued (the store short-circuits on an empty list).
-		 *
-		 * @spec exclude UI data-loading orchestration — delegates to fetchWebhookHealth which carries the @spec tag
-		 */
-		async loadData() {
-			await qualityStore.fetchWebhookHealth()
-		},
-
 		/**
 		 * Look up the cached per-webhook stats for a webhook id.
 		 *

@@ -28,6 +28,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * Golden: status, body and collaborator call order of the per-object timeline routes,
@@ -129,8 +130,8 @@ class TimelineEntriesControllerGoldenTest extends TestCase
 
         $entries = $this->createMock(TimelineEntryService::class);
         $entries->method('listForObject')->willReturnCallback(
-            function (ObjectEntity $object, ?string $visibility, int $limit, int $offset) use ($fail): array {
-                $this->log[] = 'listForObject:' . $object->getUuid() . ':' . var_export($visibility, true) . ':' . $limit . ':' . $offset;
+            function (ObjectEntity $object, ListQuery $query) use ($fail): array {
+                $this->log[] = 'listForObject:' . $object->getUuid() . ':' . var_export($query->filters['visibility'] ?? null, true) . ':' . $query->limit . ':' . $query->offset;
                 $fail('list');
                 return [self::entry('e1', 'public'), self::entry('e2', 'internal')];
             }
@@ -217,7 +218,6 @@ class TimelineEntriesControllerGoldenTest extends TestCase
         );
 
         return TimelineEntriesControllerFactory::create(
-            'openregister',
             $request,
             $objects,
             $entries,

@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Delegation;
 use DateTime;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapper;
+use OCA\OpenRegister\Service\Delegation\DelegationRequest;
 use OCA\OpenRegister\Service\Delegation\DelegationResolver;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
 use PHPUnit\Framework\TestCase;
@@ -136,7 +137,7 @@ class DelegationResolverTest extends TestCase {
 	public function testALiveGrantPermits(): void {
 		$this->stored = [$this->grant()];
 
-		$verdict = $this->resolver()->resolve('alice', 'mayor', $this->now);
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: $this->now));
 
 		$this->assertTrue($verdict->permitted);
 		$this->assertSame(DelegationVerdict::REASON_GRANTED, $verdict->reason);
@@ -149,7 +150,7 @@ class DelegationResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoGrantRefuses(): void {
-		$verdict = $this->resolver()->resolve('alice', 'mayor', $this->now);
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: $this->now));
 
 		$this->assertFalse($verdict->permitted);
 		$this->assertSame(DelegationVerdict::REASON_NONE, $verdict->reason);
@@ -170,7 +171,7 @@ class DelegationResolverTest extends TestCase {
 	public function testSelfDelegationShortCircuitsBeforeTheStore(): void {
 		$this->storeBroken = true;
 
-		$verdict = $this->resolver()->resolve('alice', 'alice', $this->now);
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'alice', scope: [], now: $this->now));
 
 		$this->assertTrue($verdict->permitted);
 		$this->assertSame(DelegationVerdict::REASON_SELF, $verdict->reason);
@@ -189,10 +190,24 @@ class DelegationResolverTest extends TestCase {
 	public function testAnExpiredGrantRefusesAsExpired(): void {
 		$this->stored = [$this->grant(expires: '2026-08-01 00:00:00')];
 
-		$verdict = $this->resolver()->resolve('alice', 'mayor', $this->now);
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: $this->now));
 
 		$this->assertFalse($verdict->permitted);
 		$this->assertSame(DelegationVerdict::REASON_EXPIRED, $verdict->reason);
+	}
+
+	/**
+	 * A refusal over dead grants names both parties in its detail.
+	 *
+	 * @return void
+	 */
+	public function testARefusalOverDeadGrantsNamesBothParties(): void {
+		$this->stored = [$this->grant(expires: '2026-08-01 00:00:00')];
+
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: ' alice ', actingAs: 'mayor', scope: [], now: $this->now));
+
+		$this->assertFalse($verdict->permitted);
+		$this->assertSame('"alice" holds no live grant to act as "mayor".', $verdict->detail);
 	}
 
 	/**
@@ -207,8 +222,8 @@ class DelegationResolverTest extends TestCase {
 	public function testTheExpiryBoundaryIsExact(): void {
 		$this->stored = [$this->grant(expires: '2026-08-24 12:00:00')];
 
-		$justBefore = $this->resolver()->resolve('alice', 'mayor', new DateTime('2026-08-24 11:59:59'));
-		$atExpiry = $this->resolver()->resolve('alice', 'mayor', new DateTime('2026-08-24 12:00:00'));
+		$justBefore = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: new DateTime('2026-08-24 11:59:59')));
+		$atExpiry = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: new DateTime('2026-08-24 12:00:00')));
 
 		$this->assertTrue($justBefore->permitted, 'a grant is live up to its expiry');
 		$this->assertFalse($atExpiry->permitted, 'a grant is not live AT its expiry');
@@ -225,7 +240,7 @@ class DelegationResolverTest extends TestCase {
 	public function testARevokedGrantRefusesAsRevoked(): void {
 		$this->stored = [$this->grant(status: DelegationGrant::STATUS_REVOKED, revoked: '2026-08-20 00:00:00')];
 
-		$verdict = $this->resolver()->resolve('alice', 'mayor', $this->now);
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: $this->now));
 
 		$this->assertFalse($verdict->permitted);
 		$this->assertSame(DelegationVerdict::REASON_REVOKED, $verdict->reason);
@@ -245,7 +260,7 @@ class DelegationResolverTest extends TestCase {
 	public function testADenialRefusesAndSuppressesReRequesting(): void {
 		$this->stored = [$this->grant(status: DelegationGrant::STATUS_DENIED)];
 
-		$verdict = $this->resolver()->resolve('alice', 'mayor', $this->now);
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: $this->now));
 
 		$this->assertFalse($verdict->permitted);
 		$this->assertSame(DelegationVerdict::REASON_DENIED, $verdict->reason);
@@ -260,7 +275,7 @@ class DelegationResolverTest extends TestCase {
 	public function testAPendingRequestDoesNotRaiseAnother(): void {
 		$this->stored = [$this->grant(status: DelegationGrant::STATUS_PENDING)];
 
-		$verdict = $this->resolver()->resolve('alice', 'mayor', $this->now);
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: $this->now));
 
 		$this->assertFalse($verdict->permitted);
 		$this->assertSame(DelegationVerdict::REASON_PENDING, $verdict->reason);
@@ -276,7 +291,7 @@ class DelegationResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAbsentGrantMayBeRequested(): void {
-		$verdict = $this->resolver()->resolve('alice', 'mayor', $this->now);
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: $this->now));
 
 		$this->assertTrue($verdict->mayRequestConsent());
 	}
@@ -289,7 +304,7 @@ class DelegationResolverTest extends TestCase {
 	public function testAScopeMismatchRefusesAsOutOfScope(): void {
 		$this->stored = [$this->grant(scope: ['register' => ['reports']])];
 
-		$verdict = $this->resolver()->resolve('alice', 'mayor', $this->now, ['register' => ['payroll']]);
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: ['register' => ['payroll']], now: $this->now));
 
 		$this->assertFalse($verdict->permitted);
 		$this->assertSame(DelegationVerdict::REASON_OUT_OF_SCOPE, $verdict->reason);
@@ -303,7 +318,7 @@ class DelegationResolverTest extends TestCase {
 	public function testACoveringScopePermits(): void {
 		$this->stored = [$this->grant(scope: ['register' => ['payroll', 'reports']])];
 
-		$verdict = $this->resolver()->resolve('alice', 'mayor', $this->now, ['register' => ['payroll']]);
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: ['register' => ['payroll']], now: $this->now));
 
 		$this->assertTrue($verdict->permitted);
 	}
@@ -319,7 +334,7 @@ class DelegationResolverTest extends TestCase {
 	public function testAnUnscopedGrantDoesNotCoverAScopedRequest(): void {
 		$this->stored = [$this->grant(scope: [])];
 
-		$verdict = $this->resolver()->resolve('alice', 'mayor', $this->now, ['register' => ['payroll']]);
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: ['register' => ['payroll']], now: $this->now));
 
 		$this->assertFalse($verdict->permitted);
 	}
@@ -339,7 +354,7 @@ class DelegationResolverTest extends TestCase {
 			$this->grant(),
 		];
 
-		$verdict = $this->resolver()->resolve('alice', 'mayor', $this->now);
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: $this->now));
 
 		$this->assertTrue($verdict->permitted);
 		$this->assertSame(DelegationVerdict::REASON_GRANTED, $verdict->reason);
@@ -359,7 +374,7 @@ class DelegationResolverTest extends TestCase {
 	public function testAnUnreadableStoreFailsClosed(): void {
 		$this->storeBroken = true;
 
-		$verdict = $this->resolver()->resolve('alice', 'mayor', $this->now);
+		$verdict = $this->resolver()->resolve(new DelegationRequest(principal: 'alice', actingAs: 'mayor', scope: [], now: $this->now));
 
 		$this->assertFalse($verdict->permitted, 'an unreadable grant store must not permit anything');
 		$this->assertSame(DelegationVerdict::REASON_UNREADABLE, $verdict->reason);
@@ -372,7 +387,7 @@ class DelegationResolverTest extends TestCase {
 	 */
 	public function testAnUnnamedPartyIsRefused(): void {
 		foreach ([['', 'mayor'], ['alice', ''], ['   ', 'mayor']] as [$principal, $actingAs]) {
-			$verdict = $this->resolver()->resolve($principal, $actingAs, $this->now);
+			$verdict = $this->resolver()->resolve(new DelegationRequest(principal: $principal, actingAs: $actingAs, scope: [], now: $this->now));
 
 			$this->assertFalse($verdict->permitted);
 			$this->assertSame(DelegationVerdict::REASON_UNNAMED, $verdict->reason);

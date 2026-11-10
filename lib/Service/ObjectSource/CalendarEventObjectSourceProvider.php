@@ -71,19 +71,33 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	];
 
 	/**
+	 * App availability checks.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CalendarEventService $calendarEventService The CalDAV VEVENT read/list service.
-	 * @param IAppManager $appManager App availability checks.
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param OptionalAppBridge    $app                  Whether the app is installed, its services, and the log of failed reads.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly CalendarEventService $calendarEventService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		OptionalAppBridge $app,
 	) {
+		$this->appManager = $app->appManager;
+		$this->logger = $app->logger;
 	}//end __construct()
 
 	/**
@@ -112,14 +126,26 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+		return $this->findEvent(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	}//end find()
+
+	/**
+	 * Read one object for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param string               $id      The object id.
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
+	 */
+	private function findEvent(SourcedObjectBinding $binding, string $id): ?ObjectEntity {
 		foreach ($this->readEvents(limit: 1000, offset: 0) as $event) {
 			if ($this->hasId(event: $event, id: $id) === true) {
-				return $this->toObjectEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), event: $event);
+				return $this->toObjectEntity(binding: $binding, event: $event);
 			}
 		}
 
 		return null;
-	}//end find()
+	}//end findEvent()
 
 	/**
 	 * {@inheritDoc}
@@ -139,17 +165,28 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+		return $this->listEvents(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
+	}//end findAll()
+
+	/**
+	 * Read one page of objects for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param array<string, mixed> $query   Query (filters/search/limit/offset).
+	 *
+	 * @return ObjectEntity[] The matching virtual objects.
+	 */
+	private function listEvents(SourcedObjectBinding $binding, array $query): array {
 		$limit = (int)($query['limit'] ?? 200);
 		$offset = (int)($query['offset'] ?? 0);
 
-		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
 		$objects = [];
 		foreach ($this->readEvents(limit: $limit, offset: $offset) as $event) {
 			$objects[] = $this->toObjectEntity(binding: $binding, event: $event);
 		}
 
 		return $objects;
-	}//end findAll()
+	}//end listEvents()
 
 	/**
 	 * Read VEVENT arrays for the acting user, failing closed to an empty list.

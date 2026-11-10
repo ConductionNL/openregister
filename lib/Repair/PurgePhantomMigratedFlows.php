@@ -81,10 +81,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -125,19 +123,17 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper      $flowMapper    Reads and removes rows in the flow table.
+	 * @param FlowMapperInterface      $flowMapper    Reads and removes rows in the flow table.
 	 * @param FlowRunMapperInterface   $flowRunMapper Proves a row has never been dispatched.
-	 * @param MagicMapperInterface     $objectMapper  Resolves a uuid back to the object it was copied from.
-	 * @param SchemaMapperInterface    $schemaMapper  Turns that object's schema reference into a slug.
+	 * @param MigratedFlowOrigins      $origins       Traces a row back to the object (and its schema) it was copied from.
 	 * @param LoggerInterface $logger        Records every removal and every spared ambiguity.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly FlowMapper $flowMapper,
+		private readonly FlowMapperInterface $flowMapper,
 		private readonly FlowRunMapperInterface $flowRunMapper,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly MigratedFlowOrigins $origins,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -324,7 +320,7 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 		}
 
 		try {
-			$objects = $this->objectMapper->findMultipleAcrossAllMagicTables(uuids: [$uuid]);
+			$objects = $this->origins->objectMapper->findMultipleAcrossAllMagicTables(uuids: [$uuid]);
 		} catch (Throwable $e) {
 			$this->logger->warning('[PurgePhantomMigratedFlows] could not resolve ' . $uuid . ': ' . $e->getMessage());
 			return null;
@@ -341,7 +337,7 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 		}
 
 		try {
-			$schema = $this->schemaMapper->find(id: $schemaRef, _rbac: false, _multitenancy: false);
+			$schema = $this->origins->schemaMapper->find(id: $schemaRef, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			$this->logger->warning('[PurgePhantomMigratedFlows] could not resolve schema for ' . $uuid . ': ' . $e->getMessage());
 			return null;

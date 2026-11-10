@@ -81,28 +81,26 @@ interface SearchTrailServiceInterface {
 	/**
 	 * Get popular search terms with enhanced analytics
 	 *
-	 * @param int $limit Maximum number of terms to return
-	 * @param DateTime|null $from Start date filter
-	 * @param DateTime|null $to End date filter
+	 * @param SearchPeriod $period The date range; either end may be open.
+	 * @param int          $limit  Maximum number of terms to return
 	 *
 	 * @return array Popular search terms data
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function getPopularSearchTerms(int $limit = 10, ?DateTime $from = null, ?DateTime $to = null): array;
+	public function getPopularSearchTerms(SearchPeriod $period=new SearchPeriod(), int $limit=10): array;
 
 	/**
 	 * Get search activity patterns by time period
 	 *
-	 * @param string $interval Time interval ('hour', 'day', 'week', 'month')
-	 * @param DateTime|null $from Start date filter
-	 * @param DateTime|null $to End date filter
+	 * @param SearchPeriod $period   The date range; either end may be open.
+	 * @param string       $interval Time interval ('hour', 'day', 'week', 'month')
 	 *
 	 * @return array Search activity data with insights
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function getSearchActivity(string $interval = 'day', ?DateTime $from = null, ?DateTime $to = null): array;
+	public function getSearchActivity(SearchPeriod $period=new SearchPeriod(), string $interval='day'): array;
 
 	/**
 	 * Get search statistics by register and schema with insights
@@ -119,15 +117,14 @@ interface SearchTrailServiceInterface {
 	/**
 	 * Get user agent statistics with browser insights
 	 *
-	 * @param int $limit Maximum number of user agents to return
-	 * @param DateTime|null $from Start date filter
-	 * @param DateTime|null $to End date filter
+	 * @param SearchPeriod $period The date range; either end may be open.
+	 * @param int          $limit  Maximum number of user agents to return
 	 *
 	 * @return array User agent statistics data
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function getUserAgentStatistics(int $limit = 10, ?DateTime $from = null, ?DateTime $to = null): array;
+	public function getUserAgentStatistics(SearchPeriod $period=new SearchPeriod(), int $limit=10): array;
 
 	/**
 	 * Clean up old search trail logs

@@ -48,11 +48,11 @@ interface ApiVersionNegotiatorInterface {
 	 *
 	 * @param IRequest $request The incoming request.
 	 *
-	 * @return ApiVersionNegotiation What was asked for, and what answers.
+	 * @return ApiVersionNegotiationInterface What was asked for, and what answers.
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
-	public function negotiate(IRequest $request): ApiVersionNegotiation;
+	public function negotiate(IRequest $request): ApiVersionNegotiationInterface;
 
 	/**
 	 * The identifiers this instance would accept, for a refusal message.

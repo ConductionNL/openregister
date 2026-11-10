@@ -63,21 +63,26 @@ class LifecycleFinalStateResolver {
 	private array $memo = [];
 
 	/**
+	 * Tells the two forms of `final` apart.
+	 *
+	 * @var LifecycleDeclarationForms
+	 */
+	private readonly LifecycleDeclarationForms $declaration;
+
+	/**
 	 * Constructor.
 	 *
-	 * The declaration reader is defaulted rather than required because it is a
-	 * pure shape check with no collaborators; the parameter exists so a test
-	 * can substitute one.
+	 * The declaration reader is a pure shape check with no collaborators, so
+	 * the resolver builds it itself.
 	 *
-	 * @param MagicObjectFinderInterface                $objects     Loads the referenced row.
-	 * @param LoggerInterface            $logger      Where an unresolvable reference is reported.
-	 * @param LifecycleDeclarationForms  $declaration Tells the two forms of `final` apart.
+	 * @param MagicObjectFinderInterface $objects Loads the referenced row.
+	 * @param LoggerInterface            $logger  Where an unresolvable reference is reported.
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objects,
 		private readonly LoggerInterface $logger,
-		private readonly LifecycleDeclarationForms $declaration = new LifecycleDeclarationForms(),
 	) {
+		$this->declaration = new LifecycleDeclarationForms();
 	}//end __construct()
 
 	/**
@@ -123,7 +128,7 @@ class LifecycleFinalStateResolver {
 			return $this->memo[$key];
 		}
 
-		$this->memo[$key] = $this->read(from: $from, field: $field, state: $state);
+		$this->memo[$key] = $this->read(reference: new FinalStateReference(from: $from, field: $field, state: $state));
 
 		return $this->memo[$key];
 	}//end isFinalByReference()
@@ -131,13 +136,13 @@ class LifecycleFinalStateResolver {
 	/**
 	 * Read the named property off the referenced row.
 	 *
-	 * @param string $from  The schema the referenced row belongs to.
-	 * @param string $field The property on that row that says whether it ends.
-	 * @param string $state The lifecycle value, which identifies the row.
+	 * @param FinalStateReference $reference The schema, property and lifecycle value to read.
 	 *
 	 * @return bool True when the property is true.
 	 */
-	private function read(string $from, string $field, string $state): bool {
+	private function read(FinalStateReference $reference): bool {
+		$from     = $reference->from;
+		$state    = $reference->state;
 		$resolved = $this->fetch(from: $from, state: $state);
 		if ($resolved === null) {
 			return false;
@@ -152,7 +157,7 @@ class LifecycleFinalStateResolver {
 			return false;
 		}
 
-		return $this->flagOn(row: $resolved['object'], from: $from, reference: ['field' => $field, 'state' => $state]);
+		return $this->flagOn(row: $resolved['object'], reference: $reference);
 	}//end read()
 
 	/**
@@ -187,24 +192,23 @@ class LifecycleFinalStateResolver {
 	/**
 	 * Read the named property off the resolved row, reporting a row that declares none.
 	 *
-	 * @param mixed                               $row       The resolved object entity.
-	 * @param string                              $from      The schema the row belongs to, for the log line.
-	 * @param array{field: string, state: string} $reference The property to read and the lifecycle value.
+	 * @param mixed               $row       The resolved object entity.
+	 * @param FinalStateReference $reference The schema (for the log line), the property to read and the lifecycle value.
 	 *
 	 * @return bool True when the property is true.
 	 */
-	private function flagOn(mixed $row, string $from, array $reference): bool {
+	private function flagOn(mixed $row, FinalStateReference $reference): bool {
 		$data = ($row->getObject() ?? []);
-		if (is_array($data) === false || array_key_exists($reference['field'], $data) === false) {
+		if (is_array($data) === false || array_key_exists($reference->field, $data) === false) {
 			$this->logger->warning(
-				'[LifecycleFinalStateResolver] the ' . $from . ' row behind lifecycle value "'
-				. $reference['state'] . '" declares no "' . $reference['field'] . '" property.'
+				'[LifecycleFinalStateResolver] the ' . $reference->from . ' row behind lifecycle value "'
+				. $reference->state . '" declares no "' . $reference->field . '" property.'
 			);
 
 			return false;
 		}
 
-		return $this->truthy(value: $data[$reference['field']]);
+		return $this->truthy(value: $data[$reference->field]);
 	}//end flagOn()
 
 	/**

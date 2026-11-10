@@ -11,6 +11,7 @@ use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Notifications\Db\Message;
 use OCA\OpenRegister\Notifications\Db\MessageMapper;
@@ -129,8 +130,8 @@ class ConversationControllerReadUpdateGoldenTest extends TestCase {
 			$this->failOn('count', $fail);
 			return 3;
 		});
-		$messages->method('findByConversation')->willReturnCallback(function (...$args) use ($fail) {
-			$this->calls[] = ['messageMapper.findByConversation' => $args];
+		$messages->method('findByConversation')->willReturnCallback(function (int $conversationId, ListQuery $page) use ($fail) {
+			$this->calls[] = ['messageMapper.findByConversation' => [$conversationId, $page->limit, $page->offset]];
 			$this->failOn('messages', $fail);
 			$message = new Message();
 			$message->setId(7);
@@ -161,7 +162,6 @@ class ConversationControllerReadUpdateGoldenTest extends TestCase {
 		}
 
 		$controller = ConversationControllerFactory::create(
-			'openregister',
 			$request,
 			$conversations,
 			$messages,
