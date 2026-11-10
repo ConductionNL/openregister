@@ -187,7 +187,7 @@ class ExampleSetFiles {
 	}//end present()
 
 	/**
-	 * Delete one file the set attached; '' when it is gone, otherwise why not.
+	 * Delete one file the set attached, found by its id; '' when it is gone, otherwise why not.
 	 *
 	 * The file is found by its id in OpenRegister's own account, where an
 	 * object's files live, and that node is deleted. Asking FileService to
@@ -196,28 +196,12 @@ class ExampleSetFiles {
 	 * A file that cannot be found counts as gone only when the object no
 	 * longer has a file of that name.
 	 *
-	 * @param string $fileId   The file id, as the install record holds it.
-	 * @param string $name     The file name, as the install record holds it.
-	 * @param string $objectId The id of the object the file was attached to.
-	 *
-	 * @return string '' when the file is gone; otherwise the reason it stays.
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
-	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
-	 */
-	public function delete(string $fileId, string $name, string $objectId): string {
-		return $this->deleteAttached(file: new AttachedFile(id: $fileId, name: $name), objectId: $objectId);
-	}//end delete()
-
-	/**
-	 * Delete one file the set attached, found by its id; '' when it is gone, otherwise why not.
-	 *
 	 * @param AttachedFile $file     The file id and name, as the install record holds them.
 	 * @param string       $objectId The id of the object the file was attached to.
 	 *
 	 * @return string '' when the file is gone; otherwise the reason it stays.
 	 */
-	private function deleteAttached(AttachedFile $file, string $objectId): string {
+	public function deleteAttached(AttachedFile $file, string $objectId): string {
 		try {
 			$found = $this->fileService()->getFileById(fileId: (int) $file->id);
 			if ($found === null) {

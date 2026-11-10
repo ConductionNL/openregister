@@ -30,6 +30,7 @@ use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Service\ExampleSet\AttachedFile;
 
 /**
  * Behaviour of the files an example set attaches to its objects.
@@ -170,14 +171,14 @@ class ExampleSetFilesBehaviourTest extends TestCase {
 		$this->fileService->method('getFileById')->with(9)->willReturn($file);
 		$this->fileService->expects($this->once())->method('deleteFile')->with($file)->willReturn(true);
 
-		$this->assertSame('', $this->files()->delete('9', 'a.pdf', 'obj-1'));
+		$this->assertSame('', $this->files()->deleteAttached(new AttachedFile('9', 'a.pdf'), 'obj-1'));
 	}
 
 	public function testDeleteReportsAFileServiceThatDidNotDelete(): void {
 		$this->fileService->method('getFileById')->willReturn($this->named('a.pdf', 9));
 		$this->fileService->method('deleteFile')->willReturn(false);
 
-		$this->assertSame('OpenRegister did not delete it (see the Nextcloud log)', $this->files()->delete('9', 'a.pdf', 'obj-1'));
+		$this->assertSame('OpenRegister did not delete it (see the Nextcloud log)', $this->files()->deleteAttached(new AttachedFile('9', 'a.pdf'), 'obj-1'));
 	}
 
 	public function testDeleteOfAGoneFileIsFineWhenTheObjectNoLongerHasIt(): void {
@@ -185,7 +186,7 @@ class ExampleSetFilesBehaviourTest extends TestCase {
 		$this->fileService->method('getFiles')->willReturn([$this->named('other.pdf')]);
 		$this->fileService->expects($this->never())->method('deleteFile');
 
-		$this->assertSame('', $this->files()->delete('9', 'a.pdf', 'obj-1'));
+		$this->assertSame('', $this->files()->deleteAttached(new AttachedFile('9', 'a.pdf'), 'obj-1'));
 	}
 
 	public function testDeleteOfAnUnfindableFileTheObjectStillHasIsRefused(): void {
@@ -194,13 +195,13 @@ class ExampleSetFilesBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			'OpenRegister cannot find file id 9 although the object still has a.pdf',
-			$this->files()->delete('9', 'a.pdf', 'obj-1')
+			$this->files()->deleteAttached(new AttachedFile('9', 'a.pdf'), 'obj-1')
 		);
 	}
 
 	public function testDeleteReportsAThrownMessage(): void {
 		$this->fileService->method('getFileById')->willThrowException(new \RuntimeException('locked'));
 
-		$this->assertSame('locked', $this->files()->delete('9', 'a.pdf', 'obj-1'));
+		$this->assertSame('locked', $this->files()->deleteAttached(new AttachedFile('9', 'a.pdf'), 'obj-1'));
 	}
 }//end class
