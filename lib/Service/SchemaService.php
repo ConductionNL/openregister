@@ -67,6 +67,27 @@ class SchemaService implements SchemaExplorationInterface {
 	];
 
 	/**
+	 * Property names that are internal or metadata, never suggested (compared lower-case).
+	 *
+	 * @var list<string>
+	 */
+	private const INTERNAL_PROPERTY_NAMES = [
+		'id',
+		'uuid',
+		'_id',
+		'_uuid',
+		'created',
+		'updated',
+		'created_at',
+		'updated_at',
+		'deleted',
+		'deleted_at',
+		'@self',
+		'$schema',
+		'$id',
+	];
+
+	/**
 	 * Simple string formats, in detection order, after dates and identifiers.
 	 *
 	 * @var array<string, string>
@@ -98,27 +119,6 @@ class SchemaService implements SchemaExplorationInterface {
 		'snake_case' => '/^[a-z]+(_[a-z]+)*$/',
 		'SCREAMING_SNAKE_CASE' => '/^[A-Z]+(_[A-Z]+)*$/',
 		'filename' => '~^[^<>:"/\\|?*]+\.[a-zA-Z0-9]+$~',
-	];
-
-	/**
-	 * Property names that are internal or metadata, never suggested (compared lower-case).
-	 *
-	 * @var list<string>
-	 */
-	private const INTERNAL_PROPERTY_NAMES = [
-		'id',
-		'uuid',
-		'_id',
-		'_uuid',
-		'created',
-		'updated',
-		'created_at',
-		'updated_at',
-		'deleted',
-		'deleted_at',
-		'@self',
-		'$schema',
-		'$id',
 	];
 
 	/**
