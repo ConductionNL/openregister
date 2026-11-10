@@ -80,9 +80,26 @@ class BulkJobReversal implements BulkJobReversalInterface {
 	public function reverse(ReversalRequest $request): BulkJob {
 		$original = $request->original;
 		$this->assertReversible(job: $original);
-		$uuids = $this->writtenUuids(job: $original);
+		$uuids    = $this->writtenUuids(job: $original);
+		$reversal = $this->createReversal(request: $request, uuids: $uuids);
+		$reverses = $this->reversesEntry(job: $original, written: count($uuids));
+
+		return $this->link(original: $original, reversal: $this->nameOriginal(reversal: $reversal, reverses: $reverses));
+	}//end reverse()
+
+	/**
+	 * Queue the job that writes the original's objects back, under the requester's name and reason.
+	 *
+	 * @param ReversalRequest    $request The job to undo, who asks, and why.
+	 * @param array<int, string> $uuids   The objects the original wrote.
+	 *
+	 * @return BulkJob The queued reversal.
+	 */
+	private function createReversal(ReversalRequest $request, array $uuids): BulkJob {
+		$original = $request->original;
 		$call     = $this->restoreCall(job: $original);
-		$reversal = $this->service->createFromRequest(
+
+		return $this->service->createFromRequest(
 			request: new BulkJobRequest(
 				call: $call,
 				selection: self::selectionOf(job: $original, uuids: $uuids),
@@ -90,10 +107,7 @@ class BulkJobReversal implements BulkJobReversalInterface {
 				justification: $request->justification
 			)
 		);
-		$reverses = $this->reversesEntry(job: $original, written: count($uuids));
-
-		return $this->link(original: $original, reversal: $this->nameOriginal(reversal: $reversal, reverses: $reverses));
-	}//end reverse()
+	}//end createReversal()
 
 	/**
 	 * The selection of a reversal: the written objects, in the original's register and schema.
