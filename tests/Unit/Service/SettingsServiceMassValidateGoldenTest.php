@@ -53,8 +53,9 @@ class SettingsServiceMassValidateGoldenTest extends TestCase {
 			$this->calls[] = ['count', $args];
 			return $s['total'];
 		});
-		$mapper->method('findAll')->willReturnCallback(function (...$args) use ($s) {
-			$this->calls[] = ['findAll', $args];
+		$mapper->method('getAllRegisterSchemaPairs')->willReturn([['registerId' => 1, 'schemaId' => 2]]);
+		$mapper->method('searchObjects')->willReturnCallback(function (...$args) use ($s) {
+			$this->calls[] = ['searchObjects', $args];
 			$objects = [];
 			for ($i = 0; $i < $s['perBatch']; $i++) {
 				$object = new ObjectEntity();
