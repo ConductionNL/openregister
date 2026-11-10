@@ -993,30 +993,6 @@ class ObjectsController extends Controller {
 	}//end purposeRefusal()
 
 	/**
-	 * Resolve a register/schema path pair to numeric ids.
-	 *
-	 * Delegates to ResolvesRegisterAndSchemaTrait so this controller and
-	 * BulkController share ONE implementation. They previously each held a
-	 * private copy; #2858 and #2860 fixed this one and the bulk copy kept the
-	 * bug, so `GET /api/objects/19/9476` worked while
-	 * `POST /api/bulk/19/9475/save` still 404'd on the same register.
-	 *
-	 * @param string $register Register slug, uuid or numeric id.
-	 * @param string $schema Schema slug, uuid or numeric id.
-	 * @param ObjectOperationsInterface $objectService The request's object service.
-	 *
-	 * @return array The resolved ids and entities.
-	 *
-	 * @throws RegisterNotFoundException When the register does not resolve.
-	 * @throws SchemaNotFoundException When the schema does not resolve.
-	 *
-	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
-	 */
-	private function resolveRegisterSchemaIds(string $register, string $schema, ObjectOperationsInterface $objectService): array {
-		return $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
-	}//end resolveRegisterSchemaIds()
-
-	/**
 	 * Log one warning for the filter keys that name no property of the schema.
 	 *
 	 * Such a filter answers `1 = 0`, so the caller gets an empty list that is
@@ -1241,7 +1217,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -2099,9 +2075,8 @@ class ObjectsController extends Controller {
 	private function countPairScoped(array $entry, ObjectCountScope $scope): ?int {
 		try {
 			// Resolve slugs/ids to numeric ids + entities (same as index()).
-			$resolved = $this->resolveRegisterSchemaIds(
-				register: (string)$entry['register'],
-				schema: (string)$entry['schema'],
+			$resolved = $this->resolveRegisterSchemaRef(
+				ref: new RegisterSchemaRef(register: (string)$entry['register'], schema: (string)$entry['schema']),
 				objectService: $scope->objectService
 			);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
@@ -2727,7 +2702,10 @@ class ObjectsController extends Controller {
 	 */
 	private function oneTableListing(ObjectsRouteScope $scope, ObjectOperationsInterface $objectService): array|JSONResponse {
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $scope->register, schema: $scope->schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(
+				ref: new RegisterSchemaRef(register: $scope->register, schema: $scope->schema),
+				objectService: $objectService
+			);
 
 			$answer = $this->refuseUnboundPurpose(resolved: $resolved);
 			if ($answer === null && (new MagicMappedTable(resolved: $resolved))->isMapped() === true) {
@@ -2962,7 +2940,10 @@ class ObjectsController extends Controller {
 	 */
 	private function optionsSchema(ReferenceOptionsAsk $ask, ObjectOperationsInterface $objectService): Schema|JSONResponse {
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $ask->register, schema: $ask->schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(
+				ref: new RegisterSchemaRef(register: $ask->register, schema: $ask->schema),
+				objectService: $objectService
+			);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -3006,7 +2987,7 @@ class ObjectsController extends Controller {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.show.in');
 
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -3380,7 +3361,7 @@ class ObjectsController extends Controller {
 	public function create(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.create.in');
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -3758,7 +3739,7 @@ class ObjectsController extends Controller {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.update.in');
 
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -4004,7 +3985,7 @@ class ObjectsController extends Controller {
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function patch(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
 		}
@@ -4184,7 +4165,7 @@ class ObjectsController extends Controller {
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function postPatch(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
+			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
 		}
