@@ -256,26 +256,34 @@ class SurveyRules {
 	 */
 	public function disclosure(array $survey, int $responseCount): array {
 		$anonymity = (string)($survey['anonymity'] ?? self::ATTRIBUTED);
-		if ($anonymity !== self::ANONYMOUS) {
-			return ['withheld' => false, 'count' => $responseCount, 'reason' => ''];
-		}
-
 		$minimum = (int)($survey['minimumResponses'] ?? self::DEFAULT_MINIMUM_RESPONSES);
-		if ($responseCount >= $minimum) {
+		if ($anonymity !== self::ANONYMOUS || $responseCount >= $minimum) {
 			return ['withheld' => false, 'count' => $responseCount, 'reason' => ''];
 		}
 
 		return [
 			'withheld' => true,
 			'count' => $responseCount,
-			'reason' => sprintf(
-				'This survey is anonymous and has %d of the %d answers it needs before any of them are '
-				.'shown. Fewer than that, and the answers point back at the people who gave them.',
-				$responseCount,
-				$minimum
-			),
+			'reason' => self::withheldReason(responseCount: $responseCount, minimum: $minimum),
 		];
 	}//end disclosure()
+
+	/**
+	 * Why an anonymous survey's answers are withheld while it is below its minimum.
+	 *
+	 * @param int $responseCount The answers it has.
+	 * @param int $minimum       The answers it needs.
+	 *
+	 * @return string The reason.
+	 */
+	private static function withheldReason(int $responseCount, int $minimum): string {
+		return sprintf(
+			'This survey is anonymous and has %d of the %d answers it needs before any of them are '
+			.'shown. Fewer than that, and the answers point back at the people who gave them.',
+			$responseCount,
+			$minimum
+		);
+	}//end withheldReason()
 
 	/**
 	 * Why this person may not be invited again, if they may not.
