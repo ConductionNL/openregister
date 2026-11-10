@@ -59,4 +59,24 @@ final class ConfigurationKeyRefusalGoldenTest extends TestCase {
 			$this->assertSame($expected, $registry->refusalFor(layer: $layer, configKey: $key), $layer . ' ' . $key);
 		}
 	}
+
+	public function testEveryValueRefusalIsPinned(): void {
+		$registry = new ConfigurationKeyRegistry();
+		$cases    = [
+			['rbac', ['enabled' => true], null],
+			['rbac', 'on', '"rbac" is declared as object and the value is string'],
+			['flow_run_retention_days', '30', null],
+			['flow_run_retention_days', 30, '"flow_run_retention_days" is declared as string and the value is int'],
+			['flow_audit_enabled', false, null],
+			['flow_audit_enabled', 'false', '"flow_audit_enabled" is declared as boolean and the value is string'],
+			['party_query_cap', 50, null],
+			['party_query_cap', 50.0, '"party_query_cap" is declared as integer and the value is float'],
+			['register.anything', ['any' => 'shape'], null],
+			['register.anything', NAN, '"register.anything" holds a value that cannot be stored as JSON'],
+			['flow_audit_enabled', null, '"flow_audit_enabled" is declared as boolean and the value is null'],
+		];
+		foreach ($cases as [$key, $value, $expected]) {
+			$this->assertSame($expected, $registry->valueRefusalFor(configKey: $key, value: $value), $key);
+		}
+	}
 }//end class
