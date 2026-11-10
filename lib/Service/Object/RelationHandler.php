@@ -217,9 +217,11 @@ class RelationHandler {
 	}//end indexedByUuidAndId()
 
 	/**
-	 * Load a chunk of relationships optimized.
+	 * Load a chunk of relationships: the related objects the caller may read.
 	 *
-	 * @param array $relationshipIds Array of relationship IDs to load.
+	 * Located across all magic tables, then read under RBAC and the organisation boundary.
+	 *
+	 * @param array $relationshipIds Array of relationship UUIDs to load.
 	 *
 	 * @return ObjectEntity[]
 	 *
@@ -238,8 +240,7 @@ class RelationHandler {
 		}
 
 		try {
-			// Use the mapper's optimized bulk fetch.
-			return $this->stores->objects->findAll(ids: $relationshipIds, includeDeleted: false);
+			return $this->readableRelated(uuids: $relationshipIds, lookup: new RelationLookup(objectId: ''));
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[RelationHandler] Failed to load relationship chunk',
