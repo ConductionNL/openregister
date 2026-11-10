@@ -9,7 +9,7 @@
  *   2. metadata  — UpdateFileHandler::updateFileMetadata writes desc/cat/labels
  *   3. rename    — FileService::renameFile preserves content + audit row
  *   4. lock      — FileLockHandler::lockFile sets an OR-side lock; isLocked sees it
- *   5. copy      — FileService::copyFile clones into a sibling object
+ *   5. copy      — FileService::copyAttachedFile clones into a sibling object
  *   6. download  — counter increments via FileMapper::incrementDownloadCount
  *   7. versions  — FileVersioningHandler::listVersions degrades gracefully
  *   8. delete    — FileService::deleteFile removes the source file
@@ -50,6 +50,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\File\FileRename;
+use OCA\OpenRegister\Service\File\FileTransfer;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
 
 /**
  * @group DB
@@ -170,10 +172,12 @@ class FileActionsLifecycleIntegrationTest extends TestCase {
 
 		// 2. METADATA --------------------------------------------------
 		$entity = $this->updateHandler->updateFileMetadata(
-			fileId: $fileId,
-			description: 'Lifecycle test file',
-			category: 'integration',
-			labels: ['lifecycle', 'integration-test']
+			change: new FileMetadataChange(
+				fileId: $fileId,
+				description: 'Lifecycle test file',
+				category: 'integration',
+				labels: ['lifecycle', 'integration-test']
+			)
 		);
 		$this->assertSame('Lifecycle test file', $entity->getDescription());
 		$this->assertSame('integration', $entity->getCategory());
@@ -194,10 +198,8 @@ class FileActionsLifecycleIntegrationTest extends TestCase {
 		$this->assertSame('integration', $afterRename->getCategory());
 
 		// 5. COPY ------------------------------------------------------
-		$copy = $this->fileService->copyFile(
-			$this->sourceObject,
-			$fileId,
-			$this->targetObject
+		$copy = $this->fileService->copyAttachedFile(
+			transfer: new FileTransfer(source: $this->sourceObject, fileId: $fileId, target: $this->targetObject)
 		);
 		$copyFileId = $copy->getId();
 		$this->createdFileIds[] = $copyFileId;
