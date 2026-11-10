@@ -571,13 +571,25 @@ class DsarService implements DsarServiceInterface {
 		} catch (DoesNotExistException $e) {
 			return null;
 		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[DSAR] Failed to load object',
-				context: ['identifier' => $identifier, 'error' => $e->getMessage()]
-			);
+			$this->logLoadFailure(identifier: $identifier, error: $e);
 			return null;
 		}
 	}//end findUnscoped()
+
+	/**
+	 * Log a matched object that failed to load.
+	 *
+	 * @param int|string $identifier The uuid or id.
+	 * @param \Throwable $error      Why it failed.
+	 *
+	 * @return void
+	 */
+	private function logLoadFailure(int|string $identifier, \Throwable $error): void {
+		$this->logger->debug(
+			message: '[DSAR] Failed to load object',
+			context: ['identifier' => $identifier, 'error' => $error->getMessage()]
+		);
+	}//end logLoadFailure()
 
 	/**
 	 * Update a single object with DSAR attribution (Art 16 rectificatie).

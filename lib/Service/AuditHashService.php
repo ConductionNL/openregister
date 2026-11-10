@@ -314,9 +314,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		}
 
 		if ($this->acquireSealLock() === false) {
-			$this->logger->warning(
-				'[AuditHashService] seal lock unavailable, leaving ' . count($ids) . ' audit rows unsealed (a later seal pass will chain them)'
-			);
+			$this->logRowsLeftUnsealed(count: count($ids));
 
 			return 0;
 		}
@@ -345,6 +343,19 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			)
 		);
 	}//end positiveIds()
+
+	/**
+	 * Warn that rows were left unsealed because the seal lock was unavailable.
+	 *
+	 * @param int $count How many rows were left unsealed.
+	 *
+	 * @return void
+	 */
+	private function logRowsLeftUnsealed(int $count): void {
+		$this->logger->warning(
+			'[AuditHashService] seal lock unavailable, leaving ' . $count . ' audit rows unsealed (a later seal pass will chain them)'
+		);
+	}//end logRowsLeftUnsealed()
 
 	/**
 	 * Seal rows that were left unsealed, oldest first.
