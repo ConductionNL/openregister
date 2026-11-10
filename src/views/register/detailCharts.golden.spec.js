@@ -1,6 +1,6 @@
-import RegisterDetail from './RegisterDetail.vue'
-import SchemaDetails from '../schema/SchemaDetails.vue'
 import RegisterSideBar from '../../sidebars/register/RegisterSideBar.vue'
+import SchemaDetails from '../schema/SchemaDetails.vue'
+import RegisterDetail from './RegisterDetail.vue'
 
 // The register and schema detail pages draw the same three charts; the
 // register detail page and the register sidebar resolve the same register.
