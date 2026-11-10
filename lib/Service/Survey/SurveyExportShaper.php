@@ -86,41 +86,82 @@ class SurveyExportShaper {
 	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md
 	 */
 	public function rows(SurveyExport $export): array {
-		$disclosure = $this->rules->disclosure(survey: $export->survey, responseCount: count($export->answerSets));
-		if ($disclosure['withheld'] === true) {
-			throw new RuntimeException($disclosure['reason']);
-		}
+		$this->assertDisclosable(export: $export);
 
 		$anonymous = ((string)($export->survey['anonymity'] ?? SurveyRules::ATTRIBUTED) === SurveyRules::ANONYMOUS);
 		$ordered = $this->ordered(questions: $export->questions);
 		$rows = [];
 
 		foreach ($export->answerSets as $answerSet) {
-			$row = [
-				'surveyVersion' => ($answerSet['surveyVersion'] ?? null),
-				'submittedAt' => ($answerSet['submittedAt'] ?? null),
-				'subjectObject' => ($answerSet['subjectObject'] ?? null),
-			];
-
-			if ($anonymous === false) {
-				$row['respondent'] = ($answerSet['respondent'] ?? null);
-			}
-
-			$byQuestion = [];
-			foreach (($answerSet['answers'] ?? []) as $answer) {
-				$byQuestion[(string)($answer['question'] ?? '')] = ($answer['value'] ?? null);
-			}
-
-			foreach ($ordered as $question) {
-				$heading = (string)($question['text'] ?? $question['slug'] ?? '');
-				$row[$heading] = ($byQuestion[(string)($question['slug'] ?? '')] ?? null);
-			}
-
-			$rows[] = $row;
-		}//end foreach
+			$rows[] = array_merge(
+				self::metadataColumns(answerSet: $answerSet, anonymous: $anonymous),
+				self::answerColumns(answerSet: $answerSet, ordered: $ordered)
+			);
+		}
 
 		return $rows;
 	}//end rows()
+
+	/**
+	 * Refuse an export the disclosure rules withhold.
+	 *
+	 * @param SurveyExport $export The survey and what came back.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When an anonymous survey is below its minimum.
+	 */
+	private function assertDisclosable(SurveyExport $export): void {
+		$disclosure = $this->rules->disclosure(survey: $export->survey, responseCount: count($export->answerSets));
+		if ($disclosure['withheld'] === true) {
+			throw new RuntimeException($disclosure['reason']);
+		}
+	}//end assertDisclosable()
+
+	/**
+	 * The version, submission and subject columns of one answer set; the respondent only when attributed.
+	 *
+	 * @param array<string, mixed> $answerSet The answer set.
+	 * @param bool                 $anonymous Whether the survey is anonymous.
+	 *
+	 * @return array<string, mixed> The columns.
+	 */
+	private static function metadataColumns(array $answerSet, bool $anonymous): array {
+		$row = [
+			'surveyVersion' => ($answerSet['surveyVersion'] ?? null),
+			'submittedAt' => ($answerSet['submittedAt'] ?? null),
+			'subjectObject' => ($answerSet['subjectObject'] ?? null),
+		];
+
+		if ($anonymous === false) {
+			$row['respondent'] = ($answerSet['respondent'] ?? null);
+		}
+
+		return $row;
+	}//end metadataColumns()
+
+	/**
+	 * One column per question, in declared order, holding this answer set's answer or null.
+	 *
+	 * @param array<string, mixed>             $answerSet The answer set.
+	 * @param array<int, array<string, mixed>> $ordered   The questions, ordered.
+	 *
+	 * @return array<string, mixed> The columns, keyed by question heading.
+	 */
+	private static function answerColumns(array $answerSet, array $ordered): array {
+		$byQuestion = [];
+		foreach (($answerSet['answers'] ?? []) as $answer) {
+			$byQuestion[(string)($answer['question'] ?? '')] = ($answer['value'] ?? null);
+		}
+
+		$columns = [];
+		foreach ($ordered as $question) {
+			$heading = (string)($question['text'] ?? $question['slug'] ?? '');
+			$columns[$heading] = ($byQuestion[(string)($question['slug'] ?? '')] ?? null);
+		}
+
+		return $columns;
+	}//end answerColumns()
 
 	/**
 	 * The questions in their declared order.
