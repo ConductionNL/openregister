@@ -33,19 +33,20 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.MissingReturn -- PHPUnit fixtures and tests; the signature IS the contract.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
-use OCA\OpenRegister\Tests\Unit\Controller\Support\AccessLinkControllerFactory;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\AccessLinkController;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
-use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Sharing\LinkFile;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AccessLinkControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -246,7 +247,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['message'] = 'Advies: akkoord.';
 		$this->acts->expects($this->once())
 			->method('comment')
-			->with($this->anything(), $this->anything(), 'Advies: akkoord.')
+			->with($this->anything(), 'Advies: akkoord.')
 			->willReturn(['id' => 4, 'message' => 'Advies: akkoord.']);
 		$this->links->expects($this->once())
 			->method('recordUse')
@@ -316,7 +317,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['encoding'] = 'base64';
 		$this->acts->expects($this->once())
 			->method('upload')
-			->with($this->anything(), $this->anything(), 'scan.png', "\x89PNG\r\n")
+			->with($this->anything(), new LinkFile(fileName: 'scan.png', content: "\x89PNG\r\n"))
 			->willReturn(['id' => 1]);
 
 		$this->assertSame(Http::STATUS_CREATED, $this->controller->upload(anchor: 'a')->getStatus());
@@ -342,7 +343,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['content'] = 'akkoord';
 		$this->acts->expects($this->once())
 			->method('upload')
-			->with($this->anything(), $this->anything(), 'advies.txt', 'akkoord')
+			->with($this->anything(), new LinkFile(fileName: 'advies.txt', content: 'akkoord'))
 			->willReturn(['id' => 2]);
 		$this->links->expects($this->once())
 			->method('recordUse')
