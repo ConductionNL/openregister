@@ -116,26 +116,53 @@ class CorrectionService implements CorrectionServiceInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function correct(CorrectionTarget $target, array $values, ?string $reason): array {
-		$register = $target->register;
-		$schema   = $target->schema;
-		$id       = $target->id;
-		$user     = $this->correctingUser();
-		$reason = self::requiredReason(reason: $reason);
-		$values = self::correctableValues(values: $values);
+		$user = $this->correctingUser();
 
-		$this->objectService->setRegister(register: $register);
-		$this->objectService->setSchema(schema: $schema);
-		$existing  = $this->objectService->findSilent(
-			id: $id, _extend: [], files: false, register: $register, schema: $schema, _rbac: false, _multitenancy: false
+		return $this->applyCorrection(
+			user: $user,
+			correction: new Correction(target: $target, reason: self::requiredReason(reason: $reason), values: self::correctableValues(values: $values))
 		);
-		$before    = ($existing->getObject() ?? []);
-		$merged    = array_merge($before, $values);
-		$corrected = $this->objectService->saveObject(object: $merged, register: $register, schema: $schema, uuid: $existing->getUuid());
-
-		$fields  = self::fieldChanges(before: $before, values: $values);
-		$context = ['correction' => ['reason' => $reason, 'right' => self::RIGHT, 'actor' => $user->getUID(), 'fields' => $fields]];
-		return ['object' => $corrected, 'audit' => $this->recordCorrection(object: $corrected, context: $context)];
 	}//end correct()
+
+	/**
+	 * Write a checked correction through the save path and record it on the audit trail.
+	 *
+	 * @param IUser      $user       The correcting user, who holds the right.
+	 * @param Correction $correction The record, the reason and the values.
+	 *
+	 * @return array{object: ObjectEntity, audit: AuditTrail|null} The corrected record and its entry.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function applyCorrection(IUser $user, Correction $correction): array {
+		$target    = $correction->target;
+		$existing  = $this->storedRecord(target: $target);
+		$before    = ($existing->getObject() ?? []);
+		$merged    = array_merge($before, $correction->values);
+		$corrected = $this->objectService->saveObject(object: $merged, register: $target->register, schema: $target->schema, uuid: $existing->getUuid());
+
+		$fields  = self::fieldChanges(before: $before, values: $correction->values);
+		$context = ['correction' => ['reason' => $correction->reason, 'right' => self::RIGHT, 'actor' => $user->getUID(), 'fields' => $fields]];
+		return ['object' => $corrected, 'audit' => $this->recordCorrection(object: $corrected, context: $context)];
+	}//end applyCorrection()
+
+	/**
+	 * The record as stored, read without RBAC: the right was checked on the caller.
+	 *
+	 * @param CorrectionTarget $target The register, schema and object id.
+	 *
+	 * @return ObjectEntity The stored record.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function storedRecord(CorrectionTarget $target): ObjectEntity {
+		$this->objectService->setRegister(register: $target->register);
+		$this->objectService->setSchema(schema: $target->schema);
+
+		return $this->objectService->findSilent(
+			id: $target->id, _extend: [], files: false, register: $target->register, schema: $target->schema, _rbac: false, _multitenancy: false
+		);
+	}//end storedRecord()
 
 	/**
 	 * The signed-in user, who must hold the correction right.

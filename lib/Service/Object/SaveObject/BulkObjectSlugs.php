@@ -110,7 +110,21 @@ class BulkObjectSlugs {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function apply(array $objects, Register|string|int|null $register=null, Schema|string|int|null $schema=null): array {
-		foreach ($this->groups(objects: $objects, caller: new BulkSlugCaller(register: $register, schema: $schema)) as $group) {
+		return $this->applyFor(objects: $objects, caller: new BulkSlugCaller(register: $register, schema: $schema));
+	}//end apply()
+
+	/**
+	 * Decide the object slugs of a prepared batch for the register and schema its caller passed.
+	 *
+	 * @param array          $objects The prepared rows.
+	 * @param BulkSlugCaller $caller  The register and schema the caller passed, if any.
+	 *
+	 * @return array The rows, each with its slug decided and without the carrier key.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 */
+	private function applyFor(array $objects, BulkSlugCaller $caller): array {
+		foreach ($this->groups(objects: $objects, caller: $caller) as $group) {
 			$this->decideGroup(objects: $objects, group: $group);
 		}
 
@@ -122,7 +136,7 @@ class BulkObjectSlugs {
 		}
 
 		return $objects;
-	}//end apply()
+	}//end applyFor()
 
 	/**
 	 * Whether a prepared row has the `@self` shape.
