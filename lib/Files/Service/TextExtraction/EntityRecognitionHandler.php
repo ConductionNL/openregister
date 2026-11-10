@@ -22,6 +22,7 @@
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
+use CurlHandle;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
@@ -716,39 +717,13 @@ class EntityRecognitionHandler {
 	 * @throws Exception When settings or the request fail.
 	 */
 	private function runPresidio(EntityDetectionQuery $query): array {
-		// Get Presidio settings.
-		$fileSettings = $this->backends->settingsService->getFileSettingsOnly();
-		// Strip a trailing slash to avoid a double-slash "//analyze" URL
-		// (some servers 404, silently sending the run to the regex fallback).
-		$presidioEndpoint = rtrim(trim((string)($fileSettings['presidioApiEndpoint'] ?? '')), '/');
-
-		if (empty($presidioEndpoint) === true) {
-			$this->logger->warning(
-				message: '[EntityRecognitionHandler] Presidio endpoint not configured, falling back to regex',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		$presidioEndpoint = $this->presidioEndpoint();
+		if ($presidioEndpoint === null) {
 			return $this->detectWithRegex(query: $query);
 		}
 
-		$request = new AnalyzeRequest(
-			query: $query,
-			dialect: new AnalyzeDialect(
-				language: 'en',
-				nameMap: null,
-				method: self::METHOD_PRESIDIO,
-				defaultConfidence: 0
-			)
-		);
-
-		// Make HTTP request and parse response.
-		$apiResults = $this->postAnalyzeRequest(
-			call: new AnalyzeCall(
-				url: $presidioEndpoint . '/analyze',
-				requestBody: $this->buildAnalyzeRequestBody(request: $request),
-				serviceName: 'Presidio'
-			)
-		);
-
+		$request = $this->presidioRequest(query: $query);
+		$apiResults = $this->postToPresidio(request: $request, endpoint: $presidioEndpoint);
 		if ($apiResults === null) {
 			return $this->detectWithRegex(query: $query);
 		}
@@ -761,6 +736,82 @@ class EntityRecognitionHandler {
 		// Convert results to our format.
 		return $this->convertApiResultsToEntities(apiResults: $apiResults, request: $request);
 	}//end runPresidio()
+
+	/**
+	 * The configured Presidio endpoint, or null (with a warning) when none is configured.
+	 *
+	 * @return string|null The endpoint without a trailing slash, or null.
+	 *
+	 * @throws Exception When the settings cannot be read.
+	 */
+	private function presidioEndpoint(): ?string {
+		$fileSettings = $this->backends->settingsService->getFileSettingsOnly();
+		// Strip a trailing slash to avoid a double-slash "//analyze" URL
+		// (some servers 404, silently sending the run to the regex fallback).
+		$presidioEndpoint = $this->endpointSetting(fileSettings: $fileSettings, key: 'presidioApiEndpoint');
+
+		if (empty($presidioEndpoint) === true) {
+			$this->logger->warning(
+				message: '[EntityRecognitionHandler] Presidio endpoint not configured, falling back to regex',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+
+		return $presidioEndpoint;
+	}//end presidioEndpoint()
+
+	/**
+	 * A configured endpoint setting, trimmed and without a trailing slash.
+	 *
+	 * @param array  $fileSettings The stored file settings.
+	 * @param string $key          The setting holding the endpoint.
+	 *
+	 * @return string The endpoint, or '' when none is configured.
+	 */
+	private function endpointSetting(array $fileSettings, string $key): string {
+		return rtrim(trim((string)($fileSettings[$key] ?? '')), '/');
+	}//end endpointSetting()
+
+	/**
+	 * The analyze request for Presidio: English, Presidio's entity names, no default confidence.
+	 *
+	 * @param EntityDetectionQuery $query Text, entity filter and minimum confidence.
+	 *
+	 * @return AnalyzeRequest
+	 */
+	private function presidioRequest(EntityDetectionQuery $query): AnalyzeRequest {
+		return new AnalyzeRequest(
+			query: $query,
+			dialect: new AnalyzeDialect(
+				language: 'en',
+				nameMap: null,
+				method: self::METHOD_PRESIDIO,
+				defaultConfidence: 0
+			)
+		);
+	}//end presidioRequest()
+
+	/**
+	 * Post an analyze request to Presidio's /analyze route.
+	 *
+	 * @param AnalyzeRequest $request  The analyze request.
+	 * @param string         $endpoint The Presidio endpoint.
+	 *
+	 * @return array|null The results, or null on failure.
+	 *
+	 * @throws AnalyzeRequestRejectedException When Presidio answers with a request error.
+	 */
+	private function postToPresidio(AnalyzeRequest $request, string $endpoint): ?array {
+		// Make HTTP request and parse response.
+		return $this->postAnalyzeRequest(
+			call: new AnalyzeCall(
+				url: $endpoint . '/analyze',
+				requestBody: $this->buildAnalyzeRequestBody(request: $request),
+				serviceName: 'Presidio'
+			)
+		);
+	}//end postToPresidio()
 
 	/**
 	 * Detect entities using OpenAnonymiser service.
@@ -809,23 +860,7 @@ class EntityRecognitionHandler {
 	private function runOpenAnonymiser(EntityDetectionQuery $query): array {
 		// Get OpenAnonymiser settings.
 		$fileSettings = $this->backends->settingsService->getFileSettingsOnly();
-		// Strip a trailing slash: a configured endpoint like
-		// "https://host/" would otherwise build "https://host//api/v1/analyze"
-		// (double slash), which some servers 404 — sending the run silently
-		// to the regex fallback.
-		$anonEndpoint = rtrim(trim((string)($fileSettings['openAnonymiserApiEndpoint'] ?? '')), '/');
-		// Source: 'internal' (AppAPI ExApp, default) or 'external' (operator-entered URL).
-		$useExternal = (($fileSettings['openAnonymiserSource'] ?? 'internal') === 'external');
-
-		$request = new AnalyzeRequest(
-			query: $query,
-			dialect: new AnalyzeDialect(
-				language: 'nl',
-				nameMap: self::OPENANONYMISER_ENTITY_NAMES,
-				method: self::METHOD_OPENANONYMISER,
-				defaultConfidence: 0.85
-			)
-		);
+		$request = $this->openAnonymiserRequest(query: $query);
 
 		// Build request body (shared by both transports), in anonymiq's
 		// own entity names: it rejects Presidio's (or#4115).
@@ -839,19 +874,68 @@ class EntityRecognitionHandler {
 
 		$responseData = $this->sendOpenAnonymiserRequest(
 			requestBody: $requestBody,
-			transport: new OpenAnonymiserTransport(
-				endpoint: $anonEndpoint,
-				useExternal: $useExternal,
-				authHeaders: $this->openAnonymiserAuthHeaders(fileSettings: $fileSettings)
-			)
+			transport: $this->openAnonymiserTransport(fileSettings: $fileSettings)
 		);
 
+		return $this->openAnonymiserEntities(responseData: $responseData, request: $request);
+	}//end runOpenAnonymiser()
+
+	/**
+	 * The analyze request for OpenAnonymiser: Dutch, anonymiq's entity names, 0.85 for a missing score.
+	 *
+	 * @param EntityDetectionQuery $query Text, entity filter and minimum confidence.
+	 *
+	 * @return AnalyzeRequest
+	 */
+	private function openAnonymiserRequest(EntityDetectionQuery $query): AnalyzeRequest {
+		return new AnalyzeRequest(
+			query: $query,
+			dialect: new AnalyzeDialect(
+				language: 'nl',
+				nameMap: self::OPENANONYMISER_ENTITY_NAMES,
+				method: self::METHOD_OPENANONYMISER,
+				defaultConfidence: 0.85
+			)
+		);
+	}//end openAnonymiserRequest()
+
+	/**
+	 * The configured OpenAnonymiser transport: endpoint, internal or external, and credentials.
+	 *
+	 * @param array $fileSettings The stored file settings.
+	 *
+	 * @return OpenAnonymiserTransport
+	 *
+	 * @throws Exception When the password cannot be read.
+	 */
+	private function openAnonymiserTransport(array $fileSettings): OpenAnonymiserTransport {
+		return new OpenAnonymiserTransport(
+			// Strip a trailing slash: a configured endpoint like
+			// "https://host/" would otherwise build "https://host//api/v1/analyze"
+			// (double slash), which some servers 404 — sending the run silently
+			// to the regex fallback.
+			endpoint: $this->endpointSetting(fileSettings: $fileSettings, key: 'openAnonymiserApiEndpoint'),
+			// Source: 'internal' (AppAPI ExApp, default) or 'external' (operator-entered URL).
+			useExternal: (($fileSettings['openAnonymiserSource'] ?? 'internal') === 'external'),
+			authHeaders: $this->openAnonymiserAuthHeaders(fileSettings: $fileSettings)
+		);
+	}//end openAnonymiserTransport()
+
+	/**
+	 * Convert OpenAnonymiser's answer, falling back to regex when it could not be reached.
+	 *
+	 * @param array|null     $responseData The response data, or null when OpenAnonymiser could not be reached.
+	 * @param AnalyzeRequest $request      The analyze request.
+	 *
+	 * @return array Detected entities.
+	 */
+	private function openAnonymiserEntities(?array $responseData, AnalyzeRequest $request): array {
 		if ($responseData === null) {
 			$this->logger->warning(
 				message: '[EntityRecognitionHandler] OpenAnonymiser unreachable, falling back to regex',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			return $this->detectWithRegex(query: $query);
+			return $this->detectWithRegex(query: $request->query);
 		}
 
 		// OpenAnonymiser wraps results in {"pii_entities": [...]}.
@@ -867,7 +951,7 @@ class EntityRecognitionHandler {
 		// OpenAnonymiser may return null score for NLP-detected entities (e.g. PERSON).
 		// Treat null as high confidence (0.85) since these are spaCy NER detections.
 		return $this->convertApiResultsToEntities(apiResults: $anonymiserResults, request: $request);
-	}//end runOpenAnonymiser()
+	}//end openAnonymiserEntities()
 
 	/**
 	 * Send an analyze request to OpenAnonymiser over the configured transport.
@@ -1015,6 +1099,35 @@ class EntityRecognitionHandler {
 	 */
 	private function postAnalyzeRequest(AnalyzeCall $call): ?array {
 		$serviceName = $call->serviceName;
+		$ch = $this->analyzeHandle(call: $call);
+
+		$response = curl_exec($ch);
+		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		$curlError = curl_error($ch);
+		// No curl_close(): deprecated since PHP 8.0 and a no-op — the
+		// CurlHandle object is freed when it goes out of scope.
+		if ($curlError !== '') {
+			$this->logger->error(
+				message: "[EntityRecognitionHandler] {$serviceName} connection error: " . $curlError,
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+
+		return $this->acceptedAnalyzeResponse(
+			serviceName: $serviceName,
+			response: new AnalyzeResponse(status: $httpCode, body: $response)
+		);
+	}//end postAnalyzeRequest()
+
+	/**
+	 * A curl handle that POSTs the call's JSON body with the call's extra headers.
+	 *
+	 * @param AnalyzeCall $call URL, request body and extra headers.
+	 *
+	 * @return CurlHandle|false The configured handle.
+	 */
+	private function analyzeHandle(AnalyzeCall $call): CurlHandle|false {
 		$ch = curl_init($call->url);
 		curl_setopt_array(
 			$ch,
@@ -1033,32 +1146,32 @@ class EntityRecognitionHandler {
 			]
 		);
 
-		$response = curl_exec($ch);
-		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		$curlError = curl_error($ch);
-		// No curl_close(): deprecated since PHP 8.0 and a no-op — the
-		// CurlHandle object is freed when it goes out of scope.
-		if ($curlError !== '') {
+		return $ch;
+	}//end analyzeHandle()
+
+	/**
+	 * The decoded body of an answered analyze request; a request error throws, any other non-200 is null.
+	 *
+	 * @param string          $serviceName Human-readable service name.
+	 * @param AnalyzeResponse $response    The HTTP status curl reported and the raw response body.
+	 *
+	 * @return array|null The decoded array, or null on failure.
+	 *
+	 * @throws AnalyzeRequestRejectedException When the service answers with a request error.
+	 */
+	private function acceptedAnalyzeResponse(string $serviceName, AnalyzeResponse $response): ?array {
+		$this->refuseRequestError(serviceName: $serviceName, response: $response);
+
+		if ($response->status !== 200) {
 			$this->logger->error(
-				message: "[EntityRecognitionHandler] {$serviceName} connection error: " . $curlError,
+				message: "[EntityRecognitionHandler] {$serviceName} returned HTTP " . $response->status,
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return null;
 		}
 
-		$reply = new AnalyzeResponse(status: $httpCode, body: $response);
-		$this->refuseRequestError(serviceName: $serviceName, response: $reply);
-
-		if ($httpCode !== 200) {
-			$this->logger->error(
-				message: "[EntityRecognitionHandler] {$serviceName} returned HTTP " . $httpCode,
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return null;
-		}
-
-		return $this->decodeAnalyzeResponse(serviceName: $serviceName, response: $reply);
-	}//end postAnalyzeRequest()
+		return $this->decodeAnalyzeResponse(serviceName: $serviceName, response: $response);
+	}//end acceptedAnalyzeResponse()
 
 	/**
 	 * Throw when the service answered with a request (4xx) error.
