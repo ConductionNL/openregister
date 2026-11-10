@@ -1279,22 +1279,64 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	private function cascadeObjectProperty(CascadeRun $run): void {
 		$propValue = $run->data[$run->property] ?? null;
-		if ($propValue === null || empty($propValue) === true
-			|| (is_array($propValue) === false && is_object($propValue) === false)
-		) {
+		if (self::isCascadableObjectValue(value: $propValue) === false) {
 			return;
 		}
 
-		$objectData = $propValue;
-		if (is_object($propValue) === true) {
-			$objectData = (array)$propValue;
-		}
+		$objectData = self::objectDataOf(value: $propValue);
 
 		// Skip if the object is effectively empty (only contains empty values).
 		if ($this->emptyValues()->isEmptyObject(object: $objectData) === true) {
 			return;
 		}
 
+		$this->cascadePropertyObject(run: $run, objectData: $objectData);
+	}//end cascadeObjectProperty()
+
+	/**
+	 * Whether a property value can hold a nested object: set, not empty, an array or an object.
+	 *
+	 * @param mixed $value The property value.
+	 *
+	 * @return bool True when the value is worth cascading.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isCascadableObjectValue(mixed $value): bool {
+		return $value !== null && empty($value) === false
+			&& (is_array($value) === true || is_object($value) === true);
+	}//end isCascadableObjectValue()
+
+	/**
+	 * A nested object value as an array.
+	 *
+	 * @param array|object $value The property value.
+	 *
+	 * @return array The object data.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function objectDataOf(array|object $value): array {
+		if (is_object($value) === true) {
+			return (array)$value;
+		}
+
+		return $value;
+	}//end objectDataOf()
+
+	/**
+	 * Cascade the run's single nested object and store the result in the property.
+	 *
+	 * @param CascadeRun $run        The cascade pass, on the property to cascade.
+	 * @param array      $objectData The nested object.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the caller may not create the nested object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cascadePropertyObject(CascadeRun $run, array $objectData): void {
 		try {
 			$createdUuid = $this->cascadeSingleObject(
 				target: new NestedObjectTarget(parent: $run->parent, definition: $run->definition),
@@ -1305,15 +1347,29 @@ class SaveObject implements SaveObjectInterface {
 			throw $e;
 		} catch (Exception $e) {
 			// Continue with other properties even if one fails.
-			$this->logger->warning(
-				message: '[SaveObject] Cascade of an object property failed, continuing with the other properties',
-				context: [
-					'property' => $run->property,
-					'exception' => $e->getMessage(),
-				]
-			);
+			$this->warnPropertyCascadeFailed(run: $run, error: $e);
 		}
-	}//end cascadeObjectProperty()
+	}//end cascadePropertyObject()
+
+	/**
+	 * Log a failed cascade of an object property; the save continues with the other properties.
+	 *
+	 * @param CascadeRun $run   The cascade pass, on the failed property.
+	 * @param Exception  $error The failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function warnPropertyCascadeFailed(CascadeRun $run, Exception $error): void {
+		$this->logger->warning(
+			message: '[SaveObject] Cascade of an object property failed, continuing with the other properties',
+			context: [
+				'property' => $run->property,
+				'exception' => $error->getMessage(),
+			]
+		);
+	}//end warnPropertyCascadeFailed()
 
 	/**
 	 * Cascade the objects of the run's array property, and queue what the parent no longer references.
@@ -1340,31 +1396,73 @@ class SaveObject implements SaveObjectInterface {
 			return;
 		}
 
+		$this->cascadeArrayItems(run: $run);
+	}//end cascadeArrayProperty()
+
+	/**
+	 * Cascade the objects of the run's non-empty array property and store the result.
+	 *
+	 * @param CascadeRun $run The cascade pass, on the array property.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the caller may not create a nested object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cascadeArrayItems(CascadeRun $run): void {
 		try {
 			$createdUuids = $this->cascadeMultipleObjects(
 				target: new NestedObjectTarget(parent: $run->parent, definition: $run->definition),
 				propData: $run->data[$run->property]
 			);
-
-			if ($run->isRelated === true) {
-				$this->applyRelatedCascadeResult(run: $run, createdUuids: $createdUuids);
-				return;
-			}
-
-			CascadeRules::applyArrayResult(run: $run, createdUuids: $createdUuids);
+			$this->applyArrayCascadeResult(run: $run, createdUuids: $createdUuids);
 		} catch (NotAuthorizedException $e) {
 			throw $e;
 		} catch (Exception $e) {
 			// Continue with other properties even if one fails.
-			$this->logger->warning(
-				message: '[SaveObject] Cascade of an array property failed, continuing with the other properties',
-				context: [
-					'property' => $run->property,
-					'exception' => $e->getMessage(),
-				]
-			);
+			$this->warnArrayCascadeFailed(run: $run, error: $e);
 		}
-	}//end cascadeArrayProperty()
+	}//end cascadeArrayItems()
+
+	/**
+	 * Store the created UUIDs in the array property: as related references, or in place of the inline objects.
+	 *
+	 * @param CascadeRun $run          The cascade pass, on the array property.
+	 * @param string[]   $createdUuids The UUIDs of the newly created objects.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function applyArrayCascadeResult(CascadeRun $run, array $createdUuids): void {
+		if ($run->isRelated === true) {
+			$this->applyRelatedCascadeResult(run: $run, createdUuids: $createdUuids);
+			return;
+		}
+
+		CascadeRules::applyArrayResult(run: $run, createdUuids: $createdUuids);
+	}//end applyArrayCascadeResult()
+
+	/**
+	 * Log a failed cascade of an array property; the save continues with the other properties.
+	 *
+	 * @param CascadeRun $run   The cascade pass, on the failed property.
+	 * @param Exception  $error The failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function warnArrayCascadeFailed(CascadeRun $run, Exception $error): void {
+		$this->logger->warning(
+			message: '[SaveObject] Cascade of an array property failed, continuing with the other properties',
+			context: [
+				'property' => $run->property,
+				'exception' => $error->getMessage(),
+			]
+		);
+	}//end warnArrayCascadeFailed()
 
 	/**
 	 * Queue references of the run's property for orphan cleanup after the parent is saved.
@@ -1431,62 +1529,78 @@ class SaveObject implements SaveObjectInterface {
 	 * @psalm-return list<string>
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::isValid is standard Symfony UID pattern
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex array object cascading logic
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation and processing paths
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function cascadeMultipleObjects(NestedObjectTarget $target, array $propData): array {
-		if (array_is_list($propData) === false) {
-			return [];
-		}
-
-		$validObjects = array_filter($propData, fn ($object): bool => CascadeItem::isCandidate(object: $object));
-		if (empty($validObjects) === true) {
-			return [];
-		}
-
+		$objectsToCreate = self::nestedObjectsToCreate(propData: $propData);
 		$definition = CascadeRules::itemsDefinition(property: $target->definition);
-		if ($definition === null) {
+		if ($objectsToCreate === [] || $definition === null) {
 			return [];
 		}
 
-		// Existing ids need no cascade; only nested objects are created.
-		$objectsToCreate = array_filter($validObjects, fn ($object): bool => is_string($object) === false);
-		if (empty($objectsToCreate) === true) {
-			return [];
-		}
-
-		// Create each sub-object using optimized cascadeSingleObject().
-		// Performance optimizations applied:
-		// - Request-scoped schema/register caching (avoids repeated DB lookups)
-		// - Silent mode (skips audit trails for sub-objects)
-		// - Skipped inverse relation updates (handled via inversedBy property).
+		// Create each sub-object using optimized cascadeSingleObject(): request-scoped
+		// schema/register caching, silent mode, inverse relations via inversedBy.
 		$createdUuids = [];
 		foreach ($objectsToCreate as $object) {
-			try {
-				$uuid = $this->cascadeSingleObject(
-					target: new NestedObjectTarget(parent: $target->parent, definition: $definition),
-					object: $object
-				);
-				if ($uuid !== null) {
-					$createdUuids[] = $uuid;
-				}
-			} catch (NotAuthorizedException $e) {
-				throw $e;
-			} catch (Exception $e) {
-				// Continue with other objects even if one fails.
-				$this->logger->warning(
-					message: '[SaveObject] Cascade of a nested object failed, continuing with the others',
-					context: [
-						'exception' => $e->getMessage(),
-					]
-				);
+			$uuid = $this->cascadeListItem(target: new NestedObjectTarget(parent: $target->parent, definition: $definition), object: $object);
+			if ($uuid !== null) {
+				$createdUuids[] = $uuid;
 			}
 		}
 
 		return $createdUuids;
 	}//end cascadeMultipleObjects()
+
+	/**
+	 * The inline objects of a list property that are to be created.
+	 *
+	 * A map is no list and creates nothing; existing ids need no cascade.
+	 *
+	 * @param array $propData The data in the property.
+	 *
+	 * @return array The candidate objects that are not plain ids, keys kept.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function nestedObjectsToCreate(array $propData): array {
+		if (array_is_list($propData) === false) {
+			return [];
+		}
+
+		$validObjects = array_filter($propData, fn ($object): bool => CascadeItem::isCandidate(object: $object));
+
+		return array_filter($validObjects, fn ($object): bool => is_string($object) === false);
+	}//end nestedObjectsToCreate()
+
+	/**
+	 * Cascade one object of a list; a failure other than a refusal is logged and creates nothing.
+	 *
+	 * @param NestedObjectTarget $target The parent object and the items definition.
+	 * @param mixed              $object The nested object.
+	 *
+	 * @return string|null The created uuid, or null.
+	 *
+	 * @throws NotAuthorizedException When the caller may not create the nested object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cascadeListItem(NestedObjectTarget $target, mixed $object): string|null {
+		try {
+			return $this->cascadeSingleObject(target: $target, object: $object);
+		} catch (NotAuthorizedException $e) {
+			throw $e;
+		} catch (Exception $e) {
+			// Continue with other objects even if one fails.
+			$this->logger->warning(
+				message: '[SaveObject] Cascade of a nested object failed, continuing with the others',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
+			return null;
+		}
+	}//end cascadeListItem()
 
 	/**
 	 * Where the sub-objects of a cascading property live, and how one names its parent.
