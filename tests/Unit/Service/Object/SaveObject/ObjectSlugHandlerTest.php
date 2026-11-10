@@ -223,7 +223,7 @@ class ObjectSlugHandlerTest extends TestCase {
 		$schema->setSlug(null);
 		$schema->setTitle('WOO Besluiten');
 
-		$this->assertSame('woo-besluiten-hello', $this->handler->candidate(['title' => 'Hello'], $schema, null));
+		$this->assertSame('woo-besluiten-hello', $this->handler->candidate(['title' => 'Hello'], $schema));
 	}
 
 	public function testTheSchemaNameSourceGivesNoSlugWithoutANameFieldOrName(): void {
@@ -231,9 +231,9 @@ class ObjectSlugHandlerTest extends TestCase {
 		$withoutNameField = $this->schema(['objectSlugField' => ObjectSlugHandler::SCHEMA_NAME_SOURCE]);
 		$withEmptyName = $this->schema(['objectSlugField' => ObjectSlugHandler::SCHEMA_NAME_SOURCE, 'objectNameField' => 'title']);
 
-		$this->assertNull($this->handler->candidate(['title' => 'Hello'], $withoutNameField, null));
-		$this->assertNull($this->handler->candidate(['title' => '   '], $withEmptyName, null));
-		$this->assertNull($this->handler->candidate(['body' => 'x'], $withEmptyName, null));
+		$this->assertNull($this->handler->candidate(['title' => 'Hello'], $withoutNameField));
+		$this->assertNull($this->handler->candidate(['title' => '   '], $withEmptyName));
+		$this->assertNull($this->handler->candidate(['body' => 'x'], $withEmptyName));
 	}
 
 	public function testASchemaNameSourceNameThatSlugifiesToNothingGivesNoSlug(): void {
@@ -241,8 +241,8 @@ class ObjectSlugHandlerTest extends TestCase {
 		// schema slug alone must not become the object's slug.
 		$schema = $this->schema(['objectSlugField' => ObjectSlugHandler::SCHEMA_NAME_SOURCE, 'objectNameField' => 'title']);
 
-		$this->assertNull($this->handler->candidate(['title' => '!!!'], $schema, null));
-		$this->assertNull($this->handler->candidate(['title' => 'Москва'], $schema, null));
+		$this->assertNull($this->handler->candidate(['title' => '!!!'], $schema));
+		$this->assertNull($this->handler->candidate(['title' => 'Москва'], $schema));
 	}
 
 	public function testASchemaNameSourceSlugIsCutToTheColumnWithoutATrailingHyphen(): void {

@@ -198,7 +198,7 @@ class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 					'uuid' => $row['uuid'],
 					'slug' => $row['slug'],
 					'created' => $row['created'] ?? null,
-					'candidate' => $this->slugHandler->candidate(objectData: $row['object'], schema: $schema, clientSlug: null),
+					'candidate' => $this->slugHandler->candidate(objectData: $row['object'], schema: $schema),
 				];
 			}
 

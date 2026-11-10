@@ -449,7 +449,7 @@ final class ObjectSlugGoldenTest extends TestCase {
 	public function testTheCandidate(array $data, array $configuration, ?string $schemaSlug, ?string $client, ?string $expected): void {
 		$schema = $this->schema($configuration, $schemaSlug, $schemaSlug === null ? 'Het Schema' : null);
 
-		$this->assertSame($expected, $this->handler->candidate($data, $schema, $client));
+		$this->assertSame($expected, ($this->handler->clientCandidate($client) ?? $this->handler->candidate($data, $schema)));
 	}
 
 	public function testDiffersFromStored(): void {
