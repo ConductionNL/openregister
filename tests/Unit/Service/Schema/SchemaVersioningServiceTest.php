@@ -79,15 +79,17 @@ class SchemaVersioningServiceTest extends TestCase {
 	}
 
 	public function testGatePassesOnAcknowledgedBreaking(): void {
+		$this->expectNotToPerformAssertions();
+
 		$cs = new SchemaChangeSet([['property' => 'email', 'kind' => 'removed']], SchemaChangeSet::CLASS_BREAKING, 'major');
 		$this->service->enforceGate($cs, true, 1);
-		$this->addToAssertionCount(1);
 	}
 
 	public function testGatePassesOnCompatible(): void {
+		$this->expectNotToPerformAssertions();
+
 		$cs = new SchemaChangeSet([['property' => 'x', 'kind' => 'added']], SchemaChangeSet::CLASS_COMPATIBLE, 'minor');
 		$this->service->enforceGate($cs, false, 1);
-		$this->addToAssertionCount(1);
 	}
 
 	public function testGate409CarriesChangesAndInvalidCount(): void {
