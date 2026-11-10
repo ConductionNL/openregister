@@ -28,6 +28,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\OasController;
+use OCA\OpenRegister\Controller\Support\OasControllerServices;
 use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\Oas\OasETagComputer;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
@@ -71,7 +72,7 @@ class OasControllerGoldenTest extends TestCase {
 			$etag = new OasETagComputer();
 		}
 
-		return new OasController('openregister', $this->request, $this->oasService, $etag);
+		return new OasController($this->request, new OasControllerServices($this->oasService, $etag));
 	}
 
 	private function report(): OasValidationReport {

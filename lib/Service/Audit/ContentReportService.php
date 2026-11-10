@@ -127,18 +127,31 @@ class ContentReportService implements ContentReportServiceInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function file(ObjectEntity $object, string $reason, ?string $reporter): ContentReport {
-		$copy = $this->snapshot(object: $object);
+		return $this->fileReport(filing: new ContentReportFiling(object: $object, reason: $reason, reporter: $reporter));
+	}//end file()
+
+	/**
+	 * File one report: take the copy, pin the reviewer group and the retention, and persist it.
+	 *
+	 * @param ContentReportFiling $filing The object, the reason and the reporter.
+	 *
+	 * @return ContentReport The persisted report, with the copy already taken.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function fileReport(ContentReportFiling $filing): ContentReport {
+		$copy = $this->snapshot(object: $filing->object);
 
 		$report = new ContentReport();
-		$report->setObjectUuid($object->getUuid());
-		$report->setRegister((string)$object->getRegister());
-		$report->setSchema((string)$object->getSchema());
-		$report->setReason($reason);
-		$report->setReportedBy($reporter);
+		$report->setObjectUuid($filing->object->getUuid());
+		$report->setRegister((string)$filing->object->getRegister());
+		$report->setSchema((string)$filing->object->getSchema());
+		$report->setReason($filing->reason);
+		$report->setReportedBy($filing->reporter);
 		$report->setStatus(ContentReport::STATUS_OPEN);
 		$report->setCopy($copy);
 		$report->setCopyHash(ContentReport::hashCopy(copy: $copy));
-		$report->setOrganisationId($object->getOrganisation());
+		$report->setOrganisationId($filing->object->getOrganisation());
 
 		// Pinned onto the row rather than read at review time. An administrator
 		// widening the configured group later must not retroactively widen who
@@ -150,7 +163,7 @@ class ContentReportService implements ContentReportServiceInterface {
 		$report->setExpires((new DateTime())->modify('+' . $days . ' days'));
 
 		return $this->reports->insert($report);
-	}//end file()
+	}//end fileReport()
 
 	/**
 	 * The frozen content, as it read when the report was filed.
