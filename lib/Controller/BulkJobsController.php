@@ -252,7 +252,7 @@ class BulkJobsController extends Controller {
 		$schema = $this->nullableInt(value: $this->request->getParam('schema'));
 
 		try {
-			$job = $this->service->create(
+			$job = $this->service->createFor(
 				call: $this->service->actionCall(actionId: $action, parameters: $parameters),
 				selection: $this->service->selection(criteria: $selection, registerId: $register, schemaId: $schema),
 				actorUid: $uid,

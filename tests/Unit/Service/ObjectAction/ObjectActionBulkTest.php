@@ -96,7 +96,7 @@ class ObjectActionBulkTest extends TestCase {
 		$this->registers->method('find')->with('cases', false, false)->willReturn($register);
 		$job = new BulkJob();
 		$this->jobs->expects($this->once())
-			->method('create')
+			->method('createFor')
 			->willReturnCallback(
 				function (BulkJobActionCall $call, BulkJobSelection $selection, string $actorUid, ?string $justification) use ($job): BulkJob {
 					$this->assertSame('openregister:run-action', $call->actionId);
@@ -124,7 +124,7 @@ class ObjectActionBulkTest extends TestCase {
 		$this->gate->method('userId')->willReturn('noor');
 		$this->registers->method('find')->willThrowException(new DoesNotExistException('no register'));
 		$this->jobs->expects($this->once())
-			->method('create')
+			->method('createFor')
 			->with($this->anything(), $this->callback(static fn (BulkJobSelection $selection): bool => $selection->registerId === null && $selection->schemaId === 9))
 			->willReturn(new BulkJob());
 
@@ -138,7 +138,7 @@ class ObjectActionBulkTest extends TestCase {
 	 */
 	public function testWithoutASignedInUserNoJobIsCreated(): void {
 		$this->gate->method('userId')->willReturn(null);
-		$this->jobs->expects($this->never())->method('create');
+		$this->jobs->expects($this->never())->method('createFor');
 
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('needs a signed-in user');

@@ -96,7 +96,7 @@ class ObjectActionBulk implements ObjectActionBulkInterface {
 			throw new InvalidArgumentException('A bulk job runs as the person who starts it, so it needs a signed-in user.');
 		}
 
-		return $this->jobs->create(
+		return $this->jobs->createFor(
 			call: $call,
 			selection: new BulkJobSelection(
 				criteria: ['ids' => $selection->ids],

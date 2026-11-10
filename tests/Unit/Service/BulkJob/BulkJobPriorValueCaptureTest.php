@@ -338,7 +338,7 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 		);
 
 		try {
-			$service->create(new BulkJobActionCall('openregister:set-properties', []), new BulkJobSelection(['ids' => $uuids], 1, 2), 'coordinator', null);
+			$service->createFor(new BulkJobActionCall('openregister:set-properties', []), new BulkJobSelection(['ids' => $uuids], 1, 2), 'coordinator', null);
 			$this->fail('The undo ceiling should have refused this job.');
 		} catch (BulkJobRefusedException $exception) {
 			$this->assertSame('undo-ceiling', $exception->getReason());

@@ -211,10 +211,45 @@ class BulkJobService implements BulkJobServiceInterface {
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function create(BulkJobActionCall $call, BulkJobSelection $selection, string $actorUid, ?string $justification): BulkJob {
+	public function createFor(BulkJobActionCall $call, BulkJobSelection $selection, string $actorUid, ?string $justification): BulkJob {
 		return $this->createFromRequest(
 			request: new BulkJobRequest(call: $call, selection: $selection, actorUid: $actorUid, justification: $justification)
 		);
+	}//end createFor()
+
+	/**
+	 * Create a job, rehearse it, and write nothing, by the loose values other apps pass by name.
+	 *
+	 * @param string               $actionId      The action to run.
+	 * @param array<string, mixed> $parameters    The action's parameters.
+	 * @param array<string, mixed> $selection     The objects to run it on: `ids` or `query`.
+	 * @param string|null          $justification The reason the operator typed.
+	 * @param string               $actorUid      The actor's uid.
+	 * @param int|null             $registerId    The register the objects live in.
+	 * @param int|null             $schemaId      The schema the objects live in.
+	 *
+	 * @return BulkJob The previewed job.
+	 *
+	 * @throws InvalidArgumentException When the action, its parameters or the register and schema do not resolve.
+	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The public signature dossiq calls by name.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
+	 */
+	public function create(
+		string $actionId,
+		array $parameters,
+		array $selection,
+		?string $justification,
+		string $actorUid,
+		?int $registerId=null,
+		?int $schemaId=null,
+	): BulkJob {
+		$call  = new BulkJobActionCall(actionId: $actionId, parameters: $parameters);
+		$scope = new BulkJobSelection(criteria: $selection, registerId: $registerId, schemaId: $schemaId);
+
+		return $this->createFor(call: $call, selection: $scope, actorUid: $actorUid, justification: $justification);
 	}//end create()
 
 	/**

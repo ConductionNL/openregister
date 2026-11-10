@@ -358,7 +358,7 @@ class RulesServicesGoldenTest extends TestCase {
 
 	private function replay(int|Throwable $count): RuleReplayService {
 		$jobs = $this->createMock(BulkJobService::class);
-		$jobs->method('create')->willReturnCallback(
+		$jobs->method('createFor')->willReturnCallback(
 			function (...$args): BulkJob {
 				$this->calls[] = ['create', $args];
 				$job = $this->createMock(BulkJob::class);

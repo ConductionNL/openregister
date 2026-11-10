@@ -195,7 +195,7 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 * @return BulkJob The job.
 	 */
 	private function createJob(RuleReplayRun $run): BulkJob {
-		return $this->jobs->create(
+		return $this->jobs->createFor(
 			call: $run->actionCall(),
 			selection: $run->selection->forBulkJob(),
 			actorUid: $run->actorUid,

@@ -103,7 +103,7 @@ interface BulkJobServiceInterface {
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function create(BulkJobActionCall $call, BulkJobSelection $selection, string $actorUid, ?string $justification): BulkJob;
+	public function createFor(BulkJobActionCall $call, BulkJobSelection $selection, string $actorUid, ?string $justification): BulkJob;
 
 	/**
 	 * Create a job from what the operator asked for, rehearse it, and write nothing.
