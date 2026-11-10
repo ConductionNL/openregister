@@ -1,3 +1,4 @@
 ResolvedConsumer\topenregister#9816\tintegriq#3126\tnone\topenregister#9816 then integriq#3126
 StoreDescriptor\topenregister#9817\tdossiq#5556,buildiq#1276,pipelinq#3258,launchpad#1038,learniq#2166\tnone\topenregister#9817 first, then the 5 app PRs in the same window (any order)
 GenericAdminSettings+GenericSettingsSection+GenericInitializeSettings	openregister#9824	shillinq#2411,planninq#1096,integriq#3137,buildiq#1277	none	openregister#9824 then shillinq#2411,planninq#1096,integriq#3137,buildiq#1277 in the same window
+AggregationQuery::create	openregister#9818	shillinq#2408,pipelinq#3271	none	openregister#9818 then shillinq#2408 and pipelinq#3271 in the same window
