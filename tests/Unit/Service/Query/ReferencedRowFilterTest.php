@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowExistsClause;
 use OCA\OpenRegister\Service\Query\RelatedRowFilter;
@@ -174,7 +175,7 @@ class ReferencedRowFilterTest extends TestCase {
 			db: $this->createMock(IDBConnection::class),
 			logger: new NullLogger(),
 			access: new RelatedRowAccess(rbac: $rbac, logger: new NullLogger())
-		))->apply(qb: $qb, query: $this->forwardQuery(), register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]);
+		))->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]), query: $this->forwardQuery());
 
 		$this->assertSame(1, $applied);
 		$this->assertStringContainsString('rel0._uuid = t."subsidieaanvraag"', $sql[0]);

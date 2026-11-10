@@ -248,7 +248,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	private function rememberedOrSubmitted(FormSubmission $submission, string $key): array {
 		$keyScope = $submission->keyScope();
 		$binding = $this->keeping->keys->bindingFor(subject: $submission->submitter(), payload: $submission->payload);
-		$remembered = $this->keeping->keys->find(scope: $keyScope, key: $key, binding: $binding);
+		$remembered = $this->keeping->keys->answerFor(request: new IdempotentRequest(scope: $keyScope, key: $key, binding: $binding));
 		if ($remembered !== null) {
 			/*
 			 * @var array<string, mixed> $remembered
@@ -257,7 +257,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		}
 
 		$answer = $this->submitOnce(submission: $submission);
-		$this->keeping->keys->remember(scope: $keyScope, key: $key, response: $answer, binding: $binding);
+		$this->keeping->keys->keep(request: new IdempotentRequest(scope: $keyScope, key: $key, binding: $binding), response: $answer);
 
 		return $answer;
 	}//end rememberedOrSubmitted()

@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
+use OCA\OpenRegister\Service\RecordUpdate;
 use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use Adbar\Dot;
 use DateTime;
@@ -2661,10 +2662,8 @@ class SaveObject implements SaveObjectInterface {
 		// active, and refused once it has been nominated.
 		$retentionService = $this->resolveRetentionService();
 		if ($retentionService !== null) {
-			$preparedObject = $retentionService->applyClassificationOnUpdate(
-				object: $preparedObject,
-				schema: $call->schema,
-				previousData: ($oldObjectData ?? [])
+			$preparedObject = $retentionService->applyClassification(
+				update: new RecordUpdate(object: $preparedObject, schema: $call->schema, previousData: ($oldObjectData ?? []))
 			);
 		}
 
@@ -4334,10 +4333,8 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		try {
-			return $retentionService->recalculateArchiveActionDate(
-				$preparedObject,
-				$run->schema,
-				$run->oldObject->getObject()
+			return $retentionService->recalculateActionDate(
+				new RecordUpdate($preparedObject, $run->schema, $run->oldObject->getObject())
 			);
 		} catch (\Throwable $e) {
 			$this->logger->debug('[SaveObject] Skipping archive action date recalculation: ' . $e->getMessage());

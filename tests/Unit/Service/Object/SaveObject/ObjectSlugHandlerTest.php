@@ -254,8 +254,9 @@ class ObjectSlugHandlerTest extends TestCase {
 			)
 		);
 
-		// "convenanten-abcdefgh-ijk" cut at 21 ends on the hyphen before "ijk".
-		$this->assertSame('convenanten-abcdefgh', $source->candidate(objectData: ['title' => 'abcdefgh ijk'], schema: $schema, maxLength: 21));
+		// "convenanten-" plus 242 letters is 254 characters, so the 255-character cut ends on the hyphen before "ijk".
+		$name = str_repeat('a', 242);
+		$this->assertSame('convenanten-' . $name, $source->candidate(objectData: ['title' => $name . ' ijk'], schema: $schema));
 	}
 
 	public function testAStoredSlugIsFrozenWhenTheSourceFieldIsRenamed(): void {

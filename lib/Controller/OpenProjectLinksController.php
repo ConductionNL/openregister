@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\WorkPackageDraft;
 use OCA\OpenRegister\Service\OpenProjectLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -272,7 +273,7 @@ class OpenProjectLinksController extends Controller {
 	private function createWorkPackage(ObjectEntity $object, string $projectId, string $subject): OpenProjectLink {
 		$type = (string)$this->request->getParam('type', '');
 
-		return $this->linkService->createAndLinkWorkPackage($this->linkTargetOf(object: $object), $projectId, $subject, $type);
+		return $this->linkService->createAndLinkDraft($this->linkTargetOf(object: $object), new WorkPackageDraft($projectId, $subject, $type));
 	}//end createWorkPackage()
 
 	/**

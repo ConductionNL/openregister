@@ -9,6 +9,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\RegistersController;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -2111,7 +2112,7 @@ class RegistersControllerTest extends TestCase {
 	public function testRegisterObjectStatsFallsBackToMapperWithoutSchemaStats(): void {
 		$this->objectMapper->expects($this->once())
 			->method('getStatistics')
-			->with(registerId: 7, schemaId: null)
+			->with(new StatisticsScope(registerId: 7))
 			->willReturn(['total' => 42, 'size' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0]);
 
 		$result = $this->statistics()->objectTotals(7, null);
