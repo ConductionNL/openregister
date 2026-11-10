@@ -70,7 +70,6 @@ class MessageDispatchControllerTest extends TestCase {
 		$this->provider = $this->createMock(MessageDispatchProvider::class);
 
 		$this->controller = new MessageDispatchController(
-			'openregister',
 			$this->request,
 			$this->provider
 		);

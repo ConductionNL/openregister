@@ -28,7 +28,9 @@ namespace OCA\OpenRegister\Mcp\Controller;
 use BadMethodCallException;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Mcp\Controller\Support\JsonRpcCall;
+use OCA\OpenRegister\Mcp\Controller\Support\JsonRpcError;
 use OCA\OpenRegister\Mcp\Controller\Support\McpServerControllerServices;
 use OCA\OpenRegister\Service\Mcp\McpAgentScope;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpProtocolService;
@@ -148,16 +150,14 @@ class McpServerController extends Controller {
 	/**
 	 * McpServerController constructor
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request Request object
 	 * @param McpServerControllerServices $services The mcp server controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		McpServerControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->protocolService = $services->domain->protocolService;
 		$this->toolsService = $services->domain->toolsService;
 		$this->resourcesService = $services->domain->resourcesService;
@@ -210,11 +210,11 @@ class McpServerController extends Controller {
 	 */
 	private function envelopeError(mixed $request): ?JSONResponse {
 		if ($request === null) {
-			return $this->jsonRpcError(id: null, code: self::ERR_PARSE, message: 'Parse error: invalid JSON');
+			return (new JsonRpcError(code: self::ERR_PARSE, message: 'Parse error: invalid JSON'))->responseFor(id: null);
 		}
 
 		if (($request['jsonrpc'] ?? null) !== '2.0' || isset($request['method']) === false) {
-			return $this->jsonRpcError(id: $request['id'] ?? null, code: self::ERR_INVALID_REQUEST, message: 'Invalid JSON-RPC 2.0 request');
+			return (new JsonRpcError(code: self::ERR_INVALID_REQUEST, message: 'Invalid JSON-RPC 2.0 request'))->responseFor(id: $request['id'] ?? null);
 		}
 
 		return null;
@@ -285,19 +285,17 @@ class McpServerController extends Controller {
 	 */
 	private function sessionError(mixed $id, string $sessionId): ?JSONResponse {
 		if ($sessionId === '') {
-			return $this->jsonRpcError(
-				id: $id,
+			return (new JsonRpcError(
 				code: self::ERR_SESSION_REQUIRED,
 				message: 'Mcp-Session-Id header required'
-			);
+			))->responseFor(id: $id);
 		}
 
 		if ($this->protocolService->validateSession(sessionId: $sessionId) === null) {
-			return $this->jsonRpcError(
-				id: $id,
+			return (new JsonRpcError(
 				code: self::ERR_SESSION_REQUIRED,
 				message: 'Invalid or expired session'
-			);
+			))->responseFor(id: $id);
 		}
 
 		return null;
@@ -321,11 +319,10 @@ class McpServerController extends Controller {
 			$id = $request['id'];
 		}
 
-		$response = $this->jsonRpcError(
-			id: $id,
+		$response = (new JsonRpcError(
 			code: self::ERR_UNAUTHORIZED,
 			message: 'Authentication required: send Nextcloud credentials (an app password over basic auth, or a bearer token)'
-		);
+		))->responseFor(id: $id);
 		$response->setStatus(Http::STATUS_UNAUTHORIZED);
 		$response->addHeader('WWW-Authenticate', 'Basic realm="Nextcloud", charset="UTF-8"');
 
@@ -405,7 +402,7 @@ class McpServerController extends Controller {
 
 			$this->agentScope->assertUsable(agentUuid: $agentUuid, userId: $call->userId);
 		} catch (InvalidArgumentException $e) {
-			return $this->jsonRpcError(id: $call->id, code: self::ERR_INVALID_PARAMS, message: $e->getMessage());
+			return (new JsonRpcError(code: self::ERR_INVALID_PARAMS, message: $e->getMessage()))->responseFor(id: $call->id);
 		}
 
 		return null;
@@ -431,7 +428,7 @@ class McpServerController extends Controller {
 			return $response;
 		} catch (\Exception $e) {
 			$this->logger->error(message: '[MCP] Initialize failed', context: ['error' => $e->getMessage()]);
-			return $this->jsonRpcError(id: $call->id, code: self::ERR_INTERNAL, message: 'Initialize failed: ' . $e->getMessage());
+			return (new JsonRpcError(code: self::ERR_INTERNAL, message: 'Initialize failed: ' . $e->getMessage()))->responseFor(id: $call->id);
 		}//end try
 	}//end initializeSession()
 
@@ -447,12 +444,12 @@ class McpServerController extends Controller {
 		try {
 			return $this->jsonRpcSuccess(id: $call->id, result: $this->methodResult(call: $call, sessionId: $sessionId));
 		} catch (BadMethodCallException $e) {
-			return $this->jsonRpcError(id: $call->id, code: self::ERR_METHOD_NOT_FOUND, message: $e->getMessage());
+			return (new JsonRpcError(code: self::ERR_METHOD_NOT_FOUND, message: $e->getMessage()))->responseFor(id: $call->id);
 		} catch (InvalidArgumentException $e) {
-			return $this->jsonRpcError(id: $call->id, code: self::ERR_INVALID_PARAMS, message: $e->getMessage());
+			return (new JsonRpcError(code: self::ERR_INVALID_PARAMS, message: $e->getMessage()))->responseFor(id: $call->id);
 		} catch (Exception $e) {
 			$this->logger->error(message: '[MCP] Method dispatch failed', context: ['method' => $call->method, 'error' => $e->getMessage()]);
-			return $this->jsonRpcError(id: $call->id, code: self::ERR_INTERNAL, message: $e->getMessage());
+			return (new JsonRpcError(code: self::ERR_INTERNAL, message: $e->getMessage()))->responseFor(id: $call->id);
 		}//end try
 	}//end dispatch()
 
@@ -545,27 +542,4 @@ class McpServerController extends Controller {
 			statusCode: Http::STATUS_OK
 		);
 	}//end jsonRpcSuccess()
-
-	/**
-	 * Build a JSON-RPC 2.0 error response
-	 *
-	 * @param mixed $id Request ID (null for parse errors)
-	 * @param int $code JSON-RPC error code
-	 * @param string $message Error message
-	 *
-	 * @return JSONResponse JSON-RPC error response
-	 */
-	private function jsonRpcError(mixed $id, int $code, string $message): JSONResponse {
-		return new JSONResponse(
-			data: [
-				'jsonrpc' => '2.0',
-				'id' => $id,
-				'error' => [
-					'code' => $code,
-					'message' => $message,
-				],
-			],
-			statusCode: Http::STATUS_OK
-		);
-	}//end jsonRpcError()
 }//end class

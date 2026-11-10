@@ -50,6 +50,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AccessLinkControllerServices;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\StoredEntity;
@@ -141,16 +142,14 @@ class AccessLinkController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by Nextcloud).
 	 * @param IRequest $request Current request.
 	 * @param AccessLinkControllerServices $services The access link controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		AccessLinkControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->links = $services->domain->links;
 		$this->reader = $services->domain->reader;
 		$this->mintGuard = $services->domain->mintGuard;

@@ -32,7 +32,6 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -62,20 +61,32 @@ class FlowTimerWorker extends TimedJob {
 	public const DEFAULT_BATCH = 200;
 
 	/**
+	 * AppConfig, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Job scheduling clock (kept by the base Job as $this->time).
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
 	 * @param FlowTimerSweepInterface $sweep The two range scans and what they fire.
-	 * @param IAppConfig $appConfig Holds the batch limit override.
-	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		ConfiguredJobRuntime $runtime,
 		private readonly FlowTimerSweepInterface $sweep,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		$this->appConfig = $runtime->appConfig;
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 
 	}//end __construct()

@@ -35,12 +35,9 @@ use Exception;
 use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormLinkMapperInterface;
 use OCA\OpenRegister\Db\FormSubmissionRef;
-use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -120,50 +117,6 @@ class FormLinkService implements FormLinkServiceInterface {
 	];
 
 	/**
-	 * Form-link mapper.
-	 *
-	 * @var FormLinkMapperInterface
-	 */
-	private readonly FormLinkMapperInterface $formLinkMapper;
-
-	/**
-	 * Container (used for late-bound `OCA\Forms\*` classes that only
-	 * exist on the classpath when NC Forms is installed).
-	 *
-	 * @var ContainerInterface
-	 */
-	private readonly ContainerInterface $container;
-
-	/**
-	 * NC app manager — used to gate `OCA\Forms` access.
-	 *
-	 * @var IAppManager
-	 */
-	private readonly IAppManager $appManager;
-
-	/**
-	 * DB connection — used for the available-forms query when
-	 * FormMapper isn't on the classpath but the table exists.
-	 *
-	 * @var IDBConnection
-	 */
-	private readonly IDBConnection $db;
-
-	/**
-	 * User session.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param FormLinkMapperInterface $formLinkMapper Form-link mapper.
@@ -174,18 +127,11 @@ class FormLinkService implements FormLinkServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		FormLinkMapperInterface $formLinkMapper,
-		ContainerInterface $container,
-		IDBConnection $db,
-		LinkServiceRuntime $runtime,
+		private readonly FormLinkMapperInterface $formLinkMapper,
+		private readonly ContainerInterface $container,
+		private readonly IDBConnection $db,
+		private readonly LinkServiceRuntime $runtime,
 	) {
-		$this->formLinkMapper = $formLinkMapper;
-		$this->container = $container;
-		$this->db = $db;
-		$this->appManager = $runtime->appManager();
-		$this->userSession = $runtime->userSession();
-		$this->logger = $runtime->logger();
-
 	}//end __construct()
 
 	/**
@@ -365,7 +311,7 @@ class FormLinkService implements FormLinkServiceInterface {
 	 * @throws Exception When there is no active user.
 	 */
 	private function requireUid(): string {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in', 401);
 		}
@@ -510,7 +456,7 @@ class FormLinkService implements FormLinkServiceInterface {
 	 * @throws Exception When the Forms app or its classes are missing, or its services cannot be resolved.
 	 */
 	private function resolveFormsServices(): array {
-		if ($this->appManager->isInstalled(self::REQUIRED_APP) === false) {
+		if ($this->runtime->appManager()->isInstalled(self::REQUIRED_APP) === false) {
 			throw new Exception('NC Forms app is not installed', 503);
 		}
 
@@ -536,7 +482,7 @@ class FormLinkService implements FormLinkServiceInterface {
 				'service' => $this->container->get(self::FORMS_SERVICE_CLASS),
 			];
 		} catch (Throwable $e) {
-			$this->logger->error('Failed to resolve NC Forms services: ' . $e->getMessage());
+			$this->runtime->logger()->error('Failed to resolve NC Forms services: ' . $e->getMessage());
 			throw new Exception('Could not bootstrap NC Forms services', 503);
 		}
 	}//end formsContainerServices()
@@ -605,11 +551,11 @@ class FormLinkService implements FormLinkServiceInterface {
 	 * @return string|null
 	 */
 	private function formsUserId(): ?string {
-		if ($this->appManager->isInstalled(self::REQUIRED_APP) === false) {
+		if ($this->runtime->appManager()->isInstalled(self::REQUIRED_APP) === false) {
 			return null;
 		}
 
-		return $this->userSession->getUser()?->getUID();
+		return $this->runtime->userSession()->getUser()?->getUID();
 	}//end formsUserId()
 
 	/**
@@ -628,7 +574,7 @@ class FormLinkService implements FormLinkServiceInterface {
 				->orderBy('last_updated', 'DESC');
 			return $this->fetchRows(result: $qb->executeQuery());
 		} catch (Throwable $e) {
-			$this->logger->debug('Available-forms query failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Available-forms query failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end ownedFormRows()
@@ -721,7 +667,7 @@ class FormLinkService implements FormLinkServiceInterface {
 	 * @return array{title:?string, hash:?string, status:?string, expiresAt:?DateTime}
 	 */
 	private function snapshotFormMetadata(int $formId): array {
-		if ($this->appManager->isInstalled(self::REQUIRED_APP) === false) {
+		if ($this->runtime->appManager()->isInstalled(self::REQUIRED_APP) === false) {
 			return self::NO_METADATA;
 		}
 
@@ -733,7 +679,7 @@ class FormLinkService implements FormLinkServiceInterface {
 
 			return $this->metadataFromRow(row: $row);
 		} catch (Throwable $e) {
-			$this->logger->debug('Form metadata snapshot failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('Form metadata snapshot failed: ' . $e->getMessage());
 			return self::NO_METADATA;
 		}
 	}//end snapshotFormMetadata()

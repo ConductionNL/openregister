@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\Object\CascadeTarget;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -597,7 +598,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		$data = ['title' => 'No cascade test'];
 
 		$result = $this->relationCascadeHandler->cascadeObjects(
-			$object,
 			$this->testSchema,
 			$data
 		);
@@ -633,7 +633,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		];
 
 		$result = $this->relationCascadeHandler->cascadeObjects(
-			$object,
 			$cascadeSchema,
 			$data
 		);
@@ -675,8 +674,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		];
 
 		$result = $this->relationCascadeHandler->cascadeMultipleObjects(
-			$object,
-			$cascadeSchema->getProperties()['children'],
 			$data['children']
 		);
 		$this->assertIsArray($result);
@@ -710,7 +707,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		];
 
 		$result = $this->relationCascadeHandler->cascadeObjects(
-			$object,
 			$cascadeSchema,
 			$data
 		);
@@ -727,8 +723,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		$data = ['title' => 'WriteBack test', 'foo' => 'bar'];
 
 		$result = $this->relationCascadeHandler->handleInverseRelationsWriteBack(
-			$object,
-			$this->testSchema,
 			$data
 		);
 		$this->assertEquals($data, $result);
@@ -739,11 +733,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testCascadeSingleObjectReturnsNull(): void {
 		$object = $this->createTestObject(['title' => 'Cascade single']);
-		$result = $this->relationCascadeHandler->cascadeSingleObject(
-			$object,
-			['$ref' => '#/components/schemas/Related', 'inversedBy' => 'parent'],
-			['name' => 'Child']
-		);
+		$result = $this->relationCascadeHandler->cascadeSingleObject();
 		$this->assertNull($result);
 	}
 
@@ -978,12 +968,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	 * Test createRelatedObject with null $ref returns null.
 	 */
 	public function testCreateRelatedObjectNullRef(): void {
-		$result = $this->cascadingHandler->createRelatedObject(
-			['name' => 'Test'],
-			[], // no $ref
-			Uuid::v4()->toRfc4122(),
-			$this->testRegister->getId()
-		);
+		$result = $this->cascadingHandler->createRelatedObject(objectData: ['name' => 'Test'], target: (new CascadeTarget(parentUuid: Uuid::v4()->toRfc4122(), register: $this->testRegister->getId()))->with(definition: [])); // no $ref
 		$this->assertNull($result);
 	}
 
@@ -991,12 +976,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	 * Test createRelatedObject with empty $ref returns null.
 	 */
 	public function testCreateRelatedObjectEmptyRef(): void {
-		$result = $this->cascadingHandler->createRelatedObject(
-			['name' => 'Test'],
-			['$ref' => ''],
-			Uuid::v4()->toRfc4122(),
-			$this->testRegister->getId()
-		);
+		$result = $this->cascadingHandler->createRelatedObject(objectData: ['name' => 'Test'], target: (new CascadeTarget(parentUuid: Uuid::v4()->toRfc4122(), register: $this->testRegister->getId()))->with(definition: ['$ref' => '']));
 		$this->assertNull($result);
 	}
 
@@ -1004,12 +984,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	 * Test createRelatedObject with invalid schema reference returns null.
 	 */
 	public function testCreateRelatedObjectInvalidSchemaRef(): void {
-		$result = $this->cascadingHandler->createRelatedObject(
-			['name' => 'Test'],
-			['$ref' => '#/components/schemas/NonExistentSchema' . uniqid()],
-			Uuid::v4()->toRfc4122(),
-			$this->testRegister->getId()
-		);
+		$result = $this->cascadingHandler->createRelatedObject(objectData: ['name' => 'Test'], target: (new CascadeTarget(parentUuid: Uuid::v4()->toRfc4122(), register: $this->testRegister->getId()))->with(definition: ['$ref' => '#/components/schemas/NonExistentSchema' . uniqid()]));
 		$this->assertNull($result);
 	}
 
@@ -1017,12 +992,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	 * Test createRelatedObject with non-path $ref returns null.
 	 */
 	public function testCreateRelatedObjectNonPathRef(): void {
-		$result = $this->cascadingHandler->createRelatedObject(
-			['name' => 'Test'],
-			['$ref' => 'just-a-string'],
-			Uuid::v4()->toRfc4122(),
-			$this->testRegister->getId()
-		);
+		$result = $this->cascadingHandler->createRelatedObject(objectData: ['name' => 'Test'], target: (new CascadeTarget(parentUuid: Uuid::v4()->toRfc4122(), register: $this->testRegister->getId()))->with(definition: ['$ref' => 'just-a-string']));
 		$this->assertNull($result);
 	}
 

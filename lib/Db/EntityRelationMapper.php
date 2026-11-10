@@ -21,15 +21,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
+use OCA\OpenRegister\Files\Db\EntityMention;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -102,15 +102,15 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * @param IDBConnection $db Database connection.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit-trail persistence (used by updateDecisionMetadata).
 	 * @param IUserSession $userSession Session user lookup for audit-trail actor.
-	 * @param IEventDispatcher $eventDispatcher Symfony event dispatcher (used by updateDecisionMetadata
-	 *                                          to notify listeners after a decision-metadata write).
+	 * @param EntityEventsInterface $entityEvents Announces the decision-metadata write to listeners
+	 *                                           (used by updateDecisionMetadata).
 	 * @param LoggerInterface $logger Structured log sink.
 	 */
 	public function __construct(
 		IDBConnection $db,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserSession $userSession,
-		private readonly IEventDispatcher $eventDispatcher,
+		private readonly EntityEventsInterface $entityEvents,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_entity_relations', entityClass: EntityRelation::class);
@@ -414,36 +414,27 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * 142 has both `"Jan Jansen"` PERSON and `"Jansen"` PERSON entities)
 	 * are legitimately distinct rows.
 	 *
-	 * @param int $fileId Nextcloud file id.
-	 * @param int $entityId Catalogue entity id.
-	 * @param int $chunkId Chunk row id the position is relative to.
-	 * @param int $positionStart Position of the first byte of the match within the chunk.
-	 * @param int $positionEnd Position one past the last byte of the match within the chunk.
+	 * @param int           $fileId  Nextcloud file id.
+	 * @param EntityMention $mention The entity, chunk and span within the chunk.
 	 *
 	 * @return bool True when a row with exactly these five values exists.
 	 */
-	public function existsForFileAtPosition(
-		int $fileId,
-		int $entityId,
-		int $chunkId,
-		int $positionStart,
-		int $positionEnd,
-	): bool {
+	public function existsForFileAtPosition(int $fileId, EntityMention $mention): bool {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('id')
 			->from($this->getTableName())
 			->where(
 				$qb->expr()->andX(
 					$qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)),
-					$qb->expr()->eq('entity_id', $qb->createNamedParameter($entityId, IQueryBuilder::PARAM_INT)),
-					$qb->expr()->eq('chunk_id', $qb->createNamedParameter($chunkId, IQueryBuilder::PARAM_INT)),
+					$qb->expr()->eq('entity_id', $qb->createNamedParameter($mention->entityId, IQueryBuilder::PARAM_INT)),
+					$qb->expr()->eq('chunk_id', $qb->createNamedParameter($mention->chunkId, IQueryBuilder::PARAM_INT)),
 					$qb->expr()->eq(
 						'position_start',
-						$qb->createNamedParameter($positionStart, IQueryBuilder::PARAM_INT)
+						$qb->createNamedParameter($mention->positionStart, IQueryBuilder::PARAM_INT)
 					),
 					$qb->expr()->eq(
 						'position_end',
-						$qb->createNamedParameter($positionEnd, IQueryBuilder::PARAM_INT)
+						$qb->createNamedParameter($mention->positionEnd, IQueryBuilder::PARAM_INT)
 					)
 				)
 			)
@@ -519,8 +510,8 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		$relation = new EntityRelation();
 		$relation->setEntityId((int)$row['entityId']);
 		// phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
-		foreach (self::ROW_FIELDS as $field => [$setter, $cast, $nullSkips]) {
-			if ($this->rowFieldIsSkipped(row: $row, field: $field, nullSkips: $nullSkips) === true) {
+		foreach (self::ROW_FIELDS as $field => [$setter, $cast]) {
+			if ($this->rowFieldIsSkipped(row: $row, field: $field) === true) {
 				continue;
 			}
 
@@ -537,16 +528,15 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	}//end buildRelationFromRow()
 
 	/**
-	 * Whether a row field is left unset: it is absent, or null where null means "skip".
+	 * Whether a row field is left unset: it is absent, or null where ROW_FIELDS says null means "skip".
 	 *
 	 * @param array<string, mixed> $row Field values keyed by camelCase setter name.
-	 * @param string $field The field.
-	 * @param bool $nullSkips Whether a null value skips the field.
+	 * @param string $field A ROW_FIELDS key.
 	 *
 	 * @return bool True when the setter is not called.
 	 */
-	private function rowFieldIsSkipped(array $row, string $field, bool $nullSkips): bool {
-		return array_key_exists($field, $row) === false || ($nullSkips === true && $row[$field] === null);
+	private function rowFieldIsSkipped(array $row, string $field): bool {
+		return array_key_exists($field, $row) === false || (self::ROW_FIELDS[$field][2] === true && $row[$field] === null);
 	}//end rowFieldIsSkipped()
 
 	/**
@@ -759,11 +749,8 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		try {
 			$relation = $this->update(entity: $relation);
 			$relationId = (int)$relation->getId();
-			$this->emitDecisionMetadataAuditEntry(
-				relationId: $relationId,
-				changedFields: $changedFields,
-				actingUser: $actingUser
-			);
+			$actingUser = ($actingUser ?? $this->userSession->getUser());
+			$this->emitDecisionMetadataAuditEntry(relation: $relation, changedFields: $changedFields, actingUser: $actingUser);
 			$this->db->commit();
 		} catch (\Throwable $writeError) {
 			$this->db->rollBack();
@@ -788,13 +775,7 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		// dispatch / listener failure MUST NOT roll back the persisted
 		// state change — log and continue, same contract as audit.
 		try {
-			$this->eventDispatcher->dispatchTyped(
-				new EntityRelationDecisionUpdatedEvent(
-					relation: $relation,
-					changedFields: $changedFields,
-					actingUser: ($actingUser ?? $this->userSession->getUser())
-				)
-			);
+			$this->entityEvents->entityRelationDecisionUpdated(relation: $relation, changedFields: $changedFields, actingUser: $actingUser);
 		} catch (\Throwable $dispatchError) {
 			$this->logger->error(
 				message: '[EntityRelationMapper] Failed to dispatch EntityRelationDecisionUpdatedEvent',
@@ -945,18 +926,14 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * encode the subject (table + row id) inside the `changed` JSON
 	 * payload alongside the per-field diff.
 	 *
-	 * @param int $relationId The EntityRelation row id.
-	 * @param array $changedFields Map of field name → { previous, new }.
-	 * @param IUser|null $actingUser Optional explicit acting user.
+	 * @param EntityRelation $relation The relation as stored now.
+	 * @param array<string, array{previous: mixed, new: mixed}> $changedFields Only the fields that changed.
+	 * @param IUser|null $actingUser The acting user (already resolved to the session user).
 	 *
 	 * @return void
 	 */
-	private function emitDecisionMetadataAuditEntry(
-		int $relationId,
-		array $changedFields,
-		?IUser $actingUser = null,
-	): void {
-		$user = $actingUser ?? $this->userSession->getUser();
+	private function emitDecisionMetadataAuditEntry(EntityRelation $relation, array $changedFields, ?IUser $actingUser): void {
+		$user = $actingUser;
 		$userId = 'system';
 		if ($user !== null) {
 			$userId = $user->getUID();
@@ -973,7 +950,7 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		$auditTrail->setChanged(
 			[
 				'subjectType' => 'openregister_entity_relations',
-				'subjectId' => $relationId,
+				'subjectId' => (int)$relation->getId(),
 				'fields' => $changedFields,
 			]
 		);

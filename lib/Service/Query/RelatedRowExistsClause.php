@@ -123,9 +123,9 @@ final class RelatedRowExistsClause {
 	/**
 	 * Render one filter as an `EXISTS` clause and its parameters.
 	 *
-	 * @param RelatedRowFilter    $filter The parsed filter.
-	 * @param RelatedRowSqlTarget $target The engine, related table, outer alias and storage shape.
-	 * @param RelatedRowInnerRow  $inner  The related row's alias, its access predicate and its placeholder prefix.
+	 * @param RelatedRowFilter   $filter   The parsed filter.
+	 * @param RelatedRowSubquery $subquery The SQL target (engine, related table, outer alias, storage) and the
+	 *                                     inner row (alias, access predicate, placeholder prefix).
 	 *
 	 * @return array{sql: string, parameters: array<string, mixed>} The clause and its bindings.
 	 *
@@ -134,52 +134,73 @@ final class RelatedRowExistsClause {
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function render(RelatedRowFilter $filter, RelatedRowSqlTarget $target, RelatedRowInnerRow $inner): array {
-		$accessPredicate = $inner->accessPredicate;
-		if (trim($accessPredicate) === '') {
+	public function render(RelatedRowFilter $filter, RelatedRowSubquery $subquery): array {
+		$inner = $subquery->inner;
+		if (trim($inner->accessPredicate) === '') {
 			throw new InvalidArgumentException(
 				'A related-row subquery needs the access predicate for the related schema. '
 				. 'Without it the existence of rows the caller may not read decides which objects they see.'
 			);
 		}
 
-		$clause = $this->rowConditions(filter: $filter, target: $target, inner: $inner);
-
-		foreach ($filter->conditions as $index => $condition) {
-			$rendered = $this->condition(
-				target: $target,
-				innerAlias: $inner->alias,
-				name: sprintf('%s_c%d', $inner->parameterPrefix, $index),
-				condition: $condition
-			);
-
-			$clause['where'][]    = $rendered['where'];
-			$clause['parameters'] = array_merge($clause['parameters'], $rendered['parameters']);
-		}
+		$clause     = $this->rowConditions(filter: $filter, subquery: $subquery);
+		$conditions = $this->filterConditions(filter: $filter, subquery: $subquery);
 
 		return [
 			'sql' => sprintf(
 				'EXISTS (SELECT 1 FROM %s %s WHERE %s)',
-				$target->table,
+				$subquery->target->table,
 				$inner->alias,
-				implode(' AND ', $clause['where'])
+				implode(' AND ', array_merge($clause['where'], $conditions['where']))
 			),
-			'parameters' => $clause['parameters'],
+			'parameters' => array_merge($clause['parameters'], $conditions['parameters']),
 		];
 	}//end render()
 
 	/**
+	 * Every condition of the filter, in order, with their bindings.
+	 *
+	 * @param RelatedRowFilter   $filter   The parsed filter.
+	 * @param RelatedRowSubquery $subquery The SQL target and the inner row.
+	 *
+	 * @return array{where: array<int, string>, parameters: array<string, mixed>} The conditions and their bindings.
+	 *
+	 * @throws InvalidArgumentException When an operator has no SQL, or the engine or storage is unknown.
+	 */
+	private function filterConditions(RelatedRowFilter $filter, RelatedRowSubquery $subquery): array {
+		$where      = [];
+		$parameters = [];
+		foreach ($filter->conditions as $index => $condition) {
+			$rendered = $this->condition(
+				target: $subquery->target,
+				bound: new RelatedRowBoundCondition(
+					left: $this->fieldExpression(target: $subquery->target, field: $subquery->innerField(name: $condition['field'])),
+					placeholder: $subquery->placeholderFor(index: $index),
+					operator: $condition['operator'],
+					value: $condition['value']
+				)
+			);
+
+			$where[]    = $rendered['where'];
+			$parameters = array_merge($parameters, $rendered['parameters']);
+		}
+
+		return ['where' => $where, 'parameters' => $parameters];
+	}//end filterConditions()
+
+	/**
 	 * The conditions every related row must meet before any filter condition: schema, join, not deleted, access.
 	 *
-	 * @param RelatedRowFilter    $filter The parsed filter.
-	 * @param RelatedRowSqlTarget $target The engine, related table, outer alias and storage shape.
-	 * @param RelatedRowInnerRow  $inner  The related row's alias, its access predicate and its placeholder prefix.
+	 * @param RelatedRowFilter   $filter   The parsed filter.
+	 * @param RelatedRowSubquery $subquery The SQL target and the inner row.
 	 *
 	 * @return array{where: array<int, string>, parameters: array<string, mixed>} The conditions and their bindings.
 	 *
 	 * @throws InvalidArgumentException When the engine or storage is unknown.
 	 */
-	private function rowConditions(RelatedRowFilter $filter, RelatedRowSqlTarget $target, RelatedRowInnerRow $inner): array {
+	private function rowConditions(RelatedRowFilter $filter, RelatedRowSubquery $subquery): array {
+		$target     = $subquery->target;
+		$inner      = $subquery->inner;
 		$innerAlias = $inner->alias;
 		$parameters = [];
 		$where      = [];
@@ -192,7 +213,7 @@ final class RelatedRowExistsClause {
 			$where[] = sprintf('%s."schema" = :%s_schema', $innerAlias, $inner->parameterPrefix);
 		}
 
-		$where[] = $this->joinCondition(filter: $filter, target: $target, innerAlias: $innerAlias);
+		$where[] = $this->joinCondition(filter: $filter, subquery: $subquery);
 
 		// Soft-deleted related rows are not rows. Without this a case keeps
 		// matching on a property somebody removed, which reads as the removal
@@ -211,42 +232,36 @@ final class RelatedRowExistsClause {
 	/**
 	 * One filter condition and its bindings.
 	 *
-	 * @param RelatedRowSqlTarget                                $target     The engine and storage shape.
-	 * @param string                                             $innerAlias The related row's alias.
-	 * @param string                                             $name       The condition's placeholder name.
-	 * @param array{field: string, operator: string, value: mixed} $condition  The condition.
+	 * @param RelatedRowSqlTarget      $target The engine and storage shape.
+	 * @param RelatedRowBoundCondition $bound  The condition, with its field expression and placeholder name.
 	 *
 	 * @return array{where: string, parameters: array<string, mixed>} The condition and its bindings.
 	 *
-	 * @throws InvalidArgumentException When the operator has no SQL, or the engine or storage is unknown.
+	 * @throws InvalidArgumentException When the operator has no SQL, or the engine is unknown.
 	 */
-	private function condition(RelatedRowSqlTarget $target, string $innerAlias, string $name, array $condition): array {
-		$left = $this->fieldExpression(engine: $target->engine, storage: $target->storage, alias: $innerAlias, field: $condition['field']);
-
-		if ($condition['operator'] === 'in') {
-			return $this->inCondition(left: $left, name: $name, value: $condition['value']);
+	private function condition(RelatedRowSqlTarget $target, RelatedRowBoundCondition $bound): array {
+		if ($bound->operator === 'in') {
+			return $this->inCondition(bound: $bound);
 		}
 
 		return [
-			'where' => $this->comparison(target: $target, left: $left, placeholder: $name, condition: $condition),
-			'parameters' => [$name => $condition['value']],
+			'where' => $this->comparison(target: $target, bound: $bound),
+			'parameters' => [$bound->placeholder => $bound->value],
 		];
 	}//end condition()
 
 	/**
 	 * An `IN (...)` condition with one placeholder per value.
 	 *
-	 * @param string $left  The field expression.
-	 * @param string $name  The condition's placeholder name.
-	 * @param mixed  $value The value or values.
+	 * @param RelatedRowBoundCondition $bound The condition: field expression, placeholder name, value or values.
 	 *
 	 * @return array{where: string, parameters: array<string, string>} The condition and its bindings.
 	 */
-	private function inCondition(string $left, string $name, mixed $value): array {
+	private function inCondition(RelatedRowBoundCondition $bound): array {
 		$placeholders = [];
 		$parameters   = [];
-		foreach (array_values((array)$value) as $position => $item) {
-			$placeholder = sprintf('%s_%d', $name, $position);
+		foreach (array_values((array)$bound->value) as $position => $item) {
+			$placeholder = sprintf('%s_%d', $bound->placeholder, $position);
 			$placeholders[] = ':' . $placeholder;
 			$parameters[$placeholder] = (string)$item;
 		}
@@ -257,7 +272,7 @@ final class RelatedRowExistsClause {
 			return ['where' => '1 = 0', 'parameters' => []];
 		}
 
-		return ['where' => sprintf('%s IN (%s)', $left, implode(', ', $placeholders)), 'parameters' => $parameters];
+		return ['where' => sprintf('%s IN (%s)', $bound->left, implode(', ', $placeholders)), 'parameters' => $parameters];
 	}//end inCondition()
 
 	/**
@@ -276,33 +291,27 @@ final class RelatedRowExistsClause {
 	 * overwrite the first block's bindings, and the query would run, and it
 	 * would answer the wrong question without failing.
 	 *
-	 * @param array<int, RelatedRowFilter> $filters            The parsed filters.
-	 * @param RelatedRowSqlTarget          $target             The engine, objects table, outer alias and storage shape.
-	 * @param callable                     $accessPredicateFor Given the inner alias and the filter, the access predicate for rows under it.
-	 * @param string                       $parameterPrefix    A prefix for this query's placeholders.
+	 * @param RelatedRowClauseBatch $batch The filters, the target, the access predicate per inner row and the placeholder prefix.
 	 *
 	 * @return array{sql: array<int, string>, parameters: array<string, mixed>} The clauses and their bindings.
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function renderAll(
-		array $filters,
-		RelatedRowSqlTarget $target,
-		callable $accessPredicateFor,
-		string $parameterPrefix = 'rel',
-	): array {
+	public function renderAll(RelatedRowClauseBatch $batch): array {
 		$sql        = [];
 		$parameters = [];
 
-		foreach (array_values($filters) as $position => $filter) {
-			$alias  = sprintf('%s%d', $parameterPrefix, $position);
+		foreach (array_values($batch->filters) as $position => $filter) {
+			$alias  = sprintf('%s%d', $batch->parameterPrefix, $position);
 			$clause = $this->render(
 				filter: $filter,
-				target: $target,
-				inner: new RelatedRowInnerRow(
-					alias: $alias,
-					accessPredicate: (string)$accessPredicateFor($alias, $filter),
-					parameterPrefix: $alias
+				subquery: new RelatedRowSubquery(
+					target: $batch->target,
+					inner: new RelatedRowInnerRow(
+						alias: $alias,
+						accessPredicate: (string)($batch->accessPredicateFor)($alias, $filter),
+						parameterPrefix: $alias
+					)
 				)
 			);
 
@@ -353,28 +362,26 @@ final class RelatedRowExistsClause {
 	 * Equality is left alone on purpose: text equality is the right answer on
 	 * both engines, and `'7' = '7'` needs no cast to be true.
 	 *
-	 * @param RelatedRowSqlTarget                                $target      The engine, and whether the field is JSON text or a typed column.
-	 * @param string                                             $left        The field expression.
-	 * @param string                                             $placeholder The bound parameter's name.
-	 * @param array{field: string, operator: string, value: mixed} $condition   The condition; its value is read to choose the ordering.
+	 * @param RelatedRowSqlTarget      $target The engine, and whether the field is JSON text or a typed column.
+	 * @param RelatedRowBoundCondition $bound  The condition; its value is read to choose the ordering.
 	 *
 	 * @return string The comparison.
 	 *
 	 * @throws InvalidArgumentException When the operator has no SQL, or the engine is unknown.
 	 */
-	private function comparison(RelatedRowSqlTarget $target, string $left, string $placeholder, array $condition): string {
-		$operator = (self::SQL_OPERATORS[$condition['operator']] ?? null);
+	private function comparison(RelatedRowSqlTarget $target, RelatedRowBoundCondition $bound): string {
+		$operator = (self::SQL_OPERATORS[$bound->operator] ?? null);
 		if ($operator === null) {
 			throw new InvalidArgumentException(
-				sprintf('No SQL for operator \'%s\'.', (string)$condition['operator'])
+				sprintf('No SQL for operator \'%s\'.', $bound->operator)
 			);
 		}
 
-		if ($this->isPlainComparison(target: $target, operator: $operator, value: $condition['value']) === true) {
-			return sprintf('%s %s :%s', $left, $operator, $placeholder);
+		if ($this->isPlainComparison(target: $target, bound: $bound) === true) {
+			return sprintf('%s %s :%s', $bound->left, $operator, $bound->placeholder);
 		}
 
-		return $this->numericComparison(engine: $target->engine, left: $left, placeholder: $placeholder, operator: $operator);
+		return $this->numericComparison(engine: $target->engine, bound: $bound);
 	}//end comparison()
 
 	/**
@@ -388,32 +395,37 @@ final class RelatedRowExistsClause {
 	 * exists solely because the JSON operator erases the type and hands back
 	 * text. Equality, and a bound that is not a number, are plain too.
 	 *
-	 * @param RelatedRowSqlTarget $target   The storage shape.
-	 * @param string              $operator The SQL operator.
-	 * @param mixed               $value    The bound value.
+	 * Only called once `comparison()` has checked the operator has SQL, so
+	 * `eq` and `ne` are exactly the operators that render as `=` and `!=`.
+	 *
+	 * @param RelatedRowSqlTarget      $target The storage shape.
+	 * @param RelatedRowBoundCondition $bound  The condition: its operator and bound value.
 	 *
 	 * @return bool True when the comparison is plain.
 	 */
-	private function isPlainComparison(RelatedRowSqlTarget $target, string $operator, mixed $value): bool {
+	private function isPlainComparison(RelatedRowSqlTarget $target, RelatedRowBoundCondition $bound): bool {
 		return $target->storage === self::STORAGE_COLUMNS
-			|| in_array($operator, ['=', '!='], true) === true
-			|| is_scalar($value) === false
-			|| preg_match('/' . self::NUMERIC_PATTERN . '/', (string)$value) !== 1;
+			|| in_array($bound->operator, ['eq', 'ne'], true) === true
+			|| is_scalar($bound->value) === false
+			|| preg_match('/' . self::NUMERIC_PATTERN . '/', (string)$bound->value) !== 1;
 	}//end isPlainComparison()
 
 	/**
 	 * A numeric ordering comparison, guarded on the column, in the engine's spelling.
 	 *
-	 * @param string $engine      The database engine.
-	 * @param string $left        The field expression.
-	 * @param string $placeholder The bound parameter's name.
-	 * @param string $operator    The SQL operator.
+	 * Only called once `comparison()` has checked the operator has SQL.
+	 *
+	 * @param string                   $engine The database engine.
+	 * @param RelatedRowBoundCondition $bound  The condition: field expression, placeholder name and operator.
 	 *
 	 * @return string The comparison.
 	 *
 	 * @throws InvalidArgumentException When the engine is unknown.
 	 */
-	private function numericComparison(string $engine, string $left, string $placeholder, string $operator): string {
+	private function numericComparison(string $engine, RelatedRowBoundCondition $bound): string {
+		$left        = $bound->left;
+		$placeholder = $bound->placeholder;
+		$operator    = self::SQL_OPERATORS[$bound->operator];
 		if ($engine === self::ENGINE_POSTGRES) {
 			return sprintf(
 				'(CASE WHEN %1$s ~ \'%3$s\' THEN (%1$s)::numeric %4$s :%2$s ELSE FALSE END)',
@@ -442,26 +454,24 @@ final class RelatedRowExistsClause {
 	/**
 	 * The expression for one property, in whichever storage holds it.
 	 *
-	 * @param string $engine  The database engine.
-	 * @param string $storage The storage shape.
-	 * @param string $alias   The related row's alias.
-	 * @param string $field   The property name.
+	 * @param RelatedRowSqlTarget $target The engine and storage shape.
+	 * @param RelatedRowField     $field  The row's alias and the property name.
 	 *
 	 * @return string The SQL expression.
 	 *
 	 * @throws InvalidArgumentException When the storage or engine is unknown.
 	 */
-	private function fieldExpression(string $engine, string $storage, string $alias, string $field): string {
-		if ($storage === self::STORAGE_COLUMNS) {
-			return sprintf('%s.%s', $alias, $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $field)));
+	private function fieldExpression(RelatedRowSqlTarget $target, RelatedRowField $field): string {
+		if ($target->storage === self::STORAGE_COLUMNS) {
+			return sprintf('%s.%s', $field->alias, $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $field->name)));
 		}
 
-		if ($storage === self::STORAGE_JSON) {
-			return $this->jsonField(engine: $engine, alias: $alias, field: $field);
+		if ($target->storage === self::STORAGE_JSON) {
+			return $this->jsonField(engine: $target->engine, field: $field);
 		}
 
 		throw new InvalidArgumentException(
-			sprintf('No related-row SQL for storage \'%s\'.', $storage)
+			sprintf('No related-row SQL for storage \'%s\'.', $target->storage)
 		);
 	}//end fieldExpression()
 
@@ -500,33 +510,30 @@ final class RelatedRowExistsClause {
 	 * Inverse (`_related`): the related row's property holds the object's uuid.
 	 * Forward (`_referenced`): the object's property holds the related row's uuid.
 	 *
-	 * @param RelatedRowFilter    $filter     The parsed filter.
-	 * @param RelatedRowSqlTarget $target     The engine, the storage shape and the alias of the object row.
-	 * @param string              $innerAlias The alias of the related row.
+	 * @param RelatedRowFilter   $filter   The parsed filter.
+	 * @param RelatedRowSubquery $subquery The engine, the storage shape, and the aliases of the object row and the related row.
 	 *
 	 * @return string The join condition.
 	 *
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	private function joinCondition(RelatedRowFilter $filter, RelatedRowSqlTarget $target, string $innerAlias): string {
-		$engine     = $target->engine;
-		$storage    = $target->storage;
-		$outerAlias = $target->outerAlias;
-		$uuid       = $this->metadataColumn(storage: $storage, name: 'uuid');
+	private function joinCondition(RelatedRowFilter $filter, RelatedRowSubquery $subquery): string {
+		$target = $subquery->target;
+		$uuid   = $this->metadataColumn(storage: $target->storage, name: 'uuid');
 
 		if ($filter->direction === RelatedRowFilter::DIRECTION_FORWARD) {
 			return sprintf(
 				'%s.%s = %s',
-				$innerAlias,
+				$subquery->inner->alias,
 				$uuid,
-				$this->fieldExpression(engine: $engine, storage: $storage, alias: $outerAlias, field: $filter->foreignKey)
+				$this->fieldExpression(target: $target, field: $subquery->outerField(name: $filter->foreignKey))
 			);
 		}
 
 		return sprintf(
 			'%s = %s.%s',
-			$this->fieldExpression(engine: $engine, storage: $storage, alias: $innerAlias, field: $filter->foreignKey),
-			$outerAlias,
+			$this->fieldExpression(target: $target, field: $subquery->innerField(name: $filter->foreignKey)),
+			$target->outerAlias,
 			$uuid
 		);
 	}//end joinCondition()
@@ -571,16 +578,16 @@ final class RelatedRowExistsClause {
 	 * string literal with the quotes doubled, because neither engine accepts a
 	 * placeholder inside a JSON path expression.
 	 *
-	 * @param string $engine The database engine.
-	 * @param string $alias  The related row's alias.
-	 * @param string $field  The property name.
+	 * @param string          $engine The database engine.
+	 * @param RelatedRowField $field  The row's alias and the property name.
 	 *
 	 * @return string The SQL expression, yielding text.
 	 *
 	 * @throws InvalidArgumentException When the engine is unknown.
 	 */
-	private function jsonField(string $engine, string $alias, string $field): string {
-		$safe = str_replace("'", "''", $field);
+	private function jsonField(string $engine, RelatedRowField $field): string {
+		$alias = $field->alias;
+		$safe  = str_replace("'", "''", $field->name);
 
 		if ($engine === self::ENGINE_POSTGRES) {
 			return sprintf("%s.object ->> '%s'", $alias, $safe);

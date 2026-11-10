@@ -56,8 +56,6 @@ interface ConsumerMapperInterface {
 	 * @param int|null $limit Maximum number of results to return
 	 * @param int|null $offset Number of results to skip
 	 * @param array|null $filters Associative array of filters
-	 * @param array|null $searchConditions Array of search conditions
-	 * @param array|null $searchParams Array of search parameters
 	 *
 	 * @return array An array of Consumer entities
 	 */
@@ -65,8 +63,6 @@ interface ConsumerMapperInterface {
 		?int $limit = null,
 		?int $offset = null,
 		?array $filters = [],
-		?array $searchConditions = [],
-		?array $searchParams = [],
 	): array;
 
 	/**

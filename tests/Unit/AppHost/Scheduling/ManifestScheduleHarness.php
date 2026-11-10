@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -43,10 +44,12 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorStores;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunStores;
@@ -408,7 +411,7 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$slugs = $this->createMock(RegisterSlugResolverInterface::class);
 		$slugs->method('slugOrNull')->willReturnCallback(fn () => $this->slugsAnswer);
 
-		return new ScheduleReleaseReader($objects, new ApplicationRegister($registers, $schemas, $slugs), $session);
+		return new ScheduleReleaseReader($objects, new ApplicationRegister(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), $slugs), $session);
 	}
 
 	/**
@@ -420,11 +423,9 @@ abstract class ManifestScheduleHarness extends TestCase {
 	 */
 	private function flowLocator(FlowMapper $flowMapper): FlowLocator {
 		return new FlowLocator(
-			$flowMapper,
-			$this->createMock(FlowTriggerMapper::class),
+			new FlowLocatorStores($flowMapper, $this->createMock(FlowTriggerMapper::class), $this->createMock(FlowVersionMapper::class)),
 			$this->createMock(ObjectOperationsInterface::class),
-			$this->logger,
-			$this->createMock(FlowVersionMapper::class)
+			$this->logger
 		);
 	}
 

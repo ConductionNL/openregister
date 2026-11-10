@@ -21,6 +21,8 @@ use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
 use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
+use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
 
 class ChatServiceTest extends TestCase {
 
@@ -300,7 +302,7 @@ class ChatServiceTest extends TestCase {
 		$this->conversationHandler
 			->expects($this->once())
 			->method('ensureUniqueTitle')
-			->with('Title', 'user1', 5)
+			->with(new TitleClaim(baseTitle: 'Title', userId: 'user1', agentId: 5))
 			->willReturn('Title (2)');
 
 		$result = $this->service->ensureUniqueTitle('Title', 'user1', 5);
@@ -368,9 +370,7 @@ class ChatServiceTest extends TestCase {
 			->method('generateResponse')
 			->willReturnCallback(function (
 				ChatMessageRequest $request,
-				array $context,
-				array $messageHistory,
-				$agent,
+				ReplyGrounding $grounding,
 			) use (&$capturedChannel): string {
 				$capturedChannel = $request->channel;
 				return 'AI says hello';
@@ -413,9 +413,7 @@ class ChatServiceTest extends TestCase {
 			->method('generateResponse')
 			->willReturnCallback(function (
 				ChatMessageRequest $request,
-				array $context,
-				array $messageHistory,
-				$agent,
+				ReplyGrounding $grounding,
 			) use (&$capturedChannel): string {
 				$capturedChannel = $request->channel;
 				return 'response';

@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationStores;
 use OCA\OpenRegister\Service\Relation\ProvenanceLink;
+use OCA\OpenRegister\Service\Relation\ProseMention;
 use OCA\OpenRegister\Service\Relation\RelationEndpoint;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -321,12 +322,11 @@ class ObjectRelationServiceTest extends TestCase {
 	public function testAProseReferenceWritesARowOnBothSides(): void {
 		$this->mapper->method('findByAnchor')->willReturn([]);
 
-		$rows = $this->service->recordProseReference(
-			source: new RelationEndpoint(uuid: 'uuid-a', register: 1, schema: 2),
+		$rows = $this->service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 'uuid-a', register: 1, schema: 2),
 			target: new RelationEndpoint(uuid: 'uuid-b', register: 1, schema: 3),
 			anchor: 'note-7',
 			relationType: 'noemt'
-		);
+		));
 
 		$this->assertCount(2, $rows);
 		$this->assertSame('uuid-a', $rows[0]->getSourceUuid());
@@ -348,11 +348,10 @@ class ObjectRelationServiceTest extends TestCase {
 		$existing->hydrate(['sourceUuid' => 'uuid-a', 'targetUuid' => 'uuid-b', 'anchor' => 'note-7']);
 		$this->mapper->method('findByAnchor')->willReturn([$existing]);
 
-		$this->assertSame([], $this->service->recordProseReference(
-			source: new RelationEndpoint(uuid: 'uuid-a'),
+		$this->assertSame([], $this->service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 'uuid-a'),
 			target: new RelationEndpoint(uuid: 'uuid-b'),
 			anchor: 'note-7'
-		));
+		)));
 		$this->assertSame([], $this->written);
 	}//end testTheSameMentionIsNotWrittenTwice()
 
@@ -360,11 +359,10 @@ class ObjectRelationServiceTest extends TestCase {
 	 * An object cannot mention itself into a relation with itself.
 	 */
 	public function testAnObjectDoesNotMentionItself(): void {
-		$this->assertSame([], $this->service->recordProseReference(
-			source: new RelationEndpoint(uuid: 'uuid-a'),
+		$this->assertSame([], $this->service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 'uuid-a'),
 			target: new RelationEndpoint(uuid: 'uuid-a'),
 			anchor: 'note-7'
-		));
+		)));
 	}//end testAnObjectDoesNotMentionItself()
 
 	/**

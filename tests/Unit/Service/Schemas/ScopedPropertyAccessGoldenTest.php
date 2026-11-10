@@ -29,6 +29,8 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
+use OCA\OpenRegister\Service\Schemas\ScopedField;
+use OCA\OpenRegister\Service\Schemas\ScopedPropertyCensus;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -162,8 +164,8 @@ class ScopedPropertyAccessGoldenTest extends TestCase {
 			]
 		);
 
-		$this->assertSame(2, $governance->countAtScope(schema: $schema, scope: 'team-a'));
-		$this->assertSame(1, $governance->countAtScope(schema: $schema, scope: 'team-a', except: 'b'));
+		$this->assertSame(2, $governance->countAtScope(schema: $schema, field: new ScopedField(property: '', scope: 'team-a')));
+		$this->assertSame(1, $governance->countAtScope(schema: $schema, field: new ScopedField(property: 'b', scope: 'team-a')));
 		$governance->assertBelowCeiling(schema: $schema, scope: 'team-a', property: 'b');
 		$governance->assertBelowCeiling(schema: $schema, scope: 'team-b', property: 'new');
 
@@ -193,7 +195,7 @@ class ScopedPropertyAccessGoldenTest extends TestCase {
 		);
 		$asOf   = new DateTimeImmutable('2026-01-02T03:04:05+00:00');
 
-		$report = $this->governance()->unusedReport(schema: $schema, counts: ['used' => 4, 'unused' => 0, 'plain' => 0], asOf: $asOf);
+		$report = $this->governance()->unusedReport(schema: $schema, census: new ScopedPropertyCensus(counts: ['used' => 4, 'unused' => 0, 'plain' => 0], asOf: $asOf));
 
 		$row = static fn (string $p, string $s, ?int $v, string $state): array => [
 			'property' => $p, 'scope' => $s, 'values' => $v, 'state' => $state,

@@ -43,7 +43,6 @@ class IntegrationRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter',
 				'OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator',
 				'OCA\OpenRegister\Service\Integration\PropertySemanticReferenceValidator',
-				'OCA\OpenRegister\Repair\LogDanglingLinkedTypes',
 				'OCA\OpenRegister\Service\Integration\LeafRegistry',
 				'OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider',
 				'OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider',

@@ -224,7 +224,7 @@ class MigrationPackService implements MigrationPackServiceInterface {
 		$this->validator->assertValid(definition: $definition);
 
 		$pack = $this->mapper->find(id: $id);
-		$this->assertUnchangedSince(pack: $pack, id: $id, expectedUpdatedAt: $expectedUpdatedAt);
+		$this->assertUnchangedSince(pack: $pack, expectedUpdatedAt: $expectedUpdatedAt);
 		$this->admitSlugChange(pack: $pack, slug: (string)$definition['id']);
 
 		$this->applyDefinition(pack: $pack, definition: $definition);
@@ -236,8 +236,7 @@ class MigrationPackService implements MigrationPackServiceInterface {
 	/**
 	 * Refuse an update when the pack was saved at another time than the caller read.
 	 *
-	 * @param MigrationPack $pack              The stored pack.
-	 * @param int           $id                The id the caller asked for.
+	 * @param MigrationPack $pack              The stored pack (found by the id the caller asked for).
 	 * @param int|null      $expectedUpdatedAt The `updatedAt` the caller read, as a Unix time, or null for no check.
 	 *
 	 * @return void
@@ -246,12 +245,12 @@ class MigrationPackService implements MigrationPackServiceInterface {
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
 	 */
-	private function assertUnchangedSince(MigrationPack $pack, int $id, ?int $expectedUpdatedAt): void {
+	private function assertUnchangedSince(MigrationPack $pack, ?int $expectedUpdatedAt): void {
 		if ($expectedUpdatedAt !== null
 			&& $pack->getUpdatedAt()?->getTimestamp() !== $expectedUpdatedAt
 		) {
 			throw new PackChangedException(
-				message: 'Migration pack ' . $id . ' was saved after ' . date(DATE_ATOM, $expectedUpdatedAt)
+				message: 'Migration pack ' . $pack->getId() . ' was saved after ' . date(DATE_ATOM, $expectedUpdatedAt)
 			);
 		}
 	}//end assertUnchangedSince()

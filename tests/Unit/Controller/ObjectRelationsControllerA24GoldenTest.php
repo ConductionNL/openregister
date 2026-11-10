@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
 use OCA\OpenRegister\Service\Relation\ProvenanceLink;
+use OCA\OpenRegister\Service\Relation\ProseMention;
 use OCA\OpenRegister\Service\Relation\RelationEndpoint;
 use OCA\OpenRegister\Service\Relation\ObjectTreeService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
@@ -284,7 +285,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 
 		$seen = $this->controller(params: ['target' => 'b', 'anchor' => 'p1', 'type' => 'mentions'], readable: ['a', 'b']);
 		$this->relations->expects($this->once())->method('recordProseReference')
-			->with(new RelationEndpoint('a', 3, 4), new RelationEndpoint('b', 3, 4), 'p1', 'mentions')
+			->with(new ProseMention(new RelationEndpoint('a', 3, 4), new RelationEndpoint('b', 3, 4), 'p1', 'mentions'))
 			->willReturn([$this->row(uuid: 'out'), $this->row(uuid: 'in')]);
 		$this->assertSame(
 			[

@@ -291,11 +291,6 @@
 			"eager": false,
 			"service": true
 		},
-		"OCA\\OpenRegister\\Service\\Vectorization\\Strategies\\VectorizationStrategyInterface": {
-			"class": "OCA\\OpenRegister\\Search\\Service\\Vectorization\\Strategies\\VectorizationStrategyInterface",
-			"eager": false,
-			"service": true
-		},
 		"OCA\\OpenRegister\\Service\\Vectorization\\VectorEmbeddings": {
 			"class": "OCA\\OpenRegister\\Search\\Service\\Vectorization\\VectorEmbeddings",
 			"eager": true,

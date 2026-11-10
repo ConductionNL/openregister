@@ -25,7 +25,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Service\Notification\AddressDeliveryServices;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferenceLookupServices;
+use OCA\OpenRegister\Service\Notification\ReferenceOrigin;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -134,12 +137,9 @@ class ReferencedAddressNotifierTest extends TestCase {
 	 */
 	private function notifier(): ReferencedAddressNotifier {
 		return new ReferencedAddressNotifier(
-			objects: $this->objects,
-			email: $this->email,
-			optOut: $this->optOut,
-			logger: $this->createMock(LoggerInterface::class),
-			schemas: $this->schemas,
-			refs: $this->refs
+			lookups: new ReferenceLookupServices(objects: $this->objects, schemas: $this->schemas, refs: $this->refs),
+			delivery: new AddressDeliveryServices(email: $this->email, optOut: $this->optOut),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end notifier()
 
@@ -249,10 +249,10 @@ class ReferencedAddressNotifierTest extends TestCase {
 		$object = $this->object('x-1', ['email' => 'a@example.org', 'supplier' => ['id' => 'sup-2']]);
 
 		$notifier = $this->notifier();
-		$this->assertSame('a@example.org', $notifier->resolveAddress(object: $object, data: $object->getObject(), path: 'email')['address']);
+		$this->assertSame('a@example.org', $notifier->resolveAddress(origin: new ReferenceOrigin(object: $object, data: $object->getObject()), path: 'email')['address']);
 		$this->assertSame(
 			'b@example.org',
-			$notifier->resolveAddress(object: $object, data: $object->getObject(), path: 'supplier.contactEmail', schema: $this->referencing(['supplier']))['address']
+			$notifier->resolveAddress(origin: new ReferenceOrigin(object: $object, data: $object->getObject(), schema: $this->referencing(['supplier'])), path: 'supplier.contactEmail')['address']
 		);
 	}//end testAPlainFieldAndAnObjectShapedReferenceBothResolve()
 
@@ -277,7 +277,7 @@ class ReferencedAddressNotifierTest extends TestCase {
 			'nothing' => ReferencedAddressNotifier::REASON_NO_REFERENCE,
 		];
 		foreach ($cases as $path => $reason) {
-			$resolved = $notifier->resolveAddress(object: $object, data: $object->getObject(), path: $path, schema: $schema);
+			$resolved = $notifier->resolveAddress(origin: new ReferenceOrigin(object: $object, data: $object->getObject(), schema: $schema), path: $path);
 			$this->assertNull($resolved['address'], $path);
 			$this->assertSame($reason, $resolved['reason'], $path);
 		}
@@ -286,8 +286,8 @@ class ReferencedAddressNotifierTest extends TestCase {
 		// any object may read a referenced object that has no organisation.
 		$this->store['global'] = $this->object('global', ['contactEmail' => 'g@example.org'], null);
 		$untenanted = $this->object('u', ['ref' => 'sup-other', 'glob' => 'global'], null);
-		$this->assertSame(ReferencedAddressNotifier::REASON_OTHER_TENANT, $notifier->resolveAddress(object: $untenanted, data: $untenanted->getObject(), path: 'ref.contactEmail', schema: $schema)['reason']);
-		$this->assertSame('g@example.org', $notifier->resolveAddress(object: $object, data: ['glob' => 'global'], path: 'glob.contactEmail', schema: $schema)['address']);
+		$this->assertSame(ReferencedAddressNotifier::REASON_OTHER_TENANT, $notifier->resolveAddress(origin: new ReferenceOrigin(object: $untenanted, data: $untenanted->getObject(), schema: $schema), path: 'ref.contactEmail')['reason']);
+		$this->assertSame('g@example.org', $notifier->resolveAddress(origin: new ReferenceOrigin(object: $object, data: ['glob' => 'global'], schema: $schema), path: 'glob.contactEmail')['address']);
 
 		$outcomes = $notifier->notify(
 			object: $object,
@@ -402,13 +402,13 @@ class ReferencedAddressNotifierTest extends TestCase {
 		$plain = $this->schema(['supplierRef' => ['type' => 'string', 'format' => 'uuid']]);
 		$this->assertSame(
 			ReferencedAddressNotifier::REASON_REFERENCE_NOT_FOUND,
-			$notifier->resolveAddress(object: $message, data: $message->getObject(), path: 'supplierRef.contactEmail', schema: $plain)['reason']
+			$notifier->resolveAddress(origin: new ReferenceOrigin(object: $message, data: $message->getObject(), schema: $plain), path: 'supplierRef.contactEmail')['reason']
 		);
 		$this->assertSame(
 			ReferencedAddressNotifier::REASON_REFERENCE_NOT_FOUND,
-			$notifier->resolveAddress(object: $message, data: $message->getObject(), path: 'supplierRef.contactEmail')['reason']
+			$notifier->resolveAddress(origin: new ReferenceOrigin(object: $message, data: $message->getObject()), path: 'supplierRef.contactEmail')['reason']
 		);
-		$this->assertNull($notifier->resolveAddress(object: $message, data: $message->getObject(), path: 'supplierRef.contactEmail', schema: $plain)['address']);
+		$this->assertNull($notifier->resolveAddress(origin: new ReferenceOrigin(object: $message, data: $message->getObject(), schema: $plain), path: 'supplierRef.contactEmail')['address']);
 	}//end testAReferencePropertyWithoutARefIsNotFollowed()
 
 	/**
@@ -425,12 +425,12 @@ class ReferencedAddressNotifierTest extends TestCase {
 		$schema = $this->referencing(['first']);
 
 		$ok = $this->object('m-1', ['first' => 'sup-1']);
-		$this->assertSame('deep@example.org', $notifier->resolveAddress(object: $ok, data: $ok->getObject(), path: 'first.next.contactEmail', schema: $schema)['address']);
+		$this->assertSame('deep@example.org', $notifier->resolveAddress(origin: new ReferenceOrigin(object: $ok, data: $ok->getObject(), schema: $schema), path: 'first.next.contactEmail')['address']);
 
 		$this->store['sup-1'] = $this->object('sup-1', ['next' => 'other']);
 		$this->assertSame(
 			ReferencedAddressNotifier::REASON_REFERENCE_NOT_FOUND,
-			$notifier->resolveAddress(object: $ok, data: $ok->getObject(), path: 'first.next.contactEmail', schema: $schema)['reason']
+			$notifier->resolveAddress(origin: new ReferenceOrigin(object: $ok, data: $ok->getObject(), schema: $schema), path: 'first.next.contactEmail')['reason']
 		);
 	}//end testEveryHopOfALongerPathIsCheckedAgainstItsOwnSchema()
 }//end class

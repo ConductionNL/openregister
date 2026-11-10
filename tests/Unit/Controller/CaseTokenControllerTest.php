@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\CaseTokenController;
+use OCA\OpenRegister\Controller\Support\CaseTokenControllerServices;
 use OCA\OpenRegister\Service\CaseTokenServiceInterface;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -65,9 +66,11 @@ class CaseTokenControllerTest extends TestCase {
 		$request->method('getRemoteAddress')->willReturn('192.0.2.7');
 		$this->controller = new CaseTokenController(
 			$request,
-			$this->tokens,
-			$this->throttler,
-			$this->createMock(LoggerInterface::class)
+			new CaseTokenControllerServices(
+				$this->tokens,
+				$this->throttler,
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end setUp()
 

@@ -48,6 +48,7 @@ use ReflectionClass;
 use ReflectionNamedType;
 use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepSources;
 use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepPlatform;
+use OCA\OpenRegister\Db\SchemaCatalog;
 
 class ViewAlertCountsTheViewQueryTest extends TestCase {
 
@@ -161,11 +162,7 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 	 * @return QueryHandler
 	 */
 	private function realQueryHandler(): QueryHandler {
-		$resolver = new SearchReferenceResolver(
-			$this->createMock(RegisterMapperInterface::class),
-			$this->createMock(SchemaMapperInterface::class),
-			new NullLogger()
-		);
+		$resolver = new SearchReferenceResolver(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->createMock(SchemaMapperInterface::class), tables: $this->createMock(MagicMapperInterface::class)), new NullLogger());
 
 		$args = [];
 		foreach ((new ReflectionClass(QueryHandler::class))->getConstructor()->getParameters() as $param) {

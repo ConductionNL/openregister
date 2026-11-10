@@ -18,7 +18,7 @@ final class ContentReportControllerFactory {
 	/**
 	 * The constructor arguments of ContentReportController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param ContentReportMapper $reports Constructor argument.
 	 * @param ContentReportService $service Constructor argument.
@@ -36,7 +36,6 @@ final class ContentReportControllerFactory {
 		\OCP\IUserSession $userSession,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ContentReportControllerServices(
 				reports: $reports,

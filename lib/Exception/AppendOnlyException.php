@@ -23,8 +23,6 @@
 
 namespace OCA\OpenRegister\Exception;
 
-use Throwable;
-
 /**
  * Exception thrown when an UPDATE or DELETE is attempted on an append-only schema.
  *
@@ -51,43 +49,25 @@ use Throwable;
 class AppendOnlyException extends \Exception {
 
 	/**
-	 * The schema slug or identifier that triggered this exception.
-	 *
-	 * @var string
-	 */
-	private readonly string $schemaIdentifier;
-
-	/**
-	 * The mutating operation that was rejected ('update' or 'delete').
-	 *
-	 * @var string
-	 */
-	private readonly string $operation;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param string $schemaIdentifier The schema slug, UUID, or ID
-	 * @param string $operation The rejected operation ('update' or 'delete')
-	 * @param Throwable|null $previous Previous exception
+	 * @param string $operation        The rejected operation ('update' or 'delete')
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-3
 	 */
 	public function __construct(
-		string $schemaIdentifier,
-		string $operation = 'update',
-		?Throwable $previous = null,
+		private readonly string $schemaIdentifier,
+		private readonly string $operation='update',
 	) {
-		$this->schemaIdentifier = $schemaIdentifier;
-		$this->operation = $operation;
-
-		$message = sprintf(
-			'SCHEMA_APPEND_ONLY: Schema "%s" is append-only; %s operations are not permitted.',
-			$schemaIdentifier,
-			$operation
+		parent::__construct(
+			message: sprintf(
+				'SCHEMA_APPEND_ONLY: Schema "%s" is append-only; %s operations are not permitted.',
+				$schemaIdentifier,
+				$operation
+			),
+			code: 405
 		);
-
-		parent::__construct(message: $message, code: 405, previous: $previous);
 	}//end __construct()
 
 	/**

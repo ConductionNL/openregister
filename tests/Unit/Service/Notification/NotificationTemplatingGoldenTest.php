@@ -27,6 +27,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 
 /**
  * Pins interpolate(), unanswered() and translatedValue() over a fixed corpus,
@@ -181,9 +182,9 @@ class NotificationTemplatingGoldenTest extends TestCase {
 			$out['interpolate-no-resolver'][$name] = $plain->interpolate($template, $data, $context);
 			$out['interpolate-no-context'][$name]  = $templating->interpolate($template, $data, []);
 			$out['interpolate-no-data'][$name]     = $templating->interpolate($template, [], $context, ['nl']);
-			$out['unanswered'][$name]              = $templating->unanswered($template, $data, $context);
-			$out['unanswered-empty'][$name]        = $templating->unanswered($template, [], []);
-			$out['unanswered-context'][$name]      = $templating->unanswered($template, [], $context);
+			$out['unanswered'][$name]              = $templating->unanswered($template, new PlaceholderValues($data, $context));
+			$out['unanswered-empty'][$name]        = $templating->unanswered($template, new PlaceholderValues([], []));
+			$out['unanswered-context'][$name]      = $templating->unanswered($template, new PlaceholderValues([], $context));
 		}
 
 		$out['find-calls'] = $calls;

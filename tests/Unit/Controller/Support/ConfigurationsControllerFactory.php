@@ -18,7 +18,6 @@ final class ConfigurationsControllerFactory {
 	/**
 	 * The constructor arguments of ConfigurationsController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param ConfigurationMapper $configurationMapper Constructor argument.
 	 * @param ConfigurationService $configurationService Constructor argument.
@@ -30,7 +29,6 @@ final class ConfigurationsControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Db\ConfigurationMapper $configurationMapper,
 		\OCA\OpenRegister\Service\ConfigurationService $configurationService,
@@ -40,7 +38,6 @@ final class ConfigurationsControllerFactory {
 		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ConfigurationsControllerServices(
 				configurationMapper: $configurationMapper,

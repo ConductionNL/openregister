@@ -78,33 +78,9 @@ class FlowRunGuard {
 	 */
 	private int $lastBeat = 0;
 
-	/**
-	 * The run being guarded.
-	 *
-	 * @var string
-	 */
-	private readonly string $runUuid;
 
-	/**
-	 * microtime(true) when the walk began.
-	 *
-	 * @var float
-	 */
-	private readonly float $startedAt;
 
-	/**
-	 * Seconds the whole run may take; 0 disables.
-	 *
-	 * @var integer
-	 */
-	private readonly int $budget;
 
-	/**
-	 * Seconds between liveness writes.
-	 *
-	 * @var integer
-	 */
-	private readonly int $minInterval;
 
 	/**
 	 * Constructor.
@@ -116,12 +92,8 @@ class FlowRunGuard {
 	public function __construct(
 		private readonly FlowRunMapperInterface $mapper,
 		private readonly LoggerInterface $logger,
-		FlowRunGuardClock $clock,
+		private readonly FlowRunGuardClock $clock,
 	) {
-		$this->runUuid     = $clock->runUuid;
-		$this->startedAt   = $clock->startedAt;
-		$this->budget      = $clock->budget;
-		$this->minInterval = $clock->minInterval;
 	}//end __construct()
 
 	/**
@@ -130,7 +102,7 @@ class FlowRunGuard {
 	 * @return float The elapsed time.
 	 */
 	public function elapsed(): float {
-		return (microtime(true) - $this->startedAt);
+		return (microtime(true) - $this->clock->startedAt);
 	}//end elapsed()
 
 	/**
@@ -139,13 +111,13 @@ class FlowRunGuard {
 	 * @return boolean True when the deadline has passed.
 	 */
 	public function expired(): bool {
-		if ($this->budget <= 0) {
+		if ($this->clock->budget <= 0) {
 			// An operator who runs deliberately long flows can lift the ceiling
 			// rather than have real work killed. Nothing else switches it off.
 			return false;
 		}
 
-		return ($this->elapsed() >= (float)$this->budget);
+		return ($this->elapsed() >= (float)$this->clock->budget);
 	}//end expired()
 
 	/**
@@ -176,7 +148,7 @@ class FlowRunGuard {
 					'The run exceeded its maximum runtime of %d seconds (%s elapsed)%s. '
 					. 'Raise `maxRuntimeMinutes` on the flow, or the `flow_max_runtime_minutes` '
 					. 'instance setting, if this flow is meant to run this long.',
-					$this->budget,
+					$this->clock->budget,
 					number_format($this->elapsed(), 1),
 					$location
 				)
@@ -205,7 +177,7 @@ class FlowRunGuard {
 	 */
 	public function beat(): void {
 		$now = time();
-		if (($now - $this->lastBeat) < $this->minInterval) {
+		if (($now - $this->lastBeat) < $this->clock->minInterval) {
 			return;
 		}
 
@@ -215,14 +187,14 @@ class FlowRunGuard {
 		$this->lastBeat = $now;
 
 		try {
-			$this->mapper->touch(uuid: $this->runUuid, when: new DateTime());
+			$this->mapper->touch(uuid: $this->clock->runUuid, when: new DateTime());
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FlowRunGuard] Could not record a beat: ' . $e->getMessage(),
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'run' => $this->runUuid,
+					'run' => $this->clock->runUuid,
 				]
 			);
 		}

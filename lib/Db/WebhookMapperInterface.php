@@ -142,12 +142,11 @@ interface WebhookMapperInterface {
 	 *
 	 * @param Webhook $webhook Webhook to update
 	 * @param bool $success Was delivery successful
-	 * @param bool $incrementOnly Only increment counters, don't update timestamps
 	 *
 	 * @return Webhook
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
 	 *
 	 */
-	public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly = false): Webhook;
+	public function updateStatistics(Webhook $webhook, bool $success): Webhook;
 }//end interface

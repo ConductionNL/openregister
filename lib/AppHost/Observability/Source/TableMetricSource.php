@@ -100,16 +100,18 @@ class TableMetricSource implements MetricSourceInterface {
 		$labelDefaults = $source['labelDefaults'] ?? [];
 
 		try {
+			$count = new TableCount(table: $table, filter: ($source['filter'] ?? []));
 			if ($groupBy === []) {
-				$value = $this->countAll(table: $table, filter: $source['filter'] ?? []);
+				$value = $this->countAll(count: $count);
 				$samples = [['labels' => [], 'value' => $value]];
 				return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: $samples)];
 			}
 
+			$labels  = new TableLabels(columns: $groupBy, map: $labelMap, defaults: $labelDefaults);
 			$samples = [];
-			foreach ($this->countGrouped(table: $table, groupBy: $groupBy, filter: $source['filter'] ?? []) as $row) {
+			foreach ($this->countGrouped(count: $count, columns: $groupBy) as $row) {
 				$samples[] = [
-					'labels' => $this->labelsOf(row: $row, groupBy: $groupBy, labelMap: $labelMap, labelDefaults: $labelDefaults),
+					'labels' => $this->labelsOf(row: $row, labels: $labels),
 					'value' => (int)($row['cnt'] ?? 0),
 				];
 			}
@@ -127,17 +129,16 @@ class TableMetricSource implements MetricSourceInterface {
 	/**
 	 * COUNT(*) of the table with optional filters.
 	 *
-	 * @param string $table Allowlisted table name.
-	 * @param array<string, mixed> $filter Column filters.
+	 * @param TableCount $count The allowlisted table and its column filters.
 	 *
 	 * @return int
 	 *
 	 * @throws \OCP\DB\Exception On DB error.
 	 */
-	private function countAll(string $table, array $filter): int {
+	private function countAll(TableCount $count): int {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->func()->count('*', 'cnt'))->from($table);
-		$this->applyFilters(qb: $qb, filter: $filter);
+		$qb->select($qb->func()->count('*', 'cnt'))->from($count->table);
+		$this->applyFilters(qb: $qb, filter: $count->filter);
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
@@ -148,25 +149,24 @@ class TableMetricSource implements MetricSourceInterface {
 	/**
 	 * COUNT(*) GROUP BY the given columns, with optional filters.
 	 *
-	 * @param string $table Allowlisted table name.
-	 * @param string[] $groupBy Columns to group by.
-	 * @param array<string, mixed> $filter Column filters.
+	 * @param TableCount $count   The allowlisted table and its column filters.
+	 * @param string[]   $columns Columns to group by.
 	 *
 	 * @return array<int, array<string, mixed>> The grouped rows, each with its `cnt`.
 	 *
 	 * @throws \OCP\DB\Exception On DB error.
 	 */
-	private function countGrouped(string $table, array $groupBy, array $filter): array {
+	private function countGrouped(TableCount $count, array $columns): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'cnt'));
 
-		foreach ($groupBy as $column) {
+		foreach ($columns as $column) {
 			$this->assertColumn(column: (string)$column);
 			$qb->addSelect((string)$column)->addGroupBy((string)$column);
 		}
 
-		$qb->from($table);
-		$this->applyFilters(qb: $qb, filter: $filter);
+		$qb->from($count->table);
+		$this->applyFilters(qb: $qb, filter: $count->filter);
 
 		$result = $qb->executeQuery();
 		$rows = $result->fetchAll();
@@ -178,32 +178,30 @@ class TableMetricSource implements MetricSourceInterface {
 	 * The sample labels of one grouped row.
 	 *
 	 * @param array<string, mixed> $row One grouped row.
-	 * @param string[] $groupBy Columns grouped by.
-	 * @param array<string, string> $labelMap Column → label rename.
-	 * @param array<string, scalar> $labelDefaults Default value for NULL/empty columns.
+	 * @param TableLabels $labels The columns grouped by, the column → label rename and the defaults for NULL/empty columns.
 	 *
 	 * @return array<string, string>
 	 */
-	private function labelsOf(array $row, array $groupBy, array $labelMap, array $labelDefaults): array {
-		$labels = [];
-		foreach ($groupBy as $column) {
+	private function labelsOf(array $row, TableLabels $labels): array {
+		$out = [];
+		foreach ($labels->columns as $column) {
 			$column = (string)$column;
 			$raw = $row[$column] ?? null;
 
 			$value = $raw;
 			if ($raw === null || $raw === '') {
-				$value = ($labelDefaults[$column] ?? '');
+				$value = ($labels->defaults[$column] ?? '');
 			}
 
 			$labelKey = $column;
-			if (isset($labelMap[$column]) === true) {
-				$labelKey = (string)$labelMap[$column];
+			if (isset($labels->map[$column]) === true) {
+				$labelKey = (string)$labels->map[$column];
 			}
 
-			$labels[$labelKey] = (string)$value;
+			$out[$labelKey] = (string)$value;
 		}
 
-		return $labels;
+		return $out;
 	}//end labelsOf()
 
 	/**

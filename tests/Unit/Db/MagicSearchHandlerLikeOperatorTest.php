@@ -40,6 +40,8 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 
 /**
  * Locks `like` on the QueryBuilder path and the raw-SQL UNION path, for object
@@ -178,7 +180,7 @@ class MagicSearchHandlerLikeOperatorTest extends TestCase {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		$isPostgres = ($platformClass === PostgreSQL120Platform::class);
 
-		return $method->invoke($this->handler($platformClass), $query, $this->schema(), $this->connection(), $isPostgres);
+		return $method->invoke($this->handler($platformClass), new ConditionSqlRun(query: $query, table: new MagicReadTable(schema: $this->schema()), connection: $this->connection(), isPostgres: $isPostgres));
 	}//end unionObject()
 
 	/**
@@ -313,7 +315,7 @@ class MagicSearchHandlerLikeOperatorTest extends TestCase {
 	 */
 	public function testMetadataFilterOnRawSqlPath(): void {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildMetadataFilterConditionsSql');
-		$conditions = $method->invoke($this->handler(), ['@self' => ['name' => ['like' => 'demo']]], $this->connection(), true);
+		$conditions = $method->invoke($this->handler(), new ConditionSqlRun(query: ['@self' => ['name' => ['like' => 'demo']]], table: new MagicReadTable(schema: new Schema()), connection: $this->connection(), isPostgres: true));
 
 		$this->assertCount(1, $conditions);
 		$this->assertStringContainsString("ILIKE '%demo%'", $conditions[0]);

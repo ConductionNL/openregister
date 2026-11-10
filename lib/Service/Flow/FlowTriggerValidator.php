@@ -54,8 +54,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Service\Delegation\DelegationRequest;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -344,7 +346,9 @@ class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 		// reasoning that makes registry() return null rather than throw.
 		$delegation = $this->delegationService(savedBy: $savedBy, runAs: $runAs);
 
-		$verdict = $delegation->verdictFor(principal: $savedBy, actingAs: $runAs);
+		$verdict = $delegation->verdictFor(
+			request: new DelegationRequest(principal: $savedBy, actingAs: $runAs, scope: [], now: new DateTime())
+		);
 		if ($verdict->permitted === true) {
 			$config[self::CONFIG_DECLARED_BY] = $savedBy;
 
