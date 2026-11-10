@@ -37,6 +37,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 
 /**
  * Unit tests for RegistersController
@@ -1538,8 +1539,7 @@ class RegistersControllerTest extends TestCase {
 		$this->importService->expects($this->once())
 			->method('importFromJson')
 			->with(
-				$this->anything(),
-				$this->callback(fn ($register) => $register === null)
+				$this->callback(fn (ImportRequest $request): bool => $request->scope->register === null)
 			)
 			->willReturn(['created' => [], 'updated' => [], 'errors' => []]);
 
