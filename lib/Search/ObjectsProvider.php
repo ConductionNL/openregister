@@ -398,6 +398,8 @@ class ObjectsProvider implements IFilteringProvider {
 	 * @param ListQuery         $page    The requested page
 	 *
 	 * @return SearchResult
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SearchResult::paginated/complete is standard Nextcloud search pattern
 	 */
 	private function resultPage(array $entries, ListQuery $page): SearchResult {
 		if (count($entries) >= $page->limit) {
