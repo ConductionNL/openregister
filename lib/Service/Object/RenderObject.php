@@ -806,6 +806,7 @@ class RenderObject implements RenderObjectInterface {
 		// The trusted-internal-read bypass applies to property `authorization.read` and to
 		// decryption ONLY. The writeOnly strip deliberately does not consult it.
 		$pass = new RowRedaction();
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		$pass->applyGatedStrips = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
 
 		foreach ($rows as &$row) {
@@ -2971,6 +2972,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private static function stripsAuthorizedProperties(?Schema $schema, bool $rbac): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $rbac !== false
 			&& SystemOperationContext::isActive() === false
 			&& $schema !== null

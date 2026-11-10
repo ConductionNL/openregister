@@ -97,19 +97,18 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	/**
 	 * Check if the current user can read a specific property
 	 *
-	 * @param Schema $schema Schema containing property definition
-	 * @param string $property Property name to check
-	 * @param array $object Object data (for conditional matching)
+	 * @param SchemaProperty        $property The schema and the property name to check
+	 * @param PropertyAccessRequest $request  The object data (for conditional matching)
 	 *
 	 * @return bool True if user can read the property
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (property-level read authorization:
 	 *       evaluates the property's read rules against the current user's groups + object conditions)
 	 */
-	public function canReadProperty(Schema $schema, string $property, array $object): bool {
+	public function canReadProperty(SchemaProperty $property, PropertyAccessRequest $request): bool {
 		return $this->checkPropertyAccess(
-			rules: $this->actionRules(schema: $schema, property: $property)['read'] ?? [],
-			request: new PropertyAccessRequest(object: $object)
+			rules: $this->actionRules(schema: $property->schema, property: $property->name)['read'] ?? [],
+			request: $request
 		);
 	}//end canReadProperty()
 
@@ -236,7 +235,7 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	private function keepIfReadable(ProtectedPropertyRead $read): array {
 		$object = $read->object;
 		$property = $read->property;
-		if ($this->canReadProperty(schema: $read->schema, property: $property, object: $object) === false) {
+		if ($this->canReadProperty(property: new SchemaProperty(schema: $read->schema, name: $property), request: new PropertyAccessRequest(object: $object)) === false) {
 			unset($object[$property]);
 			$this->logger->debug(
 				message: '[PropertyRbacHandler] Filtered unreadable property',
@@ -503,7 +502,7 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 			return false;
 		}
 
-		return $this->canReadProperty(schema: $update->schema, property: $property, object: $stored) === false
+		return $this->canReadProperty(property: new SchemaProperty(schema: $update->schema, name: $property), request: new PropertyAccessRequest(object: $stored)) === false
 			|| $this->canUpdateProperty(
 				property: new SchemaProperty(schema: $update->schema, name: $property),
 				request: new PropertyAccessRequest(object: $stored)

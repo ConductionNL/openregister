@@ -38,6 +38,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use DateTime;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -271,7 +273,7 @@ final class ConflictReportTest extends TestCase {
 	public function testARestrictedPropertyConflictsWithoutShowingItself(): void {
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturnCallback(
-			static fn (Schema $schema, string $property, array $object): bool => ($property !== 'bsn')
+			static fn (SchemaProperty $read, PropertyAccessRequest $request): bool => ($read->name !== 'bsn')
 		);
 
 		$body = (new ConflictReport($rbac))->build(
@@ -358,7 +360,8 @@ final class ConflictReportTest extends TestCase {
 		$seen = [];
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturnCallback(
-			static function (Schema $schema, string $property, array $object) use (&$seen): bool {
+			static function (SchemaProperty $read, PropertyAccessRequest $request) use (&$seen): bool {
+				[$schema, $property, $object] = [$read->schema, $read->name, $request->object];
 				$seen[] = $object;
 				return true;
 			}

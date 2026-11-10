@@ -59,6 +59,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -809,7 +810,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			->onlyMethods(['grantedObjectUuids'])
 			->getMock();
 		$this->grants->method('grantedObjectUuids')->willReturn([$uuid => 31]);
-		$this->assertTrue($this->grants->isGranted(userId: 'anna', objectUuid: $uuid, action: 'update'), 'the control: the share carries update');
+		$this->assertTrue($this->grants->isGranted(lookup: new GrantLookup(userId: 'anna', objectUuid: $uuid), action: 'update'), 'the control: the share carries update');
 
 		$object = self::object(assignee: null);
 		$object->setUuid($uuid);
