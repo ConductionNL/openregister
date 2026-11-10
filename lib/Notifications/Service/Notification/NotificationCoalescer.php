@@ -122,18 +122,18 @@ class NotificationCoalescer {
 	 * fails — return true so a broken coalescer never silences
 	 * legitimate notifications.
 	 *
-	 * @param string $ruleId Stable rule identifier (annotation key).
-	 * @param string $recipient Recipient ID (uid, `__webhook__`, etc.).
+	 * @param CoalesceBucket            $bucket          The stable rule identifier (annotation key) and the
+	 *                                                   recipient ID (uid, `__webhook__`, etc.).
 	 * @param array<string, mixed>|null $perRuleOverride Optional `coalesce` block from the rule spec.
 	 *
 	 * @return bool True when the dispatch may proceed.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-9
 	 */
-	public function shouldDispatch(string $ruleId, string $recipient, ?array $perRuleOverride): bool {
+	public function shouldDispatch(CoalesceBucket $bucket, ?array $perRuleOverride): bool {
 		// No rule-level config = no coalescing for this rule; empty keys
 		// would lump unrelated rules together.
-		if ($this->isCoalescing(perRuleOverride: $perRuleOverride) === false || $ruleId === '' || $recipient === '') {
+		if ($this->isCoalescing(perRuleOverride: $perRuleOverride) === false || $bucket->ruleId === '' || $bucket->recipient === '') {
 			return true;
 		}
 
@@ -142,7 +142,7 @@ class NotificationCoalescer {
 			return true;
 		}
 
-		return $this->advance(bucket: new CoalesceBucket(ruleId: $ruleId, recipient: $recipient), rule: $rule);
+		return $this->advance(bucket: $bucket, rule: $rule);
 	}//end shouldDispatch()
 
 	/**

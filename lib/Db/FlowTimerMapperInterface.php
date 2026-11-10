@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -100,15 +101,14 @@ interface FlowTimerMapperInterface {
 	/**
 	 * Every timer bound to a subject, optionally restricted to a state set.
 	 *
-	 * @param string $subjectType The subject type.
-	 * @param string $subjectUuid The subject uuid.
-	 * @param array<int, string> $states Restrict to these states; empty means all.
+	 * @param TimerSubject       $subject The subject's type and uuid.
+	 * @param array<int, string> $states  Restrict to these states; empty means all.
 	 *
 	 * @return array<int, FlowTimer> The subject's timers, oldest first.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
-	public function findBySubject(string $subjectType, string $subjectUuid, array $states = []): array;
+	public function findBySubject(TimerSubject $subject, array $states = []): array;
 
 	/**
 	 * The OPEN timers a run terminality reaches: bound to the run as subject,

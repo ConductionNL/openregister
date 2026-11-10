@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -170,10 +171,10 @@ class SaveObjectFieldEncryptionTest extends TestCase {
 		$entity = new ObjectEntity();
 		$entity->setUuid('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 
-		$method = $this->reflection->getMethod('prepareObjectData');
+		$method = $this->reflection->getMethod('prepareCascadeData');
 		$method->setAccessible(true);
 
-		return $method->invokeArgs($this->saveObject, [$entity, $schema, $data]);
+		return $method->invokeArgs($this->saveObject, [CascadeRun::forObject(parent: $entity, data: $data), $schema]);
 	}
 
 	public function testFlaggedPropertyIsEncryptedBeforePersistence(): void {

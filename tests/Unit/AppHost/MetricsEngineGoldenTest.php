@@ -230,7 +230,7 @@ class MetricsEngineGoldenTest extends TestCase {
 				throw new RuntimeException('boom from '.$label);
 			}
 
-			return [MetricSample::single($descriptor->name, $descriptor->type, 'Help for '.$descriptor->name, strlen($descriptor->name), ['src' => $label])];
+			return [new MetricSample($descriptor->name, $descriptor->type, 'Help for '.$descriptor->name, [['labels' => ['src' => $label], 'value' => strlen($descriptor->name)]])];
 		});
 
 		return $source;

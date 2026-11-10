@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -246,18 +247,18 @@ class TimelineVisibilityServiceTest extends TestCase {
 	public function testMakingANotePublicIsAudited(): void {
 		$object = $this->object();
 		$this->auditTrailMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with(
+			->method('recordObjectEvent')
+			->with(AuditTrailEvents::matching([
 				$object,
 				TimelineVisibilityService::AUDIT_ACTION,
 				['noteId' => 42, 'from' => 'internal', 'to' => 'public']
-			);
+			]));
 
 		$this->assertTrue($this->service->auditNoteMove(object: $object, move: new NoteVisibilityMove(noteId: 42, from: 'internal', to: 'public')));
 	}
 
 	public function testAFlagThatDidNotMoveWritesNothing(): void {
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->assertFalse(
 			$this->service->auditNoteMove(object: $this->object(), move: new NoteVisibilityMove(noteId: 42, from: 'internal', to: 'internal'))
@@ -265,7 +266,7 @@ class TimelineVisibilityServiceTest extends TestCase {
 	}
 
 	public function testALostAuditEntryIsLoggedRatherThanThrown(): void {
-		$this->auditTrailMapper->method('createAuditTrailEntry')
+		$this->auditTrailMapper->method('recordObjectEvent')
 			->willThrowException(new \RuntimeException('trail unavailable'));
 		$this->logger->expects($this->once())->method('error');
 

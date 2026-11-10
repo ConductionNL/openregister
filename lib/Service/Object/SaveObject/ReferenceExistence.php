@@ -26,6 +26,7 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Exception\BrokenReference;
 use OCA\OpenRegister\Exception\CircularReferenceException;
+use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCA\OpenRegister\Exception\ReferenceCycle;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -260,16 +261,17 @@ final class ReferenceExistence {
 	}//end resolveRegister()
 
 	/**
-	 * Whether the referenced object exists; a missing one is refused, a failing lookup skips the check.
+	 * Whether the referenced object exists; a missing one and a failed lookup are refused, other errors skip the check.
 	 *
 	 * Soft-deleted objects count as nonexistent (`includeDeleted: false` is
 	 * pinned here, not left to the mapper default).
 	 *
 	 * @param ReferenceCheck $check The reference.
 	 *
-	 * @return bool True when found, false when the lookup itself failed.
+	 * @return bool True when found, false when another error skipped the check.
 	 *
 	 * @throws ReferenceValidationException When the reference resolves to no stored object.
+	 * @throws ObjectLookupFailedException When the store could not answer.
 	 */
 	private function objectFound(ReferenceCheck $check): bool {
 		try {
@@ -277,8 +279,10 @@ final class ReferenceExistence {
 			return true;
 		} catch (DoesNotExistException $e) {
 			$this->refuseMissing(check: $check, cause: $e);
+		} catch (ObjectLookupFailedException $e) {
+			throw $e;
 		} catch (Exception $e) {
-			// Errors other than non-existence (e.g. database errors) are logged, never blocking.
+			// Other errors (e.g. an unresolvable target) are logged, never blocking.
 			$this->events->logger->warning(
 				message: '[SaveObject] Reference validation lookup failed',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $check->propertyName, 'uuid' => $check->uuid, 'error' => $e->getMessage()]

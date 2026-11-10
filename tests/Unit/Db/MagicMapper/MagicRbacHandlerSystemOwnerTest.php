@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -224,11 +225,7 @@ class MagicRbacHandlerSystemOwnerTest extends TestCase {
 		$captured = [];
 		$qb = $this->mockQueryBuilder($captured);
 
-		$this->handler->applyRbacFilters(
-			qb: $qb,
-			schema: $this->schemaWithReadRule(),
-			action: 'read'
-		);
+		$this->handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->schemaWithReadRule()))->forAction('read'));
 
 		$this->assertContains(
 			't._owner=__system__',
@@ -257,11 +254,7 @@ class MagicRbacHandlerSystemOwnerTest extends TestCase {
 		$captured = [];
 		$qb = $this->mockQueryBuilder($captured);
 
-		$this->handler->applyRbacFilters(
-			qb: $qb,
-			schema: $this->schemaWithReadRule(),
-			action: 'read'
-		);
+		$this->handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->schemaWithReadRule()))->forAction('read'));
 
 		$this->assertNotContains(
 			't._owner=__system__',
@@ -286,11 +279,7 @@ class MagicRbacHandlerSystemOwnerTest extends TestCase {
 		$captured = [];
 		$qb = $this->mockQueryBuilder($captured);
 
-		$this->handler->applyRbacFilters(
-			qb: $qb,
-			schema: $this->schemaWithReadRule(),
-			action: 'read'
-		);
+		$this->handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->schemaWithReadRule()))->forAction('read'));
 
 		$this->assertNotContains(
 			't._owner=__system__',
@@ -317,11 +306,7 @@ class MagicRbacHandlerSystemOwnerTest extends TestCase {
 		$captured = [];
 		$qb = $this->mockQueryBuilder($captured);
 
-		$this->handler->applyRbacFilters(
-			qb: $qb,
-			schema: $this->schemaWithReadRule(),
-			action: 'read'
-		);
+		$this->handler->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->schemaWithReadRule()))->forAction('read'));
 
 		// No conditions captured at all - admin bypass returns immediately.
 		$this->assertSame(

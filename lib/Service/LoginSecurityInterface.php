@@ -44,15 +44,14 @@ interface LoginSecurityInterface extends SecurityHeadersInterface {
 	/**
 	 * Record a failed login attempt
 	 *
-	 * @param string $username  The username that failed authentication
-	 * @param string $ipAddress The IP address of the failed attempt
-	 * @param string $reason    The reason for login failure
+	 * @param FailedAttempt $attempt The username that failed authentication, the IP address of the failed
+	 *                               attempt and the reason for the failure (e.g. `invalid_credentials`).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
-	public function recordFailedLoginAttempt(string $username, string $ipAddress, string $reason = 'invalid_credentials'): void;
+	public function recordFailedLoginAttempt(FailedAttempt $attempt): void;
 
 	/**
 	 * Record a successful login attempt

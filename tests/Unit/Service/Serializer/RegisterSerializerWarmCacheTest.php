@@ -5,7 +5,7 @@
  *
  * expandSchemas() resolved every schema id through SchemaMapper::find() — one
  * query per register-schema pair (~1,200 on the dev instance) for a single
- * `_extend[]=schemas` page load. serializeMany() now warms the request cache
+ * `_extend[]=schemas` page load. serializePage() now warms the request cache
  * with one batched lookup first.
  *
  * SPDX-License-Identifier: EUPL-1.2

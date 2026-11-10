@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\TaskImport;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskState;
 use Psr\Container\ContainerInterface;
@@ -141,20 +142,19 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	/**
 	 * Why a filled task cannot be written, or '': refusal(), then the run it names and its claim.
 	 *
-	 * @param array<string, mixed> $data    The filled task fields.
-	 * @param array<int, string>   $users   The account ids the set creates or adopts.
+	 * @param FilledRow            $row     The filled task fields and the account ids the set creates or adopts.
 	 * @param array<string, mixed> $context The fill context, with the fragment's flows.
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
 	 */
-	protected function refusalIn(array $data, array $users, array $context): string {
+	protected function refusalIn(FilledRow $row, array $context): string {
 		return $this->firstOf(
 			reasons: [
-				$this->refusal(data: $data, users: $users),
-				(new ExampleSetFlowRuns(container: $this->container))->taskRefusal(data: $data, context: $context),
-				$this->claimRefusal(data: $data),
+				$this->refusal(data: $row->data, users: $row->users),
+				(new ExampleSetFlowRuns(container: $this->container))->taskRefusal(data: $row->data, context: $context),
+				$this->claimRefusal(data: $row->data),
 			]
 		);
 	}//end refusalIn()
@@ -265,7 +265,9 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	private function import(ExampleSetRow $row, array $fields): Task {
 		$data = $row->data;
 		$actor = $this->actor(app: $row->app, data: $data);
-		$task = $this->service()->import(data: $fields, actor: $actor, createdAt: ExampleSetTaskDates::moment(value: ($data['createdAt'] ?? null)));
+		$task = $this->service()->importTask(
+			import: new TaskImport(data: $fields, actor: $actor, createdAt: ExampleSetTaskDates::moment(value: ($data['createdAt'] ?? null)))
+		);
 		$this->complete(task: $task, data: $data);
 		$this->waitAndClaim(task: $task, data: $data);
 

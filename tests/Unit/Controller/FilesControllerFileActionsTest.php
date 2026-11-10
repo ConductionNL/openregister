@@ -535,8 +535,8 @@ class FilesControllerFileActionsTest extends TestCase {
 			]
 		);
 		$this->fileService->expects($this->once())
-			->method('copyFile')
-			->with($sourceObject, 42, $targetObject)
+			->method('copyAttachedFile')
+			->with(new FileTransfer($sourceObject, 42, $targetObject))
 			->willReturn($newFile);
 		$this->fileService->method('formatFile')->willReturn(['name' => 'copied.pdf']);
 
@@ -576,7 +576,7 @@ class FilesControllerFileActionsTest extends TestCase {
 			->method('setRegister')
 			->with($this->logicalOr('reg', 'other-register'));
 
-		$this->fileService->method('copyFile')->willReturn($newFile);
+		$this->fileService->method('copyAttachedFile')->willReturn($newFile);
 		$this->fileService->method('formatFile')->willReturn(['name' => 'cross.pdf']);
 
 		$response = $this->controller->copy('reg', 'sch', 'source-uuid', 42);
@@ -606,8 +606,8 @@ class FilesControllerFileActionsTest extends TestCase {
 			]
 		);
 
-		// copyFile must NOT be called when target is missing.
-		$this->fileService->expects($this->never())->method('copyFile');
+		// copyAttachedFile must NOT be called when target is missing.
+		$this->fileService->expects($this->never())->method('copyAttachedFile');
 
 		$response = $this->controller->copy('reg', 'sch', 'source-uuid', 42);
 

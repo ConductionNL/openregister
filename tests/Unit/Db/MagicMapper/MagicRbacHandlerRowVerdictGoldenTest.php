@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -133,8 +134,7 @@ class MagicRbacHandlerRowVerdictGoldenTest extends TestCase {
 	 */
 	private function rowVerdict(MagicRbacHandler $handler, Schema $schema, string $action, string $owner, ?array $rowAuth): bool {
 		return $handler->hasRowPermission(
-			schema: $schema,
-			action: $action,
+			ask: new RbacPermissionAsk(schema: $schema, action: $action),
 			row: $this->row($owner, ['title' => 'rij'], $rowAuth, 'cccccccc-0000-0000-0000-000000000001')
 		);
 	}//end rowVerdict()

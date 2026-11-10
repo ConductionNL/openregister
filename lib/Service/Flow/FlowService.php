@@ -137,12 +137,13 @@ class FlowService implements FlowServiceInterface {
 		}
 
 		return $this->definitions->mapper->findAllFlows(
-			app: $query->filters['app'] ?? null,
-			applicationSlug: $query->filters['applicationSlug'] ?? null,
-			organisation: $organisation,
-			enabled: $query->filters['enabled'] ?? null,
-			limit: $query->limit,
-			offset: ($query->offset ?? 0)
+			selection: new FlowSelection(
+				app: $query->filters['app'] ?? null,
+				applicationSlug: $query->filters['applicationSlug'] ?? null,
+				organisation: $organisation,
+				enabled: $query->filters['enabled'] ?? null
+			),
+			query: new ListQuery(limit: $query->limit, offset: ($query->offset ?? 0))
 		);
 	}//end listFlows()
 
@@ -772,12 +773,14 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function start(Flow $flow, FlowRunOptions $options): FlowRun {
-		$run = $this->dispatch->runner->queue(
+		$run = $this->dispatch->runner->queueRun(
 			flowId: (string)$flow->getUuid(),
-			subject: $options->subject,
-			trigger: $options->trigger,
-			context: $options->context,
-			user: $this->caller()->actingUser()
+			options: new FlowRunQueueOptions(
+				subject: $options->subject,
+				trigger: $options->trigger,
+				context: $options->context,
+				user: $this->caller()->actingUser()
+			)
 		);
 
 		if ($options->sync === false) {
