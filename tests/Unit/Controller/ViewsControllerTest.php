@@ -20,6 +20,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 
 class ViewsControllerTest extends TestCase {
 	private ViewsController $controller;
