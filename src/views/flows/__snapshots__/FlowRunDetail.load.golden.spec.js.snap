@@ -1,0 +1,153 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FlowRunDetail.load goes on with an empty run answer 1`] = `
+{
+  "actionError": "",
+  "activeTab": "steps",
+  "changed": [
+    {
+      "uuid": "o1",
+    },
+  ],
+  "flow": null,
+  "loading": false,
+  "names": {
+    "n.a": "Node A",
+  },
+  "run": null,
+  "tasks": [
+    {
+      "id": 1,
+      "runUuid": "run-1",
+    },
+  ],
+  "uuid": "run-1",
+  "versions": [],
+}
+`;
+
+exports[`FlowRunDetail.load leaves the panels empty when only the run can be read 1`] = `
+{
+  "actionError": "",
+  "activeTab": "steps",
+  "changed": [],
+  "flow": null,
+  "loading": false,
+  "names": {},
+  "run": {
+    "flowId": "flow-9",
+    "status": "done",
+    "uuid": "run-1",
+  },
+  "tasks": [],
+  "uuid": "run-1",
+  "versions": [],
+}
+`;
+
+exports[`FlowRunDetail.load reads the run, then its flow, versions, catalog, objects and tasks 1`] = `
+{
+  "actionError": "",
+  "activeTab": "steps",
+  "changed": [
+    {
+      "uuid": "o1",
+    },
+  ],
+  "flow": {
+    "id": "flow-9",
+    "name": "Enquiry",
+  },
+  "loading": false,
+  "names": {
+    "n.a": "Node A",
+  },
+  "run": {
+    "flowId": "flow-9",
+    "status": "done",
+    "uuid": "run-1",
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "runUuid": "run-1",
+    },
+  ],
+  "uuid": "run-1",
+  "versions": [
+    {
+      "version": 1,
+    },
+  ],
+}
+`;
+
+exports[`FlowRunDetail.load reads the run, then its flow, versions, catalog, objects and tasks 2`] = `
+[
+  [
+    "/gen/apps/openregister/api/flow-runs/run-1",
+  ],
+  [
+    "/gen/apps/openregister/api/flows/flow-9",
+    undefined,
+  ],
+  [
+    "/gen/apps/openregister/api/flows/flow-9/versions",
+    undefined,
+  ],
+  [
+    "/gen/apps/openregister/api/flow/node-catalog",
+    undefined,
+  ],
+  [
+    "/gen/apps/openregister/api/flow-runs/run-1/objects",
+    undefined,
+  ],
+  [
+    "/gen/apps/openregister/api/flow-tasks",
+    {
+      "params": {
+        "runUuid": "run-1",
+        "scope": "all",
+      },
+    },
+  ],
+]
+`;
+
+exports[`FlowRunDetail.load skips the flow and versions for a run without a flow 1`] = `
+{
+  "actionError": "",
+  "activeTab": "steps",
+  "changed": [
+    {
+      "uuid": "o1",
+    },
+  ],
+  "flow": null,
+  "loading": false,
+  "names": {
+    "n.a": "Node A",
+  },
+  "run": {
+    "uuid": "run-1",
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "runUuid": "run-1",
+    },
+  ],
+  "uuid": "run-1",
+  "versions": [],
+}
+`;
+
+exports[`FlowRunDetail.load skips the flow and versions for a run without a flow 2`] = `
+[
+  "/gen/apps/openregister/api/flow-runs/run-1",
+  "/gen/apps/openregister/api/flow/node-catalog",
+  "/gen/apps/openregister/api/flow-runs/run-1/objects",
+  "/gen/apps/openregister/api/flow-tasks",
+]
+`;
