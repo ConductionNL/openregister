@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Rbac\GrantRowsQuery;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -151,9 +153,10 @@ class ObjectGrantsController extends Controller {
 			return new JSONResponse(
 				$this->report->rowsFor(
 					object: $object,
-					registerRef: $this->objectService->getRegister(),
-					schemaRef: $this->objectService->getSchema(),
-					principalTypes: $types
+					query: new GrantRowsQuery(
+						table: new RegisterSchemaRef(register: $this->objectService->getRegister(), schema: $this->objectService->getSchema()),
+						principalTypes: $types
+					)
 				)
 			);
 		} catch (\Throwable $e) {
