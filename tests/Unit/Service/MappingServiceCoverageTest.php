@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Service\MappingKeyRewrite;
 use OCA\OpenRegister\Service\MappingService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -78,8 +79,7 @@ class MappingServiceCoverageTest extends TestCase {
 	public function testEncodeArrayKeysFlat(): void {
 		$result = $this->service->encodeArrayKeys(
 			['a.b' => 'value', 'c' => 'other'],
-			'.',
-			'&#46;'
+			new MappingKeyRewrite('.', '&#46;')
 		);
 
 		$this->assertArrayHasKey('a&#46;b', $result);
@@ -89,8 +89,7 @@ class MappingServiceCoverageTest extends TestCase {
 	public function testEncodeArrayKeysNested(): void {
 		$result = $this->service->encodeArrayKeys(
 			['parent' => ['child.key' => 'val']],
-			'.',
-			'&#46;'
+			new MappingKeyRewrite('.', '&#46;')
 		);
 
 		$this->assertArrayHasKey('child&#46;key', $result['parent']);
@@ -100,8 +99,7 @@ class MappingServiceCoverageTest extends TestCase {
 		// Empty nested arrays should not be recursed into
 		$result = $this->service->encodeArrayKeys(
 			['key' => []],
-			'.',
-			'&#46;'
+			new MappingKeyRewrite('.', '&#46;')
 		);
 
 		$this->assertSame([], $result['key']);

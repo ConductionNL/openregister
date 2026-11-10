@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\AuthenticationService;
 use OCA\OpenRegister\Service\AuthorizationService;
 use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
+use OCA\OpenRegister\Service\MappingKeyRewrite;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -1115,7 +1116,7 @@ class ServicesIntegrationTest extends TestCase {
 			'nested' => ['inner.key' => 'inner_value'],
 		];
 
-		$result = $service->encodeArrayKeys($input, '.', '_DOT_');
+		$result = $service->encodeArrayKeys($input, new MappingKeyRewrite('.', '_DOT_'));
 
 		$this->assertArrayHasKey('key_DOT_with_DOT_dots', $result);
 		$this->assertArrayHasKey('inner_DOT_key', $result['nested']);
