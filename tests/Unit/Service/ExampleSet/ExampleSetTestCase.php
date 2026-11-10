@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\Organisation;
@@ -1447,7 +1449,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function fileService(): FileService {
 		$service = $this->createMock(FileService::class);
 		$service->method('addFile')->willReturnCallback(
-			function (string $objectEntity, string $fileName, mixed $content, bool $share = false): File {
+			function (FileTarget $target, FileUpload $upload): File {
+				[$objectEntity, $fileName, $content, $share] = [(string) $target->object, $upload->fileName, $upload->content, $upload->share];
 				$id = (string) (count($this->files, COUNT_RECURSIVE) + 100);
 				$this->files[$objectEntity][$id] = ['name' => $fileName, 'shared' => $share, 'content' => (string) $content];
 				$file = $this->createMock(File::class);

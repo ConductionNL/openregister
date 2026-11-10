@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
@@ -275,7 +277,8 @@ class PortalTaskServiceBehaviourTest extends TestCase {
 		$this->files->expects($this->exactly(2))
 			->method('addFile')
 			->willReturnCallback(
-				function ($objectEntity, string $fileName, mixed $content, bool $share, array $tags, $schema, $register, $registerId) use (&$stream): File {
+				function (FileTarget $target, FileUpload $upload) use (&$stream): File {
+					[$objectEntity, $fileName, $content, $share, $tags, $registerId] = [$target->object, $upload->fileName, $upload->content, $upload->share, $upload->tags, $target->registerId];
 					$this->assertSame('case-7', $objectEntity);
 					$this->assertFalse($share);
 					$this->assertSame(['portal-task:t-1'], $tags);

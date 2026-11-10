@@ -39,6 +39,8 @@ namespace OCA\OpenRegister\Service\Portal;
 
 use DateTime;
 use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
@@ -486,12 +488,8 @@ class PortalTaskService implements PortalTaskServiceInterface {
 			$name = (string)$file['name'];
 			$content = $this->contentOf(file: $file);
 			$stored = $this->files->addFile(
-				objectEntity: (string)$task->getObjectUuid(),
-				fileName: $name,
-				content: $content,
-				share: false,
-				tags: [self::FILE_TAG_PREFIX . (string)$task->getUuid()],
-				registerId: $task->getRegisterId()
+				target: new FileTarget(object: (string)$task->getObjectUuid(), registerId: $task->getRegisterId()),
+				upload: new FileUpload(fileName: $name, content: $content, share: false, tags: [self::FILE_TAG_PREFIX . (string)$task->getUuid()])
 			);
 
 			if (is_resource($content) === true) {

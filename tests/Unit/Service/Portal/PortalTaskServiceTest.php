@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
 use OCA\OpenRegister\Service\Task\TaskAct;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
@@ -184,7 +186,10 @@ class PortalTaskServiceTest extends TestCase {
 		$this->openForRuns($task);
 		$this->files->expects($this->once())
 			->method('addFile')
-			->with('case-7', 'payslip.pdf', 'PDFBYTES', false, ['portal-task:t-1'], null, null, 3)
+			->with(
+				$this->callback(fn (FileTarget $target): bool => $target->object === 'case-7' && $target->registerId === 3),
+				$this->callback(fn (FileUpload $upload): bool => $upload->fileName === 'payslip.pdf' && $upload->content === 'PDFBYTES' && $upload->share === false && $upload->tags === ['portal-task:t-1'])
+			)
 			->willReturnCallback(
 				function (): File {
 					$this->trace[] = 'store';

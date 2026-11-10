@@ -33,6 +33,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -159,13 +161,7 @@ class FileActionsLifecycleIntegrationTest extends TestCase {
 	 */
 	public function testFullFileLifecycle(): void {
 		// 1. UPLOAD ----------------------------------------------------
-		$original = $this->fileService->addFile(
-			$this->sourceObject,
-			'lifecycle.txt',
-			'lifecycle initial content',
-			false,
-			['lifecycle']
-		);
+		$original = $this->fileService->addFile(new FileTarget($this->sourceObject), new FileUpload('lifecycle.txt', 'lifecycle initial content', false, ['lifecycle']));
 		$fileId = $original->getId();
 		$this->createdFileIds[] = $fileId;
 		$this->assertSame('lifecycle.txt', $original->getName());

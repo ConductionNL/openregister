@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Files\Service\File;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Exception\ObjectFolderConflictException;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCP\Files\File;
@@ -174,7 +176,10 @@ class ObjectFolderBrowser {
 			$fileName = $relative . '/' . $name;
 		}
 
-		$file = $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: $upload->content);
+		$file = $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $fileName, content: $upload->content, share: false)
+		);
 
 		return $this->describe(root: $root, node: $file);
 	}//end upload()

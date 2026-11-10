@@ -1409,42 +1409,18 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * Delegates to CreateFileHandler for single-responsibility file creation operations.
 	 *
-	 * @param ObjectEntity|string $objectEntity The object entity to add the file to.
-	 * @param string $fileName The name of the file to create.
-	 * @param string|resource $content File content: a byte string, or a readable stream resource.
-	 * @param bool $share Whether to create a share link for the file.
-	 * @param array $tags Optional array of tags to attach to the file.
-	 * @param int|string|Schema|null $_schema The register of the object to add the file to.
-	 * @param int|string|Register|null $_register The register of the object to add the file to.
-	 * @param int|string|null $registerId The registerId of the object to add the file to.
+	 * @param FileTarget $target The object (or its id) and, when the object does not name it, its register.
+	 * @param FileUpload $upload The file name, content, share toggle and tags.
 	 *
 	 * @return File The created file.
 	 *
 	 * @throws NotPermittedException If file creation fails due to permissions.
 	 * @throws Exception If file creation fails for other reasons.
 	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_schema and $_register stay in this fixed public signature; moved here from CreateFileHandler.
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
 	 */
-	public function addFile(
-		ObjectEntity|string $objectEntity,
-		string $fileName,
-		mixed $content,
-		bool $share = false,
-		array $tags = [],
-		int|string|Schema|null $_schema = null,
-		int|string|Register|null $_register = null,
-		int|string|null $registerId = null,
-	): File {
-		return $this->createFileHandler->addFile(
-			target: new FileTarget(object: $objectEntity, registerId: $registerId),
-			upload: new FileUpload(fileName: $fileName, content: $content, share: $share, tags: $tags)
-		);
+	public function addFile(FileTarget $target, FileUpload $upload): File {
+		return $this->createFileHandler->addFile(target: $target, upload: $upload);
 	}//end addFile()
 
 	/**
