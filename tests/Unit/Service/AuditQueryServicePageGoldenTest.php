@@ -34,6 +34,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\AuditQueryService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * Pins, over a small fixed store, which register/schema pairs each filter
@@ -180,7 +181,7 @@ class AuditQueryServicePageGoldenTest extends TestCase {
 	 */
 	private function page(array $filters, int $limit = 50, int $offset = 0): array {
 		$this->searches = [];
-		$page = $this->service()->query($filters, $limit, $offset);
+		$page = $this->service()->query(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
 		return [
 			'keys' => array_keys($page),
 			'ids' => array_column($page['entries'], 'id'),
@@ -256,7 +257,7 @@ class AuditQueryServicePageGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testEntryShape(): void {
-		$page = $this->service()->query(['registerId' => 'r1', 'schemaId' => 'zaak'], 1, 0);
+		$page = $this->service()->query(query: new ListQuery(limit: 1, offset: 0, filters: ['registerId' => 'r1', 'schemaId' => 'zaak']));
 		$this->assertSame(
 			[
 				'id' => 'r1-zaak-new',
