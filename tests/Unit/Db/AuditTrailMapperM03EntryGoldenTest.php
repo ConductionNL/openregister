@@ -4,7 +4,7 @@
  * Golden record of the AuditTrailMapper entry writers and per-object scopes the M03 lane reshapes.
  *
  * Pins the rows recordHardeningChange(), recordPurposeRefusal(),
- * createPartyQueryRefusalEntry() and recordSlugBackfill() write into the
+ * recordPartyQueryRefusal() and recordSlugBackfill() write into the
  * migrated table, with and without a session user, and what countObjectTrail()
  * and tombstoneObjectTrail() count and leave behind for every action scope:
  * allowed rows and refused (excluded) rows alike. Generated uuids and
@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
@@ -136,8 +137,8 @@ final class AuditTrailMapperM03EntryGoldenTest extends TestCase {
 			'hardening refused without reason' => fn (AuditTrailMapper $m) => $m->recordHardeningChange(new HardeningChange('session.ttl', 'a', 'b'), false),
 			'purpose minimal' => fn (AuditTrailMapper $m) => $m->recordPurposeRefusal(new PurposeRefusal('missing')),
 			'purpose full' => fn (AuditTrailMapper $m) => $m->recordPurposeRefusal(new PurposeRefusal('unknown', 'p-1', new AuditedObject(3, 4))),
-			'party minimal' => fn (AuditTrailMapper $m) => $m->createPartyQueryRefusalEntry('jan', 50, 400),
-			'party with schema' => fn (AuditTrailMapper $m) => $m->createPartyQueryRefusalEntry('', 0, 1, 9),
+			'party minimal' => fn (AuditTrailMapper $m) => $m->recordPartyQueryRefusal(new PartyQueryRefusal('jan', 50, 400)),
+			'party with schema' => fn (AuditTrailMapper $m) => $m->recordPartyQueryRefusal(new PartyQueryRefusal('', 0, 1, 9)),
 			'slug empty' => fn (AuditTrailMapper $m) => $m->recordSlugBackfill(new SlugBackfill([], ['filled' => 0])),
 			'slug some' => fn (AuditTrailMapper $m) => $m->recordSlugBackfill(new SlugBackfill([['uuid' => 'a', 'old' => null, 'new' => 'x'], ['new' => 'y']], ['filled' => 2], new AuditedObject(1, 2))),
 			'slug truncated' => fn (AuditTrailMapper $m) => $m->recordSlugBackfill(new SlugBackfill($changes, [], new AuditedObject(5))),

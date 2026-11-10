@@ -3148,36 +3148,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end refusalActor()
 
 	/**
-	 * Create one immutable, hash-chained audit record for a party query that
-	 * was refused for exceeding the administered cap.
-	 *
-	 * A refusal is the interesting event, not the search: proportionality is
-	 * the duty a functionaris gegevensbescherming asks about, and "who tried
-	 * to pull four hundred people out of the register" is the question the
-	 * trail has to answer. The entry carries no result, because there was
-	 * none — that is the point of a refusal rather than a truncation.
-	 *
-	 * The query text is recorded verbatim so the attempt can be read back.
-	 * It is a search term an authenticated caller typed, not a record about a
-	 * person, and the trail is already the instance's protected surface.
-	 *
-	 * @param string $query The query that was refused.
-	 * @param int $cap The administered maximum result count.
-	 * @param int $would How many parties the query would have matched.
-	 * @param int|null $schema Schema id searched, when the query named one.
-	 *
-	 * @return AuditTrail The persisted, hash-chained entry.
-	 *
-	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
-	 */
-	public function createPartyQueryRefusalEntry(string $query, int $cap, int $would, ?int $schema = null): AuditTrail {
-		return $this->recordPartyQueryRefusal(refusal: new PartyQueryRefusal(query: $query, cap: $cap, would: $would, schema: $schema));
-	}//end createPartyQueryRefusalEntry()
-
-	/**
 	 * Record a person query refused over the administered cap.
-	 *
-	 * The typed form of {@see createPartyQueryRefusalEntry()}, which keeps its signature for other apps.
 	 *
 	 * @param PartyQueryRefusal $refusal The query, the cap, the count it would have matched and the schema.
 	 *
