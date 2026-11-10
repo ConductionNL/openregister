@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 /**
  * Descriptor and list() of a link-table provider without a fallback: an object
  * without links has no rows, and a link table that cannot be read throws.
@@ -36,9 +37,7 @@ trait NcAppLinkRowsProvider {
 	/**
 	 * The rows linked to an object, one per link-table row.
 	 *
-	 * @param string              $register Register slug or numeric id.
-	 * @param string              $schema   Schema slug or numeric id.
-	 * @param string              $objectId Object uuid.
+	 * @param ObjectRef              $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters  Optional filters (unused by link-table providers).
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -47,8 +46,8 @@ trait NcAppLinkRowsProvider {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The IntegrationProvider contract fixes the signature.
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->rowsOf(objectId: $objectId);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->rowsOf(objectId: $ref->id);
 	}//end list()
 
 	/**

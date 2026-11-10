@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration;
 
 use OCA\OpenRegister\Exception\NotImplementedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Default starting point for concrete IntegrationProvider implementations.
@@ -108,9 +109,7 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 * providers can rely on this default; CRUD-capable providers
 	 * override.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Linked-thing id.
 	 *
 	 * @return array<string,mixed>
@@ -123,16 +122,14 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
 	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
 	 */
-	public function get(string $register, string $schema, string $objectId, string $entityId): array {
+	public function get(ObjectRef $ref, string $entityId): array {
 		throw $this->unsupported(operation: 'get');
 	}//end get()
 
 	/**
 	 * Create / attach a linked thing.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload New linked-thing fields.
 	 *
 	 * @return array<string,mixed>
@@ -145,16 +142,14 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
 	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
+	public function create(ObjectRef $ref, array $payload): array {
 		throw $this->unsupported(operation: 'create');
 	}//end create()
 
 	/**
 	 * Update a linked thing.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Linked-thing id.
 	 * @param array<string,mixed> $payload Update payload.
 	 *
@@ -168,16 +163,14 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
 	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
 	 */
-	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
+	public function update(ObjectRef $ref, string $entityId, array $payload): array {
 		throw $this->unsupported(operation: 'update');
 	}//end update()
 
 	/**
 	 * Delete / unlink a linked thing.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Linked-thing id.
 	 *
 	 * @return void
@@ -190,7 +183,7 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
 	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+	public function delete(ObjectRef $ref, string $entityId): void {
 		throw $this->unsupported(operation: 'delete');
 	}//end delete()
 

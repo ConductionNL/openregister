@@ -111,9 +111,7 @@ class DeckProvider extends AbstractIntegrationProvider {
 	/**
 	 * List deck cards linked to an OR object.
 	 *
-	 * @param string $register Register slug or numeric id (unused — link rows resolve scope).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Optional filters (currently ignored).
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -122,8 +120,8 @@ class DeckProvider extends AbstractIntegrationProvider {
 	 *
 	 * @spec openspec/specs/integration-deck/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->cardsOf(objectId: $objectId);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->cardsOf(objectId: $ref->id);
 	}//end list()
 
 	/**
@@ -148,9 +146,7 @@ class DeckProvider extends AbstractIntegrationProvider {
 	 *   - link existing — `{ cardId, registerId?, schemaId? }`
 	 *   - create new    — `{ boardId, stackId, title, description?, duedate?, registerId?, schemaId? }`
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload Card data (see method docblock).
 	 *
 	 * @return array<string,mixed>
@@ -159,8 +155,8 @@ class DeckProvider extends AbstractIntegrationProvider {
 	 *
 	 * @spec openspec/specs/integration-deck/spec.md
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		return $this->linkCardFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), payload: $payload);
+	public function create(ObjectRef $ref, array $payload): array {
+		return $this->linkCardFor(ref: $ref, payload: $payload);
 	}//end create()
 
 	/**
@@ -225,9 +221,7 @@ class DeckProvider extends AbstractIntegrationProvider {
 	/**
 	 * Unlink a Deck card. The card itself stays in Deck.
 	 *
-	 * @param string $register Register slug or numeric id (unused).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Deck card id (numeric).
 	 *
 	 * @return void
@@ -236,8 +230,8 @@ class DeckProvider extends AbstractIntegrationProvider {
 	 *
 	 * @spec openspec/specs/integration-deck/spec.md
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		$this->deckLinkService->unlinkCard($objectId, (int)$entityId);
+	public function delete(ObjectRef $ref, string $entityId): void {
+		$this->deckLinkService->unlinkCard($ref->id, (int)$entityId);
 	}//end delete()
 
 	/**
