@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -244,8 +245,7 @@ class SharedMasterDataServiceTest extends TestCase {
 
 		try {
 			$service->assertWritable(
-				table: SharedMasterDataService::REGISTERS,
-				id: 7,
+				row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: 7),
 				activeOrgUuids: [self::ORG_B]
 			);
 			$this->fail('A consumer write to shared master data must be refused.');
@@ -266,8 +266,7 @@ class SharedMasterDataServiceTest extends TestCase {
 		$service = $this->service(rowsByTable: $this->codeListSharedWithB());
 
 		$service->assertWritable(
-			table: SharedMasterDataService::REGISTERS,
-			id: 7,
+			row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: 7),
 			activeOrgUuids: [self::ORG_A]
 		);
 
@@ -283,8 +282,7 @@ class SharedMasterDataServiceTest extends TestCase {
 		$service = $this->service(rowsByTable: $this->codeListSharedWithB());
 
 		$service->assertWritable(
-			table: SharedMasterDataService::REGISTERS,
-			id: 7,
+			row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: 7),
 			activeOrgUuids: [self::ORG_C]
 		);
 
@@ -312,8 +310,7 @@ class SharedMasterDataServiceTest extends TestCase {
 		);
 
 		$service->assertWritable(
-			table: SharedMasterDataService::REGISTERS,
-			id: 7,
+			row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: 7),
 			activeOrgUuids: [self::ORG_A]
 		);
 
