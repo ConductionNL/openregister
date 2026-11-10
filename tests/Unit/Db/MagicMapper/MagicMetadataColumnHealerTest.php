@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCP\IConfig;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -387,12 +389,7 @@ class MagicMetadataColumnHealerTest extends TestCase {
 		$healer = $this->healer();
 		$this->assertSame(self::DRIFTED, $healer->missingFor(tableName: self::TABLE));
 
-		$conditions = $this->searchHandler(healer: $healer)->buildWhereConditionsSql(
-			query: ['_rbac' => false, '_multitenancy' => false],
-			schema: new Schema(),
-			registerId: 5,
-			tableName: self::TABLE
-		);
+		$conditions = $this->searchHandler(healer: $healer)->buildWhereClause(request: new WhereClauseRequest(query: ['_rbac' => false, '_multitenancy' => false], table: new MagicReadTable(schema: new Schema(), registerId: 5, tableName: self::TABLE)));
 
 		$sql = implode(' ', $conditions);
 		$this->assertStringNotContainsString('_archived', $sql);
@@ -404,12 +401,7 @@ class MagicMetadataColumnHealerTest extends TestCase {
 		$this->assertSame(['a', 'b'], $rows);
 
 		// The archived-only lens of a table without the column is empty, not every row.
-		$archivedOnly = $this->searchHandler(healer: $healer)->buildWhereConditionsSql(
-			query: ['_rbac' => false, '_multitenancy' => false, '_archived' => 'true'],
-			schema: new Schema(),
-			registerId: 5,
-			tableName: self::TABLE
-		);
+		$archivedOnly = $this->searchHandler(healer: $healer)->buildWhereClause(request: new WhereClauseRequest(query: ['_rbac' => false, '_multitenancy' => false, '_archived' => 'true'], table: new MagicReadTable(schema: new Schema(), registerId: 5, tableName: self::TABLE)));
 		$this->assertContains('1=0', $archivedOnly);
 	}//end testATableThatCannotBeHealedWarnsOnceAndStillLists()
 
@@ -420,12 +412,7 @@ class MagicMetadataColumnHealerTest extends TestCase {
 		$healer = $this->healer();
 		$healer->ensure(tableName: self::TABLE);
 
-		$conditions = $this->searchHandler(healer: $healer)->buildWhereConditionsSql(
-			query: ['_rbac' => false, '_multitenancy' => false],
-			schema: new Schema(),
-			registerId: 5,
-			tableName: self::TABLE
-		);
+		$conditions = $this->searchHandler(healer: $healer)->buildWhereClause(request: new WhereClauseRequest(query: ['_rbac' => false, '_multitenancy' => false], table: new MagicReadTable(schema: new Schema(), registerId: 5, tableName: self::TABLE)));
 
 		$this->assertContains('_archived IS NULL', $conditions);
 	}//end testACompleteTableKeepsTheArchivePredicate()

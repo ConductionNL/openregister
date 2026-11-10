@@ -47,6 +47,8 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
+use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -444,14 +446,14 @@ final class BulkJobExecutorTest extends TestCase {
 
 		$context = null;
 		$this->auditTrailMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (ObjectEntity $object, string $action, array $ctx = [], ?string $actorId = null, ?string $actorName = null) use (&$context) {
 					$context = ['action' => $action, 'context' => $ctx, 'actor' => $actorId];
 
 					return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
 				}
-			);
+			));
 
 		$this->executor()->processBatch($job, 25);
 

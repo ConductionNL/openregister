@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\BuiltinProviders;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use OCA\OpenRegister\Exception\NotImplementedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider;
 use OCP\IL10N;
 use OCP\SystemTag\ISystemTag;
@@ -91,7 +92,7 @@ class TagsProviderBehaviourTest extends TestCase {
 				['id' => '3', 'name' => 'urgent', 'visibility' => true, 'assignable' => true],
 				['id' => '4', 'name' => 'internal', 'visibility' => false, 'assignable' => false],
 			],
-			$this->provider()->list('r', 's', 'obj-1')
+			$this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'))
 		);
 	}//end testTheObjectsTagsAreListedWithTheirVisibility()
 
@@ -99,27 +100,27 @@ class TagsProviderBehaviourTest extends TestCase {
 		$this->objects->method('getTagIdsForObjects')->willReturn(['other' => ['1']]);
 		$this->tags->expects($this->never())->method('getTagsByIds');
 
-		$this->assertSame([], $this->provider()->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 	}//end testAnUntaggedObjectListsNothingWithoutLoadingTags()
 
 	public function testAnEmptyTagListAlsoListsNothing(): void {
 		$this->objects->method('getTagIdsForObjects')->willReturn(['obj-1' => []]);
 		$this->tags->expects($this->never())->method('getTagsByIds');
 
-		$this->assertSame([], $this->provider()->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 	}//end testAnEmptyTagListAlsoListsNothing()
 
 	public function testAFailingTagLookupListsNothing(): void {
 		$this->objects->method('getTagIdsForObjects')->willReturn(['obj-1' => ['3']]);
 		$this->tags->method('getTagsByIds')->willThrowException(new RuntimeException('tag gone'));
 
-		$this->assertSame([], $this->provider()->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 	}//end testAFailingTagLookupListsNothing()
 
 	public function testCreatingATagHereIsNotImplemented(): void {
 		$this->expectException(NotImplementedException::class);
 		$this->expectExceptionMessage('TagsProvider write path delegates to TagsController');
 
-		$this->provider()->create('r', 's', 'obj-1', ['name' => 'x']);
+		$this->provider()->create(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), ['name' => 'x']);
 	}//end testCreatingATagHereIsNotImplemented()
 }//end class

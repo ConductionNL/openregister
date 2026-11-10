@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroupManager;
@@ -135,7 +136,7 @@ class LockAuthorizationBehaviourTest extends TestCase {
 		$object->setOwner('alice');
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
 		$permissions->expects($this->once())->method('checkPermission')
-			->with($schema, 'update', null, 'alice', true, $object)
+			->with($schema, 'update', new PermissionCheckOptions(objectOwner: 'alice', object: $object), true)
 			->willThrowException(new RuntimeException('denied'));
 
 		$this->expectExceptionMessage('denied');

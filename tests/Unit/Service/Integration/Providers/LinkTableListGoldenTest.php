@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Db;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\Providers;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -141,7 +142,7 @@ class LinkTableListGoldenTest extends TestCase {
 			];
 			foreach ($scenarios as $label => [$installed, $links]) {
 				$this->markerCalls = [];
-				$rows = $this->provider($spec, $installed, $links)->list('r', 's', 'obj-1', ['q' => 1]);
+				$rows = $this->provider($spec, $installed, $links)->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), ['q' => 1]);
 				$seen[$name.', '.$label] = ['rows' => $rows, 'marker' => $this->markerCalls];
 			}
 		}

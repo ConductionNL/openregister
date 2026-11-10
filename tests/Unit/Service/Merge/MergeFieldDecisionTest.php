@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Merge;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -32,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
 use OCA\OpenRegister\Service\Merge\MergeReportingServices;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Merge\MergeSurvivorshipServices;
@@ -40,6 +43,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -252,13 +256,7 @@ class MergeFieldDecisionTest extends TestCase {
 			}
 		);
 
-		$this->service->executeMerge(
-			from: 'from-uuid',
-			into: 'into-uuid',
-			reason: 'same person, two intakes',
-			mergedBy: 'reviewer',
-			decisions: ['address' => 'from', 'phone' => 'into']
-		);
+		$this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'same person, two intakes', mergedBy: 'reviewer'), decisions: ['address' => 'from', 'phone' => 'into']);
 
 		$this->assertSame('Eikenlaan 4', $survivorPayload['address']);
 		$this->assertSame('020-2222222', $survivorPayload['phone']);
@@ -279,13 +277,7 @@ class MergeFieldDecisionTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObject');
 
 		try {
-			$this->service->executeMerge(
-				from: 'from-uuid',
-				into: 'into-uuid',
-				reason: 'same person',
-				mergedBy: 'reviewer',
-				decisions: ['address' => 'into']
-			);
+			$this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'same person', mergedBy: 'reviewer'), decisions: ['address' => 'into']);
 			$this->fail('an incomplete decision map should have been refused');
 		} catch (MergeDecisionException $e) {
 			$this->assertSame(422, $e->getCode());
@@ -307,13 +299,7 @@ class MergeFieldDecisionTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObject');
 
 		try {
-			$this->service->executeMerge(
-				from: 'from-uuid',
-				into: 'into-uuid',
-				reason: 'same person',
-				mergedBy: 'reviewer',
-				decisions: ['address' => 'into', 'phone' => 'from', 'iban' => 'from']
-			);
+			$this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'same person', mergedBy: 'reviewer'), decisions: ['address' => 'into', 'phone' => 'from', 'iban' => 'from']);
 			$this->fail('a map naming an unoffered property should have been refused');
 		} catch (MergeDecisionException $e) {
 			$this->assertContains('iban', $e->getProperties());
@@ -334,13 +320,7 @@ class MergeFieldDecisionTest extends TestCase {
 		$this->objectService->expects($this->never())->method('saveObject');
 
 		$this->expectException(MergeDecisionException::class);
-		$this->service->executeMerge(
-			from: 'from-uuid',
-			into: 'into-uuid',
-			reason: 'same person',
-			mergedBy: 'reviewer',
-			decisions: ['address' => 'Eikenlaan 4', 'phone' => 'into']
-		);
+		$this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'same person', mergedBy: 'reviewer'), decisions: ['address' => 'Eikenlaan 4', 'phone' => 'into']);
 	}//end testADecisionMustNameFromOrInto()
 
 	/**
@@ -378,12 +358,7 @@ class MergeFieldDecisionTest extends TestCase {
 			}
 		);
 
-		$this->service->executeMerge(
-			from: 'from-uuid',
-			into: 'into-uuid',
-			reason: 'same person',
-			mergedBy: 'reviewer'
-		);
+		$this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'same person', mergedBy: 'reviewer'));
 
 		$this->assertSame('Eikenlaan 14', $survivorPayload['address']);
 		$this->assertSame('020-2222222', $survivorPayload['phone']);
@@ -418,28 +393,23 @@ class MergeFieldDecisionTest extends TestCase {
 		$this->objectService->method('findAll')->willReturn([]);
 
 		$this->propertyRbac->method('canReadProperty')->willReturnCallback(
-			static fn (...$args): bool => (($args[1] ?? '') !== 'medicalNote')
+			static fn (SchemaProperty $read, PropertyAccessRequest $request): bool => ($read->name !== 'medicalNote')
 		);
 
 		$audited = [];
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			static function (...$args) use (&$audited): AuditTrail {
 				$subject = $args[0];
 				$audited[] = [(string)$subject->getUuid(), (string)$args[1], $args[2]];
 
 				return new AuditTrail();
 			}
-		);
+		));
 
 		$this->objectService->expects($this->never())->method('saveObject');
 
 		try {
-			$this->service->executeMerge(
-				from: 'from-uuid',
-				into: 'into-uuid',
-				reason: 'same person',
-				mergedBy: 'handler'
-			);
+			$this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'same person', mergedBy: 'handler'));
 			$this->fail('a merge touching an unreadable property should have been refused');
 		} catch (MergeNotFullyReadableException $e) {
 			$this->assertSame(403, $e->getCode());
@@ -480,7 +450,7 @@ class MergeFieldDecisionTest extends TestCase {
 		);
 		$this->objectService->method('findAll')->willReturn([]);
 		$this->propertyRbac->method('canReadProperty')->willReturnCallback(
-			static fn (...$args): bool => (($args[1] ?? '') !== 'medicalNote')
+			static fn (SchemaProperty $read, PropertyAccessRequest $request): bool => ($read->name !== 'medicalNote')
 		);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
@@ -498,12 +468,7 @@ class MergeFieldDecisionTest extends TestCase {
 			}
 		);
 
-		$operation = $this->service->executeMerge(
-			from: 'from-uuid',
-			into: 'into-uuid',
-			reason: 'same person',
-			mergedBy: 'handler'
-		);
+		$operation = $this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'same person', mergedBy: 'handler'));
 
 		$this->assertSame('into-uuid', $operation['mergedIntoUuid']);
 	}//end testAPairWithoutTheRestrictedPropertyStillMerges()
@@ -529,12 +494,12 @@ class MergeFieldDecisionTest extends TestCase {
 		);
 		$this->objectService->method('findAll')->willReturn([]);
 		$this->propertyRbac->method('canReadProperty')->willReturnCallback(
-			static fn (...$args): bool => (($args[2]['@self']['organisation'] ?? null) === 'org-a')
+			static fn (SchemaProperty $read, PropertyAccessRequest $request): bool => (($request->object['@self']['organisation'] ?? null) === 'org-a')
 		);
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturn(new AuditTrail());
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturn(new AuditTrail());
 		$this->objectService->expects($this->never())->method('saveObject');
 
 		$this->expectException(MergeNotFullyReadableException::class);
-		$this->service->executeMerge(from: 'from-uuid', into: 'into-uuid', reason: 'same person', mergedBy: 'handler');
+		$this->service->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'same person', mergedBy: 'handler'));
 	}//end testTheReadRuleIsAskedOfTheRecord()
 }//end class

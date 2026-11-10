@@ -75,14 +75,7 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 		$adapter = $this->findAllAdapter($captured, 3, 'sch');
 
 		$result = $adapter->findAll(
-			['limit' => 1, 'keep' => 'x', 'filters' => ['a' => 1]],
-			['b' => 2],
-			[7, 8],
-			20,
-			40,
-			['title' => 'asc'],
-			['owner'],
-			'term'
+			['limit' => 20, 'keep' => 'x', 'filters' => ['b' => 2], 'ids' => [7, 8], 'offset' => 40, 'sort' => ['title' => 'asc'], 'extend' => ['owner'], 'search' => 'term']
 		);
 
 		$this->assertSame(['r'], $result);
@@ -176,7 +169,7 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 
 		$adapter = new ObjectServiceMapperAdapter($service, 1, 10);
 
-		$this->assertSame($saved, $adapter->updateFromArray(7, ['b' => 3, 'c' => 4], true, true));
+		$this->assertSame($saved, $adapter->patchFromArray(7, ['b' => 3, 'c' => 4]));
 		$this->assertSame(['7', [], false, 1, 10, true, true, true, true], $findArgs);
 		$this->assertSame(WriteCause::LOOKUP, $cause);
 	}//end testPatchAllowedMergesOverTheExistingObject()
@@ -196,7 +189,7 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 		$this->expectException(ValidationException::class);
 		$this->expectExceptionMessage('Object "abc" not found or not accessible');
 
-		$adapter->updateFromArray('abc', ['b' => 3], true, true);
+		$adapter->patchFromArray('abc', ['b' => 3]);
 	}//end testPatchRefusedWhenTheScopedReadFindsNothing()
 
 	/**
@@ -214,6 +207,6 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 
 		$adapter = new ObjectServiceMapperAdapter($service, 2, 20);
 
-		$this->assertSame($saved, $adapter->updateFromArray(5, ['b' => 3, 'id' => 'ignored']));
+		$this->assertSame($saved, $adapter->replaceFromArray(5, ['b' => 3, 'id' => 'ignored']));
 	}//end testPutSavesWithoutReading()
 }//end class

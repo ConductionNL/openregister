@@ -28,7 +28,7 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
 
 /**
  * Resolves a fixed corpus of schema defaults, stored values, scopes and

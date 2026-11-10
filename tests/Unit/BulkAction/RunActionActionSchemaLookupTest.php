@@ -75,7 +75,7 @@ class RunActionActionSchemaLookupTest extends TestCase {
 				return new Schema();
 			}
 		);
-		$this->runner->method('check')->willReturn([]);
+		$this->runner->method('rehearse')->willReturn([]);
 
 		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'close'], commit: false, actor: null));
 
@@ -85,7 +85,7 @@ class RunActionActionSchemaLookupTest extends TestCase {
 
 	public function testAnUnreadableSchemaRefusesTheMember(): void {
 		$this->schemas->method('find')->willThrowException(new RuntimeException('gone'));
-		$this->runner->expects($this->never())->method('check');
+		$this->runner->expects($this->never())->method('rehearse');
 		$this->runner->expects($this->never())->method('run');
 
 		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'close'], commit: true, actor: null));
@@ -99,14 +99,14 @@ class RunActionActionSchemaLookupTest extends TestCase {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->expects($this->never())->method('runAs');
 		$seen = [];
-		$this->runner->method('target')->willReturnCallback(
-			function (ObjectEntity $object, Schema $schema, string $register, string $schemaRef) use (&$seen): \OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget {
-				$seen = [$register, $schemaRef];
-				return new \OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget($object, $schema, $register, $schemaRef);
-			}
-		);
 		$this->runner->expects($this->once())->method('run')
-			->with($this->anything(), 'close', ['note' => 'x'])
+			->with(
+				$this->callback(static function (\OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget $target) use (&$seen): bool {
+					$seen = [$target->subject()['register'], $target->subject()['schema']];
+					return true;
+				}),
+				new \OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest('close', ['note' => 'x'])
+			)
 			->willReturn(['status' => Http::STATUS_CONFLICT, 'body' => ['message' => 'already closed']]);
 		$action = new RunActionAction($this->runner, new BulkObjectAccess($objects, $this->schemas, new NullLogger()));
 
@@ -119,7 +119,7 @@ class RunActionActionSchemaLookupTest extends TestCase {
 
 	public function testAReadableSchemaIsNotRefused(): void {
 		$this->schemas->method('find')->willReturn(new Schema());
-		$this->runner->method('check')->willReturn(['refusal' => ['status' => Http::STATUS_FORBIDDEN, 'body' => ['message' => 'nope']]]);
+		$this->runner->method('rehearse')->willReturn(['refusal' => ['status' => Http::STATUS_FORBIDDEN, 'body' => ['message' => 'nope']]]);
 
 		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'close'], commit: false, actor: null));
 

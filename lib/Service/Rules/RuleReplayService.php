@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Rules;
 
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use Throwable;
 
@@ -101,30 +102,6 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 * Nothing is written by this call. It creates the job in the previewed
 	 * state with a per-object outcome, which the operator then commits through
 	 * the bulk job surface, or does not.
-	 *
-	 * @param Schema $schema The schema the rule is declared on.
-	 * @param string $ruleId The derived rule id.
-	 * @param array<string, mixed> $selection Either `{"ids": [...]}` or `{"query": {...}}`.
-	 * @param string $actorUid The actor's uid.
-	 * @param string|null $justification The reason the operator typed.
-	 * @param int|null $registerId The register the selection lives in.
-	 *
-	 * @return array<string, mixed> The previewed job, or the refusal.
-	 *
-	 * @throws RuleCeilingException When the selection is larger than the rule's ceiling.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md
-	 */
-	public function preview(Schema $schema, string $ruleId, array $selection, string $actorUid,
-		?string $justification = null, ?int $registerId = null): array {
-		$request = new RuleReplayRequest(ruleId: $ruleId, actorUid: $actorUid, justification: $justification);
-		return $this->previewReplay(request: $request, selection: new RuleReplaySelection(schema: $schema, registerId: $registerId, criteria: $selection));
-	}//end preview()
-
-	/**
-	 * Preview a replay of one rule over a selection of existing objects.
-	 *
-	 * Nothing is written by this call; see preview().
 	 *
 	 * @param RuleReplayRequest   $request   The rule, who asks and why.
 	 * @param RuleReplaySelection $selection The objects, and the schema and register they are scoped to.
@@ -213,11 +190,13 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 * @return BulkJob The job.
 	 */
 	private function createJob(RuleReplayRun $run): BulkJob {
-		return $this->jobs->create(
-			call: $run->actionCall(),
-			selection: $run->selection->forBulkJob(),
-			actorUid: $run->actorUid,
-			justification: $run->justification
+		return $this->jobs->createFromRequest(
+			request: new BulkJobRequest(
+				call: $run->actionCall(),
+				selection: $run->selection->forBulkJob(),
+				actorUid: $run->actorUid,
+				justification: $run->justification
+			)
 		);
 	}//end createJob()
 

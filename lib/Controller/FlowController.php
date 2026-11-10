@@ -66,6 +66,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\WorkflowEngine\IManager;
 use Throwable;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 
 /**
  * Catalog and CRUD endpoints for flows.
@@ -405,6 +406,11 @@ class FlowController extends Controller {
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md
 	 */
 	public function state(string $flowId): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		try {
 			$this->flows->find(uuid: $flowId);
 		} catch (DoesNotExistException $e) {
@@ -573,6 +579,11 @@ class FlowController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		$limit      = min(200, max(1, (int)$this->request->getParam('limit', 100)));
 		$offset     = max(0, (int)$this->request->getParam('offset', 0));
 		$appFilter  = $this->trimmedFilter(key: 'app');
@@ -897,6 +908,11 @@ class FlowController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(string $id): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		try {
 			$flow = $this->flows->find(uuid: $id);
 		} catch (DoesNotExistException $e) {
@@ -1391,15 +1407,17 @@ class FlowController extends Controller {
 		try {
 			$version = $this->flowVersionService->publish(
 				flow: $flow,
-				// From FlowAccess, which already holds the session — a second
-				// IUserSession here would push this constructor past the
-				// parameter limit for one string.
-				publishedBy: $this->access->currentUser()?->getUID(),
-				// The author may RAISE the derived verdict and never lower it.
-				// A refusal to call a removal minor is an
-				// UnexpectedValueException rather than a lifecycle refusal:
-				// the flow's state is fine, the request is not.
-				bump: $this->request->getParam('bump')
+				options: new FlowPublishOptions(
+					// From FlowAccess, which already holds the session — a second
+					// IUserSession here would push this constructor past the
+					// parameter limit for one string.
+					publishedBy: $this->access->currentUser()?->getUID(),
+					// The author may RAISE the derived verdict and never lower it.
+					// A refusal to call a removal minor is an
+					// UnexpectedValueException rather than a lifecycle refusal:
+					// the flow's state is fine, the request is not.
+					bump: $this->request->getParam('bump')
+				)
 			);
 		} catch (FlowLifecycleRefusedInterface $e) {
 			return $this->refusal(refusal: $e);

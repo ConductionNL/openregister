@@ -56,6 +56,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * Service for managing and executing scheduled report exports.
@@ -1043,14 +1044,28 @@ class ScheduledReportService implements ScheduledReportsInterface {
 
 		switch ($report->getFormat()) {
 			case 'csv':
-				$bytes = $this->exportService->exportToCsv(register: $register, schema: $schema, filters: $filters, currentUser: $owner);
+				$bytes = $this->exportService->exportToCsv(
+					request: new ObjectExportRequest(
+						register: $register,
+						schema: $schema,
+						filters: $filters,
+						currentUser: $owner,
+					)
+				);
 				return ['bytes' => $bytes, 'rowCount' => $this->countCsvRows(csv: $bytes)];
 			case 'pdf':
 				return $this->exportPdf(
 					query: new ScheduledReportExportQuery(register: $register, schema: $schema, filters: $filters, owner: $owner)
 				);
 			default:
-				$spreadsheet = $this->exportService->exportToExcel(register: $register, schema: $schema, filters: $filters, currentUser: $owner);
+				$spreadsheet = $this->exportService->exportToExcel(
+					request: new ObjectExportRequest(
+						register: $register,
+						schema: $schema,
+						filters: $filters,
+						currentUser: $owner,
+					)
+				);
 				return [
 					'bytes' => $this->spreadsheetToXlsxBytes(spreadsheet: $spreadsheet),
 					'rowCount' => $this->countSpreadsheetRows(spreadsheet: $spreadsheet),
@@ -1135,10 +1150,12 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 */
 	private function exportPdf(ScheduledReportExportQuery $query): array {
 		$bytes = $this->exportService->exportToPdf(
-			register: $query->register,
-			schema: $query->schema,
-			filters: $query->filters,
-			currentUser: $query->owner
+			request: new ObjectExportRequest(
+				register: $query->register,
+				schema: $query->schema,
+				filters: $query->filters,
+				currentUser: $query->owner,
+			),
 		);
 
 		return ['bytes' => $bytes, 'rowCount' => $this->bestEffortRowCount(query: $query)];
@@ -1156,10 +1173,12 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	private function bestEffortRowCount(ScheduledReportExportQuery $query): int {
 		try {
 			$spreadsheet = $this->exportService->exportToExcel(
-				register: $query->register,
-				schema: $query->schema,
-				filters: $query->filters,
-				currentUser: $query->owner
+				request: new ObjectExportRequest(
+					register: $query->register,
+					schema: $query->schema,
+					filters: $query->filters,
+					currentUser: $query->owner,
+				),
 			);
 			return $this->countSpreadsheetRows(spreadsheet: $spreadsheet);
 		} catch (\Throwable $e) {
