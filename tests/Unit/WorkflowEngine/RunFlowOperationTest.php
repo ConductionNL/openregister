@@ -38,6 +38,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * @covers \OCA\OpenRegister\WorkflowEngine\RunFlowOperation
@@ -81,9 +82,9 @@ final class RunFlowOperationTest extends TestCase {
 		$mapper->method('findAllFlows')->willReturnCallback(fn (): array => $this->flows);
 
 		$runner = $this->createMock(FlowRunServiceInterface::class);
-		$runner->method('queue')->willReturnCallback(
-			function (string $flowId, array $subject = [], string $trigger = 'manual', array $context = [], ?string $user = null) {
-				$this->queued[] = ['flowId' => $flowId, 'subject' => $subject, 'trigger' => $trigger, 'user' => $user];
+		$runner->method('queueRun')->willReturnCallback(
+			function (string $flowId, FlowRunQueueOptions $options) {
+				$this->queued[] = ['flowId' => $flowId, 'subject' => $options->subject, 'trigger' => $options->trigger, 'user' => $options->user];
 
 				return new \OCA\OpenRegister\Db\FlowRun();
 			}

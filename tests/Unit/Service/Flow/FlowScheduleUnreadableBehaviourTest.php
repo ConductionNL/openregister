@@ -54,14 +54,14 @@ class FlowScheduleUnreadableBehaviourTest extends TestCase {
 
 	public function testAnUnreadableBaselineNeverFires(): void {
 		$runs = $this->createMock(FlowRunServiceInterface::class);
-		$runs->expects(self::never())->method('queue');
+		$runs->expects(self::never())->method('queueRun');
 
 		self::assertSame([], $this->service($this->candidate('* * * * *', 'last tuesday-ish at noonish'), $runs)->fireDueFlows(new DateTimeImmutable('2026-12-02T06:03:00+00:00')));
 	}//end testAnUnreadableBaselineNeverFires()
 
 	public function testTheSameBaselineFiresWhenReadable(): void {
 		$runs = $this->createMock(FlowRunServiceInterface::class);
-		$runs->expects(self::once())->method('queue');
+		$runs->expects(self::once())->method('queueRun');
 
 		self::assertSame(['f1'], $this->service($this->candidate('* * * * *', '2026-12-02T05:00:00+00:00'), $runs)->fireDueFlows(new DateTimeImmutable('2026-12-02T06:03:00+00:00')));
 	}//end testTheSameBaselineFiresWhenReadable()

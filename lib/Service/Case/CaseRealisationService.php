@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\Task;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * Creates, reads and closes realisations.
@@ -280,16 +281,18 @@ class CaseRealisationService {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
 	private function realiseAsRun(CaseItem $item, string $actor): void {
-		$run = $this->runs->runs->queue(
+		$run = $this->runs->runs->queueRun(
 			flowId: self::flowOf(item: $item),
-			subject: [
-				'uuid' => (string)$item->getObjectUuid(),
-				'register' => (string)$item->getRegisterId(),
-				'schema' => (string)$item->getSchemaId(),
-			],
-			trigger: self::RUN_TRIGGER,
-			context: ['caseItem' => (string)$item->getUuid()],
-			user: $this->runUser(actor: $actor)
+			options: new FlowRunQueueOptions(
+				subject: [
+					'uuid' => (string)$item->getObjectUuid(),
+					'register' => (string)$item->getRegisterId(),
+					'schema' => (string)$item->getSchemaId(),
+				],
+				trigger: self::RUN_TRIGGER,
+				context: ['caseItem' => (string)$item->getUuid()],
+				user: $this->runUser(actor: $actor)
+			)
 		);
 		$item->setRealisationKind(CaseItem::REALISATION_RUN);
 		$item->setRealisationUuid($run->getUuid());
