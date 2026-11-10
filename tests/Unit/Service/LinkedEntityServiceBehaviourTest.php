@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Service\LinkedEntityIntegrations;
@@ -226,7 +227,7 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 		$this->magicMapper->method('find')->willReturn($object);
 		$this->schemaMapper->method('find')->with('7')->willReturn($schema);
 		$this->permissionHandler->expects($this->once())->method('checkPermission')
-			->with($this->identicalTo($schema), 'update', null, 'alice', true, $this->identicalTo($object));
+			->with($this->identicalTo($schema), 'update', new PermissionCheckOptions(objectOwner: 'alice', object: $object));
 		$this->magicMapper->expects($this->once())->method('update')->with($this->identicalTo($object));
 
 		$this->assertSame(['n-1', 'n-3'], $this->service()->removeLink('o-1', 'notes', 'n-2'));
