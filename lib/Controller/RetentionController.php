@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJobInterface;
 use OCA\OpenRegister\Controller\Support\DestructionListApproval;
 use OCA\OpenRegister\Controller\Support\RetentionControllerServices;
@@ -430,7 +431,7 @@ class RetentionController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
-			$this->retentionService->placeLegalHold($object, $reason, $this->ownerKeyParam());
+			$this->retentionService->placeHold($object, new HoldOrder($reason, $this->ownerKeyParam()));
 			$this->objectMapper->update($object);
 
 			// Create audit trail.
@@ -479,7 +480,7 @@ class RetentionController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
-			$this->retentionService->releaseLegalHold($object, $reason, $this->ownerKeyParam());
+			$this->retentionService->releaseHold($object, new HoldOrder($reason, $this->ownerKeyParam()));
 			$this->objectMapper->update($object);
 
 			// Create audit trail.

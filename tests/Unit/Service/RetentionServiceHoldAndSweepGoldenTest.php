@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\Service\DisposalSweep;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -91,9 +92,9 @@ class RetentionServiceHoldAndSweepGoldenTest extends TestCase {
 
 		$object = new ObjectEntity();
 		$object->setRetention([]);
-		$this->service->placeLegalHold($object, 'Bezwaar 12', 'matter-a');
-		$this->service->placeLegalHold($object, 'WOO-verzoek 7', 'matter-b');
-		$this->service->releaseLegalHold($object, 'Bezwaar afgehandeld', 'matter-a');
+		$this->service->placeHold($object, new HoldOrder('Bezwaar 12', 'matter-a'));
+		$this->service->placeHold($object, new HoldOrder('WOO-verzoek 7', 'matter-b'));
+		$this->service->releaseHold($object, new HoldOrder('Bezwaar afgehandeld', 'matter-a'));
 
 		$legalHold = $object->getRetention()['legalHold'];
 		$this->assertTrue($legalHold['active']);
@@ -111,9 +112,9 @@ class RetentionServiceHoldAndSweepGoldenTest extends TestCase {
 
 		$object = new ObjectEntity();
 		$object->setRetention([]);
-		$this->service->placeLegalHold($object, 'Bezwaar 12', 'matter-a');
-		$this->service->placeLegalHold($object, 'WOO-verzoek 7', 'matter-b');
-		$this->service->releaseLegalHold($object, 'Alles afgehandeld');
+		$this->service->placeHold($object, new HoldOrder('Bezwaar 12', 'matter-a'));
+		$this->service->placeHold($object, new HoldOrder('WOO-verzoek 7', 'matter-b'));
+		$this->service->releaseHold($object, new HoldOrder('Alles afgehandeld'));
 
 		$legalHold = $object->getRetention()['legalHold'];
 		$this->assertFalse($legalHold['active']);
@@ -131,7 +132,7 @@ class RetentionServiceHoldAndSweepGoldenTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setRetention(['archiefnominatie' => 'vernietigen']);
 
-		$this->assertSame($object, $this->service->releaseLegalHold($object, 'Niets', 'matter-a'));
+		$this->assertSame($object, $this->service->releaseHold($object, new HoldOrder('Niets', 'matter-a')));
 		$this->assertSame(['archiefnominatie' => 'vernietigen'], $object->getRetention());
 	}//end testAReleaseWithNothingHeldChangesNothing()
 

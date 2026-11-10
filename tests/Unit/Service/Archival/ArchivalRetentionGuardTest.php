@@ -155,7 +155,7 @@ class ArchivalRetentionGuardTest extends TestCase {
 
 	/**
 	 * A RELEASED HOLD DOES NOT REFUSE. `active: false` is the shape
-	 * `RetentionService::releaseLegalHold()` writes, and it must read as "may
+	 * `RetentionService::releaseHold()` writes, and it must read as "may
 	 * be erased" rather than as "there is a legalHold key, so hold it".
 	 *
 	 * @return void

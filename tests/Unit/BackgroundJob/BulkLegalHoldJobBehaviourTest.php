@@ -125,7 +125,7 @@ class BulkLegalHoldJobBehaviourTest extends TestCase {
 			->with('[BulkLegalHoldJob] Error: mapper unavailable', ['exception' => $failure]);
 
 		$retention = $this->createMock(RetentionServiceInterface::class);
-		$retention->expects($this->never())->method('placeLegalHold');
+		$retention->expects($this->never())->method('placeHold');
 
 		$requested = [];
 		$container = $this->createMock(ContainerInterface::class);
