@@ -54,6 +54,20 @@ use Psr\Log\LoggerInterface;
 class OasRbacAnnotator {
 
 	/**
+	 * The response an operation answers when the caller lacks the required group.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const FORBIDDEN_RESPONSE = [
+		'description' => 'Forbidden — user does not have the required group membership for this action',
+		'content' => [
+			'application/json' => [
+				'schema' => ['$ref' => '#/components/schemas/Error'],
+			],
+		],
+	];
+
+	/**
 	 * The block a schema is actually governed by.
 	 *
 	 * @var EffectiveAuthorization
@@ -211,36 +225,12 @@ class OasRbacAnnotator {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	public function applyRbacToOperation(array &$operation, array $groups): void {
-		// Admin always has access to every endpoint.
-		if (in_array('admin', $groups, true) === false) {
-			array_unshift($groups, 'admin');
-		}
+		$groups = $this->adminFirst(groups: $groups);
 
-		// Deduplicate while preserving order — admin first, then schema groups.
-		$groups = array_values(array_unique($groups));
-
-		// Build scope list as inline code fragments.
-		$scopeList = implode(
-			', ',
-			array_map(
-				static function (string $group): string {
-					return '`' . $group . '`';
-				},
-				$groups
-			)
-		);
-
-		$operation['description'] .= "\n\n**Required scopes:** " . $scopeList;
+		$operation['description'] .= "\n\n**Required scopes:** " . $this->scopeList(groups: $groups);
 
 		// Add 403 response.
-		$operation['responses']['403'] = [
-			'description' => 'Forbidden — user does not have the required group membership for this action',
-			'content' => [
-				'application/json' => [
-					'schema' => ['$ref' => '#/components/schemas/Error'],
-				],
-			],
-		];
+		$operation['responses']['403'] = self::FORBIDDEN_RESPONSE;
 
 		// Emit per-operation security requirement: oauth2 with the resolved
 		// scope set, OR basicAuth fallback. Two array entries = OR semantics
@@ -250,6 +240,42 @@ class OasRbacAnnotator {
 			['basicAuth' => []],
 		];
 	}//end applyRbacToOperation()
+
+	/**
+	 * The groups with admin first, each once.
+	 *
+	 * Admin always has access to every endpoint.
+	 *
+	 * @param array<int, string> $groups The schema's groups.
+	 *
+	 * @return array<int, string> Admin, then the schema groups, deduplicated in order.
+	 */
+	private function adminFirst(array $groups): array {
+		if (in_array('admin', $groups, true) === false) {
+			array_unshift($groups, 'admin');
+		}
+
+		return array_values(array_unique($groups));
+	}//end adminFirst()
+
+	/**
+	 * The groups as a list of inline code fragments.
+	 *
+	 * @param array<int, string> $groups The groups.
+	 *
+	 * @return string The list.
+	 */
+	private function scopeList(array $groups): string {
+		return implode(
+			', ',
+			array_map(
+				static function (string $group): string {
+					return '`' . $group . '`';
+				},
+				$groups
+			)
+		);
+	}//end scopeList()
 
 	/**
 	 * Whether this caller may be told that a property exists.
