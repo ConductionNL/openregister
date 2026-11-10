@@ -141,29 +141,35 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#2.1
 	 */
 	private function tierWinners(array $candidates, SurvivorshipRun $run): array {
-		$goldenRecord = [];
-		$provenance   = [];
-
+		$provenance = [];
 		foreach ($candidates as $attribute => $options) {
 			$winner = $this->pickWinner(options: $options, run: $run);
-			if ($winner === null) {
-				continue;
+			if ($winner !== null) {
+				$provenance[$attribute] = self::provenanceOf(winner: $winner);
 			}
-
-			$goldenRecord[$attribute] = $winner['value'];
-			$provenance[$attribute]   = [
-				'value' => $winner['value'],
-				'sourceSystem' => $winner['sourceSystem'],
-				'trustTier' => $winner['trustTier'],
-				'lastUpdated' => $winner['lastUpdated'],
-			];
 		}
 
 		return [
-			'goldenRecord' => $goldenRecord,
+			'goldenRecord' => array_map(static fn (array $entry): mixed => $entry['value'], $provenance),
 			'attributeProvenance' => $provenance,
 		];
 	}//end tierWinners()
+
+	/**
+	 * The provenance an attribute's winning candidate records.
+	 *
+	 * @param array<string, mixed> $winner The winning candidate.
+	 *
+	 * @return array{value: mixed, sourceSystem: mixed, trustTier: mixed, lastUpdated: mixed} The provenance.
+	 */
+	private static function provenanceOf(array $winner): array {
+		return [
+			'value' => $winner['value'],
+			'sourceSystem' => $winner['sourceSystem'],
+			'trustTier' => $winner['trustTier'],
+			'lastUpdated' => $winner['lastUpdated'],
+		];
+	}//end provenanceOf()
 
 	/**
 	 * The result with every override applied over the tier-selected values.
