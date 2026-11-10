@@ -26,8 +26,6 @@ namespace OCA\OpenRegister\Mcp\Tool;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\RegisterServiceInterface;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * Register Tool
@@ -48,26 +46,16 @@ use Psr\Log\LoggerInterface;
 class RegisterTool extends AbstractTool {
 
 	/**
-	 * Register service
-	 *
-	 * @var RegisterServiceInterface
-	 */
-	private RegisterServiceInterface $registerService;
-
-	/**
 	 * Constructor
 	 *
-	 * @param IUserSession $userSession User session service
-	 * @param LoggerInterface $logger Logger service
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
 	 * @param RegisterServiceInterface $registerService Register service
 	 */
 	public function __construct(
-		IUserSession $userSession,
-		LoggerInterface $logger,
-		RegisterServiceInterface $registerService,
+		ToolCallTrail $trail,
+		private readonly RegisterServiceInterface $registerService,
 	) {
-		parent::__construct(userSession: $userSession, logger: $logger);
-		$this->registerService = $registerService;
+		parent::__construct(trail: $trail);
 	}//end __construct()
 
 	/**

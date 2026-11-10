@@ -7,6 +7,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Mcp\Tool\RegisterTool;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -25,8 +26,7 @@ class RegisterToolTest extends TestCase {
 		$this->registerService = $this->createMock(RegisterService::class);
 
 		$this->tool = new RegisterTool(
-			$this->userSession,
-			$this->logger,
+			new ToolCallTrail($this->userSession, $this->logger),
 			$this->registerService
 		);
 
@@ -101,7 +101,7 @@ class RegisterToolTest extends TestCase {
 	public function testExecuteFunctionNoUserContext(): void {
 		$noUserSession = $this->createMock(IUserSession::class);
 		$noUserSession->method('getUser')->willReturn(null);
-		$tool = new RegisterTool($noUserSession, $this->logger, $this->registerService);
+		$tool = new RegisterTool(new ToolCallTrail($noUserSession, $this->logger), $this->registerService);
 
 		$result = $tool->executeFunction('list_registers', []);
 		$this->assertFalse($result['success']);
@@ -305,7 +305,7 @@ class RegisterToolTest extends TestCase {
 	public function testExecuteFunctionWithExplicitUserId(): void {
 		$noUserSession = $this->createMock(IUserSession::class);
 		$noUserSession->method('getUser')->willReturn(null);
-		$tool = new RegisterTool($noUserSession, $this->logger, $this->registerService);
+		$tool = new RegisterTool(new ToolCallTrail($noUserSession, $this->logger), $this->registerService);
 
 		$this->registerService->method('findAll')->willReturn([]);
 

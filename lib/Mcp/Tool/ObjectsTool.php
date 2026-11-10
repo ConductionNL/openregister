@@ -26,8 +26,6 @@ namespace OCA\OpenRegister\Mcp\Tool;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
 
@@ -50,26 +48,16 @@ use RuntimeException;
 class ObjectsTool extends AbstractTool {
 
 	/**
-	 * Object service
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private ObjectOperationsInterface $objectService;
-
-	/**
 	 * Constructor
 	 *
-	 * @param IUserSession $userSession User session service
-	 * @param LoggerInterface $logger Logger service
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
 	 * @param ObjectOperationsInterface $objectService Object service
 	 */
 	public function __construct(
-		IUserSession $userSession,
-		LoggerInterface $logger,
-		ObjectOperationsInterface $objectService,
+		ToolCallTrail $trail,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
-		parent::__construct(userSession: $userSession, logger: $logger);
-		$this->objectService = $objectService;
+		parent::__construct(trail: $trail);
 	}//end __construct()
 
 	/**

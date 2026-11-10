@@ -29,8 +29,6 @@ use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * ApplicationTool
@@ -45,26 +43,16 @@ use Psr\Log\LoggerInterface;
 class ApplicationTool extends AbstractTool implements ToolInterface {
 
 	/**
-	 * Application mapper for database operations
+	 * Constructor
 	 *
-	 * @var ApplicationMapperInterface
-	 */
-	private ApplicationMapperInterface $applicationMapper;
-
-	/**
-	 * ApplicationTool constructor
-	 *
+	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
 	 * @param ApplicationMapperInterface $applicationMapper Application mapper instance
-	 * @param IUserSession $userSession User session
-	 * @param LoggerInterface $logger Logger instance
 	 */
 	public function __construct(
-		ApplicationMapperInterface $applicationMapper,
-		IUserSession $userSession,
-		LoggerInterface $logger,
+		ToolCallTrail $trail,
+		private readonly ApplicationMapperInterface $applicationMapper,
 	) {
-		parent::__construct(userSession: $userSession, logger: $logger);
-		$this->applicationMapper = $applicationMapper;
+		parent::__construct(trail: $trail);
 	}//end __construct()
 
 	/**

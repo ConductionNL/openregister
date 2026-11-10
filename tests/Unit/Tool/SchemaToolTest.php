@@ -6,6 +6,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Mcp\Tool\SchemaTool;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -24,8 +25,7 @@ class SchemaToolTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
 		$this->tool = new SchemaTool(
-			$this->userSession,
-			$this->logger,
+			new ToolCallTrail($this->userSession, $this->logger),
 			$this->schemaMapper
 		);
 
@@ -114,7 +114,7 @@ class SchemaToolTest extends TestCase {
 	public function testExecuteFunctionNoUserContext(): void {
 		$noUserSession = $this->createMock(IUserSession::class);
 		$noUserSession->method('getUser')->willReturn(null);
-		$tool = new SchemaTool($noUserSession, $this->logger, $this->schemaMapper);
+		$tool = new SchemaTool(new ToolCallTrail($noUserSession, $this->logger), $this->schemaMapper);
 
 		$result = $tool->executeFunction('list_schemas', []);
 		$this->assertFalse($result['success']);
@@ -332,7 +332,7 @@ class SchemaToolTest extends TestCase {
 	public function testExecuteFunctionWithExplicitUserId(): void {
 		$noUserSession = $this->createMock(IUserSession::class);
 		$noUserSession->method('getUser')->willReturn(null);
-		$tool = new SchemaTool($noUserSession, $this->logger, $this->schemaMapper);
+		$tool = new SchemaTool(new ToolCallTrail($noUserSession, $this->logger), $this->schemaMapper);
 
 		$this->schemaMapper->method('findAll')->willReturn([]);
 
