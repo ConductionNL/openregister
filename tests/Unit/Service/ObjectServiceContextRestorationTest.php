@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
+use OCA\OpenRegister\Service\Object\ObjectListRequest;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -221,22 +222,8 @@ class ObjectServiceContextRestorationTest extends TestCase {
 		// Record the scope the service resolves for a LIST read. This is the
 		// assertion #3408 found missing everywhere.
 		$this->getHandler->method('findAll')->willReturnCallback(
-			function (
-				?int $limit = null,
-				?int $offset = null,
-				array $filters = [],
-				array $sort = [],
-				?string $search = null,
-				?array $_extend = [],
-				bool $files = false,
-				?string $uses = null,
-				?Register $register = null,
-				?Schema $schema = null,
-				?array $ids = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-			): array {
-				$this->findAllScope = ['register' => $register, 'schema' => $schema];
+			function (ObjectListRequest $request): array {
+				$this->findAllScope = ['register' => $request->scope->register, 'schema' => $request->scope->schema];
 				return [];
 			}
 		);

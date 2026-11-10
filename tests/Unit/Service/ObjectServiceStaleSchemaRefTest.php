@@ -283,7 +283,7 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 						(new \ReflectionMethod(GetObject::class, 'findAll'))->getParameters()
 					);
 					$named = array_combine(array_slice($names, 0, count($args)), $args);
-					$scope = [$named['register'] ?? null, $named['schema'] ?? null];
+					$scope = [$named['request']->scope->register, $named['request']->scope->schema];
 					return [];
 				}
 			);
