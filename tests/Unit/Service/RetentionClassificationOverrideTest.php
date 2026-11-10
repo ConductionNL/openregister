@@ -183,6 +183,16 @@ class RetentionClassificationOverrideTest extends TestCase {
 		$this->assertSame('1.1', (new ClassificationOverride())->effective(archive: ['classification' => '1.1'], data: ['selectielijstCategorie' => '2.3']));
 	}
 
+	public function testTheEffectiveCategoryFollowsTheAnnotationsCategoryProperty(): void {
+		$archive = ['classification' => '1.1'];
+		$configuration = ['x-openregister-archival' => ['categoryProperty' => 'categorie']];
+
+		$this->assertSame('2.3', (new ClassificationOverride())->effective(archive: $archive, data: ['categorie' => ' 2.3 '], configuration: $configuration));
+		$this->assertSame('1.1', (new ClassificationOverride())->effective(archive: $archive, data: ['categorie' => ''], configuration: $configuration));
+		$this->assertSame('1.1', (new ClassificationOverride())->effective(archive: $archive, data: ['categorie' => 23], configuration: $configuration));
+		$this->assertSame('1.1', (new ClassificationOverride())->effective(archive: $archive, data: ['categorie' => '2.3']));
+	}
+
 	public function testAnInvalidCategoryIsRefused(): void {
 		$this->expectException(ValidationException::class);
 		$this->expectExceptionMessage('9.9');
