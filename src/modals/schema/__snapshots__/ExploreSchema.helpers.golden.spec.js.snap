@@ -1,0 +1,149 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ExploreSchema issue lookups details a list of issues 1`] = `
+[
+  {
+    "description": "[Enum constraint is missing]",
+    "type": "enum",
+  },
+  {
+    "description": "[Property can be improved]",
+    "type": "general",
+  },
+]
+`;
+
+exports[`ExploreSchema issue lookups maps every issue type to a category and a description 1`] = `
+[
+  [
+    "type_mismatch",
+    "type",
+    "[Data type does not match observed values]",
+  ],
+  [
+    "missing_max_length",
+    "constraint",
+    "[Maximum length constraint is missing]",
+  ],
+  [
+    "max_length_too_small",
+    "constraint",
+    "[Maximum length is too restrictive]",
+  ],
+  [
+    "missing_format",
+    "format",
+    "[Format constraint is missing]",
+  ],
+  [
+    "missing_pattern",
+    "pattern",
+    "[Pattern constraint is missing]",
+  ],
+  [
+    "missing_minimum",
+    "constraint",
+    "[Minimum value constraint is missing]",
+  ],
+  [
+    "minimum_too_high",
+    "constraint",
+    "[Minimum value is too restrictive]",
+  ],
+  [
+    "missing_maximum",
+    "constraint",
+    "[Maximum value constraint is missing]",
+  ],
+  [
+    "maximum_too_low",
+    "constraint",
+    "[Maximum value is too restrictive]",
+  ],
+  [
+    "inconsistent_required",
+    "behavior",
+    "[Required status is inconsistent]",
+  ],
+  [
+    "missing_enum",
+    "enum",
+    "[Enum constraint is missing]",
+  ],
+  [
+    "something_else",
+    "general",
+    "[Property can be improved]",
+  ],
+  [
+    "toString",
+    [Function],
+    [Function],
+  ],
+]
+`;
+
+exports[`ExploreSchema.formatOptions lists the common formats when none was detected 1`] = `
+[
+  {
+    "key": "none",
+    "label": "None",
+    "value": "",
+  },
+  {
+    "key": "date",
+    "label": "Date (YYYY-MM-DD)",
+    "value": "date",
+  },
+  {
+    "key": "date-time",
+    "label": "Date Time (ISO 8601)",
+    "value": "date-time",
+  },
+  {
+    "key": "time",
+    "label": "Time (HH:MM:SS)",
+    "value": "time",
+  },
+  {
+    "key": "email",
+    "label": "Email",
+    "value": "email",
+  },
+  {
+    "key": "url",
+    "label": "URL",
+    "value": "url",
+  },
+  {
+    "key": "uuid",
+    "label": "UUID",
+    "value": "uuid",
+  },
+  {
+    "key": "hostname",
+    "label": "Hostname",
+    "value": "hostname",
+  },
+  {
+    "key": "color",
+    "label": "Color (Hex)",
+    "value": "color",
+  },
+]
+`;
+
+exports[`ExploreSchema.updateSchema request posts only the selected properties, then refreshes and closes 1`] = `
+[
+  [
+    "/index.php/apps/openregister/api/schemas/7/update-from-exploration",
+    {
+      "body": "{"properties":{"name":{"type":"string","title":"Name","description":"The name","required":true,"facetable":false},"age":{"type":"integer","title":"Age"}}}",
+      "headers": {
+        "Content-Type": "application/json",
+      },
+      "method": "POST",
+    },
+  ],
+]
+`;

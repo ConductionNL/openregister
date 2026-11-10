@@ -101,8 +101,7 @@ abstract class ExampleSetEngineRows {
 	 * Why a filled row cannot be written in this run, or ''; a kind that checks a row against the set's objects or
 	 * cast overrides this, every other kind answers refusal().
 	 *
-	 * @param array<string, mixed> $data    The filled fields.
-	 * @param array<int, string>   $users   The account ids the set creates or adopts.
+	 * @param FilledRow            $row     The filled fields and the account ids the set creates or adopts.
 	 * @param array<string, mixed> $context The context placeholders draw on: `objects`, `cast`, `today`.
 	 *
 	 * @return string
@@ -111,8 +110,8 @@ abstract class ExampleSetEngineRows {
 	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
-	protected function refusalIn(array $data, array $users, array $context): string {
-		return $this->refusal(data: $data, users: $users);
+	protected function refusalIn(FilledRow $row, array $context): string {
+		return $this->refusal(data: $row->data, users: $row->users);
 	}//end refusalIn()
 
 	/**
@@ -350,7 +349,7 @@ abstract class ExampleSetEngineRows {
 			value: $entry['data'],
 			scope: new ExampleSetFillScope(context: $this->fillContext(context: $check->context), gaps: $gaps)
 		);
-		$why  = $this->refusalIn(data: $data, users: $check->users, context: $check->context);
+		$why  = $this->refusalIn(row: new FilledRow(data: $data, users: $check->users), context: $check->context);
 		if ($gaps !== []) {
 			return 'cannot resolve '.implode(', ', array_unique($gaps));
 		}

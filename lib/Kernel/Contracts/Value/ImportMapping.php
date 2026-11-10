@@ -8,8 +8,8 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @category Service
- * @package  OCA\OpenRegister\Service\Import
+ * @category Contract
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,7 +24,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Import;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
  * How imported rows are mapped, and whether they are saved (ADR-011 Rule 2).

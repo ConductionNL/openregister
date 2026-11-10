@@ -83,6 +83,10 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskDelegation;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskResolution;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick;
 
 /**
  * REST surface for the fleet-generic task.
@@ -558,7 +562,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function offer(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): TaskInterface => $this->tasks->offer(uuid: $uuid, pool: $this->body(), actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->offer(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), pool: $this->body()),
 			uuid: $uuid
 		);
 	}//end offer()
@@ -613,7 +617,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function assign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): TaskInterface => $this->tasks->assign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->assign(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), assignee: $assignee),
 			uuid: $uuid
 		);
 	}//end assign()
@@ -632,7 +636,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function reassign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): TaskInterface => $this->tasks->reassign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->reassign(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), assignee: $assignee),
 			uuid: $uuid
 		);
 	}//end reassign()
@@ -652,7 +656,10 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function delegate(string $uuid, string $delegate = '', string $mandate = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): TaskInterface => $this->tasks->delegate(uuid: $uuid, delegate: $delegate, mandate: $mandate, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->delegate(
+				ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()),
+				delegation: new TaskDelegation(delegate: $delegate, mandate: $mandate),
+			),
 			uuid: $uuid
 		);
 	}//end delegate()
@@ -672,7 +679,10 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function resolve(string $uuid, ?string $resultText = null, ?string $comment = null): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): TaskInterface => $this->tasks->resolve(uuid: $uuid, resultText: $resultText, comment: $comment, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->resolve(
+				ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()),
+				resolution: new TaskResolution(resultText: $resultText, comment: $comment),
+			),
 			uuid: $uuid
 		);
 	}//end resolve()
@@ -749,7 +759,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function cancel(string $uuid, ?string $reason = null): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): TaskInterface => $this->tasks->cancel(uuid: $uuid, reason: $reason, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->cancel(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), reason: $reason),
 			uuid: $uuid
 		);
 	}//end cancel()
@@ -771,7 +781,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function edit(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): TaskInterface => $this->tasks->edit(uuid: $uuid, changes: $this->body(), actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->edit(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), changes: $this->body()),
 			uuid: $uuid
 		);
 	}//end edit()
@@ -794,7 +804,10 @@ class TaskController extends Controller {
 		$value = filter_var($checked, FILTER_VALIDATE_BOOLEAN);
 
 		return $this->respondWith(
-			verb: fn (): TaskInterface => $this->tasks->checkChecklistItem(uuid: $uuid, itemId: $itemId, checked: $value, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->checkChecklistItem(
+				ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()),
+				tick: new ChecklistTick(itemId: $itemId, checked: $value),
+			),
 			uuid: $uuid
 		);
 	}//end checkItem()

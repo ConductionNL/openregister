@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCP\App\IAppManager;
@@ -75,7 +76,7 @@ class MessageDispatchGoldenTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		$provider = new MessageDispatchProvider(new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($router, $this->createMock(IAppManager::class), $l10n), $logger);
-		$result   = $provider->dispatch(...$args);
+		$result   = $provider->dispatch($args[0], new OutboundMessage(path: $args[2], body: $args[1], headers: ($args[3] ?? [])));
 
 		return [
 			'result'   => $result,

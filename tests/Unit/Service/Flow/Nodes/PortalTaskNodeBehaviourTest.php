@@ -44,7 +44,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
-use OCA\OpenRegister\Service\Flow\TaskAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode

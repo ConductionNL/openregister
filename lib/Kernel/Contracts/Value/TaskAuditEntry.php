@@ -6,8 +6,8 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister\Service\Flow
+ * @category Contract
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Flow;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
  * The task, the audited action, the acting identity and what is recorded.

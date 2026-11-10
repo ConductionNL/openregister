@@ -62,9 +62,7 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	/**
 	 * Copy a file to another object.
 	 *
-	 * @param ObjectEntity $sourceObject The source object entity.
-	 * @param int $fileId The source file ID.
-	 * @param ObjectEntity $targetObject The target object entity.
+	 * @param FileTransfer $transfer The source object, the source file ID and the target object.
 	 *
 	 * @return File The new file copy.
 	 *
@@ -72,7 +70,7 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File;
+	public function copyAttachedFile(FileTransfer $transfer): File;
 
 	/**
 	 * Create a ZIP archive containing all files for a specific object.
