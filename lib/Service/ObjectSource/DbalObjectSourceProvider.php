@@ -476,18 +476,10 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function aggregate(
-		Register $register,
-		Schema $schema,
-		string $metric,
-		?string $field,
-		array $filter,
-		?array $groupBy,
-		?array $dateBucket,
-		array $config = [],
+		Register $register, Schema $schema, string $metric, ?string $field, array $filter, ?array $groupBy, ?array $dateBucket, array $config=[]
 	): ?array {
 		$shape   = new DbalAggregationShape(groupBy: $groupBy, dateBucket: $dateBucket);
 		$request = new DbalMetricRequest(metric: $metric, field: $field, filter: $filter, shape: $shape);
-
 		return $this->aggregateMetric(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config), request: $request);
 	}//end aggregate()
 
@@ -500,8 +492,10 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @return array{value: int|float|null}|array{groups: array<int, array{key: mixed, value: int|float|null}>}|null
 	 *
 	 * @throws DbalObjectSourceException On an unreachable DB (503) or query error (502).
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function aggregateMetric(DbalObjectRef $ref, DbalMetricRequest $request): ?array {
+	public function aggregateMetric(DbalObjectRef $ref, DbalMetricRequest $request): ?array {
 		if (in_array($request->metric, ['count', 'sum', 'avg', 'min', 'max'], true) === false) {
 			return null;
 		}
