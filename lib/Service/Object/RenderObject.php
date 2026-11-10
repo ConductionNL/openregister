@@ -1536,7 +1536,14 @@ class RenderObject implements RenderObjectInterface {
 		try {
 			$this->hydrateFilesOf(entity: $entity);
 		} catch (Exception $e) {
-			// Log error but don't break rendering - just return original entity.
+			// Rendering goes on with the entity as it is.
+			$this->runtime->logger->warning(
+				message: '[RenderObject] Could not render the file properties',
+				context: [
+					'uuid' => $entity->getUuid(),
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 
 		return $entity;
@@ -1847,7 +1854,14 @@ class RenderObject implements RenderObjectInterface {
 				$entity->setImage(self::fileUrlOf(value: $value));
 			}
 		} catch (\Exception $e) {
-			// Log error but don't break rendering - just return original entity.
+			// Rendering goes on with the entity as it is.
+			$this->runtime->logger->warning(
+				message: '[RenderObject] Could not hydrate the image metadata from file properties',
+				context: [
+					'uuid' => $entity->getUuid(),
+					'exception' => $e->getMessage(),
+				]
+			);
 		}//end try
 
 		return $entity;

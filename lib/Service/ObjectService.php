@@ -3641,6 +3641,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             throw $e;
         } catch (Exception $e) {
             // A missing object or any other error: let SaveObject handle the creation.
+            $this->logger->debug(
+                message: '[ObjectService] Folder binding not re-validated, object not loadable',
+                context: [
+                    'uuid' => $uuid,
+                    'exception' => $e->getMessage(),
+                ]
+            );
         }//end try
     }//end revalidateFolderBinding()
 
@@ -5491,6 +5498,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 $schemas[] = $schema->jsonSerialize();
             } catch (\Exception $e) {
                 // Skip schemas that cannot be found.
+                $this->logger->debug(
+                    message: '[ObjectService] Skipping a register schema that cannot be loaded',
+                    context: [
+                        'schemaId' => $schemaId,
+                        'exception' => $e->getMessage(),
+                    ]
+                );
             }
         }
 

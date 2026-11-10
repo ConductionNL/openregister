@@ -1337,6 +1337,13 @@ class DeleteObject {
 				);
 			} catch (\Exception $e) {
 				// Cache invalidation failures never abort a delete (parity with delete()).
+				$this->logger->warning(
+					message: '[DeleteObject] Cache invalidation failed after a soft delete',
+					context: [
+						'uuid' => $entity->getUuid(),
+						'exception' => $e->getMessage(),
+					]
+				);
 			}//end try
 		}//end foreach
 	}//end invalidateCachesForDeleted()

@@ -179,7 +179,7 @@ class RegisterScopedSchemaResolver implements RegisterScopedSchemaResolverInterf
 		if ($this->isUniqueIdentifier(ref: $schemaRef) === true) {
 			try {
 				return $this->schemaMapper->find($schemaRef);
-			} catch (\Throwable) {
+			} catch (\Exception) {
 				// Genuinely absent, not merely unlisted — fall through to the
 				// refusal below. The global lookup widens for AMBIGUITY, never
 				// for absence.

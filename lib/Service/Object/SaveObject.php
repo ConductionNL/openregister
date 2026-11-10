@@ -1288,6 +1288,13 @@ class SaveObject implements SaveObjectInterface {
 			throw $e;
 		} catch (Exception $e) {
 			// Continue with other properties even if one fails.
+			$this->logger->warning(
+				message: '[SaveObject] Cascade of an object property failed, continuing with the other properties',
+				context: [
+					'property' => $run->property,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end cascadeObjectProperty()
 
@@ -1332,6 +1339,13 @@ class SaveObject implements SaveObjectInterface {
 			throw $e;
 		} catch (Exception $e) {
 			// Continue with other properties even if one fails.
+			$this->logger->warning(
+				message: '[SaveObject] Cascade of an array property failed, continuing with the other properties',
+				context: [
+					'property' => $run->property,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end cascadeArrayProperty()
 
@@ -1445,6 +1459,12 @@ class SaveObject implements SaveObjectInterface {
 				throw $e;
 			} catch (Exception $e) {
 				// Continue with other objects even if one fails.
+				$this->logger->warning(
+					message: '[SaveObject] Cascade of a nested object failed, continuing with the others',
+					context: [
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}
 
