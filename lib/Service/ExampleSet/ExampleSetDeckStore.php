@@ -69,23 +69,21 @@ class ExampleSetDeckStore {
 	 * The live board of this owner with this title, written when absent and
 	 * then shared for editing with these groups.
 	 *
-	 * @param string             $owner  The board owner.
-	 * @param string             $title  The board title.
-	 * @param string             $color  The colour of a board written now, hex without '#'.
-	 * @param array<int, string> $groups The groups that may edit a board written now.
+	 * @param DeckBoardRequest $board The owner, the title, and the colour and editing groups of a board written now.
 	 *
 	 * @return array{id: int, created: bool}
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
-	public function board(string $owner, string $title, string $color, array $groups): array {
-		$found = $this->liveId(rows: new DeckColumn(table: 'deck_boards', column: 'owner'), row: new DeckTitled(parent: $owner, title: $title));
+	public function board(DeckBoardRequest $board): array {
+		$titled = new DeckTitled(parent: $board->owner, title: $board->title);
+		$found  = $this->liveId(rows: new DeckColumn(table: 'deck_boards', column: 'owner'), row: $titled);
 		if ($found !== null) {
 			return ['id' => $found, 'created' => false];
 		}
 
-		$id = $this->insertBoard(board: new DeckTitled(parent: $owner, title: $title), color: $color);
-		foreach ($groups as $group) {
+		$id = $this->insertBoard(board: $titled, color: $board->color);
+		foreach ($board->groups as $group) {
 			$this->shareBoard(board: $id, group: $group);
 		}
 

@@ -289,10 +289,12 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 */
 	private function place(ExampleSetDeckStore $store, array $data): array {
 		$board = $store->board(
-			owner: (string) $data['owner'],
-			title: (string) $data['board'],
-			color: (string) ($data['color'] ?? self::DEFAULT_COLOR),
-			groups: array_map('strval', (array) ($data['shareWith'] ?? []))
+			board: new DeckBoardRequest(
+				owner: (string) $data['owner'],
+				title: (string) $data['board'],
+				color: (string) ($data['color'] ?? self::DEFAULT_COLOR),
+				groups: array_map('strval', (array) ($data['shareWith'] ?? []))
+			)
 		);
 		$stack = $store->stack(board: $board['id'], title: (string) $data['list']);
 

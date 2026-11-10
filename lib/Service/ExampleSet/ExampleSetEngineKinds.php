@@ -98,7 +98,10 @@ class ExampleSetEngineKinds {
 
 			$refusals = array_merge(
 				$refusals,
-				$rows->checkFragment(fragment: $write->fragment, context: $write->context, users: $users, values: $write->values)
+				$rows->checkFragment(
+					fragment: $write->fragment,
+					check: new ExampleSetFragmentCheck(context: $write->context, users: $users, values: $write->values)
+				)
 			);
 		}
 

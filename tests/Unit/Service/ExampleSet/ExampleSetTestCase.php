@@ -932,9 +932,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			return null;
 		};
 		$store->method('available')->willReturnCallback(fn (): bool => $this->deckInstalled);
-		$store->method('board')->willReturnCallback(function (string $owner, string $title, string $color, array $groups) use ($find, $add): array {
-			$found = $find('boards', 'owner', $owner, $title);
-			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('boards', ['owner' => $owner, 'title' => $title, 'groups' => $groups]), 'created' => true];
+		$store->method('board')->willReturnCallback(function (\OCA\OpenRegister\Service\ExampleSet\DeckBoardRequest $board) use ($find, $add): array {
+			$found = $find('boards', 'owner', $board->owner, $board->title);
+			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('boards', ['owner' => $board->owner, 'title' => $board->title, 'groups' => $board->groups]), 'created' => true];
 		});
 		$store->method('stack')->willReturnCallback(function (int $board, string $title) use ($find, $add): array {
 			$found = $find('stacks', 'board', $board, $title);

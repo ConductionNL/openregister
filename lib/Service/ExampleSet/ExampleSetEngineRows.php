@@ -315,17 +315,15 @@ abstract class ExampleSetEngineRows {
 	/**
 	 * Check the rows of one fragment: each fills and passes refusal().
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<int, string>   $users    The account ids the set creates or adopts.
-	 * @param ExampleSetValues     $values   Fills placeholders.
+	 * @param array<string, mixed>    $fragment The fragment.
+	 * @param ExampleSetFragmentCheck $check    The context placeholders draw on, the account ids the set creates or
+	 *                                          adopts, and the filler.
 	 *
 	 * @return array<int, string> Refusals.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	public function checkFragment(array $fragment, array $context, array $users, ExampleSetValues $values): array {
-		$check    = new ExampleSetFragmentCheck(context: $context, users: $users, values: $values);
+	public function checkFragment(array $fragment, ExampleSetFragmentCheck $check): array {
 		$refusals = [];
 		foreach (($fragment[$this->part()] ?? []) as $entry) {
 			$why = $this->entryRefusal(entry: $entry, check: $check);
