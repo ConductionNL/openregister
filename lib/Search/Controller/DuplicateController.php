@@ -46,6 +46,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
 use RuntimeException;
 use Throwable;
 
@@ -286,21 +287,70 @@ class DuplicateController extends Controller {
 		$objectB = (string)$this->request->getParam('objectB', '');
 		$reason = (string)$this->request->getParam('reason', '');
 
-		if ($objectA === '' || $objectB === '' || $objectA === $objectB) {
+		$pair    = new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema);
+		$refusal = $this->dismissRefusal(pair: $pair);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->storeDismissal(pair: $pair, reason: $reason);
+	}//end dismiss()
+
+	/**
+	 * Why a dismissal is refused: the pair is not two different objects (400),
+	 * or the caller is in none of the schema's dismiss groups (403).
+	 *
+	 * @param ReviewedPair $pair The two uuids and the register and schema references.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the dismissal may proceed.
+	 */
+	private function dismissRefusal(ReviewedPair $pair): ?JSONResponse {
+		if ($this->isTwoDifferentObjects(pair: $pair) === false) {
 			return new JSONResponse(
 				['error' => 'A dismissal needs two different objects.'],
 				Http::STATUS_BAD_REQUEST
 			);
 		}
 
-		if ($this->mayDismiss(register: $register, schema: $schema) === false) {
-			return new JSONResponse(
-				['error' => 'You are not in a group this schema allows to dismiss duplicate pairs.'],
-				Http::STATUS_FORBIDDEN
-			);
+		if ($this->mayDismiss(register: $pair->registerSlug, schema: $pair->schemaSlug) === false) {
+			return $this->notInADismissGroup();
 		}
 
-		$pair = new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema);
+		return null;
+	}//end dismissRefusal()
+
+	/**
+	 * Whether a pair names two objects, and not the same one twice.
+	 *
+	 * @param ReviewedPair $pair The two uuids.
+	 *
+	 * @return bool
+	 */
+	private function isTwoDifferentObjects(ReviewedPair $pair): bool {
+		return $pair->first !== '' && $pair->second !== '' && $pair->first !== $pair->second;
+	}//end isTwoDifferentObjects()
+
+	/**
+	 * The 403 for a caller in none of the groups the schema allows to dismiss pairs.
+	 *
+	 * @return JSONResponse
+	 */
+	private function notInADismissGroup(): JSONResponse {
+		return new JSONResponse(
+			['error' => 'You are not in a group this schema allows to dismiss duplicate pairs.'],
+			Http::STATUS_FORBIDDEN
+		);
+	}//end notInADismissGroup()
+
+	/**
+	 * Store the dismissal of an allowed pair, fingerprinted as the scorer will compare it.
+	 *
+	 * @param ReviewedPair $pair   The two uuids and the register and schema references.
+	 * @param string       $reason Why the reviewer judged them different.
+	 *
+	 * @return JSONResponse The stored dismissal, or 404 when either object cannot be read.
+	 */
+	private function storeDismissal(ReviewedPair $pair, string $reason): JSONResponse {
 		$fingerprint = $this->fingerprintOf(pair: $pair);
 		if ($fingerprint === null) {
 			return new JSONResponse(
@@ -309,17 +359,25 @@ class DuplicateController extends Controller {
 			);
 		}
 
-		$row = $this->dismissals->dismiss(
-			pair: $pair,
-			dismissal: new PairDismissal(
-				fingerprint: $fingerprint,
-				reason: $reason,
-				dismissedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
-			)
-		);
-
+		$row = $this->dismissals->dismiss(pair: $pair, dismissal: $this->dismissalOf(fingerprint: $fingerprint, reason: $reason));
 		return new JSONResponse($row);
-	}//end dismiss()
+	}//end storeDismissal()
+
+	/**
+	 * The dismissal record, made by the signed-in user.
+	 *
+	 * @param string $fingerprint The pair fingerprint.
+	 * @param string $reason      Why the reviewer judged them different.
+	 *
+	 * @return PairDismissal
+	 */
+	private function dismissalOf(string $fingerprint, string $reason): PairDismissal {
+		return new PairDismissal(
+			fingerprint: $fingerprint,
+			reason: $reason,
+			dismissedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
+		);
+	}//end dismissalOf()
 
 	/**
 	 * Undo a dismissal, so the pair is offered again.
@@ -346,10 +404,7 @@ class DuplicateController extends Controller {
 		}
 
 		if ($this->mayDismiss(register: $register, schema: $schema) === false) {
-			return new JSONResponse(
-				['error' => 'You are not in a group this schema allows to dismiss duplicate pairs.'],
-				Http::STATUS_FORBIDDEN
-			);
+			return $this->notInADismissGroup();
 		}
 
 		$row = $this->dismissals->undismiss(
@@ -380,9 +435,8 @@ class DuplicateController extends Controller {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	private function mayDismiss(string $register, string $schema): bool {
-		$annotation = $this->duplicates->dedupAnnotation(register: $register, schema: $schema);
-		$groups = ($annotation['dismissGroups'] ?? null);
-		if (is_array($groups) === false || count($groups) === 0) {
+		$groups = $this->dismissGroups(register: $register, schema: $schema);
+		if ($groups === []) {
 			return false;
 		}
 
@@ -391,6 +445,36 @@ class DuplicateController extends Controller {
 			return false;
 		}
 
+		return $this->isInAnyGroup(user: $user, groups: $groups);
+	}//end mayDismiss()
+
+	/**
+	 * The schema's declared `dismissGroups`, or an empty list when it declares none.
+	 *
+	 * @param string $register Register reference.
+	 * @param string $schema   Schema reference.
+	 *
+	 * @return array<mixed> The declared groups, unfiltered.
+	 */
+	private function dismissGroups(string $register, string $schema): array {
+		$annotation = $this->duplicates->dedupAnnotation(register: $register, schema: $schema);
+		$groups     = ($annotation['dismissGroups'] ?? null);
+		if (is_array($groups) === false) {
+			return [];
+		}
+
+		return $groups;
+	}//end dismissGroups()
+
+	/**
+	 * Whether the user is in one of the named groups; names that are not a non-empty string are skipped.
+	 *
+	 * @param IUser        $user   The signed-in user.
+	 * @param array<mixed> $groups The declared group names.
+	 *
+	 * @return bool True at the first group the user is in.
+	 */
+	private function isInAnyGroup(IUser $user, array $groups): bool {
 		foreach ($groups as $group) {
 			if (is_string($group) === false || $group === '') {
 				continue;
@@ -402,7 +486,7 @@ class DuplicateController extends Controller {
 		}
 
 		return false;
-	}//end mayDismiss()
+	}//end isInAnyGroup()
 
 	/**
 	 * The fingerprint of the pair being dismissed, computed by the SAME
