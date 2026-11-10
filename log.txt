@@ -2794,3 +2794,4 @@
 2026-11-10T19:01:01Z integrator-20261110T111852-c9674639 CONFLICT-DEV #9077 712e156d
 2026-11-10T19:05:19Z integrator-20261110T111852-c9674639 GREEN tree 333f9a7e65 on dev a462950273 prs 13 front=ok: Tests: 54881, Assertions: 181885, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
 2026-11-10T19:05:55Z integrator-20261110T111852-c9674639 MERGED-TREE 333f9a7e65: 13 PRs in one push, main now 333f9a7e65 = tested tree
+2026-11-10T19:07:09Z integrator-20261110T111852-c9674639 CONFLICT-DEV #9029 34e90443
