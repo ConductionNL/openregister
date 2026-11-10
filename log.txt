@@ -2049,3 +2049,4 @@
 2026-11-10T12:39:45Z integrator-20261110T111852-c9674639 RESOLVED #8820 801a9c3a -> 83f05ad3 use/map lines only
 2026-11-10T12:39:52Z precheck-20261110T113051-6c6f1023 GREEN tree d31e19016f on dev 53c76fd32b prs 1 front=ok: Tests: 54829, Assertions: 181112, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
 2026-11-10T12:40:04Z precheck-20261110T113712-a8af1fdb GREEN tree c46036174b on dev 53c76fd32b prs 1 front=skip: Tests: 54829, Assertions: 181112, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
+2026-11-10T12:40:26Z precheck-20261110T113809-5ce48586 GREEN tree a3597354a5 on dev 53c76fd32b prs 1 front=skip: Tests: 54829, Assertions: 181115, Errors: 6, Failures: 11, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
