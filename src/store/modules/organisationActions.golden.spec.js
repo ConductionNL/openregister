@@ -19,6 +19,12 @@ const ACTIONS = {
 	updateOrganisation: (store) => store.updateOrganisation({ uuid: 'org-1', id: 7, name: 'Renamed', slug: '', active: '', users: ['u'] }),
 	searchOrganisations: (store) => store.searchOrganisations('  acme  ', 10, 20),
 	searchAllOrganisations: (store) => store.searchOrganisations(),
+	getActiveOrganisation: (store) => store.getActiveOrganisation(),
+	getOrganisation: (store) => store.getOrganisation('org-1'),
+	getOrganisationAsItem: (store) => store.getOrganisation('org-1', { setItem: true }),
+	clearCache: (store) => store.clearCache(),
+	updateWithoutId: (store) => store.updateOrganisation({ name: 'No id' }),
+	updateById: (store) => store.updateOrganisation({ id: 7, name: 'By id' }),
 }
 
 const ANSWERS = {
@@ -50,7 +56,9 @@ async function run(action, answer) {
 	store.organisationItem = false
 	const log = []
 	store.refreshOrganisationList = async () => log.push(['refreshOrganisationList'])
-	store.getActiveOrganisation = async () => log.push(['getActiveOrganisation'])
+	if (action !== 'getActiveOrganisation') {
+		store.getActiveOrganisation = async () => log.push(['getActiveOrganisation'])
+	}
 	global.fetch = jest.fn(async (...args) => {
 		log.push(['fetch', ...args])
 		return answer()
