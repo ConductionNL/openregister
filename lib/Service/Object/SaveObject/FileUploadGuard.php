@@ -73,16 +73,13 @@ final class FileUploadGuard {
 	/**
 	 * Refuse a file whose MIME type the property does not accept, then one larger than it accepts.
 	 *
-	 * @param array<string, mixed> $fileData    The parsed file data.
-	 * @param array<string, mixed> $fileConfig  The file property configuration.
-	 * @param string               $errorPrefix The error message prefix.
+	 * @param UploadCheck $check The parsed file data, the error message prefix and the file property configuration.
 	 *
 	 * @return void
 	 *
 	 * @throws Exception If the type is not accepted or the file is too large.
 	 */
-	public function assertAccepted(array $fileData, array $fileConfig, string $errorPrefix): void {
-		$check = new UploadCheck(fileData: $fileData, errorPrefix: $errorPrefix, fileConfig: $fileConfig);
+	public function assertAccepted(UploadCheck $check): void {
 		$this->assertAllowedType(check: $check);
 		$this->assertWithinMaxSize(check: $check);
 	}//end assertAccepted()
@@ -92,28 +89,14 @@ final class FileUploadGuard {
 	 * an embedded PHP tag. The checks live in {@see ExecutableContentDetector}; this owns the
 	 * caller-facing message shape and the logging.
 	 *
-	 * @param string $content     The file content to check.
-	 * @param string $errorPrefix The error message prefix.
-	 * @param string $fileName    The filename, used for its extension only; '' when unknown.
+	 * @param UploadedContent $upload The file content, the error message prefix and the filename (used for its
+	 *                                extension only; '' when unknown).
 	 *
 	 * @return void
 	 *
 	 * @throws Exception If executable content is detected.
 	 */
-	public function blockExecutableContent(string $content, string $errorPrefix, string $fileName): void {
-		$this->blockExecutable(upload: new UploadedContent(content: $content, errorPrefix: $errorPrefix, fileName: $fileName));
-	}//end blockExecutableContent()
-
-	/**
-	 * Refuse content with an executable signature, a script shebang or an embedded PHP tag.
-	 *
-	 * @param UploadedContent $upload The content, its error prefix and its filename.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception If executable content is detected.
-	 */
-	private function blockExecutable(UploadedContent $upload): void {
+	public function blockExecutableContent(UploadedContent $upload): void {
 		$content     = $upload->content;
 		$errorPrefix = $upload->errorPrefix;
 		// Offset-0 executable signatures — universal, every file property.
@@ -132,7 +115,7 @@ final class FileUploadGuard {
 				"$errorPrefix contains PHP code. PHP files are blocked for security reasons."
 			);
 		}
-	}//end blockExecutable()
+	}//end blockExecutableContent()
 
 	/**
 	 * The executable MIME types blocked.
@@ -235,29 +218,14 @@ final class FileUploadGuard {
 	/**
 	 * Refuse a file whose MIME type is one of the given executable MIME types.
 	 *
-	 * @param array<string, mixed> $fileData    The file data.
-	 * @param string               $errorPrefix The error message prefix.
-	 * @param array<int, string>   $mimeTypes   The executable MIME types, see executableMimeTypes().
+	 * @param UploadCheck        $check     The file data and the error message prefix.
+	 * @param array<int, string> $mimeTypes The executable MIME types, see executableMimeTypes().
 	 *
 	 * @return void
 	 *
 	 * @throws Exception If the MIME type is executable.
 	 */
-	public function blockMimeTypeIn(array $fileData, string $errorPrefix, array $mimeTypes): void {
-		$this->refuseMimeType(check: new UploadCheck(fileData: $fileData, errorPrefix: $errorPrefix), mimeTypes: $mimeTypes);
-	}//end blockMimeTypeIn()
-
-	/**
-	 * Refuse a file whose MIME type is one of the given MIME types, and log it.
-	 *
-	 * @param UploadCheck        $check     The file data and the error prefix.
-	 * @param array<int, string> $mimeTypes The executable MIME types.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception If the MIME type is executable.
-	 */
-	private function refuseMimeType(UploadCheck $check, array $mimeTypes): void {
+	public function blockMimeTypeIn(UploadCheck $check, array $mimeTypes): void {
 		$errorPrefix = $check->errorPrefix;
 		$mimeType    = $check->fileData['mimeType'] ?? null;
 		if ($mimeType === null || in_array($mimeType, $mimeTypes, true) === false) {
@@ -268,7 +236,7 @@ final class FileUploadGuard {
 		throw new Exception(
 			"$errorPrefix has executable MIME type '$mimeType'. " . 'Executable files are blocked for security reasons.'
 		);
-	}//end refuseMimeType()
+	}//end blockMimeTypeIn()
 
 	/**
 	 * Refuse content that starts with an executable signature.
