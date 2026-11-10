@@ -172,3 +172,4 @@
 2026-11-10T19:43:28Z dev=8cd70ed9c1 prs=8990,9076,9090,9104,9129,9130,9132,9133,9134,9135,9136,9137,9138,9139,9140,9141,9142,9144,9145,9146,9147,9148,9149,9150,9151 Tests: 54960, Assertions: 182154, Errors: 7, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 19. front=ok
 2026-11-10T19:48:59Z dev=8cd70ed9c1 prs=8990,9076,9090,9104,9129,9130,9132,9133,9134,9135,9136,9137,9138 Tests: 54888, Assertions: 181912, Errors: 7, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 19. front=ok
 2026-11-10T19:53:28Z dev=8cd70ed9c1 prs=8990,9076,9090,9104,9129,9130,9132 Tests: 54888, Assertions: 181912, Errors: 7, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 19. front=skip
+2026-11-10T22:52:01Z dev=466aa04a5e prs=8819 Tests: 55284, Assertions: 183108, Errors: 6, Failures: 12, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 24. front=skip
