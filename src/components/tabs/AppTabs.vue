@@ -34,6 +34,23 @@ import { h } from 'vue'
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  */
+/**
+ * The classes of one tab button.
+ *
+ * @param {boolean} active Whether the tab is the selected one
+ * @param {boolean} disabled Whether the tab is disabled
+ * @return {Array} The class list
+ */
+function tabClasses(active, disabled) {
+	return [
+		'app-tabs__tab',
+		{
+			'app-tabs__tab--active': active,
+			'app-tabs__tab--disabled': disabled,
+		},
+	]
+}
+
 export default {
 	name: 'AppTabs',
 	provide() {
@@ -200,32 +217,35 @@ export default {
 					role: 'tablist',
 					onKeydown: this.onKeydown,
 				},
-				this.tabs.map((tab, index) =>
-					h(
-						'button',
-						{
-							key: tab.uid,
-							type: 'button',
-							role: 'tab',
-							id: `app-tab-${tab.uid}`,
-							class: [
-								'app-tabs__tab',
-								{
-									'app-tabs__tab--active':
-										index === this.activeIndex,
-									'app-tabs__tab--disabled': tab.disabled === true,
-								},
-							],
-							disabled: tab.disabled === true,
-							'aria-selected':
-								index === this.activeIndex ? 'true' : 'false',
-							'aria-controls': `app-tabpanel-${tab.uid}`,
-							tabindex: index === this.activeIndex ? 0 : -1,
-							onClick: () => this.select(index),
-						},
-						tab.titleSlot ? tab.titleSlot() : tab.title,
-					),
-				),
+				this.tabs.map((tab, index) => this.renderTab(tab, index)),
+			)
+		},
+
+		/**
+		 * Render one tab button of the strip.
+		 *
+		 * @param {object} tab The registered tab
+		 * @param {number} index Its position in the strip
+		 * @return {object} The tab button vnode.
+		 */
+		renderTab(tab, index) {
+			const active = index === this.activeIndex
+			const disabled = tab.disabled === true
+			return h(
+				'button',
+				{
+					key: tab.uid,
+					type: 'button',
+					role: 'tab',
+					id: `app-tab-${tab.uid}`,
+					class: tabClasses(active, disabled),
+					disabled,
+					'aria-selected': active ? 'true' : 'false',
+					'aria-controls': `app-tabpanel-${tab.uid}`,
+					tabindex: active ? 0 : -1,
+					onClick: () => this.select(index),
+				},
+				tab.titleSlot ? tab.titleSlot() : tab.title,
 			)
 		},
 	},
