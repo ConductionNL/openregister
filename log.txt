@@ -2833,3 +2833,4 @@
 2026-11-10T19:38:08Z integrator-20261110T111852-c9674639 RED tree 0e413d07f9 prs 50 front=ok: Tests: 55055, Assertions: 182495, Errors: 7, Failures: 11, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\AppHost\LeafRegistrationOrderTest::testRegistrationOrderAndSharedFactories
 2026-11-10T19:38:30Z integrator-20261110T111852-c9674639 CONFLICT-DEV #9029 34e90443
 2026-11-10T19:38:42Z integrator-20261110T111852-c9674639 CONFLICT-DEV #9044 7a9138aa
+2026-11-10T19:38:57Z integrator-20261110T111852-c9674639 CONFLICT-DEV #9062 39a65587
