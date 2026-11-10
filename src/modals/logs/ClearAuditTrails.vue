@@ -71,9 +71,9 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcNoteCard } from '@nextcloud/vue'
+import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 import { confirmDialogState } from '../shared/confirmDialogState.js'
-import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 
 export default {
 	name: 'ClearAuditTrails',
