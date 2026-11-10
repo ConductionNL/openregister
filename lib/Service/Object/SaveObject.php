@@ -32,6 +32,10 @@ namespace OCA\OpenRegister\Service\Object;
 use Adbar\Dot;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusalOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -680,16 +684,18 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		try {
-			$this->auditTrailMapper->createSharedMasterDataRefusalEntry(
-				holderOrganisation: $refusal->getHolderUuid(),
-				sourceOrganisation: ($activeOrgUuid ?? ''),
-				resourceType: $refusal->getResourceType(),
+			$options = new SharedMasterDataRefusalOptions(
 				context: $redactor->redact(context: $context),
-				register: $registerId,
-				schema: $schemaId,
-				objectUuid: $uuid,
-				actorId: $actorId,
-				actorReference: $redactor->pseudonym(userId: $actorId)
+				target: new AuditedObject(register: $registerId, schema: $schemaId, objectUuid: $uuid),
+				actor: new NamedActor(id: $actorId, name: $redactor->pseudonym(userId: $actorId))
+			);
+			$this->auditTrailMapper->recordSharedMasterDataRefusal(
+				refusal: new SharedMasterDataRefusal(
+					holderOrganisation: $refusal->getHolderUuid(),
+					sourceOrganisation: ($activeOrgUuid ?? ''),
+					resourceType: $refusal->getResourceType(),
+					options: $options
+				)
 			);
 		} catch (\Throwable $e) {
 			// Best effort by design: see the docblock on the caller. The write
