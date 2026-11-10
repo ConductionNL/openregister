@@ -312,8 +312,8 @@ function failureMessage(action, e) {
  * and rethrown.
  *
  * @param {string} action The action's name
- * @param {Function} request The request; its result is the action's result
- * @return {Promise<*>} The request's result
+ * @param {() => Promise<unknown>} request The request; its result is the action's result
+ * @return {Promise<unknown>} The request's result
  */
 async function tracked(action, request) {
 	this.loading = true
