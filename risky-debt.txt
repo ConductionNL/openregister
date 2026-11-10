@@ -222,3 +222,4 @@ OCA\OpenRegister\Tests\Unit\Service\WebhookServiceTest::testDeliverWebhookSchedu
 /root/sigint/or/tests/Unit/Service/Credential/OAuth2InstanceClientMintGoldenTest.php:186
 /root/sigint/or/tests/Unit/Service/Credential/OAuth2InstanceClientTest.php:238
 /root/sigint/or/tests/Unit/Architecture/K19OasInterfaceBindingsTest.php:126
+/root/sigint/or/tests/Unit/Architecture/H12InterfaceBindingsTest.php:150
