@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\ObjectMigration;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -85,7 +86,7 @@ class MigrationHandlerSlugTest extends TestCase {
 		$manip = $this->createMock(DataManipulationHandler::class);
 		$manip->method('mapObjectProperties')->willReturn(['title' => 'Hello World']);
 		$mapper->expects($this->once())->method('slugForMove')
-			->with($object, $targetRegister, $targetSchema)
+			->with($object, new RegisterSchema($targetRegister, $targetSchema))
 			->willReturn('hello-world-20261030120000');
 
 		$handler = $this->migrationHandler(mapper: $mapper, utility: $utility, dataManip: $manip);

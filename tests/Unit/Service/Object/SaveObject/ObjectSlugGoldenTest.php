@@ -99,12 +99,13 @@ final class ObjectSlugGoldenTest extends TestCase {
 
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 		$this->magicMapper->method('findSlugHolders')->willReturnCallback(
-			fn (Register $r, Schema $s, string $slug, string $excludeUuid): array => array_values(
+			fn (RegisterSchema $table, string $slug, string $excludeUuid): array => array_values(
 				array_filter($this->holders[$slug] ?? [], static fn (string $h): bool => $h !== $excludeUuid)
 			)
 		);
 		$this->magicMapper->method('findSlugState')->willReturnCallback(
-			function (Register $r, Schema $s, array $slugs, array $uuids): array {
+			function (RegisterSchema $table, array $slugs, array $uuids): array {
+				[$r, $s] = [$table->register, $table->schema];
 				$holders = [];
 				foreach ($slugs as $slug) {
 					if (isset($this->holders[$slug]) === true) {
