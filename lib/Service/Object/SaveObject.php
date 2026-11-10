@@ -113,6 +113,7 @@ use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
 use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Service\File\FolderAccessCheck;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -3525,9 +3526,7 @@ class SaveObject implements SaveObjectInterface {
 			// passing while another denies because of session vs explicit
 			// user disagreement.
 			$this->folderManagementHandler->assertFolderIsAccessible(
-				folderId: $folderValue,
-				currentUser: $bind->actingUser,
-				objectEntity: $objectEntity
+				check: new FolderAccessCheck(folderId: $folderValue, currentUser: $bind->actingUser, objectEntity: $objectEntity)
 			);
 
 			// Normalise to the canonical integer string so the persisted
