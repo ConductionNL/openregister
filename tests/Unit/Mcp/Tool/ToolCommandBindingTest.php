@@ -25,6 +25,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Pins how the model's arguments reach the schema, register and object
@@ -169,7 +170,9 @@ class ToolCommandBindingTest extends TestCase
     {
         $service = $this->createMock(ObjectOperationsInterface::class);
         $service->method('saveObject')->willReturnCallback(
-            function (array $object, ?array $extend = [], $register = null, $schema = null): ObjectEntity {
+            function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+                $register = $options->target->register;
+                $schema = $options->target->schema;
                 $this->calls[] = ['saveObject', $object, $register, $schema];
                 return new ObjectEntity();
             }

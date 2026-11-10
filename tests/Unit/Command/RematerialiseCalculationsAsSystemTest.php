@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
 use ReflectionNamedType;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 class RematerialiseCalculationsAsSystemTest extends TestCase {
 
@@ -122,7 +123,7 @@ class RematerialiseCalculationsAsSystemTest extends TestCase {
 			static fn (callable $operation) => \OCA\OpenRegister\Service\SystemOperationContext::run($operation)
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object, ?array $extend = [], $register = null, $schemaRef = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true) use ($permissions, $schema): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($permissions, $schema): ObjectEntity {
 				// ObjectService::checkSavePermissions() for an existing row.
 				$permissions->checkPermission(schema: $schema, action: 'update', _rbac: $_rbac);
 				// The save path materialises (CalculationOnSaveListener), so the saved row carries the value.

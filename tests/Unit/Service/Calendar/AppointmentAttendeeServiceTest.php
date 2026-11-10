@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -70,7 +71,7 @@ class AppointmentAttendeeServiceTest extends TestCase {
 
 	private function captureSaves(): void {
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (array | ObjectEntity $object): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$this->saved = $object;
 				if (is_array($object) === false) {
 					$this->saved = $object->getObject();

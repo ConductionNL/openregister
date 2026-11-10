@@ -86,6 +86,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Lifecycle\TransitionEngine
@@ -199,19 +200,9 @@ class TransitionEngineAsSystemTest extends TestCase {
 		// saveObject() dispatches ObjectUpdatingEvent to the real listener and
 		// refuses the write when it stops the event, as MagicMapper does.
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array|ObjectEntity $object,
-				?array $extend = [],
-				mixed $register = null,
-				mixed $schema = null,
-				?string $uuid = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-				bool $silent = false,
-				bool $_validation = true,
-				?array $uploadedFiles = null,
-				?IUser $currentUser = null,
-			): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$silent = $options->policy->silent;
+				$currentUser = $options->actor->currentUser;
 				$this->saves[] = [
 					'_rbac' => $_rbac,
 					'_multitenancy' => $_multitenancy,

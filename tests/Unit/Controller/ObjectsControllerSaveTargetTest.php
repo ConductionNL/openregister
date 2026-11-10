@@ -49,6 +49,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
@@ -111,7 +112,8 @@ class ObjectsControllerSaveTargetTest extends TestCase {
 		// The caller's own read: whatever identifier names B in the caller's scope answers B.
 		$this->objectService->method('findSilent')->willReturn($this->visible);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->saveTargets[] = ($args['uuid'] ?? $args[4] ?? null);
 				return $this->visible;
 			}

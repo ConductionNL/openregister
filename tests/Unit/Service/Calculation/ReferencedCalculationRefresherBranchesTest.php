@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * ReferencedCalculationRefresherBranchesTest.
@@ -173,7 +174,8 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 	public function testAFailedReSaveIsLoggedAndNotCounted(): void {
 		$this->rows->method('findAllInRegisterSchemaTable')->willReturn([$this->referrer('bad'), $this->referrer('good')]);
 		$this->objects->method('saveObject')->willReturnCallback(
-			static function (mixed ...$args): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				if ($args[4] === 'bad') {
 					throw new RuntimeException('locked');
 				}
@@ -205,7 +207,7 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 		$depthsReached = [];
 		$this->rows->method('findAllInRegisterSchemaTable')->willReturn([$this->referrer('case-1')]);
 		$this->objects->method('saveObject')->willReturnCallback(
-			function () use ($refresher, &$depthsReached): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($refresher, &$depthsReached): ObjectEntity {
 				// A save that changes a read field again triggers the next level.
 				$depthsReached[] = $refresher->refresh($this->caseType(['startableFlows' => [count($depthsReached)]]), null);
 				return new ObjectEntity();

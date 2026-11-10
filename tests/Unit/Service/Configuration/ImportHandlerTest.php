@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Unit tests for ImportHandler.
@@ -1504,15 +1505,7 @@ class ImportHandlerTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (
-					$object,
-					$extend = [],
-					$register = null,
-					$schema = null,
-					$uuid = null,
-					bool $_rbac = true,
-					bool $_multitenancy = true,
-				) use (&$saveRbac, &$saveMt, $savedObject) {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saveRbac, &$saveMt, $savedObject) {
 					$saveRbac = $_rbac;
 					$saveMt = $_multitenancy;
 					return $savedObject;

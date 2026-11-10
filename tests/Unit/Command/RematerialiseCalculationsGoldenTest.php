@@ -47,6 +47,7 @@ use RuntimeException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Each case is a schema configuration and a set of rows with scripted collaborator
@@ -263,7 +264,11 @@ class RematerialiseCalculationsGoldenTest extends TestCase {
 
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, ?array $extend = [], $reg = null, $sch = null, ?string $uuid = null, ...$rest) use ($rows): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($rows): ObjectEntity {
+				$reg = $options->target->register;
+				$sch = $options->target->schema;
+				$uuid = $options->uuid;
+				$rest = [$_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->calls[] = ['save', $object, $reg, $sch, $uuid, $rest];
 				$row = $rows[(int)substr((string)$uuid, 5)];
 				if (($row['saveThrows'] ?? false) === true) {

@@ -58,6 +58,7 @@ use OCA\OpenRegister\Service\Credential\OAuth2RefreshTarget;
 use OCA\OpenRegister\Service\Credential\TokenSetAddress;
 use OCA\OpenRegister\Service\Credential\TokenResponseOptions;
 use OCA\OpenRegister\Event\CredentialRelinkRequiredEvent;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2RefreshService
@@ -132,7 +133,8 @@ class OAuth2RefreshServiceTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('find')->willReturn($existing);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$written): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$written): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$written[] = ($args['uuid'] ?? $args[4] ?? null);
 				return new ObjectEntity();
 			}
@@ -189,7 +191,7 @@ class OAuth2RefreshServiceTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('find')->willReturn($stored);
 		$objectService->method('saveObject')->willReturnCallback(
-			function () use (&$order): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$order): ObjectEntity {
 				$order[] = 'object';
 				return new ObjectEntity();
 			}
@@ -236,7 +238,8 @@ class OAuth2RefreshServiceTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('find')->willReturn($existing);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$written): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$written): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$written[] = ($args['uuid'] ?? $args[4] ?? null);
 				return new ObjectEntity();
 			}
@@ -466,7 +469,7 @@ class OAuth2RefreshServiceTest extends TestCase {
 			$objectService = $this->createMock(ObjectService::class);
 			$objectService->method('find')->willReturn($existing);
 			$objectService->method('saveObject')->willReturnCallback(
-				function (array | ObjectEntity $object): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 					$this->metadataWrites[] = (is_array($object) === true ? $object : $object->getObject());
 					return new ObjectEntity();
 				}

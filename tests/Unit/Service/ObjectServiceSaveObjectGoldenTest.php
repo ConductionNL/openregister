@@ -69,6 +69,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\MockObject\Stub\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\SavePolicy;
+use OCA\OpenRegister\Service\Object\SaveActor;
 
 /**
  * Golden test for ObjectService::saveObject().
@@ -180,21 +184,17 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 
 		try {
 			$saved = $service->saveObject(
-				$object,
-				array_key_exists('extend', $case) === true ? $case['extend'] : [],
-				(array_key_exists('register', $case) === true ? $case['register'] : $this->register()),
-				(($case['noSchema'] ?? false) === true) ? null : ($case['schema'] ?? $this->schema(case: $case)),
-				($case['uuid'] ?? null),
-				($case['rbac'] ?? true),
-				($case['multi'] ?? true),
-				($case['silent'] ?? false),
-				($case['validation'] ?? true),
-				($case['files'] ?? null),
-				$user,
-				($case['failIfExists'] ?? false),
-				($case['unowned'] ?? false),
-				($case['dedup'] ?? false),
-				($case['owner'] ?? null)
+				object: $object,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: (array_key_exists('register', $case) === true ? $case['register'] : $this->register()), schema: (($case['noSchema'] ?? false) === true) ? null : ($case['schema'] ?? $this->schema(case: $case))),
+					uuid: ($case['uuid'] ?? null),
+					extend: array_key_exists('extend', $case) === true ? $case['extend'] : [],
+					uploadedFiles: ($case['files'] ?? null),
+					policy: new SavePolicy(silent: ($case['silent'] ?? false), validation: ($case['validation'] ?? true), failIfExists: ($case['failIfExists'] ?? false), dedupOverride: ($case['dedup'] ?? false)),
+					actor: new SaveActor(currentUser: $user, owner: ($case['owner'] ?? null), unowned: ($case['unowned'] ?? false))
+				),
+				_rbac: ($case['rbac'] ?? true),
+				_multitenancy: ($case['multi'] ?? true)
 			);
 			$actual = ['result' => $this->describe($saved)];
 		} catch (\Throwable $e) {

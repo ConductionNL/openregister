@@ -78,6 +78,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * The create check sees the incoming object, so a `match` on it can pass.
@@ -372,9 +374,7 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 		try {
 			$this->objectService->saveObject(
 				object: ['title' => 'overwritten'],
-				register: $register,
-				schema: $schema,
-				uuid: 'uuid-b',
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: 'uuid-b'),
 				_rbac: true,
 				_multitenancy: $multitenancy
 			);

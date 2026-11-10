@@ -50,6 +50,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 final class TransitionEngineDelegatedAccessGoldenTest extends TestCase {
 
@@ -267,7 +268,8 @@ final class TransitionEngineDelegatedAccessGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function (...$args): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$call = $this->named('saveObject', $args);
 				$this->saves[] = $call;
 

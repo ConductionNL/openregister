@@ -47,6 +47,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Golden test for POST /api/objects/{register}/{schema}: what reaches the save, and every refusal it can answer.
@@ -219,7 +220,8 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 			$this->calls[] = 'clearCreatedSubObjects';
 		});
 		$service->method('handleValidationException')->willReturnCallback(fn (...$args) => new JSONResponse(['validation' => ($args['exception'] ?? $args[0])->getMessage()], 400));
-		$service->method('saveObject')->willReturnCallback(function (...$args) use ($setup): ObjectEntity {
+		$service->method('saveObject')->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($setup): ObjectEntity {
+			$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 			$this->calls[] = ['saveObject' => $args];
 			if (isset($setup['fails']) === true) {
 				throw $this->failure($setup['fails']);

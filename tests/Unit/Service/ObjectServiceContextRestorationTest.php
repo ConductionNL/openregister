@@ -71,6 +71,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * A WRITE MUST NOT SCOPE THE NEXT READ.
@@ -363,8 +365,9 @@ class ObjectServiceContextRestorationTest extends TestCase {
 	private function saveIntoBrokerScope(): void {
 		$this->service->saveObject(
 			object: ['name' => 'example credential'],
-			register: self::BROKER_REGISTER,
-			schema: self::BROKER_SCHEMA,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -512,8 +515,9 @@ class ObjectServiceContextRestorationTest extends TestCase {
 		try {
 			$this->service->saveObject(
 				object: ['name' => 'doomed'],
-				register: self::BROKER_REGISTER,
-				schema: self::BROKER_SCHEMA,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

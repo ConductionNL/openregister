@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\VocabularyImportService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\VocabularyImportService
@@ -297,7 +298,10 @@ class VocabularyImportServiceGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, $extend = [], $register = null, $schema = null, $uuid = null) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->log[] = ['saveObject', $object, $register, $schema, $uuid];
 				$uuid = ($uuid ?? 'uuid-'.(++$this->sequence));
 				$this->store[$schema][$uuid] = $object;

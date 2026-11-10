@@ -29,6 +29,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * What a correction checks, in which order, what it saves and how it records the act.
@@ -91,7 +92,8 @@ class CorrectionServiceGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function (...$args) use ($o): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($o): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->trace[] = ['saveObject', $args];
 				$saved = new ObjectEntity();
 				$saved->setUuid('u-1');

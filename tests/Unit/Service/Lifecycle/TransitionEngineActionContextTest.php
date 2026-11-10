@@ -42,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Declaration lifetime around the engine's save.
@@ -106,7 +107,7 @@ class TransitionEngineActionContextTest extends TestCase {
 	public function testTheNamedActionIsDeclaredDuringTheSave(): void {
 		$seen = 'nothing';
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function () use (&$seen): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seen): ObjectEntity {
 				// This is where the listeners run: inside saveObject.
 				$seen = $this->context->declaredFor(uuid: self::OBJ);
 				$saved = new ObjectEntity();
@@ -128,7 +129,7 @@ class TransitionEngineActionContextTest extends TestCase {
 	 */
 	public function testTheDeclarationIsReleasedAfterTheSave(): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function (): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$saved = new ObjectEntity();
 				$saved->setUuid(self::OBJ);
 				$saved->setObject(['status' => 'verifying']);

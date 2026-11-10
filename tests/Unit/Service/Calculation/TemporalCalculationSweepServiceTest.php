@@ -53,6 +53,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * TemporalCalculationSweepServiceTest.
@@ -218,7 +219,8 @@ class TemporalCalculationSweepServiceTest extends TestCase {
 
 		$savedUuids = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use (&$savedUuids) {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$savedUuids) {
+				$uuid = $options->uuid;
 				$savedUuids[] = (string)$uuid;
 				return new ObjectEntity();
 			}
@@ -254,7 +256,7 @@ class TemporalCalculationSweepServiceTest extends TestCase {
 
 		$saved = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function ($object) use (&$saved) {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saved) {
 				$saved[] = $object;
 				return new ObjectEntity();
 			}

@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Search\Service\Quality\PairDismissal;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 class DismissedPairStoreTest extends TestCase {
 
@@ -147,7 +148,8 @@ class DismissedPairStoreTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (...$args) use (&$written): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$written): ObjectEntity {
+					$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 					$written = $args[0];
 					return $this->row('new-row', is_array($args[0]) ? $args[0] : []);
 				}
@@ -185,7 +187,8 @@ class DismissedPairStoreTest extends TestCase {
 
 		$uuidPassed = 'not-set';
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$uuidPassed): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$uuidPassed): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				// ObjectService::saveObject is (object, extend, register, schema, uuid, ...),
 				// so the uuid is the FIFTH argument, not the fourth.
 				$uuidPassed = ($args[4] ?? null);
@@ -216,7 +219,8 @@ class DismissedPairStoreTest extends TestCase {
 
 		$written = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$written): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$written): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$written = $args[0];
 				return $this->row('existing-row', is_array($args[0]) ? $args[0] : []);
 			}

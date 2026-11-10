@@ -39,6 +39,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Unit tests for SettingsService
@@ -1890,7 +1891,8 @@ class SettingsServiceTest extends TestCase {
 		$saved = [];
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->expects($this->exactly(2))->method('saveObject')
-			->willReturnCallback(function (...$args) use (&$saved) {
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saved) {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$saved[] = [$args[0], $args[2], $args[3], $args[4]];
 				return new \OCA\OpenRegister\Db\ObjectEntity();
 			});

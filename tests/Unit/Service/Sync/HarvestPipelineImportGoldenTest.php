@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Sync\SyncConflictResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Each case imports scripted records and records the summary plus every
@@ -173,7 +174,8 @@ class HarvestPipelineImportGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function (...$args) use ($scenario, &$calls) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($scenario, &$calls) {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$named = $args;
 				$calls[] = ['saveObject', $named];
 				$object = ($named['object'] ?? $named[0]);

@@ -42,6 +42,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Integration tests for ObjectsController
@@ -344,13 +346,13 @@ class ObjectsControllerIntegrationTest extends TestCase {
 		], $data);
 
 		$result = $this->objectService->saveObject(
-			$objectData,
-			null,
-			$this->testRegister,
-			$this->testSchema,
-			null,
-			false,
-			false
+			object: $objectData,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $this->testRegister, schema: $this->testSchema),
+				extend: null
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->createdObjectUuids[] = $result->getUuid();

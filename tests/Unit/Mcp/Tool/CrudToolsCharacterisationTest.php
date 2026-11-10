@@ -44,6 +44,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Pins what the agent, application, schema and register MCP tools write and return.
@@ -491,7 +492,8 @@ class CrudToolsCharacterisationTest extends TestCase
             }
         );
         $service->method('saveObject')->willReturnCallback(
-            function (...$args) use (&$calls, $object): ObjectEntity {
+            function (array|ObjectEntity $payload, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$calls, $object): ObjectEntity {
+                $args = [$payload, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
                 $calls[] = ['saveObject', $args[0], $args[2], $args[3]];
                 return $object;
             }

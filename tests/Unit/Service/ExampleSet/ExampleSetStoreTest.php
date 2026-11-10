@@ -39,6 +39,7 @@ use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\ExampleSet\ObjectCheck;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
@@ -219,7 +220,7 @@ class ExampleSetStoreTest extends TestCase {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('runAsSystem')->willReturnCallback(static fn (callable $operation) => SystemOperationContext::run($operation));
 		$objects->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$seen, $actions, $saved): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seen, $actions, $saved): ObjectEntity {
 				$seen[] = ['system' => SystemOperationContext::isActive(), 'declared' => $actions->writesDeclaredState(uuid: 'case-1')];
 				return $saved;
 			}

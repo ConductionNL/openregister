@@ -81,6 +81,8 @@ use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Tests that a save cannot reach a draft its caller cannot read.
@@ -331,9 +333,7 @@ class ObjectServiceDraftWriteTest extends TestCase {
 		[$register, $schema] = $this->scope(draftsVisible: $draftsVisible);
 		$this->service->saveObject(
 			object: ['subject' => 'changed by somebody else'],
-			register: $register,
-			schema: $schema,
-			uuid: 'draft-1',
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: 'draft-1'),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);

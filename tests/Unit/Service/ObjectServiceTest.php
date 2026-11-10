@@ -80,6 +80,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Comprehensive unit tests for ObjectService.
@@ -760,8 +762,7 @@ class ObjectServiceTest extends TestCase {
 
 		$this->service->saveObject(
 			object: ['x' => 1],
-			register: $this->register,
-			schema: $schemaNoVal
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $schemaNoVal))
 		);
 
 		$this->assertNotNull($handlerScope, 'The save never reached the handler.');

@@ -48,6 +48,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
@@ -365,15 +366,9 @@ class CredentialBrokerMintTest extends TestCase {
 	 */
 	private function stubSaveObject(string $uuid): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				$register = null,
-				$schema = null,
-				?string $incomingUuid = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-			) use ($uuid): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($uuid): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->savedObject = $object;
 				$this->savedScope = [
 					'register' => $register,

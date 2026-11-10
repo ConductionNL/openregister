@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 class MergeServiceExecuteCharacterisationTest extends TestCase {
 
@@ -97,7 +98,9 @@ class MergeServiceExecuteCharacterisationTest extends TestCase {
 		);
 		$objects->method('findAll')->willReturn([]);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, $extend = [], $register = null, $schema = null) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$payload = $object instanceof ObjectEntity ? $object->getObject() : $object;
 				$this->saves[] = ['payload' => $payload, 'register' => $register, 'schema' => $schema];
 				if ($object instanceof ObjectEntity) {

@@ -45,6 +45,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 class ImportHandlerForeignSeedSchemaTest extends TestCase {
 
@@ -110,7 +111,7 @@ class ImportHandlerForeignSeedSchemaTest extends TestCase {
 
 		$this->objectService->method('searchObjects')->willReturn([]);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
 				$this->saved[] = $object;
 				$entity = new ObjectEntity();
 				$entity->setUuid('uuid-' . ($object['@self']['slug'] ?? 'x'));

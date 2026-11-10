@@ -32,6 +32,7 @@ use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 class LinkObjectRelationGoldenTest extends TestCase {
 
@@ -49,7 +50,8 @@ class LinkObjectRelationGoldenTest extends TestCase {
 
 		$this->objects = $this->createMock(ObjectService::class);
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (...$args): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->saved[] = $args;
 				return $this->object('n-1', []);
 			}

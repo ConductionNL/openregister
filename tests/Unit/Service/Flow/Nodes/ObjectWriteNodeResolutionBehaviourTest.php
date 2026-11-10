@@ -44,6 +44,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
@@ -151,7 +152,7 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 	 */
 	private function savesAs(array $uuids): void {
 		$this->objects->method('saveObject')->willReturnCallback(
-			static function (mixed $object) use (&$uuids): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$uuids): ObjectEntity {
 				$entity = new ObjectEntity();
 				$entity->setUuid((string)array_shift($uuids));
 				$entity->setObject((array)$object);
@@ -191,7 +192,7 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 		$this->schemas->method('find')->with('2', self::anything(), false, false)->willReturn($this->schema);
 		$this->objects->expects(self::once())->method('saveObject')
 			->with(['title' => 'a'], self::anything(), $this->register, $this->schema)
-			->willReturnCallback(static function (): ObjectEntity {
+			->willReturnCallback(static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$entity = new ObjectEntity();
 				$entity->setUuid('u-1');
 				$entity->setObject(['title' => 'a']);

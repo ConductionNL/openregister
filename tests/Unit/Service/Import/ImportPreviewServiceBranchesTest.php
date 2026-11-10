@@ -61,6 +61,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 final class ImportPreviewServiceBranchesTest extends TestCase {
 
@@ -521,7 +522,8 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		$this->objectService->expects($this->once())->method('saveObjects')->willThrowException(new RuntimeException('chunk'));
 		$seen = [];
 		$this->objectService->expects($this->exactly(2))->method('saveObject')->willReturnCallback(
-			static function (array $object, ...$rest) use (&$seen, $second): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seen, $second): ObjectEntity {
+				$rest = [$options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				// Captured, not asserted: writeRow() catches every Throwable.
 				$seen[] = ['id' => $object['@self']['id'], 'validation' => $rest[7], 'user' => $rest[9]];
 				if ($object['@self']['id'] === $second) {

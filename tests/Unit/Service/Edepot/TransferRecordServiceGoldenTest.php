@@ -26,6 +26,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Pins every object-store call (and its arguments, including the RBAC and
@@ -65,7 +66,8 @@ class TransferRecordServiceGoldenTest extends TestCase {
 	private function service(): TransferRecordService {
 		$store = $this->createMock(ObjectOperationsInterface::class);
 		$store->method('saveObject')->willReturnCallback(
-			function (mixed ...$args): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->calls[] = ['saveObject', $args];
 				return self::entity(uuid: 'saved-uuid', data: ['stored' => true]);
 			}

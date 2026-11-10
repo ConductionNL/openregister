@@ -76,6 +76,8 @@ use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * The pre-validation cascade runs inside a cascade scope that carries the save's RBAC mode.
@@ -242,8 +244,7 @@ class ObjectServiceCascadeScopeTest extends TestCase {
 		$schema->setSlug('ticket');
 		$this->service->saveObject(
 			object: ['subject' => 'new', 'note' => ['text' => 'nested']],
-			register: $register,
-			schema: $schema,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema)),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -301,8 +302,7 @@ class ObjectServiceCascadeScopeTest extends TestCase {
 
 		$this->service->saveObject(
 			object: ['subject' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]],
-			register: $register,
-			schema: $schema,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema)),
 			_rbac: false,
 			_multitenancy: false
 		);

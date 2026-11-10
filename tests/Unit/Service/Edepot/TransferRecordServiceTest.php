@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * TransferRecordServiceTest.
@@ -64,7 +65,10 @@ class TransferRecordServiceTest extends TestCase {
 
 		$savedArgs = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use ($entity, &$savedArgs) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($entity, &$savedArgs) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$savedArgs = ['register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 				return $entity;
 			}

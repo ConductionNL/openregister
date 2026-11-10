@@ -46,6 +46,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Tests for object-write's whole-object payload path.
@@ -213,7 +214,7 @@ class ObjectWritePayloadFromTest extends TestCase {
 	public function testWritesTheObjectAtThePathWhole(): void {
 		$seen = null;
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (mixed $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, bool $_validation = true, ?array $uploadedFiles = null, ?IUser $currentUser = null) use (&$seen): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seen): ObjectEntity {
 				$seen = $object;
 
 				return $this->entity('uuid-1', (array)$object);

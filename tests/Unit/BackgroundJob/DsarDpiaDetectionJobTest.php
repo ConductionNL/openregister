@@ -42,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\BackgroundJob\Support\DsarDpiaDetectionServices;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * DsarDpiaDetectionJobTest.
@@ -114,7 +115,8 @@ class DsarDpiaDetectionJobTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use (&$savedFlags) {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$savedFlags) {
+				$uuid = $options->uuid;
 				$savedFlags[(string)$uuid] = $object['dpiaRequired'];
 				$saved = new ObjectEntity();
 				$saved->setUuid((string)$uuid);
@@ -185,7 +187,8 @@ class DsarDpiaDetectionJobTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use (&$written) {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$written) {
+				$uuid = $options->uuid;
 				$written[] = $uuid;
 				$saved = new ObjectEntity();
 				$saved->setUuid((string)$uuid);

@@ -37,6 +37,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Unit tests for SchemaDerivedToolProvider.
@@ -446,7 +447,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		$captured = null;
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(function (mixed $object) use (&$captured) {
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured) {
 				$captured = $object;
 				return $this->mockObject(['id' => 'new-uuid', 'name' => 'X']);
 			});
@@ -465,7 +466,8 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		$capturedArgs = null;
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(function (mixed ...$args) use (&$capturedArgs) {
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$capturedArgs) {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$capturedArgs = $args;
 				return $this->mockObject(['id' => 'uuid-2', 'name' => 'Edited']);
 			});

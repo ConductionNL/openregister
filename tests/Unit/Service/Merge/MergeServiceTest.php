@@ -46,6 +46,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 class MergeServiceTest extends TestCase {
 
@@ -192,7 +193,7 @@ class MergeServiceTest extends TestCase {
 
 		$saveCalls = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, ...$rest) use (&$saveCalls, $savedFrom, $savedInto, $savedOperation) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saveCalls, $savedFrom, $savedInto, $savedOperation) {
 				$saveCalls[] = $object;
 				if ($object instanceof ObjectEntity && $object->getUuid() === 'from-uuid') {
 					return $savedFrom;

@@ -18,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Records the mapper calls, log lines and result of massValidateObjects(), per scenario,
@@ -68,7 +69,8 @@ class SettingsServiceMassValidateGoldenTest extends TestCase {
 		});
 
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('saveObject')->willReturnCallback(function (...$args) {
+		$objectService->method('saveObject')->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+			$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 			$this->calls[] = ['save', $args[4], $args[0]];
 			if ($args[4] === 'uuid-1') {
 				throw new Exception('rejected');

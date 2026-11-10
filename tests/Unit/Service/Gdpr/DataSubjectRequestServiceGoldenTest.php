@@ -47,6 +47,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Golden test for DataSubjectRequestService.
@@ -187,7 +188,8 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$object = $args[0];
 				$this->saves[] = [$object->getUuid(), $args[5], $args[6]];
 				if (in_array($object->getUuid(), $this->failingSaves, true) === true) {

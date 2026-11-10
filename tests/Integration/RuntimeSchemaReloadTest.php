@@ -70,6 +70,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
  * Service-level integration tests for the runtime-schema-api spec.
@@ -441,8 +443,7 @@ class RuntimeSchemaReloadTest extends TestCase {
 			// persistence not available", skipping a test that could run.
 			$created = $this->objectService->saveObject(
 				object: ['name' => 'guard-fixture'],
-				register: $register,
-				schema: $schema,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema)),
 				_rbac: false,
 				_multitenancy: false
 			);

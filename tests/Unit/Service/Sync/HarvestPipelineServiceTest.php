@@ -42,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Sync\HarvestPipelineService
@@ -186,7 +187,7 @@ class HarvestPipelineServiceTest extends TestCase {
 		$this->syncRecordMapper->method('findByExternalId')->willReturn(null);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$obj = new ObjectEntity();
 				$obj->setUuid('new-uuid');
 				return $obj;
@@ -269,7 +270,7 @@ class HarvestPipelineServiceTest extends TestCase {
 		// First save succeeds, second throws (e.g. schema validation failure).
 		$calls = 0;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function () use (&$calls): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$calls): ObjectEntity {
 				$calls++;
 				if ($calls === 2) {
 					throw new RuntimeException('validation failed');

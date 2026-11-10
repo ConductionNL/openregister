@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\Merge\MasterRecomputeService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Each branch of one recompute.
@@ -79,7 +80,7 @@ class MasterRecomputeServiceTest extends TestCase {
 		$objects->expects($this->once())->method('saveObject')
 			->with($this->identicalTo($master), [], '3', '7', 'm-1')
 			->willReturnCallback(
-				function (ObjectEntity $object) use (&$saved): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saved): ObjectEntity {
 					$saved = $object->getObject();
 					return $object;
 				}

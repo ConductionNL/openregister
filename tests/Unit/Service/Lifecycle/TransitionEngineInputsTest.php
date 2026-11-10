@@ -42,6 +42,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Lifecycle\TransitionEngine
@@ -161,7 +162,7 @@ class TransitionEngineInputsTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array $object) use (&$captured): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured): ObjectEntity {
 					$captured = $object;
 					return $this->timesheet();
 				}
@@ -197,7 +198,7 @@ class TransitionEngineInputsTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array $object) use (&$captured): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured): ObjectEntity {
 					$captured = $object;
 					return $this->timesheet();
 				}
@@ -312,7 +313,7 @@ class TransitionEngineInputsTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array $object) use (&$captured): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured): ObjectEntity {
 					$captured = $object;
 					return $this->timesheet();
 				}
@@ -344,7 +345,7 @@ class TransitionEngineInputsTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array $object) use (&$captured): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured): ObjectEntity {
 					$captured = $object;
 					return $this->timesheet();
 				}

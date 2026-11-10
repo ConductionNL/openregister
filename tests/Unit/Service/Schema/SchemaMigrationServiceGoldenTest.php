@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 class SchemaMigrationServiceGoldenTest extends TestCase {
 	private SchemaMigrationService $service;
@@ -116,7 +117,8 @@ class SchemaMigrationServiceGoldenTest extends TestCase {
 
 	private function saveRefusesU8(): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->saves[] = $args;
 				if ($args[4] === 'u8') {
 					throw new RuntimeException('save refused');
@@ -235,7 +237,8 @@ class SchemaMigrationServiceGoldenTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->saves[] = $args;
 				if ($args[4] === 'refused') {
 					throw new RuntimeException('restore refused');

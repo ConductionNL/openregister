@@ -47,6 +47,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * TemporalCalculationSweepServiceGoldenTest.
@@ -239,7 +240,12 @@ class TemporalCalculationSweepServiceGoldenTest extends TestCase {
 		);
 		$saved = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function (array $object, $extend, $register, $schema, $uuid, $rbac, $multitenancy) use (&$saved): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saved): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
+				$rbac = $_rbac;
+				$multitenancy = $_multitenancy;
 				if ($uuid === 'savefails') {
 					throw new RuntimeException('refused');
 				}

@@ -43,6 +43,7 @@ use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
@@ -155,7 +156,7 @@ class CredentialOAuth2MintTest extends TestCase {
 	private function makeBroker(): CredentialBrokerService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array | ObjectEntity $object): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$this->savedObject = (is_array($object) === true ? $object : $object->getObject());
 				$saved = new ObjectEntity();
 				$saved->setUuid('minted-uuid');

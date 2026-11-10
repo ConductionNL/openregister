@@ -46,6 +46,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Test class for DataSubjectRequestService.
@@ -323,7 +324,7 @@ class DataSubjectRequestServiceTest extends TestCase {
 		// EXACTLY ONE WRITE. The retained record is never handed to the audited
 		// save path at all, so it cannot be tombstoned on the way past.
 		$this->objectService->expects($this->once())->method('saveObject')->willReturnCallback(
-			function ($object) use ($ordinary) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($ordinary) {
 				$this->assertSame($ordinary, $object);
 				return $ordinary;
 			}
@@ -464,7 +465,7 @@ class DataSubjectRequestServiceTest extends TestCase {
 
 		// Only the free object is written (erased) via the audited save path.
 		$this->objectService->expects($this->once())->method('saveObject')->willReturnCallback(
-			function ($object) use ($free) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($free) {
 				$this->assertSame($free, $object);
 				return $free;
 			}

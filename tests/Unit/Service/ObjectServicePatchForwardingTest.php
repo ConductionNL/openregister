@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\ObjectService
@@ -114,7 +115,8 @@ class ObjectServicePatchForwardingTest extends TestCase {
 			->onlyMethods(['saveObject'])
 			->getMock();
 		$service->method('saveObject')->willReturnCallback(
-			static function (mixed ...$args) use (&$seen, $existing): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seen, $existing): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$seen['save'] = $args;
 				return $existing;
 			}

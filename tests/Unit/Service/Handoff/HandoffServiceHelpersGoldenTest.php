@@ -64,6 +64,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 final class HandoffServiceHelpersGoldenTest extends TestCase {
 
@@ -253,7 +254,8 @@ final class HandoffServiceHelpersGoldenTest extends TestCase {
 
 		$target = $this->targetObject();
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args) use ($target, $source, $sourceSaveFails): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($target, $source, $sourceSaveFails): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$call = $this->named(class: ObjectService::class, method: 'saveObject', args: $args);
 				$this->saves[] = $call;
 				if ($call['uuid'] === 'src-uuid') {

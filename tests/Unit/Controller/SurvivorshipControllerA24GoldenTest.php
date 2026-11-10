@@ -38,6 +38,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SurvivorshipControllerFactory;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Pins the RBAC/tenant-scoped read, the write order and every status mapping.
@@ -243,7 +244,11 @@ class SurvivorshipControllerA24GoldenTest extends TestCase {
 		$saved = $this->object(['golden' => 'yes']);
 		$saved->setUuid('m-1');
 		$this->objects->expects($this->once())->method('saveObject')->willReturnCallback(
-			function ($obj, ?array $extend = [], $register = null, $schema = null, ?string $uuid = null) use ($object, $saved) {
+			function (array|ObjectEntity $payload, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($object, $saved) {
+				$obj = $payload;
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->calls[] = 'save';
 				$this->assertSame([$object, 'reg', 'sch', 'm-1'], [$obj, $register, $schema, $uuid]);
 				$this->assertSame(
@@ -274,7 +279,8 @@ class SurvivorshipControllerA24GoldenTest extends TestCase {
 		$object = $this->object(['attributeOverrides' => ['name' => ['value' => 'x']]]);
 		$this->findYields($object);
 		$this->schemaConfig(['x-openregister-survivorship' => ['overridesField' => '']]);
-		$this->objects->method('saveObject')->willReturnCallback(function ($obj) {
+		$this->objects->method('saveObject')->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+			$obj = $object;
 			$this->assertSame(['id' => 'm-1', 'attributeOverrides' => []], $obj->getObject());
 			return $obj;
 		});

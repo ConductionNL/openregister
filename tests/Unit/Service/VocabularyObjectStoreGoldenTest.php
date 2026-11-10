@@ -16,6 +16,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\VocabularyObjectStore;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Golden test for VocabularyObjectStore: pins the exact findAll configs and
@@ -43,7 +44,10 @@ final class VocabularyObjectStoreGoldenTest extends TestCase {
 			}
 		);
 		$service->method('saveObject')->willReturnCallback(
-			function ($object, $extend = [], $register = null, $schema = null, $uuid = null): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->calls[] = ['saveObject', $object, $register, $schema, $uuid];
 				return $this->entity($uuid ?? 'new-uuid', $object);
 			}

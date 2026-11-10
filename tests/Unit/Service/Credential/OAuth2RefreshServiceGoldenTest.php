@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Credential\OAuth2RefreshSteps;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshTarget;
 use OCA\OpenRegister\Service\Credential\TokenSetAddress;
 use OCA\OpenRegister\Event\CredentialRelinkRequiredEvent;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Golden outcomes of the OAuth2 token refresh.
@@ -513,7 +514,10 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 			return $entity;
 		});
 		$objects->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object, ?array $extend = [], $register = null, $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->events[] = 'save';
 				$object['@args'] = ['register' => $register, 'schema' => $schema, 'uuid' => $uuid, '_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
 				$this->saves[] = $object;

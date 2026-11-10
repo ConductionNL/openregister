@@ -53,6 +53,7 @@ use OCP\Security\Bruteforce\IThrottler;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * A federated create may not address an existing object.
@@ -120,7 +121,8 @@ class FederationControllerCreateIdentityTest extends TestCase {
 
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				// saveObject is called with named arguments; the object is the
 				// first, however PHPUnit hands it back.
 				$this->written = (array)($args[0] ?? []);

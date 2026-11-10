@@ -40,6 +40,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Seed objects follow the shipped version through the real importFromJson().
@@ -167,7 +168,8 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 	private function saves(callable $refuse): void {
 		$attempt = 0;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend = [], $register = null, $schema = null, ?string $uuid = null) use ($refuse, &$attempt): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($refuse, &$attempt): ObjectEntity {
+				$uuid = $options->uuid;
 				$slug = (string)($object['@self']['slug'] ?? '');
 				if ($slug === 'woo-verzoek') {
 					$attempt++;

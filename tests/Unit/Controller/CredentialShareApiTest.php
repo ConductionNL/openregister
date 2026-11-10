@@ -47,6 +47,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 class CredentialShareApiTest extends TestCase {
 
@@ -321,7 +322,8 @@ class CredentialShareApiTest extends TestCase {
 		$objectService->method('setSchema')->willReturnSelf();
 		$objectService->method('findAll')->willReturn([$credential]);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (...$args) use ($credential): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($credential): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				// Named or positional: the object body is the first argument.
 				$object = ($args[0] ?? []);
 				if (is_array($object) === true) {

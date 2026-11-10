@@ -47,6 +47,7 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Throwable;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
@@ -344,7 +345,7 @@ final class ObjectWriteConfigGoldenTest extends TestCase {
 		$store = $this->createMock(ObjectOperationsInterface::class);
 		$store->method('runAs')->willReturnCallback(static fn (IUser $user, callable $work): mixed => $work());
 		$store->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$this->saved[] = (array)$object;
 				$entity = new ObjectEntity();
 				$entity->setUuid('fixed-uuid');

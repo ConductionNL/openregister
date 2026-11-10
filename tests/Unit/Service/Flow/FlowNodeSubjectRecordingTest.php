@@ -50,6 +50,7 @@ use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Wiring tests for the two recording nodes.
@@ -298,7 +299,7 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 	public function testAMultiObjectWriteHandsOverEveryUuid(): void {
 		$uuids = ['obj-1', 'obj-2'];
 		$this->objects->method('saveObject')->willReturnCallback(
-			function () use (&$uuids): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$uuids): ObjectEntity {
 				return $this->saved((string)array_shift($uuids));
 			}
 		);

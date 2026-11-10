@@ -24,6 +24,7 @@ use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Unit tests for ObjectsToolProvider.
@@ -167,7 +168,7 @@ class ObjectsToolProviderTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (mixed $object) use (&$captured): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured): ObjectEntity {
 					$captured = $object;
 					return $this->mockObject(['uuid' => 'new', 'name' => 'X']);
 				}
@@ -197,7 +198,8 @@ class ObjectsToolProviderTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (mixed ...$args) use (&$capturedArgs): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$capturedArgs): ObjectEntity {
+					$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 					$capturedArgs = $args;
 					return $this->mockObject(['uuid' => 'uuid-2', 'name' => 'Edited']);
 				}

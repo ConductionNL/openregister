@@ -46,6 +46,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
  * Resilience + no-user-context fallback regression tests for ImportHandler.
@@ -192,7 +193,7 @@ class ImportHandlerResilienceTest extends TestCase {
 
 		// 'bad' object throws a validation failure; 'good' saves fine.
 		$this->objectService->method('saveObject')
-			->willReturnCallback(function (array $object) {
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
 				$slug = $object['@self']['slug'] ?? null;
 				if ($slug === 'bad') {
 					throw new RuntimeException('The required property (name) is missing');
@@ -279,19 +280,9 @@ class ImportHandlerResilienceTest extends TestCase {
 		// MIDDLE reads the wrong argument under the right name.
 		$capturedUser = null;
 		$this->objectService->method('saveObject')
-			->willReturnCallback(function (
-				$object,
-				$extend = [],
-				$register = null,
-				$schema = null,
-				$uuid = null,
-				$rbac = true,
-				$multitenancy = true,
-				$silent = false,
-				$validation = true,
-				$uploadedFiles = null,
-				$currentUser = null,
-			) use (&$capturedUser) {
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$capturedUser) {
+				$uuid = $options->uuid;
+				$currentUser = $options->actor->currentUser;
 				$capturedUser = $currentUser;
 				$entity = new \OCA\OpenRegister\Db\ObjectEntity();
 				$entity->setUuid('uuid');
