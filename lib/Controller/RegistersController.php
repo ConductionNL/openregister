@@ -34,6 +34,7 @@ use OCA\OpenRegister\Controller\Support\RegisterStatistics;
 use OCA\OpenRegister\Controller\Support\RegisterUpdate;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -524,7 +525,7 @@ class RegistersController extends Controller {
 	 */
 	private function shownStats(mixed $registerId): array {
 		return [
-			'objects' => $this->services->mappers->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null),
+			'objects' => $this->services->mappers->objectEntityMapper->getStatistics(scope: new StatisticsScope(registerId: $registerId)),
 			'logs' => $this->auditLogStats(registerId: (int)$registerId),
 			'files' => [ 'total' => 0, 'size' => 0 ],
 		];
@@ -862,7 +863,7 @@ class RegistersController extends Controller {
 	 * @return int Total object count.
 	 */
 	private function countRegisterObjects(int $registerId): int {
-		$stats = $this->services->mappers->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+		$stats = $this->services->mappers->objectEntityMapper->getStatistics(scope: new StatisticsScope(registerId: $registerId));
 		return (int)$stats['total'];
 	}//end countRegisterObjects()
 

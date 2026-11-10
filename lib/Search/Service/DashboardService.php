@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Search\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -93,8 +94,9 @@ class DashboardService {
 	 */
 	private function getStats(?int $registerId = null, ?int $schemaId = null): array {
 		try {
+			$scope = new StatisticsScope(registerId: $registerId, schemaId: $schemaId);
 			return [
-				'objects' => $this->objectTotals(stats: $this->mappers->catalog->tables()->getStatistics(registerId: $registerId, schemaId: $schemaId)),
+				'objects' => $this->objectTotals(stats: $this->mappers->catalog->tables()->getStatistics(scope: $scope)),
 				'logs' => $this->sizeTotals(stats: $this->mappers->auditTrailMapper->getStatistics(registerId: $registerId, schemaId: $schemaId)),
 				'webhookLogs' => $this->webhookLogTotals(),
 				'files' => self::ZERO_TOTALS,
@@ -126,7 +128,7 @@ class DashboardService {
 		try {
 			$valid = $this->validCombinations();
 			return [
-				'objects' => $this->objectTotals(stats: $this->mappers->catalog->tables()->getStatistics(registerId: null, schemaId: null, exclude: $valid)),
+				'objects' => $this->objectTotals(stats: $this->mappers->catalog->tables()->getStatistics(scope: new StatisticsScope(exclude: $valid))),
 				'logs' => $this->sizeTotals(stats: $this->mappers->auditTrailMapper->getStatistics(registerId: null, schemaId: null, exclude: $valid)),
 				'files' => self::ZERO_TOTALS,
 			];

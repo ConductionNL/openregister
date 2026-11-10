@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -208,17 +209,11 @@ abstract class AbstractObjectMapper {
 	/**
 	 * Get statistics for objects.
 	 *
-	 * @param int|array|null $registerId Filter by register ID(s).
-	 * @param int|array|null $schemaId Filter by schema ID(s).
-	 * @param array $exclude Combinations to exclude.
+	 * @param StatisticsScope $scope The registers and schemas to cover and the pairs to leave out; every table when omitted.
 	 *
 	 * @return array Statistics including total, size, invalid, deleted, locked counts.
 	 */
-	abstract public function getStatistics(
-		int|array|null $registerId = null,
-		int|array|null $schemaId = null,
-		array $exclude = [],
-	): array;
+	abstract public function getStatistics(StatisticsScope $scope=new StatisticsScope()): array;
 
 	/**
 	 * Get chart data for objects grouped by register.
