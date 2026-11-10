@@ -73,6 +73,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 class ObjectServiceRawAppendTest extends TestCase {
 
@@ -104,7 +105,7 @@ class ObjectServiceRawAppendTest extends TestCase {
 		$this->schema->setId(2);
 		$this->schema->setSlug('portalTrafficEvent');
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->createMock(DeleteObject::class),
 			$this->createMock(GetObject::class),
@@ -143,7 +144,7 @@ class ObjectServiceRawAppendTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}
 
 	/**

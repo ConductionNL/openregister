@@ -49,6 +49,7 @@ use ReflectionNamedType;
 use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepSources;
 use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepPlatform;
 use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 class ViewAlertCountsTheViewQueryTest extends TestCase {
 
@@ -122,7 +123,7 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 	 */
 	private function realObjectService(): ObjectService {
 		$args = [];
-		foreach ((new ReflectionClass(ObjectService::class))->getConstructor()->getParameters() as $param) {
+		foreach ((new \ReflectionMethod(ObjectServiceFactory::class, 'args'))->getParameters() as $param) {
 			$type = $param->getType();
 			if ($param->isOptional() === true) {
 				$args[] = $param->getDefaultValue();
@@ -144,7 +145,7 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 		}
 
 		$service = $this->getMockBuilder(ObjectService::class)
-			->setConstructorArgs($args)
+			->setConstructorArgs(ObjectServiceFactory::args(...$args))
 			->onlyMethods(['runAs'])
 			->getMock();
 		$service->method('runAs')->willReturnCallback(
