@@ -116,36 +116,60 @@ class SharePrincipalDeriver implements SharePrincipalDeriverInterface {
 		}
 
 		$valid = [];
-
 		foreach ($sharedWith as $entry) {
-			if (is_array($entry) === false) {
-				continue;
+			$kept = self::validEntry(entry: $entry);
+			if ($kept !== null) {
+				$valid[] = $kept;
 			}
-
-			$type = ($entry['type'] ?? null);
-			if ($type !== self::TYPE_USER && $type !== self::TYPE_GROUP) {
-				continue;
-			}
-
-			$id = ($entry['id'] ?? null);
-			if (is_string($id) === false || trim($id) === '') {
-				continue;
-			}
-
-			$permission = ($entry['permission'] ?? null);
-			if (is_string($permission) === false) {
-				$permission = null;
-			}
-
-			$valid[] = [
-				'type' => $type,
-				'id' => trim($id),
-				'permission' => $permission,
-			];
-		}//end foreach
+		}
 
 		return $valid;
 	}//end validEntries()
+
+	/**
+	 * One share entry with a known type and a non-blank id, trimmed; null when it is dropped.
+	 *
+	 * @param mixed $entry One entry of the share list.
+	 *
+	 * @return array{type: string, id: string, permission: string|null}|null The entry.
+	 */
+	private static function validEntry(mixed $entry): ?array {
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$type = ($entry['type'] ?? null);
+		if ($type !== self::TYPE_USER && $type !== self::TYPE_GROUP) {
+			return null;
+		}
+
+		$id = ($entry['id'] ?? null);
+		if (is_string($id) === false || trim($id) === '') {
+			return null;
+		}
+
+		return [
+			'type' => $type,
+			'id' => trim($id),
+			'permission' => self::permissionOf(entry: $entry),
+		];
+	}//end validEntry()
+
+	/**
+	 * The entry's permission, or null when it names none as a string.
+	 *
+	 * @param array<string, mixed> $entry One share entry.
+	 *
+	 * @return string|null The permission.
+	 */
+	private static function permissionOf(array $entry): ?string {
+		$permission = ($entry['permission'] ?? null);
+		if (is_string($permission) === false) {
+			return null;
+		}
+
+		return $permission;
+	}//end permissionOf()
 
 	/**
 	 * Whether a principal holds one of the given permissions on a share list.
