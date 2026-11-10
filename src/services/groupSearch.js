@@ -44,6 +44,21 @@ function fetchGroupsMatching(query) {
 }
 
 /**
+ * The groups an OCS answer names, as picker options; undefined when the
+ * answer named no groups.
+ *
+ * @param {object} data The OCS answer.
+ * @param {function(string): object} toGroup How a group id becomes a picker option.
+ * @return {Array<object>|undefined} The picker options.
+ */
+function foundGroups(data, toGroup) {
+	if (data.ocs?.data?.groups) {
+		return data.ocs.data.groups.map(toGroup)
+	}
+	return undefined
+}
+
+/**
  * Offer the found groups on the picker, after the selected ones; nothing
  * changes when the answer named no groups.
  *
@@ -70,7 +85,7 @@ async function runGroupSearch(vm, search) {
 		const response = await fetchGroupsMatching(search.query)
 		if (response.ok) {
 			const data = await response.json()
-			offerGroups(vm, data.ocs?.data?.groups?.map(search.toGroup))
+			offerGroups(vm, foundGroups(data, search.toGroup))
 		} else if (search.warnOnRefusal) {
 			// eslint-disable-next-line no-console
 			console.warn('Failed to search groups:', response.statusText)
