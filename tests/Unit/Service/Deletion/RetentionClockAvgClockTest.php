@@ -57,6 +57,8 @@ final class RetentionClockAvgClockTest extends TestCase {
 
 	/**
 	 * @param Verwerkingsactiviteit|RuntimeException|null $activity What resolving the reference gives.
+	 *
+	 * @return RetentionClockService The service.
 	 */
 	private function service(Verwerkingsactiviteit|RuntimeException|null $activity): RetentionClockService {
 		$mapper = $this->createMock(VerwerkingsactiviteitMapperInterface::class);
@@ -91,7 +93,9 @@ final class RetentionClockAvgClockTest extends TestCase {
 			$object->setUpdated(new DateTime($updated));
 		}
 
-		$object->setCreated($created === null ? null : new DateTime($created));
+		if ($created !== null) {
+			$object->setCreated(new DateTime($created));
+		}
 
 		return $object;
 	}

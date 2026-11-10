@@ -66,7 +66,12 @@ final class DeletionScopeAndWindowGoldenTest extends TestCase {
 		if ($instance instanceof RuntimeException) {
 			$handler->method('getRetentionSettingsOnly')->willThrowException($instance);
 		} else {
-			$handler->method('getRetentionSettingsOnly')->willReturn($instance === null ? [] : ['objectDeleteRetention' => $instance]);
+			$settings = [];
+			if ($instance !== null) {
+				$settings = ['objectDeleteRetention' => $instance];
+			}
+
+			$handler->method('getRetentionSettingsOnly')->willReturn($settings);
 		}
 
 		return new DeletionWindowService($handler, $this->logger());
@@ -87,8 +92,10 @@ final class DeletionScopeAndWindowGoldenTest extends TestCase {
 	}
 
 	public function testASchemaRetentionWinsWhenItIsAPositiveNumber(): void {
-		$this->assertSame(['days' => 12, 'source' => DeletionWindow::SOURCE_SCHEMA], $this->windows(864000000)->retentionFor($this->schema(['deleteRetention' => '12'])));
-		$this->assertSame(['days' => 3, 'source' => DeletionWindow::SOURCE_SCHEMA], $this->windows(864000000)->retentionFor($this->schema(['deleteRetention' => 3.9])));
+		$service = $this->windows(864000000);
+
+		$this->assertSame(['days' => 12, 'source' => DeletionWindow::SOURCE_SCHEMA], $service->retentionFor($this->schema(['deleteRetention' => '12'])));
+		$this->assertSame(['days' => 3, 'source' => DeletionWindow::SOURCE_SCHEMA], $service->retentionFor($this->schema(['deleteRetention' => 3.9])));
 	}
 
 	public function testANonNumericOrSubDaySchemaRetentionFallsToTheInstance(): void {
@@ -151,10 +158,12 @@ final class DeletionScopeAndWindowGoldenTest extends TestCase {
 	}
 
 	public function testAScopeNobodyCanHonourIsRefusedWithItsRuleAndMembers(): void {
-		$service = new DestructionScopeService(new AuditRecording($this->createMock(AuditTrailMapper::class), $this->logger()), new DestructionScopeReader(), new DestructionCompanions());
+		$audit = new AuditRecording($this->createMock(AuditTrailMapper::class), $this->logger());
+		$service = new DestructionScopeService($audit, new DestructionScopeReader(), new DestructionCompanions());
+		$declared = ['everything', DestructionScope::NOTES, DestructionScope::VERSIONS];
 
 		try {
-			$service->destroy($this->object(), $this->schema([DestructionScope::SCHEMA_KEY => ['everything', DestructionScope::NOTES, DestructionScope::VERSIONS]]));
+			$service->destroy($this->object(), $this->schema([DestructionScope::SCHEMA_KEY => $declared]));
 			$this->fail('A scope naming members nobody can honour must be refused.');
 		} catch (DestructionRefusedException $refusal) {
 			$this->assertSame('destruction-scope-unclear', $refusal->getRule());
@@ -163,7 +172,8 @@ final class DeletionScopeAndWindowGoldenTest extends TestCase {
 				[
 					'error' => 'DESTRUCTION_REFUSED',
 					'rule' => 'destruction-scope-unclear',
-					'message' => 'The declared destruction scope names members this instance cannot honour: everything, notes.',
+					'message' => 'The declared destruction scope names members this instance cannot honour: '
+						. 'everything, notes.',
 					'unknown' => ['everything'],
 					'unavailable' => [DestructionScope::NOTES],
 				],
@@ -183,7 +193,8 @@ final class DeletionScopeAndWindowGoldenTest extends TestCase {
 		$notes->method('countNotesForObject')->willReturn(2);
 		$notes->method('deleteNotesForObject')->willThrowException(new RuntimeException('notes locked'));
 
-		$service = new DestructionScopeService(new AuditRecording($mapper, $this->logger()), new DestructionScopeReader(), new DestructionCompanions($notes));
+		$audit = new AuditRecording($mapper, $this->logger());
+		$service = new DestructionScopeService($audit, new DestructionScopeReader(), new DestructionCompanions($notes));
 
 		$report = $service->destroy(
 			$this->object(),
@@ -200,9 +211,7 @@ final class DeletionScopeAndWindowGoldenTest extends TestCase {
 			$report
 		);
 		$errors = array_values(array_filter($this->logs, static fn (array $log): bool => $log[0] === 'error'));
-		$this->assertSame(
-			[['error', '[DestructionScope] Failed to destroy scope member', ['member' => DestructionScope::NOTES, 'uuid' => 'zaak-7', 'error' => 'notes locked']]],
-			$errors
-		);
+		$context = ['member' => DestructionScope::NOTES, 'uuid' => 'zaak-7', 'error' => 'notes locked'];
+		$this->assertSame([['error', '[DestructionScope] Failed to destroy scope member', $context]], $errors);
 	}
 }//end class
