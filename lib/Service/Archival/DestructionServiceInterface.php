@@ -68,23 +68,17 @@ interface DestructionServiceInterface {
 	 * handlePartialApproval(), which REPLACES `objects`.
 	 *
 	 * @param array<string, mixed> $destructionList The destruction list data.
-	 * @param ApprovalChoice|null $choice Approve all (the default), or approve with records excluded and why;
-	 *                                    from {@see approvalChoice()}.
-	 * @param bool $requiresDual Whether two-step approval is required.
-	 * @param string|null $listUuid UUID of the persisted destruction list; passed to the
-	 *                              execution job so it can reload the list from storage.
+	 * @param ApprovalRequest      $request         The choice (from {@see approvalChoice()}), whether two-step
+	 *                                              approval is required, and the persisted list's uuid the
+	 *                                              execution job reloads.
 	 *
 	 * @return array<string, mixed> The updated destruction list.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Configuration-driven dual approval toggle
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function approveList(
-		array $destructionList, ?ApprovalChoice $choice=null, bool $requiresDual=false, ?string $listUuid=null
-	): array;
+	public function approveList(array $destructionList, ApprovalRequest $request): array;
 
 	/**
 	 * Reject an entire destruction list.

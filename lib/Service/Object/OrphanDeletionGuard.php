@@ -20,7 +20,6 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Archival\RecordState;
@@ -64,21 +63,6 @@ class OrphanDeletionGuard {
 	}//end __construct()
 
 	/**
-	 * Whether the signed-in caller may soft-delete this row.
-	 *
-	 * @param ObjectEntity $row      The row.
-	 * @param Register     $register The row's register.
-	 * @param Schema       $schema   The row's schema.
-	 *
-	 * @return bool False on any refusal or failure.
-	 *
-	 * @spec openspec/specs/referential-integrity/spec.md
-	 */
-	public function allows(ObjectEntity $row, Register $register, Schema $schema): bool {
-		return $this->allowsIn(row: $row, table: new RegisterSchema(register: $register, schema: $schema));
-	}//end allows()
-
-	/**
 	 * Whether the signed-in caller may soft-delete this row of this table.
 	 *
 	 * @param ObjectEntity   $row   The row.
@@ -88,7 +72,7 @@ class OrphanDeletionGuard {
 	 *
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
-	private function allowsIn(ObjectEntity $row, RegisterSchema $table): bool {
+	public function allows(ObjectEntity $row, RegisterSchema $table): bool {
 		if ($this->userSession->getUser() === null || $this->isProtected(row: $row, schema: $table->schema) === true) {
 			return false;
 		}
@@ -98,7 +82,7 @@ class OrphanDeletionGuard {
 		} catch (Throwable $e) {
 			return false;
 		}
-	}//end allowsIn()
+	}//end allows()
 
 	/**
 	 * Whether the caller holds the row's organisation, may write the shared data, may delete, and the delete passes.

@@ -156,10 +156,8 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 		$block = $this->withScope(object: $object, scope: $change->scope);
 
 		$this->records->authorizationWriter->writeAuthorizationBlock(
-			register: $table->register,
-			schema: $table->schema,
-			objectUuid: (string)$object->getUuid(),
-			block: $block
+			table: $table,
+			assignment: new AuthorizationAssignment(objectUuid: (string)$object->getUuid(), block: $block)
 		);
 
 		return $block;
@@ -722,7 +720,7 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 		$uid = $this->callerUid();
 		$groups = $this->callerGroups(uid: $uid);
 
-		$admittedAs = $this->grantManage->admittedAs(userId: $uid, userGroups: $groups, object: $object);
+		$admittedAs = $this->grantManage->admittedAs(caller: new GrantCaller(userId: $uid, userGroups: $groups), object: $object);
 		if ($admittedAs === null) {
 			throw new NotAuthorizedException(
 				message: 'Only the owner or an administrator may change sharing on this object'
@@ -731,8 +729,7 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 
 		if ($this->grantManage->letsItselfIn(
 			admittedAs: $admittedAs,
-			userId: $uid,
-			userGroups: $groups,
+			caller: new GrantCaller(userId: $uid, userGroups: $groups),
 			principal: ($grantee ?? new GrantedPrincipal())
 		) === true
 		) {

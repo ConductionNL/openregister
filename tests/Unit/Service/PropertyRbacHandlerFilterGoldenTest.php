@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldLists;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCP\IGroupManager;
@@ -145,8 +146,8 @@ final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
 		$actual['omittedWriteOnly'] = $omitted;
 		$actual['omittedProtected'] = [$handler->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: ['status' => $status], stored: $object)), $log];
 		$log = [];
-		$actual['restore'] = $handler->restoreWriteOnlyValues(prepared: $incoming, stored: $object, omittedPaths: [...$omitted, 'nowhere.at.all']);
-		$actual['restoreScalar'] = $handler->restoreWriteOnlyValues(prepared: ['cfg' => 'flat'], stored: $object, omittedPaths: ['cfg.auth.secret']);
+		$actual['restore'] = $handler->restoreWriteOnlyValues(prepared: $incoming, omitted: new OmittedWriteOnly(stored: $object, paths: [...$omitted, 'nowhere.at.all']));
+		$actual['restoreScalar'] = $handler->restoreWriteOnlyValues(prepared: ['cfg' => 'flat'], omitted: new OmittedWriteOnly(stored: $object, paths: ['cfg.auth.secret']));
 		$actual['couldRead'] = array_map(
 			fn (string $p): bool => $handler->couldReadProperty(schema: $schema, property: $p),
 			array_combine(array_keys(self::AUTH), array_keys(self::AUTH))

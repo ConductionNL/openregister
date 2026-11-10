@@ -82,27 +82,10 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 
 
 	/**
-	 * Ensure a specialized table exists for register+schema combination
+	 * Ensure the table of one register+schema target exists and is current.
 	 *
 	 * Creates the table if it doesn't exist, updates it if schema changed,
 	 * and optionally recreates it if force flag is set.
-	 *
-	 * @param Register $register The register context
-	 * @param Schema $schema The schema context
-	 * @param bool $force Force table recreation even if exists
-	 *
-	 * @return bool True if table exists/was created successfully
-	 *
-	 * @throws Exception If table creation/update fails
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows table recreation
-	 */
-	public function ensureTableForRegisterSchema(Register $register, Schema $schema, bool $force = false): bool {
-		return $this->ensureTarget(target: new MagicTableTarget(register: $register, schema: $schema), force: $force);
-	}//end ensureTableForRegisterSchema()
-
-	/**
-	 * Ensure the table of one register+schema target exists and is current.
 	 *
 	 * @param MagicTableTarget $target The register and schema of the table.
 	 * @param bool             $force  Force table recreation even if exists.
@@ -110,8 +93,12 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 	 * @return bool True if table exists/was created successfully
 	 *
 	 * @throws Exception If table creation/update fails
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows table recreation
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
 	 */
-	private function ensureTarget(MagicTableTarget $target, bool $force): bool {
+	public function ensureTargetTable(MagicTableTarget $target, bool $force=false): bool {
 		$target->cacheKey = $this->magicMapper->getCacheKey(registerId: $target->register->getId(), schemaId: $target->schema->getId());
 
 		// Verified once per process, checked FIRST.
@@ -146,7 +133,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 		} catch (Exception $e) {
 			throw $this->ensureFailure(target: $target, error: $e);
 		}
-	}//end ensureTarget()
+	}//end ensureTargetTable()
 
 	/**
 	 * Whether the table's columns were verified this process and its schema version is unchanged.

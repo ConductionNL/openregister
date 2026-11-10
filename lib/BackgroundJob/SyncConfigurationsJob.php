@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Config\ConfigurationRecords;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
 
 /**
  * Class SyncConfigurationsJob
@@ -251,10 +252,7 @@ class SyncConfigurationsJob extends TimedJob {
 		// The repository is stored as owner/repo.
 		[$owner, $repo] = explode('/', $githubRepo);
 		$configData = $this->githubService->getFileContent(
-			owner: $owner,
-			repo: $repo,
-			path: $githubPath,
-			branch: $configuration->getGithubBranch() ?? 'main'
+			location: new GitHubFileLocation(owner: $owner, repo: $repo, path: $githubPath, branch: $configuration->getGithubBranch() ?? 'main')
 		);
 
 		$this->importFetched(configuration: $configuration, configData: $configData);

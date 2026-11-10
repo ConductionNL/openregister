@@ -49,21 +49,14 @@ interface SearchTrailMapperInterface {
 	/**
 	 * Find all search trails with optional filters
 	 *
+	 * @param ListQuery                $query    The page and its sort; unbounded for every row.
 	 * @param SearchTrailCriteria|null $criteria Filters, search term and created window; null for all.
-	 * @param int|null $limit Maximum number of results to return
-	 * @param int|null $offset Number of results to skip
-	 * @param array $sort Sort criteria
 	 *
 	 * @return SearchTrail[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\SearchTrail>
 	 */
-	public function findAll(
-		?SearchTrailCriteria $criteria = null,
-		?int $limit = null,
-		?int $offset = null,
-		array $sort = [],
-	): array;
+	public function findAll(ListQuery $query, ?SearchTrailCriteria $criteria = null): array;
 
 	/**
 	 * Count search trails with optional filters
@@ -77,15 +70,12 @@ interface SearchTrailMapperInterface {
 	/**
 	 * Create a new search trail entry
 	 *
-	 * @param array       $searchQuery   The search query parameters
-	 * @param SearchTrail $outcome       The unsaved trail carrying what the search
-	 *                                   returned: result count and total results.
-	 * @param float       $responseTime  The response time in milliseconds
-	 * @param string      $executionType The execution type ('sync' or 'async')
+	 * @param array              $searchQuery The search query parameters.
+	 * @param SearchTrailOutcome $outcome     The finished outcome values of the search.
 	 *
 	 * @return SearchTrail The created search trail entity
 	 */
-	public function createSearchTrail(array $searchQuery, SearchTrail $outcome, float $responseTime, string $executionType = 'sync'): SearchTrail;
+	public function createSearchTrail(array $searchQuery, SearchTrailOutcome $outcome): SearchTrail;
 
 	/**
 	 * Get search statistics for the given time period

@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
@@ -296,7 +297,7 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 		}
 
 		$routing->method('findSlugHolders')->willReturnCallback(
-			fn ($register, $schema, string $slug): array => ($this->onlyHeldSlug === null || $this->onlyHeldSlug === $slug) ? $holders : []
+			fn (RegisterSchema $table, string $slug): array => ($this->onlyHeldSlug === null || $this->onlyHeldSlug === $slug) ? $holders : []
 		);
 		return $this->buildSlugHandler(
 			magicMapper: $routing,
@@ -359,7 +360,8 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 			}
 		);
 		$routing->method('findSlugsByPrefix')->willReturnCallback(
-			function ($register, $schema, string $prefix): array {
+			function (RegisterSchema $table, string $prefix): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				$matches = [];
 				foreach ($this->inserted as $entity) {
 					if (str_starts_with((string)$entity->getSlug(), $prefix) === true) {
