@@ -57,6 +57,7 @@ use OCA\OpenRegister\Service\Import\ImportValueCaster;
 use OCA\OpenRegister\Service\Import\JsonImportRows;
 use OCA\OpenRegister\Service\Import\MappedSheet;
 use OCA\OpenRegister\Service\Import\MappingErrorRow;
+use OCA\OpenRegister\Service\Import\RowImportTarget;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCP\IGroupManager;
@@ -1424,7 +1425,8 @@ class ImportService implements ObjectImporterInterface {
 			$rowData = $mapped['data'];
 		}
 
-		$parsed['objects'][] = $this->transformCsvRow(rowData: $rowData, table: $line['table'], currentUser: $parse['currentUser']);
+		$target = new RowImportTarget(table: $line['table'], importer: $parse['currentUser']);
+		$parsed['objects'][] = $this->transformCsvRow(rowData: $rowData, target: $target);
 	}//end parseCsvRow()
 
 	/**
@@ -1689,48 +1691,23 @@ class ImportService implements ObjectImporterInterface {
 	}//end buildDryRunSummary()
 
 	/**
-	 * Transform CSV row data to object format for batch saving
-	 *
-	 * @param array $rowData Row data from CSV
-	 * @param Register $register The register
-	 * @param Schema $schema The schema
-	 * @param IUser|null $currentUser The current user performing the import
-	 *
-	 * @return ((int|mixed|string)[]|mixed)[]
-	 *
-	 * @psalm-return array{'@self': array<string, int|mixed|string>,...}
+	 * Transform a CSV row to object format for batch saving, for one register and schema.
 	 *
 	 * Public because the previewed import maps its rows through this exact
 	 * method. A preview produced by a second transform would be a preview of
 	 * something other than what the write does, which is the failure D-1
 	 * exists to prevent.
 	 *
-	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
-	 */
-	public function transformCsvRowToObject(
-		array $rowData,
-		Register $register,
-		Schema $schema,
-		?IUser $currentUser = null,
-	): array {
-		return $this->transformCsvRow(rowData: $rowData, table: new RegisterSchema(register: $register, schema: $schema), currentUser: $currentUser);
-	}//end transformCsvRowToObject()
-
-	/**
-	 * Transform a CSV row to object format for batch saving, for one register and schema.
-	 *
-	 * See {@see transformCsvRowToObject()}: the previewed import maps its rows through the same transform.
-	 *
-	 * @param array          $rowData     Row data from CSV
-	 * @param RegisterSchema $table       The register and schema
-	 * @param IUser|null     $currentUser The current user performing the import
+	 * @param array           $rowData Row data from CSV
+	 * @param RowImportTarget $target  The register and schema, and the importing user
 	 *
 	 * @return array<string, mixed> The object, with its `@self` section
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	public function transformCsvRow(array $rowData, RegisterSchema $table, ?IUser $currentUser = null): array {
-		$isAdmin = $this->isRowImporterAdmin(user: $currentUser);
+	public function transformCsvRow(array $rowData, RowImportTarget $target): array {
+		$isAdmin = $this->isRowImporterAdmin(user: $target->importer);
+		$table = $target->table;
 
 		// Translatable-property pre-pass (register-i18n Phase 3 wire-in):
 		// turn flat `field_lang` columns into the nested `field: {lang: value}`

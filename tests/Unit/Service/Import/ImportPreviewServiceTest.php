@@ -192,7 +192,7 @@ final class ImportPreviewServiceTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($schema);
 
 		$importService = $this->createMock(ImportService::class);
-		$importService->method('transformCsvRowToObject')->willReturnCallback(
+		$importService->method('transformCsvRow')->willReturnCallback(
 			static function (array $rowData) use ($register, $schema): array {
 				$object = $rowData;
 				$object['@self'] = ['register' => $register->getId(), 'schema' => $schema->getId()];
