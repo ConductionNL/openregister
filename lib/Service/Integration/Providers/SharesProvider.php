@@ -47,6 +47,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata;
 // Getters mirror the contract in the interface.
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\Files\Folder;
@@ -455,26 +456,38 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-leaf-foundation/spec.md
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
+		return $this->mintCaseTokenFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), payload: $payload);
+	}//end create()
+
+	/**
+	 * Mint a public case token for the object; any other type, or no token service, answers the 501.
+	 *
+	 * @param ObjectRef           $ref     The owning object.
+	 * @param array<string,mixed> $payload `type` (only `public-token`), `label`, `ttlSeconds`.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function mintCaseTokenFor(ObjectRef $ref, array $payload): array {
 		$type = (string)($payload['type'] ?? 'public-token');
 		if ($type !== 'public-token') {
 			// Only the public-token surface is supported by this provider;
 			// anything else defers to the abstract 501 contract.
-			return parent::create(register: $register, schema: $schema, objectId: $objectId, payload: $payload);
+			return parent::create(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, payload: $payload);
 		}
 
 		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
 		if ($service === null || method_exists($service, 'mint') === false) {
-			return parent::create(register: $register, schema: $schema, objectId: $objectId, payload: $payload);
+			return parent::create(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, payload: $payload);
 		}
 
 		return $service->mint(
-			objectUuid: $objectId,
-			registerId: $this->numericOrNull(value: $register),
-			schemaId: $this->numericOrNull(value: $schema),
+			objectUuid: $ref->id,
+			registerId: $this->numericOrNull(value: (string)$ref->register),
+			schemaId: $this->numericOrNull(value: (string)$ref->schema),
 			label: self::mintLabel(payload: $payload),
 			ttlSeconds: self::mintTtl(payload: $payload)
 		);
-	}//end create()
+	}//end mintCaseTokenFor()
 
 	/**
 	 * The token label from a mint payload, cast to a string when given.
@@ -525,39 +538,49 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-shares/spec.md
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+		$this->revokeFor(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), entityId: $entityId);
+	}//end delete()
+
+	/**
+	 * Revoke a case token (`token:<token-or-id>`) or a file share of the object; without the service, the 501.
+	 *
+	 * @param ObjectRef $ref      The owning object.
+	 * @param string    $entityId `token:<token-or-id>`, or a share id.
+	 *
+	 * @return void
+	 */
+	private function revokeFor(ObjectRef $ref, string $entityId): void {
 		// Case-token revoke path: `token:<token-or-id>`.
 		if (str_starts_with($entityId, 'token:') === true) {
-			$this->deleteCaseToken(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
+			$this->deleteCaseToken(ref: $ref, entityId: $entityId);
 			return;
 		}
 
 		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
 		if ($service === null || method_exists($service, 'revokeShare') === false) {
-			parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
+			parent::delete(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, entityId: $entityId);
 			return;
 		}
 
-		$service->revokeShare($objectId, $entityId);
-	}//end delete()
+		$service->revokeShare($ref->id, $entityId);
+	}//end revokeFor()
 
 	/**
 	 * Revoke a `token:`-addressed case token, or answer the 501 without a token service.
 	 *
-	 * @param string $register Register slug.
-	 * @param string $schema   Schema slug.
-	 * @param string $objectId Owning object uuid.
-	 * @param string $entityId `token:<token-or-id>`.
+	 * @param ObjectRef $ref      The owning object.
+	 * @param string    $entityId `token:<token-or-id>`.
 	 *
 	 * @return void
 	 */
-	private function deleteCaseToken(string $register, string $schema, string $objectId, string $entityId): void {
+	private function deleteCaseToken(ObjectRef $ref, string $entityId): void {
 		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
 		if ($service !== null && method_exists($service, 'revoke') === true) {
-			$service->revoke($objectId, substr($entityId, strlen('token:')));
+			$service->revoke($ref->id, substr($entityId, strlen('token:')));
 			return;
 		}
 
-		parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
+		parent::delete(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, entityId: $entityId);
 	}//end deleteCaseToken()
 
 	/**

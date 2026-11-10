@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
@@ -174,9 +175,20 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+		return $this->linkedEventsOf(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId));
+	}//end list()
+
+	/**
+	 * The object's linked events; none, logged, when the calendar cannot be read.
+	 *
+	 * @param ObjectRef $ref The owning object; register and schema only name it in the log line.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function linkedEventsOf(ObjectRef $ref): array {
 		try {
 			// Tier-2: UNION read across link-table + legacy X-OR-* scan.
-			return $this->calendarLinkService->getLinkedEvents(objectUuid: $objectId);
+			return $this->calendarLinkService->getLinkedEvents(objectUuid: $ref->id);
 		} catch (Throwable $e) {
 			// CalDAV failures (no user, no VEVENT calendar) degrade to
 			// an empty list rather than breaking the tab — AD-23 covers
@@ -184,14 +196,14 @@ class CalendarProvider extends AbstractIntegrationProvider {
 			// for link-table providers) but does NOT mandate silent
 			// failure: surface the cause so an empty Meetings tab can
 			// be diagnosed from nextcloud.log instead of guessing.
-			$scope = ['objectId' => $objectId, 'register' => $register, 'schema' => $schema, 'exception' => $e];
+			$scope = ['objectId' => $ref->id, 'register' => $ref->register, 'schema' => $ref->schema, 'exception' => $e];
 			$this->logger->warning(
 				'CalendarProvider::list() failed; degrading to empty list',
 				['app' => 'openregister', 'provider' => self::class, 'method' => 'list'] + $scope
 			);
 			return [];
 		}//end try
-	}//end list()
+	}//end linkedEventsOf()
 
 	/**
 	 * Unlink a VEVENT.
