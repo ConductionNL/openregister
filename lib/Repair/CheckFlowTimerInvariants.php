@@ -98,23 +98,48 @@ class CheckFlowTimerInvariants implements IRepairStep {
 			return;
 		}
 
-		$defects = array_sum($counts);
-		$message = sprintf(
+		if (array_sum($counts) === 0) {
+			$output->info(self::summary(counts: $counts));
+
+			return;
+		}
+
+		$this->reportDefects(counts: $counts, output: $output);
+	}//end run()
+
+	/**
+	 * The counts line.
+	 *
+	 * @param array{armedWithoutFireAt: int, suspendedWithClock: int, orphaned: int} $counts The defect counts.
+	 *
+	 * @return string The line.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private static function summary(array $counts): string {
+		return sprintf(
 			'Business-timer invariants: %d armed without fire_at, %d suspended with fire_at or running_since, %d orphaned (subject terminal or absent).',
 			$counts['armedWithoutFireAt'],
 			$counts['suspendedWithClock'],
 			$counts['orphaned']
 		);
+	}//end summary()
 
-		if ($defects === 0) {
-			$output->info($message);
-
-			return;
-		}
-
+	/**
+	 * Warn about the defects and log them with their counts; nothing is cancelled.
+	 *
+	 * @param array{armedWithoutFireAt: int, suspendedWithClock: int, orphaned: int} $counts The defect counts.
+	 * @param IOutput                                                                 $output Migration output handle.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private function reportDefects(array $counts, IOutput $output): void {
+		$message = self::summary(counts: $counts);
 		$output->warning($message . ' These are DEFECTS in whoever completed the subject; they are reported, not cancelled.');
 		$this->logger->warning('[CheckFlowTimerInvariants] ' . $message, $counts);
-	}//end run()
+	}//end reportDefects()
 
 	/**
 	 * Count the defects across the armed and suspended timers.
