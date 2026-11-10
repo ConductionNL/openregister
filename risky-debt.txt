@@ -213,3 +213,4 @@ OCA\OpenRegister\Tests\Unit\Service\WebhookServiceTest::testDeliverWebhookSchedu
 /root/sigint/or/tests/Unit/Architecture/HubClassesAreReachedThroughInterfacesTest.php:153
 /root/sigint/or/tests/Unit/AppHost/Scheduling/ManifestScheduleEndToEndTest.php:256
 /root/sigint/or/tests/Unit/AppHost/Scheduling/ManifestScheduleEndToEndTest.php:483
+/root/sigint/or/tests/Unit/Architecture/F02InterfaceBindingsTest.php:136
