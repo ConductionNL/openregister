@@ -200,14 +200,7 @@ class DeleteObject {
 		$options    = ($options ?? new RemovalOptions());
 		$identifier = $this->deletionIdentifier(object: $object);
 
-		// PERF: callers that already resolved the object AND its register/schema
-		// context (deleteObject() always has both after resolveDeletionContext())
-		// pass them in, skipping a full cross-magic-table re-scan per delete.
-		$given = null;
-		if ($object instanceof ObjectEntity === true && $options->table !== null) {
-			$given = new DeletionTarget(object: $object, register: $options->table->register, schema: $options->table->schema);
-		}
-
+		$given  = self::givenDeletionTarget(object: $object, options: $options);
 		$target = ($given ?? $this->lookUpDeletionTarget(object: $object, identifier: $identifier));
 
 		// Asked before the folder goes and before the row is marked deleted.
@@ -226,6 +219,27 @@ class DeleteObject {
 		$this->softDelete(target: $target, cascadeContext: $options->cascadeContext);
 		return true;
 	}//end delete()
+
+	/**
+	 * The deletion target the caller already resolved, when it handed in the
+	 * entity together with its register/schema context.
+	 *
+	 * PERF: callers that already resolved the object AND its register/schema
+	 * context (deleteObject() always has both after resolveDeletionContext())
+	 * pass them in, skipping a full cross-magic-table re-scan per delete.
+	 *
+	 * @param array|JsonSerializable $object  The object to delete.
+	 * @param RemovalOptions         $options The removal options.
+	 *
+	 * @return DeletionTarget|null The target, or null when it must be looked up.
+	 */
+	private static function givenDeletionTarget(array|JsonSerializable $object, RemovalOptions $options): ?DeletionTarget {
+		if ($object instanceof ObjectEntity === true && $options->table !== null) {
+			return new DeletionTarget(object: $object, register: $options->table->register, schema: $options->table->schema);
+		}
+
+		return null;
+	}//end givenDeletionTarget()
 
 	/**
 	 * The identifier of the object handed to delete().
@@ -472,45 +486,76 @@ class DeleteObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function deleteObjectFolder(ObjectEntity $objectEntity): void {
-		if ($this->fileService === null) {
-			return;
-		}
-
 		// Skip objects that never had a folder bound (nothing to clean up).
-		$folderBinding = $objectEntity->getFolder();
-		if ($folderBinding === null || $folderBinding === '') {
+		if ($this->fileService === null || self::hasBoundFolder(objectEntity: $objectEntity) === false) {
 			return;
 		}
 
 		try {
-			$folder = $this->fileService->getObjectFolder(objectEntity: $objectEntity);
-			if ($folder === null) {
-				return;
-			}
-
-			$folder->delete();
-
-			$this->logger->info(
-				message: '[DeleteObject] Removed Nextcloud folder for permanently deleted object',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $objectEntity->getUuid(),
-				]
-			);
+			$this->removeObjectFolder(fileService: $this->fileService, objectEntity: $objectEntity);
 		} catch (\Throwable $e) {
 			// A missing or legacy folder must not abort the permanent delete.
-			$this->logger->warning(
-				message: '[DeleteObject] Failed to remove Nextcloud folder during permanent delete',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $objectEntity->getUuid(),
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
+			$this->logFolderRemovalFailure(objectEntity: $objectEntity, error: $e);
+		}
 	}//end deleteObjectFolder()
+
+	/**
+	 * Whether the object has a folder bound to it.
+	 *
+	 * @param ObjectEntity $objectEntity The object.
+	 *
+	 * @return bool
+	 */
+	private static function hasBoundFolder(ObjectEntity $objectEntity): bool {
+		$folderBinding = $objectEntity->getFolder();
+		return ($folderBinding !== null && $folderBinding !== '');
+	}//end hasBoundFolder()
+
+	/**
+	 * Delete the object's Nextcloud folder, when it resolves, and log the removal.
+	 *
+	 * @param FileFolderServiceInterface $fileService  The file service.
+	 * @param ObjectEntity               $objectEntity The object.
+	 *
+	 * @return void
+	 */
+	private function removeObjectFolder(FileFolderServiceInterface $fileService, ObjectEntity $objectEntity): void {
+		$folder = $fileService->getObjectFolder(objectEntity: $objectEntity);
+		if ($folder === null) {
+			return;
+		}
+
+		$folder->delete();
+
+		$this->logger->info(
+			message: '[DeleteObject] Removed Nextcloud folder for permanently deleted object',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $objectEntity->getUuid(),
+			]
+		);
+	}//end removeObjectFolder()
+
+	/**
+	 * Log a folder that could not be removed during a permanent delete.
+	 *
+	 * @param ObjectEntity $objectEntity The object.
+	 * @param \Throwable   $error        Why it could not be removed.
+	 *
+	 * @return void
+	 */
+	private function logFolderRemovalFailure(ObjectEntity $objectEntity, \Throwable $error): void {
+		$this->logger->warning(
+			message: '[DeleteObject] Failed to remove Nextcloud folder during permanent delete',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $objectEntity->getUuid(),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logFolderRemovalFailure()
 
 	/**
 	 * Perform pre-flight deletion analysis for an object.
