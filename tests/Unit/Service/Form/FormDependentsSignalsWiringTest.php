@@ -54,7 +54,7 @@ class FormDependentsSignalsWiringTest extends TestCase {
 			->willReturnCallback(
 				static function (FormDestinationDependentsEvent $event): void {
 					$event->addForm(
-						new FormDependent(
+						FormDependent::fromPublishedForm(
 							form: new PublishedForm(id: 'form-a', app: 'pipelinq', title: 'Contact'),
 							author: 'alice',
 							mapping: ['fields' => []],

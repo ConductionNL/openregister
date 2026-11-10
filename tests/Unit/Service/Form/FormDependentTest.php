@@ -30,7 +30,7 @@ final class FormDependentTest extends TestCase {
 	public function testEveryAnnouncedFieldReadsBack(): void {
 		$unpublish = static function (): void {
 		};
-		$form = new FormDependent(
+		$form = FormDependent::fromPublishedForm(
 			form: new PublishedForm(id: 'form-a', app: 'pipelinq', title: 'Contact opnemen', audience: 'public'),
 			author: 'alice',
 			mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title']]],
@@ -52,10 +52,32 @@ final class FormDependentTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnInternalFormWithoutACloserHasNoUnpublishOrAudience(): void {
-		$form = new FormDependent(form: new PublishedForm(id: 'form-c', app: 'portaliq', title: 'Melding'), author: null, mapping: []);
+		$form = FormDependent::fromPublishedForm(form: new PublishedForm(id: 'form-c', app: 'portaliq', title: 'Melding'), author: null, mapping: []);
 
 		$this->assertNull($form->author);
 		$this->assertNull($form->unpublish);
 		$this->assertNull($form->audience);
 	}//end testAnInternalFormWithoutACloserHasNoUnpublishOrAudience()
+
+	/**
+	 * The constructor buildiq and portaliq call by name, and positionally, reads back as given.
+	 *
+	 * @return void
+	 */
+	public function testTheLooseValueConstructorAnswersByNameAndPositionally(): void {
+		$unpublish = static function (): void {
+		};
+		$named = new FormDependent(id: 'form-a', app: 'buildiq', title: 'Aanvraag', author: 'alice', mapping: ['fixed' => []], unpublish: $unpublish, audience: 'public');
+		$positional = new FormDependent('form-a', 'buildiq', 'Aanvraag', 'alice', ['fixed' => []], $unpublish, 'public');
+
+		$this->assertEquals($named, $positional);
+		$this->assertSame('form-a', $named->id);
+		$this->assertSame('buildiq', $named->app);
+		$this->assertSame('Aanvraag', $named->title);
+		$this->assertSame('alice', $named->author);
+		$this->assertSame(['fixed' => []], $named->mapping);
+		$this->assertSame($unpublish, $named->unpublish);
+		$this->assertSame('public', $named->audience);
+		$this->assertNull((new FormDependent(id: 'form-b', app: 'portaliq', title: 'Melding', author: null, mapping: []))->audience);
+	}//end testTheLooseValueConstructorAnswersByNameAndPositionally()
 }//end class

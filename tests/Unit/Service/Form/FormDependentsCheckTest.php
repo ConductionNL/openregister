@@ -86,7 +86,7 @@ class FormDependentsCheckTest extends TestCase {
 				$this->assertInstanceOf(FormDestinationDependentsEvent::class, $event);
 				$this->assertSame('ticket', $event->getSchema()->getSlug());
 				$event->addForm(
-					new FormDependent(
+					FormDependent::fromPublishedForm(
 						form: new PublishedForm(id: 'form-a', app: 'pipelinq', title: 'Contact opnemen'),
 						author: 'alice',
 						mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title']]],
@@ -96,7 +96,7 @@ class FormDependentsCheckTest extends TestCase {
 					)
 				);
 				$event->addForm(
-					new FormDependent(
+					FormDependent::fromPublishedForm(
 						form: new PublishedForm(id: 'form-b', app: 'portaliq', title: 'Melding'),
 						author: null,
 						mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title'], ['field' => 'prio', 'property' => 'priority', 'type' => 'choice', 'options' => ['low', 'high']]]],
@@ -107,7 +107,7 @@ class FormDependentsCheckTest extends TestCase {
 				);
 				if ($this->withFailing === true) {
 					$event->addForm(
-						new FormDependent(
+						FormDependent::fromPublishedForm(
 							form: new PublishedForm(id: 'form-d', app: 'pipelinq', title: 'Kapot'),
 							author: 'dave',
 							mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title']]],
@@ -120,7 +120,7 @@ class FormDependentsCheckTest extends TestCase {
 
 				if ($this->withClosureless === true) {
 					$event->addForm(
-						new FormDependent(
+						FormDependent::fromPublishedForm(
 							form: new PublishedForm(id: 'form-c', app: 'pipelinq', title: 'Zonder sluiter'),
 							author: 'carol',
 							mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title']]]
