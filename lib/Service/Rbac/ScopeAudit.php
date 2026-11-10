@@ -105,13 +105,7 @@ class ScopeAudit implements ScopeAuditInterface {
 	 * @return array<string, mixed> The row.
 	 */
 	private function row(Register $register, Schema $schema): array {
-		$set = $this->holders->holders(
-			blocks: [
-				'schema' => $schema->getAuthorization(),
-				'register' => $register->getAuthorization(),
-			],
-			roleDefinitions: $this->roleDefinitionsOf(register: $register)
-		);
+		$set = $this->holdersOn(register: $register, schema: $schema);
 
 		return [
 			'register' => $register->getSlug(),
@@ -121,6 +115,24 @@ class ScopeAudit implements ScopeAuditInterface {
 			'byAction' => $this->byAction(holders: $set['holders']),
 		];
 	}//end row()
+
+	/**
+	 * The holders and denials the schema's and the register's blocks write, with the register's roles.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array{holders: array<int, array<string, mixed>>, denied: array<int, array<string, mixed>>} The set.
+	 */
+	private function holdersOn(Register $register, Schema $schema): array {
+		return $this->holders->holders(
+			blocks: [
+				'schema' => $schema->getAuthorization(),
+				'register' => $register->getAuthorization(),
+			],
+			roleDefinitions: $this->roleDefinitionsOf(register: $register)
+		);
+	}//end holdersOn()
 
 	/**
 	 * The same rules, indexed by verb.
