@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider;
@@ -83,9 +85,9 @@ final class GroupObjectSourceVisibilityTest extends TestCase {
 			'fin' => $this->group('fin', 'Financiën'),
 		]);
 
-		$this->assertSame(['kcc'], $this->ids($this->provider()->findAll(new Register(), new Schema(), ['filters' => ['search' => 'KLANT']])));
-		$this->assertSame(['ict'], $this->ids($this->provider()->findAll(new Register(), new Schema(), ['_search' => 'IC'])));
-		$this->assertSame(['kcc', 'ict', 'fin'], $this->ids($this->provider()->findAll(new Register(), new Schema(), [])));
+		$this->assertSame(['kcc'], $this->ids($this->provider()->findAll(new SourcedTable(new RegisterSchema(new Register(), new Schema())), ['filters' => ['search' => 'KLANT']])));
+		$this->assertSame(['ict'], $this->ids($this->provider()->findAll(new SourcedTable(new RegisterSchema(new Register(), new Schema())), ['_search' => 'IC'])));
+		$this->assertSame(['kcc', 'ict', 'fin'], $this->ids($this->provider()->findAll(new SourcedTable(new RegisterSchema(new Register(), new Schema())), [])));
 	}
 
 	public function testAFailingGroupLookupIsLoggedAndFindsNothing(): void {
@@ -93,7 +95,7 @@ final class GroupObjectSourceVisibilityTest extends TestCase {
 		$this->groups->method('get')->willThrowException(new RuntimeException('ldap down'));
 		$this->logger->expects($this->once())->method('warning')->with('[ObjectSource:group-source] could not read group: ldap down');
 
-		$this->assertNull($this->provider()->find(new Register(), new Schema(), 'kcc'));
+		$this->assertNull($this->provider()->find(new SourcedTable(new RegisterSchema(new Register(), new Schema())), 'kcc'));
 	}
 
 	public function testWithoutAUserNoSingleGroupIsReadable(): void {
@@ -101,7 +103,7 @@ final class GroupObjectSourceVisibilityTest extends TestCase {
 		$this->groups->method('get')->with('kcc')->willReturn($this->group('kcc', 'KCC'));
 		$this->groups->expects($this->never())->method('isAdmin');
 
-		$this->assertNull($this->provider()->find(new Register(), new Schema(), 'kcc'));
+		$this->assertNull($this->provider()->find(new SourcedTable(new RegisterSchema(new Register(), new Schema())), 'kcc'));
 	}
 
 	public function testAFailingMembershipCheckHidesTheGroup(): void {
@@ -111,7 +113,7 @@ final class GroupObjectSourceVisibilityTest extends TestCase {
 		$this->groups->method('get')->willReturn($group);
 		$this->groups->method('isAdmin')->willReturn(false);
 
-		$this->assertNull($this->provider()->find(new Register(), new Schema(), 'kcc'));
+		$this->assertNull($this->provider()->find(new SourcedTable(new RegisterSchema(new Register(), new Schema())), 'kcc'));
 	}
 
 	public function testAMemberReadsTheirGroupAndANonMemberDoesNot(): void {
@@ -123,10 +125,10 @@ final class GroupObjectSourceVisibilityTest extends TestCase {
 		$this->groups->method('get')->willReturnMap([['kcc', $mine], ['fin', $theirs]]);
 		$this->groups->method('isAdmin')->willReturn(false);
 
-		$found = $this->provider()->find(new Register(), new Schema(), 'kcc');
+		$found = $this->provider()->find(new SourcedTable(new RegisterSchema(new Register(), new Schema())), 'kcc');
 		$this->assertSame('kcc', $found->getUuid());
 		$this->assertSame('KCC', $found->getObject()['displayName']);
-		$this->assertNull($this->provider()->find(new Register(), new Schema(), 'fin'));
+		$this->assertNull($this->provider()->find(new SourcedTable(new RegisterSchema(new Register(), new Schema())), 'fin'));
 	}
 	public function testAnAdminSearchesAllGroupsWithTheQuerysPaging(): void {
 		$this->session->method('getUser')->willReturn($this->user);
@@ -136,7 +138,7 @@ final class GroupObjectSourceVisibilityTest extends TestCase {
 			->willReturn(['z1' => $this->group('z1', 'Zaak 1'), 'z2' => $this->group('z2', 'Zaak 2')]);
 
 		$provider = $this->provider();
-		$this->assertSame(['z1', 'z2'], $this->ids($provider->findAll(new Register(), new Schema(), ['search' => 'zaak', 'limit' => 10, 'offset' => 20])));
+		$this->assertSame(['z1', 'z2'], $this->ids($provider->findAll(new SourcedTable(new RegisterSchema(new Register(), new Schema())), ['search' => 'zaak', 'limit' => 10, 'offset' => 20])));
 		$this->assertSame('group-source', $provider->getId());
 		$this->assertTrue($provider->isEnabled());
 	}
@@ -146,7 +148,7 @@ final class GroupObjectSourceVisibilityTest extends TestCase {
 		$this->groups->method('isAdmin')->willThrowException(new RuntimeException('db'));
 		$this->logger->expects($this->once())->method('warning')->with('[ObjectSource:group-source] could not list groups: db');
 
-		$this->assertSame(0, $this->provider()->count(new Register(), new Schema()));
+		$this->assertSame(0, $this->provider()->count(new SourcedTable(new RegisterSchema(new Register(), new Schema()))));
 	}
 
 	public function testWithoutAUserNothingIsListed(): void {
@@ -154,6 +156,6 @@ final class GroupObjectSourceVisibilityTest extends TestCase {
 		$this->groups->expects($this->never())->method('search');
 		$this->groups->expects($this->never())->method('getUserGroups');
 
-		$this->assertSame([], $this->provider()->findAll(new Register(), new Schema(), ['search' => 'x']));
+		$this->assertSame([], $this->provider()->findAll(new SourcedTable(new RegisterSchema(new Register(), new Schema())), ['search' => 'x']));
 	}
 }

@@ -29,6 +29,8 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
@@ -229,7 +231,10 @@ class GetObject
      */
     private function findInSource(ObjectSourceBinding $source, string $id): ObjectEntity
     {
-        $virtual = $source->provider?->find(register: $source->register, schema: $source->schema, id: $id, config: $source->config());
+        $virtual = $source->provider?->find(
+            source: new SourcedTable(table: new RegisterSchema(register: $source->register, schema: $source->schema), config: $source->config()),
+            id: $id
+        );
         if ($virtual === null) {
             throw new DoesNotExistException(sprintf('Object %s not found', $id));
         }
@@ -405,7 +410,10 @@ class GetObject
      */
     private function findAllInSource(ObjectSourceBinding $source, array $query): array
     {
-        return $source->provider?->findAll(register: $source->register, schema: $source->schema, query: $query, config: $source->config()) ?? [];
+        return $source->provider?->findAll(
+            source: new SourcedTable(table: new RegisterSchema(register: $source->register, schema: $source->schema), config: $source->config()),
+            query: $query
+        ) ?? [];
     }//end findAllInSource()
 
     /**

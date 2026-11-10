@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
@@ -166,8 +168,7 @@ class OrganisationObjectSourceWriteTest extends TestCase {
 		$this->organisationMapper->expects($this->never())->method('save');
 
 		$entity = $this->provider()->insert(
-			register: new Register(),
-			schema: new Schema(),
+			source: new SourcedTable(new RegisterSchema(new Register(), new Schema())),
 			data: ['name' => 'Gemeente Utrecht', 'description' => 'The one in the middle']
 		);
 
@@ -202,8 +203,7 @@ class OrganisationObjectSourceWriteTest extends TestCase {
 			);
 
 		$entity = $this->provider()->insert(
-			register: new Register(),
-			schema: new Schema(),
+			source: new SourcedTable(new RegisterSchema(new Register(), new Schema())),
 			data: [
 				'name' => 'Gemeente Utrecht',
 				'oin' => '00000001002220647000',
@@ -231,8 +231,7 @@ class OrganisationObjectSourceWriteTest extends TestCase {
 		$this->expectExceptionMessage('needs a name');
 
 		$this->provider()->insert(
-			register: new Register(),
-			schema: new Schema(),
+			source: new SourcedTable(new RegisterSchema(new Register(), new Schema())),
 			data: ['name' => '   ']
 		);
 
@@ -252,8 +251,7 @@ class OrganisationObjectSourceWriteTest extends TestCase {
 		$this->expectExceptionMessage('acting user');
 
 		$this->provider()->insert(
-			register: new Register(),
-			schema: new Schema(),
+			source: new SourcedTable(new RegisterSchema(new Register(), new Schema())),
 			data: ['name' => 'Gemeente Utrecht']
 		);
 
@@ -275,8 +273,7 @@ class OrganisationObjectSourceWriteTest extends TestCase {
 			->willReturnArgument(0);
 
 		$entity = $this->provider()->update(
-			register: new Register(),
-			schema: new Schema(),
+			source: new SourcedTable(new RegisterSchema(new Register(), new Schema())),
 			id: 'org-uuid',
 			data: ['name' => 'New name']
 		);
@@ -306,8 +303,7 @@ class OrganisationObjectSourceWriteTest extends TestCase {
 		$this->expectExceptionMessage('does not exist');
 
 		$this->provider()->update(
-			register: new Register(),
-			schema: new Schema(),
+			source: new SourcedTable(new RegisterSchema(new Register(), new Schema())),
 			id: 'org-uuid',
 			data: ['name' => 'New name']
 		);
@@ -337,8 +333,7 @@ class OrganisationObjectSourceWriteTest extends TestCase {
 		$this->expectExceptionMessage('merged away');
 
 		$this->provider()->update(
-			register: new Register(),
-			schema: new Schema(),
+			source: new SourcedTable(new RegisterSchema(new Register(), new Schema())),
 			id: 'old-uuid',
 			data: ['name' => 'New name']
 		);
@@ -366,8 +361,7 @@ class OrganisationObjectSourceWriteTest extends TestCase {
 		$this->organisationMapper->method('save')->willReturnArgument(0);
 
 		$entity = $this->provider()->update(
-			register: new Register(),
-			schema: new Schema(),
+			source: new SourcedTable(new RegisterSchema(new Register(), new Schema())),
 			id: 'org-uuid',
 			data: ['summary' => 'A municipality', 'storageQuota' => 999]
 		);
@@ -392,8 +386,7 @@ class OrganisationObjectSourceWriteTest extends TestCase {
 		$this->organisationMapper->expects($this->never())->method('save');
 
 		$this->provider()->update(
-			register: new Register(),
-			schema: new Schema(),
+			source: new SourcedTable(new RegisterSchema(new Register(), new Schema())),
 			id: 'org-uuid',
 			data: ['storageQuota' => 999]
 		);
@@ -414,8 +407,7 @@ class OrganisationObjectSourceWriteTest extends TestCase {
 		$this->expectExceptionMessage('Merge it instead');
 
 		$this->provider()->remove(
-			register: new Register(),
-			schema: new Schema(),
+			source: new SourcedTable(new RegisterSchema(new Register(), new Schema())),
 			id: 'org-uuid'
 		);
 

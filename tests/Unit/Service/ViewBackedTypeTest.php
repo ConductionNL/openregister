@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -168,10 +170,8 @@ class ViewBackedTypeTest extends TestCase {
 			->willReturn([$permit]);
 
 		$rows = $this->provider($magic)->findAll(
-			register: new Register(),
-			schema: $this->viewBackedSchema(),
-			query: ['limit' => 10, 'offset' => 20],
-			config: ['view' => 'active-permits']
+			source: new SourcedTable(new RegisterSchema(new Register(), $this->viewBackedSchema()), ['view' => 'active-permits']),
+			query: ['limit' => 10, 'offset' => 20]
 		);
 
 		$this->assertSame([$permit], $rows);
@@ -183,10 +183,8 @@ class ViewBackedTypeTest extends TestCase {
 
 		// status=expired is outside the view's status=active: nothing can match.
 		$rows = $this->provider($magic)->findAll(
-			register: new Register(),
-			schema: $this->viewBackedSchema(),
-			query: ['status' => 'expired'],
-			config: ['view' => 'active-permits']
+			source: new SourcedTable(new RegisterSchema(new Register(), $this->viewBackedSchema()), ['view' => 'active-permits']),
+			query: ['status' => 'expired']
 		);
 
 		$this->assertSame([], $rows);
@@ -199,7 +197,7 @@ class ViewBackedTypeTest extends TestCase {
 			->with($this->callback(fn (array $q): bool => $q['status'] === ['active'] && isset($q['_limit']) === false))
 			->willReturn(7);
 
-		$this->assertSame(7, $this->provider($magic)->count(register: new Register(), schema: $this->viewBackedSchema(), query: ['limit' => 5], config: ['view' => 'active-permits']));
+		$this->assertSame(7, $this->provider($magic)->count(source: new SourcedTable(new RegisterSchema(new Register(), $this->viewBackedSchema()), ['view' => 'active-permits']), query: ['limit' => 5]));
 	}//end testTheCountIsTheQueryCount()
 
 	/**
