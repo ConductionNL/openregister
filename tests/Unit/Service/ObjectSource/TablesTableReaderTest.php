@@ -54,7 +54,7 @@ class TablesTableReaderTest extends TestCase {
 		$appManager->method('isEnabledForUser')->willReturn($appThere);
 		$container = $this->createMock(ContainerInterface::class);
 
-		return new TablesTableReader($appManager, $container, new NullLogger());
+		return new TablesTableReader(app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $container, logger: new NullLogger()));
 	}//end reader()
 
 	/**
@@ -158,7 +158,7 @@ class TablesTableReaderTest extends TestCase {
 			static fn (string $class): object => new $class()
 		);
 
-		return new TablesTableReader($appManager, $container, new NullLogger());
+		return new TablesTableReader(app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $container, logger: new NullLogger()));
 	}//end readerOverFakeTables()
 
 	/**

@@ -46,7 +46,7 @@ class CalendarEventObjectSourceProviderFailureTest extends TestCase {
 			->willThrowException(new RuntimeException('caldav down'));
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->exactly(2))->method('warning')->with('[ObjectSource:calendar-event-source] could not read VEVENTs: caldav down');
-		$provider = new CalendarEventObjectSourceProvider(calendarEventService: $calendar, appManager: $this->createMock(IAppManager::class), logger: $logger);
+		$provider = new CalendarEventObjectSourceProvider(calendarEventService: $calendar, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $this->createMock(IAppManager::class), container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: $logger));
 
 		$this->assertSame([], $provider->findAll(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), query: ['limit' => 5]));
 		$this->assertNull($provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: 'e-1'));

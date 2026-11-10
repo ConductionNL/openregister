@@ -72,11 +72,7 @@ class TablesObjectSourceProviderRelationTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$deriver = new TablesUuidDeriver();
-		$provider = new TablesObjectSourceProvider(
-			parts: new TablesProviderParts(reader: $reader, columnMapper: new TablesColumnMapper(uuidDeriver: $deriver, logger: new NullLogger()), uuidDeriver: $deriver, syncService: $sync),
-			userSession: $session,
-			logger: new NullLogger()
-		);
+		$provider = new TablesObjectSourceProvider(parts: new TablesProviderParts(reader: $reader, columnMapper: new TablesColumnMapper(uuidDeriver: $deriver, logger: new NullLogger()), uuidDeriver: $deriver, syncService: $sync), session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $session, logger: new NullLogger()));
 
 		$objects = $provider->findAll(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()), ['tableId' => 5]), query: []);
 
