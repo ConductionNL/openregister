@@ -42,6 +42,7 @@ use OCA\OpenRegister\Event\FlowEmailSentEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
@@ -333,11 +334,7 @@ class FlowMessagingService {
 	 */
 	private function postTalkItem(FlowSend $send, array $json): void {
 		$token = $this->conversationToken(send: $send, json: $json);
-		$message = $this->platform->templating->interpolate(
-			template: (string)($send->config['message'] ?? ''),
-			data: $json,
-			context: $this->scalarContext(context: $send->context)
-		);
+		$message = $this->platform->templating->render(template: (string)($send->config['message'] ?? ''), values: new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context)));
 		if ($token === '') {
 			$send->failures[] = 'No Talk conversation resolved for an item; nothing was posted for it.';
 			$send->add(bucket: 'failed', recipient: $token);
@@ -567,8 +564,8 @@ class FlowMessagingService {
 	private function sendItem(FlowSend $send, FlowSendItem $item): void {
 		$scalars = $this->scalarContext(context: $send->context);
 		$templating = $this->platform->templating;
-		$item->title = $templating->interpolate(template: (string)($send->config[$send->titleKey] ?? ''), data: $item->json, context: $scalars);
-		$item->body = $templating->interpolate(template: (string)($send->config[$send->bodyKey] ?? ''), data: $item->json, context: $scalars);
+		$item->title = $templating->render(template: (string)($send->config[$send->titleKey] ?? ''), values: new PlaceholderValues(data: $item->json, context: $scalars));
+		$item->body = $templating->render(template: (string)($send->config[$send->bodyKey] ?? ''), values: new PlaceholderValues(data: $item->json, context: $scalars));
 		$item->kind = FlowEmailSentEvent::KIND_USER;
 		foreach ($item->uids as $uid) {
 			$item->recipient = $uid;
@@ -882,6 +879,6 @@ class FlowMessagingService {
 			return $value;
 		}
 
-		return trim($this->platform->templating->interpolate(template: $value, data: $json, context: $this->scalarContext(context: $send->context)));
+		return trim($this->platform->templating->render(template: $value, values: new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context))));
 	}//end conversationToken()
 }//end class
