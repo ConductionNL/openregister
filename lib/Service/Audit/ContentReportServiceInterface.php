@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\ContentReport;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IUser;
 
 /**
@@ -44,9 +43,7 @@ interface ContentReportServiceInterface {
 	/**
 	 * File a report, taking the copy now.
 	 *
-	 * @param ObjectEntity $object   The content being reported.
-	 * @param string       $reason   Why, in the reporter's words.
-	 * @param string|null  $reporter The uid of whoever filed it.
+	 * @param ContentReportFiling $filing The object reported, why in the reporter's words, and the reporter's uid.
 	 *
 	 * @return ContentReport The persisted report, with the copy already taken.
 	 *
@@ -55,7 +52,7 @@ interface ContentReportServiceInterface {
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function file(ObjectEntity $object, string $reason, ?string $reporter): ContentReport;
+	public function file(ContentReportFiling $filing): ContentReport;
 
 	/**
 	 * Whether a user may read the copies on a report.

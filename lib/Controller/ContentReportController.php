@@ -34,6 +34,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Service\Audit\ContentReportFiling;
 
 /**
  * Filing is open, reading a copy is not.
@@ -138,7 +139,7 @@ class ContentReportController extends Controller {
 		}
 
 		try {
-			$report = $this->service->file(object: $object, reason: $reason, reporter: $user->getUID());
+			$report = $this->service->file(filing: new ContentReportFiling(object: $object, reason: $reason, reporter: $user->getUID()));
 		} catch (Throwable $writeFailed) {
 			return new JSONResponse(
 				data: ['error' => $writeFailed->getMessage()],
