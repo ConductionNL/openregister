@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RetentionControllerFactory;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -271,10 +272,10 @@ class RetentionControllerDestructionListGoldenTest extends TestCase {
 
 	private function auditMapper(): AuditTrailMapper {
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('createAuditTrailEntry')->willReturnCallback(function (ObjectEntity $object, ...$rest) {
+		$mapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(function (ObjectEntity $object, ...$rest) {
 			$this->calls[] = ['audit.createAuditTrailEntry' => [$object->getUuid(), ...$rest]];
 			return new AuditTrail();
-		});
+		}));
 		return $mapper;
 	}
 

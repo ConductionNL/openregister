@@ -90,12 +90,7 @@ class AutoTransitionSelectorTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('getLanguageCode')->willReturn('en');
 
-		return new LifecycleConditionEvaluator(
-			$this->createMock(IUserSession::class),
-			$groupManager,
-			new LifecycleConditionReporting($l10n, $this->createMock(LoggerInterface::class)),
-			$this->realConditionDialect()
-		);
+		return new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $this->createMock(LoggerInterface::class)), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->createMock(IUserSession::class), $groupManager)));
 	}//end realEvaluator()
 
 	/**
@@ -313,10 +308,8 @@ class AutoTransitionSelectorTest extends TestCase {
 		// either fire on the string or refuse the double's answer; both show up
 		// here rather than as a quiet second code path.
 		$evaluator = new class (
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
 			new LifecycleConditionReporting($this->createMock(IL10N::class), $this->createMock(LoggerInterface::class)),
-			$this->realConditionDialect()
+			new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)))
 		) extends LifecycleConditionEvaluator {
 			/**
 			 * Rules this double was asked about.

@@ -48,6 +48,30 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class FileSettingsController extends Controller {
+
+	/**
+	 * The file extraction statistics served when nothing could be measured, in response order.
+	 *
+	 * Extraction keeps no per-file queue state, so pendingFiles, failed and processing stay 0
+	 * and extractedTextStorageMB is not measured.
+	 *
+	 * @var array<string, bool|int|string>
+	 */
+	private const EMPTY_EXTRACTION_STATS = [
+		'success' => true,
+		'totalFiles' => 0,
+		'processedFiles' => 0,
+		'pendingFiles' => 0,
+		'untrackedFiles' => 0,
+		'extractedTextStorageMB' => '0.00',
+		'totalFilesStorageMB' => '0.00',
+		'completed' => 0,
+		'failed' => 0,
+		'indexed' => 0,
+		'processing' => 0,
+		'vectorized' => 0,
+	];
+
 	/**
 	 * DI container, for the optional extraction backends.
 	 *
@@ -297,52 +321,74 @@ class FileSettingsController extends Controller {
 	 */
 	public function getFileExtractionStats(): JSONResponse {
 		try {
-			$fileMapper = $this->container->get(\OCA\OpenRegister\Files\Db\FileMapperInterface::class);
-			$chunkMapper = $this->container->get(\OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface::class);
-			$extractionStats = $this->container->get(\OCA\OpenRegister\Files\Service\TextExtractionService::class)->getStats();
-
-			$processedFiles = $chunkMapper->countFileSourceSummaries();
-			$totalFilesStorageMB = round($fileMapper->getTotalFilesSize() / 1024 / 1024, 2);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'totalFiles' => $fileMapper->countAllFiles(),
-					'processedFiles' => $processedFiles,
-					'pendingFiles' => 0,
-					'untrackedFiles' => $extractionStats['untrackedFiles'],
-					'extractedTextStorageMB' => '0.00',
-					'totalFilesStorageMB' => number_format($totalFilesStorageMB, 2),
-					'completed' => $processedFiles,
-					'failed' => 0,
-					'indexed' => $chunkMapper->countIndexed(),
-					'processing' => 0,
-					'vectorized' => $chunkMapper->countVectorized(),
-					'totalChunks' => $extractionStats['totalChunks'],
-					'totalEntities' => $extractionStats['totalEntities'],
-				]
-			);
+			$stats = array_merge(self::EMPTY_EXTRACTION_STATS, $this->measureFileExtraction());
 		} catch (Exception $e) {
 			// Return zeros instead of error to avoid breaking UI.
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'totalFiles' => 0,
-					'processedFiles' => 0,
-					'pendingFiles' => 0,
-					'untrackedFiles' => 0,
-					'extractedTextStorageMB' => '0.00',
-					'totalFilesStorageMB' => '0.00',
-					'completed' => 0,
-					'failed' => 0,
-					'indexed' => 0,
-					'processing' => 0,
-					'vectorized' => 0,
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
+			$stats = array_merge(self::EMPTY_EXTRACTION_STATS, ['error' => $e->getMessage()]);
+		}
+
+		return new JSONResponse(data: $stats);
 	}//end getFileExtractionStats()
+
+	/**
+	 * Measure the file cache, the chunk table and the extraction totals.
+	 *
+	 * @return array<string, int|string> The measured statistics, keyed as in EMPTY_EXTRACTION_STATS
+	 *                                   plus totalChunks and totalEntities.
+	 *
+	 * @spec exclude Private helper of getFileExtractionStats();
+	 *              the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
+	 */
+	private function measureFileExtraction(): array {
+		$fileMapper = $this->container->get(\OCA\OpenRegister\Files\Db\FileMapperInterface::class);
+		$chunkMapper = $this->container->get(\OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface::class);
+		$extractionStats = $this->container->get(\OCA\OpenRegister\Files\Service\TextExtractionService::class)->getStats();
+
+		$processedFiles = $chunkMapper->countFileSourceSummaries();
+		$totalFilesStorageMB = round($fileMapper->getTotalFilesSize() / 1024 / 1024, 2);
+
+		return [
+			'totalFiles' => $fileMapper->countAllFiles(),
+			'processedFiles' => $processedFiles,
+			'untrackedFiles' => $extractionStats['untrackedFiles'],
+			'totalFilesStorageMB' => number_format($totalFilesStorageMB, 2),
+			'completed' => $processedFiles,
+		] + $this->chunkIndexCounts(chunkMapper: $chunkMapper) + $this->extractionTotals(extractionStats: $extractionStats);
+	}//end measureFileExtraction()
+
+	/**
+	 * The indexed and vectorized chunk counts.
+	 *
+	 * @param \OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface $chunkMapper The chunk table overview.
+	 *
+	 * @return array{indexed: int, vectorized: int}
+	 *
+	 * @spec exclude Private helper of getFileExtractionStats();
+	 *              the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
+	 */
+	private function chunkIndexCounts(\OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface $chunkMapper): array {
+		return [
+			'indexed' => $chunkMapper->countIndexed(),
+			'vectorized' => $chunkMapper->countVectorized(),
+		];
+	}//end chunkIndexCounts()
+
+	/**
+	 * The chunk and entity totals from the text extraction statistics.
+	 *
+	 * @param array<string, mixed> $extractionStats The TextExtractionService statistics.
+	 *
+	 * @return array{totalChunks: mixed, totalEntities: mixed}
+	 *
+	 * @spec exclude Private helper of getFileExtractionStats();
+	 *              the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
+	 */
+	private function extractionTotals(array $extractionStats): array {
+		return [
+			'totalChunks' => $extractionStats['totalChunks'],
+			'totalEntities' => $extractionStats['totalEntities'],
+		];
+	}//end extractionTotals()
 
 	/**
 	 * Perform a health check HTTP request against a service endpoint.
@@ -358,21 +404,8 @@ class FileSettingsController extends Controller {
 	 *              the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
 	 */
 	private function performHealthCheck(ServiceHealthProbe $probe): array {
-		$headers = $probe->headers;
-		if (empty($headers) === true) {
-			$headers = ['Content-Type: application/json'];
-		}
-
 		$ch = curl_init($probe->url);
-		curl_setopt_array(
-			$ch,
-			[
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_HTTPHEADER => $headers,
-				CURLOPT_TIMEOUT => 10,
-				CURLOPT_SSL_VERIFYPEER => true,
-			]
-		);
+		curl_setopt_array($ch, $this->healthCheckCurlOptions(probe: $probe));
 
 		curl_exec($ch);
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -386,6 +419,45 @@ class FileSettingsController extends Controller {
 			];
 		}
 
+		return $this->healthCheckStatusResult(probe: $probe, httpCode: $httpCode);
+	}//end performHealthCheck()
+
+	/**
+	 * The cURL options of a health check request; without headers it sends a JSON content type.
+	 *
+	 * @param ServiceHealthProbe $probe The service name, the URL to check and its optional headers.
+	 *
+	 * @return array<int, mixed> The cURL options.
+	 *
+	 * @spec exclude Private helper of performHealthCheck();
+	 *              the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
+	 */
+	private function healthCheckCurlOptions(ServiceHealthProbe $probe): array {
+		$headers = $probe->headers;
+		if (empty($headers) === true) {
+			$headers = ['Content-Type: application/json'];
+		}
+
+		return [
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_HTTPHEADER => $headers,
+			CURLOPT_TIMEOUT => 10,
+			CURLOPT_SSL_VERIFYPEER => true,
+		];
+	}//end healthCheckCurlOptions()
+
+	/**
+	 * The health check result for the HTTP status a reachable service answered with.
+	 *
+	 * @param ServiceHealthProbe $probe    The probed service.
+	 * @param int                $httpCode The HTTP status code it answered with.
+	 *
+	 * @return array{success: bool, message?: string, error?: string} Health check result.
+	 *
+	 * @spec exclude Private helper of performHealthCheck();
+	 *              the file-index HTTP surface is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2.
+	 */
+	private function healthCheckStatusResult(ServiceHealthProbe $probe, int $httpCode): array {
 		if ($httpCode === 200 || $httpCode === 201) {
 			return [
 				'success' => true,
@@ -397,7 +469,7 @@ class FileSettingsController extends Controller {
 			'success' => false,
 			'error' => $probe->serviceName . ' API returned HTTP ' . $httpCode,
 		];
-	}//end performHealthCheck()
+	}//end healthCheckStatusResult()
 
 	/**
 	 * Fetch Presidio supported entity capabilities.

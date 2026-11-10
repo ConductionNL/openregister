@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -89,10 +90,10 @@ class UserTaskDeadlineGoldenTest extends TestCase {
 		$node  = new UserTaskNode(new UserTaskServices($bridge, $forms, $timers), new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class)));
 		$state = new FlowResumeState();
 		try {
-			$node->execute(
-				[FlowItems::item(json: ['name' => 'Case 7'])],
-				array_merge(['title' => 'Approve', 'assignee' => 'alice'], $config),
-				array_merge(
+			$node->execute(new FlowNodeCall(
+				items: [FlowItems::item(json: ['name' => 'Case 7'])],
+				config: array_merge(['title' => 'Approve', 'assignee' => 'alice'], $config),
+				context: array_merge(
 					[
 						FlowResumeState::CONTEXT_KEY => $state,
 						FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'ask'),
@@ -101,7 +102,7 @@ class UserTaskDeadlineGoldenTest extends TestCase {
 					],
 					$extra
 				)
-			);
+			));
 			$this->fail('a fresh user task suspends');
 		} catch (FlowSuspension $suspension) {
 			// The normal outcome of a fresh task.

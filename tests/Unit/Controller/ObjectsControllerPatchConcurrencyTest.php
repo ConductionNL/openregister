@@ -84,7 +84,7 @@ class ObjectsControllerPatchConcurrencyTest extends TestCase {
 		$this->webhookService = $this->createMock(WebhookService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		// resolveRegisterSchemaIds() reuses the entities resolved by
+		// resolveRegisterSchemaRef() reuses the entities resolved by
 		// ObjectService::setRegister()/setSchema(); the ObjectService mock
 		// returns null from the entity getters by default, so entities stay
 		// null and the numeric ids passed in tests ('1' / '2') are used as-is.

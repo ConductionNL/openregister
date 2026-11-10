@@ -71,9 +71,10 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcNoteCard } from '@nextcloud/vue'
+import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 import { confirmDialogState } from '../shared/confirmDialogState.js'
-import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
+import { deletionAnswer } from './deletionAnswer.js'
 
 export default {
 	name: 'ClearAuditTrails',
@@ -163,29 +164,52 @@ export default {
 
 			try {
 				const result = await this.requestClear()
-				this.success = true
-				this.error = false
-				this.successMessage =
-					result.message
-					|| this.t(
-						'openregister',
-						'{count} audit trails cleared successfully',
-						{ count: this.filteredCount },
-					)
-				await auditTrailStore.refreshAuditTrailList()
-				this.closeModalTimeout = setTimeout(this.closeDialog, 3000)
+				await this.showCleared(result)
 			} catch (error) {
-				console.error('Error clearing audit trails:', error)
-				this.success = false
-				this.error =
-					error.message
-					|| this.t(
-						'openregister',
-						'An error occurred while clearing audit trails',
-					)
+				this.showClearFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Say how many entries were cleared, refresh the audit trail list and
+		 * close after three seconds.
+		 *
+		 * @param {object} result The server's answer
+		 * @return {Promise<void>}
+		 */
+		async showCleared(result) {
+			this.success = true
+			this.error = false
+			this.successMessage =
+				result.message
+				|| this.t(
+					'openregister',
+					'{count} audit trails cleared successfully',
+					{
+						count: this.filteredCount,
+					},
+				)
+			await auditTrailStore.refreshAuditTrailList()
+			this.closeModalTimeout = setTimeout(this.closeDialog, 3000)
+		},
+
+		/**
+		 * Log a failed clear and say why it failed.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showClearFailure(error) {
+			console.error('Error clearing audit trails:', error)
+			this.success = false
+			this.error =
+				error.message
+				|| this.t(
+					'openregister',
+					'An error occurred while clearing audit trails',
+				)
 		},
 
 		/**
@@ -206,11 +230,7 @@ export default {
 					headers: { 'Content-Type': 'application/json' },
 				},
 			)
-			const result = await response.json()
-			if (!result.success) {
-				throw new Error(result.error || 'Deletion failed')
-			}
-			return result
+			return deletionAnswer(response)
 		},
 
 		/**

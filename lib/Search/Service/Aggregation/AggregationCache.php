@@ -316,6 +316,7 @@ class AggregationCache implements AggregationCacheInterface {
 			$slot->schemaSlug,
 			$version,
 			$slot->name,
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 			sha1($filterStr),
 			$this->rbacScopeHash()
 		);
@@ -371,6 +372,7 @@ class AggregationCache implements AggregationCacheInterface {
 			$orgId = $org->getUuid();
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return sha1($uid . ':' . $orgId);
 	}//end rbacScopeHash()
 }//end class
