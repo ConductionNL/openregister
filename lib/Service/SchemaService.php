@@ -101,6 +101,43 @@ class SchemaService implements SchemaExplorationInterface {
 	];
 
 	/**
+	 * A property's discovery record before its first value; `name` goes in front.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const UNDISCOVERED_PROPERTY = [
+		'types' => [],
+		'examples' => [],
+		'nullable' => true,
+		'enum_values' => [],
+		'max_length' => 0,
+		'min_length' => PHP_INT_MAX,
+		'object_structure' => null,
+		'array_structure' => null,
+		'detected_format' => null,
+		'string_patterns' => [],
+		'numeric_range' => null,
+		'usage_count' => 0,
+	];
+
+	/**
+	 * The analysis of one value before its type is looked at; `examples` is set to the value.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const EMPTY_VALUE_ANALYSIS = [
+		'types' => [],
+		'examples' => [],
+		'max_length' => 0,
+		'min_length' => PHP_INT_MAX,
+		'object_structure' => null,
+		'array_structure' => null,
+		'detected_format' => null,
+		'numeric_range' => null,
+		'string_patterns' => [],
+	];
+
+	/**
 	 * SchemaService constructor
 	 *
 	 * @param SchemaCatalogInterface $catalog The schema mapper (schema operations) and the magic mapper (object queries).
@@ -225,6 +262,25 @@ class SchemaService implements SchemaExplorationInterface {
 		$run = new PropertyDiscoveryRun();
 		$dataTypes = [];
 
+		$this->recordAllObjects(run: $run, objects: $objects);
+		self::applyUsagePercentages(run: $run, totalObjects: count($objects));
+
+		return [
+			'discovered' => $run->discovered,
+			'usage_stats' => $run->usageStats,
+			'data_types' => $dataTypes,
+		];
+	}//end analyzeObjectProperties()
+
+	/**
+	 * Record the properties of every sampled object, leaving out its `@self` metadata.
+	 *
+	 * @param PropertyDiscoveryRun $run     The discovery so far.
+	 * @param array                $objects The sampled objects.
+	 *
+	 * @return void
+	 */
+	private function recordAllObjects(PropertyDiscoveryRun $run, array $objects): void {
 		foreach ($objects as $object) {
 			$objectData = $object->getObject();
 
@@ -233,26 +289,25 @@ class SchemaService implements SchemaExplorationInterface {
 
 			$this->recordObjectProperties(run: $run, objectData: $objectData);
 		}//end foreach
+	}//end recordAllObjects()
 
-		$discoveredProperties = $run->discovered;
-		$usageStats = $run->usageStats;
+	/**
+	 * Calculate the usage percentage of every discovered property.
+	 *
+	 * @param PropertyDiscoveryRun $run          The discovery so far.
+	 * @param int                  $totalObjects How many objects were sampled.
+	 *
+	 * @return void
+	 */
+	private static function applyUsagePercentages(PropertyDiscoveryRun $run, int $totalObjects): void {
+		foreach ($run->usageStats['counts'] as $propertyName => $count) {
+			$run->usageStats['percentages'][$propertyName] = round(($count / $totalObjects) * 100, 2);
 
-		// Calculate usage percentages.
-		$totalObjects = count($objects);
-		foreach ($usageStats['counts'] as $propertyName => $count) {
-			$usageStats['percentages'][$propertyName] = round(($count / $totalObjects) * 100, 2);
-
-			if (($discoveredProperties[$propertyName] ?? null) !== null) {
-				$discoveredProperties[$propertyName]['usage_percentage'] = $usageStats['percentages'][$propertyName];
+			if (($run->discovered[$propertyName] ?? null) !== null) {
+				$run->discovered[$propertyName]['usage_percentage'] = $run->usageStats['percentages'][$propertyName];
 			}
 		}
-
-		return [
-			'discovered' => $discoveredProperties,
-			'usage_stats' => $usageStats,
-			'data_types' => $dataTypes,
-		];
-	}//end analyzeObjectProperties()
+	}//end applyUsagePercentages()
 
 	/**
 	 * Count and analyse the properties of one object's data.
@@ -293,21 +348,7 @@ class SchemaService implements SchemaExplorationInterface {
 		$propertyAnalysis = $this->analyzePropertyValue(value: $propertyValue);
 
 		if (isset($discoveredProperties[$propertyName]) === false) {
-			$discoveredProperties[$propertyName] = [
-				'name' => $propertyName,
-				'types' => [],
-				'examples' => [],
-				'nullable' => true,
-				'enum_values' => [],
-				'max_length' => 0,
-				'min_length' => PHP_INT_MAX,
-				'object_structure' => null,
-				'array_structure' => null,
-				'detected_format' => null,
-				'string_patterns' => [],
-				'numeric_range' => null,
-				'usage_count' => 0,
-			];
+			$discoveredProperties[$propertyName] = ['name' => $propertyName] + self::UNDISCOVERED_PROPERTY;
 		}
 
 		// Merge type analysis.
@@ -326,17 +367,8 @@ class SchemaService implements SchemaExplorationInterface {
 	 * @return array Analysis results with type and structure info
 	 */
 	private function analyzePropertyValue($value): array {
-		$analysis = [
-			'types' => [],
-			'examples' => [$value],
-			'max_length' => 0,
-			'min_length' => PHP_INT_MAX,
-			'object_structure' => null,
-			'array_structure' => null,
-			'detected_format' => null,
-			'numeric_range' => null,
-			'string_patterns' => [],
-		];
+		$analysis = self::EMPTY_VALUE_ANALYSIS;
+		$analysis['examples'] = [$value];
 
 		// Determine data type.
 		$type = gettype($value);
