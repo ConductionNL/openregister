@@ -382,7 +382,7 @@ final class ObjectSlugGoldenTest extends TestCase {
 			path: $path
 		);
 
-		$result = $this->handler->decide($want, static fn (string $slug): ?string => self::UUID_A);
+		$result = $this->handler->decide(decision: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugDecision(want: $want, holderOf: static fn (string $slug): ?string => self::UUID_A, log: true));
 
 		$this->assertNull($result);
 		$this->assertSame(
@@ -406,9 +406,9 @@ final class ObjectSlugGoldenTest extends TestCase {
 			return $slug === 'a' ? self::UUID_A : null;
 		};
 
-		$this->assertSame('given', $this->handler->decide($want, $holderOf, false, 'given'));
+		$this->assertSame('given', $this->handler->decide(decision: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugDecision(want: $want, holderOf: $holderOf, log: false, suffixed: 'given')));
 		$this->assertSame(['a', 'given'], $asked);
-		$this->assertNull($this->handler->decide($want, static fn (string $s): ?string => self::UUID_A, false, 'given'));
+		$this->assertNull($this->handler->decide(decision: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugDecision(want: $want, holderOf: static fn (string $s): ?string => self::UUID_A, log: false, suffixed: 'given')));
 		$this->assertSame([], $this->warnings);
 	}
 

@@ -77,11 +77,11 @@ class ObjectSlugHandler implements ObjectSlugTargetInterface {
 	 * @param ObjectSlugLog    $log    Writes the [ObjectSlug] warnings.
 	 */
 	public function __construct(
-		private readonly ObjectSlugStore $store,
+		public readonly ObjectSlugStore $store,
 		private readonly ObjectSlugSource $source,
-		private readonly ObjectSlugLog $log,
+		public readonly ObjectSlugLog $log,
 	) {
-		$this->batch = new ObjectSlugBatch(handler: $this, store: $store, log: $log);
+		$this->batch = new ObjectSlugBatch(handler: $this);
 	}//end __construct()
 
 	/**
@@ -284,8 +284,11 @@ class ObjectSlugHandler implements ObjectSlugTargetInterface {
 	 */
 	private function decideAgainstStore(ObjectSlugWant $want): string|null {
 		return $this->decide(
-			want: $want,
-			holderOf: fn (string $slug): string|null => $this->store->holderOf(scope: $want->scope, slug: $slug, excludeUuid: $want->objectUuid)
+			decision: new ObjectSlugDecision(
+				want: $want,
+				holderOf: fn (string $slug): string|null => $this->store->holderOf(want: $want, slug: $slug),
+				log: true
+			)
 		);
 	}//end decideAgainstStore()
 
@@ -390,32 +393,27 @@ class ObjectSlugHandler implements ObjectSlugTargetInterface {
 	/**
 	 * Resolve the slug a candidate becomes, given who holds what.
 	 *
-	 * @param ObjectSlugWant $want     The wanted slug, its scope, the object and the path
-	 *                                 (restore, move and seed always log a suffixed outcome).
-	 * @param callable       $holderOf fn(string $slug): ?string — uuid holding $slug, other than this object.
-	 * @param bool           $log      Log a collision (false for a backfill dry run).
-	 * @param string|null    $suffixed The suffixed slug to try, when the caller already computed it.
+	 * @param ObjectSlugDecision $decision The wanted slug, who holds what, whether a clash is logged
+	 *                                     and the suffixed slug to try.
 	 *
 	 * @return string|null The slug to write, or null when the object stays without one.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `log` is false only for the backfill dry run,
-	 *   which must decide without writing a warning.
 	 */
-	public function decide(ObjectSlugWant $want, callable $holderOf, bool $log=true, string|null $suffixed=null): string|null {
-		$holder = $holderOf($want->slug);
+	public function decide(ObjectSlugDecision $decision): string|null {
+		$want = $decision->want;
+		$holder = ($decision->holderOf)($want->slug);
 		if ($holder === null) {
 			return $want->slug;
 		}
 
-		$clash = new ObjectSlugClash(want: $want, holderUuid: $holder, suffixed: $this->suffixedToTry(want: $want, suffixed: $suffixed));
-		if ($clash->suffixed !== null && $holderOf($clash->suffixed) === null) {
-			$this->saySuffixed(clash: $clash, log: $log);
+		$clash = new ObjectSlugClash(want: $want, holderUuid: $holder, suffixed: $this->suffixedToTry(want: $want, suffixed: $decision->suffixed));
+		if ($clash->suffixed !== null && ($decision->holderOf)($clash->suffixed) === null) {
+			$this->saySuffixed(clash: $clash, log: $decision->log);
 			return $clash->suffixed;
 		}
 
-		if ($log === true) {
+		if ($decision->log === true) {
 			$this->log->collision(clash: $clash);
 		}
 
