@@ -50,6 +50,8 @@ use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
+use OCA\OpenRegister\Service\Rbac\TokenGrantUse;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
@@ -1693,7 +1695,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		// schema stays the CEILING (design D3b). `private` narrows and a grant
 		// re-opens within that ceiling; neither can admit somebody the schema
 		// refuses.
-		if ($this->objectGrants()?->isGranted(userId: $userId, objectUuid: $object->getUuid(), action: $check->action) === true) {
+		if ($this->objectGrants()?->isGranted(lookup: new GrantLookup(userId: $userId, objectUuid: $object->getUuid()), action: $check->action) === true) {
 			return null;
 		}
 
@@ -2842,8 +2844,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return $this->grants->derived->tokenGrantNarrower->narrow(
 			authorization: $authorization,
-			grant: $grant,
-			target: new TokenGrantTarget(schemaSlug: $schema->getSlug(), registerSlug: $registerSlug)
+			use: new TokenGrantUse(grant: $grant, target: new TokenGrantTarget(schemaSlug: $schema->getSlug(), registerSlug: $registerSlug))
 		);
 	}//end narrowByToken()
 
@@ -3726,17 +3727,17 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * the listener only calls it when the key is present — so existing
 	 * transitions are completely unaffected (additive).
 	 *
-	 * @param array<int, mixed> $authorizationList Group ids / `{role}` entries permitted to perform the transition.
-	 * @param string|null $userId Caller uid, or null for an anonymous principal.
-	 * @param Schema $schema Schema the transition belongs to (for named-role expansion).
+	 * @param TransitionGate $gate   The group ids / `{role}` entries permitted to perform the transition, and the
+	 *                              schema it belongs to (for named-role expansion).
+	 * @param string|null    $userId Caller uid, or null for an anonymous principal.
 	 *
 	 * @return bool True when the caller is authorised; false (fail-closed) otherwise.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
 	 */
-	public function isTransitionAuthorized(array $authorizationList, ?string $userId, Schema $schema): bool {
+	public function isTransitionAuthorized(TransitionGate $gate, ?string $userId): bool {
 		// Fail-closed: an empty list authorises nobody.
-		if ($authorizationList === []) {
+		if ($gate->authorizationList === []) {
 			return false;
 		}
 
@@ -3746,9 +3747,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		$run = new TransitionAuthorizationRun(userGroupSet: array_flip($userGroups), schema: $schema);
+		$run = new TransitionAuthorizationRun(userGroupSet: array_flip($userGroups), schema: $gate->schema);
 
-		return $this->transitionListAdmits(run: $run, authorizationList: $authorizationList);
+		return $this->transitionListAdmits(run: $run, authorizationList: $gate->authorizationList);
 	}//end isTransitionAuthorized()
 
 	/**

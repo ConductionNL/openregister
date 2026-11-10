@@ -45,6 +45,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\AuthorizationChange;
 
 /**
  * Golden test for RegistersController::create(), update() and patch().
@@ -338,9 +339,9 @@ class RegistersControllerWritesGoldenTest extends TestCase {
 	 */
 	private function auditService(array $case): AuthorizationAuditService {
 		$audit = $this->createMock(AuthorizationAuditService::class);
-		foreach (['logRegisterAuthorizationChange', 'logRoleDefinitionChange'] as $method) {
-			$audit->method($method)->willReturnCallback(function (...$args) use ($case, $method): void {
-				$this->calls[] = [$method, ...$args];
+		foreach (['recordRegisterChange' => 'logRegisterAuthorizationChange', 'recordRoleChange' => 'logRoleDefinitionChange'] as $recorded => $method) {
+			$audit->method($recorded)->willReturnCallback(function (AuthorizationChange $change) use ($case, $method): void {
+				$this->calls[] = [$method, $change->entityId, $change->entityTitle, $change->before, $change->after];
 				if (($case['auditFails'] ?? null) === $method) {
 					throw new \Error('audit failed');
 				}

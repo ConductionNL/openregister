@@ -733,21 +733,6 @@ class WebhookService {
 	 * shaped it: a delivery whose mapping is missing or fails falls back to the
 	 * standard payload, and the preview must not show that fallback as mapped.
 	 *
-	 * @param Webhook $webhook   The webhook, saved or as the dialog holds it.
-	 * @param string  $eventName The event class the payload is for.
-	 * @param array   $payload   The event payload.
-	 *
-	 * @return array{payload: array, mapped: bool}
-	 *
-	 * @spec openspec/specs/webhook-payload-mapping/spec.md
-	 */
-	public function previewPayload(Webhook $webhook, string $eventName, array $payload): array {
-		return $this->previewEvent(webhook: $webhook, event: new WebhookEvent(name: $eventName, payload: $payload));
-	}//end previewPayload()
-
-	/**
-	 * The payload a delivery of this webhook would send for one event (value-object form of previewPayload()).
-	 *
 	 * @param Webhook      $webhook The webhook, saved or as the dialog holds it.
 	 * @param WebhookEvent $event   The event name and payload.
 	 *
@@ -755,7 +740,7 @@ class WebhookService {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function previewEvent(Webhook $webhook, WebhookEvent $event): array {
+	public function previewPayload(Webhook $webhook, WebhookEvent $event): array {
 		$delivery = new WebhookDelivery(webhook: $webhook, event: $event);
 		$mapped = false;
 		$mappingId = $webhook->getMapping();
@@ -767,7 +752,7 @@ class WebhookService {
 			'payload' => $this->buildPayload(delivery: $delivery),
 			'mapped' => $mapped,
 		];
-	}//end previewEvent()
+	}//end previewPayload()
 
 	/**
 	 * Build webhook payload

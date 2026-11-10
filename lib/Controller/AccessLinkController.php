@@ -57,6 +57,8 @@ use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActsInterface;
+use OCA\OpenRegister\Service\Sharing\LinkAct;
+use OCA\OpenRegister\Service\Sharing\LinkFile;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
@@ -243,7 +245,7 @@ class AccessLinkController extends Controller {
 		}
 
 		try {
-			$note = $this->acts->comment(link: $link, object: $object, message: $message);
+			$note = $this->acts->comment(act: new LinkAct(link: $link, object: $object), message: $message);
 		} catch (Throwable $failure) {
 			$this->logger->warning('[AccessLinkController] A link comment failed: ' . $failure->getMessage());
 
@@ -318,10 +320,8 @@ class AccessLinkController extends Controller {
 
 		try {
 			$stored = $this->acts->upload(
-				link: $link,
-				object: $object,
-				fileName: $fileName,
-				content: $content
+				act: new LinkAct(link: $link, object: $object),
+				file: new LinkFile(fileName: $fileName, content: $content)
 			);
 		} catch (Throwable $failure) {
 			$this->logger->warning('[AccessLinkController] A link upload failed: ' . $failure->getMessage());

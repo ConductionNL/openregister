@@ -53,7 +53,7 @@ use Throwable;
  * signal, persist — plus the stream walk's wiring and the in-request advance; each is one
  * entry into the same engine and belongs beside the others.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) 50 against 50, and the
- * one branch is the version-pin refusal in advanceStream(): the same rule
+ * one branch is the version-pin refusal in advanceBranch(): the same rule
  * execute() enforces, applied to the completion path so a week-old task
  * continues the graph its run was pinned to.
  * @SuppressWarnings(PHPMD.TooManyMethods) 28 against 25, from or-flow-run-node's
@@ -249,26 +249,6 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * `$budget` is `0` (nothing; the run is left queued), a count, or `"all"`
 	 * (bounded by the same three things a worker is).
 	 *
-	 * @param FlowRun $run The run, already resolved and pinned.
-	 * @param array $flow The pinned flow document.
-	 * @param object $subject The subject.
-	 * @param string $streamId The completing branch.
-	 * @param int|string $budget `0`, `N`, or `"all"`.
-	 *
-	 * @return FlowRun The run as it stands after the advance.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-completions-advance-budget-must-apply-to-the-completing-branch
-	 */
-	public function advanceStream(FlowRun $run, array $flow, object $subject, string $streamId, int|string $budget): FlowRun {
-		return $this->advanceBranch(
-			pass: new FlowRunPass(run: $run, flow: $flow, subject: $subject),
-			advance: new FlowStreamAdvance(streamId: $streamId, budget: $budget)
-		);
-	}//end advanceStream()
-
-	/**
-	 * Advance one stream of a run in the calling request, as {@see advanceStream()} documents.
-	 *
 	 * @param FlowRunPass       $pass    The run, already resolved and pinned, its flow document and subject.
 	 * @param FlowStreamAdvance $advance The completing branch and its budget.
 	 *
@@ -276,7 +256,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-completions-advance-budget-must-apply-to-the-completing-branch
 	 */
-	private function advanceBranch(FlowRunPass $pass, FlowStreamAdvance $advance): FlowRun {
+	public function advanceBranch(FlowRunPass $pass, FlowStreamAdvance $advance): FlowRun {
 		$run = $pass->run;
 		if ($advance->firings() === 0) {
 			return $this->requeue(run: $run);
@@ -312,7 +292,10 @@ class FlowRunService implements FlowRunServiceInterface {
 		$context['resuming'] = true;
 
 		$start = $this->startFor(pass: $pinned, guard: $guard);
-		$result = $this->walk->engine->run(start: $start->withContext(context: $context)->withStreams(streams: $walk), items: ($run->getItems() ?? []));
+		$result = $this->walk->engine->run(
+			start: $start->withContext(context: $context)->withStreams(streams: $walk),
+			origin: new FlowRunOrigin(items: ($run->getItems() ?? []))
+		);
 
 		return $this->persistResult(run: $run, result: $result);
 	}//end advanceBranch()
@@ -1083,8 +1066,7 @@ class FlowRunService implements FlowRunServiceInterface {
 			$begin = $this->startFor(pass: $pass, guard: $guard);
 			$result = $this->walk->engine->run(
 				start: $begin->withContext(context: $context)->withStreams(streams: $walk),
-				items: $items,
-				startAt: $start
+				origin: new FlowRunOrigin(items: $items, startAt: $start)
 			);
 		} catch (Throwable $e) {
 			$this->releaseWalk(walk: $walk);

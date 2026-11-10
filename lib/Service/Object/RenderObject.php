@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use Adbar\Dot;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -857,7 +858,7 @@ class RenderObject implements RenderObjectInterface {
 	 * Decrypt a row's fields when the gated strips apply and the schema encrypts properties.
 	 *
 	 * Runs AFTER redaction: a field the strip removed is no longer a key, so
-	 * decryptProperties() (which only acts on keys still present) skips it,
+	 * decryptInScope() (which only acts on keys still present) skips it,
 	 * and an unauthorized caller never reaches decryption for that field.
 	 *
 	 * @param RowRedaction $pass The redaction pass, on one row.
@@ -872,7 +873,10 @@ class RenderObject implements RenderObjectInterface {
 			&& $this->runtime->extensions->fieldEncryptionHandler !== null
 			&& $pass->schema->hasEncryptedProperties() === true
 		) {
-			return $this->runtime->extensions->fieldEncryptionHandler->decryptProperties(data: $data, schema: $pass->schema);
+			return $this->runtime->extensions->fieldEncryptionHandler->decryptInScope(
+				data: $data,
+				scope: new \OCA\OpenRegister\Service\FieldDecryptionScope(schema: $pass->schema, throwOnFailure: false)
+			);
 		}
 
 		return $data;
@@ -2901,8 +2905,7 @@ class RenderObject implements RenderObjectInterface {
 		if ($this->enrichers->derivations->computedFieldHandler->hasComputedProperties($run->schema) === true) {
 			$run->data = $this->enrichers->derivations->computedFieldHandler->evaluateComputedFields(
 				data: $run->data,
-				schema: $run->schema,
-				evaluateOn: 'read'
+				pass: new ComputedPass(schema: $run->schema, evaluateOn: 'read')
 			);
 			$run->entity->setObject($run->data);
 		}
@@ -3032,7 +3035,7 @@ class RenderObject implements RenderObjectInterface {
 	 * Decrypt properties flagged `x-openregister-encrypted: true`.
 	 *
 	 * Runs after the read strip and nowhere earlier: a stripped property is no
-	 * longer a key, so decryptProperties() skips it and an unauthorized reader
+	 * longer a key, so decryptInScope() skips it and an unauthorized reader
 	 * never reaches decryption. A value that is not an envelope passes through;
 	 * one that fails to decrypt becomes an error marker (see FieldEncryptionHandler).
 	 *
@@ -3048,7 +3051,10 @@ class RenderObject implements RenderObjectInterface {
 			return $objectData;
 		}
 
-		return $this->runtime->extensions->fieldEncryptionHandler->decryptProperties(data: $objectData, schema: $schema);
+		return $this->runtime->extensions->fieldEncryptionHandler->decryptInScope(
+			data: $objectData,
+			scope: new \OCA\OpenRegister\Service\FieldDecryptionScope(schema: $schema, throwOnFailure: false)
+		);
 	}//end decryptRenderedProperties()
 
 	/**

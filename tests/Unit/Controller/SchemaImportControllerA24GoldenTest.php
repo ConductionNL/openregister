@@ -33,6 +33,7 @@ use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
+use OCA\OpenRegister\Service\SchemaImport\SourceUpdate;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchema;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaDefinition;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaHeading;
@@ -243,8 +244,8 @@ class SchemaImportControllerA24GoldenTest extends TestCase {
 		$this->params = ['resolveConflicts' => ['c', 3]];
 		$seen = [];
 		$this->service->method('previewUpdateFromSource')->willReturnCallback(
-			function (array $source, array $current, array $resolved) use (&$seen): array {
-				$seen[] = [$source, $current, $resolved];
+			function (SourceUpdate $update) use (&$seen): array {
+				$seen[] = [$update->importSource, $update->currentProperties, $update->resolvedConflicts];
 				return $this->diff(applied: false);
 			}
 		);

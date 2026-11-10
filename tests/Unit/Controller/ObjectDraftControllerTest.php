@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Object\UserDraftActivation;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectDraftControllerFactory;
 use OCA\OpenRegister\Controller\ObjectDraftController;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -214,8 +215,9 @@ class ObjectDraftControllerTest extends TestCase {
 	 */
 	private function activationAnswers(ObjectEntity|\Throwable $answer): void {
 		$this->activation->method('activateAsUser')->willReturnCallback(
-			function (DraftAddress $address, IUser $user, array $changes = []) use ($answer): ObjectEntity {
-				$this->activations[] = ['register' => $address->register, 'schema' => $address->schema, 'draftId' => $address->draftId, 'user' => $user, 'changes' => $changes];
+			function (UserDraftActivation $activation) use ($answer): ObjectEntity {
+				$address             = $activation->address;
+				$this->activations[] = ['register' => $address->register, 'schema' => $address->schema, 'draftId' => $address->draftId, 'user' => $activation->user, 'changes' => $activation->changes];
 				if ($answer instanceof \Throwable) {
 					throw $answer;
 				}

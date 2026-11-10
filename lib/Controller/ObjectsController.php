@@ -138,6 +138,8 @@ use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Notifications\Service\PresenceBeat;
+use OCA\OpenRegister\Notifications\Service\PresenceLookup;
 
 /**
  * Objects controller for OpenRegister
@@ -5274,15 +5276,15 @@ class ObjectsController extends Controller {
 		}
 
 		$service = $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class);
-		$beat = $service->heartbeat(userId: $caller, objectUuid: $id);
-		$present = $service->present(objectUuid: $id, exceptUser: $caller);
+		$beat = $service->heartbeat(beat: new PresenceBeat(userId: $caller, objectUuid: $id, now: new DateTimeImmutable()));
+		$present = $service->present(lookup: new PresenceLookup(objectUuid: $id, exceptUser: $caller));
 
 		// ONLY on an arrival. A renewal that changed nothing is silent, which
 		// is the whole of D-2 and the reason `heartbeat()` reports which it was
 		// rather than leaving the caller to work it out.
 		if ($beat['arrived'] === true) {
 			$this->container->get(\OCA\OpenRegister\Listener\PresencePushInterface::class)
-				->pushPresence(object: $object, present: $service->present(objectUuid: $id));
+				->pushPresence(object: $object, present: $service->present(lookup: new PresenceLookup(objectUuid: $id)));
 		}
 
 		return new JSONResponse(
@@ -5328,11 +5330,11 @@ class ObjectsController extends Controller {
 
 			if ($object !== null) {
 				$this->container->get(\OCA\OpenRegister\Listener\PresencePushInterface::class)
-					->pushPresence(object: $object, present: $service->present(objectUuid: $id));
+					->pushPresence(object: $object, present: $service->present(lookup: new PresenceLookup(objectUuid: $id)));
 			}
 		}
 
-		return new JSONResponse(data: ['present' => $service->present(objectUuid: $id, exceptUser: $caller)]);
+		return new JSONResponse(data: ['present' => $service->present(lookup: new PresenceLookup(objectUuid: $id, exceptUser: $caller))]);
 	}//end presenceDepart()
 
 	/**
@@ -5404,7 +5406,7 @@ class ObjectsController extends Controller {
 		return new JSONResponse(
 			data: [
 				'present' => $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class)
-					->present(objectUuid: $id, exceptUser: $caller),
+					->present(lookup: new PresenceLookup(objectUuid: $id, exceptUser: $caller)),
 			]
 		);
 	}//end presenceList()

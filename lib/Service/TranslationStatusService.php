@@ -281,19 +281,18 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 	/**
 	 * Find objects missing translation slots in a language.
 	 *
-	 * Returns the subset of `$candidateUuids` missing at least one
-	 * translatable-property value in `$language`.
+	 * Returns the subset of the scan's candidates missing at least one
+	 * translatable-property value in the scan's language.
 	 *
-	 * @param string $language The language code to check.
-	 * @param Schema $schema The schema describing translatable properties.
-	 * @param string[] $candidateUuids List of object UUIDs to consider.
+	 * @param Schema          $schema The schema describing translatable properties.
+	 * @param LanguageGapScan $scan   The language code to check and the object UUIDs to consider.
 	 *
-	 * @return string[] Subset of `$candidateUuids` lacking the language.
+	 * @return string[] Subset of the candidates lacking the language.
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
-	public function findObjectsMissingLanguage(string $language, Schema $schema, array $candidateUuids): array {
+	public function findObjectsMissingLanguage(Schema $schema, LanguageGapScan $scan): array {
 		$properties = $this->translationHandler->getTranslatableProperties($schema);
-		return $this->translationMapper->findObjectsMissingLanguage($language, $properties, $candidateUuids);
+		return $this->translationMapper->findObjectsMissingLanguage($scan->language, $properties, $scan->candidateUuids);
 	}//end findObjectsMissingLanguage()
 }//end class

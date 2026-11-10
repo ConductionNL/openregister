@@ -328,12 +328,13 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 			$unsubscribe = $decision['unsubscribe'];
 		}
 
-		return $this->delivery->email->sendToAddress(
-			address: $entry['address'],
-			displayName: '',
-			subject: $mailing->subject,
-			body: $optOut->withLink(body: $mailing->body, unsubscribe: $unsubscribe),
-			unsubscribe: $unsubscribe
+		return $this->delivery->email->sendMailTo(
+			addressee: new \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee(address: $entry['address'], displayName: ''),
+			content: new \OCA\OpenRegister\Notifications\Service\Notification\MailContent(
+				subject: $mailing->subject,
+				body: $optOut->withLink(body: $mailing->body, unsubscribe: $unsubscribe),
+				unsubscribe: $unsubscribe
+			)
 		);
 	}//end sendOne()
 

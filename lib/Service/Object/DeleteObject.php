@@ -38,12 +38,12 @@ use DateTime;
 use DateTimeImmutable;
 use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\HookStoppedException;
@@ -328,9 +328,7 @@ class DeleteObject {
 
 		if ($objectEntity->isDraft() === true) {
 			(new DraftRemovalRecord(auditTrail: $this->auditTrailMapper, logger: $this->logger))->write(
-				draft: $objectEntity,
-				register: $target->register,
-				schema: $target->schema
+				removed: new RemovedDraft(draft: $objectEntity, register: $target->register, schema: $target->schema)
 			);
 		}
 
@@ -1149,11 +1147,7 @@ class DeleteObject {
 		$rows = [];
 		foreach ($deleted as $entity) {
 			try {
-				$rows[] = $this->auditTrailMapper->buildAuditTrail(
-					old: $entity,
-					new: null,
-					action: 'delete'
-				);
+				$rows[] = $this->auditTrailMapper->buildEntry(change: new AuditedChange(old: $entity, new: null, action: 'delete'));
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					message: '[DeleteObject] Could not build cascade audit row',

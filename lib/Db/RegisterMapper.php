@@ -29,6 +29,7 @@ use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Rbac\GrantDeclaration;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
@@ -781,9 +782,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		// granted nothing, and the role read as correctly configured in every
 		// screen that showed it.
 		AccessDeclarationValidators::permissionCatalogue(eventDispatcher: $this->eventDispatcher)->assertGrantable(
-			authorization: $authorization,
-			roleDefinitions: $roleDefinitions,
-			subject: $subject
+			declaration: new GrantDeclaration(authorization: $authorization, roleDefinitions: $roleDefinitions, subject: $subject)
 		);
 
 		if ($this->isEmptyAuthorization(authorization: $authorization) === true) {

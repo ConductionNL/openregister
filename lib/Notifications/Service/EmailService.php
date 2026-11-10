@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicRelationReaderInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * EmailService manages email-to-object links via the openregister_email_links table.
@@ -81,16 +82,15 @@ class EmailService implements EmailServiceInterface {
 	/**
 	 * Get all email links for an object.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int|null $limit Maximum results.
-	 * @param int|null $offset Results offset.
+	 * @param string    $objectUuid The object UUID.
+	 * @param ListQuery $query      The page: limit (unbounded for all) and offset.
 	 *
 	 * @return array{results: array, total: int} Email links with total count.
 	 *
 	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
-	public function getEmailsForObject(string $objectUuid, ?int $limit = null, ?int $offset = null): array {
-		$links = $this->emailLinkMapper->findByObjectUuid($objectUuid, $limit, $offset);
+	public function getEmailsForObject(string $objectUuid, ListQuery $query = new ListQuery(limit: ListQuery::UNBOUNDED)): array {
+		$links = $this->emailLinkMapper->findByObjectUuid($objectUuid, $query->limitOrNull(), $query->offset);
 		$total = $this->emailLinkMapper->countByObjectUuid($objectUuid);
 
 		return ['results' => array_map(static fn (EmailLink $link): array => $link->jsonSerialize(), $links), 'total' => $total];

@@ -46,6 +46,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 
 #[CoversClass(EmailsController::class)]
@@ -139,7 +140,7 @@ class EmailsControllerBehaviourTest extends TestCase {
 	public function testIndexPassesLimitAndOffsetAsIntegers(): void {
 		$this->emails->method('isMailAvailable')->willReturn(true);
 		$this->objects->method('getObject')->willReturn($this->object);
-		$this->emails->expects($this->once())->method('getEmailsForObject')->with('uuid-1', 10, 20)->willReturn(['results' => []]);
+		$this->emails->expects($this->once())->method('getEmailsForObject')->with('uuid-1', new ListQuery(limit: 10, offset: 20))->willReturn(['results' => []]);
 		$response = $this->controller(['limit' => '10', 'offset' => '20'])->index('reg', 'sch', 'id');
 		$this->assertSame(['results' => []], $response->getData());
 	}

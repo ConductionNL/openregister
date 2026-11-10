@@ -187,7 +187,7 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 	 * @return void
 	 */
 	private function sharedRows(ObjectEntity $object, GrantRowSet $rows): void {
-		$found = $this->sources->shares->sharesOn(object: $object, sharers: [(string)$object->getOwner()], complete: true);
+		$found = $this->sources->shares->completeSharesOn(object: $object, sharers: [(string)$object->getOwner()]);
 		foreach ($found as $share) {
 			if ($share['type'] === 'link') {
 				continue;

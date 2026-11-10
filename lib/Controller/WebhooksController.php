@@ -38,8 +38,8 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
-use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookEvent;
+use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -936,7 +936,7 @@ class WebhooksController extends Controller {
 			]
 		);
 
-		$preview = $this->webhookService->previewPayload(webhook: $webhook, eventName: $eventName, payload: $payload);
+		$preview = $this->webhookService->previewPayload(webhook: $webhook, event: new WebhookEvent(name: $eventName, payload: $payload));
 
 		return new JSONResponse(data: $preview + ['event' => $eventName]);
 	}//end preview()

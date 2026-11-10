@@ -415,7 +415,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$magicMapper->method('organisationBoundaryWaivedByRbac')->willReturn($boundaryWaived);
 		$magicMapper->method('organisationlessRowsAdmittedByRbac')->willReturn($organisationlessAdmitted);
 		$magicMapper->method('rbacRowPredicateSql')->willReturnCallback(
-			static fn (Schema $s, string $action = 'read'): ?string => $rbac->buildRbacRowPredicateSql(schema: $s, action: $action)
+			static fn (Schema $s): ?string => $rbac->buildRbacRowPredicateSql(schema: $s, action: 'read')
 		);
 		$magicMapper->method('callerQualifiesForAction')->willReturnCallback(
 			static fn (Schema $s, string $action = 'read'): bool => $rbac->callerQualifiesForAction(schema: $s, action: $action)

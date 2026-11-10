@@ -63,6 +63,7 @@ use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaTeardownInterface;
+use OCA\OpenRegister\Service\SchemaImport\GgmUpload;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
@@ -2728,10 +2729,8 @@ class SchemasController extends Controller {
 			if ($dialect === 'ggm' && isset($document['objecttypen']) === true) {
 				// Treat the uploaded body as a normalised GGM intermediate.
 				$imported = $this->schemaImportService->importGgmUpload(
-					normalised: $document,
-					reference: $reference,
-					options: ImportOptions::fromArray($this->request->getParams()),
-					sourceLabel: 'upload'
+					upload: new GgmUpload(normalised: $document, reference: $reference, sourceLabel: 'upload'),
+					options: ImportOptions::fromArray($this->request->getParams())
 				);
 			} else {
 				$imported = $this->schemaImportService->import(

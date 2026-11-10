@@ -48,6 +48,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Archival\NominationRecompute;
 
 /**
  * Characterisation of ArchivalController's review and recompute writes.
@@ -332,7 +333,7 @@ class ArchivalReviewCharacterisationTest extends TestCase {
 		$this->recordWrites();
 
 		$this->nominations->expects($this->once())->method('recompute')
-			->with($object, $this->anything(), 'archivaris', 'New selectielijst')
+			->with($this->callback(static fn (NominationRecompute $request): bool => $request->object === $object && $request->actor === 'archivaris' && $request->reason === 'New selectielijst'))
 			->willReturn(['status' => ArchivalNominationService::STATUS_NOMINATED, 'rule' => 'r-1']);
 		$this->objectMapper->expects($this->once())->method('update')
 			->willReturnCallback(

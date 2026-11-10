@@ -32,6 +32,7 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier;
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
@@ -244,7 +245,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 		$this->expectRevertAndNotice('EXAMPLE_APPROVER_USER', 'cannot be requested from a calendar');
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$this->gate()->request(self::UUID, 'assign', 'EXAMPLE_APPROVER_USER');
+		$this->gate()->request(self::UUID, new TaskAct('assign', 'EXAMPLE_APPROVER_USER'));
 	}
 
 	public function testANullActorIsPassedToTheLifecycleWhichDeniesIt(): void {
