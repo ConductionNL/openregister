@@ -223,7 +223,12 @@ class ReferencedAddressNotifierTest extends TestCase {
 
 		$outcomes = $this->notifier()->mail(
 			origin: new ReferenceOrigin(object: $message, data: $message->getObject(), schema: $this->referencing(['supplierRef'])),
-			request: new MailingRequest(recipients: [['kind' => 'email', 'field' => 'supplierRef.contactEmail']], subject: 'Nieuw bericht', body: 'U heeft een nieuw bericht.', category: 'service')
+			request: new MailingRequest(
+				recipients: [['kind' => 'email', 'field' => 'supplierRef.contactEmail']],
+				subject: 'Nieuw bericht',
+				body: 'U heeft een nieuw bericht.',
+				category: 'service'
+			)
 		);
 
 		$this->assertSame([['field' => 'supplierRef.contactEmail', 'outcome' => EmailSender::OUTCOME_DISPATCHED]], $outcomes);
@@ -287,7 +292,12 @@ class ReferencedAddressNotifierTest extends TestCase {
 
 		$outcomes = $notifier->mail(
 			origin: new ReferenceOrigin(object: $object, data: $object->getObject(), schema: $schema),
-			request: new MailingRequest(recipients: [['kind' => 'email', 'field' => 'foreign.contactEmail']], subject: 's', body: 'b', category: 'service')
+			request: new MailingRequest(
+				recipients: [['kind' => 'email', 'field' => 'foreign.contactEmail']],
+				subject: 's',
+				body: 'b',
+				category: 'service'
+			)
 		);
 		$this->assertSame([['field' => 'foreign.contactEmail', 'outcome' => ReferencedAddressNotifier::REASON_OTHER_TENANT]], $outcomes);
 		$this->assertSame([], $this->sent);
@@ -338,7 +348,10 @@ class ReferencedAddressNotifierTest extends TestCase {
 		$object = $this->object('m', []);
 		$this->assertSame(
 			[],
-			$this->notifier()->mail(origin: new ReferenceOrigin(object: $object, data: []), request: new MailingRequest(recipients: [['kind' => 'users', 'users' => ['a']]], subject: 's', body: 'b', category: 'service'))
+			$this->notifier()->mail(
+				origin: new ReferenceOrigin(object: $object, data: []),
+				request: new MailingRequest(recipients: [['kind' => 'users', 'users' => ['a']]], subject: 's', body: 'b', category: 'service')
+			)
 		);
 	}//end testARuleWithoutEmailEntriesDoesNothing()
 
@@ -362,7 +375,12 @@ class ReferencedAddressNotifierTest extends TestCase {
 
 		$outcomes = $this->notifier()->mail(
 			origin: new ReferenceOrigin(object: $message, data: $message->getObject(), schema: $this->referencing(['supplierRef'])),
-			request: new MailingRequest(recipients: [['kind' => 'email', 'field' => 'supplierRef.contactEmail']], subject: 's', body: 'b', category: 'service')
+			request: new MailingRequest(
+				recipients: [['kind' => 'email', 'field' => 'supplierRef.contactEmail']],
+				subject: 's',
+				body: 'b',
+				category: 'service'
+			)
 		);
 
 		$this->assertSame([['field' => 'supplierRef.contactEmail', 'outcome' => ReferencedAddressNotifier::REASON_REFERENCE_NOT_FOUND]], $outcomes);

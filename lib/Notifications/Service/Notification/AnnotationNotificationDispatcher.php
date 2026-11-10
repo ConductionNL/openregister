@@ -2241,7 +2241,12 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		$outcomes = $this->integrations->serverContainer->get(ReferencedAddressNotifierInterface::class)->mail(
 			origin: new ReferenceOrigin(object: $firing->object, data: $firing->data, schema: $firing->schema),
-			request: new MailingRequest(recipients: $firing->recipientsSpec(), subject: $firing->broadcastSubject, body: $firing->addressBody, category: $firing->category)
+			request: new MailingRequest(
+				recipients: $firing->recipientsSpec(),
+				subject: $firing->broadcastSubject,
+				body: $firing->addressBody,
+				category: $firing->category
+			)
 		);
 
 		$reached = 0;

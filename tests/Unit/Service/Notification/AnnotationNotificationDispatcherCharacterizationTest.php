@@ -398,7 +398,8 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		$addresses = $this->createMock(ReferencedAddressNotifier::class);
 		$addresses->method('mail')->willReturnCallback(
 			function (ReferenceOrigin $origin, MailingRequest $request): array {
-				$this->record(what: 'addresses.notify', args: [$origin->object, $origin->data, $request->recipients, $request->subject, $request->body, $request->category, $origin->schema]);
+				$args = [$origin->object, $origin->data, $request->recipients, $request->subject, $request->body, $request->category, $origin->schema];
+				$this->record(what: 'addresses.notify', args: $args);
 				return [
 					['field' => 'mail', 'outcome' => EmailSender::OUTCOME_DISPATCHED],
 					['field' => 'cc', 'outcome' => 'no-address'],

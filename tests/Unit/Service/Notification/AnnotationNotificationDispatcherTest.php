@@ -1193,7 +1193,13 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		$notifier = $this->createMock(ReferencedAddressNotifier::class);
 		$notifier->method('mail')->willReturnCallback(
 			function (ReferenceOrigin $origin, MailingRequest $request) use (&$calls): array {
-				$calls[] = ['uuid' => $origin->object->getUuid(), 'recipients' => $request->recipients, 'subject' => $request->subject, 'body' => $request->body, 'category' => $request->category];
+				$calls[] = [
+					'uuid' => $origin->object->getUuid(),
+					'recipients' => $request->recipients,
+					'subject' => $request->subject,
+					'body' => $request->body,
+					'category' => $request->category,
+				];
 				return [['field' => 'supplierRef.contactEmail', 'outcome' => EmailSender::OUTCOME_DISPATCHED]];
 			}
 		);
