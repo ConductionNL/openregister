@@ -312,7 +312,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 
 		$windows = $span->calendar->getServiceHours();
 		if ($windows->areDeclared() === true) {
-			return $this->hoursClock->elapsed(from: $span->from, to: $span->to, calendar: $span->calendar, windows: $windows);
+			return $this->hoursClock->frame(calendar: $span->calendar, windows: $windows)->elapsed(from: $span->from, to: $span->to);
 		}
 
 		return $this->sumPerDay(span: $span, perDay: fn (DateTimeImmutable $cursor): float => $this->workingHours(span: $span, cursor: $cursor))
@@ -378,12 +378,9 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	private function addHours(SlaAddition $addition): DateTimeImmutable {
 		$calendar = $addition->serviceHoursCalendar();
 		if ($calendar !== null) {
-			return $this->hoursClock->due(
-				from: $addition->start,
-				hours: $addition->value,
-				calendar: $calendar,
-				windows: $calendar->getServiceHours()
-			);
+			$frame = $this->hoursClock->frame(calendar: $calendar, windows: $calendar->getServiceHours());
+
+			return $frame->due(from: $addition->start, hours: $addition->value);
 		}
 
 		return $this->shift(moment: $addition->start, modifier: sprintf('%+d seconds', (int)round($addition->value * 3600)));

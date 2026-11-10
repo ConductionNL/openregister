@@ -137,14 +137,14 @@ class WebhookServiceIntegrationTest extends TestCase {
 			'url' => $data['url'] ?? 'http://192.0.2.1:9999/nonexistent',
 			'method' => $data['method'] ?? 'POST',
 			'events' => json_decode($data['events'] ?? '[]', true) ?: [],
-			'headers' => $data['headers'] !== null ? (json_decode($data['headers'], true) ?: []) : null,
+			'headers' => ($data['headers'] ?? null) !== null ? (json_decode($data['headers'], true) ?: []) : null,
 			'secret' => $data['secret'] ?? null,
 			'enabled' => $data['enabled'] ?? true,
-			'filters' => $data['filters'] !== null ? (json_decode($data['filters'], true) ?: []) : null,
+			'filters' => ($data['filters'] ?? null) !== null ? (json_decode($data['filters'], true) ?: []) : null,
 			'retryPolicy' => $data['retry_policy'] ?? 'exponential',
 			'maxRetries' => $data['max_retries'] ?? 3,
 			'timeout' => $data['timeout'] ?? 5,
-			'configuration' => $data['configuration'] !== null ? (json_decode($data['configuration'], true) ?: []) : null,
+			'configuration' => ($data['configuration'] ?? null) !== null ? (json_decode($data['configuration'], true) ?: []) : null,
 			'mapping' => $data['mapping'] ?? null,
 		]);
 

@@ -109,39 +109,28 @@ class AggregationCache implements AggregationCacheInterface {
 	 * Returns the cached associative array (with the same shape
 	 * AggregationRunner emits) or null on miss.
 	 *
-	 * @param string $registerSlug Register slug component of the cache key.
-	 * @param string $schemaSlug Schema slug component of the cache key.
-	 * @param string $name Aggregation name component of the cache key.
-	 * @param array<string, mixed> $filter Resolved filter (placeholders concrete).
+	 * @param AggregationSlot $slot The register, schema, aggregation name and resolved filter (placeholders concrete).
 	 *
 	 * @return array<string, mixed>|null Cached result or null on miss.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
 	 */
-	public function get(string $registerSlug, string $schemaSlug, string $name, array $filter): ?array {
-		return $this->read(
-			slot: new AggregationSlot(registerSlug: $registerSlug, schemaSlug: $schemaSlug, name: $name, filter: $filter)
-		);
+	public function get(AggregationSlot $slot): ?array {
+		return $this->read(slot: $slot);
 	}//end get()
 
 	/**
 	 * Store an aggregation result.
 	 *
-	 * @param string $registerSlug Register slug component of the cache key.
-	 * @param string $schemaSlug Schema slug component of the cache key.
-	 * @param string $name Aggregation name component of the cache key.
-	 * @param array<string, mixed> $filter Resolved filter (placeholders concrete).
+	 * @param AggregationSlot      $slot   The register, schema, aggregation name and resolved filter.
 	 * @param array<string, mixed> $result Result envelope to store.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/aggregations-backend-native/spec.md
 	 */
-	public function set(string $registerSlug, string $schemaSlug, string $name, array $filter, array $result): void {
-		$this->write(
-			slot: new AggregationSlot(registerSlug: $registerSlug, schemaSlug: $schemaSlug, name: $name, filter: $filter),
-			result: $result
-		);
+	public function set(AggregationSlot $slot, array $result): void {
+		$this->write(slot: $slot, result: $result);
 	}//end set()
 
 	/**
@@ -202,6 +191,12 @@ class AggregationCache implements AggregationCacheInterface {
 			$this->cache->set($this->key(slot: $slot), json_encode($result), self::TTL);
 		} catch (\Throwable $e) {
 			// Don't escalate: a cache write failure shouldn't break the response.
+			$this->logger->debug(
+				message: '[AggregationCache] Cache write failed',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 	}//end write()
 

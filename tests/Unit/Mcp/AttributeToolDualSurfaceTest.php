@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCA\OpenRegister\Mcp\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
@@ -225,12 +226,14 @@ class AttributeToolDualSurfaceTest extends TestCase {
 
 	public function testFacadeInvocationRoutesThroughTheSameAttributedProviderAndIsAudited(): void {
 		$this->auditTrailMapper->expects($this->once())
-			->method('createToolInvocationEntry')
+			->method('recordToolInvocation')
 			->with(
-				'pipelinq.createLead',
-				$this->matchesRegularExpression('/^[a-f0-9]{64}$/'),
-				$this->callback(fn ($summary) => $summary['isError'] === false),
-				new AuditedObject(null, null, null, 'lead-1')
+				$this->callback(
+					fn (ToolInvocation $invocation) => $invocation->toolId === 'pipelinq.createLead'
+						&& preg_match('/^[a-f0-9]{64}$/', $invocation->paramsDigest) === 1
+						&& $invocation->resultSummary['isError'] === false
+						&& $invocation->about == new AuditedObject(null, null, null, 'lead-1')
+				)
 			);
 
 		$facade = $this->buildFacade();

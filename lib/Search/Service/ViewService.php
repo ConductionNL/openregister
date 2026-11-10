@@ -260,50 +260,6 @@ class ViewService {
 	}//end newView()
 
 	/**
-	 * Update an existing view.
-	 *
-	 * @param int|string $id The ID of the view to update
-	 * @param string $name The name of the view
-	 * @param string $description The description of the view
-	 * @param string $owner The owner user ID (for access control)
-	 * @param bool $isPublic Whether the view is public
-	 * @param bool $isDefault Whether the view is default
-	 * @param array $query The query parameters
-	 * @param array|null $favoredBy Array of user IDs who favor this view
-	 * @param array|null $presentation Presentation config (viewType + kanban/calendar config); null leaves the existing value untouched
-	 * @param array|null $sharedWith Validated group shares, `[{group, mode}]`; null leaves the existing shares untouched
-	 * @param array|null $alert The declared count alert; null leaves it untouched, `[]` clears it
-	 *
-	 * @return View The updated view
-	 *
-	 * @throws Exception If update fails
-	 * @throws InvalidArgumentException If the presentation config cannot render (REQ-VIEW-PRES-01)
-	 *
-	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Each optional field is null-means-untouched; a bag would lose that per field.
-	 */
-	public function update(
-		int|string $id,
-		string $name,
-		string $description,
-		string $owner,
-		bool $isPublic,
-		bool $isDefault,
-		array $query,
-		?array $favoredBy = null,
-		?array $presentation = null,
-		?array $sharedWith = null,
-		?array $alert = null,
-	): View {
-		$definition = new ViewDefinition(name: $name, description: $description, query: $query, presentation: $presentation);
-		$audience = new ViewAudience(owner: $owner, isPublic: $isPublic, isDefault: $isDefault, sharedWith: $sharedWith);
-		$edit = new ViewEdit(definition: $definition, audience: $audience, favoredBy: $favoredBy, alert: $alert);
-		return $this->revise(id: $id, edit: $edit);
-	}//end update()
-
-	/**
 	 * Apply one edit to an existing view the edit's owner may read.
 	 *
 	 * The name, description, query and the public and default flags are always written; a null

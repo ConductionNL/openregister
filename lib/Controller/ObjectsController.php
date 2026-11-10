@@ -98,6 +98,7 @@ use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
+use OCA\OpenRegister\Service\Object\UpsertOnKeyRequest;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
@@ -3452,13 +3453,13 @@ class ObjectsController extends Controller {
 			return ['object' => $save(null), 'created' => true];
 		}
 
-		return $upsert->upsert(
+		$keyed = new UpsertOnKeyRequest(
 			constraintName: $create->controls->upsertOn,
 			object: $create->object,
 			register: $create->resolved['registerEntity'],
-			schema: $create->resolved['schemaEntity'],
-			save: $save
+			schema: $create->resolved['schemaEntity']
 		);
+		return $upsert->upsert(request: $keyed, save: $save);
 	}//end savedObject()
 
 	/**
@@ -3654,6 +3655,12 @@ class ObjectsController extends Controller {
 			}
 		} catch (\Throwable $e) {
 			// Not registered in this context; the session below is the answer.
+			$this->logger->debug(
+				message: '[ObjectsController] userId not registered in the container, using the session',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return $this->userSession->getUser()?->getUID();
@@ -6321,7 +6328,14 @@ class ObjectsController extends Controller {
 				)
 			);
 		} catch (\Throwable $auditError) {
-			// Silently swallow — audit-trail must never break the response.
+			// The audit trail must never break the download response.
+			$this->logger->warning(
+				message: '[ObjectsController] Bulk download audit entry not written',
+				context: [
+					'zipName' => $zipInfo['filename'],
+					'exception' => $auditError->getMessage(),
+				]
+			);
 		}
 	}//end auditBulkDownload()
 

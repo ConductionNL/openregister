@@ -223,7 +223,14 @@ class AuthorizationAuditService {
 				$affectedSchemaCount = count($schemas);
 			}
 		} catch (\Throwable $e) {
-			// Could not count affected schemas.
+			// The count is informational; an unreadable register reports zero.
+			$this->runtime->logger->debug(
+				message: '[AuthorizationAuditService] Could not count the schemas of a register',
+				context: [
+					'registerId' => $registerId,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return $affectedSchemaCount;
