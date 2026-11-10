@@ -141,37 +141,15 @@ class DepartmentMatrixPersonValues {
 	 * @return array<int, mixed>|null The objects, or null when the source cannot be read.
 	 */
 	private function persons(RegisterSchemaRef $source, PersonMatch $who): ?array {
-		$schemaRef = (string)$source->schema;
 		try {
-			$schema = $this->schemas->find($schemaRef, _multitenancy: false, _rbac: false);
-
-			$registerId = (string)$source->register;
-			if ($registerId === '') {
-				$registerId = (string)($this->registers->getFirstRegisterWithSchema((int)$schema->getId()) ?? '');
-			}
-
-			if ($registerId === '') {
-				return null;
-			}
-
-			$register = $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
-
-			$persons = $this->objects->searchObjects(
-				query: [
-					'@self' => ['register' => (string)$register->getId(), 'schema' => (string)$schema->getId()],
-					$who->field => $who->userId,
-					'_limit' => self::PERSON_LIMIT,
-				],
-				_rbac: false,
-				_multitenancy: false
-			);
+			$persons = $this->searchPersons(source: $source, who: $who);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[DepartmentMatrixPersonValues] Could not read the person source; the user gets no own values',
-				context: ['schema' => $schemaRef, 'error' => $e->getMessage()]
+				context: ['schema' => (string)$source->schema, 'error' => $e->getMessage()]
 			);
 			return null;
-		}//end try
+		}
 
 		if (is_array($persons) === false) {
 			return null;
@@ -179,6 +157,69 @@ class DepartmentMatrixPersonValues {
 
 		return $persons;
 	}//end persons()
+
+	/**
+	 * Search the person schema for the user's person objects, unscoped and capped.
+	 *
+	 * @param RegisterSchemaRef $source The person schema's slug or id, and the register's ('' to find it).
+	 * @param PersonMatch       $who    The property matched against the user id, and the current user.
+	 *
+	 * @return mixed The search answer, or null when no register holds the schema.
+	 *
+	 * @throws \Throwable When the schema, the register or the search cannot be read.
+	 */
+	private function searchPersons(RegisterSchemaRef $source, PersonMatch $who): mixed {
+		$schema = $this->schemas->find((string)$source->schema, _multitenancy: false, _rbac: false);
+
+		$registerId = $this->registerIdFor(source: $source, schemaId: (int)$schema->getId());
+		if ($registerId === '') {
+			return null;
+		}
+
+		$register = $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
+
+		return $this->objects->searchObjects(
+			query: self::personQuery(
+				who: $who,
+				table: new RegisterSchemaRef(register: (string)$register->getId(), schema: (string)$schema->getId())
+			),
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end searchPersons()
+
+	/**
+	 * The search for the user's person objects in one register and schema.
+	 *
+	 * @param PersonMatch       $who   The property matched against the user id, and the current user.
+	 * @param RegisterSchemaRef $table The register and the person schema.
+	 *
+	 * @return array<string, mixed> The query.
+	 */
+	private static function personQuery(PersonMatch $who, RegisterSchemaRef $table): array {
+		return [
+			'@self' => ['register' => $table->register, 'schema' => $table->schema],
+			$who->field => $who->userId,
+			'_limit' => self::PERSON_LIMIT,
+		];
+	}//end personQuery()
+
+	/**
+	 * The register the source names, else the first one holding the schema; '' when there is none.
+	 *
+	 * @param RegisterSchemaRef $source   The register's slug or id ('' to find it).
+	 * @param int               $schemaId The person schema's id.
+	 *
+	 * @return string The register id.
+	 */
+	private function registerIdFor(RegisterSchemaRef $source, int $schemaId): string {
+		$registerId = (string)$source->register;
+		if ($registerId !== '') {
+			return $registerId;
+		}
+
+		return (string)($this->registers->getFirstRegisterWithSchema($schemaId) ?? '');
+	}//end registerIdFor()
 
 	/**
 	 * The property's values over the persons that really match the user.
