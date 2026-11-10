@@ -30,6 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Merge;
 
+use OCA\OpenRegister\Service\Survivorship\ReverseFkSourceLinkCheck;
+
 /**
  * Shape validator for the `x-openregister-merge` annotation.
  *
@@ -79,49 +81,8 @@ class MergeAnnotationValidator implements MergeAnnotationValidatorInterface {
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#1.1
 	 */
 	private function validateSourceLink(array $annotation): array {
-		$sourceLink = ($annotation['sourceLink'] ?? null);
-		if ($sourceLink === null) {
-			return [];
-		}
-
-		if (is_array($sourceLink) === false) {
-			return [
-				[
-					'code' => 'merge.source-link-not-object',
-					'message' => 'x-openregister-merge "sourceLink" must be an object.',
-				],
-			];
-		}
-
-		return $this->validateReverseFk(sourceLink: $sourceLink);
+		return (new ReverseFkSourceLinkCheck(annotation: 'merge'))->errors(sourceLink: ($annotation['sourceLink'] ?? null));
 	}//end validateSourceLink()
-
-	/**
-	 * A reverseFk sourceLink must name both its source schema and its reference field.
-	 *
-	 * Any other mode (embedded is the default) has nothing to check here.
-	 *
-	 * @param array<string, mixed> $sourceLink The sourceLink object.
-	 *
-	 * @return array<int, array{code: string, message: string}> Errors (empty when valid).
-	 */
-	private function validateReverseFk(array $sourceLink): array {
-		if ((string)($sourceLink['mode'] ?? 'embedded') !== 'reverseFk') {
-			return [];
-		}
-
-		$errors = [];
-		if ((string)($sourceLink['sourceSchema'] ?? '') === ''
-			|| (string)($sourceLink['referenceField'] ?? '') === ''
-		) {
-			$errors[] = [
-				'code' => 'merge.source-link-reverse-fk-incomplete',
-				'message' => 'x-openregister-merge reverseFk "sourceLink" requires "sourceSchema" and "referenceField".',
-			];
-		}
-
-		return $errors;
-	}//end validateReverseFk()
 
 	/**
 	 * `reversalWindowDays`, when present, must be a positive integer.

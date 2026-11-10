@@ -116,50 +116,8 @@ class SurvivorshipAnnotationValidator implements SurvivorshipAnnotationValidator
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#1.1
 	 */
 	private function validateSourceLink(array $annotation): array {
-		$sourceLink = ($annotation['sourceLink'] ?? null);
-		if ($sourceLink === null) {
-			return [];
-		}
-
-		if (is_array($sourceLink) === false) {
-			return [
-				[
-					'code' => 'survivorship.source-link-not-object',
-					'message' => 'x-openregister-survivorship "sourceLink" must be an object.',
-				],
-			];
-		}
-
-		if ((string)($sourceLink['mode'] ?? 'embedded') !== 'reverseFk') {
-			return [];
-		}
-
-		return $this->validateReverseFkSourceLink(sourceLink: $sourceLink);
+		return (new ReverseFkSourceLinkCheck(annotation: 'survivorship'))->errors(sourceLink: ($annotation['sourceLink'] ?? null));
 	}//end validateSourceLink()
-
-	/**
-	 * Validate a `reverseFk` mode `sourceLink` block: it requires
-	 * `sourceSchema` and `referenceField`.
-	 *
-	 * @param array<mixed> $sourceLink The `sourceLink` block.
-	 *
-	 * @return array<int, array{code: string, message: string}>
-	 *
-	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#1.1
-	 */
-	private function validateReverseFkSourceLink(array $sourceLink): array {
-		$errors = [];
-		if ((string)($sourceLink['sourceSchema'] ?? '') === ''
-			|| (string)($sourceLink['referenceField'] ?? '') === ''
-		) {
-			$errors[] = [
-				'code' => 'survivorship.source-link-reverse-fk-incomplete',
-				'message' => 'x-openregister-survivorship reverseFk "sourceLink" requires "sourceSchema" and "referenceField".',
-			];
-		}
-
-		return $errors;
-	}//end validateReverseFkSourceLink()
 
 	/**
 	 * Whether the annotation carries a well-formed reverse-FK `sourceLink`.
