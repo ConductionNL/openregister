@@ -47,11 +47,11 @@ final class ComputedExpression {
 	/**
 	 * The sandbox template name the expression is rendered under.
 	 *
-	 * @return string `computed_<property>_<md5 of the expression>`.
+	 * @return string `computed_<property>_<xxh128 of the expression>`.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function templateName(): string {
-		return 'computed_' . $this->propertyName . '_' . md5($this->expression);
+		return 'computed_' . $this->propertyName . '_' . hash(algo: 'xxh128', data: $this->expression);
 	}//end templateName()
 }//end class

@@ -1801,7 +1801,7 @@ class MagicFacetHandler {
 	 * @throws \OCP\DB\Exception If a database error occurs.
 	 */
 	private function getTermsFacet(TableTermsFacet $facet): array {
-		$cacheKey = md5(json_encode(value: [$facet->tableName, $facet->field, $facet->baseQuery, $facet->isMetadata]));
+		$cacheKey = hash(algo: 'xxh128', data: json_encode(value: [$facet->tableName, $facet->field, $facet->baseQuery, $facet->isMetadata]));
 		if (isset($this->facetCache[$cacheKey]) === false) {
 			$this->facetCache[$cacheKey] = $this->computeTermsFacet(facet: $facet);
 		}

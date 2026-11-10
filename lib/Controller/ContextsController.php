@@ -213,7 +213,7 @@ class ContextsController extends Controller {
 			$parts[] = ((string)$schema->getId()) . '-' . $schemaStamp;
 		}
 
-		return '"' . md5(implode(':', $parts)) . '"';
+		return '"' . hash(algo: 'xxh128', data: implode(':', $parts)) . '"';
 	}//end buildEtag()
 
 	/**

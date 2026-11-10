@@ -286,7 +286,7 @@ class ComputedFieldHandler {
 	 * @spec openspec/specs/computed-fields/spec.md#requirement-circular-dependency-detection
 	 */
 	private function cyclicFields(Schema $schema): array {
-		$key = $schema->getId() . ':' . md5((string)json_encode($schema->getProperties()));
+		$key = $schema->getId() . ':' . hash(algo: 'xxh128', data: (string)json_encode($schema->getProperties()));
 		if (isset($this->cyclicBySchema[$key]) === false) {
 			$this->cyclicBySchema[$key] = $this->findCyclicFields(schema: $schema);
 		}
