@@ -139,11 +139,11 @@ final class DeckAndTalkSourceRowsTest extends TestCase {
 	}
 
 	private function deck(): DeckObjectSourceProvider {
-		return new DeckObjectSourceProvider($this->createMock(IAppManager::class), $this->session, $this->container, $this->logger);
+		return new DeckObjectSourceProvider(app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $this->createMock(IAppManager::class), container: $this->container, logger: $this->logger), userSession: $this->session);
 	}
 
 	private function talk(): TalkObjectSourceProvider {
-		return new TalkObjectSourceProvider($this->createMock(IAppManager::class), $this->session, $this->container, $this->logger);
+		return new TalkObjectSourceProvider(app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $this->createMock(IAppManager::class), container: $this->container, logger: $this->logger), userSession: $this->session);
 	}
 
 	private function rows(array $entities): array {

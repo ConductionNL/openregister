@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -45,20 +46,35 @@ use Throwable;
 class GroupObjectSourceProvider implements ObjectSourceProvider {
 
 	use CountsThroughFindAll;
+
+	/**
+	 * The acting-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param IGroupManager $groupManager Nextcloud group directory (search/get/admin).
-	 * @param IUserSession $userSession Acting-user session for read-scoping.
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param IGroupManager      $groupManager Nextcloud group directory (search/get/admin).
+	 * @param LinkSessionRuntime $session      The acting-user session and the logger for read failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IGroupManager $groupManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		LinkSessionRuntime $session,
 	) {
+		$this->userSession = $session->userSession;
+		$this->logger = $session->logger;
 	}//end __construct()
 
 	/**
