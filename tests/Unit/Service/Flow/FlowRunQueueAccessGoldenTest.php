@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * Allowed and refused outcomes of queue().
@@ -149,7 +150,7 @@ class FlowRunQueueAccessGoldenTest extends TestCase {
 	 */
 	private function outcome(FlowRunService $service, ?string $user, string $trigger): array {
 		try {
-			$run = $service->queue('f1', ['uuid' => 'o1'], $trigger, ['k' => 'v'], $user);
+			$run = $service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(subject: ['uuid' => 'o1'], trigger: $trigger, context: ['k' => 'v'], user: $user));
 		} catch (FlowUnattributed $refused) {
 			return [
 				'refused' => true,
