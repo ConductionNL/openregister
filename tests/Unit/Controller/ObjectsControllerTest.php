@@ -32,6 +32,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * Unit tests for ObjectsController
@@ -6631,6 +6632,130 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	/**
+	 * A delete carries the route's register and schema, so the URL's scope is enforced.
+	 *
+	 * @return void
+	 */
+	public function testDestroyPassesTheRouteScope(): void {
+		$this->setupAdminUser();
+		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', false, false)->willReturn(true);
+
+		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
+	}
+
+	/**
+	 * A non-admin's delete runs in the caller's scope.
+	 *
+	 * @return void
+	 */
+	public function testDestroyScopesANonAdmin(): void {
+		$this->userSession->method('getUser')->willReturn($this->createMock(\OCP\IUser::class));
+		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', true, true)->willReturn(true);
+
+		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
+	}
+
+	/**
+	 * What a delete that throws answers.
+	 *
+	 * @return array<string, array{0: \Throwable, 1: int, 2: mixed}>
+	 */
+	public static function deleteFailures(): array {
+		$hook = \OCA\OpenRegister\Exception\HookStoppedException::class;
+		$dbal = \OCA\OpenRegister\Service\ObjectSource\DbalWriteException::class;
+
+		return [
+			'append only'       => [new \OCA\OpenRegister\Exception\AppendOnlyException('s', 'delete'), 405, null],
+			'not found'         => [new \OCP\AppFramework\Db\DoesNotExistException('x'), 404, ['error' => 'Not Found']],
+			'hook'              => [new $hook('stop', ['a' => 'b']), 422, ['error' => 'stop', 'errors' => ['a' => 'b']]],
+			'hook with status'  => [new $hook('stop', ['status' => 409]), 409, ['error' => 'stop', 'errors' => ['status' => 409]]],
+			'hook, odd status'  => [new $hook('stop', ['status' => '409']), 422, ['error' => 'stop', 'errors' => ['status' => '409']]],
+			'external write'    => [new $dbal('nope', 418), 418, ['error' => 'nope']],
+			'any other failure' => [new \RuntimeException('no right'), 403, ['error' => 'no right']],
+			'fatal'             => [new \TypeError('bad'), 500, ['error' => 'An unexpected error occurred while deleting the object']],
+		];
+	}
+
+	/**
+	 * Every delete failure keeps its status and body.
+	 *
+	 * @dataProvider deleteFailures
+	 *
+	 * @param \Throwable $failure  The failure.
+	 * @param int        $status   The status.
+	 * @param mixed      $expected The body, or null when only the status is pinned.
+	 *
+	 * @return void
+	 */
+	public function testDestroyFailureAnswers(\Throwable $failure, int $status, mixed $expected): void {
+		$this->objectService->method('deleteObject')->willThrowException($failure);
+
+		$result = $this->controller->destroy('id', 'r', 's', $this->objectService);
+
+		$this->assertSame($status, $result->getStatus());
+		if ($expected !== null) {
+			$this->assertSame($expected, $result->getData());
+		}
+	}
+
+	/**
+	 * Contracts paging: the plain name wins over the `_` form, and the limit defaults to 20.
+	 *
+	 * @return void
+	 */
+	public function testContractsPagingParameters(): void {
+		$this->request->method('getParams')->willReturn(['_offset' => '1', 'offset' => '2', '_page' => '3', 'page' => '4']);
+		$this->objectService->expects($this->once())->method('getObjectContracts')
+			->with('id', ['limit' => 20, 'offset' => 2, 'page' => 4])
+			->willReturn(['results' => [], 'total' => 0]);
+
+		$this->assertSame(200, $this->controller->contracts('id', 'r', 's', $this->objectService)->getStatus());
+	}
+
+	/**
+	 * An object stored in a register and schema, on a route that names them by slug.
+	 *
+	 * @param int $registerId The id the route's register resolves to.
+	 *
+	 * @return \OCP\AppFramework\Http\JSONResponse The answer.
+	 */
+	private function logsBySlug(int $registerId): \OCP\AppFramework\Http\JSONResponse {
+		$this->setupAdminUser();
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$object->setRegister('1');
+		$object->setSchema('2');
+		$register = new \OCA\OpenRegister\Db\Register();
+		$register->setId($registerId);
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setId(2);
+		$this->objectService->method('find')->willReturn($object);
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($register);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schema);
+		$this->objectService->method('getLogs')->willReturn([]);
+		$this->request->method('getParams')->willReturn([]);
+
+		return $this->controller->logs('uuid', 'zaken', 'persoon', $this->objectService);
+	}
+
+	/**
+	 * An administrator reads an object's log through the slugs of its register and schema.
+	 *
+	 * @return void
+	 */
+	public function testLogsAnswerAnAdministratorOnASlugRoute(): void {
+		$this->assertSame(200, $this->logsBySlug(1)->getStatus());
+	}
+
+	/**
+	 * A slug route of another register still answers that the object is not there.
+	 *
+	 * @return void
+	 */
+	public function testLogsRefuseASlugRouteOfAnotherRegister(): void {
+		$this->assertSame(404, $this->logsBySlug(9)->getStatus());
+	}
+
+	/**
 	 * A JSON export is recorded with the format it was asked in.
 	 *
 	 * @return void
@@ -6698,9 +6823,7 @@ class ObjectsControllerTest extends TestCase {
 			static fn (string $key, $default = null) => ($key === 'type') ? 'json' : $default
 		);
 		$this->exportService->expects($this->once())->method('exportToJson')->with(
-			$registerEntity,
-			$schemaEntity,
-			['status' => 'open']
+			new ObjectExportRequest(register: $registerEntity, schema: $schemaEntity, filters: ['status' => 'open'])
 		)->willReturn('{"results":[1,2]}');
 
 		$result = $this->controller->export('1', '2', $this->objectService);

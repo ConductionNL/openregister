@@ -223,7 +223,7 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 			$mayReadBlocker = fn (Task $blocker): bool => $this->authorization->mayRead(task: $blocker, uid: $actor);
 		}
 
-		return $this->import(data: $data, actor: $actor, mayReadBlocker: $mayReadBlocker);
+		return $this->importTask(import: new TaskImport(data: $data, actor: $actor, mayReadBlocker: $mayReadBlocker));
 	}//end create()
 
 	/**
@@ -263,12 +263,26 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * that is already closed (a completed approval carried over from a
 	 * legacy shape). Not reachable over HTTP; the controller calls create().
 	 *
-	 * @param array<string, mixed> $data The task fields, canonical or legacy.
-	 * @param string|null $actor The creating identity.
-	 * @param callable|null $mayReadBlocker Answers whether the creating caller may read a blocker; create() passes
-	 *                                      the caller's own rule for an ordinary user, a trusted caller passes none.
-	 * @param DateTime|null $createdAt The moment the task was created, for a task carried over from elsewhere; it stamps
-	 *                                 the task and its create audit entry. Null stamps both with now.
+	 * @param array<string, mixed> $data  The task fields, canonical or legacy.
+	 * @param string|null          $actor The creating identity.
+	 *
+	 * @return Task The created task, with candidates indexed and creation audited.
+	 *
+	 * @throws TaskValidationException On any refused value.
+	 * @throws TaskAccessDeniedException Without an acting identity.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 */
+	public function import(array $data, ?string $actor): Task {
+		return $this->importTask(import: new TaskImport(data: $data, actor: $actor));
+	}//end import()
+
+	/**
+	 * Create a task on the trusted path (see import()), with the blocker rule
+	 * create() passes for an ordinary user and the creation moment of a task
+	 * carried over from elsewhere, which stamps the task and its create audit entry.
+	 *
+	 * @param TaskImport $import The task fields, the creating identity, the blocker rule and the creation moment.
 	 *
 	 * @return Task The created task, with candidates indexed and creation audited.
 	 *
@@ -279,16 +293,16 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-task-may-carry-the-moment-it-was-created
 	 */
-	public function import(array $data, ?string $actor, ?callable $mayReadBlocker = null, ?DateTime $createdAt = null): Task {
-		$data = $this->locate(data: $data);
-		$task = $this->services->intake->builder->fromData(data: $data, actor: $actor);
-		$task->setCreated($createdAt);
+	public function importTask(TaskImport $import): Task {
+		$data = $this->locate(data: $import->data);
+		$task = $this->services->intake->builder->fromData(data: $data, actor: $import->actor);
+		$task->setCreated($import->createdAt);
 		$this->refuseUnrenderableForm(task: $task);
-		(new TaskBlockerGuard(tasks: $this->services->tables->tasks))->assertDeclarable(task: $task, mayRead: $mayReadBlocker);
-		$act = $this->authorizedCreation(task: $task, actor: $actor);
+		(new TaskBlockerGuard(tasks: $this->services->tables->tasks))->assertDeclarable(task: $task, mayRead: $import->mayReadBlocker);
+		$act = $this->authorizedCreation(task: $task, actor: $import->actor);
 
 		return $this->transactional(mutation: fn (): Task => $this->audited(task: $this->inserted(task: $task, data: $data), act: $act));
-	}//end import()
+	}//end importTask()
 
 	/**
 	 * Authorize the creation of a built task, and remember that it had no
@@ -736,32 +750,6 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	}//end resolve()
 
 	/**
-	 * Complete, with the answer as separate values.
-	 *
-	 * Kept for the portal completion, which an open change rewrites; it builds
-	 * the answer and delegates to {@see self::completeWithAnswer()}.
-	 *
-	 * @param string                                $uuid       The task uuid.
-	 * @param string                                $outcome    The outcome (`approved`, `done`, `rejected`, ...).
-	 * @param string|null                           $resultText Free-text result.
-	 * @param string|null                           $comment    Completion comment.
-	 * @param string|null                           $actor      The completing identity — must be the assignee.
-	 * @param array<string, mixed>|null             $responses  The submitted answer fields, if any.
-	 * @param array<int, array<string, mixed>>|null $evidence   References to the files ALREADY stored; never bytes.
-	 *
-	 * @return Task The completed task.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
-	 */
-	public function complete(
-		string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor, ?array $responses = null, ?array $evidence = null
-	): Task {
-		$payload = new TaskAnswerPayload(responses: $responses, evidence: $evidence);
-		$answer  = new TaskAnswer(outcome: $outcome, resultText: $resultText, comment: $comment, payload: $payload);
-		return $this->completeWithAnswer(uuid: $uuid, answer: $answer, actor: $actor);
-	}//end complete()
-
-	/**
 	 * Complete: the assignee finishes the work with an explicit outcome.
 	 *
 	 * A rejecting or returning outcome REQUIRES a non-empty comment; without
@@ -957,17 +945,16 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	/**
 	 * Explicit propagation: a branch decision made this task moot.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $reason What made it moot — recorded, because "why did
-	 *                       this disappear from my inbox" must stay answerable.
-	 * @param string $source The propagation source recorded as actor.
+	 * @param string      $uuid    The task uuid.
+	 * @param TaskTrigger $trigger The propagation source recorded as actor, and what made it moot: recorded,
+	 *                             because "why did this disappear from my inbox" must stay answerable.
 	 *
 	 * @return Task The terminated task, or the task untouched when already terminal.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
-	public function terminateAsMoot(string $uuid, string $reason, string $source): Task {
-		$act = new TaskAct(verb: 'terminate', actor: $source, reason: $reason, state: Task::STATE_TERMINATED);
+	public function terminateAsMoot(string $uuid, TaskTrigger $trigger): Task {
+		$act = new TaskAct(verb: 'terminate', actor: $trigger->source, reason: $trigger->reason, state: Task::STATE_TERMINATED);
 
 		return $this->terminateOpen(task: $this->services->tables->tasks->findByUuid(uuid: $uuid), act: $act);
 	}//end terminateAsMoot()
@@ -1005,9 +992,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * task declares none; a completion that neither approves nor rejects is
 	 * refused as undecided.
 	 *
-	 * @param string $uuid The decided task's uuid.
-	 * @param string $source The consuming identity recorded as actor.
-	 * @param string $reason What relied on the approval.
+	 * @param string      $uuid    The decided task's uuid.
+	 * @param TaskTrigger $trigger The consuming identity recorded as actor, and what relied on the approval.
 	 *
 	 * @return Task The task with its consumption recorded.
 	 *
@@ -1016,11 +1002,11 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
-	public function consume(string $uuid, string $source, string $reason): Task {
+	public function consume(string $uuid, TaskTrigger $trigger): Task {
 		$task = $this->unconsumedApproval(uuid: $uuid);
-		$this->markConsumed(task: $task, source: $source);
+		$this->markConsumed(task: $task, source: $trigger->source);
 
-		return $this->updateAudited(task: $task, act: new TaskAct(verb: 'consume', actor: $source, reason: $reason));
+		return $this->updateAudited(task: $task, act: new TaskAct(verb: 'consume', actor: $trigger->source, reason: $trigger->reason));
 	}//end consume()
 
 	/**
@@ -1215,10 +1201,9 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * concurrent completion surfaces as {@see TaskConflictException}, which
 	 * the sweep treats as "nothing to do".
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $outcome `skip`, `error`, `dead_letter` or `transition:<action>`.
-	 * @param string $source The timer identity recorded as actor (`flow-timer:<uuid>`).
-	 * @param string $reason Why, recorded on the audit.
+	 * @param string       $uuid    The task uuid.
+	 * @param TimerOutcome $outcome `skip`, `error`, `dead_letter` or `transition:<action>`, and the timer identity
+	 *                              recorded as actor (`flow-timer:<uuid>`) with why, recorded on the audit.
 	 *
 	 * @return Task The task as left by the outcome, or untouched when already terminal.
 	 *
@@ -1227,9 +1212,9 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
 	 */
-	public function applyTimerOutcome(string $uuid, string $outcome, string $source, string $reason): Task {
-		[$state, $recorded, $action] = $this->timerOutcomeTarget(outcome: $outcome);
-		$act = new TaskAct(verb: $action, actor: $source, reason: $reason, state: $state);
+	public function applyTimerOutcome(string $uuid, TimerOutcome $outcome): Task {
+		[$state, $recorded, $action] = $this->timerOutcomeTarget(outcome: $outcome->outcome);
+		$act = new TaskAct(verb: $action, actor: $outcome->trigger->source, reason: $outcome->trigger->reason, state: $state);
 
 		return $this->closeByTimer(task: $this->services->tables->tasks->findByUuid(uuid: $uuid), closing: new TaskClosing(act: $act, outcome: $recorded));
 	}//end applyTimerOutcome()
@@ -1368,9 +1353,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * checks in the same order as every verb (exists, authorized, open), so a
 	 * denial here reads in the audit exactly as a denial from the verb would.
 	 *
-	 * @param string $verb The verb about to be attempted.
-	 * @param string $uuid The task uuid.
-	 * @param string|null $actor The acting identity.
+	 * @param TaskAct $act  The verb about to be attempted and the acting identity.
+	 * @param string  $uuid The task uuid.
 	 *
 	 * @return Task The open, authorized task.
 	 *
@@ -1380,8 +1364,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-only-the-matched-party-completes-fail-closed
 	 */
-	public function openFor(string $verb, string $uuid, ?string $actor): Task {
-		return $this->openTaskFor(act: new TaskAct(verb: $verb, actor: $actor), uuid: $uuid);
+	public function openFor(TaskAct $act, string $uuid): Task {
+		return $this->openTaskFor(act: $act, uuid: $uuid);
 	}//end openFor()
 
 	/**

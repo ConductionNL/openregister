@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
@@ -136,7 +137,7 @@ class OpenCorporatesProviderTest extends TestCase {
 				]
 			);
 
-		$rows = $this->provider->list('', '', '', ['_search' => 'Acme']);
+		$rows = $this->provider->list(new ObjectRef(register: '', schema: '', id: ''), ['_search' => 'Acme']);
 		$this->assertCount(1, $rows);
 		$this->assertSame('Acme BV', $rows[0]['name']);
 		$this->assertSame('69599084', $rows[0]['company_number']);

@@ -52,6 +52,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCP\App\IAppManager;
@@ -220,9 +221,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 * set (the registry contract requires the method; the dispatch surface is
 	 * {@see dispatch()}).
 	 *
-	 * @param string $register Ignored (send-only leaf).
-	 * @param string $schema Ignored (send-only leaf).
-	 * @param string $objectId Ignored (send-only leaf).
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Ignored (send-only leaf).
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -233,7 +232,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 *   filters are mandated by the IntegrationProvider contract; this leaf is
 	 *   send-only so they are intentionally unused.
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}//end list()
 

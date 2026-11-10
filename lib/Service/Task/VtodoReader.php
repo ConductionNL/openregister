@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
+use OCA\OpenRegister\Service\TaskLocation;
+
 /**
  * Reads the standard fields and the X-OPENREGISTER-* properties of a VTODO.
  *
@@ -36,16 +38,15 @@ final class VtodoReader {
 	/**
 	 * The task array of a VTODO.
 	 *
-	 * @param mixed  $vtodo      The VTODO component from the parsed iCalendar.
-	 * @param string $calendarId The calendar ID.
-	 * @param string $uri        The calendar object URI.
+	 * @param mixed        $vtodo The VTODO component from the parsed iCalendar.
+	 * @param TaskLocation $at    The calendar ID and calendar object URI.
 	 *
 	 * @return array<string, mixed> The task.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function taskArray(mixed $vtodo, string $calendarId, string $uri): array {
-		$identity = ['id' => $uri, 'uid' => $this->text(vtodo: $vtodo, property: 'UID'), 'calendarId' => $calendarId];
+	public function taskArray(mixed $vtodo, TaskLocation $at): array {
+		$identity = ['id' => $at->uri, 'uid' => $this->text(vtodo: $vtodo, property: 'UID'), 'calendarId' => (string)$at->calendarId];
 
 		return array_merge($identity, $this->vtodoFields(vtodo: $vtodo), $this->openRegisterProperties(vtodo: $vtodo));
 	}//end taskArray()

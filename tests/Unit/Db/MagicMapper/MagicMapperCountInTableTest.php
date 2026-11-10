@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\TableSearch;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
@@ -56,9 +57,9 @@ class MagicMapperCountInTableTest extends TestCase {
 		$mapper->method('existsTableForRegisterSchema')->willReturn($exists);
 		$mapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_2');
 		$handler = $this->createMock(MagicSearchHandler::class);
-		$handler->method('searchObjects')->willReturnCallback(
-			function (array $query, Register $register, Schema $schema, string $tableName) use ($answer): mixed {
-				$this->asked[] = [$query, $register->getId(), $schema->getId(), $tableName];
+		$handler->method('searchTable')->willReturnCallback(
+			function (array $query, TableSearch $search) use ($answer): mixed {
+				$this->asked[] = [$query, $search->table->register->getId(), $search->table->schema->getId(), $search->tableName];
 				if ($answer instanceof \Throwable) {
 					throw $answer;
 				}

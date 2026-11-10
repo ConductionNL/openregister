@@ -146,11 +146,11 @@ final class DeletedControllerDestroyGoldenTest extends TestCase {
 		$this->request->method('getParam')->willReturnCallback(
 			static fn (string $key, $default = null) => ($key === 'force') ? $force : $default
 		);
-		$this->windows->method('windowFor')->willReturn($this->window($daysRemaining));
+		$this->windows->method('windowOf')->willReturn($this->window($daysRemaining));
 		$recorded = [];
-		$this->recorder->method('record')->willReturnCallback(
-			static function (ObjectEntity $object, array $scope, string $rule, array $context) use (&$recorded): array {
-				$recorded = ['uuid' => $object->getUuid(), 'rule' => $rule, 'context' => $context];
+		$this->recorder->method('recordDestruction')->willReturnCallback(
+			static function (\OCA\OpenRegister\Service\Deletion\RecordDestructionCommand $command) use (&$recorded): array {
+				$recorded = ['uuid' => $command->object->getUuid(), 'rule' => $command->rule, 'context' => $command->context];
 
 				return ['destroyedBy' => 'recordmanager-1'];
 			}

@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
@@ -139,7 +140,7 @@ class KvkProviderTest extends TestCase {
 			)
 			->willReturn(['resultaten' => [['kvkNummer' => '12345678', 'naam' => 'Acme BV']]]);
 
-		$rows = $this->provider->list('', '', '', ['_search' => 'Acme', '_limit' => 10]);
+		$rows = $this->provider->list(new ObjectRef(register: '', schema: '', id: ''), ['_search' => 'Acme', '_limit' => 10]);
 		$this->assertCount(1, $rows);
 		$this->assertSame('12345678', $rows[0]['kvkNummer']);
 	}//end testListDelegatesToRouterAndUnwrapsResultaten()

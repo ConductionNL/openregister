@@ -266,9 +266,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	private function createWorkPackage(LinkTarget $target, array $payload): array {
 		try {
 			return $this->provider->create(
-				register: (string)$target->registerId,
-				schema: (string)$target->schemaId(),
-				objectId: $target->objectUuid,
+				ref: new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid),
 				payload: $payload
 			);
 		} catch (ProviderUnavailableException $e) {
@@ -515,7 +513,10 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 		}
 
 		try {
-			$row = $this->provider->get(register: (string)$ref->register, schema: (string)$ref->schema, objectId: $ref->id, entityId: (string)$workPackageId);
+			$row = $this->provider->get(
+				ref: new ObjectRef(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				entityId: (string)$workPackageId
+			);
 		} catch (Throwable $e) {
 			$this->runtime->logger()->debug('OpenProjectLinkService::fetchWorkPackage failed: ' . $e->getMessage());
 			return null;

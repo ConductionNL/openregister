@@ -44,20 +44,59 @@ final class FilePropertyLog {
 	}//end __construct()
 
 	/**
-	 * Log with the file, line and app in the context, ahead of the given keys.
+	 * Log at debug level with the file, line and app in the context, ahead of the given keys.
 	 *
-	 * @param string               $level   The log level: debug, info or warning.
 	 * @param string               $message The message.
 	 * @param array<string, mixed> $context The context after file, line and app.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	public function write(string $level, string $message, array $context): void {
-		$this->logger->{$level}(
-			message: $message,
-			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister'] + $context
-		);
-	}//end write()
+	public function debug(string $message, array $context): void {
+		$this->logger->debug(message: $message, context: self::withOrigin(context: $context));
+	}//end debug()
+
+	/**
+	 * Log at info level with the file, line and app in the context, ahead of the given keys.
+	 *
+	 * @param string               $message The message.
+	 * @param array<string, mixed> $context The context after file, line and app.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	public function info(string $message, array $context): void {
+		$this->logger->info(message: $message, context: self::withOrigin(context: $context));
+	}//end info()
+
+	/**
+	 * Log at warning level with the file, line and app in the context, ahead of the given keys.
+	 *
+	 * @param string               $message The message.
+	 * @param array<string, mixed> $context The context after file, line and app.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	public function warning(string $message, array $context): void {
+		$this->logger->warning(message: $message, context: self::withOrigin(context: $context));
+	}//end warning()
+
+	/**
+	 * The context with the file, line and app ahead of the given keys.
+	 *
+	 * @param array<string, mixed> $context The context after file, line and app.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private static function withOrigin(array $context): array {
+		return ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister'] + $context;
+	}//end withOrigin()
 
 	/**
 	 * Log with only the file and line as context.

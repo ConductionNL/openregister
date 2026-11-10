@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
 use OCP\App\IAppManager;
@@ -229,14 +230,14 @@ class BrpPersonProviderTest extends TestCase {
 			)
 			->willReturn(['personen' => [['burgerservicenummer' => '999993653']]]);
 
-		$rows = $this->provider->list('', '', '', ['_search' => '999993653']);
+		$rows = $this->provider->list(new ObjectRef(register: '', schema: '', id: ''), ['_search' => '999993653']);
 		$this->assertCount(1, $rows);
 		$this->assertSame('999993653', $rows[0]['burgerservicenummer']);
 	}//end testListDelegatesUsingSearchFilterAsBsn()
 
 	public function testListWithoutBsnShortCircuits(): void {
 		$this->router->expects($this->never())->method('call');
-		$this->assertSame([], $this->provider->list('', '', '', []));
+		$this->assertSame([], $this->provider->list(new ObjectRef(register: '', schema: '', id: ''), []));
 	}//end testListWithoutBsnShortCircuits()
 
 	public function testLookupDegradesOnSourceMissing(): void {

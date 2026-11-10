@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\XwikiLinkMapper;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
@@ -141,7 +142,7 @@ class XwikiProviderTest extends TestCase {
 				],
 			]);
 
-		$rows = $this->provider->list('r1', 's1', 'obj-1', ['_search' => 'foo']);
+		$rows = $this->provider->list(new ObjectRef(register: 'r1', schema: 's1', id: 'obj-1'), ['_search' => 'foo']);
 
 		$this->assertCount(2, $rows);
 		$this->assertSame('Departments.Legal.Handbook', $rows[0]['id']);
@@ -157,7 +158,7 @@ class XwikiProviderTest extends TestCase {
 		$this->router->method('call')->willReturn([
 			['reference' => 'A.B', 'title' => 'B', 'space' => 'A'],
 		]);
-		$rows = $this->provider->list('r', 's', 'o');
+		$rows = $this->provider->list(new ObjectRef(register: 'r', schema: 's', id: 'o'));
 		$this->assertCount(1, $rows);
 		$this->assertSame('A.B', $rows[0]['id']);
 	}//end testListAcceptsBareArrayResponse()
@@ -182,7 +183,7 @@ class XwikiProviderTest extends TestCase {
 			],
 		]);
 
-		$rows = $this->provider->list('decidesk', 'meeting', 'obj-1');
+		$rows = $this->provider->list(new ObjectRef(register: 'decidesk', schema: 'meeting', id: 'obj-1'));
 
 		$this->assertCount(1, $rows);
 		$this->assertSame('xwiki:Sandbox.IntegrationTest', $rows[0]['id']);
@@ -198,7 +199,7 @@ class XwikiProviderTest extends TestCase {
 		// An assoc response with no recognised rows key (e.g. XWiki's
 		// top-level wiki/space representation) must not be iterated as rows.
 		$this->router->method('call')->willReturn(['links' => [['rel' => 'x', 'href' => 'y']], 'syntaxes' => ['xwiki/2.1']]);
-		$this->assertSame([], $this->provider->list('r', 's', 'o'));
+		$this->assertSame([], $this->provider->list(new ObjectRef(register: 'r', schema: 's', id: 'o')));
 	}//end testListReturnsEmptyForEnvelopeWithNoRowsKey()
 
 	public function testGetFetchesEncodedReference(): void {
@@ -214,7 +215,7 @@ class XwikiProviderTest extends TestCase {
 				)
 			->willReturn(['reference' => 'Space.Page', 'title' => 'Page', 'content' => '<p>hello</p>']);
 
-		$row = $this->provider->get('r', 's', 'o', 'Space.Page');
+		$row = $this->provider->get(new ObjectRef(register: 'r', schema: 's', id: 'o'), 'Space.Page');
 		$this->assertSame('Space.Page', $row['id']);
 		$this->assertSame('<p>hello</p>', $row['content']);
 	}//end testGetFetchesEncodedReference()
@@ -232,7 +233,7 @@ class XwikiProviderTest extends TestCase {
 				)
 			->willReturn(['reference' => 'X.Y', 'title' => 'Y', 'space' => 'X']);
 
-		$row = $this->provider->create('r', 's', 'o', ['reference' => 'https://wiki/bin/view/X/Y']);
+		$row = $this->provider->create(new ObjectRef(register: 'r', schema: 's', id: 'o'), ['reference' => 'https://wiki/bin/view/X/Y']);
 		$this->assertSame('X.Y', $row['id']);
 		$this->assertSame('Y', $row['title']);
 	}//end testCreateMergesContextIntoBodyAndNormalises()
@@ -250,7 +251,7 @@ class XwikiProviderTest extends TestCase {
 				)
 			->willReturn(['reference' => 'New.Ref', 'title' => 'New']);
 
-		$row = $this->provider->update('r', 's', 'o', 'Old.Ref', ['reference' => 'New.Ref']);
+		$row = $this->provider->update(new ObjectRef(register: 'r', schema: 's', id: 'o'), 'Old.Ref', ['reference' => 'New.Ref']);
 		$this->assertSame('New.Ref', $row['id']);
 	}//end testUpdatePutsEncodedReference()
 
@@ -267,7 +268,7 @@ class XwikiProviderTest extends TestCase {
 				)
 			->willReturn([]);
 
-		$this->provider->delete('r', 's', 'o', 'Space.Page');
+		$this->provider->delete(new ObjectRef(register: 'r', schema: 's', id: 'o'), 'Space.Page');
 	}//end testDeleteCallsRouterWithDeleteAndContext()
 
 	public function testListReadsLinkTableFirstWhenMapperWiredAndObjectContext(): void {
@@ -295,7 +296,7 @@ class XwikiProviderTest extends TestCase {
 		);
 
 		$provider = new XwikiProvider(new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($this->router, $this->appManager, $l10n), $mapper);
-		$rows = $provider->list('decidesk', 'meeting', 'obj-1');
+		$rows = $provider->list(new ObjectRef(register: 'decidesk', schema: 'meeting', id: 'obj-1'));
 
 		$this->assertCount(1, $rows);
 		$this->assertSame('Sales.Pitch', $rows[0]['reference']);
@@ -322,7 +323,7 @@ class XwikiProviderTest extends TestCase {
 		$this->router->method('call')->willThrowException(new \RuntimeException('upstream down'));
 
 		$provider = new XwikiProvider(new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($this->router, $this->appManager, $l10n), $mapper);
-		$rows = $provider->list('decidesk', 'meeting', 'obj-1');
+		$rows = $provider->list(new ObjectRef(register: 'decidesk', schema: 'meeting', id: 'obj-1'));
 
 		$this->assertCount(1, $rows);
 		$this->assertSame('Sales.Pitch', $rows[0]['reference']);
