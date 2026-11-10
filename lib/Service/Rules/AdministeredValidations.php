@@ -220,21 +220,13 @@ class AdministeredValidations {
 	 * defensible and silently inverts every check.
 	 *
 	 * @param array<string, mixed>|null $annotation The declared validations.
-	 * @param array<string, mixed>      $document   The object as it would be saved.
-	 * @param array<string, mixed>      $library    Named conditions in scope.
-	 * @param string                    $language   The caller's language.
+	 * @param ValidationInput           $input      The object as it would be saved, the named conditions in scope and the caller's language.
 	 *
 	 * @return array{refusals: array<int, array<string, mixed>>, warnings: array<int, array<string, mixed>>} The outcome.
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
-	public function evaluate(
-		?array $annotation,
-		array $document,
-		array $library = [],
-		string $language = self::FALLBACK_LANGUAGE
-	): array {
-		$input   = new ValidationInput(document: $document, library: $library, language: $language);
+	public function evaluate(?array $annotation, ValidationInput $input): array {
 		$outcome = ['refusals' => [], 'warnings' => []];
 		foreach ($this->declarationsFrom(annotation: $annotation) as $name => $declaration) {
 			$entry = $this->entryFor(declaration: $declaration, input: $input);
@@ -259,7 +251,10 @@ class AdministeredValidations {
 	private function entryFor(array $declaration, ValidationInput $input): ?array {
 		try {
 			$node     = ($declaration['condition'] ?? null);
-			$violated = $this->evaluator->holds(node: $node, document: $input->document, library: $input->library);
+			$violated = $this->evaluator->holds(
+				node: $node,
+				evaluation: new ConditionEvaluation(document: $input->document, library: $input->library, depth: 0)
+			);
 		} catch (ConditionRefusedException $refused) {
 			return $this->unevaluableEntry(declaration: $declaration, refused: $refused);
 		}

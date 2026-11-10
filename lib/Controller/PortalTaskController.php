@@ -203,12 +203,8 @@ class PortalTaskController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function complete(string $uuid, string $outcome = PortalTaskServiceInterface::DEFAULT_OUTCOME, ?string $comment = null): JSONResponse {
-		return $this->asSubject(
-			action: fn (PortalSubject $subject): JSONResponse => $this->completeAs(
-				subject: $subject,
-				completion: ['uuid' => $uuid, 'outcome' => $outcome, 'comment' => $comment]
-			)
-		);
+		$completion = ['uuid' => $uuid, 'outcome' => $outcome, 'comment' => $comment];
+		return $this->asSubject(action: fn (PortalSubject $subject): JSONResponse => $this->completeAs(subject: $subject, completion: $completion));
 	}//end complete()
 
 	/**
@@ -276,7 +272,7 @@ class PortalTaskController extends Controller {
 			// verifier's own message stays in the log.
 			$this->logger?->info('[PortalTaskController] Refused a portal request: ' . $refused->getMessage(), ['code' => $refused->refusal()]);
 
-			return $this->refused(error: 'No acting portal subject', code: $refused->refusal(), status: Http::STATUS_UNAUTHORIZED);
+			return new JSONResponse($this->refused(error: 'No acting portal subject', code: $refused->refusal()), Http::STATUS_UNAUTHORIZED);
 		}
 
 		try {
@@ -345,11 +341,11 @@ class PortalTaskController extends Controller {
 	private function refuseUnlessAdmin(): ?JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
-			return $this->refused(error: 'No session', code: 'no-session', status: Http::STATUS_UNAUTHORIZED);
+			return new JSONResponse($this->refused(error: 'No session', code: 'no-session'), Http::STATUS_UNAUTHORIZED);
 		}
 
 		if ($this->isAdmin(user: $user) === false) {
-			return $this->refused(error: 'Administrators only', code: 'admin-required', status: Http::STATUS_FORBIDDEN);
+			return new JSONResponse($this->refused(error: 'Administrators only', code: 'admin-required'), Http::STATUS_FORBIDDEN);
 		}
 
 		return null;
@@ -420,7 +416,7 @@ class PortalTaskController extends Controller {
 	 */
 	private function settledAsFailed(string $uuid, string $error): JSONResponse {
 		if (trim($error) === '') {
-			return $this->refused(error: 'A failed delivery needs an error naming why.', code: 'error-required', status: Http::STATUS_BAD_REQUEST);
+			return new JSONResponse($this->refused(error: 'A failed delivery needs an error naming why.', code: 'error-required'), Http::STATUS_BAD_REQUEST);
 		}
 
 		return $this->settled(mark: fn (): PortalTaskDelivery => $this->delivery->markFailed(uuid: $uuid, error: $error));
@@ -437,7 +433,7 @@ class PortalTaskController extends Controller {
 		try {
 			return new JSONResponse($mark()->jsonSerialize());
 		} catch (DoesNotExistException) {
-			return $this->refused(error: 'No such delivery request', code: 'no-such-delivery', status: Http::STATUS_NOT_FOUND);
+			return new JSONResponse($this->refused(error: 'No such delivery request', code: 'no-such-delivery'), Http::STATUS_NOT_FOUND);
 		}
 	}//end settled()
 
@@ -461,10 +457,9 @@ class PortalTaskController extends Controller {
 
 		$this->logger?->error('[PortalTaskController] Portal task operation failed: ' . $failure->getMessage(), ['exception' => $failure]);
 
-		return $this->refused(
-			error: 'The portal task operation failed. The details are in the server log.',
-			code: 'internal',
-			status: Http::STATUS_INTERNAL_SERVER_ERROR
+		return new JSONResponse(
+			$this->refused(error: 'The portal task operation failed. The details are in the server log.', code: 'internal'),
+			Http::STATUS_INTERNAL_SERVER_ERROR
 		);
 	}//end translated()
 
@@ -494,7 +489,7 @@ class PortalTaskController extends Controller {
 	 * @return JSONResponse The 400.
 	 */
 	private function uploadConstraint(TaskValidationException $refused): JSONResponse {
-		return $this->refused(error: $refused->getMessage(), code: 'upload-constraint', status: Http::STATUS_BAD_REQUEST);
+		return new JSONResponse($this->refused(error: $refused->getMessage(), code: 'upload-constraint'), Http::STATUS_BAD_REQUEST);
 	}//end uploadConstraint()
 
 	/**
@@ -503,7 +498,7 @@ class PortalTaskController extends Controller {
 	 * @return JSONResponse The 404.
 	 */
 	private function absentTask(): JSONResponse {
-		return $this->refused(error: 'No such task', code: 'no-such-task', status: Http::STATUS_NOT_FOUND);
+		return new JSONResponse($this->refused(error: 'No such task', code: 'no-such-task'), Http::STATUS_NOT_FOUND);
 	}//end absentTask()
 
 	/**
@@ -514,7 +509,7 @@ class PortalTaskController extends Controller {
 	 * @return JSONResponse The 409.
 	 */
 	private function taskClosed(TaskConflictException $conflict): JSONResponse {
-		return $this->refused(error: $conflict->getMessage(), code: 'task-closed', status: Http::STATUS_CONFLICT);
+		return new JSONResponse($this->refused(error: $conflict->getMessage(), code: 'task-closed'), Http::STATUS_CONFLICT);
 	}//end taskClosed()
 
 	/**
@@ -535,14 +530,13 @@ class PortalTaskController extends Controller {
 	/**
 	 * A refusal body: the error and its machine-readable code.
 	 *
-	 * @param string $error  The message.
-	 * @param string $code   The code.
-	 * @param int    $status The status.
+	 * @param string $error The message.
+	 * @param string $code  The code.
 	 *
-	 * @return JSONResponse The refusal.
+	 * @return array{error: string, code: string} The refusal body.
 	 */
-	private function refused(string $error, string $code, int $status): JSONResponse {
-		return new JSONResponse(['error' => $error, 'code' => $code], $status);
+	private function refused(string $error, string $code): array {
+		return ['error' => $error, 'code' => $code];
 	}//end refused()
 
 	/**
