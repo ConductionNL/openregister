@@ -57,4 +57,15 @@ interface SurvivorshipResolverInterface {
 		SurvivorshipTrustLookup $trust,
 		mixed $overrides = null,
 	): array;
+
+	/**
+	 * Resolve the golden record for one request; what {@see self::resolveGoldenRecord()} describes.
+	 *
+	 * @param GoldenRecordRequest $request The source records, annotation, trust lookup and overrides.
+	 *
+	 * @return array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>}
+	 *
+	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.1
+	 */
+	public function resolve(GoldenRecordRequest $request): array;
 }//end interface

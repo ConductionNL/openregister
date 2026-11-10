@@ -100,6 +100,20 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 		SurvivorshipTrustLookup $trust,
 		mixed $overrides = null,
 	): array {
+		return $this->resolve(request: new GoldenRecordRequest(sourceRecords: $sourceRecords, config: $config, trust: $trust, overrides: $overrides));
+	}//end resolveGoldenRecord()
+
+	/**
+	 * Resolve the golden record for one request; what {@see self::resolveGoldenRecord()} describes.
+	 *
+	 * @param GoldenRecordRequest $request The source records, annotation, trust lookup and overrides.
+	 *
+	 * @return array{goldenRecord: array<string, mixed>, attributeProvenance: array<string, mixed>}
+	 *
+	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.1
+	 */
+	public function resolve(GoldenRecordRequest $request): array {
+		$config = $request->config;
 		$policy = new SurvivorshipTierPolicy(
 			tierOrder: $this->tierOrder(config: $config),
 			defaultTier: (string)($config['defaultTier'] ?? self::DEFAULT_TIER),
@@ -107,14 +121,14 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 			anchorField: (string)($config['freshnessAnchorField'] ?? '')
 		);
 
-		$run = new SurvivorshipRun(policy: $policy, trust: $trust);
+		$run = new SurvivorshipRun(policy: $policy, trust: $request->trust);
 
-		$candidates  = $this->collectCandidates(sourceRecords: $sourceRecords, run: $run);
-		$overrideMap = $this->normaliseOverrides(overrides: $overrides);
+		$candidates  = $this->collectCandidates(sourceRecords: $request->sourceRecords, run: $run);
+		$overrideMap = $this->normaliseOverrides(overrides: $request->overrides);
 		$result      = $this->tierWinners(candidates: $candidates, run: $run);
 
 		return $this->withOverrides(result: $result, overrideMap: $overrideMap);
-	}//end resolveGoldenRecord()
+	}//end resolve()
 
 	/**
 	 * The golden record and provenance the tier selection alone gives.

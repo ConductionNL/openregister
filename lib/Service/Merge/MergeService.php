@@ -51,6 +51,7 @@ use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Survivorship\GoldenRecordRequest;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
@@ -376,11 +377,13 @@ class MergeService implements ObjectMergerInterface {
 		);
 
 		// 3. Recompute the survivor over the combined source set, mark it active, persist.
-		$resolution = $this->resolver->resolveGoldenRecord(
-			sourceRecords: $this->survivorSources(pair: $pair, intoData: $intoData),
-			config: $survivorshipConfig,
-			trust: $this->survivorTrust(pair: $pair),
-			overrides: $decidedOverrides
+		$resolution = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $this->survivorSources(pair: $pair, intoData: $intoData),
+				config: $survivorshipConfig,
+				trust: $this->survivorTrust(pair: $pair),
+				overrides: $decidedOverrides
+			)
 		);
 
 		if ($decidedOverrides !== null) {
@@ -853,11 +856,12 @@ class MergeService implements ObjectMergerInterface {
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.2
 	 */
 	private function recomputeSurvivor(MergePair $pair): array {
-		return $this->resolver->resolveGoldenRecord(
-			sourceRecords: $this->survivorSources(pair: $pair, intoData: ($pair->intoObject->getObject() ?? [])),
-			config: $this->getSurvivorshipConfig(schema: $pair->schema),
-			trust: $this->survivorTrust(pair: $pair),
-			overrides: null
+		return $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $this->survivorSources(pair: $pair, intoData: ($pair->intoObject->getObject() ?? [])),
+				config: $this->getSurvivorshipConfig(schema: $pair->schema),
+				trust: $this->survivorTrust(pair: $pair)
+			)
 		);
 	}//end recomputeSurvivor()
 
