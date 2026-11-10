@@ -514,6 +514,7 @@ class FlowRunCommit {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-the-run-log-must-be-ordered-by-branch-never-by-completion
 	 */
 	public static function streamIdFor(string $runUuid, string $path): string {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		return substr(sha1($runUuid . '|' . $path), 0, 32);
 	}//end streamIdFor()
 

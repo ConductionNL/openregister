@@ -319,6 +319,7 @@ class JobScheduleService implements JobScheduleServiceInterface {
 	 * @return string The key, inside Nextcloud's 64-character ceiling.
 	 */
 	private function key(string $jobClass): string {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return (self::SETTING_PREFIX.md5($jobClass));
 
 	}//end key()

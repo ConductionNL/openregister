@@ -205,30 +205,68 @@ class FileExtractionController extends Controller {
 			}
 
 			$listing->restrict(restricted: $this->isCurrentUserAdmin() === false);
-			$page       = $this->extractionSummaries(listing: $listing);
-			$data       = $this->extractionRows(summaries: $page['summaries']);
-			$totalCount = $page['total'];
-
-			$riskLevel = $listing->riskLevel;
-			if (in_array($riskLevel, [null, ''], true) === false) {
-				$data       = array_values(array_filter($data, fn ($f) => $f['riskLevel'] === $riskLevel));
-				$totalCount = count($data);
-			}
-
-			if ($listing->sortsInPhp() === true) {
-				$data = $listing->sortRows(rows: $data);
-			}
-
-			if ($listing->cutsInPhp() === true) {
-				$totalCount = count($data);
-				$data       = array_slice($data, $listing->offset, $listing->limit);
-			}
-
-			return new JSONResponse(data: ['success' => true, 'data' => $data, 'count' => $totalCount]);
+			return new JSONResponse(data: $this->listingResult(listing: $listing));
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['success' => false, 'error' => $e->getMessage()], statusCode: 500);
 		}//end try
 	}//end index()
+
+	/**
+	 * One page of extraction rows for the listing, with its total count.
+	 *
+	 * @param FileExtractionListing $listing The listing request.
+	 *
+	 * @return array{success: true, data: array, count: int} The response body.
+	 */
+	private function listingResult(FileExtractionListing $listing): array {
+		$page = $this->extractionSummaries(listing: $listing);
+		$result = [
+			'success' => true,
+			'data' => $this->extractionRows(summaries: $page['summaries']),
+			'count' => $page['total'],
+		];
+
+		$result = self::filteredByRiskLevel(result: $result, riskLevel: $listing->riskLevel);
+		return self::sortedAndCut(result: $result, listing: $listing);
+	}//end listingResult()
+
+	/**
+	 * Keep only the rows of one risk level, recounting them; all rows without a risk level filter.
+	 *
+	 * @param array{success: true, data: array, count: int} $result    The response body.
+	 * @param mixed                                          $riskLevel The requested risk level.
+	 *
+	 * @return array{success: true, data: array, count: int} The filtered response body.
+	 */
+	private static function filteredByRiskLevel(array $result, mixed $riskLevel): array {
+		if (in_array($riskLevel, [null, ''], true) === false) {
+			$result['data']  = array_values(array_filter($result['data'], fn ($f) => $f['riskLevel'] === $riskLevel));
+			$result['count'] = count($result['data']);
+		}
+
+		return $result;
+	}//end filteredByRiskLevel()
+
+	/**
+	 * Sort and page the rows in PHP when the listing asks for it.
+	 *
+	 * @param array{success: true, data: array, count: int} $result  The response body.
+	 * @param FileExtractionListing                          $listing The listing request.
+	 *
+	 * @return array{success: true, data: array, count: int} The sorted and paged response body.
+	 */
+	private static function sortedAndCut(array $result, FileExtractionListing $listing): array {
+		if ($listing->sortsInPhp() === true) {
+			$result['data'] = $listing->sortRows(rows: $result['data']);
+		}
+
+		if ($listing->cutsInPhp() === true) {
+			$result['count'] = count($result['data']);
+			$result['data']  = array_slice($result['data'], $listing->offset, $listing->limit);
+		}
+
+		return $result;
+	}//end sortedAndCut()
 
 	/**
 	 * The chunked-file summaries of one listing, and their total, cut to what the caller may open.
