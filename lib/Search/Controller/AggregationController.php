@@ -48,6 +48,8 @@ use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices;
 use OCA\OpenRegister\Search\Controller\Support\AggregationRun;
 use OCA\OpenRegister\Support\FilterParams;
@@ -195,10 +197,8 @@ class AggregationController extends Controller {
 			$extraFilter = $this->resolveFilter(run: $run, action: 'aggregate');
 
 			$result = $this->services->runner->run(
-				registerRef: $run->register,
-				schemaRef: $run->schema,
-				name: $name,
-				extraFilter: $extraFilter
+				ref: new NamedAggregationRef(register: $run->register, schema: $run->schema, name: $name),
+				options: new NamedAggregationOptions(bypassRbac: false, extraFilter: $extraFilter)
 			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);

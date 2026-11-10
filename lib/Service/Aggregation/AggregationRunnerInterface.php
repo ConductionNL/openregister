@@ -39,12 +39,9 @@ interface AggregationRunnerInterface {
 	/**
 	 * Run a named aggregation declared on a schema.
 	 *
-	 * @param string               $registerRef Register slug/uuid/id: the boundary, resolved first.
-	 * @param string               $schemaRef   Schema slug/uuid/id, matched among the register's schemas.
-	 * @param string               $name        The aggregation's name in the schema declaration.
-	 * @param bool                 $bypassRbac  Internal-system mode: skip the read gate.
-	 * @param array<string, mixed> $parentRow   Parent object's values for `@self.<field>` references.
-	 * @param array<string, mixed> $extraFilter Constraints that narrow, never relax, the declared filter.
+	 * @param NamedAggregationRef          $ref     Register, schema and aggregation name, as the request names them.
+	 * @param NamedAggregationOptions|null $options The read-gate mode, parent row and narrowing filter; null runs
+	 *                                              gated, without a parent row or extra filter.
 	 *
 	 * @return array<string, mixed> The result envelope: name, metric, field, value or groups.
 	 *
@@ -52,14 +49,7 @@ interface AggregationRunnerInterface {
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	public function run(
-		string $registerRef,
-		string $schemaRef,
-		string $name,
-		bool $bypassRbac = false,
-		array $parentRow = [],
-		array $extraFilter = [],
-	): array;
+	public function run(NamedAggregationRef $ref, ?NamedAggregationOptions $options=null): array;
 
 	/**
 	 * Run an ad-hoc aggregation by register/schema ref.

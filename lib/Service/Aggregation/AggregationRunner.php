@@ -246,25 +246,15 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * schema is the aggregation *source*, the current schema supplies
 	 * the optional `@self.*` parent-reference values via `$parentRow`.
 	 *
-	 * @param string $registerRef Register slug/uuid/id.
-	 * @param string $schemaRef Schema slug/uuid/id.
-	 * @param string $name Aggregation name (key in the annotation).
-	 * @param bool $bypassRbac Internal-system mode: skip the F04 read-permission gate and the row predicate.
-	 *                         Pass `true` ONLY from non-controller callers that already
-	 *                         hold an authoritative reason to compute the aggregation
-	 *                         (e.g. report rendering for a viewer who has dashboard read,
-	 *                         threshold listeners reacting to a write event).
-	 *                         Defaults to `false` so HTTP-driven callers (the
-	 *                         controller) keep the F04 verdict.
-	 * @param array<string, mixed> $parentRow Parent object's field values, used to resolve `@self.<field>`
-	 *                                        references in a cross-schema `where` clause.  Pass the
-	 *                                        plain object array from the parent read path.  Ignored when
-	 *                                        the aggregation spec has no `from` key.
-	 * @param array<string, mixed> $extraFilter Caller-supplied constraints that NARROW the declared
-	 *                                          filter. A key the declaration already constrains is
-	 *                                          refused, not overwritten, and only scalar equality is
-	 *                                          accepted — so this can add a constraint but never relax
-	 *                                          a declared scoping one. See mergeNarrowingFilter().
+	 * @param NamedAggregationRef          $ref     Register, schema and aggregation name, as the request names them.
+	 * @param NamedAggregationOptions|null $options The read-gate mode, parent row and narrowing filter; null runs
+	 *                                              gated, without a parent row or extra filter. bypassRbac is
+	 *                                              true ONLY from non-controller callers that already hold an
+	 *                                              authoritative reason to compute the aggregation (report
+	 *                                              rendering for a viewer with dashboard read, threshold
+	 *                                              listeners reacting to a write event). The extra filter can
+	 *                                              add a constraint but never relax a declared scoping one:
+	 *                                              see mergeNarrowingFilter().
 	 *
 	 * @return array{
 	 *   name: string,
@@ -280,22 +270,15 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 * @SuppressWarnings(PHPMD.StaticAccess)
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Internal-mode toggle, intentional.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	public function run(
-		string $registerRef,
-		string $schemaRef,
-		string $name,
-		bool $bypassRbac = false,
-		array $parentRow = [],
-		array $extraFilter = [],
-	): array {
-		$run = $this->namedRun(ref: new RegisterSchemaRef(register: $registerRef, schema: $schemaRef), name: $name);
-		$run->bypassRbac  = $bypassRbac;
-		$run->extraFilter = $extraFilter;
-		return $this->runNamed(run: $run, parentRow: $parentRow);
+	public function run(NamedAggregationRef $ref, ?NamedAggregationOptions $options=null): array {
+		$options ??= new NamedAggregationOptions(bypassRbac: false);
+		$run = $this->namedRun(ref: $ref->registerSchema(), name: $ref->name);
+		$run->bypassRbac  = $options->bypassRbac;
+		$run->extraFilter = $options->extraFilter;
+		return $this->runNamed(run: $run, parentRow: $options->parentRow);
 	}//end run()
 
 	/**

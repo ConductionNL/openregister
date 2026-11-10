@@ -31,6 +31,8 @@ use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use OCA\OpenRegister\Search\Service\Reporting\ReportWriters;
 use OCA\OpenRegister\Search\Service\Reporting\SpreadsheetReportWriter;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -65,12 +67,13 @@ class ReportRenderServiceCharacterisationTest extends TestCase {
 	private function service(?LoggerInterface $logger = null): ReportRenderService {
 		$runner = $this->createMock(AggregationRunnerInterface::class);
 		$runner->method('run')->willReturnCallback(
-			function (string $registerRef, string $schemaRef, string $name, bool $bypassRbac = false): array {
-				if ($registerRef === 'kapot') {
+			function (NamedAggregationRef $ref, ?NamedAggregationOptions $options = null): array {
+				if ($ref->register === 'kapot') {
 					throw new RuntimeException('boom');
 				}
 
-				return ['name' => $name, 'metric' => 'count', 'value' => ($bypassRbac === true ? 7 : -1), 'register' => $registerRef, 'schema' => $schemaRef];
+				$bypassRbac = $options?->bypassRbac ?? false;
+				return ['name' => $ref->name, 'metric' => 'count', 'value' => ($bypassRbac === true ? 7 : -1), 'register' => $ref->register, 'schema' => $ref->schema];
 			}
 		);
 		$graphql = $this->createMock(GraphQLService::class);
