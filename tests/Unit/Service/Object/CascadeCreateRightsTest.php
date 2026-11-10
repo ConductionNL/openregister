@@ -28,6 +28,8 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -196,7 +198,16 @@ class CascadeCreateRightsTest extends TestCase {
 		$parent->setRegister('10');
 		$parent->setOwner('alice');
 
-		return (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, ...$args);
+		$run = new CascadeRun();
+		$run->parent = $parent;
+		$run->data = ($args[1] ?? []);
+		$run->stored = ($args[2] ?? []);
+		$call = match ($method) {
+			'cascadeObjects' => [$run, $args[0]],
+			default => [new NestedObjectTarget(parent: $parent, definition: $args[0]), $args[1]],
+		};
+
+		return (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, ...$call);
 	}//end onParent()
 
 	/**
