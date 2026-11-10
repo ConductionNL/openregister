@@ -36,6 +36,7 @@ use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
+use OCA\OpenRegister\Notifications\Service\Notification\QueueWait;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -204,7 +205,7 @@ class NotificationQueueFlushJobBehaviourTest extends TestCase
         );
         $this->digests->method('isValidDigestSpec')->with($digest)->willReturn(true);
         $this->digests->method('isDue')->willReturnCallback(
-            static fn (array $spec, DateTimeImmutable $enqueuedAt): bool => $enqueuedAt->format('H') === '08'
+            static fn (array $spec, QueueWait $wait): bool => $wait->enqueuedAt->format('H') === '08'
         );
 
         $this->dispatcher->expects($this->once())->method('dispatchQueued')->with([$early]);

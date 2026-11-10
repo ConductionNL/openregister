@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\BackgroundJob;
 
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use DateTime;
@@ -187,8 +188,8 @@ class TaskScheduledNotificationJobCharacterisationTest extends TestCase
         $same->setFingerprint(sha1((string) json_encode(['title' => 'keep', 'zz' => null])));
         $other = new NotificationDedupeState();
         $other->setFingerprint('stale');
-        $this->dedupe->method('findOne')->willReturnCallback(
-            fn (int $schemaId, string $ruleKey, string $objectUuid) => match ($objectUuid) {
+        $this->dedupe->method('findByKey')->willReturnCallback(
+            fn (NotificationDedupeKey $key) => match ($key->objectUuid) {
                 't-0' => $same,
                 't-2' => $other,
                 default => null,
@@ -196,8 +197,8 @@ class TaskScheduledNotificationJobCharacterisationTest extends TestCase
         );
         $upserts = [];
         $this->dedupe->method('upsert')->willReturnCallback(
-            function (NotificationDedupeKey $key, string $fingerprint, DateTime $now, bool $dispatched) use (&$upserts) {
-                $upserts[] = [$key->schemaId, $key->ruleKey, $key->objectUuid, $fingerprint, $now->format('c'), $dispatched];
+            function (NotificationDedupeKey $key, DedupeSighting $sighting) use (&$upserts) {
+                $upserts[] = [$key->schemaId, $key->ruleKey, $key->objectUuid, $sighting->fingerprint, $sighting->now->format('c'), $sighting->dispatched];
                 return new NotificationDedupeState();
             }
         );
@@ -248,7 +249,7 @@ class TaskScheduledNotificationJobCharacterisationTest extends TestCase
                 return array_fill(0, 200, $this->task('t'));
             }
         );
-        $this->dedupe->method('findOne')->willReturn(null);
+        $this->dedupe->method('findByKey')->willReturn(null);
 
         $this->sweep($this->job(['cap' => $this->rule()]));
 
