@@ -320,18 +320,30 @@ class AgentTool extends AbstractTool implements ToolInterface {
 		} catch (DoesNotExistException $e) {
 			return $this->formatError(message: "Agent with UUID '{$uuid}' not found.");
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[AgentTool] Failed to update agent',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logUpdateFailure(uuid: $uuid, error: $e);
 			return $this->formatError(message: 'Failed to update agent: ' . $e->getMessage());
 		}//end try
 	}//end patchAgent()
+
+	/**
+	 * Log a failed agent update.
+	 *
+	 * @param string     $uuid  The agent UUID.
+	 * @param \Exception $error The failure.
+	 *
+	 * @return void
+	 */
+	private function logUpdateFailure(string $uuid, \Exception $error): void {
+		$this->logger->error(
+			message: '[AgentTool] Failed to update agent',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logUpdateFailure()
 
 	/**
 	 * Load, patch and save one agent.

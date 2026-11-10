@@ -322,18 +322,30 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 		} catch (DoesNotExistException $e) {
 			return $this->formatError(message: "Application with UUID '{$uuid}' not found.");
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ApplicationTool] Failed to update application',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logUpdateFailure(uuid: $uuid, error: $e);
 			return $this->formatError(message: 'Failed to update application: ' . $e->getMessage());
 		}//end try
 	}//end patchApplication()
+
+	/**
+	 * Log a failed application update.
+	 *
+	 * @param string     $uuid  The application UUID.
+	 * @param \Exception $error The failure.
+	 *
+	 * @return void
+	 */
+	private function logUpdateFailure(string $uuid, \Exception $error): void {
+		$this->logger->error(
+			message: '[ApplicationTool] Failed to update application',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logUpdateFailure()
 
 	/**
 	 * Load, patch and save one application.
