@@ -58,7 +58,7 @@ class ExampleSetRegistersTest extends TestCase {
 	 */
 	public function testTheImportClaimsExactlyTheJobItReports(): void {
 		$descriptors = $this->createMock(RegisterDescriptorService::class);
-		$descriptors->expects($this->once())->method('reimport')->willReturn(
+		$descriptors->expects($this->once())->method('reimportShipped')->willReturn(
 			['outcome' => 'imported', 'importJobId' => 'job-mine', 'importAppId' => 'openregister.vocabulary']
 		);
 		$recorder = $this->createMock(AppImportJobRecorder::class);
@@ -76,7 +76,7 @@ class ExampleSetRegistersTest extends TestCase {
 	 */
 	public function testAnImportWithoutAJobClaimsNothingAndAFailureIsNamed(): void {
 		$descriptors = $this->createMock(RegisterDescriptorService::class);
-		$descriptors->method('reimport')->willReturnOnConsecutiveCalls(
+		$descriptors->method('reimportShipped')->willReturnOnConsecutiveCalls(
 			['outcome' => 'imported'],
 			['outcome' => 'failed', 'reason' => 'no descriptor']
 		);

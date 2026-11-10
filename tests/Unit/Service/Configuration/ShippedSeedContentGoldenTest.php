@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Service\Configuration\ShippedSeedContent;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Configuration\ShippedSeed;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\ShippedSeedContent
@@ -88,6 +89,6 @@ class ShippedSeedContentGoldenTest extends TestCase {
 			$remembered = $content->hash($shipped);
 		}
 
-		$this->assertSame($expected, $content->update($stored, $shipped, $remembered));
+		$this->assertSame($expected, $content->updateFrom($stored, new ShippedSeed($shipped, $remembered)));
 	}//end testUpdate()
 }//end class

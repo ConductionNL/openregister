@@ -18,6 +18,7 @@ use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Files\Db\FileMapper;
@@ -445,7 +446,7 @@ class MappersIntegrationTest extends TestCase {
 		$this->insertWebhookLogDirectly($webhookId);
 		$this->insertWebhookLogDirectly($webhookId);
 
-		$results = $this->webhookLogMapper->findByWebhook($webhookId, 1);
+		$results = $this->webhookLogMapper->findByWebhook($webhookId, new ListQuery(1));
 		$this->assertCount(1, $results);
 	}
 
@@ -454,7 +455,7 @@ class MappersIntegrationTest extends TestCase {
 		$this->insertWebhookLogDirectly($webhookId);
 		$this->insertWebhookLogDirectly($webhookId);
 
-		$results = $this->webhookLogMapper->findByWebhook($webhookId, null, 1);
+		$results = $this->webhookLogMapper->findByWebhook($webhookId, new ListQuery(ListQuery::UNBOUNDED, 1));
 		$this->assertCount(1, $results);
 	}
 

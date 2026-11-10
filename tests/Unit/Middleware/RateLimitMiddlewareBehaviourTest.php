@@ -35,7 +35,6 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Middleware\RateLimitMiddleware
  * @uses   \OCA\OpenRegister\Middleware\AuthRateLimitExceededException
- * @uses   \OCA\OpenRegister\Middleware\Support\RateLimitPlatform
  */
 class RateLimitMiddlewareBehaviourTest extends TestCase {
 

@@ -6,6 +6,7 @@ namespace Unit\Service;
 
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\PropertyWriteCheck;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -222,7 +223,7 @@ class PropertyRbacHandlerTest extends TestCase {
 			],
 		]);
 
-		$this->assertTrue($this->handler->canUpdateProperty($schema, 'field1', [], false));
+		$this->assertTrue($this->handler->canUpdateProperty(new SchemaProperty($schema, 'field1'), new PropertyAccessRequest([], false)));
 	}
 
 	// ── Conditional rule with match ──

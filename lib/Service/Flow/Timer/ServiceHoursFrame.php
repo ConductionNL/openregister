@@ -30,7 +30,7 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
 /**
  * The calendar deciding the days and the windows deciding the hours.
  *
- * Built by {@see ServiceHoursClock} for one computation and never leaves it.
+ * Built by {@see ServiceHoursClock::frame()} for one computation.
  *
  * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
  */

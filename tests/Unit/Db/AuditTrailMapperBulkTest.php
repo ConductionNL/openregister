@@ -104,9 +104,7 @@ class AuditTrailMapperBulkTest extends TestCase {
 
 		$this->mapper = new AuditTrailMapper(
 			$this->db,
-			$this->createMock(IUserSession::class),
-			$request,
-			new AuditTrailMapperServices($this->container, $this->createMock(LoggerInterface::class))
+			new AuditTrailMapperServices($this->container, $this->createMock(LoggerInterface::class), $this->createMock(IUserSession::class), $request)
 		);
 	}//end setUp()
 
