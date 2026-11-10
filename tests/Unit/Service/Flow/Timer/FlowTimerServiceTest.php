@@ -491,7 +491,7 @@ class FlowTimerServiceTest extends TestCase {
 		$uuid = (string)$timer->getUuid();
 
 		// Day 19: suspended for a 14-day hersteltermijn.
-		$suspended = $this->service->suspend(
+		$suspended = $this->service->suspendWith(
 			suspension: new TimerSuspension(
 				uuid: $uuid,
 				reason: 'Hersteltermijn: aanvulling gevraagd',
@@ -514,7 +514,7 @@ class FlowTimerServiceTest extends TestCase {
 		self::assertNull($read['overdueBy']);
 
 		// The applicant responds on day 6 of the suspension.
-		$resumed = $this->service->resume(decision: new TimerDecision(uuid: $uuid, reason: 'Aanvulling ontvangen'), act: new FlowTimerAct(actor: 'bob', now: $start->modify('+25 days')));
+		$resumed = $this->service->resumeWith(decision: new TimerDecision(uuid: $uuid, reason: 'Aanvulling ontvangen'), act: new FlowTimerAct(actor: 'bob', now: $start->modify('+25 days')));
 		self::assertSame(FlowTimer::STATE_ARMED, $resumed->getState());
 		self::assertEqualsWithDelta(37.0, $this->service->describe(timer: $resumed, now: $start->modify('+25 days'))['remaining'], 0.001);
 		self::assertSame($start->modify('+62 days')->format('Y-m-d H:i'), $resumed->getFireAt()->format('Y-m-d H:i'), '8 weeks minus 19 days, from the resume instant');
@@ -544,8 +544,8 @@ class FlowTimerServiceTest extends TestCase {
 		$monday = $this->at('2026-09-07 09:00');
 
 		$before = $this->service->describe(timer: $timer, now: $friday)['remaining'];
-		$this->service->suspend(suspension: new TimerSuspension(uuid: $uuid, reason: 'weekend closure test'), act: new FlowTimerAct(actor: null, now: $friday));
-		$resumed = $this->service->resume(decision: new TimerDecision(uuid: $uuid, reason: null), act: new FlowTimerAct(actor: null, now: $monday));
+		$this->service->suspendWith(suspension: new TimerSuspension(uuid: $uuid, reason: 'weekend closure test'), act: new FlowTimerAct(actor: null, now: $friday));
+		$resumed = $this->service->resumeWith(decision: new TimerDecision(uuid: $uuid, reason: null), act: new FlowTimerAct(actor: null, now: $monday));
 		$after = $this->service->describe(timer: $resumed, now: $monday)['remaining'];
 
 		self::assertEqualsWithDelta($before, $after, 0.0001, 'the weekend consumed nothing');
@@ -557,14 +557,14 @@ class FlowTimerServiceTest extends TestCase {
 		$this->task();
 		$timer = $this->service->arm(config: $this->config(), actor: null, now: $this->at('2026-09-01 09:00'));
 		try {
-			$this->service->resume(decision: new TimerDecision(uuid: (string)$timer->getUuid(), reason: null), act: new FlowTimerAct(actor: null, now: new DateTimeImmutable()));
+			$this->service->resumeWith(decision: new TimerDecision(uuid: (string)$timer->getUuid(), reason: null), act: new FlowTimerAct(actor: null, now: new DateTimeImmutable()));
 			self::fail('resumed a running timer');
 		} catch (FlowTimerStateException $refused) {
 			self::assertStringContainsString("'armed', not 'suspended'", $refused->getMessage());
 		}
 
 		try {
-			$this->service->suspend(suspension: new TimerSuspension(uuid: (string)$timer->getUuid(), reason: '   '), act: new FlowTimerAct(actor: null, now: new DateTimeImmutable()));
+			$this->service->suspendWith(suspension: new TimerSuspension(uuid: (string)$timer->getUuid(), reason: '   '), act: new FlowTimerAct(actor: null, now: new DateTimeImmutable()));
 			self::fail('suspended without a reason');
 		} catch (FlowTimerValidationException $refused) {
 			self::assertStringContainsString('non-empty reason', $refused->getMessage());
@@ -577,7 +577,7 @@ class FlowTimerServiceTest extends TestCase {
 		$timer = $this->service->arm(config: $this->config(), actor: null, now: $start);
 		$uuid = (string)$timer->getUuid();
 
-		$extended = $this->service->extend(request: new TimerExtensionRequest(uuid: $uuid, amount: 7, unit: 'calendarDays', rationale: 'Verdaging: advies derde nodig'), act: new FlowTimerAct(actor: 'carol', now: $start->modify('+10 days')));
+		$extended = $this->service->extendWith(request: new TimerExtensionRequest(uuid: $uuid, amount: 7, unit: 'calendarDays', rationale: 'Verdaging: advies derde nodig'), act: new FlowTimerAct(actor: 'carol', now: $start->modify('+10 days')));
 		self::assertSame(1, $extended->getExtensionCount());
 		self::assertSame('2026-11-03 09:00', $extended->getFireAt()->format('Y-m-d H:i'));
 		$this->assertInvariants($extended);
@@ -588,7 +588,7 @@ class FlowTimerServiceTest extends TestCase {
 		self::assertSame('2026-11-03', $events[1]->getNewFireAt()->format('Y-m-d'));
 
 		try {
-			$this->service->extend(request: new TimerExtensionRequest(uuid: $uuid, amount: 7, unit: 'calendarDays', rationale: 'nog een keer'), act: new FlowTimerAct(actor: 'carol', now: $start->modify('+11 days')));
+			$this->service->extendWith(request: new TimerExtensionRequest(uuid: $uuid, amount: 7, unit: 'calendarDays', rationale: 'nog een keer'), act: new FlowTimerAct(actor: 'carol', now: $start->modify('+11 days')));
 			self::fail('a second extension went through the standard path');
 		} catch (FlowTimerStateException $refused) {
 			self::assertStringContainsString('extension bound of 1', $refused->getMessage());
@@ -597,21 +597,21 @@ class FlowTimerServiceTest extends TestCase {
 		self::assertSame('2026-11-03 09:00', $this->store->timers[$uuid]->getFireAt()->format('Y-m-d H:i'), 'the fire moment is unchanged');
 
 		// Cross-unit extension: 2 business days on a calendar-day budget is 16 hours = 2/3 day.
-		$overridden = $this->service->extendWithOverride(request: new TimerExtensionRequest(uuid: $uuid, amount: 2, unit: 'businessDays', rationale: 'Supervisor override'), act: new FlowTimerAct(actor: 'supervisor', now: $start->modify('+12 days')));
+		$overridden = $this->service->extendOverriding(request: new TimerExtensionRequest(uuid: $uuid, amount: 2, unit: 'businessDays', rationale: 'Supervisor override'), act: new FlowTimerAct(actor: 'supervisor', now: $start->modify('+12 days')));
 		self::assertSame(2, $overridden->getExtensionCount());
 		self::assertEqualsWithDelta(63 + (16 / 24), $overridden->getBudgetValue(), 0.0001);
 		self::assertSame('override', $this->service->history(uuid: $uuid)[2]->getBasis());
 		$this->assertInvariants($overridden);
 
 		try {
-			$this->service->extendWithOverride(request: new TimerExtensionRequest(uuid: $uuid, amount: 1, unit: 'hours', rationale: ''), act: new FlowTimerAct(actor: 'supervisor', now: $start->modify('+12 days')));
+			$this->service->extendOverriding(request: new TimerExtensionRequest(uuid: $uuid, amount: 1, unit: 'hours', rationale: ''), act: new FlowTimerAct(actor: 'supervisor', now: $start->modify('+12 days')));
 			self::fail('extended without a rationale');
 		} catch (FlowTimerValidationException $refused) {
 			self::assertStringContainsString('non-empty rationale', $refused->getMessage());
 		}
 
 		try {
-			$this->service->extendWithOverride(request: new TimerExtensionRequest(uuid: $uuid, amount: 1, unit: 'hours', rationale: 'x'), act: new FlowTimerAct(actor: '  ', now: $start->modify('+12 days')));
+			$this->service->extendOverriding(request: new TimerExtensionRequest(uuid: $uuid, amount: 1, unit: 'hours', rationale: 'x'), act: new FlowTimerAct(actor: '  ', now: $start->modify('+12 days')));
 			self::fail('an override went through without an authorizing identity');
 		} catch (FlowTimerValidationException $refused) {
 			self::assertStringContainsString('authorizing identity', $refused->getMessage());
@@ -625,14 +625,14 @@ class FlowTimerServiceTest extends TestCase {
 		$uuid = (string)$timer->getUuid();
 
 		try {
-			$this->service->extend(request: new TimerExtensionRequest(uuid: $uuid, amount: -2, unit: 'no-such-unit', rationale: 'x'), act: new FlowTimerAct(actor: 'carol', now: $start->modify('+1 day')));
+			$this->service->extendWith(request: new TimerExtensionRequest(uuid: $uuid, amount: -2, unit: 'no-such-unit', rationale: 'x'), act: new FlowTimerAct(actor: 'carol', now: $start->modify('+1 day')));
 			self::fail('a negative extension went through');
 		} catch (FlowTimerValidationException $refused) {
 			self::assertStringContainsString('must be positive; got -2', $refused->getMessage(), 'the amount is refused before the unit is read');
 		}
 
-		$this->service->extend(request: new TimerExtensionRequest(uuid: $uuid, amount: 3, unit: 'calendarDays', rationale: 'Verdaging'), act: new FlowTimerAct(actor: 'carol', now: $start->modify('+2 days')));
-		$this->service->extendWithOverride(request: new TimerExtensionRequest(uuid: $uuid, amount: 4, unit: 'hours', rationale: 'Override'), act: new FlowTimerAct(actor: 'supervisor', now: $start->modify('+3 days')));
+		$this->service->extendWith(request: new TimerExtensionRequest(uuid: $uuid, amount: 3, unit: 'calendarDays', rationale: 'Verdaging'), act: new FlowTimerAct(actor: 'carol', now: $start->modify('+2 days')));
+		$this->service->extendOverriding(request: new TimerExtensionRequest(uuid: $uuid, amount: 4, unit: 'hours', rationale: 'Override'), act: new FlowTimerAct(actor: 'supervisor', now: $start->modify('+3 days')));
 		$events = $this->service->history(uuid: $uuid);
 		self::assertSame([FlowTimerEvent::TYPE_EXTENDED, 'carol', 'Verdaging (+3 calendarDays)', 'Awb 4:14'], [$events[1]->getType(), $events[1]->getActor(), $events[1]->getReason(), $events[1]->getBasis()]);
 		self::assertSame([FlowTimerEvent::TYPE_EXTENDED, 'supervisor', 'Override (+4 hours)', 'override'], [$events[2]->getType(), $events[2]->getActor(), $events[2]->getReason(), $events[2]->getBasis()]);
@@ -651,7 +651,7 @@ class FlowTimerServiceTest extends TestCase {
 
 		// Past the fire moment but not yet swept: refused because the term has run out.
 		try {
-			$this->service->extend(request: new TimerExtensionRequest(uuid: $uuid, amount: 1, unit: 'calendarDays', rationale: 'te laat'), act: new FlowTimerAct(actor: null, now: $start->modify('+57 days')));
+			$this->service->extendWith(request: new TimerExtensionRequest(uuid: $uuid, amount: 1, unit: 'calendarDays', rationale: 'te laat'), act: new FlowTimerAct(actor: null, now: $start->modify('+57 days')));
 			self::fail('extended a term that had run out');
 		} catch (FlowTimerStateException $refused) {
 			self::assertStringContainsString('has passed', $refused->getMessage());
@@ -660,7 +660,7 @@ class FlowTimerServiceTest extends TestCase {
 		self::assertTrue($this->service->fireExpiry(timer: $this->store->timers[$uuid], now: $start->modify('+57 days')));
 		self::assertTrue($this->store->timers[$uuid]->getBreached());
 		try {
-			$this->service->extend(request: new TimerExtensionRequest(uuid: $uuid, amount: 1, unit: 'calendarDays', rationale: 'te laat'), act: new FlowTimerAct(actor: null, now: $start->modify('+58 days')));
+			$this->service->extendWith(request: new TimerExtensionRequest(uuid: $uuid, amount: 1, unit: 'calendarDays', rationale: 'te laat'), act: new FlowTimerAct(actor: null, now: $start->modify('+58 days')));
 			self::fail('extended a fired timer');
 		} catch (FlowTimerStateException $refused) {
 			self::assertStringContainsString("its state is 'fired'", $refused->getMessage());
@@ -952,7 +952,7 @@ class FlowTimerServiceTest extends TestCase {
 	public function testRungsFireOnlyOnAnArmedTimerWithAFireMoment(): void {
 		$this->task();
 		$timer = $this->service->arm(config: $this->config(), actor: null, now: $this->at('2026-09-01 09:00'));
-		$this->service->suspend(suspension: new TimerSuspension(uuid: (string)$timer->getUuid(), reason: 'pauze'), act: new FlowTimerAct(actor: null, now: $this->at('2026-09-02 09:00')));
+		$this->service->suspendWith(suspension: new TimerSuspension(uuid: (string)$timer->getUuid(), reason: 'pauze'), act: new FlowTimerAct(actor: null, now: $this->at('2026-09-02 09:00')));
 		self::assertSame(0, $this->service->fireRungs(timer: $this->store->timers[(string)$timer->getUuid()], now: $this->at('2026-12-01 09:00')), 'a suspended timer neither fires nor escalates');
 		self::assertSame([], $this->dispatched);
 	}//end testRungsFireOnlyOnAnArmedTimerWithAFireMoment()
@@ -975,7 +975,7 @@ class FlowTimerServiceTest extends TestCase {
 		}
 
 		try {
-			$this->service->extend(request: new TimerExtensionRequest(uuid: 'missing', amount: 0, unit: 'hours', rationale: 'x'), act: new FlowTimerAct(actor: null, now: new DateTimeImmutable()));
+			$this->service->extendWith(request: new TimerExtensionRequest(uuid: 'missing', amount: 0, unit: 'hours', rationale: 'x'), act: new FlowTimerAct(actor: null, now: new DateTimeImmutable()));
 			self::fail('accepted a zero extension');
 		} catch (\OCP\AppFramework\Db\DoesNotExistException) {
 			// The uuid is read first; the amount guard needs a real timer.
@@ -983,15 +983,15 @@ class FlowTimerServiceTest extends TestCase {
 
 		$timer = $this->service->arm(config: $this->config(['ladder' => null]), actor: null, now: $this->at('2026-09-01 09:00'));
 		try {
-			$this->service->extend(request: new TimerExtensionRequest(uuid: (string)$timer->getUuid(), amount: 0, unit: 'hours', rationale: 'x'), act: new FlowTimerAct(actor: null, now: $this->at('2026-09-02 09:00')));
+			$this->service->extendWith(request: new TimerExtensionRequest(uuid: (string)$timer->getUuid(), amount: 0, unit: 'hours', rationale: 'x'), act: new FlowTimerAct(actor: null, now: $this->at('2026-09-02 09:00')));
 			self::fail('accepted a zero extension');
 		} catch (FlowTimerValidationException $refused) {
 			self::assertStringContainsString('must be positive', $refused->getMessage());
 		}
 
 		try {
-			$this->service->suspend(suspension: new TimerSuspension(uuid: (string)$timer->getUuid(), reason: 'twice'), act: new FlowTimerAct(actor: null, now: $this->at('2026-09-02 09:00')));
-			$this->service->suspend(suspension: new TimerSuspension(uuid: (string)$timer->getUuid(), reason: 'twice'), act: new FlowTimerAct(actor: null, now: $this->at('2026-09-03 09:00')));
+			$this->service->suspendWith(suspension: new TimerSuspension(uuid: (string)$timer->getUuid(), reason: 'twice'), act: new FlowTimerAct(actor: null, now: $this->at('2026-09-02 09:00')));
+			$this->service->suspendWith(suspension: new TimerSuspension(uuid: (string)$timer->getUuid(), reason: 'twice'), act: new FlowTimerAct(actor: null, now: $this->at('2026-09-03 09:00')));
 			self::fail('suspended a suspended timer');
 		} catch (FlowTimerStateException $refused) {
 			self::assertStringContainsString("'suspended', not 'armed'", $refused->getMessage());
@@ -1141,4 +1141,28 @@ class FlowTimerServiceTest extends TestCase {
 			$this->assertInvariants($timer);
 		}
 	}//end testASubjectMayCarryThreeDeadlinesWithDifferentMomentsIndependently()
+
+	/**
+	 * The loose-value signatures dossiq and opencatalogi call by name, and positionally, act as the value-object ones.
+	 */
+	public function testTheLooseValueSignaturesAnswerByNameAndPositionally(): void {
+		$this->task();
+		$start = $this->at('2026-09-01 09:00');
+		$uuid  = (string)$this->service->arm(config: $this->config(), actor: 'alice', now: $start)->getUuid();
+
+		$suspended = $this->service->suspend(uuid: $uuid, reason: 'Hersteltermijn', until: null, actor: null, basis: 'Awb 4:5', now: $start->modify('+19 days'));
+		self::assertSame(FlowTimer::STATE_SUSPENDED, $suspended->getState());
+		self::assertEqualsWithDelta(19.0, $suspended->getConsumedValue(), 0.001);
+
+		$resumed = $this->service->resume($uuid, 'Aanvulling ontvangen', 'bob', $start->modify('+25 days'));
+		self::assertSame(FlowTimer::STATE_ARMED, $resumed->getState());
+		self::assertSame($start->modify('+62 days')->format('Y-m-d H:i'), $resumed->getFireAt()->format('Y-m-d H:i'));
+
+		$extended = $this->service->extend(uuid: $uuid, amount: 7, unit: 'calendarDays', rationale: 'Verdaging', actor: null, now: $start->modify('+26 days'));
+		self::assertSame(1, $extended->getExtensionCount());
+
+		$overridden = $this->service->extendWithOverride($uuid, 1, 'calendarDays', 'Supervisor override', 'supervisor', $start->modify('+27 days'));
+		self::assertSame($start->modify('+70 days')->format('Y-m-d H:i'), $overridden->getFireAt()->format('Y-m-d H:i'));
+		$this->assertInvariants($overridden);
+	}//end testTheLooseValueSignaturesAnswerByNameAndPositionally()
 }//end class

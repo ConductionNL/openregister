@@ -212,7 +212,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
-	public function suspend(TimerSuspension $suspension, FlowTimerAct $act): FlowTimer {
+	public function suspendWith(TimerSuspension $suspension, FlowTimerAct $act): FlowTimer {
 		if (trim($suspension->reason) === '') {
 			throw new FlowTimerValidationException(
 				message: 'Suspending a term requires a non-empty reason: the suspension is itself a decision that has to be evidenced.'
@@ -263,6 +263,38 @@ class FlowTimerService implements FlowTimerControlInterface {
 				return $persisted;
 			}
 		);
+	}//end suspendWith()
+
+	/**
+	 * Suspend a running timer, by the loose values other apps pass by name.
+	 *
+	 * @param string                 $uuid   The timer.
+	 * @param string                 $reason Why the term is suspended.
+	 * @param DateTimeInterface|null $until  The expected end, or null.
+	 * @param string|null            $actor  The acting identity.
+	 * @param string|null            $basis  The legal ground, or null.
+	 * @param DateTimeInterface|null $now    The clock; null means the real clock.
+	 *
+	 * @return FlowTimer The suspended timer.
+	 *
+	 * @throws FlowTimerStateException When the timer is not armed.
+	 * @throws FlowTimerValidationException When the reason is empty.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The public signature dossiq and opencatalogi call by name.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 */
+	public function suspend(
+		string $uuid,
+		string $reason,
+		?DateTimeInterface $until,
+		?string $actor,
+		?string $basis=null,
+		?DateTimeInterface $now=null,
+	): FlowTimer {
+		$suspension = new TimerSuspension(uuid: $uuid, reason: $reason, until: $until, basis: $basis);
+
+		return $this->suspendWith(suspension: $suspension, act: new FlowTimerAct(actor: $actor, now: $this->instant(now: $now)));
 	}//end suspend()
 
 	/**
@@ -278,7 +310,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
-	public function resume(TimerDecision $decision, FlowTimerAct $act): FlowTimer {
+	public function resumeWith(TimerDecision $decision, FlowTimerAct $act): FlowTimer {
 		$now = $act->now;
 		$timer = $this->storage->timers->findByUuid(uuid: $decision->uuid);
 		if ($timer->getState() !== FlowTimer::STATE_SUSPENDED) {
@@ -311,6 +343,26 @@ class FlowTimerService implements FlowTimerControlInterface {
 				return $persisted;
 			}
 		);
+	}//end resumeWith()
+
+	/**
+	 * Resume a suspended timer, by the loose values other apps pass by name.
+	 *
+	 * @param string                 $uuid   The timer.
+	 * @param string|null            $reason Why the term resumes.
+	 * @param string|null            $actor  The acting identity.
+	 * @param DateTimeInterface|null $now    The clock; null means the real clock.
+	 *
+	 * @return FlowTimer The running timer.
+	 *
+	 * @throws FlowTimerStateException When the timer is not suspended.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 */
+	public function resume(string $uuid, ?string $reason, ?string $actor, ?DateTimeInterface $now=null): FlowTimer {
+		$act = new FlowTimerAct(actor: $actor, now: $this->instant(now: $now));
+
+		return $this->resumeWith(decision: new TimerDecision(uuid: $uuid, reason: $reason), act: $act);
 	}//end resume()
 
 	/**
@@ -326,7 +378,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
-	public function extend(TimerExtensionRequest $request, FlowTimerAct $act): FlowTimer {
+	public function extendWith(TimerExtensionRequest $request, FlowTimerAct $act): FlowTimer {
 		$timer = $this->storage->timers->findByUuid(uuid: $request->uuid);
 		$this->assertExtendable(timer: $timer, now: $act->now);
 
@@ -342,11 +394,36 @@ class FlowTimerService implements FlowTimerControlInterface {
 
 		$grant = new TimerExtensionGrant(extension: $request->extension(basis: 'Awb 4:14'), act: $act);
 		return $this->applyExtension(timer: $timer, grant: $grant);
+	}//end extendWith()
+
+	/**
+	 * Extend a timer through the standard path, by the loose values other apps pass by name.
+	 *
+	 * @param string                 $uuid      The timer.
+	 * @param int                    $amount    How much longer.
+	 * @param string                 $unit      The unit of the amount.
+	 * @param string                 $rationale Why.
+	 * @param string|null            $actor     The acting identity.
+	 * @param DateTimeInterface|null $now       The clock; null means the real clock.
+	 *
+	 * @return FlowTimer The extended timer.
+	 *
+	 * @throws FlowTimerStateException When the timer cannot be extended.
+	 * @throws FlowTimerValidationException When the rationale is empty or the amount is not positive.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The public signature dossiq and opencatalogi call by name.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
+	 */
+	public function extend(string $uuid, int $amount, string $unit, string $rationale, ?string $actor, ?DateTimeInterface $now=null): FlowTimer {
+		$request = new TimerExtensionRequest(uuid: $uuid, amount: $amount, unit: $unit, rationale: $rationale);
+
+		return $this->extendWith(request: $request, act: new FlowTimerAct(actor: $actor, now: $this->instant(now: $now)));
 	}//end extend()
 
 	/**
 	 * Extend BEYOND the bound: a distinct, separately authorized operation,
-	 * recorded as an override. Not a flag on {@see extend()}, because the flag
+	 * recorded as an override. Not a flag on {@see extendWith()}, because the flag
 	 * becomes the default caller within a release.
 	 *
 	 * @param TimerExtensionRequest $request The timer, the amount, its unit and the rationale.
@@ -359,7 +436,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
-	public function extendWithOverride(TimerExtensionRequest $request, FlowTimerAct $act): FlowTimer {
+	public function extendOverriding(TimerExtensionRequest $request, FlowTimerAct $act): FlowTimer {
 		if (trim((string)$act->actor) === '') {
 			throw new FlowTimerValidationException(message: 'An extension override requires an authorizing identity.');
 		}
@@ -369,6 +446,38 @@ class FlowTimerService implements FlowTimerControlInterface {
 
 		$grant = new TimerExtensionGrant(extension: $request->extension(basis: 'override'), act: $act);
 		return $this->applyExtension(timer: $timer, grant: $grant);
+	}//end extendOverriding()
+
+	/**
+	 * Extend a timer beyond its bound, as an override, by the loose values other apps pass by name.
+	 *
+	 * @param string                 $uuid      The timer.
+	 * @param int                    $amount    How much longer.
+	 * @param string                 $unit      The unit of the amount.
+	 * @param string                 $rationale Why.
+	 * @param string                 $actor     The authorizing identity.
+	 * @param DateTimeInterface|null $now       The clock; null means the real clock.
+	 *
+	 * @return FlowTimer The extended timer.
+	 *
+	 * @throws FlowTimerStateException When the timer cannot be extended.
+	 * @throws FlowTimerValidationException When the rationale is empty or the amount is not positive.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The public signature dossiq and opencatalogi call by name.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
+	 */
+	public function extendWithOverride(
+		string $uuid,
+		int $amount,
+		string $unit,
+		string $rationale,
+		string $actor,
+		?DateTimeInterface $now=null,
+	): FlowTimer {
+		$request = new TimerExtensionRequest(uuid: $uuid, amount: $amount, unit: $unit, rationale: $rationale);
+
+		return $this->extendOverriding(request: $request, act: new FlowTimerAct(actor: $actor, now: $this->instant(now: $now)));
 	}//end extendWithOverride()
 
 	/**
@@ -744,7 +853,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	}//end assertExtendable()
 
 	/**
-	 * The shared body of extend() and extendWithOverride().
+	 * The shared body of extendWith() and extendOverriding().
 	 *
 	 * @param FlowTimer           $timer The open timer.
 	 * @param TimerExtensionGrant $grant The extension and the act that grants it.

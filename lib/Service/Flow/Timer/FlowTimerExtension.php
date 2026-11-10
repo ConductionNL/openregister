@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 
 /**
- * An extension as extend() and extendWithOverride() grant it.
+ * An extension as extendWith() and extendOverriding() grant it.
  *
  * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
  */
