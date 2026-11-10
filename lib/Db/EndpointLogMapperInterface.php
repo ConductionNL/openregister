@@ -65,16 +65,14 @@ interface EndpointLogMapperInterface {
 	/**
 	 * One page of logs, and their total, of the given visible endpoints or of one of them
 	 *
-	 * @param int[]    $visibleIds The endpoints the caller can see
-	 * @param int|null $endpointId One endpoint to narrow to, or null for all visible ones
-	 * @param int|null $limit      Maximum number of results to return (null = no limit)
-	 * @param int|null $offset     Starting offset for pagination (null = no offset)
+	 * @param EndpointLogScope $scope The endpoints the caller can see, optionally narrowed to one
+	 * @param ListQuery        $query The page; unbounded for no limit, a null offset for none
 	 *
 	 * @return array{0: list<EndpointLog>, 1: int<0, max>} The page and the total; empty when the endpoint is not visible
 	 *
 	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
 	 */
-	public function findPageWithin(array $visibleIds, ?int $endpointId, ?int $limit = null, ?int $offset = null): array;
+	public function findPageWithin(EndpointLogScope $scope, ListQuery $query): array;
 
 	/**
 	 * One page of logs, and their total, of the given endpoints
