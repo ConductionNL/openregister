@@ -619,7 +619,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	private function findingsOf(array $plan, string $mode): array {
 		$write = $this->refusals->writeLabelOf(plan: $plan);
 		$object = $this->references->resolveWriteReferences(object: $plan['object'], ids: [], pending: true);
-		$excused = array_merge($this->requiredExcusalsIn(plan: $plan, mode: $mode), $this->excusalsOf(plan: $plan, object: $object));
+		$excused = $this->excusalsOf(plan: $plan, object: $object, mode: $mode);
 		try {
 			$result = $this->destinations->validator->validateObject(object: $object, schema: $plan['schema'], notSupplied: $excused);
 
@@ -637,33 +637,23 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	 *
 	 * @param array<string, mixed> $plan   The plan.
 	 * @param array<string, mixed> $object The object as validated.
+	 * @param string               $mode   MODE_FULL or MODE_DRAFT.
 	 *
 	 * @return array<string, string> Property => why it is excused.
 	 */
-	private function excusalsOf(array $plan, array $object): array {
-		$excused = (new DraftStatusPolicy())->serverFilledExcusals(schema: $plan['schema'], object: $object);
+	private function excusalsOf(array $plan, array $object, string $mode): array {
+		$policy = new DraftStatusPolicy();
+		$excused = $policy->serverFilledExcusals(schema: $plan['schema'], object: $object);
+		if ($mode === self::MODE_DRAFT) {
+			$excused = array_merge($policy->requiredExcusals(schema: $plan['schema']), $excused);
+		}
+
 		foreach (array_keys($plan['files']) as $uploaded) {
 			$excused[(string)$uploaded] = 'uploaded';
 		}
 
 		return $excused;
 	}//end excusalsOf()
-
-	/**
-	 * The required properties a draft save excuses; a full submit excuses none.
-	 *
-	 * @param array<string, mixed> $plan The plan.
-	 * @param string               $mode MODE_FULL or MODE_DRAFT.
-	 *
-	 * @return array<string, string> Property => why it is excused.
-	 */
-	private function requiredExcusalsIn(array $plan, string $mode): array {
-		if ($mode !== self::MODE_DRAFT) {
-			return [];
-		}
-
-		return (new DraftStatusPolicy())->requiredExcusals(schema: $plan['schema']);
-	}//end requiredExcusalsIn()
 
 	/**
 	 * Write in order; on a refusal, delete what this submit already wrote, then refuse.
