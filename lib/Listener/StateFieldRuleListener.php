@@ -34,8 +34,10 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\Support\StateFieldVersion;
 use OCA\OpenRegister\Listener\Support\StateFieldWrite;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateCrossing;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRulesInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateSave;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
@@ -236,10 +238,8 @@ class StateFieldRuleListener implements IEventListener {
 	 */
 	private function refusalOf(StateFieldWrite $write): ?array {
 		$refusal = $this->stateConditions->refusal(
-			annotation: $write->annotation,
-			newData: $write->newData,
-			from: $write->fromState,
-			to: $write->toState
+			save: new StateSave(annotation: $write->annotation, newData: $write->newData),
+			crossing: new StateCrossing(from: $write->fromState, to: $write->toState)
 		);
 		if ($refusal !== null) {
 			return $refusal;

@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
@@ -243,7 +244,7 @@ class AccessReviewGateGoldenTest extends TestCase {
 				$expected = $record;
 			}
 
-			$this->assertSame($expected, $gate->resolve('reg', 'sch', 'id-1'));
+			$this->assertSame($expected, $gate->resolve(new ObjectRef('reg', 'sch', 'id-1')));
 		}
 	}//end testResolveIsPinned()
 }//end class

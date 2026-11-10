@@ -326,18 +326,16 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	/**
 	 * The fragment's refusals, and a waiting run that no task of the fragment names: its slot would stay empty.
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The fill context.
-	 * @param array<int, string>   $users    The account ids the set creates or adopts.
-	 * @param ExampleSetValues     $values   Fills the placeholders.
+	 * @param array<string, mixed>    $fragment The fragment.
+	 * @param ExampleSetFragmentCheck $check    The fill context, the account ids the set creates or adopts, and the filler.
 	 *
 	 * @return array<int, string>
 	 *
 	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
 	 */
-	public function checkFragment(array $fragment, array $context, array $users, ExampleSetValues $values): array {
+	public function checkFragment(array $fragment, ExampleSetFragmentCheck $check): array {
 		return array_merge(
-			parent::checkFragment(fragment: $fragment, context: $context, users: $users, values: $values),
+			parent::checkFragment(fragment: $fragment, check: $check),
 			$this->runs()->unnamedRefusals(fragment: $fragment)
 		);
 	}//end checkFragment()

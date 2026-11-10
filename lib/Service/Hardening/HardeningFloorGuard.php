@@ -79,7 +79,7 @@ class HardeningFloorGuard {
 		$floor = $this->policy->floor(control: $control);
 		$comparator = HardeningPolicy::comparator(control: $control);
 
-		if (HardeningControl::satisfies(comparator: $comparator, value: $proposed, floor: $floor) === true) {
+		if ((new FloorRule(comparator: $comparator, floor: $floor))->admits(value: $proposed) === true) {
 			return;
 		}
 
@@ -108,7 +108,7 @@ class HardeningFloorGuard {
 		$baseline = HardeningPolicy::baseline(control: $control);
 		$comparator = HardeningPolicy::comparator(control: $control);
 
-		if (HardeningControl::satisfies(comparator: $comparator, value: $proposed, floor: $baseline) === true) {
+		if ((new FloorRule(comparator: $comparator, floor: $baseline))->admits(value: $proposed) === true) {
 			return;
 		}
 

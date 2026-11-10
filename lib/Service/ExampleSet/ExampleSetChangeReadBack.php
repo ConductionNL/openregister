@@ -182,7 +182,7 @@ class ExampleSetChangeReadBack {
 	private function undoSet(array $row, array $set): array {
 		$row = $this->paths->withoutPath(row: $row, path: $set['path']);
 		if ($set['had'] === true) {
-			return $this->paths->withPath(row: $row, path: $set['path'], value: $set['old']);
+			return $this->paths->withPath(row: $row, set: new ExampleSetPathValue(path: $set['path'], value: $set['old']));
 		}
 
 		// A map the change made on the way to its path goes again when nothing else filled it since.
@@ -206,7 +206,7 @@ class ExampleSetChangeReadBack {
 		foreach ($appended as $append) {
 			$list = (array) ($this->paths->atPath(row: $row, path: $append['path'])['value'] ?? []);
 			$kept = array_values(array_filter($list, static fn ($item): bool => $item !== $append['value']));
-			$row  = $this->paths->withPath(row: $row, path: $append['path'], value: $kept);
+			$row  = $this->paths->withPath(row: $row, set: new ExampleSetPathValue(path: $append['path'], value: $kept));
 		}
 
 		return $row;

@@ -21,6 +21,8 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\ObjectMigration;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -2058,7 +2060,14 @@ class ObjectServiceTest extends TestCase {
 		$this->stubMigrationSides(readable: ['uuid-1', 'uuid-2'], updatable: ['uuid-1']);
 		$this->getProperty('migrationHandler')->expects($this->once())
 			->method('migrateObjects')
-			->with(['1', '2'], ['3', '4'], ['uuid-1'], ['a' => 'b'])
+			->with(
+				new ObjectMigration(
+					source: new RegisterSchemaRef(register: '1', schema: '2'),
+					target: new RegisterSchemaRef(register: '3', schema: '4'),
+					objectIds: ['uuid-1'],
+					mapping: ['a' => 'b']
+				)
+			)
 			->willReturn(
 				[
 					'success' => true,

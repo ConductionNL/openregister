@@ -44,6 +44,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\CalendarEventsControllerFacto
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\LinkTarget;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -130,7 +131,7 @@ class CalendarEventsControllerTest extends TestCase {
 	 */
 	public function testEveryWriteNeedsTheObjectUpdateRight(string $write): void {
 		$this->mayUpdate = false;
-		$this->calendarLinkService->expects($this->never())->method('createAndLinkEvent');
+		$this->calendarLinkService->expects($this->never())->method('createLinkedEvent');
 		$this->calendarLinkService->expects($this->never())->method('unlinkEvent');
 		$this->calendarEventService->expects($this->never())->method('deleteEvent');
 
@@ -188,8 +189,8 @@ class CalendarEventsControllerTest extends TestCase {
 	public function testCreateMirrorsViaLinkService(): void {
 		$this->request->method('getParams')->willReturn(['summary' => 'New meeting']);
 		$this->calendarLinkService->expects($this->once())
-			->method('createAndLinkEvent')
-			->with(self::OBJ_UUID, 1, 2, $this->callback(function ($data) {
+			->method('createLinkedEvent')
+			->with((new LinkTarget(objectUuid: self::OBJ_UUID, registerId: 1))->inSchema(schemaId: 2), $this->callback(function ($data) {
 				$this->assertSame('New meeting', $data['summary']);
 				$this->assertSame('Object title', $data['objectTitle']);
 				return true;

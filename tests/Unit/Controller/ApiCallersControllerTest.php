@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Db\ApiCall\ApiCallPeriod;
 use OCA\OpenRegister\Controller\ApiCallersController;
 use OCA\OpenRegister\Db\ApiCallRecord;
 use OCA\OpenRegister\Db\ApiCallRecordMapper;
@@ -162,10 +163,10 @@ class ApiCallersControllerTest extends TestCase {
 		$mapper->expects($this->once())
 			->method('findInPeriod')
 			->with(
-				$this->callback(static fn ($from): bool => ($from->format('Y-m-d') === '2026-08-01')),
-				$this->callback(static fn ($to): bool => ($to->format('Y-m-d') === '2026-09-01')),
-				$this->anything(),
-				$this->anything(),
+				$this->callback(
+					static fn (ApiCallPeriod $period): bool => ($period->from->format('Y-m-d') === '2026-08-01')
+						&& ($period->to->format('Y-m-d') === '2026-09-01')
+				)
 			)
 			->willReturn([]);
 

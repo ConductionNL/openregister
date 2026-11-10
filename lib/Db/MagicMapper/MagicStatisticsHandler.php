@@ -331,21 +331,16 @@ class MagicStatisticsHandler {
 	/**
 	 * Get statistics for objects across all magic tables.
 	 *
-	 * @param int|array|null $registerId Register ID filter
-	 * @param int|array|null $schemaId Schema ID filter
-	 * @param array $exclude Exclusions
+	 * @param StatisticsScope $scope The registers and schemas to cover and the pairs to leave out; every table when omitted.
 	 *
 	 * @return int[] Statistics data
 	 *
 	 * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int}
 	 *
 	 */
-	public function getStatistics(
-		int|array|null $registerId = null,
-		int|array|null $schemaId = null,
-		array $exclude = [],
-	): array {
-		return $this->pairStatistics(filter: new StatisticsPairFilter(wanted: ['register' => $registerId, 'schema' => $schemaId], exclude: $exclude));
+	public function getStatistics(StatisticsScope $scope=new StatisticsScope()): array {
+		$wanted = ['register' => $scope->registerId, 'schema' => $scope->schemaId];
+		return $this->pairStatistics(filter: new StatisticsPairFilter(wanted: $wanted, exclude: $scope->exclude));
 	}//end getStatistics()
 
 	/**

@@ -82,24 +82,6 @@ final class TaskVtodoDocument {
 	/**
 	 * The document of a new standalone task linked to an object.
 	 *
-	 * @param int    $registerId  The register ID to link
-	 * @param int    $schemaId    The schema ID to link
-	 * @param string $objectUuid  The object UUID to link
-	 * @param string $objectTitle The object title for the LINK label
-	 * @param array  $data        Task data: summary, description, priority, due, status, fields
-	 *
-	 * @return array{uri: string, calendarData: string} The object URI and the iCalendar document.
-	 *
-	 * @throws Exception When the due date cannot be parsed.
-	 */
-	public function compose(int $registerId, int $schemaId, string $objectUuid, string $objectTitle, array $data): array {
-		$ref = new ObjectRef(register: $registerId, schema: $schemaId, id: $objectUuid);
-		return $this->composeFor(ref: $ref, draft: new LinkedTaskDraft(objectTitle: $objectTitle, data: $data));
-	}//end compose()
-
-	/**
-	 * The document of a new standalone task linked to an object.
-	 *
 	 * @param ObjectRef       $ref   The register ID, schema ID and UUID of the object to link.
 	 * @param LinkedTaskDraft $draft The object title for the LINK label, and the task data.
 	 *
