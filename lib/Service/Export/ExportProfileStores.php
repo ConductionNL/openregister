@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Service\Export;
 
 use OCA\OpenRegister\Db\ExportProfileMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -35,18 +36,32 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  */
 final class ExportProfileStores {
 	/**
+	 * Register lookups.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookups.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Bundle the services.
 	 *
-	 * @param ExportProfileMapperInterface $mapper         Profile persistence.
-	 * @param RegisterMapperInterface      $registerMapper Register lookups.
-	 * @param SchemaMapperInterface        $schemaMapper   Schema lookups.
+	 * @param ExportProfileMapperInterface $mapper  Profile persistence.
+	 * @param SchemaCatalogInterface       $catalog Register and schema lookups.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function __construct(
 		public readonly ExportProfileMapperInterface $mapper,
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
+		SchemaCatalogInterface $catalog,
 	) {
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper = $catalog->schemas();
 	}//end __construct()
 }//end class

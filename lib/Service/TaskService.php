@@ -70,48 +70,11 @@ use Psr\Log\LoggerInterface;
 class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface {
 
 	/**
-	 * CalDAV backend for calendar operations.
-	 *
-	 * @var CalDavBackend
-	 */
-	private readonly CalDavBackend $calDavBackend;
-
-	/**
-	 * User session for getting current user.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Logger for error reporting.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * URL generator (webroot-aware deep links).
-	 *
-	 * @var IURLGenerator
-	 */
-	private readonly IURLGenerator $urlGenerator;
-
-	/**
 	 * Calendar selection by uid, shared with the projector.
 	 *
 	 * @var VtodoCalendarLocator
 	 */
 	private readonly VtodoCalendarLocator $calendars;
-
-	/**
-	 * The write-back gate a PROJECTED VTODO's status change goes through.
-	 * Nullable so the service stays constructible bare; without it a
-	 * projected update is refused, never applied unchecked (fail closed).
-	 *
-	 * @var TaskVtodoWriteBackGate|null
-	 */
-	private readonly ?TaskVtodoWriteBackGate $gate;
 
 	/**
 	 * Composes, edits and reads the VTODO documents this service stores.
@@ -127,23 +90,20 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * @param IUserSession $userSession User session for current user context
 	 * @param LoggerInterface $logger Logger for error reporting
 	 * @param IURLGenerator $urlGenerator URL generator for deep links
-	 * @param TaskVtodoWriteBackGate|null $gate The one path from a projected VTODO into the engine
+	 * @param TaskVtodoWriteBackGate|null $gate The one path from a projected VTODO into the engine. Nullable so the
+	 *                                          service stays constructible bare; without it a projected update is
+	 *                                          refused, never applied unchecked (fail closed).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		CalDavBackend $calDavBackend,
-		IUserSession $userSession,
-		LoggerInterface $logger,
-		IURLGenerator $urlGenerator,
-		?TaskVtodoWriteBackGate $gate = null,
+		private readonly CalDavBackend $calDavBackend,
+		private readonly IUserSession $userSession,
+		private readonly LoggerInterface $logger,
+		private readonly IURLGenerator $urlGenerator,
+		private readonly ?TaskVtodoWriteBackGate $gate = null,
 	) {
-		$this->calDavBackend = $calDavBackend;
-		$this->userSession = $userSession;
-		$this->logger = $logger;
-		$this->urlGenerator = $urlGenerator;
 		$this->calendars = new VtodoCalendarLocator(calDavBackend: $calDavBackend);
-		$this->gate = $gate;
 		$this->documents = new TaskVtodoDocument();
 	}//end __construct()
 
@@ -230,7 +190,7 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	private function calendarTasks(mixed $calendarId, ?string $status): array {
 		$tasks = [];
 		foreach ($this->calDavBackend->getCalendarObjects($calendarId) as $calendarObject) {
-			$task = $this->readTask(calendarId: $calendarId, uri: $calendarObject['uri'], needle: 'VTODO');
+			$task = $this->readTask(at: new TaskLocation(calendarId: $calendarId, uri: $calendarObject['uri']), needle: 'VTODO');
 			if ($task !== null && $this->hasStatus(task: $task, status: $status) === true) {
 				$tasks[] = $task;
 			}
@@ -254,22 +214,21 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	/**
 	 * One calendar object as a task, or null when it is gone, empty, not a VTODO mentioning the needle, or unreadable.
 	 *
-	 * @param mixed  $calendarId The calendar id.
-	 * @param string $uri        The calendar object URI.
-	 * @param string $needle     Text the raw iCalendar data must contain.
+	 * @param TaskLocation $at     The calendar object.
+	 * @param string       $needle Text the raw iCalendar data must contain.
 	 *
 	 * @return array|null The task.
 	 */
-	private function readTask(mixed $calendarId, string $uri, string $needle): ?array {
-		$calendarData = ($this->calDavBackend->getCalendarObject($calendarId, $uri)['calendardata'] ?? null);
+	private function readTask(TaskLocation $at, string $needle): ?array {
+		$calendarData = ($this->calDavBackend->getCalendarObject($at->calendarId, $at->uri)['calendardata'] ?? null);
 		if (empty($calendarData) === true || $this->mentionsAll(data: $calendarData, needles: [$needle, 'VTODO']) === false) {
 			return null;
 		}
 
 		try {
-			return $this->vtodoToArray(calendarData: $calendarData, calendarId: (string)$calendarId, uri: $uri);
+			return $this->vtodoToArray(calendarData: $calendarData, at: $at);
 		} catch (Exception $e) {
-			$this->logger->warning('Failed to parse calendar object: ' . $e->getMessage(), ['uri' => $uri]);
+			$this->logger->warning('Failed to parse calendar object: ' . $e->getMessage(), ['uri' => $at->uri]);
 			return null;
 		}
 	}//end readTask()
@@ -319,7 +278,7 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 
 		$tasks = [];
 		foreach ($this->calDavBackend->getCalendarObjects($calendarId) as $calendarObject) {
-			$task = $this->readTask(calendarId: $calendarId, uri: $calendarObject['uri'], needle: $objectUuid);
+			$task = $this->readTask(at: new TaskLocation(calendarId: $calendarId, uri: $calendarObject['uri']), needle: $objectUuid);
 			if ($task !== null && $task['objectUuid'] === $objectUuid) {
 				$tasks[] = $this->withTaskDeepLink(task: $task, calendarUri: ($calendar['uri'] ?? null));
 			}
@@ -434,7 +393,7 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 
 		$this->calDavBackend->createCalendarObject($calendarId, $document['uri'], $document['calendarData']);
 
-		return $this->vtodoToArray(calendarData: $document['calendarData'], calendarId: (string)$calendarId, uri: $document['uri']);
+		return $this->vtodoToArray(calendarData: $document['calendarData'], at: new TaskLocation(calendarId: $calendarId, uri: $document['uri']));
 	}//end createTask()
 
 	/**
@@ -461,30 +420,46 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-compatibility-with-nextcloud-tasks-app
 	 */
 	public function updateTask(string $calendarId, string $taskUri, array $data): ?array {
-		$calendarIdInt = (int)$calendarId;
-		$stored = $this->storedCalendarData(calendarId: $calendarIdInt, taskUri: $taskUri);
+		return $this->changeTask(at: new TaskLocation(calendarId: $calendarId, uri: $taskUri), data: $data);
+	}//end updateTask()
+
+	/**
+	 * Update an existing CalDAV task (see updateTask()).
+	 *
+	 * @param TaskLocation $at   The calendar and URI of the task to update
+	 * @param array        $data Fields to update: summary, description, priority, due, status
+	 *
+	 * @return array|null The updated task in JSON-friendly format, or null if calendar data was not a VTODO
+	 *
+	 * @throws Exception If the task is not found or update fails
+	 * @throws TaskAccessDeniedException When a projected VTODO's change is refused
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-compatibility-with-nextcloud-tasks-app
+	 */
+	public function changeTask(TaskLocation $at, array $data): ?array {
+		$stored = $this->storedCalendarData(at: $at);
 		if (TaskCalendarProjector::taskUuidOf(calendarData: (string)$stored) !== null) {
-			return $this->updateProjectedTask(calendarId: $calendarIdInt, taskUri: $taskUri, existing: (string)$stored, data: $data);
+			$projected = new TaskLocation(calendarId: (int)$at->calendarId, uri: $at->uri);
+			return $this->updateProjectedTask(task: new StoredTask(at: $projected, calendarData: (string)$stored), data: $data);
 		}
 
 		$calendarData = $this->documents->withChanges(existing: $stored, data: $data);
-		$this->calDavBackend->updateCalendarObject($calendarIdInt, $taskUri, $calendarData);
+		$this->calDavBackend->updateCalendarObject((int)$at->calendarId, $at->uri, $calendarData);
 
-		return $this->vtodoToArray(calendarData: $calendarData, calendarId: $calendarId, uri: $taskUri);
-	}//end updateTask()
+		return $this->vtodoToArray(calendarData: $calendarData, at: $at);
+	}//end changeTask()
 
 	/**
 	 * The stored iCalendar data of a task.
 	 *
-	 * @param int    $calendarId The calendar ID containing the task
-	 * @param string $taskUri    The URI of the task
+	 * @param TaskLocation $at The calendar and URI of the task
 	 *
 	 * @return mixed The stored calendar data.
 	 *
 	 * @throws Exception If the task is not found
 	 */
-	private function storedCalendarData(int $calendarId, string $taskUri): mixed {
-		$existing = $this->calDavBackend->getCalendarObject($calendarId, $taskUri);
+	private function storedCalendarData(TaskLocation $at): mixed {
+		$existing = $this->calDavBackend->getCalendarObject((int)$at->calendarId, $at->uri);
 		if ($existing === null) {
 			throw new Exception('Task not found');
 		}
@@ -509,6 +484,22 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function requireTaskOf(string $objectUuid, string $calendarId, string $taskUri): void {
+		$this->requireTaskAt(objectUuid: $objectUuid, at: new TaskLocation(calendarId: $calendarId, uri: $taskUri));
+	}//end requireTaskOf()
+
+	/**
+	 * Refuse a task that is not one of the caller's tasks on the given object (see requireTaskOf()).
+	 *
+	 * @param string       $objectUuid The object the caller addressed.
+	 * @param TaskLocation $at         The calendar and task the caller named.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 404 when it is not.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function requireTaskAt(string $objectUuid, TaskLocation $at): void {
 		try {
 			$tasks = $this->getTasksForObject(objectUuid: $objectUuid);
 		} catch (NoVtodoCalendarException $e) {
@@ -516,13 +507,13 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 		}
 
 		foreach ($tasks as $task) {
-			if ((string)$task['calendarId'] === $calendarId && $task['id'] === $taskUri) {
+			if ((string)$task['calendarId'] === (string)$at->calendarId && $task['id'] === $at->uri) {
 				return;
 			}
 		}
 
 		throw new Exception('Task not found', 404);
-	}//end requireTaskOf()
+	}//end requireTaskAt()
 
 	/**
 	 * Delete a CalDAV task.
@@ -635,10 +626,8 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * Only `status` can name a verb; every other field is projection-owned
 	 * and the stored document is the engine's rendering regardless.
 	 *
-	 * @param int $calendarId The calendar holding the VTODO
-	 * @param string $taskUri The VTODO uri
-	 * @param string $existing The stored document
-	 * @param array $data The requested changes
+	 * @param StoredTask $task The stored document and where it is
+	 * @param array      $data The requested changes
 	 *
 	 * @return array|null The projected task as JSON-friendly array
 	 *
@@ -647,23 +636,23 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-status-mapping
 	 */
-	private function updateProjectedTask(int $calendarId, string $taskUri, string $existing, array $data): ?array {
+	private function updateProjectedTask(StoredTask $task, array $data): ?array {
 		if ($this->gate === null) {
 			throw new TaskAccessDeniedException(
 				message: 'This calendar entry projects an engine task and the write-back gate is unavailable, so the change was not applied.'
 			);
 		}
 
-		$requested = $this->requestedDocument(existing: $existing, data: $data);
+		$requested = $this->requestedDocument(existing: $task->calendarData, data: $data);
 		$rendered = $this->gate->handleWrite(calendarData: $requested, actor: $this->userSession->getUser()?->getUID());
 		if ($rendered === null) {
 			// An echo or a document that is not the engine's business: stored as is.
-			return $this->vtodoToArray(calendarData: $existing, calendarId: (string)$calendarId, uri: $taskUri);
+			return $this->vtodoToArray(calendarData: $task->calendarData, at: $task->at);
 		}
 
-		$this->calDavBackend->updateCalendarObject($calendarId, $taskUri, $rendered);
+		$this->calDavBackend->updateCalendarObject($task->at->calendarId, $task->at->uri, $rendered);
 
-		return $this->vtodoToArray(calendarData: $rendered, calendarId: (string)$calendarId, uri: $taskUri);
+		return $this->vtodoToArray(calendarData: $rendered, at: $task->at);
 	}//end updateProjectedTask()
 
 	/**
@@ -687,13 +676,12 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	/**
 	 * Parse a VTODO iCalendar string into a JSON-friendly array.
 	 *
-	 * @param string $calendarData The raw iCalendar string
-	 * @param string $calendarId The calendar ID
-	 * @param string $uri The calendar object URI
+	 * @param string       $calendarData The raw iCalendar string
+	 * @param TaskLocation $at           The calendar and URI of the calendar object
 	 *
 	 * @return array|null Task array or null if not a VTODO
 	 */
-	private function vtodoToArray(string $calendarData, string $calendarId, string $uri): ?array {
-		return $this->documents->taskOf(calendarData: $calendarData, calendarId: $calendarId, uri: $uri);
+	private function vtodoToArray(string $calendarData, TaskLocation $at): ?array {
+		return $this->documents->taskOf(calendarData: $calendarData, calendarId: (string)$at->calendarId, uri: $at->uri);
 	}//end vtodoToArray()
 }//end class
