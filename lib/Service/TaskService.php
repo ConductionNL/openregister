@@ -42,8 +42,10 @@ use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCA\OpenRegister\Service\Task\VtodoCalendarLocator;
@@ -392,34 +394,10 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * Builds a VCALENDAR/VTODO string with X-OPENREGISTER-* properties and
 	 * an RFC 9253 LINK property, then stores it in the user's calendar.
 	 *
-	 * @param int $registerId The register ID to link
-	 * @param int $schemaId The schema ID to link
-	 * @param string $objectUuid The object UUID to link
-	 * @param string $objectTitle The object title for the LINK label
-	 * @param array $data Task data: summary, description, priority, due, status
-	 *
-	 * A payload that carries an engine task identity is REFUSED: a projected
-	 * VTODO is created only by the projection, so a VTODO carrying
-	 * `X-OPENREGISTER-TASK` always corresponds to a task the engine
-	 * authorized into existence.
-	 *
-	 * @return array|null The created task in JSON-friendly format, or null if the calendar data was not a VTODO
-	 *
-	 * @throws Exception If no user is logged in or no calendar found
-	 * @throws TaskAccessDeniedException If the payload attempts to set an engine task identity
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
-	 */
-	public function createTask(int $registerId, int $schemaId, string $objectUuid, string $objectTitle, array $data): ?array {
-		$ref = new ObjectRef(register: $registerId, schema: $schemaId, id: $objectUuid);
-		return $this->createObjectTask(ref: $ref, draft: new LinkedTaskDraft(objectTitle: $objectTitle, data: $data));
-	}//end createTask()
-
-	/**
-	 * Create a new CalDAV task linked to an OpenRegister object (see createTask()).
-	 *
-	 * A payload that carries an engine task identity is REFUSED before anything is read or stored.
+	 * A payload that carries an engine task identity is REFUSED before anything
+	 * is read or stored: a projected VTODO is created only by the projection,
+	 * so a VTODO carrying `X-OPENREGISTER-TASK` always corresponds to a task
+	 * the engine authorized into existence.
 	 *
 	 * @param ObjectRef       $ref   The object to link: its register id, schema id and uuid.
 	 * @param LinkedTaskDraft $draft The object title for the LINK label, and the task data: summary, description, priority, due, status
@@ -429,6 +407,7 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * @throws Exception If no user is logged in or no calendar found
 	 * @throws TaskAccessDeniedException If the payload attempts to set an engine task identity
 	 *
+	 * @spec openspec/specs/object-interactions/spec.md
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
 	 */
 	public function createObjectTask(ObjectRef $ref, LinkedTaskDraft $draft): ?array {
@@ -458,25 +437,6 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * what is stored afterwards is the engine's own rendering. Without a
 	 * gate the update is refused, never applied unchecked.
 	 *
-	 * @param string $calendarId The calendar ID containing the task
-	 * @param string $taskUri The URI of the task to update
-	 * @param array $data Fields to update: summary, description, priority, due, status
-	 *
-	 * @return array|null The updated task in JSON-friendly format, or null if calendar data was not a VTODO
-	 *
-	 * @throws Exception If the task is not found or update fails
-	 * @throws TaskAccessDeniedException When a projected VTODO's change is refused
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-compatibility-with-nextcloud-tasks-app
-	 */
-	public function updateTask(string $calendarId, string $taskUri, array $data): ?array {
-		return $this->changeTask(at: new TaskLocation(calendarId: $calendarId, uri: $taskUri), data: $data);
-	}//end updateTask()
-
-	/**
-	 * Update an existing CalDAV task (see updateTask()).
-	 *
 	 * @param TaskLocation $at   The calendar and URI of the task to update
 	 * @param array        $data Fields to update: summary, description, priority, due, status
 	 *
@@ -485,6 +445,7 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * @throws Exception If the task is not found or update fails
 	 * @throws TaskAccessDeniedException When a projected VTODO's change is refused
 	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-compatibility-with-nextcloud-tasks-app
 	 */
 	public function changeTask(TaskLocation $at, array $data): ?array {
@@ -523,23 +484,6 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 *
 	 * The tasks of an object are those in the caller's own calendar that carry
 	 * the object's uuid, so this answers for the calendar and the link at once.
-	 *
-	 * @param string $objectUuid The object the caller addressed.
-	 * @param string $calendarId The calendar the caller named.
-	 * @param string $taskUri    The task the caller named.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception With code 404 when it is not.
-	 *
-	 * @spec openspec/specs/generic-integrations/spec.md
-	 */
-	public function requireTaskOf(string $objectUuid, string $calendarId, string $taskUri): void {
-		$this->requireTaskAt(objectUuid: $objectUuid, at: new TaskLocation(calendarId: $calendarId, uri: $taskUri));
-	}//end requireTaskOf()
-
-	/**
-	 * Refuse a task that is not one of the caller's tasks on the given object (see requireTaskOf()).
 	 *
 	 * @param string       $objectUuid The object the caller addressed.
 	 * @param TaskLocation $at         The calendar and task the caller named.

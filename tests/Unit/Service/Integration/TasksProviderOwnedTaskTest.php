@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices;
 use OCA\OpenRegister\Service\TaskService;
@@ -53,23 +54,23 @@ class TasksProviderOwnedTaskTest extends TestCase {
 	/**
 	 * A provider over a task service that owns `7/task.ics` for `uuid-mine` only.
 	 *
-	 * @param array<string, mixed>|null $updated What updateTask answers.
+	 * @param array<string, mixed>|null $updated What changeTask answers.
 	 *
 	 * @return TasksProvider
 	 */
 	private function provider(?array $updated): TasksProvider {
 		$tasks = $this->createMock(TaskService::class);
-		$tasks->method('requireTaskOf')->willReturnCallback(
-			function (string $objectUuid, string $calendarId, string $taskUri): void {
-				$this->calls[] = "require:$objectUuid:$calendarId:$taskUri";
+		$tasks->method('requireTaskAt')->willReturnCallback(
+			function (string $objectUuid, TaskLocation $at): void {
+				$this->calls[] = "require:$objectUuid:{$at->calendarId}:{$at->uri}";
 				if ($objectUuid !== 'uuid-mine') {
 					throw new Exception('Task not found', 404);
 				}
 			}
 		);
-		$tasks->method('updateTask')->willReturnCallback(
-			function (string $calendarId, string $taskUri, array $data) use ($updated): ?array {
-				$this->calls[] = "update:$calendarId:$taskUri:" . json_encode($data);
+		$tasks->method('changeTask')->willReturnCallback(
+			function (TaskLocation $at, array $data) use ($updated): ?array {
+				$this->calls[] = "update:{$at->calendarId}:{$at->uri}:" . json_encode($data);
 				return $updated;
 			}
 		);

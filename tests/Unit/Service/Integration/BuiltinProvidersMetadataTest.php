@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -152,19 +154,19 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			->willReturn($object);
 
 		$taskService->expects($this->once())
-			->method('createTask')
+			->method('createObjectTask')
 			->with(
-				42,
-				7,
-				'obj-uuid-1',
-				'My Object',
-				[
-					'summary' => 'Do the thing',
-					'description' => 'Details here',
-					'priority' => 5,
-					'status' => 'NEEDS-ACTION',
-					'due' => '2026-06-01T12:00:00Z',
-				]
+				new ObjectRef(register: 42, schema: 7, id: 'obj-uuid-1'),
+				new LinkedTaskDraft(
+					objectTitle: 'My Object',
+					data: [
+						'summary' => 'Do the thing',
+						'description' => 'Details here',
+						'priority' => 5,
+						'status' => 'NEEDS-ACTION',
+						'due' => '2026-06-01T12:00:00Z',
+					]
+				)
 			)
 			->willReturn(['id' => 'cal/task.ics', 'summary' => 'Do the thing']);
 
@@ -206,13 +208,10 @@ class BuiltinProvidersMetadataTest extends TestCase {
 		$objectService->method('find')->willReturn(null);
 
 		$taskService->expects($this->once())
-			->method('createTask')
+			->method('createObjectTask')
 			->with(
-				1,
-				2,
-				'missing-uuid',
-				'missing-uuid',
-				$this->callback(static fn (array $d): bool => $d['summary'] === 'x')
+				new ObjectRef(register: 1, schema: 2, id: 'missing-uuid'),
+				$this->callback(static fn (LinkedTaskDraft $d): bool => $d->objectTitle === 'missing-uuid' && $d->data['summary'] === 'x')
 			)
 			->willReturn(['id' => 'cal/task.ics']);
 

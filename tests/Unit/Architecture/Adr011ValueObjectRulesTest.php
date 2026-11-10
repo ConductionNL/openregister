@@ -37,8 +37,10 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	private const VALUE_OBJECTS = [
 		'Db/ListQuery.php',
 		'Db/RegisterSchema.php',
+		'Kernel/Contracts/LinkedTaskDraft.php',
 		'Kernel/Contracts/ObjectRef.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/TaskLocation.php',
 	];
 
 	/**
@@ -47,8 +49,10 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	 * @var array<int, string>
 	 */
 	private const KERNEL_LEAVES = [
+		'Kernel/Contracts/LinkedTaskDraft.php',
 		'Kernel/Contracts/ObjectRef.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/TaskLocation.php',
 	];
 
 	/**

@@ -10,6 +10,8 @@ use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\SeedRelatedItems;
 use OCA\OpenRegister\Service\Configuration\SeedRelatedTarget;
@@ -29,7 +31,7 @@ use Psr\Log\LoggerInterface;
  *
  * Verifies that `_relatedItems` payloads on seed objects route to the
  * right service (FileService::addFile / NoteService::createNote /
- * TaskService::createTask), that base64 file content gets decoded, and
+ * TaskService::createObjectTask), that base64 file content gets decoded, and
  * that error isolation + user-context guards behave correctly.
  *
  * Tests bypass the heavy importSeedData entry point by reflecting into
@@ -126,9 +128,9 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		$taskService = $this->createMock(TaskService::class);
 		$captured = [];
 		$taskService->expects($this->once())
-			->method('createTask')
-			->willReturnCallback(function (int $r, int $s, string $uuid, string $title, array $data) use (&$captured) {
-				$captured = compact('r', 's', 'uuid', 'title', 'data');
+			->method('createObjectTask')
+			->willReturnCallback(function (ObjectRef $ref, LinkedTaskDraft $draft) use (&$captured) {
+				$captured = ['r' => $ref->register, 's' => $ref->schema, 'uuid' => $ref->id, 'title' => $draft->objectTitle, 'data' => $draft->data];
 				return ['id' => 'task-1'];
 			});
 
@@ -175,7 +177,7 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 
 		$fileService->expects($this->once())->method('addFile')->willReturn($this->createMock(\OCP\Files\File::class));
 		$noteService->expects($this->once())->method('createNote')->willReturn(['id' => 1]);
-		$taskService->expects($this->once())->method('createTask')->willThrowException(new \RuntimeException('no calendar'));
+		$taskService->expects($this->once())->method('createObjectTask')->willThrowException(new \RuntimeException('no calendar'));
 
 		// Warning must be logged for the failed task; debug summary still runs.
 		$this->logger->expects($this->atLeastOnce())->method('warning');
@@ -198,7 +200,7 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 
 		$this->assertSame(1, $result['relatedFiles']);
 		$this->assertSame(1, $result['relatedNotes']);
-		$this->assertSame(0, $result['relatedTasks'], 'task should not count when createTask throws');
+		$this->assertSame(0, $result['relatedTasks'], 'task should not count when createObjectTask throws');
 	}
 
 	public function testTasksAndNotesSkippedWhenNoUserContextButFilesRun(): void {
@@ -212,7 +214,7 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 
 		$fileService->expects($this->once())->method('addFile')->willReturn($this->createMock(\OCP\Files\File::class));
 		$noteService->expects($this->never())->method('createNote');
-		$taskService->expects($this->never())->method('createTask');
+		$taskService->expects($this->never())->method('createObjectTask');
 
 		$handler = $this->makeHandler();
 		$handler->setFileService($fileService);

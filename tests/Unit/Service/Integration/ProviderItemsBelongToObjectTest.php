@@ -24,6 +24,7 @@ use Exception;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Files\Service\NoteService;
@@ -59,9 +60,9 @@ class ProviderItemsBelongToObjectTest extends TestCase {
 	 */
 	private function tasksProvider(): TasksProvider {
 		$tasks = $this->createMock(TaskService::class);
-		$tasks->method('requireTaskOf')->with('uuid-mine', '7', 'task.ics')->willThrowException(new Exception('Task not found', 404));
+		$tasks->method('requireTaskAt')->with('uuid-mine', new TaskLocation(calendarId: '7', uri: 'task.ics'))->willThrowException(new Exception('Task not found', 404));
 		$tasks->expects($this->never())->method('deleteTask');
-		$tasks->expects($this->never())->method('updateTask');
+		$tasks->expects($this->never())->method('changeTask');
 
 		return new TasksProvider(
 			new TasksProviderServices(
