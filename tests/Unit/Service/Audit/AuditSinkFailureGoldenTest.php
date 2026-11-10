@@ -45,6 +45,11 @@ final class AuditSinkFailureGoldenTest extends TestCase {
 	 */
 	public array $trace = [];
 
+	/**
+	 * The temporary directory the broken sink path lives in.
+	 *
+	 * @var string
+	 */
 	private string $dir = '';
 
 	protected function setUp(): void {
