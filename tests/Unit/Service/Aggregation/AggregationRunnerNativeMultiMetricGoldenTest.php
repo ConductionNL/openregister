@@ -221,9 +221,7 @@ class AggregationRunnerNativeMultiMetricGoldenTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		return new AggregationRunner(
-			magicMapper: $magicMapper,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
 			placeholders: new PlaceholderResolver($userSession),
 			db: $db,
 			cache: $this->createMock(AggregationCache::class),

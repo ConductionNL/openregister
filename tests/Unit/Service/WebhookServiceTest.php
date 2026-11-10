@@ -289,10 +289,7 @@ class WebhookServiceTest extends TestCase {
 		$result = $this->invokePrivateMethod(
 			'buildPayload',
 			[
-				'webhook' => $webhook,
-				'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-				'payload' => $payload,
-				'attempt' => 1,
+				'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: $payload), attempt: 1),
 			]
 		);
 
@@ -323,10 +320,7 @@ class WebhookServiceTest extends TestCase {
 		$result = $this->invokePrivateMethod(
 			'buildPayload',
 			[
-				'webhook' => $webhook,
-				'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-				'payload' => $payload,
-				'attempt' => 1,
+				'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: $payload), attempt: 1),
 			]
 		);
 
@@ -366,10 +360,7 @@ class WebhookServiceTest extends TestCase {
 		$result = $this->invokePrivateMethod(
 			'buildPayload',
 			[
-				'webhook' => $webhook,
-				'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-				'payload' => $payload,
-				'attempt' => 1,
+				'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: $payload), attempt: 1),
 			]
 		);
 
@@ -393,10 +384,7 @@ class WebhookServiceTest extends TestCase {
 		$result = $this->invokePrivateMethod(
 			'buildPayload',
 			[
-				'webhook' => $webhook,
-				'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-				'payload' => $payload,
-				'attempt' => 1,
+				'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: $payload), attempt: 1),
 			]
 		);
 
@@ -458,10 +446,7 @@ class WebhookServiceTest extends TestCase {
 		$result = $method->invokeArgs(
 			$service,
 			[
-				'webhook' => $webhook,
-				'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-				'payload' => $payload,
-				'attempt' => 1,
+				'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: $payload), attempt: 1),
 			]
 		);
 
@@ -506,10 +491,8 @@ class WebhookServiceTest extends TestCase {
 		$result = $this->invokePrivateMethod(
 			'applyMappingTransformation',
 			[
+				'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: $payload)),
 				'mappingId' => 42,
-				'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-				'payload' => $payload,
-				'webhook' => $webhook,
 			]
 		);
 
@@ -532,10 +515,8 @@ class WebhookServiceTest extends TestCase {
 		$result = $this->invokePrivateMethod(
 			'applyMappingTransformation',
 			[
+				'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['objectType' => 'object'])),
 				'mappingId' => 999,
-				'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-				'payload' => ['objectType' => 'object'],
-				'webhook' => $webhook,
 			]
 		);
 
@@ -563,10 +544,8 @@ class WebhookServiceTest extends TestCase {
 		$result = $this->invokePrivateMethod(
 			'applyMappingTransformation',
 			[
+				'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['objectType' => 'object'])),
 				'mappingId' => 42,
-				'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-				'payload' => ['objectType' => 'object'],
-				'webhook' => $webhook,
 			]
 		);
 
@@ -651,10 +630,7 @@ class WebhookServiceTest extends TestCase {
 		$result = $method->invokeArgs(
 			$service,
 			[
-				'webhook' => $webhook,
-				'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-				'payload' => $payload,
-				'attempt' => 1,
+				'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: $payload), attempt: 1),
 			]
 		);
 
@@ -1055,7 +1031,7 @@ class WebhookServiceTest extends TestCase {
 		$this->injectMockClient($mockClient);
 
 		$result = $this->invokePrivateMethod('sendRequest', [
-			'webhook' => $webhook,
+			'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'SomeEvent', payload: [])),
 			'payload' => ['key' => 'value'],
 		]);
 
@@ -1089,7 +1065,7 @@ class WebhookServiceTest extends TestCase {
 		$this->injectMockClient($mockClient);
 
 		$result = $this->invokePrivateMethod('sendRequest', [
-			'webhook' => $webhook,
+			'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'SomeEvent', payload: [])),
 			'payload' => ['q' => 'search'],
 		]);
 
@@ -1125,7 +1101,7 @@ class WebhookServiceTest extends TestCase {
 		$this->injectMockClient($mockClient);
 
 		$this->invokePrivateMethod('sendRequest', [
-			'webhook' => $webhook,
+			'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'SomeEvent', payload: [])),
 			'payload' => $payload,
 		]);
 	}//end testSendRequestAddsSignatureWhenSecretSet()
@@ -1155,7 +1131,7 @@ class WebhookServiceTest extends TestCase {
 		$this->injectMockClient($mockClient);
 
 		$this->invokePrivateMethod('sendRequest', [
-			'webhook' => $webhook,
+			'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'SomeEvent', payload: [])),
 			'payload' => ['data' => 'test'],
 		]);
 	}//end testSendRequestNoSignatureWithoutSecret()
@@ -1189,7 +1165,7 @@ class WebhookServiceTest extends TestCase {
 		$this->injectMockClient($mockClient);
 
 		$this->invokePrivateMethod('sendRequest', [
-			'webhook' => $webhook,
+			'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'SomeEvent', payload: [])),
 			'payload' => ['data' => 'test'],
 		]);
 	}//end testSendRequestMergesCustomHeaders()
@@ -1221,7 +1197,7 @@ class WebhookServiceTest extends TestCase {
 		$this->injectMockClient($mockClient);
 
 		$this->invokePrivateMethod('sendRequest', [
-			'webhook' => $webhook,
+			'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'SomeEvent', payload: [])),
 			'payload' => [],
 		]);
 	}//end testSendRequestUsesWebhookTimeout()
@@ -1834,10 +1810,8 @@ class WebhookServiceTest extends TestCase {
 		$result = $this->invokePrivateMethod(
 			'applyMappingTransformation',
 			[
+				'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: ['objectType' => 'object'])),
 				'mappingId' => 42,
-				'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-				'payload' => ['objectType' => 'object'],
-				'webhook' => $webhook,
 			]
 		);
 
@@ -1862,10 +1836,7 @@ class WebhookServiceTest extends TestCase {
 		$result = $this->invokePrivateMethod(
 			'buildPayload',
 			[
-				'webhook' => $webhook,
-				'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-				'payload' => $payload,
-				'attempt' => 1,
+				'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', payload: $payload), attempt: 1),
 			]
 		);
 
@@ -1890,10 +1861,7 @@ class WebhookServiceTest extends TestCase {
 		$result = $this->invokePrivateMethod(
 			'buildPayload',
 			[
-				'webhook' => $webhook,
-				'eventName' => 'SomeEvent',
-				'payload' => $payload,
-				'attempt' => 5,
+				'delivery' => new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'SomeEvent', payload: $payload), attempt: 5),
 			]
 		);
 

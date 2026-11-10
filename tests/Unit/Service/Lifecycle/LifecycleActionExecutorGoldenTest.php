@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Lifecycle\LifecycleActionRegistry;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Lifecycle\TransitionPayload;
 
 /**
  * Golden test for LifecycleActionExecutor::run().
@@ -86,9 +87,7 @@ class LifecycleActionExecutorGoldenTest extends TestCase {
 		try {
 			$result = $this->executor()->run(
 				$actions,
-				['status' => 'closed', 'kind' => 'A', 'trail' => []],
-				['status' => 'open', 'kind' => 'B'],
-				'close'
+				new TransitionPayload('close', ['status' => 'closed', 'kind' => 'A', 'trail' => []], ['status' => 'open', 'kind' => 'B'])
 			);
 			return json_encode($result);
 		} catch (RuntimeException $exception) {

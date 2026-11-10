@@ -36,8 +36,8 @@ final class OperationsConsistencyControllerFactory {
 			new \OCA\OpenRegister\Controller\Support\OperationsConsistencyControllerServices(
 				check: $check,
 				repair: $repair,
+				userSession: $userSession,
 			),
-			$userSession,
 		];
 	}
 

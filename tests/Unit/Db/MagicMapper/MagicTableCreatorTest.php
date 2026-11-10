@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
@@ -76,7 +77,7 @@ class MagicTableCreatorTest extends TestCase {
 		$config = $this->createMock(IConfig::class);
 		$config->method('getSystemValue')->with('dbtableprefix', 'oc_')->willReturn('nc_');
 		$this->logger = $this->createMock(LoggerInterface::class);
-		return new MagicTableCreator($db, $config, $this->logger);
+		return new MagicTableCreator(new MagicTableSql($db, $config, $this->logger));
 	}//end creator()
 
 	/**

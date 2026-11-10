@@ -36,7 +36,7 @@ class MdtoEventMapperTest extends TestCase {
 
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->mapper = new MdtoEventMapper($this->auditTrailMapper, $this->logger);
+		$this->mapper = new MdtoEventMapper(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->auditTrailMapper, $this->logger));
 	}
 
 	/**

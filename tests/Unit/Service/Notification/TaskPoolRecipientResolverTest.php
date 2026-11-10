@@ -28,6 +28,8 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
+use OCP\IUserSession;
 
 class TaskPoolRecipientResolverTest extends TestCase {
 	private IGroupManager&MockObject $groups;
@@ -67,14 +69,14 @@ class TaskPoolRecipientResolverTest extends TestCase {
 
 	public function testAllFourMembersAndNobodyElse(): void {
 		$this->groups->method('get')->with('permits')->willReturn($this->group(['a', 'b', 'c', 'd']));
-		$resolver = new TaskPoolRecipientResolver($this->groups, $this->users, $this->createMock(LoggerInterface::class));
+		$resolver = new TaskPoolRecipientResolver(new PrincipalDirectory($this->users, $this->groups, $this->createMock(IUserSession::class)), $this->createMock(LoggerInterface::class));
 
 		$this->assertSame(['a', 'b', 'c', 'd'], $resolver->resolve($this->pooled(['permits']), ['action' => 'offer']));
 	}
 
 	public function testANonMemberIsNotNotified(): void {
 		$this->groups->method('get')->willReturn($this->group(['member']));
-		$resolver = new TaskPoolRecipientResolver($this->groups, $this->users, $this->createMock(LoggerInterface::class));
+		$resolver = new TaskPoolRecipientResolver(new PrincipalDirectory($this->users, $this->groups, $this->createMock(IUserSession::class)), $this->createMock(LoggerInterface::class));
 
 		$this->assertNotContains('outsider', $resolver->resolve($this->pooled(['permits']), []));
 	}
@@ -83,14 +85,14 @@ class TaskPoolRecipientResolverTest extends TestCase {
 		$this->groups->method('get')->willReturn(null);
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('warning')->with($this->stringContains('does not exist'));
-		$resolver = new TaskPoolRecipientResolver($this->groups, $this->users, $logger);
+		$resolver = new TaskPoolRecipientResolver(new PrincipalDirectory($this->users, $this->groups, $this->createMock(IUserSession::class)), $logger);
 
 		$this->assertSame([], $resolver->resolve($this->pooled(['ghosts']), []));
 	}
 
 	public function testCandidateUsersAreIncludedOnlyWhenTheyExist(): void {
 		$this->users->method('userExists')->willReturnCallback(static fn (string $uid): bool => $uid === 'real');
-		$resolver = new TaskPoolRecipientResolver($this->groups, $this->users, $this->createMock(LoggerInterface::class));
+		$resolver = new TaskPoolRecipientResolver(new PrincipalDirectory($this->users, $this->groups, $this->createMock(IUserSession::class)), $this->createMock(LoggerInterface::class));
 
 		$this->assertSame(['real'], $resolver->resolve($this->pooled([], ['real', 'phantom']), []));
 	}
@@ -99,7 +101,7 @@ class TaskPoolRecipientResolverTest extends TestCase {
 		$this->groups->method('get')->willReturnCallback(
 			fn (string $gid): IGroup => $gid === 'a' ? $this->group(['x', 'y']) : $this->group(['y', 'z'])
 		);
-		$resolver = new TaskPoolRecipientResolver($this->groups, $this->users, $this->createMock(LoggerInterface::class));
+		$resolver = new TaskPoolRecipientResolver(new PrincipalDirectory($this->users, $this->groups, $this->createMock(IUserSession::class)), $this->createMock(LoggerInterface::class));
 
 		$this->assertSame(['x', 'y', 'z'], $resolver->resolve($this->pooled(['a', 'b']), []));
 	}

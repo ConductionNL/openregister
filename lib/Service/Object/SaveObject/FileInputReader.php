@@ -124,7 +124,13 @@ final class FileInputReader {
 			}
 
 			$dataUri = $this->uploadDataUri(fieldName: $fieldName, fileInfo: $fileInfo);
-			$data    = $this->injectUpload(data: $data, fieldName: $fieldName, dataUri: $dataUri);
+			$list    = $this->listField(fieldName: $fieldName);
+			if ($list === null) {
+				$data[$fieldName] = $dataUri;
+				continue;
+			}
+
+			$data[$list][] = $dataUri;
 		}
 
 		return $data;
@@ -214,29 +220,19 @@ final class FileInputReader {
 	}//end uploadDataUri()
 
 	/**
-	 * Put an upload's data URI into the object data; it takes precedence over a sent value.
+	 * The list a field name in array notation (`files[]`, `files[0]`) appends to.
 	 *
-	 * Array notation (`images[]`, `images[0]`) appends to the `images` list.
+	 * @param string $fieldName The upload's field name.
 	 *
-	 * @param array<string, mixed> $data      The object data.
-	 * @param string               $fieldName The form field name.
-	 * @param string               $dataUri   The upload as a data URI.
-	 *
-	 * @return array<string, mixed>
+	 * @return string|null The list's key, or null when the name is a plain field.
 	 */
-	private function injectUpload(array $data, string $fieldName, string $dataUri): array {
+	private function listField(string $fieldName): ?string {
 		if (preg_match('/^(.+)\[\d*\]$/', $fieldName, $matches) !== 1) {
-			$data[$fieldName] = $dataUri;
-			return $data;
+			return null;
 		}
 
-		if (isset($data[$matches[1]]) === false) {
-			$data[$matches[1]] = [];
-		}
-
-		$data[$matches[1]][] = $dataUri;
-		return $data;
-	}//end injectUpload()
+		return $matches[1];
+	}//end listField()
 
 	/**
 	 * Parse a data URI (data:image/png;base64,iVBOR...); its MIME type is taken as declared.
