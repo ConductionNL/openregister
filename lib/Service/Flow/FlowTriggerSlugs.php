@@ -44,7 +44,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -84,24 +86,7 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function registerSlug(string $identifier): string {
-		$identifier = trim($identifier);
-		if ($identifier === '') {
-			return '';
-		}
-
-		try {
-			$slug = trim((string)$this->catalog->registers()->find(id: $identifier, _rbac: false, _multitenancy: false)->getSlug());
-		} catch (Throwable $e) {
-			$this->reportUnresolved(what: 'register identifier "' . $identifier . '"', error: $e);
-
-			return $identifier;
-		}
-
-		if ($slug === '') {
-			return $identifier;
-		}
-
-		return $slug;
+		return $this->slugOf(identifier: $identifier, kind: 'register');
 	}//end registerSlug()
 
 	/**
@@ -119,25 +104,63 @@ class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function schemaSlug(string $identifier): string {
+		return $this->slugOf(identifier: $identifier, kind: 'schema');
+	}//end schemaSlug()
+
+	/**
+	 * The slug of a register or schema identifier, or the identifier itself when it has none or cannot be read.
+	 *
+	 * @param string $identifier The id, uuid or slug as written.
+	 * @param string $kind       `register` or `schema`.
+	 *
+	 * @return string The slug, the identifier, or '' for a blank one.
+	 */
+	private function slugOf(string $identifier, string $kind): string {
 		$identifier = trim($identifier);
 		if ($identifier === '') {
 			return '';
 		}
 
-		try {
-			$slug = trim((string)$this->catalog->schemas()->find(id: $identifier, _rbac: false, _multitenancy: false)->getSlug());
-		} catch (Throwable $e) {
-			$this->reportUnresolved(what: 'schema identifier "' . $identifier . '"', error: $e);
-
-			return $identifier;
-		}
-
-		if ($slug === '') {
+		$slug = $this->storedSlug(identifier: $identifier, kind: $kind);
+		if ($slug === null || $slug === '') {
 			return $identifier;
 		}
 
 		return $slug;
-	}//end schemaSlug()
+	}//end slugOf()
+
+	/**
+	 * The stored slug of the entity the identifier names, or null when it cannot be read.
+	 *
+	 * @param string $identifier The trimmed identifier.
+	 * @param string $kind       `register` or `schema`.
+	 *
+	 * @return string|null The trimmed slug, possibly empty.
+	 */
+	private function storedSlug(string $identifier, string $kind): ?string {
+		try {
+			return trim((string)$this->mapperFor(kind: $kind)->find(id: $identifier, _rbac: false, _multitenancy: false)->getSlug());
+		} catch (Throwable $e) {
+			$this->reportUnresolved(what: $kind . ' identifier "' . $identifier . '"', error: $e);
+
+			return null;
+		}
+	}//end storedSlug()
+
+	/**
+	 * The mapper that finds this kind of entity.
+	 *
+	 * @param string $kind `register` or `schema`.
+	 *
+	 * @return RegisterMapperInterface|SchemaMapperInterface The register or schema mapper.
+	 */
+	private function mapperFor(string $kind): RegisterMapperInterface|SchemaMapperInterface {
+		if ($kind === 'register') {
+			return $this->catalog->registers();
+		}
+
+		return $this->catalog->schemas();
+	}//end mapperFor()
 
 	/**
 	 * Say out loud that an identifier resolved to nothing.

@@ -113,10 +113,8 @@ class MacroActionValidator {
 				continue;
 			}
 
-			foreach ((array)($flow['nodes'] ?? []) as $node) {
-				if (is_array($node) === true && (string)($node['type'] ?? '') === FlowNextHint::MANUAL_TRIGGER) {
-					return null;
-				}
+			if (self::declaresManualTrigger(flow: $flow) === true) {
+				return null;
 			}
 
 			return $this->refusal(binding: $binding, why: 'has no manual trigger, so nothing in it starts when the action is invoked.');
@@ -124,6 +122,23 @@ class MacroActionValidator {
 
 		return null;
 	}//end declaredRefusalFor()
+
+	/**
+	 * Whether a declared flow has a manual trigger node.
+	 *
+	 * @param array<string, mixed> $flow The declared flow.
+	 *
+	 * @return boolean Whether invoking the action starts something in it.
+	 */
+	private static function declaresManualTrigger(array $flow): bool {
+		foreach ((array)($flow['nodes'] ?? []) as $node) {
+			if (is_array($node) === true && (string)($node['type'] ?? '') === FlowNextHint::MANUAL_TRIGGER) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end declaresManualTrigger()
 
 	/**
 	 * Whether the schema declares a flow by the name the binding gives.
