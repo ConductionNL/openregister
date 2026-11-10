@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowService;
@@ -330,7 +331,7 @@ final class FlowApplicationSlugRoundTripTest extends TestCase {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->expects($this->once())
 			->method('countFlows')
-			->with(null, 'hydra', self::ORGANISATION)
+			->with(new FlowSelection(app: null, applicationSlug: 'hydra', organisation: self::ORGANISATION))
 			->willReturn(3);
 
 		$result = $this->serviceWith($mapper, $this->organisationContainer())->count(app: null, applicationSlug: 'hydra');

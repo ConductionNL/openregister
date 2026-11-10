@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\Flow\TriggerLookup;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -278,7 +279,8 @@ class FlowLocator implements FlowLocatorInterface {
 	 */
 	private function columnCandidates(string $event, RegisterSchemaRef $table): ?array {
 		try {
-			return $this->stores->mapper->findByTrigger(trigger: $event, register: (string)$table->register, schema: (string)$table->schema);
+			$lookup = new TriggerLookup(trigger: $event, register: (string)$table->register, schema: (string)$table->schema);
+			return $this->stores->mapper->findByTrigger(lookup: $lookup);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FlowLocator] Could not list flows for trigger "' . $event . '": ' . $e->getMessage(),
