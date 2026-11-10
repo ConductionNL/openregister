@@ -68,7 +68,7 @@ class CountedRegisterImport {
 	 */
 	public function run(string $slug, array $slugs, string $version, int $fragments, string $via, callable $import): array {
 		$document = (new RegisterImportDocument(slug: $slug, slugs: $slugs))->release(version: $version, fragments: $fragments);
-		return $this->runCall(document: $document, call: new RegisterImportCall(via: $via, operation: \Closure::fromCallable($import)));
+		return $this->runCall(document: $document, call: new RegisterImportCall(via: $via, operation: $import(...)));
 	}//end run()
 
 	/**

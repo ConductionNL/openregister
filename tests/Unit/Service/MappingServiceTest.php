@@ -292,9 +292,13 @@ class MappingServiceTest extends TestCase {
 
 		$this->cache->method('get')->willReturn($cachedData);
 
+		$this->mappingMapper->expects($this->never())->method('find');
+
 		$result = $this->service->getMapping('5');
 
 		$this->assertInstanceOf(Mapping::class, $result);
+		$this->assertSame('CachedMapping', $result->getName());
+		$this->assertSame(5, $result->getId());
 	}
 
 	public function testGetMappingFromDatabase(): void {
@@ -472,7 +476,7 @@ class MappingServiceTest extends TestCase {
 
 		$result = $this->service->executeMapping($entity, $input);
 
-		$this->assertIsArray($result['items']);
+		$this->assertSame(['single-value'], $result['items']);
 	}
 
 	public function testExecuteMappingWithUrlDecodeCast(): void {
@@ -750,11 +754,11 @@ class MappingServiceTest extends TestCase {
 		$prop->setAccessible(true);
 		$prop->setValue($mapping, 5);
 
-		$this->mappingMapper->method('find')->willReturn($mapping);
+		$this->mappingMapper->expects($this->once())->method('find')->willReturn($mapping);
 
 		$result = $service->getMapping('5');
 
-		$this->assertInstanceOf(Mapping::class, $result);
+		$this->assertSame($mapping, $result);
 	}
 
 	// ── Additional edge-case tests ─────────────────────────────────────
@@ -774,7 +778,7 @@ class MappingServiceTest extends TestCase {
 		$result = $this->service->executeMapping($entity, $input);
 
 		// datetime cast should produce a formatted date string
-		$this->assertIsString($result['date']);
+		$this->assertSame('2025-01-15 10:30:00', $result['date']);
 	}
 
 	public function testExecuteMappingWithEmptyInput(): void {

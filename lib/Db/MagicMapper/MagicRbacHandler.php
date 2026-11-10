@@ -1858,10 +1858,8 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * - no conditions at all is DENY ALL and becomes `FALSE`, never `TRUE` and
 	 *   never omitted.
 	 *
-	 * @param Schema $schema The schema of the rows the subquery reads.
-	 * @param string $alias  The alias those rows carry in the subquery.
-	 * @param string $action The CRUD action being filtered.
-	 * @param string|null $tableName The bare magic table of the aliased rows; a `_status` column it lacks is left out of the draft predicate.
+	 * @param Schema      $schema The schema of the rows the subquery reads.
+	 * @param AliasedRows $rows   The alias the rows carry, the CRUD action and their bare magic table.
 	 *
 	 * @return string A predicate, always non-empty, safe to AND into a WHERE.
 	 *
@@ -1869,9 +1867,9 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function buildRbacPredicateForAlias(Schema $schema, string $alias, string $action = 'read', ?string $tableName = null): string {
-		$this->assertPredicateAlias(alias: $alias);
-		$result = $this->buildRbacConditionsSql(schema: $schema, action: $action, columnPrefix: $alias . '.', tableName: $tableName);
+	public function buildRbacPredicateForAlias(Schema $schema, AliasedRows $rows): string {
+		$this->assertPredicateAlias(alias: $rows->alias);
+		$result = $this->buildRbacConditionsSql(schema: $schema, action: $rows->action, columnPrefix: $rows->alias . '.', tableName: $rows->tableName);
 		if (($result['bypass'] ?? false) === true) {
 			return 'TRUE';
 		}

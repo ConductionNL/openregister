@@ -137,8 +137,7 @@ class OrganisationGrantManageGuardTest extends TestCase {
 		);
 		$this->auditor->expects($this->once())->method('recordSpecialRight')->with(
 			'org-1',
-			['records-service'],
-			['records-service', 'second-service']
+			$this->equalTo(new \OCA\OpenRegister\Service\Rbac\SpecialRightChange(['records-service'], ['records-service', 'second-service']))
 		);
 
 		$this->controller->update('org-1');

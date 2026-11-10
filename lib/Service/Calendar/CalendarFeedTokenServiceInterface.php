@@ -69,6 +69,19 @@ interface CalendarFeedTokenServiceInterface {
 	public function mint(string $userId, CalendarFeedToken $draft, ?int $ttlSeconds=null): array;
 
 	/**
+	 * Mint a feed token for the principal the request names, as mint() does.
+	 *
+	 * @param FeedTokenMint $mint The principal, the unsaved token and its lifetime.
+	 *
+	 * @return array<string, mixed> The token row plus its subscribable URL.
+	 *
+	 * @throws InvalidArgumentException When the scope is unusable or the caller is anonymous.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	public function mintToken(FeedTokenMint $mint): array;
+
+	/**
 	 * Note that a client read the feed, so a holder can see a dead subscription.
 	 *
 	 * A failure here never fails the read: the feed is the product, the

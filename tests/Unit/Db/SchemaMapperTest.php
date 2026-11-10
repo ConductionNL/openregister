@@ -59,10 +59,6 @@ class SchemaMapperTest extends TestCase {
 	// Construction
 	// -------------------------------------------------------------------------
 
-	public function testConstructorCreatesInstance(): void {
-		$this->assertInstanceOf(SchemaMapper::class, $this->mapper);
-	}
-
 	public function testGetTableNameReturnsCorrectValue(): void {
 		$this->assertStringContainsString('openregister_schemas', $this->mapper->getTableName());
 	}
