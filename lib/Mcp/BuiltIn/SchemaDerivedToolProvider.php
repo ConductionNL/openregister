@@ -24,7 +24,7 @@
  * session — no impersonation, no system account, RBAC/IDOR unchanged from
  * the REST path (REQ-DERIVED-005). Every invocation — read, write, or
  * failed — writes exactly one immutable, hash-chained audit record via
- * `AuditTrailMapper::createToolInvocationEntry()` (REQ-DERIVED-006).
+ * `AuditTrailMapper::recordToolInvocation()` (REQ-DERIVED-006).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -371,12 +371,14 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		return $this->audit()->run(
 			target: new ToolAuditTarget(toolId: $toolId, register: $register?->getId(), schema: $schema->getId()),
-			arguments: $arguments,
-			call: fn (): array => $this->runVerb(
-				verb: $verb,
-				call: new DerivedToolCall(schema: $schema, register: $register, arguments: $arguments)
-			),
-			summarise: fn (array $result): array => $this->resultSummary(verb: $verb, result: $result)
+			invocation: new AuditedInvocation(
+				arguments: $arguments,
+				call: fn (): array => $this->runVerb(
+					verb: $verb,
+					call: new DerivedToolCall(schema: $schema, register: $register, arguments: $arguments)
+				),
+				summarise: fn (array $result): array => $this->resultSummary(verb: $verb, result: $result)
+			)
 		);
 	}//end invokeTool()
 

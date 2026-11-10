@@ -43,12 +43,17 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CaseControllerServices;
 use OCA\OpenRegister\Controller\Support\CasePlanRequest;
 use OCA\OpenRegister\Controller\Support\CaseTransitionCommand;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Exception\CaseValidationException;
+use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
 use OCA\OpenRegister\Service\Case\CaseAnchor;
+use OCA\OpenRegister\Service\Case\CaseCompletion;
+use OCA\OpenRegister\Service\Case\CaseItemTransition;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationServiceInterface;
+use OCA\OpenRegister\Service\Case\CasePlanCreation;
 use OCA\OpenRegister\Service\Case\CasePlanProvenance;
 use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
 use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
@@ -140,7 +145,9 @@ class CaseController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function items(?string $type = null, ?string $state = null, int $limit = 25, int $offset = 0): JSONResponse {
-		return $this->guard(action: fn (): array => $this->plans->findStuck(type: $type, state: $state, limit: $limit, offset: $offset, uid: $this->uid()));
+		$query = new ListQuery(limit: $limit, offset: $offset, filters: ['type' => $type, 'state' => $state]);
+
+		return $this->guard(action: fn (): array => $this->plans->findStuck(query: $query, uid: $this->uid()));
 	}//end items()
 
 	/**
@@ -224,13 +231,7 @@ class CaseController extends Controller {
 	private function createPlan(CasePlanRequest $request): JSONResponse {
 		return $this->guard(
 			action: fn (): array => $this->plans->createPlan(
-				objectUuid: $request->anchor->objectUuid,
-				registerId: $request->anchor->registerId,
-				schemaId: $request->anchor->schemaId,
-				definition: $request->definition,
-				uid: $this->uid(),
-				flowUuid: $request->provenance->flowUuid,
-				flowVersion: $request->provenance->flowVersion
+				creation: new CasePlanCreation(anchor: $request->anchor, definition: $request->definition, actor: $this->uid(), provenance: $request->provenance)
 			),
 			status: Http::STATUS_CREATED
 		);
@@ -338,8 +339,10 @@ class CaseController extends Controller {
 			$data['authorization'] = $body['authorization'];
 		}
 
+		$request = new CaseAdHocRequest(objectUuid: $objectUuid, data: $data, actor: $this->uid());
+
 		return $this->guard(
-			action: fn (): array => $this->plans->attachAdHoc(objectUuid: $objectUuid, data: $data, uid: $this->uid())->jsonSerialize(),
+			action: fn (): array => $this->plans->attachAdHoc(request: $request)->jsonSerialize(),
 			status: Http::STATUS_CREATED
 		);
 	}//end attachItem()
@@ -363,7 +366,7 @@ class CaseController extends Controller {
 					throw new CaseValidationException(message: 'A `result` is required to finish a case.');
 				}
 
-				return $this->plans->completeCase(objectUuid: $objectUuid, result: $result, uid: $this->uid());
+				return $this->plans->completeCase(completion: new CaseCompletion(objectUuid: $objectUuid, result: $result, actor: $this->uid()));
 			}
 		);
 	}//end complete()
@@ -419,7 +422,9 @@ class CaseController extends Controller {
 			throw new CaseValidationException(message: 'A target state `to` is required.');
 		}
 
-		return $this->plans->transition(itemUuid: $command->itemUuid, to: $to, uid: $this->uid(), reason: $command->reason)->jsonSerialize();
+		$transition = new CaseItemTransition(itemUuid: $command->itemUuid, to: $to, actor: $this->uid(), reason: $command->reason);
+
+		return $this->plans->transition(transition: $transition)->jsonSerialize();
 	}//end transitioned()
 
 	/**
