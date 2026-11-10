@@ -149,3 +149,4 @@
 2026-11-10T14:29:20Z dev=97732f5fa7 prs=8934,8936,8937,8938,8940,8941,8942 Tests: 54836, Assertions: 181541, Errors: 7, Failures: 15, Warnings: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17. front=skip
 2026-11-10T14:33:50Z dev=97732f5fa7 prs=8934,8936,8937,8938 Tests: 54836, Assertions: 181538, Errors: 7, Failures: 15, Warnings: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17. front=skip
 2026-11-10T14:37:16Z dev=97732f5fa7 prs=9404 Tests: 54834, Assertions: 181553, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17. front=red
+2026-11-10T14:38:33Z dev=97732f5fa7 prs=8934,8936 Tests: 54836, Assertions: 181535, Errors: 7, Failures: 15, Warnings: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17. front=skip
