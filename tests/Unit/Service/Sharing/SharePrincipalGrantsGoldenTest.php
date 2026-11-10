@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Sharing;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
+use OCA\OpenRegister\Service\Sharing\ShareGrantee;
+use OCA\OpenRegister\Service\Sharing\ShareListCheck;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use PHPUnit\Framework\TestCase;
 
@@ -90,6 +92,6 @@ class SharePrincipalGrantsGoldenTest extends TestCase {
 	 * @dataProvider cases
 	 */
 	public function testGrants(mixed $sharedWith, string $userId, array $groups, array $permissions, bool $expected): void {
-		$this->assertSame($expected, (new SharePrincipalDeriver())->grants($sharedWith, $userId, $groups, $permissions));
+		$this->assertSame($expected, (new SharePrincipalDeriver())->grants(new ShareGrantee($userId, $groups), new ShareListCheck($sharedWith, $permissions)));
 	}//end testGrants()
 }//end class
