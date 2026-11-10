@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
+use OCA\OpenRegister\Files\Service\File\WordReplacementRequest;
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
@@ -100,11 +101,11 @@ class DocumentProcessingHandlerTest extends TestCase {
 		$textFile->method('getContent')->willReturn('Aanvraag van Jan Jansen.');
 		$textFile->method('getParent')->willReturn($folder);
 
-		$handler->replaceWords(
+		$handler->replaceWords(new WordReplacementRequest(
 			node: $textFile,
 			replacements: ['Jan Jansen' => '[PERSON: 1]'],
 			outputName: 'note_replaced.txt'
-		);
+		));
 
 		self::assertNull($handler->getLastStructurePreservation());
 	}//end testNonPdfHasNoStructureBlock()

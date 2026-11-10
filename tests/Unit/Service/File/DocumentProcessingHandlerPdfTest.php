@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Files\Service\File\WordReplacementRequest;
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
@@ -81,10 +82,10 @@ class DocumentProcessingHandlerPdfTest extends TestCase {
 	 */
 	public function testUnparsablePdfFailsAtTextLayerProbe(): void {
 		try {
-			$this->makeHandler()->replaceWords(
+			$this->makeHandler()->replaceWords(new WordReplacementRequest(
 				node: $this->makePdfNode(content: 'this is definitely not a pdf file'),
 				replacements: ['SAPP' => '[ORG: 1]']
-			);
+			));
 			$this->fail('Expected a PdfAnonymisationException');
 		} catch (PdfAnonymisationException $e) {
 			$this->assertSame(PdfAnonymisationException::REASON_INTERNAL_ERROR, $e->getReason());
@@ -164,7 +165,7 @@ class DocumentProcessingHandlerPdfTest extends TestCase {
 		$node = $this->makePdfNode(content: self::buildPdf(bodyText: 'Dossier of Jan Jansen', author: 'Piet Author'));
 		$node->method('getParent')->willReturn($folder);
 
-		$this->makeHandler()->replaceWords(node: $node, replacements: ['Jan Jansen' => '[PERSON: 1]']);
+		$this->makeHandler()->replaceWords(new WordReplacementRequest(node: $node, replacements: ['Jan Jansen' => '[PERSON: 1]']));
 
 		$this->assertIsString($written);
 		$this->assertStringStartsWith('%PDF-', $written);
@@ -183,10 +184,10 @@ class DocumentProcessingHandlerPdfTest extends TestCase {
 	 */
 	public function testEncryptedTrailerIsRejected(): void {
 		try {
-			$this->makeHandler()->replaceWords(
+			$this->makeHandler()->replaceWords(new WordReplacementRequest(
 				node: $this->makePdfNode(content: "%PDF-1.4\ntrailer\n<< /Size 7 /Encrypt 7 0 R >>\n%%EOF\n"),
 				replacements: ['Jan' => '[PERSON: 1]']
-			);
+			));
 			$this->fail('Expected a PdfAnonymisationException');
 		} catch (PdfAnonymisationException $e) {
 			$this->assertSame(PdfAnonymisationException::REASON_ENCRYPTED_PDF, $e->getReason());
@@ -202,10 +203,10 @@ class DocumentProcessingHandlerPdfTest extends TestCase {
 	 */
 	public function testBlankTextLayerDefersToOcr(): void {
 		try {
-			$this->makeHandler()->replaceWords(
+			$this->makeHandler()->replaceWords(new WordReplacementRequest(
 				node: $this->makePdfNode(content: self::buildPdfWithOps(ops: "BT\n/F1 12 Tf\n72 720 Td\n( ) Tj\nET\n", author: 'x')),
 				replacements: ['Jan' => '[PERSON: 1]']
-			);
+			));
 			$this->fail('Expected a PdfAnonymisationException');
 		} catch (PdfAnonymisationException $e) {
 			$this->assertSame(PdfAnonymisationException::REASON_TEXT_LAYER_MISSING, $e->getReason());
@@ -253,7 +254,7 @@ class DocumentProcessingHandlerPdfTest extends TestCase {
 		$node->method('getParent')->willReturn($folder);
 
 		$handler = $this->makeHandler();
-		$result = $handler->replaceWords(node: $node, replacements: ['Jan Jansen' => $placeholder], outputName: 'out.pdf');
+		$result = $handler->replaceWords(new WordReplacementRequest(node: $node, replacements: ['Jan Jansen' => $placeholder], outputName: 'out.pdf'));
 
 		$this->assertSame($written, $result);
 		$this->assertSame($expected, $handler->getLastResidualEntities());
@@ -277,7 +278,7 @@ class DocumentProcessingHandlerPdfTest extends TestCase {
 		$node->method('getParent')->willReturn($folder);
 
 		$handler = $this->makeHandler();
-		$handler->replaceWords(node: $node, replacements: ['Jan Jansen' => '[PERSON: 3]'], strict: true);
+		$handler->replaceWords(new WordReplacementRequest(node: $node, replacements: ['Jan Jansen' => '[PERSON: 3]'], strict: true));
 
 		$this->assertSame([['text' => 'Jan Jansen', 'type' => 'PERSON', 'id' => '3']], $handler->getLastResidualEntities());
 	}//end testStrictRunWithResidualStillWrites()

@@ -65,7 +65,10 @@ use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\ShareLinkRequest;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
+use OCA\OpenRegister\Files\Service\File\DocumentAnonymisationOptions;
+use OCA\OpenRegister\Files\Service\File\DocumentAnonymisationRequest;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\WordReplacementRequest;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileOverwrite;
 use OCA\OpenRegister\Service\File\FileContentHandlers;
@@ -1839,9 +1842,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 */
 	public function replaceWords(Node $node, array $replacements, ?string $outputName = null): File {
 		return $this->documentProcessingHandler->replaceWords(
-			node: $node,
-			replacements: $replacements,
-			outputName: $outputName
+			request: new WordReplacementRequest(node: $node, replacements: $replacements, outputName: $outputName)
 		);
 	}//end replaceWords()
 
@@ -1864,13 +1865,14 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	 *
 	 * @return Node The anonymized file node.
 	 *
-	 * @spec exclude One-line delegation to DocumentProcessingHandler::anonymizeDocument; no facade-owned logic.
+	 * @spec exclude Delegation to DocumentProcessingHandler::anonymize; no facade-owned logic.
 	 */
 	public function anonymizeDocument(
 		Node $node, array $entities, string $scope = 'document', ?string $fileKey = null, ?bool $preserveStructure = null
 	): Node {
-		return $this->documentProcessingHandler->anonymizeDocument(
-			node: $node, entities: $entities, scope: $scope, fileKey: $fileKey, preserveStructure: $preserveStructure
+		$options = new DocumentAnonymisationOptions(scope: $scope, fileKey: $fileKey, preserveStructure: $preserveStructure);
+		return $this->documentProcessingHandler->anonymize(
+			request: new DocumentAnonymisationRequest(node: $node, entities: $entities, options: $options)
 		);
 	}//end anonymizeDocument()
 

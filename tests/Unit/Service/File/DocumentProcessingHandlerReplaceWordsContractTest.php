@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
+use OCA\OpenRegister\Files\Service\File\WordReplacementRequest;
 use Exception;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
@@ -103,7 +104,7 @@ class DocumentProcessingHandlerReplaceWordsContractTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Node must be a file');
 
-		$this->makeHandler()->replaceWords(node: $this->createMock(Folder::class), replacements: ['a' => 'b']);
+		$this->makeHandler()->replaceWords(new WordReplacementRequest(node: $this->createMock(Folder::class), replacements: ['a' => 'b']));
 	}//end testFolderIsRefused()
 
 	/**
@@ -113,10 +114,10 @@ class DocumentProcessingHandlerReplaceWordsContractTest extends TestCase {
 	 */
 	public function testDefaultOutputNameKeepsExtension(): void {
 		$written = [];
-		$this->makeHandler()->replaceWords(
+		$this->makeHandler()->replaceWords(new WordReplacementRequest(
 			node: $this->textFile('note.txt', $written),
 			replacements: ['jan jansen' => '[PERSON: 1]']
-		);
+		));
 
 		self::assertSame('note_replaced.txt', $written['path']);
 		self::assertSame('Aanvraag van [PERSON: 1].', $written['content']);
@@ -129,7 +130,7 @@ class DocumentProcessingHandlerReplaceWordsContractTest extends TestCase {
 	 */
 	public function testDefaultOutputNameWithoutExtension(): void {
 		$written = [];
-		$this->makeHandler()->replaceWords(node: $this->textFile('README', $written), replacements: []);
+		$this->makeHandler()->replaceWords(new WordReplacementRequest(node: $this->textFile('README', $written), replacements: []));
 
 		self::assertSame('README_replaced', $written['path']);
 	}//end testDefaultOutputNameWithoutExtension()
@@ -141,11 +142,11 @@ class DocumentProcessingHandlerReplaceWordsContractTest extends TestCase {
 	 */
 	public function testExplicitOutputNameIsUsed(): void {
 		$written = [];
-		$this->makeHandler()->replaceWords(
+		$this->makeHandler()->replaceWords(new WordReplacementRequest(
 			node: $this->textFile('note.txt', $written),
 			replacements: [],
 			outputName: 'custom.txt'
-		);
+		));
 
 		self::assertSame('custom.txt', $written['path']);
 	}//end testExplicitOutputNameIsUsed()

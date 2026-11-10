@@ -2,7 +2,7 @@
 
 /**
  * Characterisation test for the per-run anonymisation log row that
- * DocumentProcessingHandler::anonymizeDocument() persists.
+ * DocumentProcessingHandler::anonymize() persists.
  *
  * Pins the row's file id, MIME type, engine, status, replacement count and
  * sanitisation column, the id-0 fallback, and the PII-free warning when the
@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Files\Service\File\DocumentAnonymisationRequest;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Db\AnonymisationLog;
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
@@ -171,12 +172,12 @@ class DocumentProcessingHandlerAnonymisationLogTest extends TestCase {
 		$node->method('getContent')->willReturn('Jan Jansen woont in Amsterdam.');
 		$node->method('getParent')->willReturn($parent);
 
-		$handler->anonymizeDocument(
+		$handler->anonymize(new DocumentAnonymisationRequest(
 			node: $node,
 			entities: [
 				['text' => 'Jan Jansen', 'entityType' => 'PERSON', 'key' => 'p1'],
 				['text' => 'Amsterdam', 'entityType' => 'LOCATION', 'key' => 'l1'],
 			]
-		);
+		));
 	}//end anonymise()
 }//end class

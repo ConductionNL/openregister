@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden master for DocumentProcessingHandler::anonymizeDocument() on a
+ * Golden master for DocumentProcessingHandler::anonymize() on a
  * plain-text document.
  *
  * Every case anonymises one text file and records the content written, the
@@ -32,6 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Files\Service\File\DocumentAnonymisationRequest;
+use OCA\OpenRegister\Files\Service\File\DocumentAnonymisationOptions;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform;
@@ -242,11 +244,12 @@ class DocumentProcessingHandlerAnonymizeGoldenTest extends TestCase {
 		$node->method('getContent')->willReturn(self::TEXT);
 		$node->method('getParent')->willReturn($parent);
 
-		$handler->anonymizeDocument(
-			node: $node,
-			entities: $scenario['entities'],
-			scope: ($scenario['scope'] ?? 'document'),
-			fileKey: ($scenario['fileKey'] ?? null)
+		$handler->anonymize(
+			request: new DocumentAnonymisationRequest(
+				node: $node,
+				entities: $scenario['entities'],
+				options: new DocumentAnonymisationOptions(scope: ($scenario['scope'] ?? 'document'), fileKey: ($scenario['fileKey'] ?? null))
+			)
 		);
 
 		return [

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
+use OCA\OpenRegister\Files\Service\File\WordReplacementRequest;
 use DOMDocument;
 use DOMXPath;
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
@@ -103,7 +104,7 @@ class DocumentProcessingHandlerDocxTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class)
 		);
 
-		$handler->replaceWords(node: $node, replacements: $replacements);
+		$handler->replaceWords(new WordReplacementRequest(node: $node, replacements: $replacements));
 	}//end replace()
 
 	/**
