@@ -83,6 +83,29 @@ interface ArchiveHandlerInterface {
 	): array;
 
 	/**
+	 * Freeze an object.
+	 *
+	 * Kept for the apps that call it by class name; freezeWith takes the request.
+	 *
+	 * @param string      $identifier Object id, uuid, slug or uri.
+	 * @param string|null $reason     Why it is being frozen.
+	 * @param string|null $state      The lifecycle state declaring the freeze, when one does.
+	 * @param string|null $register   The register the url names.
+	 * @param string|null $schema     The schema the url names.
+	 *
+	 * @return array{uuid: string|null, frozen: array|null} The stored marker.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function freeze(
+		string $identifier,
+		?string $reason = null,
+		?string $state = null,
+		?string $register = null,
+		?string $schema = null,
+	): array;
+
+	/**
 	 * Freeze the object a request names.
 	 *
 	 * @param ObjectStateRequest $request The object (id, uuid, slug or uri), the register and schema
@@ -98,7 +121,7 @@ interface ArchiveHandlerInterface {
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function freeze(ObjectStateRequest $request, ?string $state = null): array;
+	public function freezeWith(ObjectStateRequest $request, ?string $state = null): array;
 
 	/**
 	 * Unfreeze an object.

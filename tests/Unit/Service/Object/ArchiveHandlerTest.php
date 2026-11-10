@@ -340,7 +340,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->resolvesTo(object: $object);
 		$this->persistsVerbatim();
 
-		$result = $this->handler()->freeze(request: new ObjectStateRequest(identifier: self::OBJ, reason: 'bezwaar', register: null, schema: null), state: 'in_bezwaar');
+		$result = $this->handler()->freezeWith(request: new ObjectStateRequest(identifier: self::OBJ, reason: 'bezwaar', register: null, schema: null), state: 'in_bezwaar');
 
 		$this->assertSame('anna', $result['frozen']['by']);
 		$this->assertSame('in_bezwaar', $result['frozen']['state']);
@@ -436,4 +436,32 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->assertNull($result['frozen']);
 		$this->assertFalse($object->isFrozen());
 	}//end testUnfreezeClearsTheMarker()
+
+	/**
+	 * Other apps call freeze by class name with the identifier, reason, state,
+	 * register and schema, positionally and by name.
+	 *
+	 * @return void
+	 */
+	public function testTheIdentifierFreezeAnswersPositionallyAndByName(): void {
+		$object = $this->object();
+		$this->resolvesTo(object: $object);
+		$this->persistsVerbatim();
+		$handler = $this->handler();
+
+		$frozen = $handler->freeze(self::OBJ, 'Woo-levering', 'geleverd', 'zaken', 'zaak')['frozen'];
+		$this->assertSame(['Woo-levering', 'geleverd'], [$frozen['reason'], $frozen['state']]);
+
+		$object->unfreeze();
+		$frozen = $handler->freeze(identifier: self::OBJ, reason: 'bezwaar', state: 'in_bezwaar', register: '1', schema: '2')['frozen'];
+		$this->assertSame(['bezwaar', 'in_bezwaar'], [$frozen['reason'], $frozen['state']]);
+
+		$object->unfreeze();
+		$this->expectException(DoesNotExistException::class);
+		try {
+			$handler->freeze(self::OBJ, null, null, '99', null);
+		} finally {
+			$this->assertFalse($object->isFrozen());
+		}
+	}//end testTheIdentifierFreezeAnswersPositionallyAndByName()
 }//end class

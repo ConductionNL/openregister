@@ -134,7 +134,7 @@ final class ObjectStateControllerTest extends TestCase {
 	 */
 	public function testFreezeAndUnfreezeAnswerTheFreezeMarker(): void {
 		$this->request->method('getParam')->willReturn('bezwaar');
-		$this->handler->method('freeze')->willReturn(
+		$this->handler->method('freezeWith')->willReturn(
 			['uuid' => self::OBJ, 'frozen' => ['by' => 'anna', 'at' => 'now', 'state' => null]]
 		);
 		$this->handler->method('unfreeze')->willReturn(['uuid' => self::OBJ, 'frozen' => null]);

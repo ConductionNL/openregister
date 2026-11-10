@@ -156,7 +156,7 @@ class ObjectStateController extends Controller {
 	 * @return Closure(?string): array<string, mixed> The verb, given the reason.
 	 */
 	private function freezing(ObjectRef $ref): Closure {
-		return fn (?string $reason): array => $this->archiveHandler->freeze(
+		return fn (?string $reason): array => $this->archiveHandler->freezeWith(
 			request: new ObjectStateRequest(identifier: $ref->id, reason: $reason, register: (string)$ref->register, schema: (string)$ref->schema),
 			state: $this->textFromRequest(key: 'state')
 		);

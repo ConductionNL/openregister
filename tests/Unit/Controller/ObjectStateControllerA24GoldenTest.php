@@ -45,11 +45,11 @@ use PHPUnit\Framework\TestCase;
 final class ObjectStateControllerA24GoldenTest extends TestCase {
 
 	/**
-	 * The four verbs.
+	 * The four controller verbs and the handler method each one calls.
 	 *
-	 * @var array<int, string>
+	 * @var array<string, string>
 	 */
-	private const VERBS = ['archive', 'unarchive', 'freeze', 'unfreeze'];
+	private const VERBS = ['archive' => 'archive', 'unarchive' => 'unarchive', 'freeze' => 'freezeWith', 'unfreeze' => 'unfreeze'];
 
 	/**
 	 * The handler double.
@@ -87,9 +87,9 @@ final class ObjectStateControllerA24GoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAnonymousCallerIsRefusedByEveryVerb(): void {
-		foreach (self::VERBS as $verb) {
+		foreach (self::VERBS as $verb => $method) {
 			$controller = $this->controller(signedIn: false);
-			$this->handler->expects($this->never())->method($verb);
+			$this->handler->expects($this->never())->method($method);
 			$response = $controller->$verb('1', '2', 'o');
 			$this->assertSame([401, ['error' => 'Not authenticated']], [$response->getStatus(), $response->getData()]);
 		}
@@ -108,10 +108,10 @@ final class ObjectStateControllerA24GoldenTest extends TestCase {
 			[new \RuntimeException('secret detail'), 500, ['error' => 'Internal server error']],
 			[new \Error('engine'), 500, ['error' => 'Internal server error']],
 		];
-		foreach (self::VERBS as $verb) {
+		foreach (self::VERBS as $verb => $method) {
 			foreach ($cases as [$exception, $status, $body]) {
 				$controller = $this->controller(signedIn: true);
-				$this->handler->method($verb)->willThrowException($exception);
+				$this->handler->method($method)->willThrowException($exception);
 				$response = $controller->$verb('1', '2', 'o');
 				$this->assertSame([$status, $body], [$response->getStatus(), $response->getData()], $verb);
 			}
@@ -134,7 +134,7 @@ final class ObjectStateControllerA24GoldenTest extends TestCase {
 		$this->assertSame(['archived' => false], $controller->unarchive('1', '2', 'o')->getData());
 
 		$controller = $this->controller(signedIn: true, params: $params);
-		$this->handler->expects($this->once())->method('freeze')->with(new ObjectStateRequest('o', 'done', '1', '2'), 'woo')->willReturn(['frozen' => true]);
+		$this->handler->expects($this->once())->method('freezeWith')->with(new ObjectStateRequest('o', 'done', '1', '2'), 'woo')->willReturn(['frozen' => true]);
 		$this->assertSame(['frozen' => true], $controller->freeze('1', '2', 'o')->getData());
 
 		$controller = $this->controller(signedIn: true, params: ['reason' => '  ']);

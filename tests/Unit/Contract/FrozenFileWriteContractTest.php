@@ -69,7 +69,7 @@ class FrozenFileWriteContractTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$handler = $this->createMock(ArchiveHandler::class);
-		$handler->expects($this->once())->method('freeze')
+		$handler->expects($this->once())->method('freezeWith')
 			->with(new ObjectStateRequest('obj-1', 'Woo-levering', 'woo', 'wooDeliveredSet'), 'geleverd')
 			->willReturn(['uuid' => 'obj-1', 'frozen' => ['state' => 'geleverd']]);
 

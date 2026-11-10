@@ -135,13 +135,13 @@ final class ArchiveHandlerTransitionGoldenTest extends TestCase {
 
 	public function testFreezeThenUnfreeze(): void {
 		$handler = $this->handler();
-		$frozen = $handler->freeze(new ObjectStateRequest(self::OBJ, 'hold', 'zaken', 'zaak'), 'besluit');
+		$frozen = $handler->freezeWith(new ObjectStateRequest(self::OBJ, 'hold', 'zaken', 'zaak'), 'besluit');
 		$this->assertSame(self::OBJ, $frozen['uuid']);
 		$this->assertSame($this->object->getFrozen(), $frozen['frozen']);
 		$this->assertSame(['find:' . json_encode([self::OBJ, false, true, true]), 'check:update:anna:owner-uid:[true,true]', 'update:' . json_encode([1, 2, true]), 'audit:freeze', 'info:[ArchiveHandler] freeze:null'], $this->events);
 
 		$this->events = [];
-		$this->assertSame($frozen, $handler->freeze(new ObjectStateRequest(self::OBJ, null, null, null)));
+		$this->assertSame($frozen, $handler->freezeWith(new ObjectStateRequest(self::OBJ, null, null, null)));
 		$this->assertSame(['find:' . json_encode([self::OBJ, false, true, true]), 'check:update:anna:owner-uid:[true,true]'], $this->events);
 
 		$this->events = [];
@@ -158,7 +158,7 @@ final class ArchiveHandlerTransitionGoldenTest extends TestCase {
 		foreach ([['other', null, 'register "other"'], [null, 'other', 'schema "other"']] as [$register, $schema, $where]) {
 			$this->events = [];
 			try {
-				$handler->freeze(new ObjectStateRequest(self::OBJ, null, $register, $schema));
+				$handler->freezeWith(new ObjectStateRequest(self::OBJ, null, $register, $schema));
 				$this->fail('expected not found');
 			} catch (DoesNotExistException $e) {
 				$this->assertSame('Object "' . self::OBJ . '" is not in ' . $where . '.', $e->getMessage());
