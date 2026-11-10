@@ -52,6 +52,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * Locks the boolean grammar of `_search` on both search paths.
@@ -346,7 +348,7 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $this->makeQueryBuilder(), $nested, $schema);
+		$method->invoke($this->handler, new TableFilterRun(qb: $this->makeQueryBuilder(), query: [], table: new MagicReadTable(schema: $schema)), $nested);
 
 		$this->assertContains(
 			'isNull(t.result_type)',

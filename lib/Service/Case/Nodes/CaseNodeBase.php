@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -53,17 +54,31 @@ use RuntimeException;
 abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	protected readonly IL10N $l10n;
+
+	/**
+	 * For the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	protected readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param CaseStepRunner $steps The case layer's verbs, the run-as scope and the interactive user.
-	 * @param IL10N          $l10n  Translations.
-	 * @param IURLGenerator  $urls  For the palette icon.
+	 * @param CaseStepRunner       $steps        The case layer's verbs, the run-as scope and the interactive user.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 */
 	public function __construct(
 		protected readonly CaseStepRunner $steps,
-		protected readonly IL10N $l10n,
-		protected readonly IURLGenerator $urls,
+		FlowNodePresentation $presentation,
 	) {
+		$this->l10n = $presentation->l10n;
+		$this->urls = $presentation->urls;
 	}//end __construct()
 
 	/**

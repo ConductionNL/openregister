@@ -126,11 +126,10 @@ class CodedFilterExpanderGoldenTest extends TestCase {
 			}
 		);
 
+		$lifecycle = new ConceptLifecycle();
 		$expander = new CodedFilterExpander(
-			concepts: $concepts,
-			hierarchy: new ConceptHierarchy(lifecycle: new ConceptLifecycle()),
-			schemas: $schemas,
-			declarationFactory: new CodedPropertyDeclarationFactory()
+			scheme: new \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess(concepts: $concepts, hierarchy: new ConceptHierarchy(lifecycle: $lifecycle), lifecycle: $lifecycle),
+			tables: new \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables(schemas: $schemas, declarations: new CodedPropertyDeclarationFactory(), objects: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))
 		);
 
 		try {

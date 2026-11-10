@@ -23,6 +23,7 @@
 
 namespace OCA\OpenRegister\Mcp\Tool;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -194,59 +195,48 @@ class ObjectsTool extends AbstractTool {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function searchObjects(
-		int $limit = 20,
-		int $offset = 0,
-		?string $register = null,
-		?string $schema = null,
-		?string $query = null,
-	): array {
-		return $this->findPage(
-			filters: $this->searchFilters(scope: ['register' => $register, 'schema' => $schema], query: $query),
-			page: ['limit' => $limit, 'offset' => $offset]
-		);
+	public function searchObjects(int $limit = 20, int $offset = 0, ?string $register = null, ?string $schema = null, ?string $query = null): array {
+		return $this->findPage(query: new ListQuery(limit: $limit, offset: $offset, filters: ['register' => $register, 'schema' => $schema], search: $query));
 	}//end searchObjects()
 
 	/**
-	 * The search filters: the given register and schema, and a non-empty query.
+	 * The search filters: the query's non-null filters, and its search when it is not empty.
 	 *
-	 * @param array<string, string|null> $scope The register and schema; null leaves one out.
-	 * @param string|null                $query Search query
+	 * @param ListQuery $query The page, the register and schema filters, and the search.
 	 *
 	 * @return array<string, string> The filters.
 	 */
-	private function searchFilters(array $scope, ?string $query): array {
+	private function searchFilters(ListQuery $query): array {
 		$filters = [];
-		foreach ($scope as $key => $value) {
+		foreach ($query->filters as $key => $value) {
 			if ($value !== null) {
 				$filters[$key] = $value;
 			}
 		}
 
-		if ($query !== null && $query !== '') {
-			$filters['_search'] = $query;
+		if ($query->search !== null && $query->search !== '') {
+			$filters['_search'] = $query->search;
 		}
 
 		return $filters;
 	}//end searchFilters()
 
 	/**
-	 * Find one page of objects matching the filters, with the view filters applied.
+	 * Find one page of objects matching the query, with the view filters applied.
 	 *
-	 * @param array<string, string> $filters The filters.
-	 * @param array<string, int>    $page    The `limit` and `offset`.
+	 * @param ListQuery $query The page, the register and schema filters, and the search.
 	 *
 	 * @return (mixed|string|true)[] Result with list of objects
 	 *
 	 * @psalm-return array{success: true, message: string, data: mixed}
 	 */
-	private function findPage(array $filters, array $page): array {
-		$filters = $this->applyViewFilters(params: $filters);
+	private function findPage(ListQuery $query): array {
+		$filters = $this->applyViewFilters(params: $this->searchFilters(query: $query));
 
 		$result = $this->objectService->findAll(
 			config: [
-				'limit' => $page['limit'],
-				'offset' => $page['offset'],
+				'limit' => $query->limit,
+				'offset' => $query->offset,
 				'filters' => $filters,
 			]
 		);

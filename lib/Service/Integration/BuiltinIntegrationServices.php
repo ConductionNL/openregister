@@ -171,23 +171,28 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-activity/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class => [
-			'db'         => \OCP\IDBConnection::class,
-			'appManager' => \OCP\App\IAppManager::class,
-			'l10n'       => \OCP\IL10N::class,
-			'logger'     => \Psr\Log\LoggerInterface::class,
-		],
-		// @spec openspec/specs/integration-forms/spec.md
-		\OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class => [
-			'platform'       => [
-				\OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform::class,
+			'leaf' => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
 				[
 					'db'         => \OCP\IDBConnection::class,
 					'appManager' => \OCP\App\IAppManager::class,
 					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
+				],
+			],
+		],
+		// @spec openspec/specs/integration-forms/spec.md
+		\OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class => [
+			'leaf'           => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
+				[
+					'db'         => \OCP\IDBConnection::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
 				],
 			],
 			'formLinkMapper' => \OCA\OpenRegister\Db\FormLinkMapperInterface::class,
-			'logger'         => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-shares/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\SharesProvider::class => [
@@ -253,14 +258,18 @@ final class BuiltinIntegrationServices {
 				],
 			],
 			'pollLinkMapper' => \OCA\OpenRegister\Db\PollLinkMapperInterface::class,
-			'userSession'    => \OCP\IUserSession::class,
 		],
 		// @spec openspec/specs/integration-flow/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class => [
+			'platform'       => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform::class,
+				[
+					'db'         => \OCP\IDBConnection::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
 			'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapperInterface::class,
-			'db'             => \OCP\IDBConnection::class,
-			'appManager'     => \OCP\App\IAppManager::class,
-			'l10n'           => \OCP\IL10N::class,
 		],
 		// @spec openspec/specs/integration-activity/spec.md
 		\OCA\OpenRegister\Service\ActivityFilterService::class => [
@@ -284,16 +293,16 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-maps/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class => [
-			'platform'      => [
-				\OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform::class,
+			'leaf'          => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
 				[
 					'db'         => \OCP\IDBConnection::class,
 					'appManager' => \OCP\App\IAppManager::class,
 					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
 				],
 			],
 			'mapLinkMapper' => \OCA\OpenRegister\Db\MapLinkMapperInterface::class,
-			'logger'        => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-maps/spec.md
 		\OCA\OpenRegister\Service\MapLinkService::class => [
@@ -304,16 +313,16 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-photos/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class => [
-			'platform'        => [
-				\OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform::class,
+			'leaf'            => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
 				[
 					'db'         => \OCP\IDBConnection::class,
 					'appManager' => \OCP\App\IAppManager::class,
 					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
 				],
 			],
 			'photoLinkMapper' => \OCA\OpenRegister\Db\PhotoLinkMapperInterface::class,
-			'logger'          => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-photos/spec.md
 		\OCA\OpenRegister\Service\PhotoLinkService::class => [
@@ -324,29 +333,29 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-collectives/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class => [
-			'platform'             => [
-				\OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform::class,
+			'leaf'                 => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
 				[
 					'db'         => \OCP\IDBConnection::class,
 					'appManager' => \OCP\App\IAppManager::class,
 					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
 				],
 			],
 			'collectiveLinkMapper' => \OCA\OpenRegister\Db\CollectiveLinkMapperInterface::class,
-			'logger'               => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-analytics/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class => [
-			'platform'            => [
-				\OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform::class,
+			'leaf'                => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
 				[
 					'db'         => \OCP\IDBConnection::class,
 					'appManager' => \OCP\App\IAppManager::class,
 					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
 				],
 			],
 			'analyticsLinkMapper' => \OCA\OpenRegister\Db\AnalyticsLinkMapperInterface::class,
-			'logger'              => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-cospend/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class => [
@@ -382,17 +391,17 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-time-tracker/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class => [
-			'platform'   => [
-				\OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform::class,
+			'leaf'       => [
+				\OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning::class,
 				[
 					'db'         => \OCP\IDBConnection::class,
 					'appManager' => \OCP\App\IAppManager::class,
 					'l10n'       => \OCP\IL10N::class,
+					'logger'     => \Psr\Log\LoggerInterface::class,
 				],
 			],
 			'linkMapper' => \OCA\OpenRegister\Db\TimeTrackerLinkMapperInterface::class,
 			'config'     => \OCP\IConfig::class,
-			'logger'     => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-time-tracker/spec.md
 		\OCA\OpenRegister\Service\TimeTrackerLinkService::class => [

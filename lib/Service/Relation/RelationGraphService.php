@@ -377,7 +377,10 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		$other = self::otherEnd(edge: $edge);
 
 		if ($this->shapes->isExternal(edge: $edge) === true) {
-			$walk->nodes[$other] = $this->shapes->externalNode(edge: $edge, uuid: $other, distance: ($walk->level + 1));
+			$walk->nodes[$other] = $this->shapes->externalNode(
+				edge: $edge,
+				node: $this->shapes->unresolvedNode(uuid: $other, distance: ($walk->level + 1))
+			);
 			return;
 		}
 

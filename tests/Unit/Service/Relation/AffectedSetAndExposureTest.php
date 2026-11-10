@@ -260,10 +260,10 @@ class AffectedSetAndExposureTest extends TestCase {
 	public function testALinkShowsWhatItDeclaresAndWithholdsTheRest(): void {
 		$far = ['zaaknummer' => 'Z-1', 'status' => 'open', 'toelichting' => 'gevoelig', 'bsn' => '123'];
 
-		$projection = (new LinkExposure())->project(
+		$exposure = new LinkExposure();
+		$projection = $exposure->project(
 			farObject: $far,
-			relationType: $this->exposingType(),
-			readable: ['zaaknummer', 'status', 'toelichting', 'bsn']
+			visible: $exposure->visibleProperties(relationType: $this->exposingType(), readable: ['zaaknummer', 'status', 'toelichting', 'bsn'])
 		);
 
 		$this->assertSame('Z-1', $projection['zaaknummer']);
@@ -294,11 +294,7 @@ class AffectedSetAndExposureTest extends TestCase {
 
 		$this->assertSame(['zaaknummer'], $visible, 'the link may not hand over a field this reader may not see');
 
-		$projection = $exposure->project(
-			farObject: ['zaaknummer' => 'Z-1', 'bsn' => '123'],
-			relationType: $type,
-			readable: ['zaaknummer', 'status']
-		);
+		$projection = $exposure->project(farObject: ['zaaknummer' => 'Z-1', 'bsn' => '123'], visible: $visible);
 		$this->assertSame(LinkExposure::WITHHELD, $projection['bsn']);
 	}//end testExposureNeverWidensBeyondTheReadersOwnRules()
 

@@ -481,7 +481,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 			return null;
 		}
 
-		$bounded  = $this->bounds->withinBudget(rows: $rows, seen: $read['seen'], budget: $budget);
+		$bounded  = $this->bounds->withinBudget(rows: $rows, read: $read);
 		$readable = $this->readableOnly(walk: $read['walk'], uuids: $bounded['children']);
 		if ($readable === null) {
 			return null;

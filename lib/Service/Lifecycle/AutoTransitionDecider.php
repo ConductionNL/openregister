@@ -43,21 +43,35 @@ use Throwable;
 final class AutoTransitionDecider {
 
 	/**
+	 * Reads the schema's lifecycle annotation.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Logs an object that could not be re-read.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface    $container    Resolves the deferred-entry object resolver lazily.
-	 * @param SchemaMapperInterface $schemaMapper Reads the schema's lifecycle annotation.
-	 * @param AutoTransitionSelector $selector    Picks the one eligible move, or none.
-	 * @param LoggerInterface       $logger       Logs an object that could not be re-read.
+	 * @param ContainerInterface     $container Resolves the deferred-entry object resolver lazily.
+	 * @param SchemaReading          $schemas   Reads the schema's lifecycle annotation; logs an object that could not be re-read.
+	 * @param AutoTransitionSelector $selector  Picks the one eligible move, or none.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
-		private readonly SchemaMapperInterface $schemaMapper,
+		SchemaReading $schemas,
 		private readonly AutoTransitionSelector $selector,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->schemaMapper = $schemas->schemaMapper;
+		$this->logger = $schemas->logger;
 	}//end __construct()
 
 	/**
@@ -81,33 +95,15 @@ final class AutoTransitionDecider {
 			return null;
 		}
 
-		$subject = new AutoTransitionSubject(uuid: $entry['uuid'], register: $entry['register'], schema: $entry['schema'], schemaSlug: $declaration[1]);
-		return $this->decisionFor(subject: $subject, annotation: $declaration[0], object: $object, previous: $previous);
-	}//end decide()
-
-	/**
-	 * Ask the selector for the move and bind it to the object's current version.
-	 *
-	 * @param AutoTransitionSubject $subject    The object the move is decided for.
-	 * @param array<string, mixed>  $annotation The schema's lifecycle annotation.
-	 * @param ObjectEntity          $object     The object as stored.
-	 * @param array<string, mixed>  $previous   The object before the triggering write.
-	 *
-	 * @return AutoTransitionDecision|null The decided move, or null.
-	 */
-	private function decisionFor(AutoTransitionSubject $subject, array $annotation, ObjectEntity $object, array $previous): ?AutoTransitionDecision {
-		$candidate = $this->selector->select(
-			annotation: $annotation,
-			objectData: ($object->getObject() ?? []),
-			previous: $previous,
-			schemaSlug: $subject->schemaSlug
-		);
+		$write = new AutoTransitionWrite(objectData: ($object->getObject() ?? []), previous: $previous, schemaSlug: $declaration[1]);
+		$candidate = $this->selector->select(annotation: $declaration[0], write: $write);
 		if ($candidate === null) {
 			return null;
 		}
 
+		$subject = new AutoTransitionSubject(uuid: $entry['uuid'], register: $entry['register'], schema: $entry['schema'], schemaSlug: $declaration[1]);
 		return new AutoTransitionDecision(subject: $subject, candidate: $candidate, version: $object->getVersion(), updated: $object->getUpdated());
-	}//end decisionFor()
+	}//end decide()
 
 	/**
 	 * Re-read the object as stored, or null when it is gone or soft-deleted.

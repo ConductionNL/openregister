@@ -150,15 +150,13 @@ final class DependentValueTable implements DependentValueTableInterface {
 	 * object actually has.
 	 *
 	 * @param array<string, mixed> $properties The schema's properties block.
-	 * @param array<string, mixed> $data The object as it would be saved.
-	 * @param array<string, mixed> $stored The object as currently stored, or an empty array on create.
+	 * @param DependentValueWrite $write The object as it would be saved, and as currently stored.
 	 *
 	 * @return array<int, array{property: string, controlledBy: string, value: string, controllingValue: string, message: string}> The violations.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function violations(array $properties, array $data, array $stored = []): array {
-		$write = new DependentValueWrite(data: $data, stored: $stored);
+	public function violations(array $properties, DependentValueWrite $write): array {
 		$violations = [];
 		foreach ($this->tablesOf(properties: $properties) as $name => $table) {
 			$violation = $this->violationOf(table: ['property' => $name] + $table, write: $write);

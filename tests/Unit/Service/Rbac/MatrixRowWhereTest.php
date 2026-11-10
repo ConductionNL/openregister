@@ -82,10 +82,11 @@ class MatrixRowWhereTest extends TestCase {
 	public function testOrganisationCrossingNeedsIntent(): void {
 		$where = new MatrixRowWhere();
 
-		$this->assertTrue($where->crossesWithoutIntent(row: [], key: 'owner', value: '$organisation'));
-		$this->assertFalse($where->crossesWithoutIntent(row: [], key: '_organisation', value: '$organisation'));
-		$this->assertFalse($where->crossesWithoutIntent(row: ['crossOrganisation' => true], key: 'owner', value: '$organisation'));
-		$this->assertFalse($where->crossesWithoutIntent(row: [], key: 'owner', value: 'acme'));
+		$this->assertTrue($where->declaresCrossing(row: []) === false && $where->bindsToOrganisation(key: 'owner', value: '$organisation'));
+		$this->assertFalse($where->bindsToOrganisation(key: '_organisation', value: '$organisation'));
+		$this->assertTrue($where->declaresCrossing(row: ['crossOrganisation' => true]));
+		$this->assertFalse($where->declaresCrossing(row: ['crossOrganisation' => 'true']));
+		$this->assertFalse($where->bindsToOrganisation(key: 'owner', value: 'acme'));
 		$this->assertSame(
 			['owner' => '$organisation'],
 			$where->conditionsOf(row: ['crossOrganisation' => true, 'where' => ['owner' => '$organisation']], field: 'department')

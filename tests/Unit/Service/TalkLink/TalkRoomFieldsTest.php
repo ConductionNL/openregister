@@ -7,6 +7,8 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TalkLink;
 
+use OCA\OpenRegister\Service\TalkLink\RoomPickerQuery;
+use OCA\OpenRegister\Service\TalkLink\TalkViewer;
 use OCA\OpenRegister\Service\TalkLink\TalkRoomFields;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
@@ -62,7 +64,7 @@ class TalkRoomFieldsTest extends TestCase {
 
 		$this->assertSame(
 			['roomId' => null, 'roomName' => 'Zaak', 'roomType' => 3, 'subtitle' => 'Public', 'participantCount' => null, 'lastMessage' => null, 'lastActivity' => null],
-			$this->fields()->cacheFields($room, 'alice', null)
+			$this->fields()->cacheFields($room, new TalkViewer('alice', null))
 		);
 	}
 
@@ -76,7 +78,7 @@ class TalkRoomFieldsTest extends TestCase {
 
 		$this->assertSame(
 			[['token' => 'a', 'name' => 'Bouw', 'type' => 2, 'participantCount' => null]],
-			$this->fields()->pickerRows($rooms, 'alice', ' BOUW ', null)
+			$this->fields()->pickerRows($rooms, new RoomPickerQuery(new TalkViewer('alice', null), ' BOUW '))
 		);
 	}
 

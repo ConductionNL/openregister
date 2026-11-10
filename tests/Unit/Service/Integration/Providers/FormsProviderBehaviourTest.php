@@ -29,7 +29,7 @@ use DateTime;
 use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\Providers\FormsProvider;
-use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
+use OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -90,7 +90,7 @@ class FormsProviderBehaviourTest extends TestCase {
 			$mapper->method('findByObjectUuid')->with('obj-1')->willReturn($links);
 		}
 
-		return new FormsProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $mapper, $this->createMock(LoggerInterface::class));
+		return new FormsProvider(new LeafMarkerScanning($this->db(), $apps, $l10n, $this->createMock(LoggerInterface::class)), $mapper);
 	}//end provider()
 
 	private function db(): IDBConnection {
