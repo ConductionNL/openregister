@@ -308,6 +308,18 @@ import CalendarRowButton from './CalendarRowButton.vue'
  * rebuilt on the way out.
  */
 /**
+ * A stored calendar's working weekdays, Monday to Friday when it has none.
+ *
+ * @param {object} value The stored calendar
+ * @return {Array<number>} The ISO weekdays, as a copy
+ */
+function storedWeekdays(value) {
+	return Array.isArray(value.workingWeekdays)
+		? [...value.workingWeekdays]
+		: [1, 2, 3, 4, 5]
+}
+
+/**
  * One stored rule as a form row, its nested shift flattened.
  *
  * @param {object} rule The stored rule
@@ -708,9 +720,7 @@ export default {
 				slug: value.slug || '',
 				title: value.title || '',
 				organisation: value.organisation || '',
-				workingWeekdays: Array.isArray(value.workingWeekdays)
-					? [...value.workingWeekdays]
-					: [1, 2, 3, 4, 5],
+				workingWeekdays: storedWeekdays(value),
 
 				hoursPerWorkingDay: String(value.hoursPerWorkingDay ?? '8'),
 				serviceHours: this.serviceHoursToForm(value.serviceHours),
@@ -739,6 +749,20 @@ export default {
 				exceptions: datedExceptions(this.form.exceptions),
 			}
 
+			this.addOptionalFields(definition)
+			return definition
+		},
+
+		/**
+		 * Add the organisation and the service hours to a definition, each
+		 * only when the form sets it.
+		 *
+		 * @param {object} definition The definition being built.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-every-write-of-a-working-calendar-is-validated-the-same-way
+		 */
+		addOptionalFields(definition) {
 			if (this.form.organisation.trim()) {
 				definition.organisation = this.form.organisation.trim()
 			}
@@ -747,8 +771,6 @@ export default {
 			if (serviceHours) {
 				definition.serviceHours = serviceHours
 			}
-
-			return definition
 		},
 
 		/**
