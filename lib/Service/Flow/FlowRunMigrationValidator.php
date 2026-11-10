@@ -70,15 +70,15 @@ class FlowRunMigrationValidator {
 	/**
 	 * Whether this run's marking fits the target, and where it would land.
 	 *
-	 * @param FlowRun               $run           The run.
-	 * @param int                   $targetVersion The version asked for.
-	 * @param array<string, string> $mapping       Old node id to new node id.
+	 * @param FlowRun          $run       The run.
+	 * @param FlowRunMigration $migration The version asked for and its old-to-new node id mapping.
 	 *
 	 * @return array{ok: bool, marking: array<string, int>, unmapped: array<int, string>, reason: string}
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
-	public function validate(FlowRun $run, int $targetVersion, array $mapping = []): array {
+	public function validate(FlowRun $run, FlowRunMigration $migration): array {
+		$targetVersion = $migration->targetVersion;
 		if (in_array((string)$run->getStatus(), self::MIGRATABLE_STATUSES, true) === false) {
 			return $this->statusRefusal(run: $run);
 		}
@@ -89,7 +89,7 @@ class FlowRunMigrationValidator {
 		}
 
 		$sourceNodes = $this->nodesOf(flowId: (string)$run->getFlowId(), version: (int)$run->getFlowVersion());
-		$remap = new FlowRunMarkingRemap(nodes: $nodes, sourceNodes: $sourceNodes, mapping: $mapping);
+		$remap = new FlowRunMarkingRemap(nodes: $nodes, sourceNodes: $sourceNodes, mapping: $migration->mapping());
 
 		return $this->outcome(targetVersion: $targetVersion, remapped: $this->remapMarking(run: $run, remap: $remap));
 	}//end validate()

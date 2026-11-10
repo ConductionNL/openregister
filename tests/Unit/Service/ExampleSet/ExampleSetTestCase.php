@@ -861,11 +861,11 @@ abstract class ExampleSetTestCase extends TestCase {
 			$this->talk['rooms'][$token] = ['id' => (count($this->talk['rooms']) + 1), 'name' => $name, 'owner' => $owner, 'participants' => $participants];
 			return ['token' => $token, 'id' => $this->talk['rooms'][$token]['id'], 'created' => true];
 		});
-		$store->method('heldCall')->willReturnCallback(function (string $token, string $owner, array $call, array $joined): void {
-			$start = new \DateTime((string) $call['start']);
-			$end   = new \DateTime((string) $call['end']);
-			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_started', 'at' => $start->format('c')];
-			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_ended', 'at' => $end->format('c'), 'users' => $joined, 'duration' => ($end->getTimestamp() - $start->getTimestamp())];
+		$store->method('heldCall')->willReturnCallback(function (\OCA\OpenRegister\Service\ExampleSet\HeldTalkCall $held): void {
+			$start = new \DateTime((string) $held->call['start']);
+			$end   = new \DateTime((string) $held->call['end']);
+			$this->talk['messages'][] = ['room' => $held->token, 'message' => 'call_started', 'at' => $start->format('c')];
+			$this->talk['messages'][] = ['room' => $held->token, 'message' => 'call_ended', 'at' => $end->format('c'), 'users' => $held->joined, 'duration' => ($end->getTimestamp() - $start->getTimestamp())];
 		});
 		$store->method('roomExists')->willReturnCallback(fn (string $token): bool => isset($this->talk['rooms'][$token]));
 		$store->method('deleteRoom')->willReturnCallback(function (string $token): void {

@@ -211,10 +211,12 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 		}
 
 		$this->store()->heldCall(
-			token: $conversation['room']['token'],
-			owner: (string) $data['owner'],
-			call: $data['call'],
-			joined: $conversation['people']
+			held: new HeldTalkCall(
+				token: $conversation['room']['token'],
+				owner: (string) $data['owner'],
+				call: $data['call'],
+				joined: $conversation['people']
+			)
 		);
 	}//end holdCall()
 

@@ -167,7 +167,7 @@ class FileValidationHandler {
 			return;
 		}
 
-		$this->logBlocked(message: '[FileValidationHandler] Executable file upload blocked', fileName: $fileName, detail: ['extension' => $extension]);
+		$this->logBlocked(message: '[FileValidationHandler] Executable file upload blocked', detail: ['filename' => $fileName, 'extension' => $extension]);
 
 		$part1 = "File '$fileName' is an executable file (.$extension). ";
 		$part2 = 'Executable files are blocked for security reasons. ';
@@ -178,16 +178,15 @@ class FileValidationHandler {
 	/**
 	 * Log a blocked upload.
 	 *
-	 * @param string               $message  The message.
-	 * @param string               $fileName The file name.
-	 * @param array<string, mixed> $detail   What blocked it.
+	 * @param string               $message The message.
+	 * @param array<string, mixed> $detail  The file name (`filename`) and what blocked it.
 	 *
 	 * @return void
 	 */
-	private function logBlocked(string $message, string $fileName, array $detail): void {
+	private function logBlocked(string $message, array $detail): void {
 		$this->logger->warning(
 			message: $message,
-			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'filename' => $fileName] + $detail
+			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister'] + $detail
 		);
 	}//end logBlocked()
 
@@ -250,7 +249,7 @@ class FileValidationHandler {
 			return;
 		}
 
-		$this->logBlocked(message: '[FileValidationHandler] Executable magic bytes detected', fileName: $fileName, detail: ['type' => $description]);
+		$this->logBlocked(message: '[FileValidationHandler] Executable magic bytes detected', detail: ['filename' => $fileName, 'type' => $description]);
 
 		$execMsg = "File '$fileName' contains executable code ($description). ";
 		throw new Exception($execMsg . 'Executable files are blocked for security.');
