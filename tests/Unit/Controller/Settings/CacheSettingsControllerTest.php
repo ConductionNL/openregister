@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\CacheSettingsControllerFactory;
-use OC\Files\AppData\Factory;
+use OCP\Files\AppData\IAppDataFactory as Factory;
 use OCA\OpenRegister\Controller\Settings\CacheSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\Files\GenericFileException;
