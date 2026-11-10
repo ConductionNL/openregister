@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -134,7 +135,7 @@ class DedupeRegistersCommandGoldenTest extends TestCase {
 			}
 		);
 
-		$tester = new CommandTester(new DedupeRegistersCommand($registerMapper, $schemaMapper, $magicMapper));
+		$tester = new CommandTester(new DedupeRegistersCommand(new SchemaCatalog($registerMapper, $schemaMapper, $magicMapper)));
 		$code   = $tester->execute($input);
 
 		return [$code, $tester->getDisplay(), $this->calls];
