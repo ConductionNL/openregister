@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Files\Db\NoteVersion;
 use OCA\OpenRegister\Files\Db\NoteVersionMapper;
@@ -259,10 +260,12 @@ class NoteVersionService {
 	 */
 	private function writeEditEntry(ObjectEntity $object, array $context): bool {
 		try {
-			$this->auditTrail->createAuditTrailEntry(
-				object: $object,
-				action: self::AUDIT_ACTION,
-				context: $context
+			$this->auditTrail->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: self::AUDIT_ACTION,
+					context: $context
+				)
 			);
 		} catch (Throwable $e) {
 			// The text has already been replaced and the version already

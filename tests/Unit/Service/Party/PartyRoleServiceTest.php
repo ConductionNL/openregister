@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\Party\PartyRoleRecords;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -112,7 +113,7 @@ class PartyRoleServiceTest extends TestCase {
 			->getMock();
 		$this->audit = $this->getMockBuilder(AuditTrailMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['createAuditTrailEntry'])
+			->onlyMethods(['recordObjectEvent'])
 			->getMock();
 
 		$this->links->method('findPartiesForObject')->willReturnCallback(fn (): array => $this->rows);
@@ -378,14 +379,14 @@ class PartyRoleServiceTest extends TestCase {
 
 		$recorded = [];
 		$this->audit->expects($this->once())
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (ObjectEntity $object, string $action, array $context) use (&$recorded): AuditTrail {
 					$recorded = ['action' => $action, 'context' => $context];
 
 					return new AuditTrail();
 				}
-			);
+			));
 
 		$object = new ObjectEntity();
 		$object->setUuid('case-1');

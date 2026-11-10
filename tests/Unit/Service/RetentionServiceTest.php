@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\RetentionStores;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IAppConfig;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -734,7 +735,7 @@ class RetentionServiceTest extends TestCase {
 	 */
 	public function testACorrectedDateMovesTheDestructionDate(): void {
 		$object = $this->client(data: ['relationshipEndedAt' => '2026-11-15'], date: '2028-10-01');
-		$this->auditMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditMapper->expects($this->never())->method('recordObjectEvent');
 
 		$result = $this->service->recalculateActionDate(new RecordUpdate($object, $this->clientSchema(), ['relationshipEndedAt' => '2026-10-01']));
 
@@ -747,12 +748,12 @@ class RetentionServiceTest extends TestCase {
 	public function testAClearedDateClearsTheDestructionDateWithAnAuditEntry(): void {
 		$object = $this->client(data: ['relationshipEndedAt' => null], date: '2028-10-01');
 		$this->auditMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with(
+			->method('recordObjectEvent')
+			->with(AuditTrailEvents::matching([
 				$object,
 				'archival.destruction_date_removed',
 				$this->callback(static fn (array $context): bool => $context['archiefactiedatum'] === ['old' => '2028-10-01', 'new' => null])
-			);
+			]));
 
 		$result = $this->service->recalculateActionDate(new RecordUpdate($object, $this->clientSchema(), ['relationshipEndedAt' => '2026-10-01']));
 
