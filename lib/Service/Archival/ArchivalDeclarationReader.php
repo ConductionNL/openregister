@@ -144,7 +144,8 @@ class ArchivalDeclarationReader {
 	private function periodFor(ObjectEntity $object, array $annotation): ?string {
 		try {
 			$createdAt = ($object->getCreated() ?? new DateTimeImmutable());
-			$evaluation = $this->retention->evaluate(subject: new AnnotatedRow(annotation: $annotation, row: $this->rowOf(object: $object), createdAt: $createdAt));
+			$subject    = new AnnotatedRow(annotation: $annotation, row: $this->rowOf(object: $object), createdAt: $createdAt);
+			$evaluation = $this->retention->evaluate(subject: $subject);
 		} catch (Throwable $error) {
 			$this->logger->warning(
 				'[ArchivalDeclarationReader] ' . (string)$object->getUuid()
