@@ -43,6 +43,9 @@ use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
@@ -1037,9 +1040,8 @@ class ObjectServiceTest extends TestCase {
 			->expects($this->once())
 			->method('lock')
 			->with(
-				identifier: 'obj-uuid',
-				process: 'import',
-				duration: 3600
+				new LockRequest(identifier: 'obj-uuid', process: 'import', duration: 3600, runStep: new LockRunStep(runUuid: null, nodeId: null)),
+				advisory: false
 			)
 			->willReturn($lockInfo);
 
@@ -1059,7 +1061,7 @@ class ObjectServiceTest extends TestCase {
 		$this->lockHandler
 			->expects($this->once())
 			->method('unlock')
-			->with(identifier: 'obj-uuid')
+			->with(new UnlockRequest(identifier: 'obj-uuid', advisory: false, runUuid: null, break: false))
 			->willReturn(true);
 
 		$result = $this->service->unlockObject(identifier: 'obj-uuid');
