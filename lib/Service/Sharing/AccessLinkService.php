@@ -558,32 +558,59 @@ class AccessLinkService implements AccessLinkServiceInterface {
 		$declared = [AccessLink::CAP_READ];
 
 		foreach ($capabilities as $candidate) {
-			if (is_string($candidate) === false) {
-				throw new InvalidArgumentException('A capability must be named as a string.');
-			}
-
-			$name = strtolower(trim($candidate));
-			if ($name === '') {
-				continue;
-			}
-
-			if (in_array($name, AccessLink::CAPABILITIES, true) === false) {
-				throw new InvalidArgumentException(
-					sprintf(
-						"'%s' is not a link capability: use %s.",
-						$name,
-						implode(', ', AccessLink::CAPABILITIES)
-					)
-				);
-			}
-
-			if (in_array($name, $declared, true) === false) {
+			$name = $this->capabilityName(candidate: $candidate);
+			if ($name !== '' && in_array($name, $declared, true) === false) {
 				$declared[] = $name;
 			}
 		}
 
 		return $declared;
 	}//end normaliseCapabilities()
+
+	/**
+	 * One requested capability, lower-cased and trimmed; '' for a blank one.
+	 *
+	 * @param mixed $candidate The requested capability.
+	 *
+	 * @return string The capability name, or ''.
+	 *
+	 * @throws InvalidArgumentException When it is not a string, or not a capability this app knows.
+	 */
+	private function capabilityName(mixed $candidate): string {
+		if (is_string($candidate) === false) {
+			throw new InvalidArgumentException('A capability must be named as a string.');
+		}
+
+		$name = strtolower(trim($candidate));
+		if ($name === '') {
+			return '';
+		}
+
+		$this->assertKnownCapability(name: $name);
+
+		return $name;
+	}//end capabilityName()
+
+	/**
+	 * Refuse a capability this app does not know.
+	 *
+	 * @param string $name The lower-cased capability name.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is not one of AccessLink::CAPABILITIES.
+	 */
+	private function assertKnownCapability(string $name): void {
+		if (in_array($name, AccessLink::CAPABILITIES, true) === false) {
+			throw new InvalidArgumentException(
+				sprintf(
+					"'%s' is not a link capability: use %s.",
+					$name,
+					implode(', ', AccessLink::CAPABILITIES)
+				)
+			);
+		}
+	}//end assertKnownCapability()
 
 	/**
 	 * The end date a link must carry.
