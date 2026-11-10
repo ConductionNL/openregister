@@ -6189,42 +6189,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end fetchCrossTableMatches()
 
 	/**
-	 * Find all objects in register+schema table with filtering and pagination.
-	 *
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
-	 * @param int|null $limit Maximum number of results.
-	 * @param int|null $offset Offset for pagination.
-	 * @param array|null $filters Filters to apply.
-	 * @param array $sort Sort order.
-	 *
-	 * @return ObjectEntity[]
-	 *
-	 * @psalm-return list<ObjectEntity>
-	 */
-	public function findAllInRegisterSchemaTable(
-		Register $register,
-		Schema $schema,
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = null,
-		array $sort = [],
-	): array {
-		$listing = new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filters ?? []), sort: $sort);
-		return $this->findAllIn(table: new RegisterSchema(register: $register, schema: $schema), listing: $listing);
-	}//end findAllInRegisterSchemaTable()
-
-	/**
 	 * Find all objects in a register+schema table with filtering and pagination.
 	 *
 	 * @param RegisterSchema $table   The register and schema whose table to use.
-	 * @param ListQuery      $listing The limit (unbounded for all rows), offset, filters and sort.
+	 * @param ListQuery      $listing The limit (unbounded, the default, for all rows), offset, filters and sort.
 	 *
 	 * @return ObjectEntity[]
 	 * @psalm-return list<ObjectEntity>
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	public function findAllIn(RegisterSchema $table, ListQuery $listing): array {
+	public function findAllInRegisterSchemaTable(RegisterSchema $table, ListQuery $listing=new ListQuery(limit: ListQuery::UNBOUNDED)): array {
 		$register = $table->register;
 		$schema   = $table->schema;
 		$limit    = $listing->limitOrNull();
@@ -6249,7 +6223,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$query = array_merge($query, $filters);
 
 		return $this->searchObjectsInRegisterSchemaTable(query: $query, register: $register, schema: $schema);
-	}//end findAllIn()
+	}//end findAllInRegisterSchemaTable()
 
 	/**
 	 * The row-level access predicate for a raw query over one magic table.
@@ -8581,7 +8555,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		$filters = $this->narrowedToUses(query: $filters, uses: $request->uses);
 
-		$entities = $this->findAllIn(
+		$entities = $this->findAllInRegisterSchemaTable(
 			table: $table,
 			listing: new ListQuery(limit: $listing->limit, offset: $listing->offset, filters: $filters, sort: $listing->sort)
 		);
@@ -8776,11 +8750,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				$schema = $this->schemaMapper->find($pair['schemaId'], _multitenancy: false, _rbac: false);
 
 				$entities = $this->findAllInRegisterSchemaTable(
-					register: $register,
-					schema: $schema,
-					limit: $limit,
-					offset: $offset,
-					filters: $filter
+					table: new RegisterSchema(register: $register, schema: $schema),
+					listing: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: $filter)
 				);
 				$results = array_merge($results, $entities);
 			} catch (\Exception $e) {

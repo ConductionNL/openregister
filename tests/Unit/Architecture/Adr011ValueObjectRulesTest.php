@@ -39,6 +39,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Db/RegisterSchema.php',
 		'Kernel/Contracts/DeckPlacement.php',
 		'Kernel/Contracts/MassValidationRequest.php',
+		'Kernel/Contracts/ContactDetails.php',
 		'Kernel/Contracts/KeywordChunkSearch.php',
 		'Kernel/Contracts/MergeInstruction.php',
 		'Kernel/Contracts/ObjectRef.php',
@@ -57,6 +58,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	private const KERNEL_LEAVES = [
 		'Kernel/Contracts/DeckPlacement.php',
 		'Kernel/Contracts/MassValidationRequest.php',
+		'Kernel/Contracts/ContactDetails.php',
 		'Kernel/Contracts/KeywordChunkSearch.php',
 		'Kernel/Contracts/MergeInstruction.php',
 		'Kernel/Contracts/ObjectRef.php',

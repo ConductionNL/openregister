@@ -51,6 +51,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
@@ -312,7 +313,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 */
 	private function send(string $path, array $options): array {
 		try {
-			$response = $this->router->call(provider: $this, method: 'POST', path: ltrim($path, '/'), options: $options);
+			$response = $this->router->call(provider: $this, request: new UpstreamRequest(method: 'POST', path: ltrim($path, '/'), options: $options));
 		} catch (ProviderUnavailableException $e) {
 			return $this->degraded(cause: $e->getCause());
 		} catch (Throwable $e) {

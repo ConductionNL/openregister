@@ -1773,7 +1773,7 @@ class SaveObject implements SaveObjectInterface {
 			container: $this->container
 		);
 
-		return $this->orphanGuard->allows(row: $orphan, register: $scope['register'], schema: $scope['schema']);
+		return $this->orphanGuard->allows(row: $orphan, table: new RegisterSchema(register: $scope['register'], schema: $scope['schema']));
 	}//end orphanMayBeDeleted()
 
 	/**

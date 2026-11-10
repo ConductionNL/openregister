@@ -31,17 +31,11 @@ interface ContactMatcherInterface {
 	 * Calls matchByEmail first, then matchByName and matchByOrganization if provided.
 	 * Deduplicates by object UUID, keeping the highest confidence match.
 	 *
-	 * @param string $email The email address (required)
-	 * @param string|null $name The display name (optional)
-	 * @param string|null $organization The organization name (optional)
+	 * @param ContactDetails $contact The email address (required), display name and organization name (optional).
 	 *
 	 * @return array Combined, deduplicated match results sorted by confidence
 	 */
-	public function matchContact(
-		string $email,
-		?string $name = null,
-		?string $organization = null,
-	): array;
+	public function matchContact(ContactDetails $contact): array;
 
 	/**
 	 * Get related object counts grouped by schema title.
