@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ProcessingLogService;
+use OCA\OpenRegister\Service\ProcessingRead;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -185,7 +186,7 @@ class ReadHistoryService {
 	public function registerProcessingRead(ObjectEntity $object, string $action = self::READ_ACTION): void {
 		try {
 			$service = $this->container->get(ProcessingLogService::class);
-			$service->logRead(object: $object, action: $action);
+			$service->recordRead(object: $object, read: new ProcessingRead(action: $action));
 			$service->flush();
 		} catch (\Throwable $e) {
 			$this->logger->debug(
@@ -200,7 +201,7 @@ class ReadHistoryService {
 	 * Register a list or search read on the AVG processing log.
 	 *
 	 * One collapsed entry per register and schema in the result, through
-	 * ProcessingLogService::logReadList, which applies the same `logReads`
+	 * ProcessingLogService::recordReadList, which applies the same `logReads`
 	 * opt-in as a single read and carries the query parameters. A row that
 	 * is a rendered array is read by its `@self` block; a row that names no
 	 * uuid, register and schema cannot be attributed and is reported in the
@@ -241,7 +242,7 @@ class ReadHistoryService {
 		try {
 			$service = $this->container->get(ProcessingLogService::class);
 			foreach ($groups as $group) {
-				$service->logReadList(objects: $group, action: $read->action, query: $read->query);
+				$service->recordReadList(objects: $group, read: new ProcessingRead(action: $read->action, query: $read->query));
 			}
 
 			$service->flush();

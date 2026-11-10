@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\ProcessingLogService;
+use OCA\OpenRegister\Service\ProcessingRead;
 use OCA\OpenRegister\Service\SettingsService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -150,7 +151,7 @@ class ReadHistoryServiceTest extends TestCase {
 	 */
 	public function testAProcessingReadIsLoggedEvenWithAuditOff(): void {
 		$object = new ObjectEntity();
-		$this->processingLog->expects($this->once())->method('logRead')->with($object, 'read');
+		$this->processingLog->expects($this->once())->method('recordRead')->with($object, new ProcessingRead(action: 'read'));
 		$this->processingLog->expects($this->once())->method('flush');
 		$this->auditTrails->expects($this->never())->method('createAuditTrail');
 
@@ -163,7 +164,7 @@ class ReadHistoryServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailingProcessingLogIsSwallowed(): void {
-		$this->processingLog->method('logRead')->willThrowException(new \RuntimeException('db down'));
+		$this->processingLog->method('recordRead')->willThrowException(new \RuntimeException('db down'));
 
 		$this->service()->registerProcessingRead(object: new ObjectEntity());
 		$this->addToAssertionCount(1);

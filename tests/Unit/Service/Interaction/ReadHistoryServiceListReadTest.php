@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\ProcessingLogService;
+use OCA\OpenRegister\Service\ProcessingRead;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -91,13 +92,13 @@ class ReadHistoryServiceListReadTest extends TestCase {
 		$groups = [];
 		$log    = $this->createMock(ProcessingLogService::class);
 		$log->expects($this->exactly(2))
-			->method('logReadList')
+			->method('recordReadList')
 			->willReturnCallback(
-				static function (array $objects, string $action, ?string $channel, ?string $actor, array $query) use (&$groups): void {
+				static function (array $objects, ProcessingRead $read) use (&$groups): void {
 					$groups[] = [
 						array_map(static fn (ObjectEntity $o): string => $o->getUuid(), $objects),
-						$action,
-						$query,
+						$read->action,
+						$read->query,
 					];
 				}
 			);
@@ -133,7 +134,7 @@ class ReadHistoryServiceListReadTest extends TestCase {
 	public function testARenderedRowCarriesItsDataAndOrganisation(): void {
 		$seen = null;
 		$log  = $this->createMock(ProcessingLogService::class);
-		$log->method('logReadList')->willReturnCallback(
+		$log->method('recordReadList')->willReturnCallback(
 			static function (array $objects) use (&$seen): void {
 				$seen = $objects[0];
 			}
