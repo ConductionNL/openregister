@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\TokenGrantUse;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantTarget;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
@@ -190,8 +191,7 @@ class AuthorizationServiceConsumerGrantTest extends TestCase {
 
 		$narrowed = $narrower->narrow(
 			authorization: self::BLOCK,
-			grant: $grants->current(),
-			target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken')
+			use: new TokenGrantUse(grant: $grants->current(), target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'))
 		);
 
 		return $handler->hasGroupPermission(

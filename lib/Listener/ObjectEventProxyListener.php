@@ -549,7 +549,7 @@ final class ObjectEventProxyListener implements IEventListener {
 			$prefix = 's:';
 		}
 
-		$run->cacheKey = $prefix . md5(implode(',', $run->tokens));
+		$run->cacheKey = $prefix . hash(algo: 'xxh128', data: implode(',', $run->tokens));
 		$run->cache = $this->cacheFactory->createLocal('openregister_event_interest');
 		$cached = $this->cachedMap(cache: $run->cache, cacheKey: $run->cacheKey);
 		if ($cached !== null) {

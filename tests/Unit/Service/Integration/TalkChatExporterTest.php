@@ -23,6 +23,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -46,7 +47,7 @@ class TalkChatExporterTest extends TestCase {
 	 * @return void
 	 */
 	public function testThreeMessagesBecomeThreeLinesOldestFirst(): void {
-		$file = (new TalkChatExporter())->export(
+		$file = (new TalkChatExporter())->exportTranscript(new ChatTranscriptRequest(
 			conversation: 'Bezwaar 2026-17',
 			messages: [
 				['actorDisplayName' => 'Piet', 'timestamp' => 1791540060, 'message' => 'Akkoord.'],
@@ -55,7 +56,7 @@ class TalkChatExporterTest extends TestCase {
 			],
 			savedBy: 'Anna de Vries',
 			savedAt: new DateTimeImmutable('2026-10-09 12:00:00 UTC')
-		);
+		));
 
 		$lines = explode("\n", trim($file['content']));
 		$this->assertSame('Bezwaar 2026-17', $lines[0]);
@@ -76,7 +77,7 @@ class TalkChatExporterTest extends TestCase {
 	 */
 	public function testAnEmptyConversationIsRefused(): void {
 		$this->expectException(\InvalidArgumentException::class);
-		(new TalkChatExporter())->export('Leeg', [], 'Anna', new DateTimeImmutable());
+		(new TalkChatExporter())->exportTranscript(new ChatTranscriptRequest('Leeg', [], 'Anna', new DateTimeImmutable()));
 	}//end testAnEmptyConversationIsRefused()
 
 	/**

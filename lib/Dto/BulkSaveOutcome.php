@@ -135,51 +135,108 @@ class BulkSaveOutcome implements BulkSaveOutcomeInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public static function fromBulkResult(array $bulkResult, int $requestedCount, int $accountedCount): self {
-		$failures = [];
-		$invalid = ($bulkResult['invalid'] ?? []);
-		if (is_array($invalid) === true) {
-			foreach ($invalid as $entry) {
-				if (is_array($entry) === false) {
-					continue;
-				}
+		return self::fromSaveResult(bulkResult: $bulkResult, rows: new BulkRowCount(requested: $requestedCount, accounted: $accountedCount));
 
-				$row = ($entry['object'] ?? []);
-				if (is_array($row) === false) {
-					$row = [];
-				}
+	}//end fromBulkResult()
 
-				$index = null;
-				if (isset($entry['index']) === true && is_numeric($entry['index']) === true) {
-					$index = (int)$entry['index'];
-				}
-
-				$failures[] = [
-					'index' => $index,
-					'uuid' => self::extractRowUuid(row: $row),
-					'error' => (string)($entry['error'] ?? 'Object was rejected without a recorded reason'),
-					'type' => (string)($entry['type'] ?? 'BulkSaveRejection'),
-				];
-			}//end foreach
-		}//end if
-
+	/**
+	 * Summarise a raw `ObjectService::saveObjects()` result against the row counts.
+	 *
+	 * Every rejected row in `invalid[]` is reported with the validator's own
+	 * message; rows neither accounted for nor rejected become one
+	 * `UnaccountedObject` entry carrying the batch-level errors.
+	 *
+	 * @param array        $bulkResult Raw result from ObjectService::saveObjects().
+	 * @param BulkRowCount $rows       Rows submitted and rows the result accounts for.
+	 *
+	 * @return self The summarised outcome.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public static function fromSaveResult(array $bulkResult, BulkRowCount $rows): self {
+		$failures = self::rejections(bulkResult: $bulkResult);
 		$rejected = count($failures);
-		$unaccounted = max(0, ($requestedCount - $accountedCount - $rejected));
+		$unaccounted = $rows->unaccounted(rejected: $rejected);
 		if ($unaccounted > 0) {
-			$failures[] = [
-				'index' => null,
-				'uuid' => null,
-				'error' => sprintf(
-					'%d object(s) were not written and the save path recorded no per-object reason.%s',
-					$unaccounted,
-					self::describeUnattributedErrors(bulkResult: $bulkResult)
-				),
-				'type' => 'UnaccountedObject',
-			];
+			$failures[] = self::unaccountedFailure(unaccounted: $unaccounted, bulkResult: $bulkResult);
 		}
 
 		return new self(failedCount: ($rejected + $unaccounted), failures: $failures);
 
-	}//end fromBulkResult()
+	}//end fromSaveResult()
+
+	/**
+	 * The one failure that stands for rows the save neither wrote nor rejected.
+	 *
+	 * @param int   $unaccounted How many rows vanished without a reason.
+	 * @param array $bulkResult  Raw result, for its batch-level errors.
+	 *
+	 * @return array<string, mixed> The failure.
+	 */
+	private static function unaccountedFailure(int $unaccounted, array $bulkResult): array {
+		return [
+			'index' => null,
+			'uuid' => null,
+			'error' => sprintf(
+				'%d object(s) were not written and the save path recorded no per-object reason.%s',
+				$unaccounted,
+				self::describeUnattributedErrors(bulkResult: $bulkResult)
+			),
+			'type' => 'UnaccountedObject',
+		];
+
+	}//end unaccountedFailure()
+
+	/**
+	 * One failure per rejected row in `invalid[]`; entries that are not arrays are skipped.
+	 *
+	 * @param array $bulkResult Raw result from ObjectService::saveObjects().
+	 *
+	 * @return array<int, array<string, mixed>> The failures.
+	 */
+	private static function rejections(array $bulkResult): array {
+		$invalid = ($bulkResult['invalid'] ?? []);
+		if (is_array($invalid) === false) {
+			return [];
+		}
+
+		$failures = [];
+		foreach ($invalid as $entry) {
+			if (is_array($entry) === true) {
+				$failures[] = self::rejection(entry: $entry);
+			}
+		}
+
+		return $failures;
+
+	}//end rejections()
+
+	/**
+	 * The failure for one rejected row, with defaults for a missing reason or type.
+	 *
+	 * @param array $entry One `invalid[]` entry.
+	 *
+	 * @return array<string, mixed> The failure.
+	 */
+	private static function rejection(array $entry): array {
+		$row = ($entry['object'] ?? []);
+		if (is_array($row) === false) {
+			$row = [];
+		}
+
+		$index = null;
+		if (isset($entry['index']) === true && is_numeric($entry['index']) === true) {
+			$index = (int)$entry['index'];
+		}
+
+		return [
+			'index' => $index,
+			'uuid' => self::extractRowUuid(row: $row),
+			'error' => (string)($entry['error'] ?? 'Object was rejected without a recorded reason'),
+			'type' => (string)($entry['type'] ?? 'BulkSaveRejection'),
+		];
+
+	}//end rejection()
 
 	/**
 	 * Summarise a streaming batch status into the same shape.

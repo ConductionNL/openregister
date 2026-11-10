@@ -31,6 +31,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 
 /**
  * Which creates the policy allows and which it refuses, and when it audits.
@@ -74,7 +75,7 @@ class DedupCreatePolicyAccessGoldenTest extends TestCase {
 		$policy = $this->policy($annotation, $matches, $uid, $groups, $this->createMock(AuditTrailMapperInterface::class));
 
 		try {
-			$actual = 'allowed:' . count($policy->guardCreate('reg', 'person', ['name' => 'x'], $override));
+			$actual = 'allowed:' . count($policy->guardCreate(new CreateCandidate(register: 'reg', schema: 'person', data: ['name' => 'x'], overrideRequested: $override)));
 		} catch (DuplicateBlockedException $e) {
 			$actual = 'refused';
 		}

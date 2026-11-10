@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
+use OCA\OpenRegister\Service\Rbac\HierarchyLevel;
 use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
@@ -162,7 +163,8 @@ class ObjectTreeServiceTest extends TestCase {
 			->onlyMethods(['childrenOf'])
 			->getMock();
 		$descender->method('childrenOf')->willReturnCallback(
-			function (string $table, string $parentColumn, array $parentUuids, ?int $limit = null) use ($parentOf): array {
+			function (HierarchyLevel $level, array $parentUuids) use ($parentOf): array {
+				[$table, $parentColumn, $limit] = [$level->table, $level->parentColumn, $level->limit];
 				$this->assertSame('openregister_table_1_2', $table);
 				$this->assertSame('parent_organisation', $parentColumn);
 				$this->askedLimits[] = $limit;

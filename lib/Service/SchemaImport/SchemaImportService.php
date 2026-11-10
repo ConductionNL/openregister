@@ -174,10 +174,8 @@ class SchemaImportService implements SchemaImportServiceInterface {
 	/**
 	 * Import a GGM objecttype from an uploaded export (normalised intermediate).
 	 *
-	 * @param array<string, mixed> $normalised The normalised GGM intermediate.
-	 * @param string $reference The objecttype id/name to import.
+	 * @param GgmUpload     $upload  The normalised GGM intermediate, the objecttype id/name to import and a provenance label.
 	 * @param ImportOptions $options Import options.
-	 * @param string $sourceLabel A provenance label for the upload.
 	 *
 	 * @return ImportedSchema The mapped schema.
 	 *
@@ -185,9 +183,9 @@ class SchemaImportService implements SchemaImportServiceInterface {
 	 *
 	 * @spec openspec/specs/schema-import/spec.md
 	 */
-	public function importGgmUpload(array $normalised, string $reference, ImportOptions $options, string $sourceLabel = 'upload'): ImportedSchema {
-		$importer = new GgmImporter(GgmSnapshot::fromNormalised($normalised), $sourceLabel);
-		return $importer->import($reference, $options);
+	public function importGgmUpload(GgmUpload $upload, ImportOptions $options): ImportedSchema {
+		$importer = new GgmImporter(GgmSnapshot::fromNormalised($upload->normalised), $upload->sourceLabel);
+		return $importer->import($upload->reference, $options);
 	}//end importGgmUpload()
 
 	/**
@@ -236,9 +234,8 @@ class SchemaImportService implements SchemaImportServiceInterface {
 	/**
 	 * Compute the classified update-from-source diff for an imported schema.
 	 *
-	 * @param array<string, mixed> $importSource The stored configuration.importSource block (with baseline).
-	 * @param array<string, array<string,mixed>> $currentProperties The schema's current properties.
-	 * @param array<int, string> $resolvedConflicts Conflict property names confirmed by the caller.
+	 * @param SourceUpdate $update The stored import source (with baseline), the schema's current properties and the
+	 *                             conflict property names confirmed by the caller.
 	 *
 	 * @return array<string, mixed> The merge result (added/removed/changed/keptLocal/conflicts/merged/applied).
 	 *
@@ -246,10 +243,10 @@ class SchemaImportService implements SchemaImportServiceInterface {
 	 *
 	 * @spec openspec/specs/schema-import/spec.md
 	 */
-	public function previewUpdateFromSource(array $importSource, array $currentProperties, array $resolvedConflicts = []): array {
-		$fresh = $this->freshImport(importSource: $importSource);
-		$baseline = $this->baselineOf(importSource: $importSource);
-		$merge = new MergeInstruction(baseline: $baseline, current: $currentProperties, incoming: $fresh->properties, resolved: $resolvedConflicts);
+	public function previewUpdateFromSource(SourceUpdate $update): array {
+		$fresh = $this->freshImport(importSource: $update->importSource);
+		$baseline = $this->baselineOf(importSource: $update->importSource);
+		$merge = new MergeInstruction(baseline: $baseline, current: $update->currentProperties, incoming: $fresh->properties, resolved: $update->resolvedConflicts);
 		return $this->merge->compute($merge) + ['incomingSource' => $fresh->importSource, 'jsonld' => $fresh->jsonld];
 	}//end previewUpdateFromSource()
 

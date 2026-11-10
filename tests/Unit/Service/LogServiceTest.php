@@ -332,7 +332,7 @@ class LogServiceTest extends TestCase {
 
 		$result = $this->service->getLog(1);
 
-		$this->assertInstanceOf(AuditTrail::class, $result);
+		$this->assertSame($auditTrail, $result);
 	}
 
 	public function testExportLogsJson(): void {

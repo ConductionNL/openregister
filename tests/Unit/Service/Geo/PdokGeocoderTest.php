@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Geo;
 
+use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Geo\PdokGeocoder;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
@@ -76,7 +77,7 @@ class PdokGeocoderTest extends TestCase {
 		}
 
 		$geocoder = $this->geocoder(fn ($url, $params) => ['response' => ['docs' => $docs]]);
-		$this->assertCount(3, $geocoder->geocodeFree('test', 3));
+		$this->assertCount(3, $geocoder->geocodeFree('test', new GeocodeOptions(3)));
 	}//end testForwardGeocodingHonoursMaxItems()
 
 	public function testReverseGeocodingReturnsNearestAddress(): void {

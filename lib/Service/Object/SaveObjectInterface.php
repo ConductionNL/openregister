@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -321,22 +322,15 @@ interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveOb
 	 * re-validation is sequenced after this primitive lands and is
 	 * tracked separately.
 	 *
-	 * @param Register|null $register Register context for the batch.
-	 * @param Schema|int|string|null $schema Schema context for the batch.
-	 * @param iterable $rows Input rows (each is the same
-	 *                       shape `saveObject` accepts).
-	 * @param BatchOperationStatus|null $status Optional pre-existing status
-	 *                                          (for callers that want to
-	 *                                          accumulate across multiple
-	 *                                          calls).
+	 * @param StreamingSave $save The register and schema context of the batch, its rows (each the shape
+	 *                            `saveObject` accepts) and an optional pre-existing status for callers
+	 *                            that accumulate across multiple calls.
 	 *
 	 * @return BatchOperationStatus
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function saveObjectsStreaming(
-		Register|int|string|null $register, Schema|int|string|null $schema, iterable $rows, ?BatchOperationStatus $status = null
-	): BatchOperationStatus;
+	public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus;
 
 	/**
 	 * Updates an existing object.

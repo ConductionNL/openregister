@@ -215,17 +215,14 @@ class FlowTaskBridge implements FlowTaskBridgeInterface {
 	 * the reference it froze. Delegates to the task service, which owns the
 	 * audit's shape.
 	 *
-	 * @param string $uuid The task.
-	 * @param string $action The audited action name.
-	 * @param string|null $actor The run's acting identity.
-	 * @param string $reason What is being recorded.
+	 * @param TaskAuditEntry $entry The task, the action, the acting identity and what is recorded.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
 	 */
-	public function record(string $uuid, string $action, ?string $actor, string $reason): void {
-		$this->tasks->record(uuid: $uuid, action: $action, actor: $actor, reason: $reason);
+	public function record(TaskAuditEntry $entry): void {
+		$this->tasks->record(uuid: $entry->uuid, action: $entry->action, actor: $entry->actor, reason: $entry->reason);
 	}//end record()
 
 	/**

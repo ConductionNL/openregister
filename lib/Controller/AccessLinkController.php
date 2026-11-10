@@ -57,9 +57,13 @@ use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActsInterface;
+use OCA\OpenRegister\Service\Sharing\LinkAct;
+use OCA\OpenRegister\Service\Sharing\LinkFile;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -241,7 +245,7 @@ class AccessLinkController extends Controller {
 		}
 
 		try {
-			$note = $this->acts->comment(link: $link, object: $object, message: $message);
+			$note = $this->acts->comment(act: new LinkAct(link: $link, object: $object), message: $message);
 		} catch (Throwable $failure) {
 			$this->logger->warning('[AccessLinkController] A link comment failed: ' . $failure->getMessage());
 
@@ -316,10 +320,8 @@ class AccessLinkController extends Controller {
 
 		try {
 			$stored = $this->acts->upload(
-				link: $link,
-				object: $object,
-				fileName: $fileName,
-				content: $content
+				act: new LinkAct(link: $link, object: $object),
+				file: new LinkFile(fileName: $fileName, content: $content)
 			);
 		} catch (Throwable $failure) {
 			$this->logger->warning('[AccessLinkController] A link upload failed: ' . $failure->getMessage());
@@ -375,14 +377,16 @@ class AccessLinkController extends Controller {
 
 		try {
 			$minted = $this->links->mint(
-				userId: $user->getUID(),
-				subjectType: $subjectType,
-				subjectId: $subjectId,
-				terms: $this->links->terms(
-					capabilities: $this->capabilitiesParam(),
-					expiresAt: $this->stringParam(name: 'expiresAt'),
-					password: $this->stringParam(name: 'password'),
-					label: $this->stringParam(name: 'label')
+				new LinkMintRequest(
+					minter: $user->getUID(),
+					subjectType: $subjectType,
+					subjectId: $subjectId,
+					terms: new AccessLinkTerms(
+						capabilities: $this->capabilitiesParam(),
+						expiresAt: $this->stringParam(name: 'expiresAt'),
+						password: $this->stringParam(name: 'password'),
+						label: $this->stringParam(name: 'label')
+					)
 				)
 			);
 		} catch (InvalidArgumentException $refused) {
@@ -429,11 +433,7 @@ class AccessLinkController extends Controller {
 			return $this->notFound();
 		}
 
-		$updated = $this->links->setDisabled(
-			id: $id,
-			userId: $user->getUID(),
-			disabled: ((bool)$this->request->getParam('disabled', false))
-		);
+		$updated = $this->switched(id: $id, userId: $user->getUID());
 
 		if ($updated === null) {
 			return $this->notFound();
@@ -441,6 +441,22 @@ class AccessLinkController extends Controller {
 
 		return new JSONResponse($updated, Http::STATUS_OK);
 	}//end update()
+
+	/**
+	 * Switch one of the caller's own links off or back on, as the request's `disabled` asks.
+	 *
+	 * @param int    $id     The link row id.
+	 * @param string $userId The calling principal.
+	 *
+	 * @return array<string, mixed>|null The updated link, or null when the caller has no such link.
+	 */
+	private function switched(int $id, string $userId): ?array {
+		if ((bool)$this->request->getParam('disabled', false) === true) {
+			return $this->links->disable(id: $id, userId: $userId);
+		}
+
+		return $this->links->enable(id: $id, userId: $userId);
+	}//end switched()
 
 	/**
 	 * DELETE /api/access-links/{id}
