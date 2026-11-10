@@ -394,25 +394,28 @@ class PartyController extends Controller {
 			return new JSONResponse(['error' => 'Object "' . $partyUuid . '" is not a party'], 400);
 		}
 
-		return new JSONResponse($this->described(party: $party, definition: $definition, partyUuid: $partyUuid));
+		$body = $this->described(party: $party, definition: $definition);
+		$body['objects'] = $this->indicators->objectsOfParty(partyUuid: $partyUuid);
+
+		return new JSONResponse($body);
 	}//end describe()
 
 	/**
 	 * The body of a party read.
 	 *
+	 * The caller adds the objects of the party, keyed on the party as asked for.
+	 *
 	 * @param ObjectEntity    $party      The party record.
 	 * @param PartyDefinition $definition Its party definition.
-	 * @param string          $partyUuid  The party as asked for.
 	 *
 	 * @return array<string, mixed> The body.
 	 */
-	private function described(ObjectEntity $party, PartyDefinition $definition, string $partyUuid): array {
+	private function described(ObjectEntity $party, PartyDefinition $definition): array {
 		return [
 			'uuid' => $party->getUuid(),
 			'kind' => $definition->kind(),
 			'addresses' => $this->parties->addresses(party: $party, definition: $definition),
 			'indicators' => $this->parties->indicators(party: $party, definition: $definition),
-			'objects' => $this->indicators->objectsOfParty(partyUuid: $partyUuid),
 		];
 	}//end described()
 
