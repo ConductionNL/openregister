@@ -90,6 +90,42 @@ class DepartmentMatrixPersonValues {
 	}//end __construct()
 
 	/**
+	 * The person field a source matches the user on, or the default when it names none.
+	 *
+	 * @param array<string, mixed>|null $source The matrix's `userSource`.
+	 *
+	 * @return string The field.
+	 */
+	private static function matchFieldOf(?array $source): string {
+		$match = trim((string)($source['match'] ?? self::DEFAULT_MATCH));
+		if ($match === '') {
+			return self::DEFAULT_MATCH;
+		}
+
+		return $match;
+	}//end matchFieldOf()
+
+	/**
+	 * The user's values read from the person source now, bypassing the cache.
+	 *
+	 * @param array<string, mixed>|null $source The matrix's `userSource`, with a schema and a property.
+	 * @param PersonMatch               $who    The person field and the user.
+	 *
+	 * @return string[] The values, or none when the persons cannot be read.
+	 */
+	private function freshValues(?array $source, PersonMatch $who): array {
+		$persons = $this->persons(
+			source: new RegisterSchemaRef(register: trim((string)($source['register'] ?? '')), schema: trim((string)($source['schema'] ?? ''))),
+			who: $who
+		);
+		if ($persons === null) {
+			return [];
+		}
+
+		return self::valuesOf(rows: self::matching(persons: $persons, who: $who), property: trim((string)($source['property'] ?? '')));
+	}//end freshValues()
+
+	/**
 	 * The caller's own values from the declared person source.
 	 *
 	 * @param array<string, mixed>|null $source The matrix's `userSource`.
@@ -106,28 +142,13 @@ class DepartmentMatrixPersonValues {
 			return [];
 		}
 
-		$match = trim((string)($source['match'] ?? self::DEFAULT_MATCH));
-		if ($match === '') {
-			$match = self::DEFAULT_MATCH;
-		}
-
+		$match = self::matchFieldOf(source: $source);
 		$key = $userId . '|' . $schemaRef . '|' . (string)($source['register'] ?? '') . '|' . $property . '|' . $match;
 		if (array_key_exists($key, $this->cache) === true) {
 			return $this->cache[$key];
 		}
 
-		$who     = new PersonMatch(field: $match, userId: $userId);
-		$persons = $this->persons(
-			source: new RegisterSchemaRef(register: trim((string)($source['register'] ?? '')), schema: $schemaRef),
-			who: $who
-		);
-
-		$values = [];
-		if ($persons !== null) {
-			$values = self::valuesOf(rows: self::matching(persons: $persons, who: $who), property: $property);
-		}
-
-		$this->cache[$key] = $values;
+		$this->cache[$key] = $this->freshValues(source: $source, who: new PersonMatch(field: $match, userId: $userId));
 
 		return $this->cache[$key];
 	}//end valuesFor()
