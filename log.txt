@@ -1444,3 +1444,4 @@
 2026-11-10T07:34:07Z precheck-20261110T063022-b9b347f5 GREEN tree 3b986d8c99 on dev 5fa7046217 prs 1 front=skip: Tests: 54764, Assertions: 180836, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 21.
 2026-11-10T07:34:19Z integrator-20261110T055831-36ffe96f CONFLICT-DEV #8743 29efac80
 2026-11-10T07:34:34Z precheck-20261110T063022-b9b347f5 RESOLVED #8875 7f015538 -> 69e71a46 use/map lines only
+2026-11-10T07:34:42Z integrator-20261110T055831-36ffe96f CONFLICT-DEV #8787 5891333e
