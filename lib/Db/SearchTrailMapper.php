@@ -265,18 +265,17 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	/**
 	 * Create a new search trail entry
 	 *
-	 * @param array       $searchQuery   The search query parameters
-	 * @param SearchTrail $outcome       The unsaved trail carrying what the search
-	 *                                   returned: result count and total results.
-	 * @param float       $responseTime  The response time in milliseconds
-	 * @param string      $executionType The execution type ('sync' or 'async')
+	 * @param SearchTrailRecord $record The search query and its finished outcome values.
 	 *
 	 * @return SearchTrail The created search trail entity
 	 */
-	public function createSearchTrail(array $searchQuery, SearchTrail $outcome, float $responseTime, string $executionType = 'sync'): SearchTrail {
-		$outcome->setExecutionType($executionType);
-		$outcome->setResponseTime((int)round($responseTime));
-		return $this->recordSearch(searchTrail: $this->stamped(searchTrail: $outcome), searchQuery: $searchQuery);
+	public function createSearchTrail(SearchTrailRecord $record): SearchTrail {
+		$searchTrail = new SearchTrail();
+		$searchTrail->setResultCount($record->resultCount);
+		$searchTrail->setTotalResults($record->totalResults);
+		$searchTrail->setExecutionType($record->executionType);
+		$searchTrail->setResponseTime($record->responseTime);
+		return $this->recordSearch(searchTrail: $this->stamped(searchTrail: $searchTrail), searchQuery: $record->searchQuery);
 	}//end createSearchTrail()
 
 	/**

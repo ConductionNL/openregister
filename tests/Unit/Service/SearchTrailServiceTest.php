@@ -12,6 +12,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\SearchTrailRecord;
 use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\SearchMeasurement;
 use OCA\OpenRegister\Service\SearchPeriod;
@@ -46,6 +47,21 @@ class SearchTrailServiceTest extends TestCase {
 		$result = $this->service->createSearchTrail(['search' => 'test'], new SearchMeasurement(10, 100, 50.5, 'sync'));
 
 		$this->assertSame($trail, $result);
+	}
+
+	public function testCreateSearchTrailRoundsTheResponseTime(): void {
+		$stored = [];
+		$this->searchTrailMapper->method('createSearchTrail')->willReturnCallback(
+			function (SearchTrailRecord $record) use (&$stored): SearchTrail {
+				$stored[] = $record->responseTime;
+				return new SearchTrail();
+			}
+		);
+
+		$this->service->createSearchTrail([], new SearchMeasurement(0, 0, 12.5, 'async'));
+		$this->service->createSearchTrail([], new SearchMeasurement(0, 0, 12.4, 'sync'));
+
+		$this->assertSame([13, 12], $stored);
 	}
 
 	public function testCreateSearchTrailThrowsOnMapperException(): void {

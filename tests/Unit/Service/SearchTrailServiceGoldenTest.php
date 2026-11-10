@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\SearchTrailRecord;
 use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\SearchMeasurement;
 use OCA\OpenRegister\Service\SearchPeriod;
@@ -71,15 +72,15 @@ class SearchTrailServiceGoldenTest extends TestCase {
 	 *
 	 * @return array{0: int|null, 1: int|null}
 	 */
-	private static function outcomeOf(SearchTrail $outcome): array {
-		return [$outcome->getResultCount(), $outcome->getTotalResults()];
+	private static function outcomeOf(SearchTrailRecord $record): array {
+		return [$record->resultCount, $record->totalResults];
 	}
 
 	public function testCreatePassesArgumentsAndDoesNotClearByDefault(): void {
 		$trail = new SearchTrail();
 		$this->trailMapper->expects($this->once())->method('createSearchTrail')
-			->willReturnCallback(function (array $query, SearchTrail $outcome, float $responseTime, string $type) use ($trail) {
-				$this->assertSame([['q' => 'x', '_limit' => 3], 4, 40, 12.5, 'async'], [$query, ...self::outcomeOf($outcome), $responseTime, $type]);
+			->willReturnCallback(function (SearchTrailRecord $record) use ($trail) {
+				$this->assertSame([['q' => 'x', '_limit' => 3], 4, 40, 13, 'async'], [$record->searchQuery, ...self::outcomeOf($record), $record->responseTime, $record->executionType]);
 				return $trail;
 			});
 		$this->trailMapper->expects($this->never())->method('clearLogs');
@@ -91,7 +92,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 		$trail = new SearchTrail();
 		$this->trailMapper->method('createSearchTrail')->willReturnCallback(function (...$args) use ($trail) {
 			$this->calls[] = 'create';
-			$this->assertSame([[], 1, 2, 0.0, 'sync'], [$args[0], ...self::outcomeOf($args[1]), $args[2], $args[3]]);
+			$this->assertSame([[], 1, 2, 0, 'sync'], [$args[0]->searchQuery, ...self::outcomeOf($args[0]), $args[0]->responseTime, $args[0]->executionType]);
 			return $trail;
 		});
 		$this->trailMapper->expects($this->once())->method('clearLogs')->willReturnCallback(function () {
