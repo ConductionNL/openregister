@@ -363,9 +363,9 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 *
 	 * @param string $search A name substring, or '' for all.
 	 *
-	 * @return \OCP\DB\QueryBuilder\IQueryBuilder
+	 * @return IQueryBuilder
 	 */
-	private function operationsQuery(string $search): \OCP\DB\QueryBuilder\IQueryBuilder {
+	private function operationsQuery(string $search): IQueryBuilder {
 		$qb = $this->platform->db->getQueryBuilder();
 		$qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
 			->from('flow_operations')
