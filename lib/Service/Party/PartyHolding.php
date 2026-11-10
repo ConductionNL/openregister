@@ -49,6 +49,8 @@ final readonly class PartyHolding {
 	 * @param ContactLink $link The link.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function matches(ContactLink $link): bool {
 		return $link->getPartyUuid() === $this->partyUuid
