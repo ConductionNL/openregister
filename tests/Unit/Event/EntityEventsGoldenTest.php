@@ -38,6 +38,15 @@ class EntityEventsGoldenTest extends TestCase {
 		'Object'        => ['object', ['Created', 'Deleted', 'Locked', 'Unlocked'], 'Db\\ObjectEntity'],
 	];
 
+	/**
+	 * Entities outside the Kernel travel under the Kernel read interface they implement (ADR-013 Rule 1).
+	 */
+	private const DECLARED_AS = [
+		'OCA\\OpenRegister\\Mcp\\Db\\Agent'        => 'OCA\\OpenRegister\\Kernel\\Contracts\\AgentInterface',
+		'OCA\\OpenRegister\\Mcp\\Db\\Conversation' => 'OCA\\OpenRegister\\Kernel\\Contracts\\ConversationInterface',
+		'OCA\\OpenRegister\\Search\\Db\\View'      => 'OCA\\OpenRegister\\Kernel\\Contracts\\ViewInterface',
+	];
+
 	public static function events(): array {
 		$cases = [];
 		foreach (self::FAMILIES as $name => [$argument, $verbs, $entity]) {
@@ -61,9 +70,12 @@ class EntityEventsGoldenTest extends TestCase {
 		$parameters = (new ReflectionClass($class))->getConstructor()->getParameters();
 
 		$this->assertCount(1, $parameters);
+		$declared = (self::DECLARED_AS[$entity] ?? $entity);
+
 		$this->assertSame($argument, $parameters[0]->getName());
-		$this->assertSame($entity, (string) $parameters[0]->getType());
-		$this->assertSame($entity, (string) (new ReflectionMethod($class, $getter))->getReturnType());
+		$this->assertTrue(is_a($entity, $declared, true));
+		$this->assertSame($declared, (string) $parameters[0]->getType());
+		$this->assertSame($declared, (string) (new ReflectionMethod($class, $getter))->getReturnType());
 	}//end testTheSignatureStaysTheSame()
 
 	#[DataProvider('events')]

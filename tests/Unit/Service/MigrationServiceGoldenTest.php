@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\MigrationService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -47,9 +48,11 @@ class MigrationServiceGoldenTest extends TestCase {
 	protected function setUp(): void {
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 		$this->service     = new MigrationService(
-			$this->magicMapper,
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class)
+			new SchemaCatalog(
+				$this->createMock(RegisterMapper::class),
+				$this->createMock(SchemaMapper::class),
+				$this->magicMapper
+			)
 		);
 	}
 

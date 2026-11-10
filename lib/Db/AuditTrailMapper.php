@@ -27,8 +27,17 @@ namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Db\AuditTrail\AuditActionStatistics;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
+use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
+use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
+use OCA\OpenRegister\Db\AuditTrail\HardeningChange;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusalOptions;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailStatistics;
 use DateTime;
 use DateTimeInterface;
@@ -36,10 +45,18 @@ use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
+use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
+use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
+use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Service\Audit\AuditSinkShipperInterface;
 use OCA\OpenRegister\Service\Audit\AuditTrailCollaborators;
 use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
+use OCA\OpenRegister\Db\AuditTrail\ActionScope;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
+use OCA\OpenRegister\Db\AuditTrail\RevertOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -577,18 +594,71 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		array|null $sort = ['created' => 'DESC'],
 		string|null $search = null,
 	): array {
+		$query = new ListQuery(limit: ($limit ?? 0), offset: $offset, filters: ($filters ?? []), sort: ($sort ?? []), search: $search);
+		if ($limit === null) {
+			return $this->findEvery(query: $query);
+		}
+
+		return $this->findListed(query: $query);
+	}//end findAll()
+
+	/**
+	 * One page of audit trails matching a listing's filters, search and sort.
+	 *
+	 * The typed form of {@see findAll()} with a limit, which keeps its signature for other apps.
+	 *
+	 * @param ListQuery $query The limit, offset, filters, sort and search.
+	 *
+	 * @return AuditTrail[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function findListed(ListQuery $query): array {
+		return $this->findWithin(query: $query, limit: $query->limit);
+	}//end findListed()
+
+	/**
+	 * Every audit trail matching a listing's filters, search and sort, from its offset, without a limit.
+	 *
+	 * The typed form of {@see findAll()} without a limit: the query's limit is not applied.
+	 *
+	 * @param ListQuery $query The offset, filters, sort and search.
+	 *
+	 * @return AuditTrail[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function findEvery(ListQuery $query): array {
+		return $this->findWithin(query: $query, limit: null);
+	}//end findEvery()
+
+	/**
+	 * Audit trails matching a listing's filters, search and sort, from its offset, up to a limit.
+	 *
+	 * @param ListQuery $query The offset, filters, sort and search.
+	 * @param int|null  $limit The limit, or null for none.
+	 *
+	 * @return AuditTrail[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+	 */
+	private function findWithin(ListQuery $query, ?int $limit): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from('openregister_audit_trails');
 
-		$this->applyFindFilters(qb: $qb, filters: $filters ?? []);
-		$this->applyChangedSearch(qb: $qb, search: $search);
-		$this->applyFindSort(qb: $qb, sort: $sort ?? []);
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		$this->applyFindFilters(qb: $qb, filters: $query->filters);
+		$this->applyChangedSearch(qb: $qb, search: $query->search);
+		$this->applyFindSort(qb: $qb, sort: $query->sort);
+		(new QueryPage(limit: $limit, offset: $query->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end findWithin()
 
 	/**
 	 * Add the search on the changed field, when a search term is provided.
@@ -820,14 +890,29 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?string $action = null,
 		?array $cascadeContext = null,
 	): AuditTrail {
-		$auditTrail = $this->buildAuditTrail(old: $old, new: $new, action: $action, cascadeContext: $cascadeContext);
+		return $this->recordChange(change: new AuditedChange(old: $old, new: $new, action: $action, cascadeContext: $cascadeContext));
+	}//end createAuditTrail()
+
+	/**
+	 * Record one change to an object, merged into an aggregation window when one is set.
+	 *
+	 * The typed form of {@see createAuditTrail()}, which keeps its signature for other apps.
+	 *
+	 * @param AuditedChange $change The old and new state, the action and the cascade context.
+	 *
+	 * @return AuditTrail The created (or merged) audit trail
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function recordChange(AuditedChange $change): AuditTrail {
+		$auditTrail = $this->buildEntry(change: $change);
 
 		// Nothing merges unless an administrator set a window, so this is a
 		// no-op on every instance that did not ask for it. When nothing merged,
 		// insert the new AuditTrail, sealed into the hash chain, and return it.
 		return $this->mergeIntoAggregationWindow(candidate: $auditTrail)
 			?? $this->insertHashChained(auditTrail: $auditTrail);
-	}//end createAuditTrail()
+	}//end recordChange()
 
 	/**
 	 * Fold an edit into the entry already written, when a window says to.
@@ -1014,11 +1099,28 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?string $action = null,
 		?array $cascadeContext = null,
 	): AuditTrail {
-		$pair = ['old' => $old, 'new' => $new];
-		[$action, $objectEntity] = $this->resolveAuditAction(pair: $pair, action: $action);
+		return $this->buildEntry(change: new AuditedChange(old: $old, new: $new, action: $action, cascadeContext: $cascadeContext));
+	}//end buildAuditTrail()
+
+	/**
+	 * Build (but do not persist) the audit row of one change.
+	 *
+	 * The typed form of {@see buildAuditTrail()}, which keeps its signature for other apps.
+	 *
+	 * @param AuditedChange $change The old and new state, the action and the cascade context.
+	 *
+	 * @return AuditTrail The populated (unpersisted) audit trail entity
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function buildEntry(AuditedChange $change): AuditTrail {
+		$pair = ['old' => $change->old, 'new' => $change->new];
+		[$action, $objectEntity] = $this->resolveAuditAction(pair: $pair, action: $change->action);
 
 		$changed = $this->diffForAudit(pair: $pair, action: $action);
-		$changed = $this->foldCascadeContext(changed: $changed, cascadeContext: $cascadeContext);
+		$changed = $this->foldCascadeContext(changed: $changed, cascadeContext: $change->cascadeContext);
 		// The markers are added before the row is built and sealed: the hash
 		// chain covers whatever is in the row.
 		$changed = $this->markTransitionOrigin(changed: $changed, objectEntity: $objectEntity);
@@ -1047,7 +1149,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$this->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $objectEntity);
 
 		return $auditTrail;
-	}//end buildAuditTrail()
+	}//end buildEntry()
 
 	/**
 	 * The action to record and the entity the row describes.
@@ -2045,15 +2147,32 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Controls version handling strategy on revert
 	 */
 	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity {
+		return $this->revertObjectWith(identifier: $identifier, options: new RevertOptions(until: $until, overwriteVersion: $overwriteVersion));
+	}//end revertObject()
+
+	/**
+	 * Revert an object to a point in its trail.
+	 *
+	 * The typed form of {@see revertObject()}, which keeps its signature for other apps.
+	 *
+	 * @param mixed         $identifier The object itself, or its ID, UUID or URI to look it up by.
+	 * @param RevertOptions $options    The reversion point and the version handling.
+	 *
+	 * @throws DoesNotExistException If object not found
+	 * @throws \Exception If revert fails
+	 *
+	 * @return ObjectEntity The reverted object (unsaved)
+	 */
+	public function revertObjectWith(mixed $identifier, RevertOptions $options): ObjectEntity {
 		$object = $this->objectToRevert(identifier: $identifier);
 
 		// Get audit trail entries until the specified point.
 		$auditTrails = $this->findByObjectUntil(
 			objectUuid: $object->getUuid(),
-			until: $until
+			until: $options->until
 		);
 
-		if (empty($auditTrails) === true && $until !== null) {
+		if (empty($auditTrails) === true && $options->until !== null) {
 			throw new Exception('No audit trail entries found for the specified reversion point.');
 		}
 
@@ -2066,12 +2185,12 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		}
 
 		// Handle versioning.
-		if ($overwriteVersion === false) {
+		if ($options->overwriteVersion === false) {
 			self::bumpPatchVersion(object: $revertedObject);
 		}
 
 		return $revertedObject;
-	}//end revertObject()
+	}//end revertObjectWith()
 
 	/**
 	 * The object to revert: the one handed in, or the one the identifier names.
@@ -2387,21 +2506,36 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?array $onlyActions = null,
 		array $excludeActions = [],
 	): int {
+		return $this->countObjectTrail(objectUuid: $objectUuid, scope: new ActionScope(onlyActions: $onlyActions, excludeActions: $excludeActions));
+	}//end countForObject()
+
+	/**
+	 * Count the live rows of one object's trail within an action scope.
+	 *
+	 * The typed form of {@see countForObject()}, which keeps its signature for other apps.
+	 *
+	 * @param string      $objectUuid The object's UUID.
+	 * @param ActionScope $scope      The actions included and the actions never touched.
+	 *
+	 * @return int The number of rows that would be tombstoned.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	public function countObjectTrail(string $objectUuid, ActionScope $scope): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'row_count'))
 			->from($this->getTableName())
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->isNull('purged_at'));
 
-		self::andActionIn(qb: $qb, onlyActions: $onlyActions);
-		self::andActionNotIn(qb: $qb, excludeActions: $excludeActions);
+		self::andActionScope(qb: $qb, scope: $scope);
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
 		$result->closeCursor();
 
 		return $count;
-	}//end countForObject()
+	}//end countObjectTrail()
 
 	/**
 	 * Read the audit rows of one object, by action, newest first.
@@ -2419,21 +2553,37 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function findForObjectByAction(string $objectUuid, array $actions = [], int $limit = 50): array {
+		return $this->findObjectActions(objectUuid: $objectUuid, options: new ActionLookupOptions(actions: $actions, limit: $limit));
+	}//end findForObjectByAction()
+
+	/**
+	 * One object's entries, optionally only some actions, newest first.
+	 *
+	 * The typed form of {@see findForObjectByAction()}, which keeps its signature for other apps.
+	 *
+	 * @param string              $objectUuid The object's UUID.
+	 * @param ActionLookupOptions $options    The actions to return (every action when empty) and the row cap.
+	 *
+	 * @return array<int, AuditTrail> The matching rows, newest first.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	public function findObjectActions(string $objectUuid, ActionLookupOptions $options): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->orderBy('created', 'DESC')
-			->setMaxResults($limit);
+			->setMaxResults($options->limit);
 
-		if ($actions !== []) {
+		if ($options->actions !== []) {
 			$qb->andWhere(
-				$qb->expr()->in('action', $qb->createNamedParameter($actions, IQueryBuilder::PARAM_STR_ARRAY))
+				$qb->expr()->in('action', $qb->createNamedParameter($options->actions, IQueryBuilder::PARAM_STR_ARRAY))
 			);
 		}
 
 		return $this->findEntities(query: $qb);
-	}//end findForObjectByAction()
+	}//end findObjectActions()
 
 	/**
 	 * Tombstone the audit rows that belong to one object.
@@ -2463,6 +2613,24 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?array $onlyActions = null,
 		array $excludeActions = [],
 	): int {
+		return $this->tombstoneObjectTrail(objectUuid: $objectUuid, scope: new ActionScope(onlyActions: $onlyActions, excludeActions: $excludeActions));
+	}//end tombstoneForObject()
+
+	/**
+	 * Tombstone the rows of one object's trail within an action scope.
+	 *
+	 * The typed form of {@see tombstoneForObject()}, which keeps its signature for other apps.
+	 *
+	 * @param string      $objectUuid The object's UUID.
+	 * @param ActionScope $scope      The actions included and the actions never touched.
+	 *
+	 * @return int The number of rows tombstoned.
+	 *
+	 * @throws \Exception When the statement fails.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	public function tombstoneObjectTrail(string $objectUuid, ActionScope $scope): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update('openregister_audit_trails')
 			->set('purged_at', $qb->createFunction('NOW()'))
@@ -2475,11 +2643,23 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->isNull('purged_at'));
 
-		self::andActionIn(qb: $qb, onlyActions: $onlyActions);
-		self::andActionNotIn(qb: $qb, excludeActions: $excludeActions);
+		self::andActionScope(qb: $qb, scope: $scope);
 
 		return (int)$qb->executeStatement();
-	}//end tombstoneForObject()
+	}//end tombstoneObjectTrail()
+
+	/**
+	 * Restrict a query on one object's trail to an action scope.
+	 *
+	 * @param IQueryBuilder $qb    The query.
+	 * @param ActionScope   $scope The actions included and the actions never touched.
+	 *
+	 * @return void
+	 */
+	private static function andActionScope(IQueryBuilder $qb, ActionScope $scope): void {
+		self::andActionIn(qb: $qb, onlyActions: $scope->onlyActions);
+		self::andActionNotIn(qb: $qb, excludeActions: $scope->excludeActions);
+	}//end andActionScope()
 
 	/**
 	 * Restrict a per-object query to these actions; null or empty restricts nothing.
@@ -2655,16 +2835,34 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?string $actorName = null,
 		?string $ipAddress = null,
 	): AuditTrail {
-		$auditTrail = self::actorEntry(action: $action, actor: $this->entryActor(actorId: $actorId, actorName: $actorName));
-		$auditTrail->setObject($object->getId());
-		$auditTrail->setObjectUuid($object->getUuid());
-		$auditTrail->setRegister($object->getRegister());
-		$auditTrail->setSchema($object->getSchema());
-		$auditTrail->setChanged($context);
-		self::stampIpAddress(auditTrail: $auditTrail, ipAddress: $ipAddress);
+		$options = new ObjectAuditEventOptions(actor: new NamedActor(id: $actorId, name: $actorName), ipAddress: $ipAddress);
+
+		return $this->recordObjectEvent(event: new ObjectAuditEvent(object: $object, action: $action, context: $context, options: $options));
+	}//end createAuditTrailEntry()
+
+	/**
+	 * Record a non-CRUD action on one object, with an explicit actor when one is named.
+	 *
+	 * The typed form of {@see createAuditTrailEntry()}, which keeps its signature for other apps.
+	 *
+	 * @param ObjectAuditEvent $event The object, action, context, and the explicit actor and address.
+	 *
+	 * @return AuditTrail The created audit trail entry
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
+	 */
+	public function recordObjectEvent(ObjectAuditEvent $event): AuditTrail {
+		$actor = $this->entryActor(actorId: $event->options->actor->id, actorName: $event->options->actor->name);
+		$auditTrail = self::actorEntry(action: $event->action, actor: $actor);
+		$auditTrail->setObject($event->object->getId());
+		$auditTrail->setObjectUuid($event->object->getUuid());
+		$auditTrail->setRegister($event->object->getRegister());
+		$auditTrail->setSchema($event->object->getSchema());
+		$auditTrail->setChanged($event->context);
+		self::stampIpAddress(auditTrail: $auditTrail, ipAddress: $event->options->ipAddress);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
-	}//end createAuditTrailEntry()
+	}//end recordObjectEvent()
 
 	/**
 	 * The actor a createAuditTrailEntry() row names.
@@ -2774,17 +2972,34 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		array $resultSummary,
 		AuditedObject $about = new AuditedObject(),
 	): AuditTrail {
-		$auditTrail = self::actorEntry(action: 'mcp.' . self::toolVerb(toolId: $toolId), actor: $this->sessionActor());
+		$invocation = new ToolInvocation(toolId: $toolId, paramsDigest: $paramsDigest, resultSummary: $resultSummary, about: $about);
+
+		return $this->recordToolInvocation(invocation: $invocation);
+	}//end createToolInvocationEntry()
+
+	/**
+	 * Record one MCP tool invocation.
+	 *
+	 * The typed form of {@see createToolInvocationEntry()}, which keeps its signature for other apps.
+	 *
+	 * @param ToolInvocation $invocation The tool id, argument digest, outcome summary and what it touched.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 */
+	public function recordToolInvocation(ToolInvocation $invocation): AuditTrail {
+		$auditTrail = self::actorEntry(action: 'mcp.' . self::toolVerb(toolId: $invocation->toolId), actor: $this->sessionActor());
 		// `changed` is NOT NULL and QBMapper writes only the fields a setter
 		// touched: a tool call changes no object, so it records an empty set (#4279).
 		$auditTrail->setChanged([]);
-		$auditTrail->setToolId($toolId);
-		$auditTrail->setParamsDigest($paramsDigest);
-		$auditTrail->setResultSummary($resultSummary);
-		$about->stampOnto(auditTrail: $auditTrail);
+		$auditTrail->setToolId($invocation->toolId);
+		$auditTrail->setParamsDigest($invocation->paramsDigest);
+		$auditTrail->setResultSummary($invocation->resultSummary);
+		$invocation->about->stampOnto(auditTrail: $auditTrail);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
-	}//end createToolInvocationEntry()
+	}//end recordToolInvocation()
 
 	/**
 	 * The verb of a namespaced tool id: the part after the last dot, or the whole id without one.
@@ -2945,40 +3160,75 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?string $from = null,
 		?string $to = null,
 	): array {
+		$window = new ActionWindow(action: $action, from: $from, to: $to);
+
+		return $this->findActorTrail(query: new ActorTrailQuery(userId: $userId, limit: $limit, offset: $offset, window: $window));
+	}//end findByActor()
+
+	/**
+	 * One page of the entries one actor produced, with the unbounded total.
+	 *
+	 * The typed form of {@see findByActor()}, which keeps its signature for other apps.
+	 *
+	 * @param ActorTrailQuery $query The actor, the page and the optional action and date range.
+	 *
+	 * @return array{results: array<int, AuditTrail>, total: int}
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function findActorTrail(ActorTrailQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($qb->expr()->eq('user', $qb->createNamedParameter($userId)))
+			->where($qb->expr()->eq('user', $qb->createNamedParameter($query->userId)))
 			->orderBy('created', 'DESC')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+			->setMaxResults($query->limit)
+			->setFirstResult($query->offset);
 
-		self::andActionIs(qb: $qb, action: $action);
-		self::andCreatedFrom(qb: $qb, from: $from);
-		self::andCreatedUntil(qb: $qb, until: $to);
+		self::andActionWindow(qb: $qb, window: $query->window);
 
-		$results = $this->findEntities(query: $qb);
+		return [
+			'results' => $this->findEntities(query: $qb),
+			'total' => $this->countActorTrail(query: $query),
+		];
+	}//end findActorTrail()
 
-		// Count total matches (unbounded).
+	/**
+	 * How many entries one actor produced within the window, unbounded by the page.
+	 *
+	 * @param ActorTrailQuery $query The actor and the optional action and date range.
+	 *
+	 * @return int The total.
+	 */
+	private function countActorTrail(ActorTrailQuery $query): int {
 		$count = $this->db->getQueryBuilder();
 		$count->select($count->func()->count('*', 'total_count'))
 			->from($this->getTableName())
-			->where($count->expr()->eq('user', $count->createNamedParameter($userId)));
+			->where($count->expr()->eq('user', $count->createNamedParameter($query->userId)));
 
-		self::andActionIs(qb: $count, action: $action);
-		self::andCreatedFrom(qb: $count, from: $from);
-		self::andCreatedUntil(qb: $count, until: $to);
+		self::andActionWindow(qb: $count, window: $query->window);
 
 		$result = $count->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
 
-		return [
-			'results' => $results,
-			'total' => (int)($row['total_count'] ?? 0),
-		];
-	}//end findByActor()
+		return (int)($row['total_count'] ?? 0);
+	}//end countActorTrail()
+
+	/**
+	 * Narrow a query to an action and a `created` range, each only when given.
+	 *
+	 * @param IQueryBuilder $qb     The query.
+	 * @param ActionWindow  $window The optional action and date range.
+	 *
+	 * @return void
+	 */
+	private static function andActionWindow(IQueryBuilder $qb, ActionWindow $window): void {
+		self::andActionIs(qb: $qb, action: $window->action);
+		self::andCreatedFrom(qb: $qb, from: $window->from);
+		self::andCreatedUntil(qb: $qb, until: $window->to);
+	}//end andActionWindow()
 
 	/**
 	 * The optional action filter of findByActor(), only when non-empty.
@@ -3044,16 +3294,43 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		string|null $actorId = null,
 		string|null $actorReference = null,
 	): AuditTrail {
-		$actor = self::refusalActor(actorId: $actorId, actorReference: $actorReference);
+		$target = new AuditedObject(register: $register, schema: $schema, objectUuid: $objectUuid);
+		$options = new SharedMasterDataRefusalOptions(context: $context, target: $target, actor: new NamedActor(id: $actorId, name: $actorReference));
+
+		$parties = ['holderOrganisation' => $holderOrganisation, 'sourceOrganisation' => $sourceOrganisation, 'resourceType' => $resourceType];
+
+		return $this->recordSharedMasterDataRefusal(refusal: new SharedMasterDataRefusal(...$parties, options: $options));
+	}//end createSharedMasterDataRefusalEntry()
+
+	/**
+	 * Record a write refused because the resource is shared master data another organisation holds.
+	 *
+	 * The typed form of {@see createSharedMasterDataRefusalEntry()}, which keeps its
+	 * signature for other apps. The actor is pseudonymous and the context is
+	 * redacted before it arrives, as there.
+	 *
+	 * @param SharedMasterDataRefusal $refusal The organisations, the resource type, and the context, target and actor.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
+	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
+	 */
+	public function recordSharedMasterDataRefusal(SharedMasterDataRefusal $refusal): AuditTrail {
+		$options = $refusal->options;
+		$actor = self::refusalActor(actorId: $options->actor->id, actorReference: $options->actor->name);
 		$auditTrail = self::actorEntry(action: 'shared_master_data_write_denied', actor: $actor);
-		(new AuditedObject(register: $register, schema: $schema, objectUuid: $objectUuid))->stampOnto(auditTrail: $auditTrail);
-		$auditTrail->setOrganisationId($sourceOrganisation);
-		$refusal = ['holderOrganisation' => $holderOrganisation, 'sourceOrganisation' => $sourceOrganisation, 'resourceType' => $resourceType];
-		$auditTrail->setResultSummary(array_merge($context, $refusal, ['outcome' => 'refused']));
+		$options->target->stampOnto(auditTrail: $auditTrail);
+		$auditTrail->setOrganisationId($refusal->sourceOrganisation);
+		$summary = [
+			'holderOrganisation' => $refusal->holderOrganisation,
+			'sourceOrganisation' => $refusal->sourceOrganisation,
+			'resourceType' => $refusal->resourceType,
+		];
+		$auditTrail->setResultSummary(array_merge($options->context, $summary, ['outcome' => 'refused']));
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
-
-	}//end createSharedMasterDataRefusalEntry()
+	}//end recordSharedMasterDataRefusal()
 
 	/**
 	 * The actor a shared-master-data refusal names: `system` without an id, the id without a reference.
@@ -3101,12 +3378,28 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function createPartyQueryRefusalEntry(string $query, int $cap, int $would, ?int $schema = null): AuditTrail {
+		return $this->recordPartyQueryRefusal(refusal: new PartyQueryRefusal(query: $query, cap: $cap, would: $would, schema: $schema));
+	}//end createPartyQueryRefusalEntry()
+
+	/**
+	 * Record a person query refused over the administered cap.
+	 *
+	 * The typed form of {@see createPartyQueryRefusalEntry()}, which keeps its signature for other apps.
+	 *
+	 * @param PartyQueryRefusal $refusal The query, the cap, the count it would have matched and the schema.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 */
+	public function recordPartyQueryRefusal(PartyQueryRefusal $refusal): AuditTrail {
 		$auditTrail = self::actorEntry(action: 'party.query-refused', actor: $this->sessionActor());
-		$auditTrail->setSchema($schema);
-		$auditTrail->setResultSummary(['query' => $query, 'cap' => $cap, 'wouldHaveMatched' => $would, 'returned' => 0]);
+		$auditTrail->setSchema($refusal->schema);
+		$summary = ['query' => $refusal->query, 'cap' => $refusal->cap, 'wouldHaveMatched' => $refusal->would, 'returned' => 0];
+		$auditTrail->setResultSummary($summary);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
-	}//end createPartyQueryRefusalEntry()
+	}//end recordPartyQueryRefusal()
 
 	/**
 	 * Create one immutable, hash-chained audit record for a read that was
@@ -3135,12 +3428,29 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?int $register = null,
 		?int $schema = null,
 	): AuditTrail {
+		$target = new AuditedObject(register: $register, schema: $schema);
+
+		return $this->recordPurposeRefusal(refusal: new PurposeRefusal(rule: $rule, purpose: $purpose, target: $target));
+	}//end createPurposeRefusalEntry()
+
+	/**
+	 * Record a read refused for want of a usable purpose.
+	 *
+	 * The typed form of {@see createPurposeRefusalEntry()}, which keeps its signature for other apps.
+	 *
+	 * @param PurposeRefusal $refusal The rule, the purpose named, and the register and schema read.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function recordPurposeRefusal(PurposeRefusal $refusal): AuditTrail {
 		$auditTrail = self::actorEntry(action: PurposeGuardInterface::ACTION_REFUSED, actor: $this->sessionActor());
-		(new AuditedObject(register: $register, schema: $schema))->stampOnto(auditTrail: $auditTrail);
-		$auditTrail->setResultSummary(['rule' => $rule, 'declaredPurpose' => $purpose, 'refused' => true]);
+		$refusal->target->stampOnto(auditTrail: $auditTrail);
+		$auditTrail->setResultSummary(['rule' => $refusal->rule, 'declaredPurpose' => $refusal->purpose, 'refused' => true]);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
-	}//end createPurposeRefusalEntry()
+	}//end recordPurposeRefusal()
 
 	/**
 	 * Count audit rows per purpose over a period.
@@ -3369,16 +3679,34 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		bool $accepted,
 		string $refusal = '',
 	): AuditTrail {
-		$summary = ['control' => $control, 'before' => $before, 'after' => $after, 'accepted' => $accepted];
-		if ($refusal !== '') {
-			$summary['refusal'] = $refusal;
+		$change = new HardeningChange(control: $control, before: $before, after: $after, refusal: $refusal);
+
+		return $this->recordHardeningChange(change: $change, accepted: $accepted);
+	}//end createHardeningChangeEntry()
+
+	/**
+	 * Record one change to a security control, or one refused attempt at a change.
+	 *
+	 * The typed form of {@see createHardeningChangeEntry()}, which keeps its signature for other apps.
+	 *
+	 * @param HardeningChange $change   The control, the values before and asked for, and the refusal.
+	 * @param bool            $accepted Whether the change was made.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
+	 */
+	public function recordHardeningChange(HardeningChange $change, bool $accepted): AuditTrail {
+		$summary = ['control' => $change->control, 'before' => $change->before, 'after' => $change->after, 'accepted' => $accepted];
+		if ($change->refusal !== '') {
+			$summary['refusal'] = $change->refusal;
 		}
 
 		$auditTrail = self::actorEntry(action: self::hardeningAction(accepted: $accepted), actor: $this->sessionActor());
 		$auditTrail->setResultSummary($summary);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
-	}//end createHardeningChangeEntry()
+	}//end recordHardeningChange()
 
 	/**
 	 * The action of a hardening row: a change that was made, or one that was refused.
@@ -3427,12 +3755,29 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?int $schema = null,
 		?string $actorId = null,
 	): AuditTrail {
-		$auditTrail = self::actorEntry(action: 'export.' . $outcome, actor: $this->exportActor(actorId: $actorId));
-		(new AuditedObject(register: $register, schema: $schema))->stampOnto(auditTrail: $auditTrail);
-		$auditTrail->setResultSummary($summary);
+		$target = new AuditedObject(register: $register, schema: $schema);
+
+		return $this->recordExport(export: new ExportOutcome(outcome: $outcome, summary: $summary, target: $target, actorId: $actorId));
+	}//end createExportEntry()
+
+	/**
+	 * Record one export, completed or refused.
+	 *
+	 * The typed form of {@see createExportEntry()}, which keeps its signature for other apps.
+	 *
+	 * @param ExportOutcome $export The outcome, the summary, the register and schema, and the actor.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function recordExport(ExportOutcome $export): AuditTrail {
+		$auditTrail = self::actorEntry(action: 'export.' . $export->outcome, actor: $this->exportActor(actorId: $export->actorId));
+		$export->target->stampOnto(auditTrail: $auditTrail);
+		$auditTrail->setResultSummary($export->summary);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
-	}//end createExportEntry()
+	}//end recordExport()
 
 	/**
 	 * The actor an export row names: the principal it ran as, or the session user.
@@ -3476,14 +3821,31 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?int $register = null,
 		?int $schema = null,
 	): AuditTrail {
+		$target = new AuditedObject(register: $register, schema: $schema);
+
+		return $this->recordSlugBackfill(backfill: new SlugBackfill(changes: $changes, summary: $summary, target: $target));
+	}//end createSlugBackfillEntry()
+
+	/**
+	 * Record one slug backfill run.
+	 *
+	 * The typed form of {@see createSlugBackfillEntry()}, which keeps its signature for other apps.
+	 *
+	 * @param SlugBackfill $backfill The slugs the run wrote, its counters, and its register and schema.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	public function recordSlugBackfill(SlugBackfill $backfill): AuditTrail {
 		$auditTrail = self::actorEntry(action: 'slug.backfill.' . self::SLUG_BACKFILL_MODE, actor: $this->sessionActor());
 		// `changed` is NOT NULL and QBMapper writes only the fields a setter touched.
 		$auditTrail->setChanged([]);
-		(new AuditedObject(register: $register, schema: $schema))->stampOnto(auditTrail: $auditTrail);
-		$auditTrail->setResultSummary($this->slugBackfillResultSummary(mode: self::SLUG_BACKFILL_MODE, changes: $changes, summary: $summary));
+		$backfill->target->stampOnto(auditTrail: $auditTrail);
+		$auditTrail->setResultSummary($this->slugBackfillSummary(backfill: $backfill, mode: self::SLUG_BACKFILL_MODE));
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
-	}//end createSlugBackfillEntry()
+	}//end recordSlugBackfill()
 
 	/**
 	 * What a slug backfill entry stores: the counters and a bounded change list.
@@ -3503,6 +3865,24 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function slugBackfillResultSummary(string $mode, array $changes, array $summary): array {
+		return $this->slugBackfillSummary(backfill: new SlugBackfill(changes: $changes, summary: $summary), mode: $mode);
+	}//end slugBackfillResultSummary()
+
+	/**
+	 * The result summary of a slug backfill entry, with the change list bounded.
+	 *
+	 * The typed form of {@see slugBackfillResultSummary()}, which keeps its signature for other apps.
+	 *
+	 * @param SlugBackfill $backfill The slugs the run wrote and its counters.
+	 * @param string       $mode     The run mode, `fill`.
+	 *
+	 * @return array<string, mixed> The result summary of the entry.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	public function slugBackfillSummary(SlugBackfill $backfill, string $mode): array {
+		$changes = $backfill->changes;
+		$summary = $backfill->summary;
 		$total = count($changes);
 		$listed = [];
 		foreach (array_slice($changes, 0, self::SLUG_BACKFILL_MAX_CHANGES) as $change) {
@@ -3520,7 +3900,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		}
 
 		return $result;
-	}//end slugBackfillResultSummary()
+	}//end slugBackfillSummary()
 
 	/**
 	 * The objects one user read most recently, newest first.

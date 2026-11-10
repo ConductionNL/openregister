@@ -26,6 +26,7 @@ use OCA\OpenRegister\BackgroundJob\ExternalGrantLapseJob;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantLapseNotifier;
+use OCA\OpenRegister\Service\Rbac\PrincipalDirectory;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -89,7 +90,7 @@ class ExternalGrantLapseNotifierTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('get')->willReturnCallback(fn (string $gid): ?IGroup => $gid === 'advisers' ? $this->group() : null);
 
-		return new ExternalGrantLapseNotifier(notifications: $this->manager, users: $users, groups: $groups);
+		return new ExternalGrantLapseNotifier(notifications: $this->manager, directory: new PrincipalDirectory(userManager: $users, groupManager: $groups));
 	}//end notifier()
 
 	/**

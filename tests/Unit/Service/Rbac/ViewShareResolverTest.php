@@ -38,6 +38,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\ShareTargetLookup;
+use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewShareResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -219,15 +221,13 @@ class ViewShareResolverTest extends TestCase {
 	public function testAWriteMemberMayNotReshareRehomeOrDelete(): void {
 		$allowed = $this->resolver->refusedFields(
 			['query' => [], 'presentation' => [], 'alert' => []],
-			ViewShareResolver::ACCESS_WRITE,
-			false
+			ViewShareResolver::ACCESS_WRITE
 		);
 		$this->assertSame([], $allowed, 'the three fields a member owns');
 
 		$refused = $this->resolver->refusedFields(
 			['query' => [], 'sharedWith' => [], 'owner' => 'bob', 'isPublic' => true],
-			ViewShareResolver::ACCESS_WRITE,
-			false
+			ViewShareResolver::ACCESS_WRITE
 		);
 		sort($refused);
 		$this->assertSame(['isPublic', 'owner', 'sharedWith'], $refused);
@@ -243,8 +243,7 @@ class ViewShareResolverTest extends TestCase {
 	public function testAReadMemberMayChangeNothing(): void {
 		$refused = $this->resolver->refusedFields(
 			['query' => []],
-			ViewShareResolver::ACCESS_READ,
-			false
+			ViewShareResolver::ACCESS_READ
 		);
 
 		$this->assertSame(['query'], $refused);
@@ -258,14 +257,7 @@ class ViewShareResolverTest extends TestCase {
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testTheOwnerAndAnAdministratorMayChangeEverything(): void {
-		$this->assertSame(
-			[],
-			$this->resolver->refusedFields(
-				['owner' => 'bob', 'sharedWith' => []],
-				ViewShareResolver::ACCESS_OWNER,
-				true
-			)
-		);
+		$this->assertTrue($this->resolver->mayAdministerAs($this->view(), new ViewerReach('mallory', [], true)));
 
 		$this->assertTrue($this->resolver->mayAdminister($this->view(), 'alice', false));
 		$this->assertTrue($this->resolver->mayAdminister($this->view(), 'mallory', true));
@@ -287,7 +279,7 @@ class ViewShareResolverTest extends TestCase {
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testAShareOnAnUnknownGroupIsRefused(): void {
-		$exists = static fn (string $gid): bool => ($gid === 'vth');
+		$exists = new ShareTargetLookup(static fn (string $gid): bool => ($gid === 'vth'));
 
 		$findings = $this->resolver->validateShares(
 			[['group' => 'belastingen', 'mode' => 'read']],
@@ -310,7 +302,7 @@ class ViewShareResolverTest extends TestCase {
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testAValidShareListPasses(): void {
-		$exists = static fn (string $gid): bool => true;
+		$exists = new ShareTargetLookup(static fn (string $gid): bool => true);
 
 		$this->assertSame([], $this->resolver->validateShares(null, $exists));
 		$this->assertSame([], $this->resolver->validateShares([], $exists));
@@ -334,7 +326,7 @@ class ViewShareResolverTest extends TestCase {
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testTheShapeOfAShareListIsChecked(): void {
-		$exists = static fn (string $gid): bool => true;
+		$exists = new ShareTargetLookup(static fn (string $gid): bool => true);
 		$codes = static fn (array $findings): array => array_column($findings, 'code');
 
 		$this->assertContains(
@@ -410,11 +402,11 @@ class ViewShareResolverTest extends TestCase {
 		$users = static fn (string $uid): bool => ($uid === 'fatma');
 		$codes = static fn (array $findings): array => array_column($findings, 'code');
 
-		$this->assertSame([], $this->resolver->validateShares([['user' => 'fatma', 'mode' => 'read'], ['group' => 'vth', 'mode' => 'write']], $groups, $users));
-		$this->assertSame(['share.unknown-user'], $codes($this->resolver->validateShares([['user' => 'nobody', 'mode' => 'read']], $groups, $users)));
-		$this->assertSame(['share.duplicate-user'], $codes($this->resolver->validateShares([['user' => 'fatma', 'mode' => 'read'], ['user' => 'fatma', 'mode' => 'write']], $groups, $users)));
-		$this->assertSame(['share.user-and-group'], $codes($this->resolver->validateShares([['user' => 'fatma', 'group' => 'vth', 'mode' => 'read']], $groups, $users)));
-		$this->assertSame(['share.no-group'], $codes($this->resolver->validateShares([['mode' => 'read']], $groups, $users)));
-		$this->assertSame(['share.unknown-user'], $codes($this->resolver->validateShares([['user' => 'fatma', 'mode' => 'read']], $groups)));
+		$this->assertSame([], $this->resolver->validateShares([['user' => 'fatma', 'mode' => 'read'], ['group' => 'vth', 'mode' => 'write']], new ShareTargetLookup($groups, $users)));
+		$this->assertSame(['share.unknown-user'], $codes($this->resolver->validateShares([['user' => 'nobody', 'mode' => 'read']], new ShareTargetLookup($groups, $users))));
+		$this->assertSame(['share.duplicate-user'], $codes($this->resolver->validateShares([['user' => 'fatma', 'mode' => 'read'], ['user' => 'fatma', 'mode' => 'write']], new ShareTargetLookup($groups, $users))));
+		$this->assertSame(['share.user-and-group'], $codes($this->resolver->validateShares([['user' => 'fatma', 'group' => 'vth', 'mode' => 'read']], new ShareTargetLookup($groups, $users))));
+		$this->assertSame(['share.no-group'], $codes($this->resolver->validateShares([['mode' => 'read']], new ShareTargetLookup($groups, $users))));
+		$this->assertSame(['share.unknown-user'], $codes($this->resolver->validateShares([['user' => 'fatma', 'mode' => 'read']], new ShareTargetLookup($groups))));
 	}//end testAUserShareIsValidated()
 }//end class

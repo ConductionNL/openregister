@@ -38,7 +38,7 @@ class ContactSearchControllerAuthTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		return new ContactSearchController('openregister', $request, $search, $session);
+		return new ContactSearchController($request, new \OCA\OpenRegister\Search\Controller\Support\ContactSearchControllerServices($search, $session));
 	}
 
 	public function testAnonymousCallerIs401AndNothingIsSearched(): void {

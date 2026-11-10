@@ -63,66 +63,63 @@ class RepeatingGroupDeclarationValidator {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function validate(array $property, string $path): void {
+		$run = new RepeatingGroupDeclarationRun(property: $property, path: $path);
 		if (($property['repeatingGroup'] ?? false) !== true) {
-			$this->assertNoGroupKeys(property: $property, path: $path);
+			$this->assertNoGroupKeys(run: $run);
 			return;
 		}
 
-		$members = $this->declaredMembers(property: $property, path: $path);
-		$this->validateLabel(label: ($property['groupLabel'] ?? null), members: $members, path: $path);
+		$this->validateLabel(run: $run, members: $this->declaredMembers(run: $run));
 	}//end validate()
 
 	/**
 	 * Refuse group keys on a property that is not a repeating group.
 	 *
-	 * @param array  $property The property definition to check.
-	 * @param string $path     The current path in the schema, for the message.
+	 * @param RepeatingGroupDeclarationRun $run The property under check and its path.
 	 *
 	 * @throws PropertyVocabularyException When a group key is declared without the group.
 	 *
 	 * @return void
 	 */
-	private function assertNoGroupKeys(array $property, string $path): void {
+	private function assertNoGroupKeys(RepeatingGroupDeclarationRun $run): void {
 		// Present AND non-null, which is what every other check in the
 		// validator asks. A null says the key is spelled correctly and asserts
 		// nothing about its value, and `PropertyVocabularyTest` probes the whole
 		// published vocabulary that way: reading a null as a declaration made
 		// two published keys impossible to save on their own.
 		$hasGroupKey = (
-			($property['groupOrdered'] ?? null) !== null
-			|| ($property['groupLabel'] ?? null) !== null
+			($run->property['groupOrdered'] ?? null) !== null
+			|| ($run->property['groupLabel'] ?? null) !== null
 		);
 
 		if ($hasGroupKey === false) {
 			return;
 		}
 
-		$this->refuse(
+		$run->refuse(
 			code: 'repeating-group-not-declared',
-			path: $path,
-			message: "'groupOrdered' and 'groupLabel' at '$path' need 'repeatingGroup: true'."
+			message: "'groupOrdered' and 'groupLabel' at '{$run->path}' need 'repeatingGroup: true'."
 		);
 	}//end assertNoGroupKeys()
 
 	/**
 	 * The members a repeating group declares, refusing a group that is no list or names none.
 	 *
-	 * @param array  $property The property definition to check.
-	 * @param string $path     The current path in the schema, for the message.
+	 * @param RepeatingGroupDeclarationRun $run The property under check and its path.
 	 *
 	 * @throws PropertyVocabularyException When the group is not an array or declares no members.
 	 *
 	 * @return array The declared members.
 	 */
-	private function declaredMembers(array $property, string $path): array {
-		if (($property['type'] ?? null) !== 'array') {
-			$this->refuse(code: 'repeating-group-not-an-array', path: $path, message: "A repeating group at '$path' has to be type 'array'. Rows are a list.");
+	private function declaredMembers(RepeatingGroupDeclarationRun $run): array {
+		if (($run->property['type'] ?? null) !== 'array') {
+			$run->refuse(code: 'repeating-group-not-an-array', message: "A repeating group at '{$run->path}' has to be type 'array'. Rows are a list.");
 		}
 
-		$members = ($property['items']['properties'] ?? null);
+		$members = ($run->property['items']['properties'] ?? null);
 		if (is_array($members) === false || $members === []) {
-			$message = "A repeating group at '$path' has to declare its members under 'items.properties'.";
-			$this->refuse(code: 'repeating-group-without-members', path: $path, message: $message);
+			$message = "A repeating group at '{$run->path}' has to declare its members under 'items.properties'.";
+			$run->refuse(code: 'repeating-group-without-members', message: $message);
 		}
 
 		return $members;
@@ -134,9 +131,8 @@ class RepeatingGroupDeclarationValidator {
 	 * A label pointing at a member nobody declared renders blank on every row
 	 * and reads as a data problem for as long as anybody is willing to look.
 	 *
-	 * @param mixed $label The declared label member, or null.
-	 * @param array $members The group's declared members.
-	 * @param string $path The current path in the schema, for the message.
+	 * @param RepeatingGroupDeclarationRun $run     The property under check and its path.
+	 * @param array                        $members The group's declared members.
 	 *
 	 * @throws PropertyVocabularyException When the label names nothing.
 	 *
@@ -144,7 +140,8 @@ class RepeatingGroupDeclarationValidator {
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
-	private function validateLabel(mixed $label, array $members, string $path): void {
+	private function validateLabel(RepeatingGroupDeclarationRun $run, array $members): void {
+		$label = ($run->property['groupLabel'] ?? null);
 		if ($label === null) {
 			return;
 		}
@@ -154,40 +151,9 @@ class RepeatingGroupDeclarationValidator {
 		}
 
 		$known = implode(', ', array_map('strval', array_keys($members)));
-		$this->refuse(
+		$run->refuse(
 			code: 'repeating-group-unknown-label-member',
-			path: $path,
-			message: "'groupLabel' at '$path' names a member that is not declared. Members are: $known."
+			message: "'groupLabel' at '{$run->path}' names a member that is not declared. Members are: $known."
 		);
 	}//end validateLabel()
-
-	/**
-	 * Refuse a declaration, in the vocabulary's own error shape.
-	 *
-	 * Extracted so the four refusals above read as four rules rather than as
-	 * four copies of the same six lines.
-	 *
-	 * @param string $code The machine-readable refusal code.
-	 * @param string $path The property path the refusal is about.
-	 * @param string $message The sentence a schema author reads.
-	 *
-	 * @throws PropertyVocabularyException Always.
-	 *
-	 * @return never
-	 *
-	 * @spec openspec/specs/runtime-schema-api/spec.md
-	 */
-	private function refuse(string $code, string $path, string $message): never {
-		throw new PropertyVocabularyException(
-			$message,
-			[
-				[
-					'code' => $code,
-					'key' => 'repeatingGroup',
-					'path' => $path,
-					'message' => $message,
-				],
-			]
-		);
-	}//end refuse()
 }//end class

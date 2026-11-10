@@ -25,8 +25,6 @@
 
 namespace OCA\OpenRegister\Service\Sync;
 
-use DateTimeInterface;
-
 /**
  * Resolves source-vs-local conflicts using a configurable strategy.
  *
@@ -98,28 +96,21 @@ final class SyncConflictResolver {
 	 * When the local copy did not change, the source update is applied
 	 * regardless of strategy (there is nothing to conflict with).
 	 *
-	 * @param string $strategy Configured strategy (one of the *_WINS / MANUAL constants)
-	 * @param bool $localChanged Whether the local object changed since the last sync
-	 * @param DateTimeInterface|null $sourceModified Source-side last-modified timestamp (for newest-wins)
-	 * @param DateTimeInterface|null $localModified Local-side last-modified timestamp (for newest-wins)
+	 * @param string       $strategy Configured strategy (one of the *_WINS / MANUAL constants)
+	 * @param SyncConflict $conflict Whether the local copy changed, and when each side was modified
 	 *
 	 * @return string One of APPLY_SOURCE, KEEP_LOCAL, DEFER
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
-	public function resolve(
-		string $strategy,
-		bool $localChanged,
-		?DateTimeInterface $sourceModified = null,
-		?DateTimeInterface $localModified = null,
-	): string {
+	public function resolve(string $strategy, SyncConflict $conflict): string {
 		// Unknown strategy falls back to the safest default: defer to a human.
 		if ($this->isValidStrategy(strategy: $strategy) === false) {
 			return self::DEFER;
 		}
 
 		// No competing local edit: there is no conflict, just apply the source.
-		if ($localChanged === false) {
+		if ($conflict->localChanged === false) {
 			return self::APPLY_SOURCE;
 		}
 
@@ -129,7 +120,7 @@ final class SyncConflictResolver {
 			case self::LOCAL_WINS:
 				return self::KEEP_LOCAL;
 			case self::NEWEST_WINS:
-				return $this->resolveNewest(sourceModified: $sourceModified, localModified: $localModified);
+				return $this->resolveNewest(conflict: $conflict);
 			case self::MANUAL:
 			default:
 				return self::DEFER;
@@ -139,19 +130,18 @@ final class SyncConflictResolver {
 	/**
 	 * Compare timestamps for the newest-wins strategy.
 	 *
-	 * @param DateTimeInterface|null $sourceModified Source-side timestamp
-	 * @param DateTimeInterface|null $localModified Local-side timestamp
+	 * @param SyncConflict $conflict The source-side and local-side timestamps
 	 *
 	 * @return string APPLY_SOURCE, KEEP_LOCAL, or DEFER when undecidable
 	 */
-	private function resolveNewest(?DateTimeInterface $sourceModified, ?DateTimeInterface $localModified): string {
+	private function resolveNewest(SyncConflict $conflict): string {
 		// Cannot compare without both timestamps; defer rather than guess.
-		if ($sourceModified === null || $localModified === null) {
+		if ($conflict->sourceModified === null || $conflict->localModified === null) {
 			return self::DEFER;
 		}
 
-		$sourceTs = $sourceModified->getTimestamp();
-		$localTs = $localModified->getTimestamp();
+		$sourceTs = $conflict->sourceModified->getTimestamp();
+		$localTs = $conflict->localModified->getTimestamp();
 
 		if ($sourceTs > $localTs) {
 			return self::APPLY_SOURCE;

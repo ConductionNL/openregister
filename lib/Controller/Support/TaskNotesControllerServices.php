@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
+use OCP\IUserSession;
 
 /**
  * The services of TaskNotesController, bundled so its constructor stays small.
@@ -38,11 +39,13 @@ final class TaskNotesControllerServices {
 	 * @param TaskManagerInterface     $tasks         Resolves a task by uuid.
 	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
 	 * @param NoteServiceInterface     $notes         The same note storage the object leaf uses.
+	 * @param IUserSession $userSession The user session.
 	 */
 	public function __construct(
 		public readonly TaskManagerInterface $tasks,
 		public readonly TaskAuthorizationService $authorization,
 		public readonly NoteServiceInterface $notes,
+		public readonly IUserSession $userSession,
 	) {
 	}//end __construct()
 }//end class
