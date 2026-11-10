@@ -314,10 +314,7 @@ class McpProviderBridge implements ToolInterface {
 	 * @return array<string,mixed> MCP-shaped response or error envelope.
 	 */
 	private function forward(ToolCall $call, string $mcpId): array {
-		$this->logger->debug(
-			'[McpProviderBridge] Forwarding LLM call to MCP provider',
-			['function' => $call->functionName, 'mcpId' => $mcpId, 'appId' => $this->provider->getAppId()]
-		);
+		$this->logForward(call: $call, mcpId: $mcpId);
 
 		try {
 			return $this->provider->invokeTool($mcpId, $call->parameters);
@@ -333,6 +330,21 @@ class McpProviderBridge implements ToolInterface {
 			];
 		}
 	}//end forward()
+
+	/**
+	 * Log a call being forwarded to the provider.
+	 *
+	 * @param ToolCall $call  The LLM's function call.
+	 * @param string   $mcpId The MCP tool id it routes to.
+	 *
+	 * @return void
+	 */
+	private function logForward(ToolCall $call, string $mcpId): void {
+		$this->logger->debug(
+			'[McpProviderBridge] Forwarding LLM call to MCP provider',
+			['function' => $call->functionName, 'mcpId' => $mcpId, 'appId' => $this->provider->getAppId()]
+		);
+	}//end logForward()
 
 	/**
 	 * Attach the active agent context.
