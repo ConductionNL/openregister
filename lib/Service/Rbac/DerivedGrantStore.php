@@ -103,12 +103,7 @@ class DerivedGrantStore implements DerivedGrantStoreInterface, DerivedGrantLogin
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function rules(): array {
-		try {
-			$raw = $this->stores->appConfig->getValueString(app: self::APP_ID, key: self::RULES_KEY, default: '');
-		} catch (\Throwable $e) {
-			return [];
-		}
-
+		$raw = $this->storedRules();
 		if (trim($raw) === '') {
 			return [];
 		}
@@ -127,6 +122,19 @@ class DerivedGrantStore implements DerivedGrantStoreInterface, DerivedGrantLogin
 
 		return $decoded;
 	}//end rules()
+
+	/**
+	 * The stored rule set as written, or '' when it cannot be read.
+	 *
+	 * @return string The stored JSON, or ''.
+	 */
+	private function storedRules(): string {
+		try {
+			return $this->stores->appConfig->getValueString(app: self::APP_ID, key: self::RULES_KEY, default: '');
+		} catch (\Throwable $e) {
+			return '';
+		}
+	}//end storedRules()
 
 	/**
 	 * The grants one account currently holds by derivation.
