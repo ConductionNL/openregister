@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Hardening;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningAuditWriter;
+use OCA\OpenRegister\Service\Hardening\HardeningFact;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -56,7 +57,7 @@ final class HardeningAuditWriterGoldenTest extends TestCase {
 	}
 
 	public function testAnAllowedFactIsWrittenAsAcceptedWithNoRefusal(): void {
-		$this->writer()->accepted(fact: 'elevation.granted', before: '', after: ['user' => 'u']);
+		$this->writer()->accepted(change: new HardeningFact(fact: 'elevation.granted', before: '', after: ['user' => 'u']));
 
 		$this->assertSame(
 			[['control' => 'elevation.granted', 'before' => '', 'after' => ['user' => 'u'], 'accepted' => true, 'refusal' => '']],
@@ -65,7 +66,7 @@ final class HardeningAuditWriterGoldenTest extends TestCase {
 	}
 
 	public function testARefusedFactIsWrittenAsNotAcceptedWithItsRefusal(): void {
-		$this->writer()->refused(fact: 'statement.accepted', before: 'v1', after: 'v2', refusal: 'Not in force.');
+		$this->writer()->refused(change: new HardeningFact(fact: 'statement.accepted', before: 'v1', after: 'v2'), refusal: 'Not in force.');
 
 		$this->assertSame(
 			[['control' => 'statement.accepted', 'before' => 'v1', 'after' => 'v2', 'accepted' => false, 'refusal' => 'Not in force.']],
@@ -77,7 +78,7 @@ final class HardeningAuditWriterGoldenTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('error')->with($this->stringContains('elevation.lapsed'));
 
-		$this->writer(logger: $logger, fail: true)->refused(fact: 'elevation.lapsed', before: '', after: 'u', refusal: 'lapsed');
+		$this->writer(logger: $logger, fail: true)->refused(change: new HardeningFact(fact: 'elevation.lapsed', before: '', after: 'u'), refusal: 'lapsed');
 
 		$this->assertSame([], $this->entries);
 	}

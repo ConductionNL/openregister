@@ -122,10 +122,7 @@ class StatementService implements StatementServiceInterface {
 	/**
 	 * Publish a statement, or a new version of one.
 	 *
-	 * @param string $version The version, as the administrator writes it.
-	 * @param string $body    The text a user reads.
-	 * @param string $title   The heading above it.
-	 * @param string $userId  Who published it.
+	 * @param StatementPublication $publication The version, the text, the heading and who published it; trimmed before use.
 	 *
 	 * @return array{version: string, title: string, body: string, publishedAt: string, publishedBy: string} The statement now in force.
 	 *
@@ -133,10 +130,8 @@ class StatementService implements StatementServiceInterface {
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-published-statement-is-accepted-before-use-per-version-req-ihc-001
 	 */
-	public function publish(string $version, string $body, string $title = '', string $userId = ''): array {
-		return $this->publishStatement(
-			publication: new StatementPublication(version: trim($version), body: trim($body), title: trim($title), publishedBy: $userId)
-		);
+	public function publish(StatementPublication $publication): array {
+		return $this->publishStatement(publication: $publication->trimmed());
 	}//end publish()
 
 	/**
@@ -162,7 +157,7 @@ class StatementService implements StatementServiceInterface {
 		];
 
 		$this->platform->appConfig->setValueString(HardeningPolicy::APP_ID, self::STATEMENT_KEY, (string)json_encode($statement));
-		$this->audit->accepted(fact: 'statement.published', before: $before, after: $publication->version);
+		$this->audit->accepted(change: new HardeningFact(fact: 'statement.published', before: $before, after: $publication->version));
 
 		return $statement;
 	}//end publishStatement()
@@ -196,7 +191,7 @@ class StatementService implements StatementServiceInterface {
 	public function withdraw(): void {
 		$before = ($this->published()['version'] ?? '');
 		$this->platform->appConfig->setValueString(HardeningPolicy::APP_ID, self::STATEMENT_KEY, '');
-		$this->audit->accepted(fact: 'statement.withdrawn', before: $before, after: '');
+		$this->audit->accepted(change: new HardeningFact(fact: 'statement.withdrawn', before: $before, after: ''));
 
 	}//end withdraw()
 
@@ -292,10 +287,8 @@ class StatementService implements StatementServiceInterface {
 
 		if (trim($version) !== $statement['version']) {
 			$this->audit->refused(
-				fact: 'statement.accepted',
-				before: trim($version),
-				after: $statement['version'],
-				refusal: 'The version accepted is not the version in force.',
+				change: new HardeningFact(fact: 'statement.accepted', before: trim($version), after: $statement['version']),
+				refusal: 'The version accepted is not the version in force.'
 			);
 
 			throw new InvalidArgumentException(
@@ -316,13 +309,15 @@ class StatementService implements StatementServiceInterface {
 		);
 
 		$this->audit->accepted(
-			fact: 'statement.accepted',
-			before: '',
-			after: [
-				'user' => $userId,
-				'version' => $acceptance['version'],
-				'acceptedAt' => $acceptance['acceptedAt'],
-			]
+			change: new HardeningFact(
+				fact: 'statement.accepted',
+				before: '',
+				after: [
+					'user' => $userId,
+					'version' => $acceptance['version'],
+					'acceptedAt' => $acceptance['acceptedAt'],
+				]
+			)
 		);
 
 		return $acceptance;

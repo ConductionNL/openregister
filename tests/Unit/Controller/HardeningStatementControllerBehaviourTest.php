@@ -30,6 +30,7 @@ use OCA\OpenRegister\Controller\HardeningStatementController;
 use OCA\OpenRegister\Controller\Support\HardeningStatementControllerServices;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
 use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
+use OCA\OpenRegister\Service\Hardening\StatementPublication;
 use OCA\OpenRegister\Service\Hardening\StatementServiceInterface;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -118,13 +119,13 @@ class HardeningStatementControllerBehaviourTest extends TestCase {
 
 	public function testPublishingPassesTheFieldsAndThePublisher(): void {
 		$this->elevation->expects($this->once())->method('requireElevated');
-		$this->statements->expects($this->once())->method('publish')->with('v3', 'Body', 'Title', 'admin')->willReturn(['version' => 'v3']);
+		$this->statements->expects($this->once())->method('publish')->with(new StatementPublication(version: 'v3', body: 'Body', title: 'Title', publishedBy: 'admin'))->willReturn(['version' => 'v3']);
 		$response = $this->controller('admin', ['version' => 'v3', 'body' => 'Body', 'title' => 'Title'])->publishStatement();
 		$this->assertSame(['version' => 'v3'], $response->getData());
 	}
 
 	public function testPublishingWithoutASessionUsesAnEmptyPublisherAndEmptyFields(): void {
-		$this->statements->expects($this->once())->method('publish')->with('', '', '', '')
+		$this->statements->expects($this->once())->method('publish')->with(new StatementPublication(version: '', body: '', title: '', publishedBy: ''))
 			->willThrowException(new InvalidArgumentException('Version required'));
 		$response = $this->controller(null)->publishStatement();
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
