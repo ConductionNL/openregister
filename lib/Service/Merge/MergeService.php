@@ -53,6 +53,8 @@ use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Survivorship\MasterRecord;
+use OCA\OpenRegister\Service\Survivorship\GoldenRecordRequest;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
@@ -483,11 +485,13 @@ class MergeService implements ObjectMergerInterface {
 	 */
 	private function survivorPayload(MergeRun $run): array {
 		$survivorshipConfig = $this->getSurvivorshipConfig(schema: $run->pair->schema);
-		$resolution         = $this->resolver->resolveGoldenRecord(
-			sourceRecords: $this->survivorSources(pair: $run->pair, intoData: $run->intoData),
-			config: $survivorshipConfig,
-			trust: $this->survivorTrust(pair: $run->pair),
-			overrides: $run->overrides
+		$resolution         = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $this->survivorSources(pair: $run->pair, intoData: $run->intoData),
+				config: $survivorshipConfig,
+				trust: $this->survivorTrust(pair: $run->pair),
+				overrides: $run->overrides
+			)
 		);
 
 		foreach (($run->overrides ?? []) as $property => $override) {
@@ -968,11 +972,12 @@ class MergeService implements ObjectMergerInterface {
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.2
 	 */
 	private function recomputeSurvivor(MergePair $pair): array {
-		return $this->resolver->resolveGoldenRecord(
-			sourceRecords: $this->survivorSources(pair: $pair, intoData: ($pair->intoObject->getObject() ?? [])),
-			config: $this->getSurvivorshipConfig(schema: $pair->schema),
-			trust: $this->survivorTrust(pair: $pair),
-			overrides: null
+		return $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $this->survivorSources(pair: $pair, intoData: ($pair->intoObject->getObject() ?? [])),
+				config: $this->getSurvivorshipConfig(schema: $pair->schema),
+				trust: $this->survivorTrust(pair: $pair)
+			)
 		);
 	}//end recomputeSurvivor()
 
@@ -997,16 +1002,16 @@ class MergeService implements ObjectMergerInterface {
 
 		return array_merge(
 			$this->sourceRecordResolver->resolveSources(
-				masterData: $intoData,
-				masterUuid: (string)$pair->intoObject->getUuid(),
-				config: $survivorshipConfig,
-				masterRegister: (string)$pair->intoObject->getRegister()
+				master: new MasterRecord(data: $intoData, uuid: (string)$pair->intoObject->getUuid(), register: (string)$pair->intoObject->getRegister()),
+				config: $survivorshipConfig
 			),
 			$this->sourceRecordResolver->resolveSources(
-				masterData: ($pair->fromObject->getObject() ?? []),
-				masterUuid: (string)$pair->fromObject->getUuid(),
-				config: $survivorshipConfig,
-				masterRegister: (string)$pair->fromObject->getRegister()
+				master: new MasterRecord(
+					data: ($pair->fromObject->getObject() ?? []),
+					uuid: (string)$pair->fromObject->getUuid(),
+					register: (string)$pair->fromObject->getRegister()
+				),
+				config: $survivorshipConfig
 			)
 		);
 	}//end survivorSources()

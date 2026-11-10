@@ -34,13 +34,13 @@ final class ImportedSchemaLookup {
 	 * Constructor.
 	 *
 	 * @param array               $data              The schema data (MUST carry a non-empty `slug`).
-	 * @param array|null          $registerSchemaIds Pre-import schema ids of the target register(s), or null.
-	 * @param SchemaImportOptions $options           The importing app id and version.
+	 * @param array|null          $registerSchemaIds Pre-import schema ids of the target register(s), or null for none known.
+	 * @param SchemaImportOptions $options           The importing owner, app id, version and force flag.
 	 */
 	public function __construct(
 		public readonly array $data,
-		public readonly ?array $registerSchemaIds,
-		public readonly SchemaImportOptions $options,
+		public readonly ?array $registerSchemaIds = null,
+		public readonly SchemaImportOptions $options = new SchemaImportOptions(),
 	) {
 	}//end __construct()
 }//end class

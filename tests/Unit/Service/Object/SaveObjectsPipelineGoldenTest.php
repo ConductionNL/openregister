@@ -322,11 +322,7 @@ class SaveObjectsPipelineGoldenTest extends TestCase {
 		$organisations->method('hasAccessToOrganisation')->willReturn(false);
 
 		return new SaveObjects(
-			stores: new BulkSaveStores(
-				objectEntityMapper: $this->objectMapper(),
-				schemaMapper: $this->schemaMapper(),
-				registerMapper: $this->registerMapper(),
-				saveHandler: $this->createMock(SaveObject::class)
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper(), schemas: $this->schemaMapper(), tables: $this->objectMapper()), saveHandler: $this->createMock(SaveObject::class)
 			),
 			session: new BulkSaveSession(userSession: $session, organisationService: $organisations),
 			reporting: new BulkSaveReporting(logger: $logger),

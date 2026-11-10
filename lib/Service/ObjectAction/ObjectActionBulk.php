@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkJob\BulkJobActionCall;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use InvalidArgumentException;
@@ -96,15 +97,17 @@ class ObjectActionBulk implements ObjectActionBulkInterface {
 			throw new InvalidArgumentException('A bulk job runs as the person who starts it, so it needs a signed-in user.');
 		}
 
-		return $this->jobs->create(
-			call: $call,
-			selection: new BulkJobSelection(
-				criteria: ['ids' => $selection->ids],
-				registerId: $this->registerId(register: $selection->register),
-				schemaId: $selection->schema->getId()
-			),
-			actorUid: $actorUid,
-			justification: null
+		return $this->jobs->createFromRequest(
+			request: new BulkJobRequest(
+				call: $call,
+				selection: new BulkJobSelection(
+					criteria: ['ids' => $selection->ids],
+					registerId: $this->registerId(register: $selection->register),
+					schemaId: $selection->schema->getId()
+				),
+				actorUid: $actorUid,
+				justification: null
+			)
 		);
 	}//end create()
 

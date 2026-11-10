@@ -35,8 +35,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * Read-only provider that serves a schema's objects from an external source.
@@ -71,16 +69,14 @@ interface ObjectSourceProvider {
 	 * MUST return null when the object is absent OR access is denied, so the
 	 * two cases are indistinguishable (no enumeration oracle).
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema being read.
-	 * @param string $id The object id / source key.
-	 * @param array<string, mixed> $config The schema's object-source `config` block.
+	 * @param SourcedTable $source The register, the sourced schema being read and its object-source `config` block.
+	 * @param string       $id     The object id / source key.
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-1.1
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity;
+	public function find(SourcedTable $source, string $id): ?ObjectEntity;
 
 	/**
 	 * Find all virtual objects matching the query, applying the schema's read
@@ -89,28 +85,24 @@ interface ObjectSourceProvider {
 	 * A provider MAY ignore query operators it cannot honour; it MUST document
 	 * what it supports and MUST NOT silently cap results without a logged warning.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema being read.
-	 * @param array<string, mixed> $query Query (filters/sort/search/limit/offset).
-	 * @param array<string, mixed> $config The schema's object-source `config` block.
+	 * @param SourcedTable         $source The register, the sourced schema being read and its object-source `config` block.
+	 * @param array<string, mixed> $query  Query (filters/sort/search/limit/offset).
 	 *
 	 * @return ObjectEntity[] The matching virtual objects (possibly empty).
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-1.1
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array;
+	public function findAll(SourcedTable $source, array $query = []): array;
 
 	/**
 	 * Count virtual objects matching the query (same authorization as findAll).
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema being read.
-	 * @param array<string, mixed> $query Query (filters/search).
-	 * @param array<string, mixed> $config The schema's object-source `config` block.
+	 * @param SourcedTable         $source The register, the sourced schema being read and its object-source `config` block.
+	 * @param array<string, mixed> $query  Query (filters/search).
 	 *
 	 * @return int The number of matching virtual objects.
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-1.1
 	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int;
+	public function count(SourcedTable $source, array $query = []): int;
 }//end interface

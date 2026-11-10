@@ -32,8 +32,10 @@ use Doctrine\DBAL\Platforms\SqlitePlatform;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -229,7 +231,7 @@ class MagicRbacMemberOfListTest extends TestCase {
 			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
 		);
 
-		return $search->buildWhereConditionsSql(query: [], schema: $this->bookingSchema());
+		return $search->buildWhereClause(request: new WhereClauseRequest(query: [], table: new MagicReadTable(schema: $this->bookingSchema())));
 	}//end listConditions()
 
 	/**

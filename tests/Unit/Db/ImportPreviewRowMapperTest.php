@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Db\ImportPreviewRow;
 use OCA\OpenRegister\Db\ImportPreviewRowMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Tests\Unit\Db\Support\RecordsQueries;
 use PHPUnit\Framework\TestCase;
 
@@ -48,14 +49,14 @@ class ImportPreviewRowMapperTest extends TestCase {
 	public function testFindByPreviewListsAllRowsInSourceOrder(): void {
 		$this->rowSets = [[['id' => 1, 'preview_id' => 3, 'source_row' => 1, 'decision' => 'create'], ['id' => 2, 'preview_id' => 3, 'source_row' => 2, 'decision' => 'skip']]];
 
-		$rows = $this->mapper()->findByPreview(3);
+		$rows = $this->mapper()->findByPreview(3, ListQuery::unbounded());
 
 		$this->assertSame(['create', 'skip'], array_map(static fn (ImportPreviewRow $row): ?string => $row->getDecision(), $rows));
 		$this->assertSame(['select(*)', 'from(openregister_import_preview_rows)', 'where(eq(preview_id, 3))', 'orderBy(source_row, ASC)', 'executeQuery'], $this->queries[0]);
 	}//end testFindByPreviewListsAllRowsInSourceOrder()
 
 	public function testFindByPreviewNarrowsByDecisionAndPages(): void {
-		$this->mapper()->findByPreview(3, 'refuse', 25, 50);
+		$this->mapper()->findByPreview(3, new ListQuery(25, 50, ['decision' => 'refuse']));
 
 		$this->assertSame(["andWhere(eq(decision, 'refuse'))", 'setMaxResults(25)', 'setFirstResult(50)', 'executeQuery'], array_slice($this->queries[0], 4));
 	}//end testFindByPreviewNarrowsByDecisionAndPages()

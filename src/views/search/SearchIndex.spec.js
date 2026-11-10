@@ -48,33 +48,27 @@ jest.mock(
 jest.mock(
 	'vue-material-design-icons/Pencil.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/ContentCopy.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/TrashCanOutline.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 
 jest.mock(
 	'vue-material-design-icons/CheckCircle.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/DatabaseExport.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock(
 	'vue-material-design-icons/Merge.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 
 const computedCall = (key, ctx) => SearchIndex.computed[key].call(ctx)

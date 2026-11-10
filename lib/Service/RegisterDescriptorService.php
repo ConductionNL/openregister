@@ -294,13 +294,13 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 
 		if (in_array(strtolower($register->slug), $declared, true) === true) {
 			// The app's base document with its fragments, through the app's own forced import.
-			return $this->counted->run(
-				slug: $register->slug,
-				slugs: $declared,
-				version: $document['version'],
-				fragments: $document['fragments'],
-				via: $via,
-				import: fn (): array => $this->importRunner->run(appId: $register->appId)
+			return $this->counted->runCall(
+				document: (new RegisterImportDocument(slug: $register->slug, slugs: $declared))
+					->release(version: $document['version'], fragments: $document['fragments']),
+				call: new RegisterImportCall(
+					via: $via,
+					operation: fn (): array => $this->importRunner->run(appId: $register->appId)
+				)
 			);
 		}
 
@@ -325,13 +325,13 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 			return $this->undeclaredFailure(run: $run);
 		}
 
-		return $this->counted->run(
-			slug: $run->register->slug,
-			slugs: $this->declaredSlugs(document: $descriptor['data']),
-			version: $this->versionOf(descriptor: $descriptor),
-			fragments: 0,
-			via: $run->via,
-			import: fn (): array => $this->importDescriptorFile(appId: $run->register->appId, descriptor: $descriptor)
+		return $this->counted->runCall(
+			document: (new RegisterImportDocument(slug: $run->register->slug, slugs: $this->declaredSlugs(document: $descriptor['data'])))
+				->release(version: $this->versionOf(descriptor: $descriptor), fragments: 0),
+			call: new RegisterImportCall(
+				via: $run->via,
+				operation: fn (): array => $this->importDescriptorFile(appId: $run->register->appId, descriptor: $descriptor)
+			)
 		);
 	}//end reimportDescriptor()
 
