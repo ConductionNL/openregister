@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
@@ -255,14 +256,9 @@ class ObjectServiceFindGoldenTest extends TestCase {
 		try {
 			$found = $service->find(
 				id: $step['id'],
-				_extend: ($step['extend'] ?? []),
-				files: ($step['files'] ?? false),
-				register: $resolve($step['register'] ?? null, $this->registers),
-				schema: $resolve($step['schema'] ?? null, $this->schemas),
+				options: new ObjectFindOptions(register: $resolve($step['register'] ?? null, $this->registers), schema: $resolve($step['schema'] ?? null, $this->schemas), extend: ($step['extend'] ?? []), files: ($step['files'] ?? false), render: ($step['render'] ?? true), audit: ($step['audit'] ?? true)),
 				_rbac: ($step['rbac'] ?? true),
-				_multitenancy: ($step['multitenancy'] ?? true),
-				_render: ($step['render'] ?? true),
-				_audit: ($step['audit'] ?? true)
+				_multitenancy: ($step['multitenancy'] ?? true)
 			);
 			return ['returned' => $found?->getUuid(), 'rendered' => $found?->getObject()['rendered'] ?? false];
 		} catch (\Throwable $e) {

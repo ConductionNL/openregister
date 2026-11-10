@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
@@ -210,11 +211,9 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 		// "application" — a schema this call never mentioned.
 		$result = $this->service->find(
 			id: 'c3dce9e3-86a8-44d7-98f6-51c4a06f4b31',
-			register: 'openconnector',
-			schema: 'synchronization',
+			options: new ObjectFindOptions(register: 'openconnector', schema: 'synchronization', render: false),
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 
 		$this->assertSame($found, $result);
@@ -318,11 +317,9 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 
 		$this->service->find(
 			id: 'c3dce9e3-86a8-44d7-98f6-51c4a06f4b31',
-			register: 'openconnector',
-			schema: 'application',
+			options: new ObjectFindOptions(register: 'openconnector', schema: 'application', render: false),
 			_rbac: false,
-			_multitenancy: false,
-			_render: false
+			_multitenancy: false
 		);
 	}//end testACallNamingASchemaItsRegisterLacksIsStillRefused()
 
