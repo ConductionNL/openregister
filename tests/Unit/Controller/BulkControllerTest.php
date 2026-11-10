@@ -1075,7 +1075,7 @@ class BulkControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->with('alice')->willReturn(false);
 		$this->stubSchemaLookup(2);
-		$this->objectService->expects($this->never())->method('deleteObjectsBySchema');
+		$this->objectService->expects($this->never())->method('deleteObjectsOfTable');
 
 		$result = $this->controller->deleteSchema('1', '2');
 
@@ -1087,7 +1087,7 @@ class BulkControllerTest extends TestCase {
 		$this->stubSchemaLookup(2);
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('deleteObjectsBySchema')->willReturn([
+		$this->objectService->method('deleteObjectsOfTable')->willReturn([
 			'deleted_count' => 3,
 			'deleted_uuids' => ['u1', 'u2', 'u3'],
 			'schema_id' => 2,
@@ -1112,7 +1112,7 @@ class BulkControllerTest extends TestCase {
 		$this->stubSchemaLookup(3);
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('deleteObjectsBySchema')->willReturn([
+		$this->objectService->method('deleteObjectsOfTable')->willReturn([
 			'deleted_count' => 2,
 			'deleted_uuids' => ['u1', 'u2'],
 			'schema_id' => 3,
@@ -1145,7 +1145,7 @@ class BulkControllerTest extends TestCase {
 		$this->stubSchemaLookup(2);
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('deleteObjectsBySchema')->willThrowException(
+		$this->objectService->method('deleteObjectsOfTable')->willThrowException(
 			new ArchivalImmutableException(schemaIdentifier: 'retained-case', operation: 'delete')
 		);
 
@@ -1169,7 +1169,7 @@ class BulkControllerTest extends TestCase {
 		$this->stubAdminUser();
 		$this->setupResolveSuccess();
 		$this->stubSchemaLookup(2);
-		$this->objectService->method('deleteObjectsBySchema')->willThrowException($this->frozenRefusal());
+		$this->objectService->method('deleteObjectsOfTable')->willThrowException($this->frozenRefusal());
 		$this->request->method('getParams')->willReturn([]);
 
 		$result = $this->controller->deleteSchemaObjects('my-register', 'my-schema');
@@ -1188,7 +1188,7 @@ class BulkControllerTest extends TestCase {
 		$this->stubSchemaLookup(2);
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('deleteObjectsBySchema')->willThrowException($this->frozenRefusal());
+		$this->objectService->method('deleteObjectsOfTable')->willThrowException($this->frozenRefusal());
 		$this->request->method('getParams')->willReturn([]);
 
 		$this->assertSame(409, $this->controller->deleteSchema('1', '2')->getStatus());
@@ -1219,7 +1219,7 @@ class BulkControllerTest extends TestCase {
 		$this->stubAdminUser();
 		$this->setupResolveSuccess();
 		$this->stubSchemaLookup(2);
-		$this->objectService->method('deleteObjectsBySchema')->willThrowException($refusal);
+		$this->objectService->method('deleteObjectsOfTable')->willThrowException($refusal);
 		$this->objectService->method('deleteObjectsByRegister')->willThrowException($refusal);
 		$this->request->method('getParams')->willReturn([]);
 
@@ -1252,7 +1252,7 @@ class BulkControllerTest extends TestCase {
 		$this->stubAdminUser();
 		$this->setupResolveSuccess();
 		$this->stubSchemaLookup(2);
-		$this->objectService->method('deleteObjectsBySchema')->willThrowException(
+		$this->objectService->method('deleteObjectsOfTable')->willThrowException(
 			new ArchivalImmutableException(schemaIdentifier: 'retained-case', operation: 'delete')
 		);
 
@@ -1271,7 +1271,7 @@ class BulkControllerTest extends TestCase {
 		$this->stubSchemaLookup(2);
 		$this->objectService->method('setRegister')->willReturnSelf();
 		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('deleteObjectsBySchema')
+		$this->objectService->method('deleteObjectsOfTable')
 			->willThrowException(new \Exception('Schema delete error'));
 
 		$this->request->method('getParams')->willReturn([]);
@@ -1296,7 +1296,7 @@ class BulkControllerTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('alice')->willReturn(false);
 		$this->setupResolveSuccess();
 		$this->stubSchemaLookup(2);
-		$this->objectService->expects($this->never())->method('deleteObjectsBySchema');
+		$this->objectService->expects($this->never())->method('deleteObjectsOfTable');
 
 		$result = $this->controller->deleteSchemaObjects('1', '2');
 
@@ -1307,7 +1307,7 @@ class BulkControllerTest extends TestCase {
 		$this->stubAdminUser();
 		$this->stubSchemaLookup(2);
 		$this->setupResolveSuccess();
-		$this->objectService->method('deleteObjectsBySchema')->willReturn([
+		$this->objectService->method('deleteObjectsOfTable')->willReturn([
 			'deleted_count' => 4,
 			'deleted_uuids' => ['u1', 'u2', 'u3', 'u4'],
 			'schema_id' => 2,
@@ -1332,7 +1332,7 @@ class BulkControllerTest extends TestCase {
 		$this->stubAdminUser();
 		$this->stubSchemaLookup(2);
 		$this->setupResolveSuccess();
-		$this->objectService->method('deleteObjectsBySchema')->willReturn([
+		$this->objectService->method('deleteObjectsOfTable')->willReturn([
 			'deleted_count' => 1,
 			'deleted_uuids' => ['u1'],
 			'schema_id' => 2,
@@ -1380,7 +1380,7 @@ class BulkControllerTest extends TestCase {
 		$this->stubAdminUser();
 		$this->stubSchemaLookup(2);
 		$this->setupResolveSuccess();
-		$this->objectService->method('deleteObjectsBySchema')
+		$this->objectService->method('deleteObjectsOfTable')
 			->willThrowException(new \Exception('Delete objects error'));
 
 		$this->request->method('getParams')->willReturn([]);

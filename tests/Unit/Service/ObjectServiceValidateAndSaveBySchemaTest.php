@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -55,7 +57,7 @@ class ObjectServiceValidateAndSaveBySchemaTest extends TestCase {
 			->with(3, 9, [$service, 'saveObject'], null, 0)
 			->willReturn(['processed' => 0]);
 
-		$this->assertSame(['processed' => 0], $service->validateAndSaveObjectsBySchema(3, 9));
+		$this->assertSame(['processed' => 0], $service->validateAndSaveTable(new RegisterSchemaRef(register: 3, schema: 9), ListQuery::unbounded()));
 	}
 
 	public function testALimitAndOffsetAreForwarded(): void {
@@ -65,7 +67,7 @@ class ObjectServiceValidateAndSaveBySchemaTest extends TestCase {
 			->with(3, 9, [$service, 'saveObject'], 50, 100)
 			->willReturn(['processed' => 50]);
 
-		$this->assertSame(['processed' => 50], $service->validateAndSaveObjectsBySchema(3, 9, 50, 100));
+		$this->assertSame(['processed' => 50], $service->validateAndSaveTable(new RegisterSchemaRef(register: 3, schema: 9), new ListQuery(limit: 50, offset: 100)));
 	}
 
 	public function testAZeroLimitStaysZero(): void {
@@ -75,6 +77,6 @@ class ObjectServiceValidateAndSaveBySchemaTest extends TestCase {
 			->with(3, 9, [$service, 'saveObject'], 0, 0)
 			->willReturn([]);
 
-		$service->validateAndSaveObjectsBySchema(3, 9, 0);
+		$service->validateAndSaveTable(new RegisterSchemaRef(register: 3, schema: 9), new ListQuery(limit: 0, offset: 0));
 	}
 }

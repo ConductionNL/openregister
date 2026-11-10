@@ -63,6 +63,7 @@ use OCA\OpenRegister\Controller\Support\WriteCaller;
 use OCA\OpenRegister\Controller\Support\StringTypedPatch;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
@@ -98,6 +99,8 @@ use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
+use OCA\OpenRegister\Service\Object\RenderSelection;
+use OCA\OpenRegister\Service\ObjectMigration;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyRequest;
@@ -3122,11 +3125,7 @@ class ObjectsController extends Controller {
 	private function renderedEntity(ObjectEntity $entity, ObjectReadOptions $read): array {
 		return $this->objectService->renderEntity(
 			entity: $entity,
-			_extend: $read->extend,
-			depth: 0,
-			filter: $read->filter,
-			fields: $read->fields,
-			unset: $read->unset,
+			selection: new RenderSelection(extend: $read->extend, filter: $read->filter, fields: $read->fields, unset: $read->unset),
 			_rbac: $read->scoped,
 			_multitenancy: $read->scoped
 		);
@@ -6133,13 +6132,13 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => $refusal], statusCode: 400);
 		}
 
-		$migrationResult = $objectService->migrateObjects(
-			sourceRegister: $params['sourceRegister'],
-			sourceSchema: $params['sourceSchema'],
-			targetRegister: $params['targetRegister'],
-			targetSchema: $params['targetSchema'],
-			objectIds: $params['objects'],
-			mapping: $params['mapping']
+		$migrationResult = $objectService->migrate(
+			migration: new ObjectMigration(
+				source: new RegisterSchemaRef(register: $params['sourceRegister'], schema: $params['sourceSchema']),
+				target: new RegisterSchemaRef(register: $params['targetRegister'], schema: $params['targetSchema']),
+				objectIds: $params['objects'],
+				mapping: $params['mapping']
+			)
 		);
 
 		return new JSONResponse(data: $migrationResult);
@@ -6416,11 +6415,9 @@ class ObjectsController extends Controller {
 		$this->logger->info(message: $start, context: $scope + ['limit' => $window->limit, 'offset' => $window->offset]);
 
 		// Validate and save objects in the schema to update metadata.
-		$result = $this->objectService->validateAndSaveObjectsBySchema(
-			registerId: (int)$window->register,
-			schemaId: (int)$window->schema,
-			limit: $window->limit,
-			offset: $window->offset
+		$result = $this->objectService->validateAndSaveTable(
+			table: new RegisterSchemaRef(register: (int)$window->register, schema: (int)$window->schema),
+			query: new ListQuery(limit: ($window->limit ?? ListQuery::UNBOUNDED), offset: $window->offset)
 		);
 
 		$done = '[ObjectsController] Bulk validation and save completed';
