@@ -153,7 +153,7 @@ class PortalTaskReminderListener implements IEventListener {
 			return;
 		}
 
-		$this->delivery->request(task: $task, kind: $kind, message: $this->messageOf(event: $event, task: $task, kind: $kind));
+		$this->delivery->request(task: $task, kind: $kind, message: $this->messageOf(event: $event, task: $task));
 	}//end remind()
 
 	/**
@@ -212,20 +212,21 @@ class PortalTaskReminderListener implements IEventListener {
 	/**
 	 * The delivery message: the seam's own, plus the rung's key, priority and message key.
 	 *
+	 * A postBreach rung (delivery kind overdue) also carries its consequence line.
+	 *
 	 * @param Event         $event The timer fire.
 	 * @param TaskInterface $task  The task reminded about.
-	 * @param string        $kind  The delivery kind.
 	 *
 	 * @return array<string, mixed> The message.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-overdue-path-is-consumed-from-flow-business-timers-never-rebuilt
 	 */
-	private function messageOf(Event $event, TaskInterface $task, string $kind): array {
+	private function messageOf(Event $event, TaskInterface $task): array {
 		$message = $this->delivery->messageFor(task: $task);
 		$message['rungKey'] = (string)$this->read(source: $event, method: 'getRungKey');
 		$message['priority'] = $this->read(source: $event, method: 'getPriority');
 		$message['messageKey'] = $this->read(source: $event, method: 'getMessage');
-		if ($kind === PortalTaskDelivery::KIND_OVERDUE) {
+		if ($this->kindFor(rungKey: $message['rungKey']) === PortalTaskDelivery::KIND_OVERDUE) {
 			// The line portaliq shows as "If you do not respond: ...".
 			$message['consequence'] = $this->consequenceOf(event: $event);
 		}
