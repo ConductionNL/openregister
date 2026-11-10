@@ -46,6 +46,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\WriteOnlyValue;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker;
@@ -565,7 +566,10 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 		// invent a key that never existed, so leave the payload alone there and
 		// let normal PUT semantics apply.
 		foreach (array_filter($omittedPaths, fn ($path): bool => $this->paths->exists(path: $path, object: $stored)) as $path) {
-			$prepared = $this->paths->restore(path: $path, prepared: $prepared, value: $this->paths->read(path: $path, object: $stored));
+			$prepared = $this->paths->restore(
+				prepared: $prepared,
+				stored: new WriteOnlyValue(path: $path, value: $this->paths->read(path: $path, object: $stored))
+			);
 		}
 
 		return $prepared;

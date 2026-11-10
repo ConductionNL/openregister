@@ -123,7 +123,7 @@ class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 			block: ['authorization' => $schema->getAuthorization(), 'context' => $name, 'columns' => $columns],
 			stored: $stored?->getAuthorization()
 		);
-		foreach ($this->stored->propertyBlocks(schema: $schema, stored: $stored, name: $name) as $block) {
+		foreach ($this->stored->propertyBlocks(save: new SchemaSave(schema: $schema, stored: $stored), name: $name) as $block) {
 			$block['columns'] = $columns;
 			$findings = array_merge($findings, $this->findingsIn(block: $block, stored: $block['stored']));
 		}
