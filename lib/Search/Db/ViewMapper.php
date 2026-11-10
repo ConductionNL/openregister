@@ -142,10 +142,10 @@ class ViewMapper extends QBMapper implements ViewMapperInterface {
 		parent::__construct(db: $db, tableName: 'openregister_views', entityClass: View::class);
 
 		// Store dependencies for use in mapper methods.
-		$this->organisationMapper = $access->organisationMapper;
+		$this->organisationMapper = $access->tenancy->organisationMapper;
 		$this->appConfig = $access->appConfig;
-		$this->userSession = $access->userSession;
-		$this->groupManager = $access->groupManager;
+		$this->userSession = $access->tenancy->userSession;
+		$this->groupManager = $access->tenancy->groupManager;
 		$this->eventDispatcher = $eventDispatcher;
 	}//end __construct()
 
@@ -213,22 +213,8 @@ class ViewMapper extends QBMapper implements ViewMapperInterface {
 			$this->verifyRbacPermission(action: 'read', entityType: 'view');
 		}
 
-		// Step 2: Get query builder instance.
-		$qb = $this->db->getQueryBuilder();
-
-		// Step 3: Build SELECT query with ID or UUID filter.
-		// Compare `id` only when the value IS an integer: PostgreSQL refuses a
-		// uuid bound as an integer for the whole query, so `id = :uuid OR
-		// uuid = :uuid` answered 500 there (live pass O4, 5 Oct).
-		$match = $qb->expr()->eq('uuid', $qb->createNamedParameter((string) $id, IQueryBuilder::PARAM_STR));
-		if (is_int($id) === true || (is_string($id) === true && ctype_digit($id) === true)) {
-			$match = $qb->expr()->orX(
-				$qb->expr()->eq('id', $qb->createNamedParameter((int) $id, IQueryBuilder::PARAM_INT)),
-				$match
-			);
-		}
-
-		$qb->select('*')->from($this->getTableName())->where($match);
+		// Steps 2 and 3: SELECT the view by its ID or UUID.
+		$qb = $this->selectByIdOrUuid(id: $id);
 
 		// Step 4: Apply organisation filter for multi-tenancy.
 		// All users including admins must have active organisation.
@@ -241,6 +227,34 @@ class ViewMapper extends QBMapper implements ViewMapperInterface {
 
 		return $entity;
 	}//end find()
+
+	/**
+	 * A SELECT of this table's row with the given ID or UUID.
+	 *
+	 * Compares `id` only when the value IS an integer: PostgreSQL refuses a
+	 * uuid bound as an integer for the whole query, so `id = :uuid OR
+	 * uuid = :uuid` answered 500 there (live pass O4, 5 Oct).
+	 *
+	 * @param int|string $id The ID (integer) or UUID (string) of the view.
+	 *
+	 * @return IQueryBuilder The query, without the organisation filter.
+	 *
+	 * @spec openspec/specs/mariadb-ci-matrix/spec.md#requirement-a-text-identifier-is-never-bound-as-an-integer
+	 */
+	private function selectByIdOrUuid($id): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$match = $qb->expr()->eq('uuid', $qb->createNamedParameter((string) $id, IQueryBuilder::PARAM_STR));
+		if (is_int($id) === true || (is_string($id) === true && ctype_digit($id) === true)) {
+			$match = $qb->expr()->orX(
+				$qb->expr()->eq('id', $qb->createNamedParameter((int) $id, IQueryBuilder::PARAM_INT)),
+				$match
+			);
+		}
+
+		$qb->select('*')->from($this->getTableName())->where($match);
+
+		return $qb;
+	}//end selectByIdOrUuid()
 
 	/**
 	 * Find all views for a specific owner

@@ -45,17 +45,9 @@ final class VtodoReader {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function taskArray(mixed $vtodo, string $calendarId, string $uri): array {
-		$linkData = $this->openRegisterProperties(vtodo: $vtodo);
+		$identity = ['id' => $uri, 'uid' => $this->text(vtodo: $vtodo, property: 'UID'), 'calendarId' => $calendarId];
 
-		return array_merge(
-			[
-				'id' => $uri,
-				'uid' => $this->text(vtodo: $vtodo, property: 'UID'),
-				'calendarId' => $calendarId,
-			],
-			$this->vtodoFields(vtodo: $vtodo),
-			$linkData
-		);
+		return array_merge($identity, $this->vtodoFields(vtodo: $vtodo), $this->openRegisterProperties(vtodo: $vtodo));
 	}//end taskArray()
 
 	/**

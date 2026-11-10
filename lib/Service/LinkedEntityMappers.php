@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -34,20 +35,40 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  */
 final class LinkedEntityMappers {
 	/**
+	 * Magic mapper for object operations
+	 *
+	 * @var MagicMapperInterface
+	 */
+	public readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Schema mapper
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register mapper
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param MagicMapperInterface        $magicMapper        Magic mapper for object operations
-	 * @param SchemaMapperInterface       $schemaMapper       Schema mapper
-	 * @param RegisterMapperInterface     $registerMapper     Register mapper
+	 * @param SchemaCatalogInterface      $catalog            Register, schema and magic-table mappers.
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		public readonly MagicMapperInterface $magicMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly RegisterMapperInterface $registerMapper,
+		SchemaCatalogInterface $catalog,
 		public readonly OrganisationMapperInterface $organisationMapper,
 	) {
+		$this->magicMapper    = $catalog->tables();
+		$this->schemaMapper   = $catalog->schemas();
+		$this->registerMapper = $catalog->registers();
 	}//end __construct()
 }//end class

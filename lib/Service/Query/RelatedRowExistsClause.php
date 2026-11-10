@@ -291,33 +291,25 @@ final class RelatedRowExistsClause {
 	 * overwrite the first block's bindings, and the query would run, and it
 	 * would answer the wrong question without failing.
 	 *
-	 * @param array<int, RelatedRowFilter> $filters            The parsed filters.
-	 * @param RelatedRowSqlTarget          $target             The engine, objects table, outer alias and storage shape.
-	 * @param callable                     $accessPredicateFor Given the inner alias and the filter, the access predicate for rows under it.
-	 * @param string                       $parameterPrefix    A prefix for this query's placeholders.
+	 * @param RelatedRowClauseBatch $batch The filters, the target, the access predicate per inner row and the placeholder prefix.
 	 *
 	 * @return array{sql: array<int, string>, parameters: array<string, mixed>} The clauses and their bindings.
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function renderAll(
-		array $filters,
-		RelatedRowSqlTarget $target,
-		callable $accessPredicateFor,
-		string $parameterPrefix = 'rel',
-	): array {
+	public function renderAll(RelatedRowClauseBatch $batch): array {
 		$sql        = [];
 		$parameters = [];
 
-		foreach (array_values($filters) as $position => $filter) {
-			$alias  = sprintf('%s%d', $parameterPrefix, $position);
+		foreach (array_values($batch->filters) as $position => $filter) {
+			$alias  = sprintf('%s%d', $batch->parameterPrefix, $position);
 			$clause = $this->render(
 				filter: $filter,
 				subquery: new RelatedRowSubquery(
-					target: $target,
+					target: $batch->target,
 					inner: new RelatedRowInnerRow(
 						alias: $alias,
-						accessPredicate: (string)$accessPredicateFor($alias, $filter),
+						accessPredicate: (string)($batch->accessPredicateFor)($alias, $filter),
 						parameterPrefix: $alias
 					)
 				)

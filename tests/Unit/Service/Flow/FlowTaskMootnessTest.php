@@ -146,6 +146,18 @@ class FlowTaskMootnessTest extends TestCase {
 	}//end testAPlaceThatWasNotClearedIsLeftAlone()
 
 	/**
+	 * A task-less slot under an all-digit node id (an int array key) is skipped, not a TypeError.
+	 */
+	public function testATaskLessSlotUnderANumericNodeIdIsSkipped(): void {
+		$state = new FlowResumeState(byNode: ['42' => ['note' => 'no task here']]);
+		$this->tasks->expects($this->never())->method('terminateAsMoot');
+
+		$count = $this->mootness->placesPruned(context: $this->context($state), places: ['42'], byTransition: 's');
+
+		$this->assertSame(0, $count);
+	}//end testATaskLessSlotUnderANumericNodeIdIsSkipped()
+
+	/**
 	 * Task bookkeeping must never fail a hop: a throwing service is logged
 	 * and the walk carries on.
 	 */

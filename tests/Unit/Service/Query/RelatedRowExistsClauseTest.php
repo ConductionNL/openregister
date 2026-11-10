@@ -38,6 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Query\RelatedRowClauseBatch;
 use OCA\OpenRegister\Service\Query\RelatedRowExistsClause;
 use OCA\OpenRegister\Service\Query\RelatedRowFilter;
 use OCA\OpenRegister\Service\Query\RelatedRowInnerRow;
@@ -320,16 +321,18 @@ class RelatedRowExistsClauseTest extends TestCase {
 	 */
 	public function testTwoBlocksProduceTwoClausesWithDistinctBindings(): void {
 		$rendered = $this->clause->renderAll(
-			filters: [
-				$this->filter([['field' => 'propertyDefinition', 'operator' => 'eq', 'value' => 'pd-7']]),
-				$this->filter([['field' => 'propertyDefinition', 'operator' => 'eq', 'value' => 'pd-9']]),
-			],
-			target: new RelatedRowSqlTarget(
-				engine: RelatedRowExistsClause::ENGINE_POSTGRES,
-				table: 'oc_openregister_objects',
-				outerAlias: 'o'
-			),
-			accessPredicateFor: static fn(string $alias): string => $alias . '.owner = :me'
+			new RelatedRowClauseBatch(
+				filters: [
+					$this->filter([['field' => 'propertyDefinition', 'operator' => 'eq', 'value' => 'pd-7']]),
+					$this->filter([['field' => 'propertyDefinition', 'operator' => 'eq', 'value' => 'pd-9']]),
+				],
+				target: new RelatedRowSqlTarget(
+					engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+					table: 'oc_openregister_objects',
+					outerAlias: 'o'
+				),
+				accessPredicateFor: static fn(string $alias): string => $alias . '.owner = :me'
+			)
 		);
 
 		$this->assertCount(2, $rendered['sql']);
