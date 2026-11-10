@@ -130,8 +130,9 @@ class TextExtractionServiceTest extends TestCase {
 	}
 
 	public function testChunkDocumentReturnsEmptyArrayForEmptyText(): void {
-		$chunks = $this->service->chunkDocument('');
-		$this->assertIsArray($chunks);
+		$this->assertSame([], $this->service->chunkDocument(''));
+		$this->assertSame([], $this->service->chunkDocument(" \n\t "));
+		$this->assertSame([], $this->service->chunkDocument('', ['strategy' => 'FIXED_SIZE']));
 	}
 
 	public function testChunkDocumentRespectsChunkSizeOption(): void {
