@@ -39,6 +39,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 
 /**
  * Locks the 22P02 fix around numeric-column filtering by non-numeric (UUID)
@@ -99,7 +101,7 @@ class MagicSearchHandlerNumericUuidFilterTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		$method->setAccessible(true);
-		return $method->invoke($this->handler, $query, $schema, $this->makeConnection(), $isPostgres);
+		return $method->invoke($this->handler, new ConditionSqlRun(query: $query, table: new MagicReadTable(schema: $schema), connection: $this->makeConnection(), isPostgres: $isPostgres));
 	}//end invokeObjectFilters()
 
 	/**

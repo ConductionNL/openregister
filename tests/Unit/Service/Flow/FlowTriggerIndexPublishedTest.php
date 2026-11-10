@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
@@ -61,8 +63,7 @@ class FlowTriggerIndexPublishedTest extends TestCase {
 		// passes through unchanged — these tests are about WHICH version's
 		// nodes reach the index, not about the vocabulary they arrive in.
 		$slugs = new FlowTriggerSlugs(
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
+			new SchemaCatalog($this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class), $this->createMock(MagicMapperInterface::class)),
 			new NullLogger()
 		);
 
