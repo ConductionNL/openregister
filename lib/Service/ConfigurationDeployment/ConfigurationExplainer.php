@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
 use DateTime;
+use OCA\OpenRegister\Db\ConfigurationDeployment;
 use OCA\OpenRegister\Db\ConfigurationDeploymentMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -203,6 +204,19 @@ class ConfigurationExplainer {
 			ConfigurationLayer::SUBJECT => $subject,
 		];
 
+		return $this->readChain(configKey: $configKey, references: $references);
+
+	}//end chainFor()
+
+	/**
+	 * Read one key at every layer that has its reference, lowest precedence first.
+	 *
+	 * @param string                     $configKey  The configuration key.
+	 * @param array<string, string|null> $references The reference of each layer (null when not named).
+	 *
+	 * @return array<int, ConfigurationSnapshot> Every named layer's answer.
+	 */
+	private function readChain(string $configKey, array $references): array {
 		$chain = [];
 		foreach (ConfigurationLayer::ORDER as $layer) {
 			$reference = $references[$layer];
@@ -218,7 +232,7 @@ class ConfigurationExplainer {
 
 		return $chain;
 
-	}//end chainFor()
+	}//end readChain()
 
 	/**
 	 * The deployment that last moved a value, rendered for a reader.
@@ -243,6 +257,18 @@ class ConfigurationExplainer {
 			return ['uuid' => $uuid, 'name' => null, 'deployedAt' => null, 'missing' => true];
 		}
 
+		return $this->deploymentSummary(deployment: $deployment);
+
+	}//end deploymentFor()
+
+	/**
+	 * What an explanation says about the deployment that set a value.
+	 *
+	 * @param ConfigurationDeployment $deployment The deployment.
+	 *
+	 * @return array<string, mixed> uuid, name, deployedAt, deployedBy, isRollback and missing (false).
+	 */
+	private function deploymentSummary(ConfigurationDeployment $deployment): array {
 		return [
 			'uuid' => $deployment->getUuid(),
 			'name' => $deployment->getName(),
@@ -252,7 +278,7 @@ class ConfigurationExplainer {
 			'missing' => false,
 		];
 
-	}//end deploymentFor()
+	}//end deploymentSummary()
 
 	/**
 	 * Where a key is set, as the opening of its explanation: `"key" is set at the <layer> layer[ by <ref>]`.

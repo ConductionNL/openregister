@@ -280,31 +280,58 @@ class ConfigurationValueStore {
 		$restored = 0;
 
 		foreach (array_reverse($undoEntries) as $entry) {
-			if (($entry['layer'] ?? '') !== ConfigurationLayer::INSTANCE) {
-				continue;
-			}
-
-			$configKey = (string)($entry['key'] ?? '');
-			if ($configKey === '') {
-				continue;
-			}
-
-			// A key that was not there before this deployment is put back by
-			// being deleted again, not by writing an empty string over it: an
-			// empty string is a value, and absence is not.
-			if (($entry['present'] ?? false) === false) {
-				$this->appConfig->deleteKey($this->appName, $configKey);
+			if ($this->restoreEntry(entry: $entry) === true) {
 				$restored++;
-				continue;
 			}
-
-			$this->appConfig->setValueString($this->appName, $configKey, (string)($entry['raw'] ?? ''));
-			$restored++;
-		}//end foreach
+		}
 
 		return $restored;
 
 	}//end restore()
+
+	/**
+	 * Put one instance-layer undo entry back; other layers and keyless entries are skipped.
+	 *
+	 * @param array<string, mixed> $entry The undo entry.
+	 *
+	 * @return bool True when the entry was restored.
+	 */
+	private function restoreEntry(array $entry): bool {
+		if (($entry['layer'] ?? '') !== ConfigurationLayer::INSTANCE) {
+			return false;
+		}
+
+		$configKey = (string)($entry['key'] ?? '');
+		if ($configKey === '') {
+			return false;
+		}
+
+		$this->restoreKey(configKey: $configKey, entry: $entry);
+
+		return true;
+
+	}//end restoreEntry()
+
+	/**
+	 * Put an app-config key back as it was: deleted when it was absent, else its earlier string.
+	 *
+	 * @param string               $configKey The key.
+	 * @param array<string, mixed> $entry     The undo entry.
+	 *
+	 * @return void
+	 */
+	private function restoreKey(string $configKey, array $entry): void {
+		// A key that was not there before this deployment is put back by
+		// being deleted again, not by writing an empty string over it: an
+		// empty string is a value, and absence is not.
+		if (($entry['present'] ?? false) === false) {
+			$this->appConfig->deleteKey($this->appName, $configKey);
+			return;
+		}
+
+		$this->appConfig->setValueString($this->appName, $configKey, (string)($entry['raw'] ?? ''));
+
+	}//end restoreKey()
 
 	/**
 	 * The app-config state of one address, before it is written.
