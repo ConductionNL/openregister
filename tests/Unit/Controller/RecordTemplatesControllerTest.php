@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\RecordTemplate\TemplateListOptions;
 use OCA\OpenRegister\Controller\RecordTemplatesController;
 use OCA\OpenRegister\Controller\Support\RecordTemplatesControllerServices;
 use OCA\OpenRegister\Db\RecordTemplate;
@@ -84,7 +85,7 @@ class RecordTemplatesControllerTest extends TestCase {
 		$template = new RecordTemplate();
 		$template->setName('Melding wateroverlast');
 		$this->templates->expects($this->once())->method('listFor')
-			->with($this->isInstanceOf(ViewerReach::class), null, 'meldingen')
+			->with($this->isInstanceOf(ViewerReach::class), new TemplateListOptions(null, 'meldingen'))
 			->willReturn([$template]);
 
 		$response = $this->controller(userId: 'bert', params: ['schema' => 'meldingen'])->index();
