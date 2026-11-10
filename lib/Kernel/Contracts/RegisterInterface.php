@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
+use OCA\OpenRegister\Db\Register\MagicMappingOptions;
 use DateTime;
 use Exception;
 use JsonSerializable;
@@ -292,15 +293,13 @@ interface RegisterInterface extends JsonSerializable {
 	/**
 	 * Enable magic mapping for a specific schema in this register.
 	 *
-	 * @param int $schemaId The schema ID.
-	 * @param bool $autoCreateTable Whether to auto-create the table (default: true).
-	 * @param string|null $comment Optional comment describing why magic mapping is enabled.
+	 * @param int                 $schemaId The schema ID.
+	 * @param MagicMappingOptions $options  Whether to auto-create the table (default: true) and an optional
+	 *                                      comment describing why magic mapping is enabled.
 	 *
 	 * @return static Returns self for method chaining.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Auto-create table toggle is intentional
 	 */
-	public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable = true, ?string $comment = null): static;
+	public function enableMagicMappingForSchema(int $schemaId, MagicMappingOptions $options = new MagicMappingOptions()): static;
 
 	/**
 	 * Disable magic mapping for a specific schema in this register.

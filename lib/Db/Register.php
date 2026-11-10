@@ -27,6 +27,7 @@ use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\Register\ExactKeyHydration;
 use OCA\OpenRegister\Db\Register\MagicMappingConfig;
+use OCA\OpenRegister\Db\Register\MagicMappingOptions;
 use OCA\OpenRegister\Db\Register\RegisterFieldTypes;
 use OCA\OpenRegister\Db\Register\RegisterJson;
 use OCA\OpenRegister\Db\Register\RegisterLanguages;
@@ -510,17 +511,15 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 	/**
 	 * Enable magic mapping for a specific schema in this register.
 	 *
-	 * @param int         $schemaId        The schema ID.
-	 * @param bool        $autoCreateTable Whether to auto-create the table (default: true).
-	 * @param string|null $comment         Optional comment describing why magic mapping is enabled.
+	 * @param int                 $schemaId The schema ID.
+	 * @param MagicMappingOptions $options  Whether to auto-create the table (default: true) and an optional
+	 *                                      comment describing why magic mapping is enabled.
 	 *
 	 * @return static Returns self for method chaining.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Auto-create table toggle is intentional
 	 */
-	public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable = true, ?string $comment = null): static {
+	public function enableMagicMappingForSchema(int $schemaId, MagicMappingOptions $options = new MagicMappingOptions()): static {
 		$mapping = $this->magicMapping();
-		$entry = $mapping->entry(autoCreateTable: $autoCreateTable, comment: $comment);
+		$entry = $mapping->entry(autoCreateTable: $options->autoCreateTable, comment: $options->comment);
 		$this->setConfiguration(configuration: $mapping->with(schemaId: $schemaId, entry: $entry));
 
 		return $this;

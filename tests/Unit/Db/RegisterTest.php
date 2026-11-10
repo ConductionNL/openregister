@@ -2,6 +2,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Register\MagicMappingOptions;
 use DateTime;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\Register;
@@ -819,7 +820,7 @@ class RegisterTest extends TestCase {
 	}
 
 	public function testEnableMagicMappingForSchemaWithoutAutoCreate(): void {
-		$this->register->enableMagicMappingForSchema(42, false);
+		$this->register->enableMagicMappingForSchema(42, new MagicMappingOptions(autoCreateTable: false));
 
 		$config = $this->register->getConfiguration();
 		$this->assertTrue($config['schemas'][42]['magicMapping']);
@@ -827,7 +828,7 @@ class RegisterTest extends TestCase {
 	}
 
 	public function testEnableMagicMappingForSchemaWithComment(): void {
-		$this->register->enableMagicMappingForSchema(42, true, 'Test comment');
+		$this->register->enableMagicMappingForSchema(42, new MagicMappingOptions(autoCreateTable: true, comment: 'Test comment'));
 
 		$config = $this->register->getConfiguration();
 		$this->assertSame('Test comment', $config['schemas'][42]['comment']);
@@ -850,8 +851,8 @@ class RegisterTest extends TestCase {
 	}
 
 	public function testEnableMagicMappingOverwritesExistingSchemaConfig(): void {
-		$this->register->enableMagicMappingForSchema(42, false, 'Old comment');
-		$this->register->enableMagicMappingForSchema(42, true, 'New comment');
+		$this->register->enableMagicMappingForSchema(42, new MagicMappingOptions(autoCreateTable: false, comment: 'Old comment'));
+		$this->register->enableMagicMappingForSchema(42, new MagicMappingOptions(autoCreateTable: true, comment: 'New comment'));
 
 		$config = $this->register->getConfiguration();
 		$this->assertTrue($config['schemas'][42]['autoCreateTable']);
@@ -902,7 +903,7 @@ class RegisterTest extends TestCase {
 	}
 
 	public function testDisableMagicMappingPreservesAutoCreateTable(): void {
-		$this->register->enableMagicMappingForSchema(42, true, 'Keep this');
+		$this->register->enableMagicMappingForSchema(42, new MagicMappingOptions(autoCreateTable: true, comment: 'Keep this'));
 		$this->register->disableMagicMappingForSchema(42);
 
 		$config = $this->register->getConfiguration();

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Register\MagicMappingOptions;
 use DateTime;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\Register;
@@ -315,7 +316,7 @@ class RegisterEntityGoldenTest extends TestCase {
 		$register = new Register();
 		$register->setConfiguration(['other' => 1]);
 		$this->assertSame($register, $register->enableMagicMappingForSchema(4));
-		$register->enableMagicMappingForSchema(5, false, 'why');
+		$register->enableMagicMappingForSchema(5, new MagicMappingOptions(autoCreateTable: false, comment: 'why'));
 		$this->assertSame(
 			[
 				'other' => 1,
