@@ -80,7 +80,7 @@ class ObjectRelationCleanupServiceGoldenTest extends TestCase {
 		$double = $this->createMock($class);
 		foreach ($returns as $method => $value) {
 			$double->method($method)->willReturnCallback(function (...$args) use ($label, $method, $value) {
-				$this->calls[] = $label . '.' . $method . '(' . implode(',', $args) . ')';
+				$this->calls[] = $label . '.' . $method . '(' . implode(',', array_map(static fn ($arg) => is_object($arg) === true ? $arg::class : $arg, $args)) . ')';
 				if (isset($this->failing[$label . '.' . $method]) === true) {
 					throw new Exception($label . ' ' . $method . ' broke');
 				}

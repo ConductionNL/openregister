@@ -30,6 +30,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * Golden: the status, body and call order of index/create/destroy on the email links API,
@@ -74,8 +75,8 @@ class EmailsControllerGoldenTest extends TestCase
             }
         );
         $emailService->method('getEmailsForObject')->willReturnCallback(
-            function (string $uuid, ?int $limit, ?int $offset) use ($scenario): array {
-                $this->log[] = 'getEmailsForObject:' . $uuid . ':' . var_export($limit, true) . ':' . var_export($offset, true);
+            function (string $uuid, ListQuery $query) use ($scenario): array {
+                $this->log[] = 'getEmailsForObject:' . $uuid . ':' . var_export($query->limitOrNull(), true) . ':' . var_export($query->offset, true);
                 $this->maybeFail($scenario['fail'], 'list');
                 return ['results' => [], 'total' => 0];
             }

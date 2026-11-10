@@ -36,6 +36,7 @@ use OCP\App\IAppManager;
 use OCP\IL10N;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Db\ListQuery;
 
 /**
  * EmailProvider unit tests.
@@ -157,7 +158,7 @@ class EmailProviderTest extends TestCase {
 
 	public function testListDelegatesToEmailServiceAndReturnsPaginatedEnvelope(): void {
 		$this->emailService->method('getEmailsForObject')
-			->with(objectUuid: 'obj-uuid', limit: null, offset: null)
+			->with('obj-uuid', new ListQuery(limit: ListQuery::UNBOUNDED))
 			->willReturn(['results' => [['id' => 1, 'subject' => 'Hello']], 'total' => 1]);
 
 		$result = $this->provider->list('reg', 'schema', 'obj-uuid');
@@ -170,7 +171,7 @@ class EmailProviderTest extends TestCase {
 	public function testListHonoursPaginationFilters(): void {
 		$this->emailService->expects($this->once())
 			->method('getEmailsForObject')
-			->with(objectUuid: 'obj-uuid', limit: 10, offset: 10)
+			->with('obj-uuid', new ListQuery(limit: 10, offset: 10))
 			->willReturn(['results' => [['id' => 2]], 'total' => 25]);
 
 		$result = $this->provider->list('reg', 'schema', 'obj-uuid', ['_limit' => 10, '_page' => 1]);
@@ -184,7 +185,7 @@ class EmailProviderTest extends TestCase {
 	public function testListWithoutALimitAsksForEverythingAndHasNoCursor(): void {
 		$this->emailService->expects($this->once())
 			->method('getEmailsForObject')
-			->with(objectUuid: 'obj-uuid', limit: null, offset: null)
+			->with('obj-uuid', new ListQuery(limit: ListQuery::UNBOUNDED))
 			->willReturn(['results' => [['id' => 2]], 'total' => '25']);
 
 		$this->assertSame(
@@ -196,7 +197,7 @@ class EmailProviderTest extends TestCase {
 	public function testListTreatsANegativePageAsTheFirst(): void {
 		$this->emailService->expects($this->once())
 			->method('getEmailsForObject')
-			->with(objectUuid: 'obj-uuid', limit: 2, offset: 0)
+			->with('obj-uuid', new ListQuery(limit: 2, offset: 0))
 			->willReturn(['results' => [['id' => 1], ['id' => 2]], 'total' => 3]);
 
 		$this->assertSame('1', $this->provider->list('reg', 'schema', 'obj-uuid', ['_limit' => '2', '_page' => '-3'])['nextCursor']);
