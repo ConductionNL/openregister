@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Notifications\Controller;
 use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
 use OCA\OpenRegister\Kernel\Contracts\ReportCaller;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportUpdate;
 use OCA\OpenRegister\Notifications\Controller\Support\ScheduledReportsControllerServices;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
@@ -179,18 +180,9 @@ class ScheduledReportsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(int $id): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
-		}
-
-		try {
-			$report = $this->service->find(id: $id);
-			$this->service->assertMayAccess(report: $report, caller: new ReportCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin()));
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
-		} catch (\RuntimeException $e) {
-			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
+		$report = $this->accessibleReport(id: $id);
+		if ($report instanceof JSONResponse) {
+			return $report;
 		}
 
 		return new JSONResponse(data: $report->jsonSerialize());
@@ -214,12 +206,7 @@ class ScheduledReportsController extends Controller {
 			return $this->authRequiredResponse();
 		}
 
-		$data = $this->request->getParams();
-		foreach (array_keys($data) as $key) {
-			if (str_starts_with($key, '_') === true) {
-				unset($data[$key]);
-			}
-		}
+		$data = $this->reportFields();
 
 		try {
 			$report = $this->service->create(data: $data, ownerUid: $userId);
@@ -256,20 +243,13 @@ class ScheduledReportsController extends Controller {
 			return $this->authRequiredResponse();
 		}
 
-		$data = $this->request->getParams();
-		foreach (array_keys($data) as $key) {
-			if (str_starts_with($key, '_') === true) {
-				unset($data[$key]);
-			}
-		}
+		$data = $this->reportFields();
 
 		try {
 			$caller = new ReportCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin());
 			$report = $this->service->applyUpdate(update: new ScheduledReportUpdate(id: $id, data: $data, caller: $caller));
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
-		} catch (\RuntimeException $e) {
-			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
+		} catch (DoesNotExistException | \RuntimeException $e) {
+			return $this->reportNotFound();
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		} catch (\Throwable $e) {
@@ -305,10 +285,8 @@ class ScheduledReportsController extends Controller {
 
 		try {
 			$this->service->deleteAs(id: $id, caller: new ReportCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin()));
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
-		} catch (\RuntimeException $e) {
-			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
+		} catch (DoesNotExistException | \RuntimeException $e) {
+			return $this->reportNotFound();
 		} catch (\Throwable $e) {
 			$this->session->logger->error(
 				message: '[ScheduledReportsController] Error deleting scheduled report: ' . $e->getMessage(),
@@ -338,18 +316,9 @@ class ScheduledReportsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function runNow(int $id): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
-		}
-
-		try {
-			$report = $this->service->find(id: $id);
-			$this->service->assertMayAccess(report: $report, caller: new ReportCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin()));
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
-		} catch (\RuntimeException $e) {
-			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
+		$report = $this->accessibleReport(id: $id);
+		if ($report instanceof JSONResponse) {
+			return $report;
 		}
 
 		$this->jobList->add(ScheduledReportRunNowJob::class, ['scheduledReportId' => $report->getId()]);
@@ -361,4 +330,54 @@ class ScheduledReportsController extends Controller {
 
 		return new JSONResponse(data: ['queued' => true], statusCode: 202);
 	}//end runNow()
+
+	/**
+	 * The report a caller asked for, or the answer refusing it.
+	 *
+	 * Unknown and inaccessible reports answer the same 404.
+	 *
+	 * @param int $id The scheduled report id.
+	 *
+	 * @return ScheduledReportInterface|JSONResponse The report, or a 401/404 response.
+	 */
+	private function accessibleReport(int $id): ScheduledReportInterface|JSONResponse {
+		$userId = $this->resolveUserId();
+		if ($userId === null) {
+			return $this->authRequiredResponse();
+		}
+
+		try {
+			$report = $this->service->find(id: $id);
+			$this->service->assertMayAccess(report: $report, caller: new ReportCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin()));
+		} catch (DoesNotExistException | \RuntimeException $e) {
+			return $this->reportNotFound();
+		}
+
+		return $report;
+	}//end accessibleReport()
+
+	/**
+	 * The answer for a report that does not exist or is not the caller's.
+	 *
+	 * @return JSONResponse 404.
+	 */
+	private function reportNotFound(): JSONResponse {
+		return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
+	}//end reportNotFound()
+
+	/**
+	 * The request parameters a create or update writes: every key not starting with `_`.
+	 *
+	 * @return array<string, mixed> The fields.
+	 */
+	private function reportFields(): array {
+		$data = $this->request->getParams();
+		foreach (array_keys($data) as $key) {
+			if (str_starts_with($key, '_') === true) {
+				unset($data[$key]);
+			}
+		}
+
+		return $data;
+	}//end reportFields()
 }//end class
