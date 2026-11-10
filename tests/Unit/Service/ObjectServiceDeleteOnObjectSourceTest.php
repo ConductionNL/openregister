@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -232,27 +233,29 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 				return true;
 			}
 
-			public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+			public function find(SourcedTable $source, string $id): ?ObjectEntity {
 				return null;
 			}
 
-			public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+			public function findAll(SourcedTable $source, array $query = []): array {
 				return [];
 			}
 
-			public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
+			public function count(SourcedTable $source, array $query = []): int {
 				return 0;
 			}
 
-			public function insert(Register $register, Schema $schema, array $data, array $config = []): ObjectEntity {
+			public function insert(SourcedTable $source, array $data): ObjectEntity {
 				throw new RuntimeException('insert is not part of this test');
 			}
 
-			public function update(Register $register, Schema $schema, string $id, array $data, array $config = []): ObjectEntity {
+			public function update(SourcedTable $source, string $id, array $data): ObjectEntity {
 				throw new RuntimeException('update is not part of this test');
 			}
 
-			public function remove(Register $register, Schema $schema, string $id, array $config = []): bool {
+			public function remove(SourcedTable $source, string $id): bool {
+				$register = $source->table->register;
+				$schema   = $source->table->schema;
 				$this->removed[] = ['register' => $register, 'schema' => $schema, 'id' => $id];
 				return true;
 			}
