@@ -145,9 +145,9 @@ class AuditTrailObjectLogsCharacterisationTest extends TestCase {
 		$this->logService->expects($this->never())->method('getLogs');
 		$this->history->expects($this->once())->method('page')->willReturnCallback(
 			function (...$args): array {
-				$this->assertSame(['reg', 'sch', 'obj'], array_slice($args, 0, 3));
-				$this->assertSame(10, $args[3]['limit']);
-				$this->assertSame(20, $args[3]['offset']);
+				$this->assertSame(['reg', 'sch', 'obj'], [$args[0]->register, $args[0]->schema, $args[0]->id]);
+				$this->assertSame(10, $args[1]['limit']);
+				$this->assertSame(20, $args[1]['offset']);
 				return ['results' => [], 'total' => 0];
 			}
 		);

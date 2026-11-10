@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -239,7 +240,10 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 			)
 		);
 
-		$result = $this->service->applyDeletionActions($analysis, 'admin', 'parent-uuid', 'org-1', 'parent-slug');
+		$result = $this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'parent-uuid', triggerSchemaSlug: 'parent-slug', organisationId: 'org-1')
+		);
 
 		// The ordinary child went.
 		$this->assertSame(['child-ordinary'], $softDeleted);
@@ -284,7 +288,10 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 			)
 		);
 
-		$result = $this->service->applyDeletionActions($analysis, 'admin', 'parent-uuid');
+		$result = $this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'parent-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 
 		$this->assertCount(2, $result['retained']);
 		// Deepest first: applyDeletionActions reverses the analysis order before
@@ -316,7 +323,10 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 			)
 		);
 
-		$result = $this->service->applyDeletionActions($analysis, 'admin', 'parent-uuid');
+		$result = $this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'parent-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 
 		$this->assertCount(1, $result['retained']);
 		$this->assertSame('retained-a', $result['retained'][0]['uuid']);
@@ -342,7 +352,10 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 			effects: new DeletionEffects(cascadeTargets: [$this->target('child-ordinary', self::SCHEMA_ORDINARY)])
 		);
 
-		$result = $this->service->applyDeletionActions($analysis, 'admin', 'parent-uuid');
+		$result = $this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'parent-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 
 		$this->assertArrayHasKey('retained', $result);
 		$this->assertSame([], $result['retained']);

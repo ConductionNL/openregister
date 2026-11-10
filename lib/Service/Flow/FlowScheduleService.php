@@ -408,11 +408,13 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 		// an author states it deliberately. When the node names nobody the queue
 		// refuses, and the refusal switches the schedule off with a reason
 		// attached instead of retrying every tick forever (ADR-099).
-		$this->runs->queue(
+		$this->runs->queueRun(
 			flowId: $uuid,
-			subject: [],
-			trigger: 'schedule',
-			context: ['payload' => ['flowId' => $uuid, 'scheduledAt' => $now->format(DATE_ATOM)]]
+			options: new FlowRunQueueOptions(
+				subject: [],
+				trigger: 'schedule',
+				context: ['payload' => ['flowId' => $uuid, 'scheduledAt' => $now->format(DATE_ATOM)]]
+			)
 		);
 
 		// Remember the fire time so the next occurrence is measured from here,
