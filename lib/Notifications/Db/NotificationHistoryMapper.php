@@ -130,7 +130,7 @@ class NotificationHistoryMapper extends QBMapper implements NotificationHistoryM
 		// opening that object still clears it. Defaulting here rather than at
 		// each call site is what keeps "the work clears the bell" true for
 		// every rule that was written before the axis existed.
-		$entity->setSubjectId(($entry->about?->id ?? $entry->target->objectUuid));
+		$entity->setSubjectId(($entry->about->id ?? $entry->target->objectUuid));
 		$entity->setDispatchedAt(new DateTime());
 
 		return $this->insert(entity: $entity);
