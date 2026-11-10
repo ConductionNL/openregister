@@ -455,65 +455,69 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 *   (Requirement: REQ-DERIVED-004 — Search verb: filters, pagination, projection, truncation)
 	 */
 	private function search(DerivedToolCall $call): array {
-		$search = $this->searchRequest(call: $call);
-		$config = $this->searchConfig(search: $search, arguments: $call->arguments);
+		$filters = $this->declaredFilters(schema: $call->schema, arguments: $call->arguments);
+		$window = $this->searchPage(arguments: $call->arguments);
+		$config = ($this->windowConfig(window: $window, filters: $filters) + $this->fieldsProjection(arguments: $call->arguments));
 
 		$this->anchorObjectService(schema: $call->schema, register: $call->register);
 
-		$objects = $this->objectService->findAll(config: $config);
-		$total = $this->objectService->count(config: ['filters' => $search->filters]);
-		$results = $this->truncatedResults(objects: $objects);
+		$results = $this->truncatedResults(objects: $this->objectService->findAll(config: $config));
+		$total = $this->objectService->count(config: ['filters' => $filters]);
 
 		return [
 			'results' => $results,
-			'page' => $search->page,
-			'pageSize' => $search->pageSize,
+			'page' => $window->page,
+			'pageSize' => $window->pageSize,
 			'total' => $total,
-			'hasMore' => (($search->offset() + count($results)) < $total),
+			'hasMore' => (($window->offset() + count($results)) < $total),
 		];
 	}//end search()
 
 	/**
-	 * The declared filters and the page window a `search` call asks for.
+	 * The page window a `search` call asks for.
 	 *
-	 * @param DerivedToolCall $call The schema, its register and the arguments.
+	 * @param array<string, mixed> $arguments The tool arguments, for `page` and `pageSize`.
 	 *
-	 * @return DerivedSearch
-	 *
-	 * @throws InvalidArgumentException If `filters` names an undeclared property.
+	 * @return DerivedSearchPage
 	 */
-	private function searchRequest(DerivedToolCall $call): DerivedSearch {
-		$filters = $this->declaredFilters(schema: $call->schema, arguments: $call->arguments);
-
-		return new DerivedSearch(
-			filters: $filters,
-			page: $this->pageNumber(arguments: $call->arguments),
-			pageSize: $this->pageSize(arguments: $call->arguments)
+	private function searchPage(array $arguments): DerivedSearchPage {
+		return new DerivedSearchPage(
+			page: $this->pageNumber(arguments: $arguments),
+			pageSize: $this->pageSize(arguments: $arguments)
 		);
-	}//end searchRequest()
+	}//end searchPage()
 
 	/**
-	 * The ObjectService query config of a search: page window, filters and an optional field projection.
+	 * The ObjectService query config of a page of filtered results.
 	 *
-	 * @param DerivedSearch        $search    The filters and page window.
+	 * @param DerivedSearchPage    $window  The page window.
+	 * @param array<string, mixed> $filters The declared filters asked for.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function windowConfig(DerivedSearchPage $window, array $filters): array {
+		return [
+			'limit' => $window->pageSize,
+			'offset' => $window->offset(),
+			'filters' => $filters,
+		];
+	}//end windowConfig()
+
+	/**
+	 * The optional field projection of a search: `fields` when it is a non-empty list, else nothing.
+	 *
 	 * @param array<string, mixed> $arguments The tool arguments, for `fields`.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function searchConfig(DerivedSearch $search, array $arguments): array {
-		$config = [
-			'limit' => $search->pageSize,
-			'offset' => $search->offset(),
-			'filters' => $search->filters,
-		];
-
+	private function fieldsProjection(array $arguments): array {
 		$fields = ($arguments['fields'] ?? null);
 		if (is_array($fields) === true && count($fields) > 0) {
-			$config['fields'] = $fields;
+			return ['fields' => $fields];
 		}
 
-		return $config;
-	}//end searchConfig()
+		return [];
+	}//end fieldsProjection()
 
 	/**
 	 * The found objects serialised, with long strings truncated.

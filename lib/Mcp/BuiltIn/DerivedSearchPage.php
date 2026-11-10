@@ -1,10 +1,10 @@
 <?php
 
 /**
- * DerivedSearch
+ * DerivedSearchPage
  *
- * One `search` verb invocation of a schema-derived MCP tool: the declared
- * filters it asked for and the page window it reads.
+ * The page window one `search` verb invocation of a schema-derived MCP tool
+ * reads: the 1-based page number and the clamped page size.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -28,22 +28,20 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 /**
- * The filters and page window of one derived `search`.
+ * The page window of one derived `search`.
  *
  * @spec openspec/specs/ai-mcp/spec.md
  */
-final readonly class DerivedSearch {
+final readonly class DerivedSearchPage {
 	/**
 	 * Constructor.
 	 *
-	 * @param array<string, mixed> $filters  The declared filters asked for.
-	 * @param int                  $page     The 1-based page number.
-	 * @param int                  $pageSize The clamped page size.
+	 * @param int $page     The 1-based page number.
+	 * @param int $pageSize The clamped page size.
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 */
 	public function __construct(
-		public array $filters,
 		public int $page,
 		public int $pageSize,
 	) {
