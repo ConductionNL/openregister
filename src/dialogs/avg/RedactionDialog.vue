@@ -54,8 +54,8 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 import AvgFormFooter from './AvgFormFooter.vue'
-import { resolveGroundOptions } from '../../store/modules/avg.js'
 import { avgStore } from '../../store/store.js'
+import { caseDialogProps, groundOptions } from './caseDialog.js'
 
 export default {
 	name: 'RedactionDialog',
@@ -67,17 +67,7 @@ export default {
 		NcSelect,
 	},
 
-	props: {
-		caseId: {
-			type: String,
-			required: true,
-		},
-
-		pack: {
-			type: Object,
-			default: null,
-		},
-	},
+	props: caseDialogProps,
 
 	emits: ['close', 'redacted'],
 
@@ -95,12 +85,7 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * @spec exclude Presentation glue: reuses the pack's denial-grounds enum as the redaction-ground options.
-		 */
-		groundOptions() {
-			return resolveGroundOptions(this.pack)
-		},
+		groundOptions,
 	},
 
 	methods: {
