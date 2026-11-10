@@ -69,17 +69,15 @@ class ElevationService implements ElevationServiceInterface {
 	 * Constructor.
 	 *
 	 * @param ElevationIdentity $identity The session, the signed-in user and the password check.
-	 * @param ITimeFactory         $time        The clock, so a test can move it.
-	 * @param HardeningPolicy      $policy      Reads the administered period.
-	 * @param HardeningAuditWriter $audit       Records the grant and the refusal.
+	 * @param ITimeFactory      $time     The clock, so a test can move it.
+	 * @param HardeningPosture  $posture  Reads the administered period and records the grant and the refusal.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ElevationIdentity $identity,
 		private readonly ITimeFactory $time,
-		private readonly HardeningPolicy $policy,
-		private readonly HardeningAuditWriter $audit,
+		private readonly HardeningPosture $posture,
 	) {
 
 	}//end __construct()
@@ -92,7 +90,7 @@ class ElevationService implements ElevationServiceInterface {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-administration-requires-a-fresh-expiring-authentication-req-ihc-002
 	 */
 	public function periodSeconds(): int {
-		return $this->policy->administered(control: self::PERIOD_CONTROL);
+		return $this->posture->policy->administered(control: self::PERIOD_CONTROL);
 
 	}//end periodSeconds()
 
@@ -113,7 +111,7 @@ class ElevationService implements ElevationServiceInterface {
 	public function elevate(string $password): bool {
 		$user = $this->identity->userSession->getUser();
 		if ($user === null || $password === '') {
-			$this->audit->refused(
+			$this->posture->audit->refused(
 				fact: 'elevation.refused',
 				before: '',
 				after: '',
@@ -125,7 +123,7 @@ class ElevationService implements ElevationServiceInterface {
 
 		$uid = $user->getUID();
 		if ($this->identity->users->checkPassword($uid, $password) === false) {
-			$this->audit->refused(
+			$this->posture->audit->refused(
 				fact: 'elevation.refused',
 				before: '',
 				after: $uid,
@@ -137,7 +135,7 @@ class ElevationService implements ElevationServiceInterface {
 
 		$now = $this->time->getTime();
 		$this->identity->session->set(self::SESSION_KEY, $now);
-		$this->audit->accepted(
+		$this->posture->audit->accepted(
 			fact: 'elevation.granted',
 			before: '',
 			after: ['user' => $uid, 'periodSeconds' => $this->periodSeconds()]
@@ -224,7 +222,7 @@ class ElevationService implements ElevationServiceInterface {
 			return;
 		}
 
-		$this->audit->refused(
+		$this->posture->audit->refused(
 			fact: 'elevation.lapsed',
 			before: '',
 			after: ($this->identity->userSession->getUser()?->getUID() ?? ''),

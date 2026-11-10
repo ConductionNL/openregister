@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -101,30 +102,26 @@ class EndpointMapper extends QBMapper implements EndpointMapperInterface {
 	 * Calls parent constructor to set up base mapper functionality.
 	 *
 	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy and RBAC
-	 * @param IUserSession $userSession User session
-	 * @param IGroupManager $groupManager Group manager
+	 * @param TenancyServices $tenancy Organisation mapper, user session and group manager for multi-tenancy and RBAC
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IDBConnection $db,
-		// A MAPPER, not a service — the removed dependency here was
-		// OrganisationService, and that removal stands. MultiTenancyTrait's RBAC
-		// check needs to resolve the active organisation's membership, and
-		// without this it can only fail closed and deny every non-admin write to
-		// endpoints. openregister#2833.
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		// The organisation mapper inside is a MAPPER, not a service — the removed
+		// dependency here was OrganisationService, and that removal stands.
+		// MultiTenancyTrait's RBAC check needs to resolve the active
+		// organisation's membership, and without this it can only fail closed
+		// and deny every non-admin write to endpoints. openregister#2833.
+		TenancyServices $tenancy,
 	) {
 		// Call parent constructor to initialize base mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_endpoints', entityClass: Endpoint::class);
 
 		// Store dependencies for use in mapper methods.
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
 	}//end __construct()
 
 	/**

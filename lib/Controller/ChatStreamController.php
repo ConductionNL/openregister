@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\ChatStreamControllerServices;
 use OCA\OpenRegister\Controller\Support\ChatStreamTurn;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannels;
@@ -151,16 +152,11 @@ class ChatStreamController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param ChatStreamControllerServices $services The chat stream controller services.
 	 */
-	public function __construct(
-		string $appName,
-		IRequest $request,
-		ChatStreamControllerServices $services,
-	) {
-		parent::__construct(appName: $appName, request: $request);
+	public function __construct(IRequest $request, ChatStreamControllerServices $services) {
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->chatService = $services->chat->chatService;
 		$this->conversationMapper = $services->chat->conversationMapper;
 		$this->agentMapper = $services->chat->agentMapper;
@@ -340,11 +336,7 @@ class ChatStreamController extends Controller {
 	 */
 	private function turnConversation(ChatStreamTurn $turn): Conversation {
 		try {
-			return $this->resolveConversation(
-				conversationUuid: $turn->conversationUuid,
-				agentUuid: $turn->agentUuid,
-				userId: $turn->userId
-			);
+			return $this->resolveConversation(turn: $turn);
 		} catch (RuntimeException $e) {
 			if ($e->getMessage() === self::ERROR_FORBIDDEN) {
 				$this->emitAndExit(eventType: 'error', payload: ['code' => 'forbidden', 'message' => 'Forbidden']);
@@ -671,9 +663,8 @@ class ChatStreamController extends Controller {
 	 * security review (any authed user could otherwise read/append to
 	 * another user's thread by guessing the uuid).
 	 *
-	 * @param string $conversationUuid Conversation UUID or '' to create new.
-	 * @param string $agentUuid Agent UUID (required when creating new).
-	 * @param string $userId Current user ID.
+	 * @param ChatStreamTurn $turn The turn: its conversation UUID ('' to create new),
+	 *                             agent UUID (required when creating new) and caller.
 	 *
 	 * @return Conversation Resolved conversation.
 	 *
@@ -684,9 +675,10 @@ class ChatStreamController extends Controller {
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	private function resolveConversation(string $conversationUuid, string $agentUuid, string $userId): Conversation {
-		if ($conversationUuid !== '') {
-			$conversation = $this->conversationMapper->findByUuid(uuid: $conversationUuid);
+	private function resolveConversation(ChatStreamTurn $turn): Conversation {
+		$userId = $turn->userId;
+		if ($turn->conversationUuid !== '') {
+			$conversation = $this->conversationMapper->findByUuid(uuid: $turn->conversationUuid);
 
 			// IDOR guard: findByUuid() does not scope by user, so we MUST
 			// verify the conversation belongs to the caller. Without this
@@ -700,7 +692,7 @@ class ChatStreamController extends Controller {
 		}
 
 		// Need an agent to create a new conversation.
-		$agent = $this->agentMapper->findByUuid(uuid: $agentUuid);
+		$agent = $this->agentMapper->findByUuid(uuid: $turn->agentUuid);
 
 		$conversation = new Conversation();
 		$conversation->setUserId($userId);

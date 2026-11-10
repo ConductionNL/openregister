@@ -126,13 +126,24 @@ class ObjectWatchersController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function watch(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+		return $this->watchAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	}//end watch()
+
+	/**
+	 * Watch the object at a route path.
+	 *
+	 * @param array<string, string> $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function watchAt(array $path): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		return $this->watchObject(object: $object, scope: ['register' => $register, 'schema' => $schema]);
-	}//end watch()
+		return $this->watchObject(object: $object, scope: ['register' => $path['register'], 'schema' => $path['schema']]);
+	}//end watchAt()
 
 	/**
 	 * Follow a resolved object for the caller.
@@ -174,13 +185,24 @@ class ObjectWatchersController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function unwatch(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+		return $this->unwatchAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	}//end unwatch()
+
+	/**
+	 * Stop watching the object at a route path.
+	 *
+	 * @param array<string, string> $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function unwatchAt(array $path): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
 		return $this->unwatchObject(object: $object);
-	}//end unwatch()
+	}//end unwatchAt()
 
 	/**
 	 * Stop following a resolved object.
@@ -216,13 +238,24 @@ class ObjectWatchersController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+		return $this->watchersAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	}//end index()
+
+	/**
+	 * The watchers of the object at a route path.
+	 *
+	 * @param array<string, string> $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function watchersAt(array $path): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
 		return $this->watcherList(object: $object);
-	}//end index()
+	}//end watchersAt()
 
 	/**
 	 * List a resolved object's watchers.
@@ -268,13 +301,25 @@ class ObjectWatchersController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function add(string $register, string $schema, string $id, string $userId): JSONResponse {
-		$object = $this->resolveObject(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+		return $this->addAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id], userId: $userId);
+	}//end add()
+
+	/**
+	 * Add a watcher to the object at a route path.
+	 *
+	 * @param array<string, string> $path   The register, schema and object id from the route.
+	 * @param string                $userId The user from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function addAt(array $path, string $userId): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		return $this->addTo(object: $object, watcher: ['userId' => $userId, 'register' => $register, 'schema' => $schema]);
-	}//end add()
+		return $this->addTo(object: $object, watcher: ['userId' => $userId, 'register' => $path['register'], 'schema' => $path['schema']]);
+	}//end addAt()
 
 	/**
 	 * Subscribe a known user to a resolved object.
@@ -327,13 +372,25 @@ class ObjectWatchersController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function remove(string $register, string $schema, string $id, string $userId): JSONResponse {
-		$object = $this->resolveObject(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+		return $this->removeAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id], userId: $userId);
+	}//end remove()
+
+	/**
+	 * Remove a watcher from the object at a route path.
+	 *
+	 * @param array<string, string> $path   The register, schema and object id from the route.
+	 * @param string                $userId The user from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function removeAt(array $path, string $userId): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
 		return $this->removeFrom(object: $object, userId: $userId);
-	}//end remove()
+	}//end removeAt()
 
 	/**
 	 * Remove a user's subscription from a resolved object.

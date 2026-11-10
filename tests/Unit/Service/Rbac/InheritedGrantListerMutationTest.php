@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Rbac\InheritedGrantLister;
 use OCA\OpenRegister\Service\Rbac\ObjectShareReader;
 use OCP\Share\IShare;
 use PHPUnit\Framework\MockObject\MockObject;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -101,7 +102,7 @@ final class InheritedGrantListerMutationTest extends TestCase {
 	public function testEveryShareOfEveryAncestorIsListedAndLookedUpSystemWide(): void {
 		$dossier = $this->object('dossier-1', 'eigenaar-a');
 		$zaak    = $this->object('zaak-1', 'eigenaar-b');
-		$this->hierarchy->method('ancestorsOf')->with(3, 8, 'document-1')->willReturn(['dossier-1', 'zaak-1']);
+		$this->hierarchy->method('ancestorsOf')->with(new ObjectRef(3, 8, 'document-1'))->willReturn(['dossier-1', 'zaak-1']);
 		$this->mapper->expects($this->exactly(2))
 			->method('find')
 			->willReturnCallback(

@@ -101,15 +101,13 @@ interface ApplicationMapperInterface {
 	/**
 	 * Find all applications
 	 *
-	 * Retrieves all applications with optional pagination, filtering, and search.
+	 * Retrieves all applications with optional pagination and filtering.
 	 * Results are ordered by creation date (newest first).
 	 * Automatically applies organisation filtering for multi-tenancy.
 	 *
 	 * @param int|null $limit Maximum number of results to return (null for all)
 	 * @param int|null $offset Number of results to skip for pagination (null for no offset)
 	 * @param array<string, mixed> $filters Filter conditions as key-value pairs (default: empty array)
-	 * @param array $searchConditions Search conditions for WHERE clause (default: empty array)
-	 * @param array<string, mixed> $searchParams Parameters for search conditions (default: empty array)
 	 *
 	 * @return Application[]
 	 *
@@ -121,9 +119,25 @@ interface ApplicationMapperInterface {
 		?int $limit = null,
 		?int $offset = null,
 		array $filters = [],
-		array $searchConditions = [],
-		array $searchParams = [],
 	): array;
+
+	/**
+	 * Find the applications of a listing
+	 *
+	 * Results are ordered by creation date (newest first). The listing's
+	 * limit (unbounded for all rows), offset and equality filters apply; its
+	 * sort and search do not. Automatically applies organisation filtering
+	 * for multi-tenancy.
+	 *
+	 * @param ListQuery $query The listing.
+	 *
+	 * @return Application[]
+	 *
+	 * @throws \Exception If user doesn't have read permission
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Application>
+	 */
+	public function findAllBy(ListQuery $query): array;
 
 	/**
 	 * Find an application by its UUID

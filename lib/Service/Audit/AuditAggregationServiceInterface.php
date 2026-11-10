@@ -61,20 +61,19 @@ interface AuditAggregationServiceInterface {
 	public function setWindowSeconds(int $seconds): int;
 
 	/**
-	 * Whether two entries are close enough in time to be one.
+	 * Whether two entries are close enough in time to be one, under the administered window.
 	 *
 	 * Takes both instants rather than reading the clock, so the behaviour is
 	 * testable without waiting five minutes for the answer.
 	 *
 	 * @param DateTimeInterface|null $previous When the entry already written was written.
 	 * @param DateTimeInterface $now When the edit being recorded happened.
-	 * @param integer $window The administered window, in seconds.
 	 *
 	 * @return boolean Whether the two merge.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function isWithinWindow(?DateTimeInterface $previous, DateTimeInterface $now, int $window): bool;
+	public function isWithinWindow(?DateTimeInterface $previous, DateTimeInterface $now): bool;
 
 	/**
 	 * Fold an edit into the entry already written.

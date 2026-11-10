@@ -20,9 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\IDBConnection;
 
 /**
@@ -34,18 +32,15 @@ final class RetentionScanStores {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param IDBConnection           $db             Database connection for the row scans.
-	 * @param RegisterMapperInterface $registerMapper Register repository, used to enumerate pairs.
-	 * @param SchemaMapperInterface   $schemaMapper   Schema repository, used to enumerate pairs.
-	 * @param MagicMapperInterface    $objectMapper   Magic-table resolver and row hydrator.
+	 * @param IDBConnection          $db      Database connection for the row scans.
+	 * @param SchemaCatalogInterface $catalog The register and schema repositories, used to enumerate pairs, and
+	 *                                        the magic-table resolver and row hydrator.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function __construct(
 		public readonly IDBConnection $db,
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly MagicMapperInterface $objectMapper,
+		public readonly SchemaCatalogInterface $catalog,
 	) {
 	}//end __construct()
 }//end class

@@ -59,8 +59,7 @@ final class AuditAggregationServiceTest extends TestCase {
 		$this->assertFalse(
 			$service->isWithinWindow(
 				previous: new DateTimeImmutable('2026-09-15 10:00:00'),
-				now: new DateTimeImmutable('2026-09-15 10:01:00'),
-				window: $service->windowSeconds()
+				now: new DateTimeImmutable('2026-09-15 10:01:00')
 			)
 		);
 	}//end testNothingMergesByDefault()
@@ -75,10 +74,10 @@ final class AuditAggregationServiceTest extends TestCase {
 		$start = new DateTimeImmutable('2026-09-15 10:00:00');
 
 		$this->assertTrue(
-			$service->isWithinWindow(previous: $start, now: $start->modify('+4 minutes'), window: 300)
+			$service->isWithinWindow(previous: $start, now: $start->modify('+4 minutes'))
 		);
 		$this->assertFalse(
-			$service->isWithinWindow(previous: $start, now: $start->modify('+6 minutes'), window: 300)
+			$service->isWithinWindow(previous: $start, now: $start->modify('+6 minutes'))
 		);
 	}//end testASetWindowMergesOnlyWhatFallsInside()
 
@@ -151,7 +150,7 @@ final class AuditAggregationServiceTest extends TestCase {
 		$start = new DateTimeImmutable('2026-09-15 10:05:00');
 
 		$this->assertFalse(
-			$service->isWithinWindow(previous: $start, now: $start->modify('-1 minute'), window: 300)
+			$service->isWithinWindow(previous: $start, now: $start->modify('-1 minute'))
 		);
 	}//end testAnEditBeforeTheEntryNeverMerges()
 }//end class

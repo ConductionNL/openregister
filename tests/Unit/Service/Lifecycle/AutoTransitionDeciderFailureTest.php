@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecider;
@@ -62,7 +63,7 @@ class AutoTransitionDeciderFailureTest extends TestCase {
 			['uuid' => 'o-1', 'schema' => '7', 'error' => 'no resolver']
 		);
 
-		$this->assertNull((new AutoTransitionDecider($container, $schemas, $selector, $logger))->decide(self::ENTRY, []));
+		$this->assertNull((new AutoTransitionDecider($container, new SchemaReading($schemas, $logger), $selector))->decide(self::ENTRY, []));
 	}//end testAnUnreadableObjectDecidesNothing()
 
 	/**
@@ -80,6 +81,6 @@ class AutoTransitionDeciderFailureTest extends TestCase {
 		$selector = $this->createMock(AutoTransitionSelector::class);
 		$selector->expects($this->never())->method('select');
 
-		$this->assertNull((new AutoTransitionDecider($container, $schemas, $selector, $this->createMock(LoggerInterface::class)))->decide(self::ENTRY, []));
+		$this->assertNull((new AutoTransitionDecider($container, new SchemaReading($schemas, $this->createMock(LoggerInterface::class)), $selector))->decide(self::ENTRY, []));
 	}//end testAnUnloadableSchemaDecidesNothing()
 }//end class

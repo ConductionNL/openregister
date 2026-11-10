@@ -9,6 +9,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Service\TaskLocation;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -194,7 +195,7 @@ class TaskServiceReadGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testVtodoToArray(string $ics): void {
-		$actual = (new ReflectionMethod(TaskService::class, 'vtodoToArray'))->invoke($this->service([]), $ics, '5', 'x.ics');
+		$actual = (new ReflectionMethod(TaskService::class, 'vtodoToArray'))->invoke($this->service([]), $ics, new TaskLocation(calendarId: '5', uri: 'x.ics'));
 		$this->assertGolden(['return' => $actual]);
 	}//end testVtodoToArray()
 

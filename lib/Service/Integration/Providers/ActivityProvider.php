@@ -44,21 +44,45 @@ class ActivityProvider extends AbstractIntegrationProvider {
 	private const MARKER_PREFIX = '[or:';
 
 	/**
+	 * Database connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * App manager for installation checks.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation service.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Logger for the degraded marker-scan path.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
 	 * Construct the provider with required dependencies.
 	 *
-	 * @param IDBConnection $db Database connection.
-	 * @param IAppManager $appManager App manager for installation checks.
-	 * @param IL10N $l10n Localisation service.
-	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
+	 * @param LeafMarkerScanning $leaf The DB connection, app manager, localisation and marker-scan logger.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-activity-provider/tasks.md#task-2
 	 */
-	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private LoggerInterface $logger,
-	) {
+	public function __construct(LeafMarkerScanning $leaf) {
+		$this->db = $leaf->db;
+		$this->appManager = $leaf->appManager;
+		$this->l10n = $leaf->l10n;
+		$this->logger = $leaf->logger;
 	}//end __construct()
 
 	/**
@@ -182,13 +206,14 @@ class ActivityProvider extends AbstractIntegrationProvider {
 			return [];
 		}
 
-		$rows = $this->findByMarker(
+		$rows = $this->scanMarker(
 			db: $this->db,
-			table: 'activity',
-			markerColumn: 'subject',
-			marker: self::MARKER_PREFIX . $objectId . ']',
-			extraColumns: ['type', 'affecteduser', 'timestamp', 'object_id'],
-			idColumn: 'activity_id',
+			scan: new MarkerScan(
+				table: 'activity',
+				markerColumn: 'subject',
+				marker: self::MARKER_PREFIX . $objectId . ']',
+				columns: ['activity_id', 'type', 'affecteduser', 'timestamp', 'object_id'],
+			),
 		);
 
 		if ($this->wantsPublicOnly(filters: $filters) === true) {

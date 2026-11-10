@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\RelationScan;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -128,7 +129,7 @@ class RelationCascadeScanGoldenTest extends TestCase {
 		foreach ($cases as $name => $case) {
 			$entity = new ObjectEntity();
 			$entity->setObject($case['object']);
-			$out[$name] = $this->attempt(fn () => $handler->updateObjectRelations($entity, $case['data'])->getObject());
+			$out[$name] = $this->attempt(fn () => $handler->updateObjectRelations($entity, new RelationScan(data: $case['data']))->getObject());
 		}
 
 		return $out;
@@ -199,11 +200,6 @@ class RelationCascadeScanGoldenTest extends TestCase {
 			throw new DoesNotExistException('no');
 		});
 
-		return new RelationCascadeHandler(
-			$objects,
-			$this->createMock(SchemaMapperInterface::class),
-			$this->createMock(RegisterMapperInterface::class),
-			new NullLogger()
-		);
+		return new RelationCascadeHandler(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->createMock(SchemaMapperInterface::class), tables: $objects), logger: new NullLogger());
 	}//end handler()
 }//end class

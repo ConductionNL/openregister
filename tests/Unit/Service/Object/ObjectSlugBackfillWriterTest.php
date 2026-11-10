@@ -94,7 +94,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$this->writer = new ObjectSlugBackfillWriter(
 			magicMapper: $this->magicMapper,
 			db: $this->db,
-			ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, auditTrail: $auditTrail, logger: $this->logger),
+			ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $auditTrail, logger: $this->logger)),
 			logger: $this->logger
 		);
 	}//end setUp()

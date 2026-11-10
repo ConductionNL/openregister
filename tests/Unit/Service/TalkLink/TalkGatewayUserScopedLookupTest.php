@@ -26,6 +26,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\TalkLink;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCP\IUserSession;
+use OCA\OpenRegister\Service\TalkLink\TalkSession;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Service\TalkLink\TalkGateway;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
@@ -70,13 +73,13 @@ class TalkGatewayUserScopedLookupTest extends TestCase {
 	private function gateway(?ContainerInterface $container = null, bool $talkEnabled = true): TalkGateway {
 		$apps = $this->createMock(IAppManager::class);
 		$apps->method('isEnabledForUser')->with('spreed')->willReturn($talkEnabled);
-		return new TalkGateway($container ?? $this->createMock(ContainerInterface::class), $apps, $this->createMock(LoggerInterface::class));
+		return new TalkGateway($container ?? $this->createMock(ContainerInterface::class), new LinkServiceRuntime($apps, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)));
 	}
 
 	public function testTheUserScopedLookupIsPreferred(): void {
 		$manager = new TalkGatewayCurrentManager();
 
-		$room = $this->gateway()->findRoom($manager, 'abc', 'alice');
+		$room = $this->gateway()->findRoom(new TalkSession($manager, 'alice'), 'abc');
 
 		$this->assertEquals((object)['token' => 'abc', 'for' => 'alice'], $room);
 		$this->assertSame(['user:abc:alice'], $manager->calls);
@@ -85,7 +88,7 @@ class TalkGatewayUserScopedLookupTest extends TestCase {
 	public function testAUserScopedRefusalFallsBackToTheRawLookup(): void {
 		$manager = new TalkGatewayCurrentManager();
 
-		$room = $this->gateway()->findRoom($manager, 'not-a-member', 'bob');
+		$room = $this->gateway()->findRoom(new TalkSession($manager, 'bob'), 'not-a-member');
 
 		$this->assertEquals((object)['token' => 'not-a-member', 'for' => null], $room);
 		$this->assertSame(['user:not-a-member:bob', 'raw:not-a-member'], $manager->calls);

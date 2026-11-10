@@ -106,7 +106,7 @@ final class WriteOnlyPathsDeclaration {
 
 		$segments = explode('.', $path);
 		$this->assertNoEmptySegment(path: $path, segments: $segments);
-		$this->assertRootIsDeclared(path: $path, root: $segments[0], declared: $declared);
+		$this->assertRootIsDeclared(path: $path, declared: $declared);
 
 		return $path;
 	}//end validatedPath()
@@ -139,15 +139,15 @@ final class WriteOnlyPathsDeclaration {
 	 * partial hydration) has nothing to check against, and failing there
 	 * would reject valid declarations for the wrong reason.
 	 *
-	 * @param string             $path     The declared path.
-	 * @param string             $root     Its first segment.
+	 * @param string             $path     The declared path; its first segment is the root.
 	 * @param array<int, string> $declared The names of the schema's declared properties.
 	 *
 	 * @throws \InvalidArgumentException If the root is not declared.
 	 *
 	 * @return void
 	 */
-	private function assertRootIsDeclared(string $path, string $root, array $declared): void {
+	private function assertRootIsDeclared(string $path, array $declared): void {
+		$root = explode('.', $path)[0];
 		$rootIsDeclared = (empty($declared) === true || in_array($root, $declared, true) === true);
 		if ($rootIsDeclared === false) {
 			throw new InvalidArgumentException(

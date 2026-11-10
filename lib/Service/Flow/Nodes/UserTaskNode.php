@@ -170,11 +170,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 		$this->l10n       = $presentation->l10n;
 		$this->urls       = $presentation->urls;
 		$this->config     = new UserTaskConfig(l10n: $this->l10n, forms: $services->forms);
-		$this->performers = new UserTaskPerformers(
-			config: $this->config,
-			principals: $hooks->principals,
-			events: $hooks->events
-		);
+		$this->performers = new UserTaskPerformers(config: $this->config, hooks: $hooks);
 
 	}//end __construct()
 
@@ -336,9 +332,8 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 		}
 
 		$resume = $this->resumeSlot(context: $context);
-		$step = new UserTaskStep(items: $items, config: $config, context: $context, nodeId: $resume->nodeId());
 
-		return $this->pass(step: $step, resume: $resume);
+		return $this->pass(step: new UserTaskStep(items: $items, config: $config, context: $context, nodeId: $resume->nodeId()), resume: $resume);
 	}//end execute()
 
 	/**

@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ConfigurationsControllerServices;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Db\ListQuery;
@@ -31,9 +32,7 @@ use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -48,13 +47,6 @@ use Symfony\Component\Uid\Uuid;
  * @psalm-suppress UnusedClass
  */
 class ConfigurationsController extends Controller {
-
-	/**
-	 * User ID for ownership tracking.
-	 *
-	 * @var string|null User ID or null if not authenticated.
-	 */
-	private readonly ?string $userId;
 
 	/**
 	 * The configuration mapper instance
@@ -80,22 +72,17 @@ class ConfigurationsController extends Controller {
 	/**
 	 * Constructor for ConfigurationController.
 	 *
-	 * @param IRequest $request The request object
+	 * @param IRequest                         $request  The request object
 	 * @param ConfigurationsControllerServices $services The configurations controller services.
-	 * @param string|null $userId The current user ID
-	 * @param IGroupManager $groupManager Group manager for admin checks
 	 */
 	public function __construct(
 		IRequest $request,
 		ConfigurationsControllerServices $services,
-		?string $userId,
-		private readonly IGroupManager $groupManager,
 	) {
-		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
 		$this->configurationMapper = $services->configurationMapper;
 		$this->configurationService = $services->configurationService;
-		$this->userId = $userId;
 	}//end __construct()
 
 	/**
@@ -104,12 +91,7 @@ class ConfigurationsController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->services->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->services->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**
@@ -403,7 +385,7 @@ class ConfigurationsController extends Controller {
 					'version' => ($jsonData['info']['version'] ?? '1.0.0'),
 					'sourceType' => 'upload',
 					'app' => ($this->request->getParam('appId') ?? ($jsonData['x-openregister']['app'] ?? 'unknown')),
-					'owner' => ($this->request->getParam('owner') ?? $this->userId),
+					'owner' => ($this->request->getParam('owner') ?? $this->services->session->userSession->getUser()?->getUID()),
 					'registers' => [],
 					'schemas' => [],
 					'objects' => [],
