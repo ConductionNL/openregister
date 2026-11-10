@@ -176,18 +176,17 @@ class FlowRunAssignee {
 	/**
 	 * Whether this user may answer the step the run is waiting on.
 	 *
-	 * @param FlowRun     $run The suspended run.
-	 * @param string|null $uid The acting user, or null when there is no session.
-	 * @param string|null $nodeId The node the answer addresses, when the caller
-	 *                            knows it — see {@see recordedFor()} for how
-	 *                            addressing narrows and never loosens.
+	 * @param FlowRun   $run    The suspended run.
+	 * @param RunSignal $signal The answer: its acting user (none when there is no session) and the node it
+	 *                          addresses, when the caller knows it — see {@see recordedFor()} for how addressing
+	 *                          narrows and never loosens. Its payload plays no part.
 	 *
 	 * @return boolean True when the answer may be accepted.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
-	public function mayAnswer(FlowRun $run, ?string $uid, ?string $nodeId = null): bool {
-		return $this->recordedMayAnswer(recorded: $this->recordedValueFor(run: $run, nodeId: $nodeId), uid: $uid);
+	public function mayAnswer(FlowRun $run, RunSignal $signal): bool {
+		return $this->recordedMayAnswer(recorded: $this->recordedValueFor(run: $run, nodeId: $signal->nodeId), uid: $signal->actor());
 	}//end mayAnswer()
 
 	/**
