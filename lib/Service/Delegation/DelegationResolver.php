@@ -88,10 +88,14 @@ class DelegationResolver {
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public function resolve(DelegationRequest $request): DelegationVerdict {
-		$principal = trim($request->principal);
-		$actingAs = trim($request->actingAs);
+		$trimmed = new DelegationRequest(
+			principal: trim($request->principal),
+			actingAs: trim($request->actingAs),
+			scope: $request->scope,
+			now: $request->now
+		);
 
-		if ($principal === '' || $actingAs === '') {
+		if ($trimmed->principal === '' || $trimmed->actingAs === '') {
 			return DelegationVerdict::refused(
 				reason: DelegationVerdict::REASON_UNNAMED,
 				detail: 'A delegation needs both a principal and an identity to act as.'
@@ -99,12 +103,49 @@ class DelegationResolver {
 		}
 
 		// Self short-circuits BEFORE the store. See the class docblock.
-		if ($principal === $actingAs) {
+		if ($trimmed->principal === $trimmed->actingAs) {
 			return DelegationVerdict::self();
 		}
 
+		return $this->resolveFromStore(request: $trimmed);
+	}//end resolve()
+
+	/**
+	 * Judge a named, non-self request against the grants the store holds for it.
+	 *
+	 * @param DelegationRequest $request The trimmed request.
+	 *
+	 * @return DelegationVerdict The verdict.
+	 */
+	private function resolveFromStore(DelegationRequest $request): DelegationVerdict {
+		$candidates = $this->findCandidates(request: $request);
+		if ($candidates === null) {
+			return DelegationVerdict::refused(
+				reason: DelegationVerdict::REASON_UNREADABLE,
+				detail: 'The delegation store could not be read, so the delegation is refused.'
+			);
+		}
+
+		if ($candidates === []) {
+			return DelegationVerdict::refused(
+				reason: DelegationVerdict::REASON_NONE,
+				detail: sprintf('"%s" holds no grant to act as "%s".', $request->principal, $request->actingAs)
+			);
+		}
+
+		return $this->judge(candidates: $candidates, request: $request);
+	}//end resolveFromStore()
+
+	/**
+	 * The grants stored between the request's parties, or null when the store cannot be read.
+	 *
+	 * @param DelegationRequest $request The trimmed request.
+	 *
+	 * @return array<int, DelegationGrant>|null The candidates, or null.
+	 */
+	private function findCandidates(DelegationRequest $request): ?array {
 		try {
-			$candidates = $this->grants->findFor(principal: $principal, actingAs: $actingAs);
+			return $this->grants->findFor(principal: $request->principal, actingAs: $request->actingAs);
 		} catch (Throwable $e) {
 			// 🔴 Fail CLOSED. A store that cannot be read is not a store that
 			// says yes. The alternative — treating an unreadable grant table as
@@ -113,27 +154,12 @@ class DelegationResolver {
 			// never-injected organisation service), and it fails silently.
 			$this->logger->error(
 				message: '[DelegationResolver] Could not read the grant store; refusing: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'principal' => $principal, 'actingAs' => $actingAs]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'principal' => $request->principal, 'actingAs' => $request->actingAs]
 			);
 
-			return DelegationVerdict::refused(
-				reason: DelegationVerdict::REASON_UNREADABLE,
-				detail: 'The delegation store could not be read, so the delegation is refused.'
-			);
+			return null;
 		}//end try
-
-		if ($candidates === []) {
-			return DelegationVerdict::refused(
-				reason: DelegationVerdict::REASON_NONE,
-				detail: sprintf('"%s" holds no grant to act as "%s".', $principal, $actingAs)
-			);
-		}
-
-		return $this->judge(
-			candidates: $candidates,
-			request: new DelegationRequest(principal: $principal, actingAs: $actingAs, scope: $request->scope, now: $request->now)
-		);
-	}//end resolve()
+	}//end findCandidates()
 
 	/**
 	 * Pick the verdict the candidate set warrants.
