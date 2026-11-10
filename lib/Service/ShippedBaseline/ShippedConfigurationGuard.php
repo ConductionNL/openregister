@@ -76,7 +76,7 @@ class ShippedConfigurationGuard {
 	/**
 	 * The divergence answer for a schema with no shipped baseline recorded.
 	 *
-	 * @var array{baseline: false, app: string, appVersion: string, recordedAt: string, divergences: array<never, never>}
+	 * @var array{baseline: false, app: '', appVersion: '', recordedAt: '', divergences: array{}}
 	 */
 	private const NO_BASELINE_DIVERGENCE = [
 		'baseline' => false,
