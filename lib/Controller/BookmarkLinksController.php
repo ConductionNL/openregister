@@ -31,6 +31,8 @@ use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\BookmarkLinksControllerServices;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
+use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\BookmarkDraft;
@@ -295,15 +297,23 @@ class BookmarkLinksController extends Controller {
 			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
-		$search = $this->request->getParam('search');
-		if ($search !== null) {
-			$search = (string)$search;
-		}
+		$bookmarks = $this->bookmarkLinkService->getAvailableBookmarks(
+			LinkedSourceActions::search(request: $this->request),
+			$this->requestedTags()
+		);
 
-		$tags = null;
+		return LinkedSourceResponses::listed(items: $bookmarks);
+	}//end available()
+
+	/**
+	 * The tags the picker narrows to: a comma list or a list of text, or null for no narrowing.
+	 *
+	 * @return array<int, string>|null The tags
+	 */
+	private function requestedTags(): ?array {
 		$rawTags = $this->request->getParam('tags');
 		if (is_string($rawTags) === true && $rawTags !== '') {
-			$tags = array_values(
+			return array_values(
 				array_filter(
 					array_map('trim', explode(',', $rawTags)),
 					static function (string $tag): bool {
@@ -311,13 +321,14 @@ class BookmarkLinksController extends Controller {
 					}
 				)
 			);
-		} elseif (is_array($rawTags) === true) {
-			$tags = array_values(array_filter($rawTags, 'is_string'));
 		}
 
-		$bookmarks = $this->bookmarkLinkService->getAvailableBookmarks($search, $tags);
-		return new JSONResponse(['results' => $bookmarks, 'total' => count($bookmarks)]);
-	}//end available()
+		if (is_array($rawTags) === true) {
+			return array_values(array_filter($rawTags, 'is_string'));
+		}
+
+		return null;
+	}//end requestedTags()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
