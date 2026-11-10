@@ -208,7 +208,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		// sealed hash forward, so a tail of them is a smaller claim, never a
 		// false alarm.
 		//
-		// Attribution is applied here as well as in buildAuditTrail(), which
+		// Attribution is applied here as well as in buildEntry(), which
 		// covers the entry points that do NOT build their row there —
 		// createAuditTrailEntry() (archival/retention) and
 		// recordToolInvocation() (MCP). Both can be reached from inside a
@@ -1067,42 +1067,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end findMergeCandidate()
 
 	/**
-	 * Build (but do not persist) an audit trail entity for object changes.
-	 *
-	 * Contains the complete row-building logic shared by {@see createAuditTrail()}
-	 * (single insert) and {@see insertAuditTrails()} (batched multi-row insert),
-	 * so both paths produce identical audit rows.
-	 *
-	 * @param ObjectEntity|null $old The old state of the object
-	 * @param ObjectEntity|null $new The new state of the object
-	 * @param string|null $action The action to record. NULL (the default) infers it from which
-	 *                            entities are present: no `new` is a delete, no `old` is a create,
-	 *                            otherwise an update. A NAMED action is used verbatim — the
-	 *                            inference used to overwrite an explicit 'update' because it was
-	 *                            indistinguishable from the old default (#2217).
-	 * @param array|null $cascadeContext Optional referential-integrity cascade context to fold
-	 *                                   into the `changed` column (keys: triggerObject,
-	 *                                   triggerSchema, action_type, property).
-	 *
-	 * @return AuditTrail The populated (unpersisted) audit trail entity
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function buildAuditTrail(
-		?ObjectEntity $old = null,
-		?ObjectEntity $new = null,
-		?string $action = null,
-		?array $cascadeContext = null,
-	): AuditTrail {
-		return $this->buildEntry(change: new AuditedChange(old: $old, new: $new, action: $action, cascadeContext: $cascadeContext));
-	}//end buildAuditTrail()
-
-	/**
 	 * Build (but do not persist) the audit row of one change.
-	 *
-	 * The typed form of {@see buildAuditTrail()}, which keeps its signature for other apps.
 	 *
 	 * @param AuditedChange $change The old and new state, the action and the cascade context.
 	 *
@@ -1565,7 +1530,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * Each entry is an array with keys `old` (?ObjectEntity), `new` (?ObjectEntity)
 	 * and `action` (string). Rows are built through the exact same
-	 * {@see buildAuditTrail()} logic as {@see createAuditTrail()} so their content
+	 * {@see buildEntry()} logic as {@see createAuditTrail()} so their content
 	 * is identical, but they are persisted with one multi-row INSERT per chunk of
 	 * 100 instead of one INSERT (plus 3 hash-chain queries) per row. After each
 	 * chunk the rows are sealed into the SHA-256 hash chain in a single batched
@@ -1574,7 +1539,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * rather than losing the audit records.
 	 *
 	 * @param array $entries Mixed list: ['old' => ?ObjectEntity, 'new' => ?ObjectEntity, 'action' => string,
-	 *                       'cascadeContext' => ?array] entries built through {@see buildAuditTrail()}, and/or
+	 *                       'cascadeContext' => ?array] entries built through {@see buildEntry()}, and/or
 	 *                       pre-built AuditTrail entities (each must carry a uuid) persisted as-is
 	 * @param int $chunkSize Number of rows per multi-row INSERT statement
 	 *
@@ -1606,7 +1571,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	/**
 	 * The row one insertAuditTrails() entry stands for.
 	 *
-	 * Pre-built rows (e.g. cascade deletes assembled via buildAuditTrail()
+	 * Pre-built rows (e.g. cascade deletes assembled via buildEntry()
 	 * with cascade context) are persisted as-is; array entries are built
 	 * through the shared row logic so both shapes yield identical rows.
 	 *
@@ -1631,11 +1596,13 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			throw new InvalidArgumentException('insertAuditTrails() expects AuditTrail entities or old/new/action entry arrays.');
 		}
 
-		return $this->buildAuditTrail(
-			old: ($entry['old'] ?? null),
-			new: ($entry['new'] ?? null),
-			action: ($entry['action'] ?? 'update'),
-			cascadeContext: ($entry['cascadeContext'] ?? null)
+		return $this->buildEntry(
+			change: new AuditedChange(
+				old: ($entry['old'] ?? null),
+				new: ($entry['new'] ?? null),
+				action: ($entry['action'] ?? 'update'),
+				cascadeContext: ($entry['cascadeContext'] ?? null)
+			)
 		);
 	}//end auditTrailFromEntry()
 
@@ -1703,7 +1670,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	/**
 	 * The union of updated properties across a chunk, in first-seen order, without `id`.
 	 *
-	 * Rows built by buildAuditTrail() set the same fields, but optional fields
+	 * Rows built by buildEntry() set the same fields, but optional fields
 	 * like processingActivityId/importJobId can differ per row.
 	 *
 	 * @param AuditTrail[] $chunk The chunk.
@@ -2483,33 +2450,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end clearLogs()
 
 	/**
-	 * Count the audit rows that belong to one object, excluding the evidence
-	 * of its own destruction.
-	 *
-	 * Already-tombstoned rows are excluded: their payload is gone, so there is
-	 * nothing left to destroy and counting them would make a preview promise
-	 * work it will not do.
-	 *
-	 * @param string $objectUuid The object's UUID.
-	 * @param array<int, string>|null $onlyActions Restrict to these actions, or null for every action.
-	 * @param array<int, string> $excludeActions Actions never touched, such as the destruction record.
-	 *
-	 * @return int The number of rows that would be tombstoned.
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function countForObject(
-		string $objectUuid,
-		?array $onlyActions = null,
-		array $excludeActions = [],
-	): int {
-		return $this->countObjectTrail(objectUuid: $objectUuid, scope: new ActionScope(onlyActions: $onlyActions, excludeActions: $excludeActions));
-	}//end countForObject()
-
-	/**
 	 * Count the live rows of one object's trail within an action scope.
-	 *
-	 * The typed form of {@see countForObject()}, which keeps its signature for other apps.
 	 *
 	 * @param string      $objectUuid The object's UUID.
 	 * @param ActionScope $scope      The actions included and the actions never touched.
@@ -2583,40 +2524,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end findObjectActions()
 
 	/**
-	 * Tombstone the audit rows that belong to one object.
-	 *
-	 * ⚠️ Tombstones rather than deletes, for the same reason {@see clearLogs()}
-	 * does: the table carries a SHA-256 chain and physically removing a row
-	 * mid-chain is indistinguishable from tampering (or#2265). The payload and
-	 * the personal identifiers go; the row, its `created` and its hash pair
-	 * stay, so the destruction stays provable.
-	 *
-	 * Rows whose action is listed in `$excludeActions` are never touched. That
-	 * is how the evidence of a destruction survives the destruction it
-	 * describes.
-	 *
-	 * @param string $objectUuid The object's UUID.
-	 * @param array<int, string>|null $onlyActions Restrict to these actions, or null for every action.
-	 * @param array<int, string> $excludeActions Actions never touched, such as the destruction record.
-	 *
-	 * @return int The number of rows tombstoned.
-	 *
-	 * @throws \Exception When the statement fails.
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function tombstoneForObject(
-		string $objectUuid,
-		?array $onlyActions = null,
-		array $excludeActions = [],
-	): int {
-		return $this->tombstoneObjectTrail(objectUuid: $objectUuid, scope: new ActionScope(onlyActions: $onlyActions, excludeActions: $excludeActions));
-	}//end tombstoneForObject()
-
-	/**
 	 * Tombstone the rows of one object's trail within an action scope.
-	 *
-	 * The typed form of {@see tombstoneForObject()}, which keeps its signature for other apps.
 	 *
 	 * @param string      $objectUuid The object's UUID.
 	 * @param ActionScope $scope      The actions included and the actions never touched.

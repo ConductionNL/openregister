@@ -29,6 +29,8 @@ use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
 use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
+use OCA\OpenRegister\Db\AuditTrail\ActionScope;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -208,16 +210,12 @@ interface AuditTrailMapperInterface {
 	 * (single insert) and {@see insertAuditTrails()} (batched multi-row insert),
 	 * so both paths produce identical audit rows.
 	 *
-	 * @param ObjectEntity|null $old The old state of the object
-	 * @param ObjectEntity|null $new The new state of the object
-	 * @param string|null $action The action to record. NULL (the default) infers it from which
-	 *                            entities are present: no `new` is a delete, no `old` is a create,
-	 *                            otherwise an update. A NAMED action is used verbatim — the
-	 *                            inference used to overwrite an explicit 'update' because it was
-	 *                            indistinguishable from the old default (#2217).
-	 * @param array|null $cascadeContext Optional referential-integrity cascade context to fold
-	 *                                   into the `changed` column (keys: triggerObject,
-	 *                                   triggerSchema, action_type, property).
+	 * @param AuditedChange $change The old and new state of the object; the action to record (NULL
+	 *                              infers it from which entities are present: no `new` is a delete,
+	 *                              no `old` is a create, otherwise an update; a NAMED action is used
+	 *                              verbatim, #2217); and the optional referential-integrity cascade
+	 *                              context folded into the `changed` column (keys: triggerObject,
+	 *                              triggerSchema, action_type, property).
 	 *
 	 * @return AuditTrail The populated (unpersisted) audit trail entity
 	 *
@@ -225,9 +223,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function buildAuditTrail(
-		?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null, ?array $cascadeContext = null
-	): AuditTrail;
+	public function buildEntry(AuditedChange $change): AuditTrail;
 
 	/**
 	 * Stamp an audit row's expiry and retention source from the retention of
@@ -259,7 +255,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * Each entry is an array with keys `old` (?ObjectEntity), `new` (?ObjectEntity)
 	 * and `action` (string). Rows are built through the exact same
-	 * {@see buildAuditTrail()} logic as {@see createAuditTrail()} so their content
+	 * {@see buildEntry()} logic as {@see createAuditTrail()} so their content
 	 * is identical, but they are persisted with one multi-row INSERT per chunk of
 	 * 100 instead of one INSERT (plus 3 hash-chain queries) per row. After each
 	 * chunk the rows are sealed into the SHA-256 hash chain in a single batched
@@ -268,7 +264,7 @@ interface AuditTrailMapperInterface {
 	 * rather than losing the audit records.
 	 *
 	 * @param array $entries Mixed list: ['old' => ?ObjectEntity, 'new' => ?ObjectEntity, 'action' => string,
-	 *                       'cascadeContext' => ?array] entries built through {@see buildAuditTrail()}, and/or
+	 *                       'cascadeContext' => ?array] entries built through {@see buildEntry()}, and/or
 	 *                       pre-built AuditTrail entities (each must carry a uuid) persisted as-is
 	 * @param int $chunkSize Number of rows per multi-row INSERT statement
 	 *
@@ -465,15 +461,15 @@ interface AuditTrailMapperInterface {
 	 * nothing left to destroy and counting them would make a preview promise
 	 * work it will not do.
 	 *
-	 * @param string $objectUuid The object's UUID.
-	 * @param array<int, string>|null $onlyActions Restrict to these actions, or null for every action.
-	 * @param array<int, string> $excludeActions Actions never touched, such as the destruction record.
+	 * @param string      $objectUuid The object's UUID.
+	 * @param ActionScope $scope      The actions included (null for every action) and the actions never
+	 *                                touched, such as the destruction record.
 	 *
 	 * @return int The number of rows that would be tombstoned.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function countForObject(string $objectUuid, ?array $onlyActions = null, array $excludeActions = []): int;
+	public function countObjectTrail(string $objectUuid, ActionScope $scope): int;
 
 	/**
 	 * Read the audit rows of one object, by action, newest first.
@@ -505,9 +501,9 @@ interface AuditTrailMapperInterface {
 	 * is how the evidence of a destruction survives the destruction it
 	 * describes.
 	 *
-	 * @param string $objectUuid The object's UUID.
-	 * @param array<int, string>|null $onlyActions Restrict to these actions, or null for every action.
-	 * @param array<int, string> $excludeActions Actions never touched, such as the destruction record.
+	 * @param string      $objectUuid The object's UUID.
+	 * @param ActionScope $scope      The actions included (null for every action) and the actions never
+	 *                                touched, such as the destruction record.
 	 *
 	 * @return int The number of rows tombstoned.
 	 *
@@ -515,7 +511,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function tombstoneForObject(string $objectUuid, ?array $onlyActions = null, array $excludeActions = []): int;
+	public function tombstoneObjectTrail(string $objectUuid, ActionScope $scope): int;
 
 	/**
 	 * Clear all audit trail logs (not just expired ones)

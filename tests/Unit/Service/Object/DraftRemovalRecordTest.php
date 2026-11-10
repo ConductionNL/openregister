@@ -94,7 +94,7 @@ class DraftRemovalRecordTest extends TestCase {
 		);
 		// The change-style writers would serialise the object, content and all. A removed draft must never go through them.
 		$mapper->expects($this->never())->method('createAuditTrail');
-		$mapper->expects($this->never())->method('buildAuditTrail');
+		$mapper->expects($this->never())->method('buildEntry');
 		$mapper->expects($this->never())->method('insertAuditTrails');
 
 		return $mapper;

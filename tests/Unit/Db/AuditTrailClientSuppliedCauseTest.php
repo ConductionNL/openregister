@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -111,7 +112,7 @@ final class AuditTrailClientSuppliedCauseTest extends TestCase {
 	public function testAClientSuppliedCauseIsIgnoredAndRecorded(): void {
 		WriteCause::noteClientAttempt(objectUuid: 'u-7');
 
-		$trail = $this->mapper()->buildAuditTrail(old: $this->object(title: 'A'), new: $this->object(title: 'B'));
+		$trail = $this->mapper()->buildEntry(change: new AuditedChange(old: $this->object(title: 'A'), new: $this->object(title: 'B')));
 
 		$this->assertSame(WriteCause::PERSON, $trail->getCause(), 'the cause is the one derived from the acting context');
 		$this->assertTrue($trail->getChanged()['clientSuppliedCause'] ?? false, 'the attempt is recorded on the entry');
@@ -123,7 +124,7 @@ final class AuditTrailClientSuppliedCauseTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoAttemptLeavesNoMarker(): void {
-		$trail = $this->mapper()->buildAuditTrail(old: $this->object(title: 'A'), new: $this->object(title: 'B'));
+		$trail = $this->mapper()->buildEntry(change: new AuditedChange(old: $this->object(title: 'A'), new: $this->object(title: 'B')));
 
 		$this->assertArrayNotHasKey('clientSuppliedCause', (array)$trail->getChanged());
 	}//end testNoAttemptLeavesNoMarker()
@@ -136,7 +137,7 @@ final class AuditTrailClientSuppliedCauseTest extends TestCase {
 	public function testACreateCarriesTheMarkerToo(): void {
 		WriteCause::noteClientAttempt(objectUuid: 'u-7');
 
-		$trail = $this->mapper()->buildAuditTrail(new: $this->object(title: 'B'));
+		$trail = $this->mapper()->buildEntry(change: new AuditedChange(new: $this->object(title: 'B')));
 
 		$this->assertSame('create', $trail->getAction());
 		$this->assertTrue($trail->getChanged()['clientSuppliedCause'] ?? false);
@@ -153,7 +154,7 @@ final class AuditTrailClientSuppliedCauseTest extends TestCase {
 		$other = $this->object(title: 'C');
 		$other->setId(8);
 		$other->setUuid('u-8');
-		$trail = $this->mapper()->buildAuditTrail(new: $other);
+		$trail = $this->mapper()->buildEntry(change: new AuditedChange(new: $other));
 
 		$this->assertArrayNotHasKey('clientSuppliedCause', (array)$trail->getChanged());
 	}//end testAnotherObjectsRowCarriesNoMarker()
