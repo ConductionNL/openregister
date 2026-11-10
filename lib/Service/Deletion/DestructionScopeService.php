@@ -151,6 +151,28 @@ class DestructionScopeService {
 	 */
 	public function destroy(ObjectEntity $object, ?Schema $schema): array {
 		$preview = $this->preview(object: $object, schema: $schema);
+		self::refuseUnclearScope(preview: $preview);
+
+		$outcome = $this->destroyMembers(preview: $preview, object: $object);
+
+		return [
+			'scope' => $preview['scope'],
+			'destroyed' => $outcome['destroyed'],
+			'total' => array_sum($outcome['destroyed']),
+			'failed' => $outcome['failed'],
+		];
+	}//end destroy()
+
+	/**
+	 * Refuse a scope that names members this instance cannot honour.
+	 *
+	 * @param array<string, mixed> $preview The preview of the scope.
+	 *
+	 * @return void
+	 *
+	 * @throws DestructionRefusedException When the scope cannot be honoured.
+	 */
+	private static function refuseUnclearScope(array $preview): void {
 		if ($preview['destroyable'] === false) {
 			throw new DestructionRefusedException(
 				rule: 'destruction-scope-unclear',
@@ -163,35 +185,57 @@ class DestructionScopeService {
 				]
 			);
 		}
+	}//end refuseUnclearScope()
 
-		$destroyed = [];
-		$failed = [];
-		$total = 0;
+	/**
+	 * Destroy every member of the scope, carrying on past a member that fails.
+	 *
+	 * @param array<string, mixed> $preview The preview of the scope.
+	 * @param ObjectEntity         $object  The object being destroyed.
+	 *
+	 * @return array{destroyed: array<string, int>, failed: array<string, string>} What went and what failed.
+	 */
+	private function destroyMembers(array $preview, ObjectEntity $object): array {
+		$outcome = ['destroyed' => [], 'failed' => []];
 		foreach ($preview['scope'] as $member) {
 			try {
-				$went = $this->destroyMember(member: new ScopeMember(name: $member, expected: ($preview['counts'][$member] ?? 0)), object: $object);
-				$destroyed[$member] = $went;
-				$total += $went;
-			} catch (Throwable $e) {
-				$failed[$member] = $e->getMessage();
-				$this->logger->error(
-					message: '[DestructionScope] Failed to destroy scope member',
-					context: [
-						'member' => $member,
-						'uuid' => $object->getUuid(),
-						'error' => $e->getMessage(),
-					]
+				$outcome['destroyed'][$member] = $this->destroyLogged(
+					member: new ScopeMember(name: $member, expected: ($preview['counts'][$member] ?? 0)),
+					object: $object
 				);
+			} catch (Throwable $e) {
+				$outcome['failed'][$member] = $e->getMessage();
 			}
 		}
 
-		return [
-			'scope' => $preview['scope'],
-			'destroyed' => $destroyed,
-			'total' => $total,
-			'failed' => $failed,
-		];
-	}//end destroy()
+		return $outcome;
+	}//end destroyMembers()
+
+	/**
+	 * Destroy one scope member, logging a failure before passing it on.
+	 *
+	 * @param ScopeMember  $member The member and how many rows are expected.
+	 * @param ObjectEntity $object The object being destroyed.
+	 *
+	 * @return int How many rows went.
+	 *
+	 * @throws Throwable When the member could not be destroyed.
+	 */
+	private function destroyLogged(ScopeMember $member, ObjectEntity $object): int {
+		try {
+			return $this->destroyMember(member: $member, object: $object);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[DestructionScope] Failed to destroy scope member',
+				context: [
+					'member' => $member->name,
+					'uuid' => $object->getUuid(),
+					'error' => $e->getMessage(),
+				]
+			);
+			throw $e;
+		}
+	}//end destroyLogged()
 
 	/**
 	 * Whether this instance can honour a scope member at all.
