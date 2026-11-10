@@ -100,6 +100,10 @@ class GraphQLControllerCharacterisationTest extends TestCase {
 
 	/**
 	 * Run execute() with the given raw request body as php://input.
+	 *
+	 * @param string $body The raw request body.
+	 *
+	 * @return JSONResponse The controller's response.
 	 */
 	private function executeWithBody(string $body): JSONResponse {
 		GraphQLInputStream::$body = $body;
