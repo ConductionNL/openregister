@@ -136,7 +136,7 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 	 */
 	private function service(): LinkedEntityService {
 		return new LinkedEntityService(
-			new LinkedEntityMappers($this->magicMapper, $this->schemaMapper, $this->registerMapper, $this->organisationMapper),
+			new LinkedEntityMappers(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper), $this->organisationMapper),
 			new LinkedEntityIntegrations($this->registry, $this->permissionHandler, $this->deepLinks),
 			$this->logger
 		);

@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
@@ -61,9 +62,11 @@ class RetentionServiceHoldAndSweepGoldenTest extends TestCase {
 
 		$this->service = new RetentionService(
 			new RetentionStores(
-				$this->createMock(MagicMapper::class),
-				$this->createMock(SchemaMapper::class),
-				$this->createMock(RegisterMapper::class),
+				new SchemaCatalog(
+					registers: $this->createMock(RegisterMapper::class),
+					schemas: $this->createMock(SchemaMapper::class),
+					tables: $this->createMock(MagicMapper::class)
+				),
 				$this->createMock(AuditTrailMapper::class)
 			),
 			new RetentionRules(
