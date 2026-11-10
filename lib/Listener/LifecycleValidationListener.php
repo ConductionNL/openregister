@@ -170,6 +170,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is the static scope check every system guard reads.
 	 */
 	private function writesDeclaredState(LifecycleEdit $edit): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return SystemOperationContext::isActive() === true && $this->access->edits->writesDeclaredState(edit: $edit) === true;
 	}//end writesDeclaredState()
 
