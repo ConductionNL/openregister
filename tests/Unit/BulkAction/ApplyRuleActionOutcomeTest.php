@@ -17,6 +17,7 @@ namespace OCA\OpenRegister\Tests\Unit\BulkAction;
 
 use OCA\OpenRegister\BulkAction\ApplyRuleAction;
 use OCA\OpenRegister\BulkAction\BulkObjectAccess;
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -92,7 +93,7 @@ class ApplyRuleActionOutcomeTest extends TestCase {
 
 	public function testARuleNoLongerDeclaredFailsNamingIt(): void {
 		$this->inventory->method('find')->willReturn(null);
-		$result = $this->action->apply($this->object([]), ['schema' => 'orders', 'ruleId' => 'r-9'], true);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object([]), parameters: ['schema' => 'orders', 'ruleId' => 'r-9'], commit: true, actor: null));
 		$this->assertSame(BulkJobMember::OUTCOME_FAILED, $result->getOutcome());
 		$this->assertSame('The rule "r-9" is no longer declared.', $result->getReason());
 	}//end testARuleNoLongerDeclaredFailsNamingIt()
@@ -100,7 +101,7 @@ class ApplyRuleActionOutcomeTest extends TestCase {
 	public function testANonCalculationRuleIsSkippedNamingItsKind(): void {
 		$this->inventory->method('find')->willReturn($this->rule(RuleVocabulary::KIND_STATE_FIELD_RULE));
 		$this->evaluator->expects($this->never())->method('evaluate');
-		$result = $this->action->apply($this->object([]), ['schema' => 'orders', 'ruleId' => 'r-1'], true);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object([]), parameters: ['schema' => 'orders', 'ruleId' => 'r-1'], commit: true, actor: null));
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertStringContainsString('A rule of kind "' . RuleVocabulary::KIND_STATE_FIELD_RULE . '" derives no value', (string)$result->getReason());
 	}//end testANonCalculationRuleIsSkippedNamingItsKind()
@@ -109,7 +110,7 @@ class ApplyRuleActionOutcomeTest extends TestCase {
 		$this->inventory->method('find')->willReturn($this->rule(RuleVocabulary::KIND_CALCULATION, false));
 		$this->evaluator->expects($this->never())->method('evaluate');
 		$this->objects->expects($this->never())->method('patchObject');
-		$result = $this->action->apply($this->object([]), ['schema' => 'orders', 'ruleId' => 'r-1'], true);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object([]), parameters: ['schema' => 'orders', 'ruleId' => 'r-1'], commit: true, actor: null));
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertSame('The rule is switched off.', $result->getReason());
 	}//end testASwitchedOffRuleIsSkippedBeforeEvaluating()
@@ -118,7 +119,7 @@ class ApplyRuleActionOutcomeTest extends TestCase {
 		$this->inventory->method('find')->willReturn($this->rule(RuleVocabulary::KIND_CALCULATION));
 		$this->evaluator->method('evaluate')->willThrowException(new RuntimeException('division by zero'));
 		$this->objects->expects($this->never())->method('patchObject');
-		$result = $this->action->apply($this->object(['total' => 1]), ['schema' => 'orders', 'ruleId' => 'r-1'], true);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(['total' => 1]), parameters: ['schema' => 'orders', 'ruleId' => 'r-1'], commit: true, actor: null));
 		$this->assertSame(BulkJobMember::OUTCOME_FAILED, $result->getOutcome());
 		$this->assertSame('division by zero', $result->getReason());
 	}//end testAnEvaluatorFailureFailsTheMemberWithItsMessage()
@@ -135,7 +136,7 @@ class ApplyRuleActionOutcomeTest extends TestCase {
 				return new ObjectEntity();
 			}
 		);
-		$result = $this->action->apply($this->object(['total' => 1]), ['schema' => 'orders', 'ruleId' => 'r-1'], true, $actor);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(['total' => 1]), parameters: ['schema' => 'orders', 'ruleId' => 'r-1'], commit: true, actor: $actor));
 		$this->assertSame(BulkJobMember::OUTCOME_APPLIED, $result->getOutcome(), (string)$result->getReason());
 		// patchObject(objectId, data, register, schema, _rbac, _multitenancy, currentUser).
 		$this->assertSame(['o-1', ['total' => 3], '3', '7', true, true, $actor], $seen);
@@ -147,7 +148,7 @@ class ApplyRuleActionOutcomeTest extends TestCase {
 		$this->objects->method('patchObject')->willThrowException(new RuntimeException('locked'));
 		$this->logger->expects($this->once())->method('warning')
 			->with('[ApplyRuleAction] Write failed for object', ['action' => ApplyRuleAction::ID, 'object' => 'o-1', 'error' => 'locked']);
-		$result = $this->action->apply($this->object(['total' => 1]), ['schema' => 'orders', 'ruleId' => 'r-1'], true);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(['total' => 1]), parameters: ['schema' => 'orders', 'ruleId' => 'r-1'], commit: true, actor: null));
 		$this->assertSame(BulkJobMember::OUTCOME_FAILED, $result->getOutcome());
 		$this->assertSame('locked', $result->getReason());
 	}//end testAWriteThatThrowsFailsTheMemberAndIsLogged()

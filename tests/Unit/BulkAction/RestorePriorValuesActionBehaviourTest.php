@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BulkAction;
 
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\BulkAction\BulkObjectAccess;
 use InvalidArgumentException;
@@ -158,8 +159,8 @@ class RestorePriorValuesActionBehaviourTest extends TestCase {
 		$object = $this->object(['status' => 'closed']);
 
 		$action->reversalPlanFor($object, $this->parameters());
-		$rehearsal = $action->apply($object, $this->parameters(), false);
-		$commit = $action->apply($object, $this->parameters(), true);
+		$rehearsal = $action->apply(step: new BulkStep(object: $object, parameters: $this->parameters(), commit: false, actor: null));
+		$commit = $action->apply(step: new BulkStep(object: $object, parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_APPLIED, $rehearsal->getOutcome());
 		$this->assertSame(BulkJobMember::OUTCOME_APPLIED, $commit->getOutcome());
@@ -170,8 +171,8 @@ class RestorePriorValuesActionBehaviourTest extends TestCase {
 
 		$action = $this->action();
 		$object = $this->object(['status' => 'closed']);
-		$first = $action->apply($object, $this->parameters(), false);
-		$second = $action->apply($object, $this->parameters(), true);
+		$first = $action->apply(step: new BulkStep(object: $object, parameters: $this->parameters(), commit: false, actor: null));
+		$second = $action->apply(step: new BulkStep(object: $object, parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $first->getOutcome());
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $second->getOutcome());
@@ -186,7 +187,7 @@ class RestorePriorValuesActionBehaviourTest extends TestCase {
 			->with(new ObjectPatch(objectId: 'case-9', data: ['status' => 'open'], target: new ObjectFindTarget(register: '11', schema: '22'), currentUser: $actor), true, true)
 			->willReturn(new ObjectEntity());
 
-		$result = $this->action()->apply($this->object(['status' => 'closed']), $this->parameters(), true, $actor);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(['status' => 'closed']), parameters: $this->parameters(), commit: true, actor: $actor));
 
 		$this->assertTrue($result->isApplied());
 	}
@@ -206,7 +207,7 @@ class RestorePriorValuesActionBehaviourTest extends TestCase {
 				]
 			);
 
-		$result = $this->action()->apply($this->object(['status' => 'closed']), $this->parameters(), true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(['status' => 'closed']), parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_FAILED, $result->getOutcome());
 		$this->assertSame('locked', $result->getReason());
@@ -216,7 +217,7 @@ class RestorePriorValuesActionBehaviourTest extends TestCase {
 		$this->memberMapper->method('findByJobAndObject')->willReturn($this->record([], ['status' => 'closed']));
 		$this->objectService->expects($this->never())->method('patchObject');
 
-		$result = $this->action()->apply($this->object(['status' => 'closed']), $this->parameters(), true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(['status' => 'closed']), parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertSame('the object already carries the values it had before', $result->getReason());
@@ -226,7 +227,7 @@ class RestorePriorValuesActionBehaviourTest extends TestCase {
 		$this->memberMapper->method('findByJobAndObject')->willReturn($this->record(['flag' => 0], ['flag' => 1]));
 		$this->objectService->expects($this->never())->method('patchObject');
 
-		$result = $this->action()->apply($this->object(['flag' => true]), $this->parameters(), true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(['flag' => true]), parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertSame(
@@ -238,7 +239,7 @@ class RestorePriorValuesActionBehaviourTest extends TestCase {
 	public function testAFloatAndAnIntegerStringOfTheSameNumberAreTheSameValue(): void {
 		$this->memberMapper->method('findByJobAndObject')->willReturn($this->record(['amount' => 5], ['amount' => '12']));
 
-		$result = $this->action()->apply($this->object(['amount' => 12.0]), $this->parameters(), false);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(['amount' => 12.0]), parameters: $this->parameters(), commit: false, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_APPLIED, $result->getOutcome());
 	}
@@ -246,7 +247,7 @@ class RestorePriorValuesActionBehaviourTest extends TestCase {
 	public function testANonNumericStringIsNeverEqualToANumber(): void {
 		$this->memberMapper->method('findByJobAndObject')->willReturn($this->record(['amount' => 5], ['amount' => 12]));
 
-		$result = $this->action()->apply($this->object(['amount' => 'twelve']), $this->parameters(), false);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(['amount' => 'twelve']), parameters: $this->parameters(), commit: false, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertStringStartsWith('not reversible: amount', (string)$result->getReason());
@@ -255,7 +256,7 @@ class RestorePriorValuesActionBehaviourTest extends TestCase {
 		$this->memberMapper->method('findByJobAndObject')->willReturn($this->record(['status' => 'open'], ['status' => 'closed']));
 		$this->objectService->expects($this->never())->method('patchObject');
 
-		$result = $this->action()->apply($this->object(['status' => 'open']), $this->parameters(), true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(['status' => 'open']), parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertSame('the object already carries the values it had before', $result->getReason());
@@ -265,7 +266,7 @@ class RestorePriorValuesActionBehaviourTest extends TestCase {
 		$this->memberMapper->method('findByJobAndObject')->willReturn($this->record(null, ['status' => 'closed']));
 		$this->objectService->expects($this->never())->method('patchObject');
 
-		$result = $this->action()->apply($this->object(['status' => 'closed']), $this->parameters(), true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(['status' => 'closed']), parameters: $this->parameters(), commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertSame(

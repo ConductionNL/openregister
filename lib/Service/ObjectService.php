@@ -29,7 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Formats\UuidFormat;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\ListQuery;
@@ -94,6 +96,7 @@ use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
 use OCA\OpenRegister\Service\Object\ResultNameCollector;
 use OCA\OpenRegister\Service\Object\LockHandler;
@@ -552,7 +555,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * composes correctly.
      *
      * This does not grant anything. If the named user cannot see a row, neither
-     * can the callable.
+     * can the callable, also when the caller runs inside a system-operation scope:
+     * that scope is lifted for the callable.
      *
      * 🔴 `setVolatileActiveUser()`, NOT `setUser()`. The two differ in one way
      * that matters here: `setUser()` also writes `user_id` into the PHP session,
@@ -575,6 +579,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return mixed Whatever the callable returns.
      *
+     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::suspend is the static scope helper.
+     *
      * @spec openspec/specs/delegated-identity/spec.md
      * @spec openspec/specs/rbac-scopes/spec.md
      */
@@ -584,7 +590,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->userSession->setVolatileActiveUser($user);
 
         try {
-            return $operation();
+            // A system scope would otherwise answer every check for the named user.
+            return SystemOperationContext::suspend($operation);
         } finally {
             // ALWAYS restore, including on a throw, so a long-lived process
             // (cron worker, queue runner) never leaks this identity forward.
@@ -1403,10 +1410,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'read',
-            userId: null,
-            objectOwner: $object->getOwner(),
-            _rbac: $request->rbac,
-            object: $object
+            options: new PermissionCheckOptions(objectOwner: $object->getOwner(), object: $object),
+            _rbac: $request->rbac
         );
     }//end assertFindAllowed()
 
@@ -2852,11 +2857,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'create',
-            userId: null,
-            objectOwner: null,
-            _rbac: $request->rbac,
-            object: $request->incoming,
-            register: $this->currentRegisterId()
+            options: new PermissionCheckOptions(object: $request->incoming, register: $this->currentRegisterId()),
+            _rbac: $request->rbac
         );
     }//end assertMayCreate()
 
@@ -2877,10 +2879,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'update',
-            userId: null,
-            objectOwner: $stored->getOwner(),
-            _rbac: $_rbac,
-            object: $stored
+            options: new PermissionCheckOptions(objectOwner: $stored->getOwner(), object: $stored),
+            _rbac: $_rbac
         );
     }//end assertMayUpdate()
 
@@ -3442,8 +3442,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         return $this->validateHandler->validateReadOnlyConstraints(
-            incomingObject: $candidate,
-            existingObject: $existingData,
+            check: new WriteConstraintCheck(incoming: $candidate, stored: $existingData),
             schema: $this->currentSchema
         );
     }//end readOnlyViolations()
@@ -3466,8 +3465,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function immutableViolations(array $candidate, array $existingData): array
     {
         return $this->validateHandler->validateImmutableConstraints(
-            incomingObject: $candidate,
-            existingObject: $existingData,
+            check: new WriteConstraintCheck(incoming: $candidate, stored: $existingData),
             schema: $this->currentSchema
         );
     }//end immutableViolations()
@@ -3705,7 +3703,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return void
      *
-     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the user cannot access the bound folder.
+     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the user cannot access the bound folder, or the check fails.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
@@ -3716,8 +3714,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
             // Propagate folder-access denials up to the controller.
             throw $e;
-        } catch (Exception $e) {
-            // A missing object or any other error: let SaveObject handle the creation.
+        } catch (OcpDoesNotExistException $e) {
+            // No stored object yet: let SaveObject handle the creation.
             $this->logger->debug(
                 message: '[ObjectService] Folder binding not re-validated, object not loadable',
                 context: [
@@ -3725,6 +3723,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                     'exception' => $e->getMessage(),
                 ]
             );
+        } catch (Exception $e) {
+            // The binding could not be checked, so the save is refused.
+            $this->logger->warning(
+                message: '[ObjectService] Folder binding re-check failed, save refused',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'exception' => $e]
+            );
+            throw new \OCA\OpenRegister\Exception\FolderAccessDeniedException(attemptedFolderId: '', previous: $e);
         }//end try
     }//end revalidateFolderBinding()
 
@@ -4263,10 +4268,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'delete',
-            userId: $request->actingUserId(),
-            objectOwner: $row->getOwner(),
-            _rbac: $request->rbac,
-            object: $row
+            options: new PermissionCheckOptions(
+                userId: $request->actingUserId(),
+                objectOwner: $row->getOwner(),
+                object: $row
+            ),
+            _rbac: $request->rbac
         );
 
         \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.permitted');
@@ -4366,10 +4373,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'delete',
-            userId: $request->actingUserId(),
-            objectOwner: null,
-            _rbac: $request->rbac,
-            register: $this->currentRegisterId()
+            options: new PermissionCheckOptions(userId: $request->actingUserId(), register: $this->currentRegisterId()),
+            _rbac: $request->rbac
         );
     }//end assertMayDeleteFromSchema()
 
@@ -4392,7 +4397,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         $deleter = ($request->currentUser ?? $this->userSession->getUser());
         if ($request->rbac === true && $object !== null && $this->currentSchema !== null
-            && $this->draftKeptFromCaller(object: $object, schema: $this->currentSchema, user: $deleter) === true
+            && (new DraftCallerRule())->keptFromCaller(
+                object: $object,
+                schema: $this->currentSchema,
+                caller: $this->draftCaller(user: $deleter)
+            ) === true
         ) {
             throw new OcpDoesNotExistException('Object not found');
         }
@@ -4421,10 +4430,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $schema,
             action: 'delete',
-            userId: $request->actingUserId(),
-            objectOwner: null,
-            _rbac: $request->rbac,
-            register: $this->currentRegisterId()
+            options: new PermissionCheckOptions(userId: $request->actingUserId(), register: $this->currentRegisterId()),
+            _rbac: $request->rbac
         );
 
         return $this->deleteHandler->deleteObject(
@@ -4502,31 +4509,25 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end isDeletableDraft()
 
     /**
-     * Whether a stored draft is kept from the caller (DraftStatusPolicy::keptFromCaller(), the one rule of every draft guard).
+     * The caller as the draft rule sees them (DraftCallerRule::keptFromCaller(), the one rule of every draft guard).
      *
      * One answer for the single delete and the bulk delete: another user's
      * draft is not theirs to remove. An administrator reads every draft, so
      * is not kept from one.
      *
-     * @param ObjectEntity $object The stored object.
-     * @param Schema       $schema Its schema.
-     * @param IUser|null   $user   The caller.
+     * @param IUser|null $user The caller.
      *
-     * @return bool True when the object is a draft the caller may not touch.
+     * @return DraftCaller Their user id, and whether they are an administrator.
      *
      * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
      */
-    private function draftKeptFromCaller(ObjectEntity $object, Schema $schema, ?IUser $user): bool
+    private function draftCaller(?IUser $user): DraftCaller
     {
-        return (new DraftCallerRule())->keptFromCaller(
-            object: $object,
-            schema: $schema,
-            caller: new DraftCaller(
-                userId: $user?->getUID(),
-                isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
-            )
+        return new DraftCaller(
+            userId: $user?->getUID(),
+            isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
         );
-    }//end draftKeptFromCaller()
+    }//end draftCaller()
 
     /**
      * Refuse a delete on an archival-annotated schema.
@@ -5496,8 +5497,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->permissionHandler->checkPermission(
             schema: $schema,
             action: 'read',
-            userId: null,
-            objectOwner: null,
             _rbac: $_rbac
         );
 
@@ -6061,21 +6060,17 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * Failure isolation differs too: a row that throws is recorded on the
      * returned status and the batch continues, rather than failing the call.
      *
-     * @param array                    $objects  Rows in the shape saveObject() accepts.
-     * @param Register|string|int|null $register Optional register context.
-     * @param Schema|string|int|null   $schema   Optional schema context.
+     * @param StreamingSave $save The rows, in the shape saveObject() accepts, and the optional
+     *                            register and schema context (entity, id, uuid or slug).
      *
      * @return BatchOperationStatus Per-row outcomes plus reference-cache counters.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
-    public function saveObjectsStreaming(
-        array $objects,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null
-    ): BatchOperationStatus {
-        $target = new ObjectFindTarget(register: $register, schema: $schema);
-        return $this->preservingScope(operation: fn (): BatchOperationStatus => $this->streamIntoTarget(objects: $objects, target: $target));
+    public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus
+    {
+        $target = new ObjectFindTarget(register: $save->register, schema: $save->schema);
+        return $this->preservingScope(operation: fn (): BatchOperationStatus => $this->streamIntoTarget(objects: $save->rows, target: $target));
     }//end saveObjectsStreaming()
 
     /**
@@ -6084,14 +6079,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * A STREAMING SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER. saveObjectsStreaming()
      * runs this inside preservingScope(), the same contract as saveObject(); see restoreScopeContext().
      *
-     * @param array            $objects The rows to stream.
+     * @param iterable         $objects The rows to stream.
      * @param ObjectFindTarget $target  The register and schema the caller named.
      *
      * @return BatchOperationStatus The status of the streamed batch.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
-    private function streamIntoTarget(array $objects, ObjectFindTarget $target): BatchOperationStatus
+    private function streamIntoTarget(iterable $objects, ObjectFindTarget $target): BatchOperationStatus
     {
         $this->applyScope(register: $target->register, schema: $target->schema);
         return $this->streamIntoContext(objects: $objects);
@@ -6100,13 +6095,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Stream rows into the current register and schema.
      *
-     * @param array $objects The rows to save.
+     * @param iterable $objects The rows to save.
      *
      * @return BatchOperationStatus The status of the run.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
-    private function streamIntoContext(array $objects): BatchOperationStatus
+    private function streamIntoContext(iterable $objects): BatchOperationStatus
     {
         // The reference cache is request-scoped and this call is a logical
         // boundary: verdicts from an earlier batch must not decide this one.
@@ -6201,11 +6196,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $tableName = $this->objectMapper->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema);
 
         $written = $this->objectMapper->bulkUpsert(
-            objects: $rows,
-            register: $table->register,
-            schema: $table->schema,
-            tableName: $tableName,
-            needsPreUpdateState: false
+            command: new BulkUpsertCommand(objects: $rows, table: $table, tableName: $tableName, needsPreUpdateState: false)
         );
 
         return count($written);
@@ -6916,7 +6907,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function draftDeleteRefusal(array $scope, array $run): ?array
     {
         if ($scope['draft'] === true && $run['_rbac'] === true
-            && $this->draftKeptFromCaller(object: $scope['row'], schema: $scope['gateSchema'], user: $this->userSession->getUser()) === true
+            && (new DraftCallerRule())->keptFromCaller(
+                object: $scope['row'],
+                schema: $scope['gateSchema'],
+                caller: $this->draftCaller(user: $this->userSession->getUser())
+            ) === true
         ) {
             return [
                 'error'   => 'OBJECT_NOT_PERMITTED',

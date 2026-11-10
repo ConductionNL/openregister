@@ -679,13 +679,18 @@
   },
   "src/modals/webhook/EditWebhook.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 4
+      "count": 2
     },
     "no-console": {
       "count": 2
     }
   },
   "src/modals/webhook/ViewWebhookLog.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 2
+    }
+  },
+  "src/modals/webhook/webhookDefaults.js": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 2
     }

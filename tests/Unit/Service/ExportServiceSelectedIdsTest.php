@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * The `_ids` of an export request reach the search as its `ids`.
@@ -68,7 +69,7 @@ class ExportServiceSelectedIdsTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(9);
 
-		$service->countExportRows(register: $register, schema: $schema, filters: $filters);
+		$service->countExportRows(request: new ObjectExportRequest(register: $register, schema: $schema, filters: $filters));
 
 		return $captured;
 	}//end idsFor()

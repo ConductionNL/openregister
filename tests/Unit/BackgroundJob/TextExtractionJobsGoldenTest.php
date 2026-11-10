@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
 use OCA\OpenRegister\BackgroundJob\ObjectTextExtractionJob;
+use OCA\OpenRegister\Files\Service\FileExtractionOptions;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -72,7 +73,7 @@ class TextExtractionJobsGoldenTest extends TestCase {
 		$extractor = $this->createMock(TextExtractionService::class);
 		foreach (['extractFile', 'extractObject'] as $method) {
 			$extractor->method($method)->willReturnCallback(function (...$args) use ($method, $case, &$seen) {
-				$seen[] = "extractor.$method " . json_encode($args);
+				$seen[] = "extractor.$method " . json_encode(array_merge(...array_map(static fn ($arg) => $arg instanceof FileExtractionOptions ? [$arg->forceReExtract, $arg->entityTypes] : [$arg], $args)));
 				if ($case === 'failing') {
 					throw new RuntimeException('cannot read');
 				}

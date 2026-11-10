@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -520,7 +521,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 
 		$seen = [];
 		$this->permissionHandler->method('checkPermission')->willReturnCallback(
-			static function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true) use (&$seen): void {
+			static function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true) use (&$seen): void {
 				$seen[] = $_rbac;
 			}
 		);
@@ -611,7 +612,8 @@ class ObjectServicePatchObjectTest extends TestCase {
 
 		$seen = null;
 		$this->permissionHandler->method('checkPermission')->willReturnCallback(
-			static function (Schema $schema, string $action, ?string $userId = null) use (&$seen): void {
+			static function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true) use (&$seen): void {
+				$userId = $options->userId;
 				$seen = ['action' => $action, 'userId' => $userId];
 			}
 		);
@@ -647,7 +649,8 @@ class ObjectServicePatchObjectTest extends TestCase {
 
 		$seen = 'untouched';
 		$this->permissionHandler->method('checkPermission')->willReturnCallback(
-			static function (Schema $schema, string $action, ?string $userId = null) use (&$seen): void {
+			static function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true) use (&$seen): void {
+				$userId = $options->userId;
 				$seen = $userId;
 			}
 		);

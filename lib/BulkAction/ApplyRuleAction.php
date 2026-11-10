@@ -28,10 +28,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BulkAction;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
-use OCP\IUser;
 use Throwable;
 use OCA\OpenRegister\Service\Rules\ApplyRuleServices;
 use OCA\OpenRegister\Service\Object\ObjectPatch;
@@ -167,33 +165,17 @@ class ApplyRuleAction implements ApplyRuleActionInterface {
 	/**
 	 * Rehearse or make the write for one object.
 	 *
-	 * @param ObjectEntity $object The object to act on.
-	 * @param array<string, mixed> $parameters The job's parameters.
-	 * @param bool $commit False to rehearse, true to write.
-	 * @param IUser|null $actor The user the job runs as.
+	 * @param BulkStep $step The member, the job's parameters, rehearsal or commit, and the actor.
 	 *
 	 * @return BulkActionResult What happened, or what would happen.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One executor for the rehearsal and
-	 *   the commit is the design property of D-5.
 	 * @SuppressWarnings(PHPMD.StaticAccess) BulkActionResult's named constructors are
 	 *   its only constructor: the class is immutable and its private __construct exists
 	 *   so an outcome cannot be built without saying which of the four it is.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
-		return $this->applyStep(step: new BulkStep(object: $object, parameters: $parameters, commit: $commit, actor: $actor));
-	}//end apply()
-
-	/**
-	 * Replay the rule on the step's object, or say why not.
-	 *
-	 * @param BulkStep $step The member, the job's parameters, rehearsal or commit, and the actor.
-	 *
-	 * @return BulkActionResult What happened, or what would happen.
-	 */
-	private function applyStep(BulkStep $step): BulkActionResult {
+	public function apply(BulkStep $step): BulkActionResult {
 		$rule = $this->ruleFor(parameters: $step->parameters);
 		if ($rule === null) {
 			return BulkActionResult::failed(
@@ -207,7 +189,7 @@ class ApplyRuleAction implements ApplyRuleActionInterface {
 		}
 
 		return $this->replay(step: $step, rule: $rule);
-	}//end applyStep()
+	}//end apply()
 
 	/**
 	 * Why a declared rule derives nothing to replay, or null when it does.

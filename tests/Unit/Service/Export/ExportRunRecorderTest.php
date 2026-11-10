@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Export;
 use DateTime;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRunContent;
 use OCA\OpenRegister\Service\Export\ExportRunFile;
@@ -128,8 +129,9 @@ class ExportRunRecorderTest extends TestCase {
 				return $this->rows[$uuid];
 			}
 		);
-		$mapper->method('findForActor')->willReturnCallback(
-			function (?string $actor, array $filters = []): array {
+		$mapper->method('listForActor')->willReturnCallback(
+			function (?string $actor, ListQuery $query): array {
+				$filters = $query->filters;
 				$found = [];
 				foreach ($this->rows as $row) {
 					if ($actor !== null && $row->getActor() !== $actor) {

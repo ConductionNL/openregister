@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -181,7 +182,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
 			foreach ($this->recordsFrom(json: $json, config: $config) as $record) {
-				$out[] = FlowItems::item(json: $record, fromItemIndex: $index);
+				$out[] = FlowItems::item(json: $record, options: new FlowItemOptions(fromItemIndex: $index));
 			}
 		}
 

@@ -40,7 +40,6 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\IUser;
 use OCA\OpenRegister\Service\Object\ObjectPatch;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
@@ -206,30 +205,15 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface, Restore
 	/**
 	 * Rehearse or make the restoring write.
 	 *
-	 * @param ObjectEntity         $object     The object to act on.
-	 * @param array<string, mixed> $parameters The job's parameters.
-	 * @param bool                 $commit     False to rehearse, true to write.
-	 * @param IUser|null           $actor      The user the job runs as.
+	 * @param BulkStep $step The member, the job being undone, rehearsal or commit, and the actor.
 	 *
 	 * @return BulkActionResult What happened, or what would happen.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One executor for the
 	 * rehearsal and the commit is the design property of D-1.
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
-		return $this->applyStep(step: new BulkStep(object: $object, parameters: $parameters, commit: $commit, actor: $actor));
-	}//end apply()
-
-	/**
-	 * Write back what the original job changed on the step's object, or say why not.
-	 *
-	 * @param BulkStep $step The member, the job being undone, rehearsal or commit, and the actor.
-	 *
-	 * @return BulkActionResult What happened, or what would happen.
-	 */
-	private function applyStep(BulkStep $step): BulkActionResult {
+	public function apply(BulkStep $step): BulkActionResult {
 		$record = $this->recordFor(object: $step->object, parameters: $step->parameters);
 		if ($record === null) {
 			return BulkActionResult::skipped(
@@ -247,7 +231,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface, Restore
 		}
 
 		return $this->write(step: $step, restore: ($record->getPriorValues() ?? []));
-	}//end applyStep()
+	}//end apply()
 
 	/**
 	 * Why the object is left as it is, or null when the prior values go back.

@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\BulkAction;
 use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\AbstractPropertyWriteAction;
 use OCA\OpenRegister\BulkAction\AssignAction;
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\BulkAction\SetPropertiesAction;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -153,7 +154,7 @@ class PropertyWriteActionsBehaviourTest extends TestCase {
 	public function testAnAssignWithoutAPropertyHasNothingToWrite(): void {
 		$this->objectService->expects($this->never())->method('patchObject');
 
-		$result = $this->assign()->apply($this->object(['handler' => 'bob']), ['value' => 'ann'], true);
+		$result = $this->assign()->apply(step: new BulkStep(object: $this->object(['handler' => 'bob']), parameters: ['value' => 'ann'], commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertSame('the object already names this handler', $result->getReason());
@@ -162,7 +163,7 @@ class PropertyWriteActionsBehaviourTest extends TestCase {
 	public function testASetPropertiesWithScalarPropertiesHasNothingToWrite(): void {
 		$this->objectService->expects($this->never())->method('patchObject');
 
-		$result = $this->setProperties()->apply($this->object(['status' => 'open']), ['properties' => 'status'], true);
+		$result = $this->setProperties()->apply(step: new BulkStep(object: $this->object(['status' => 'open']), parameters: ['properties' => 'status'], commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 		$this->assertSame('the object already carries these values', $result->getReason());
@@ -176,17 +177,19 @@ class PropertyWriteActionsBehaviourTest extends TestCase {
 			->willReturn(new ObjectEntity());
 
 		$result = $this->assign()->apply(
-			$this->object(['status' => 'open']),
-			['property' => 'handler', 'value' => null],
-			true,
-			$actor
+			step: new BulkStep(
+				object: $this->object(['status' => 'open']),
+				parameters: ['property' => 'handler', 'value' => null],
+				commit: true,
+				actor: $actor
+			)
 		);
 
 		$this->assertTrue($result->isApplied());
 	}
 
 	public function testALooselyEqualValueIsStillAWrite(): void {
-		$result = $this->setProperties()->apply($this->object(['count' => '3']), ['properties' => ['count' => 3]], false);
+		$result = $this->setProperties()->apply(step: new BulkStep(object: $this->object(['count' => '3']), parameters: ['properties' => ['count' => 3]], commit: false, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_APPLIED, $result->getOutcome());
 	}
@@ -224,7 +227,7 @@ class PropertyWriteActionsBehaviourTest extends TestCase {
 				['action' => 'openregister:assign', 'object' => 'zaak-4', 'error' => 'validation failed']
 			);
 
-		$result = $this->assign()->apply($this->object([]), ['property' => 'handler', 'value' => 'ann'], true);
+		$result = $this->assign()->apply(step: new BulkStep(object: $this->object([]), parameters: ['property' => 'handler', 'value' => 'ann'], commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_FAILED, $result->getOutcome());
 		$this->assertSame('validation failed', $result->getReason());

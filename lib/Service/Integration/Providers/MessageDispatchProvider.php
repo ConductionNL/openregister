@@ -51,6 +51,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCP\App\IAppManager;
@@ -219,9 +220,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 * set (the registry contract requires the method; the dispatch surface is
 	 * {@see dispatch()}).
 	 *
-	 * @param string $register Ignored (send-only leaf).
-	 * @param string $schema Ignored (send-only leaf).
-	 * @param string $objectId Ignored (send-only leaf).
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Ignored (send-only leaf).
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -232,7 +231,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 *   filters are mandated by the IntegrationProvider contract; this leaf is
 	 *   send-only so they are intentionally unused.
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}//end list()
 
@@ -250,13 +249,11 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 *
 	 * @param string $source The seeded source slug to send through
 	 *                       (MUST be in {@see ALLOWED_SOURCES}).
-	 * @param array<string,mixed> $body The provider-shaped request body the
-	 *                                  consuming app composed.
-	 * @param string $path Path relative to the source base URL
-	 *                     (e.g. `2010-04-01/Accounts/{SID}/Messages.json`,
-	 *                     `{PhoneNumberID}/messages`, `message`).
-	 * @param array<string,string> $headers Optional extra request headers
-	 *                                      (e.g. a per-call Content-Type).
+	 * @param OutboundMessage $message The path relative to the source base URL
+	 *                                 (e.g. `2010-04-01/Accounts/{SID}/Messages.json`,
+	 *                                 `{PhoneNumberID}/messages`, `message`), the
+	 *                                 provider-shaped body the consuming app composed,
+	 *                                 and optional extra request headers.
 	 *
 	 * @return array<string,mixed> `{ status: 'sent', response }` on success, or
 	 *                             `{ unavailable: true, cause }` when the source
@@ -264,10 +261,10 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
 	 */
-	public function dispatch(string $source, array $body, string $path, array $headers = []): array {
-		$options = ['body' => $body, 'headers' => $this->withJsonAccept(headers: $headers)];
+	public function dispatch(string $source, OutboundMessage $message): array {
+		$options = ['body' => $message->body, 'headers' => $this->withJsonAccept(headers: $message->headers)];
 
-		return $this->sendThrough(source: trim($source), send: fn (): array => $this->send(path: $path, options: $options));
+		return $this->sendThrough(source: trim($source), send: fn (): array => $this->send(path: $message->path, options: $options));
 	}//end dispatch()
 
 	/**

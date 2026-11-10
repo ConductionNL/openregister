@@ -100,7 +100,7 @@ class FlowConcurrencyTest extends TestCase {
 		$settled = [];
 		$promises = [];
 
-		$out = $this->concurrency->map(
+		$out = $this->concurrency->within(limit: 4)->map(
 			[0, 1, 2, 3],
 			static function (int $item) use (&$promises, &$settled) {
 				$promise = new Promise(
@@ -124,8 +124,7 @@ class FlowConcurrencyTest extends TestCase {
 				$promises[$item] = $promise;
 
 				return $promise;
-			},
-			4
+			}
 		);
 
 		$this->assertSame([3, 2, 1, 0], $settled, 'the fixture did not settle out of order, so ordering is untested');
@@ -204,7 +203,7 @@ class FlowConcurrencyTest extends TestCase {
 		$peak = 0;
 		$pending = [];
 
-		$out = $this->concurrency->map(
+		$out = $this->concurrency->within(limit: 3)->map(
 			range(1, 12),
 			static function (int $item) use (&$inFlight, &$peak, &$pending): Promise {
 				$inFlight++;
@@ -219,8 +218,7 @@ class FlowConcurrencyTest extends TestCase {
 				$pending[] = $promise;
 
 				return $promise;
-			},
-			3
+			}
 		);
 
 		$this->assertSame(3, $peak, 'more calls were in flight than the limit allowed');
@@ -253,7 +251,7 @@ class FlowConcurrencyTest extends TestCase {
 			return $promise;
 		};
 
-		$this->concurrency->map(range(1, 30), $work, 999);
+		$this->concurrency->within(limit: 999)->map(range(1, 30), $work);
 		$this->assertLessThanOrEqual(
 			FlowConcurrency::MAX_LIMIT,
 			$peak,
@@ -262,7 +260,7 @@ class FlowConcurrencyTest extends TestCase {
 
 		$peak = 0;
 		$inFlight = 0;
-		$out = $this->concurrency->map([1, 2, 3], $work, 0);
+		$out = $this->concurrency->within(limit: 0)->map([1, 2, 3], $work);
 		$this->assertCount(3, $out, 'a zero limit did not run the items');
 
 	}//end testTheLimitIsClamped()

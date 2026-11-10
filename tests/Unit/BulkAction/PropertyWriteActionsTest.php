@@ -30,6 +30,7 @@ namespace Unit\BulkAction;
 use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\AssignAction;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\BulkAction\SetPropertiesAction;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -105,7 +106,7 @@ final class PropertyWriteActionsTest extends TestCase {
 	}
 
 	public function testTheRehearsalWritesNothing(): void {
-		$result = $this->setProperties()->apply($this->object(), ['properties' => ['status' => 'closed']], false);
+		$result = $this->setProperties()->apply(step: new BulkStep(object: $this->object(), parameters: ['properties' => ['status' => 'closed']], commit: false, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_APPLIED, $result->getOutcome());
 		$this->assertSame([], $this->patches, 'a rehearsal must not reach the write path');
@@ -115,8 +116,8 @@ final class PropertyWriteActionsTest extends TestCase {
 		$action = $this->setProperties();
 		$parameters = ['properties' => ['status' => 'closed']];
 
-		$rehearsed = $action->apply($this->object(), $parameters, false);
-		$committed = $action->apply($this->object(), $parameters, true);
+		$rehearsed = $action->apply(step: new BulkStep(object: $this->object(), parameters: $parameters, commit: false, actor: null));
+		$committed = $action->apply(step: new BulkStep(object: $this->object(), parameters: $parameters, commit: true, actor: null));
 
 		$this->assertSame($rehearsed->getOutcome(), $committed->getOutcome());
 		$this->assertCount(1, $this->patches);
@@ -126,9 +127,12 @@ final class PropertyWriteActionsTest extends TestCase {
 
 	public function testAnObjectThatAlreadyCarriesTheValuesIsSkippedWithAReason(): void {
 		$result = $this->setProperties()->apply(
-			$this->object(['status' => 'closed']),
-			['properties' => ['status' => 'closed']],
-			true
+			step: new BulkStep(
+				object: $this->object(['status' => 'closed']),
+				parameters: ['properties' => ['status' => 'closed']],
+				commit: true,
+				actor: null
+			)
 		);
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
@@ -138,9 +142,12 @@ final class PropertyWriteActionsTest extends TestCase {
 
 	public function testAnObjectAlreadyNamingTheHandlerIsSkipped(): void {
 		$result = $this->assign()->apply(
-			$this->object(['assignee' => 'fatima']),
-			['property' => 'assignee', 'value' => 'fatima'],
-			true
+			step: new BulkStep(
+				object: $this->object(['assignee' => 'fatima']),
+				parameters: ['property' => 'assignee', 'value' => 'fatima'],
+				commit: true,
+				actor: null
+			)
 		);
 
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
@@ -149,9 +156,12 @@ final class PropertyWriteActionsTest extends TestCase {
 
 	public function testTheRedistributionWritesTheNamedProperty(): void {
 		$result = $this->assign()->apply(
-			$this->object(['assignee' => 'hans']),
-			['property' => 'assignee', 'value' => 'fatima'],
-			true
+			step: new BulkStep(
+				object: $this->object(['assignee' => 'hans']),
+				parameters: ['property' => 'assignee', 'value' => 'fatima'],
+				commit: true,
+				actor: null
+			)
 		);
 
 		$this->assertSame(BulkJobMember::OUTCOME_APPLIED, $result->getOutcome());
@@ -163,7 +173,7 @@ final class PropertyWriteActionsTest extends TestCase {
 		$objectService->method('patchObject')->willThrowException(new \RuntimeException('the object is locked'));
 
 		$action = new SetPropertiesAction($objectService, new NullLogger());
-		$result = $action->apply($this->object(), ['properties' => ['status' => 'closed']], true);
+		$result = $action->apply(step: new BulkStep(object: $this->object(), parameters: ['properties' => ['status' => 'closed']], commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_FAILED, $result->getOutcome());
 		$this->assertSame('the object is locked', $result->getReason());

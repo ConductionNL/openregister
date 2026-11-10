@@ -171,7 +171,7 @@ class ReachRevocationServiceFailureTest extends TestCase {
 		$failing->setAuthorization(['read' => ['alice', 'staff', 7], 'mode' => 'strict']);
 		$this->schemas->method('findAll')->willReturn([$empty, $untouched, $failing]);
 		$this->schemas->expects($this->once())->method('update')->with($failing)->willThrowException(new RuntimeException('locked'));
-		$this->audit->expects($this->never())->method('logSchemaAuthorizationChange');
+		$this->audit->expects($this->never())->method('recordSchemaChange');
 		$this->derived->method('grantsFor')->willReturn([]);
 		$this->derived->expects($this->never())->method('forget');
 		$this->delegations->method('findHeldBy')->willReturn([]);

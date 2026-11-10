@@ -28,7 +28,6 @@ namespace OCA\OpenRegister\BulkAction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Object\ObjectPatch;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
@@ -80,15 +79,10 @@ abstract class AbstractPropertyWriteAction implements ReversibleBulkActionInterf
 	/**
 	 * Rehearse or make the write.
 	 *
-	 * @param ObjectEntity $object The object to act on.
-	 * @param array<string, mixed> $parameters The job's parameters.
-	 * @param bool $commit False to rehearse, true to write.
-	 * @param IUser|null $actor The user the job runs as.
+	 * @param BulkStep $step The member, the job's parameters, rehearsal or commit, and the actor.
 	 *
 	 * @return BulkActionResult What happened, or what would happen.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One executor for the
-	 * rehearsal and the commit is the design property of D-1.
 	 * @SuppressWarnings(PHPMD.StaticAccess) BulkActionResult's named
 	 * constructors are its only constructor: the class is immutable and its
 	 * private __construct exists so an outcome cannot be built without
@@ -96,25 +90,25 @@ abstract class AbstractPropertyWriteAction implements ReversibleBulkActionInterf
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
-		$patch = $this->patchFor(parameters: $parameters);
-		$current = $object->getObject();
+	public function apply(BulkStep $step): BulkActionResult {
+		$patch = $this->patchFor(parameters: $step->parameters);
+		$current = $step->object->getObject();
 
 		if ($this->wouldChangeNothing(patch: $patch, current: $current) === true) {
 			return BulkActionResult::skipped(reason: $this->alreadyThereReason());
 		}
 
-		if ($commit === false) {
+		if ($step->commit === false) {
 			return BulkActionResult::applied();
 		}
 
 		try {
 			$this->objectService->patchObject(
 				patch: new ObjectPatch(
-					objectId: (string)$object->getUuid(),
+					objectId: (string)$step->object->getUuid(),
 					data: $patch,
-					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
-					currentUser: $actor
+					target: new ObjectFindTarget(register: $step->object->getRegister(), schema: $step->object->getSchema()),
+					currentUser: $step->actor
 				)
 			);
 		} catch (\Throwable $exception) {
@@ -122,7 +116,7 @@ abstract class AbstractPropertyWriteAction implements ReversibleBulkActionInterf
 				message: '[BulkAction] Write failed for object',
 				context: [
 					'action' => $this->getId(),
-					'object' => $object->getUuid(),
+					'object' => $step->object->getUuid(),
 					'error' => $exception->getMessage(),
 				]
 			);

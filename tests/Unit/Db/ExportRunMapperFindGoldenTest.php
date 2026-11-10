@@ -27,6 +27,7 @@ use DateTime;
 use DateTimeZone;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
+use OCA\OpenRegister\Db\ListQuery;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -93,7 +94,7 @@ final class ExportRunMapperFindGoldenTest extends TestCase {
 	}//end testAnActorReadIsScopedAndAnAdministratorReadIsNot()
 
 	/**
-	 * Run findForActor() against a recording connection.
+	 * Run listForActor() against a recording connection.
 	 *
 	 * @param array<string, mixed> $args Named arguments.
 	 *
@@ -113,7 +114,10 @@ final class ExportRunMapperFindGoldenTest extends TestCase {
 		try {
 			$outcome['result'] = array_map(
 				static fn (ExportRun $run): array => ['uuid' => $run->getUuid(), 'actor' => $run->getActor()],
-				$mapper->findForActor(...$args)
+				$mapper->listForActor(
+					actor: ($args['actor'] ?? null),
+					query: new ListQuery(limit: ($args['limit'] ?? 50), offset: ($args['offset'] ?? 0), filters: ($args['filters'] ?? []))
+				)
 			);
 		} catch (\Throwable $e) {
 			$outcome['thrown'] = get_class($e) . ': ' . $e->getMessage();
