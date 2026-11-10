@@ -101,16 +101,15 @@ class OrganisationLifecycleAuditor implements OrganisationEditAuditorInterface {
 	/**
 	 * Record an edit of an organisation's details.
 	 *
-	 * @param Organisation         $organisation The organisation, after the edit.
-	 * @param array<string, mixed> $before       The edited fields as they were, by name.
-	 * @param array<string, mixed> $after        The same fields as they are now.
+	 * @param Organisation     $organisation The organisation, after the edit.
+	 * @param OrganisationEdit $edit         The edited fields as they were and as they are now, by name.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
-	public function recordUpdate(Organisation $organisation, array $before, array $after): void {
-		$changed = self::changedFields(before: $before, after: $after);
+	public function recordUpdate(Organisation $organisation, OrganisationEdit $edit): void {
+		$changed = self::changedFields(before: $edit->before, after: $edit->after);
 		if ($changed !== []) {
 			$this->write(organisation: $organisation, change: new OrganisationChange(action: self::ACTION_UPDATED, changed: $changed));
 		}

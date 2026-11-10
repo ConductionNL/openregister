@@ -29,6 +29,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Organisation\OrganisationEdit;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
@@ -766,8 +767,7 @@ class OrganisationController extends Controller {
 			$response = $this->saveAndReturnOrganisation(organisation: $organisation);
 			$this->lifecycleAuditor?->recordUpdate(
 				organisation: $organisation,
-				before: $detailsBefore,
-				after: $this->auditedDetailsOf(organisation: $organisation)
+				edit: new OrganisationEdit(before: $detailsBefore, after: $this->auditedDetailsOf(organisation: $organisation))
 			);
 
 			// Who holds the right to decide who reads a record is the one change
