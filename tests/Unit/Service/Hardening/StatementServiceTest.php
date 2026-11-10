@@ -175,4 +175,48 @@ class StatementServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->service->accept(userId: '', version: '2');
 	}
+
+	// ---- Characterisation of publish(), pinned before it took an operation object. ----
+
+	public function testPublishTrimsTheTextAndReturnsTheStatementItStored(): void {
+		$statement = $this->service->publish(version: ' 4 ', body: ' The text ', title: ' Heading ', userId: 'admin');
+
+		$this->assertSame(['version', 'title', 'body', 'publishedAt', 'publishedBy'], array_keys($statement));
+		$this->assertSame(['4', 'Heading', 'The text', 'admin'], [$statement['version'], $statement['title'], $statement['body'], $statement['publishedBy']]);
+		$this->assertNotSame('', $statement['publishedAt']);
+		$this->assertSame($statement, $this->service->published());
+	}
+
+	public function testAStatementWithoutABodyIsRefusedAndNothingIsStoredOrAudited(): void {
+		$this->audit->expects($this->never())->method('accepted');
+
+		try {
+			$this->service->publish(version: '4', body: '   ', userId: 'admin');
+			$this->fail('A statement without a body was published.');
+		} catch (InvalidArgumentException $refusal) {
+			$this->assertStringContainsString('text a user is asked to accept', $refusal->getMessage());
+		}
+
+		$this->assertNull($this->service->published());
+	}
+
+	public function testAStatementWithoutAVersionIsRefusedBeforeTheBodyIsChecked(): void {
+		$this->expectExceptionMessage('carries a version');
+		$this->service->publish(version: ' ', body: '');
+	}
+
+	public function testPublishingAuditsTheVersionItReplaces(): void {
+		$facts = [];
+		$this->audit->method('accepted')->willReturnCallback(
+			function (string $fact, $before, $after) use (&$facts): void {
+				$facts[] = [$fact, $before, $after];
+			}
+		);
+
+		$this->service->publish(version: '2', body: 'text', userId: 'admin');
+		$this->service->publish(version: '3', body: 'text, revised');
+
+		$this->assertSame([['statement.published', '', '2'], ['statement.published', '2', '3']], $facts);
+		$this->assertSame('', $this->service->published()['publishedBy']);
+	}
 }//end class
