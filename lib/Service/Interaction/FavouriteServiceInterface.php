@@ -37,9 +37,7 @@ interface FavouriteServiceInterface {
 	/**
 	 * Star an object: follow it with notifications off, unless already followed.
 	 *
-	 * @param ObjectEntity $object The object, already resolved through RBAC.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
+	 * @param AddressedObject $target The object, already resolved through RBAC, and how the caller addressed it.
 	 *
 	 * @throws NotAuthorizedException When the caller is anonymous.
 	 *
@@ -47,11 +45,7 @@ interface FavouriteServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
-	public function star(
-		ObjectEntity $object,
-		?string $register = null,
-		?string $schema = null
-	): Watcher;
+	public function star(AddressedObject $target): Watcher;
 
 	/**
 	 * Unstar an object: stop following it.

@@ -31,6 +31,7 @@ use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SearchTrailPageLinks;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapperInterface;
+use OCA\OpenRegister\Service\SearchPeriod;
 use OCA\OpenRegister\Service\SearchTrailServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -571,9 +572,8 @@ class SearchTrailController extends Controller {
 	 */
 	private function popularTermsPage(array $query): array {
 		$serviceResult = $this->searchTrailService->getPopularSearchTerms(
-			limit: (int)$query['statsLimit'],
-			from: $query['from'],
-			to: $query['to']
+			period: new SearchPeriod(from: $query['from'], to: $query['to']),
+			limit: (int)$query['statsLimit']
 		);
 
 		return $this->withSearchMeta(
@@ -612,7 +612,7 @@ class SearchTrailController extends Controller {
 		$period = $this->period();
 		$interval = $this->request->getParam(key: 'interval', default: 'day');
 
-		return $this->searchTrailService->getSearchActivity(interval: $interval, from: $period['from'], to: $period['to']);
+		return $this->searchTrailService->getSearchActivity(period: new SearchPeriod(from: $period['from'], to: $period['to']), interval: $interval);
 	}//end activityResult()
 
 	/**
@@ -685,9 +685,8 @@ class SearchTrailController extends Controller {
 	 */
 	private function userAgentPage(array $query): array {
 		$serviceResult = $this->searchTrailService->getUserAgentStatistics(
-			limit: (int)$query['statsLimit'],
-			from: $query['from'],
-			to: $query['to']
+			period: new SearchPeriod(from: $query['from'], to: $query['to']),
+			limit: (int)$query['statsLimit']
 		);
 		if (($serviceResult['user_agents'] ?? null) !== null) {
 			return $this->structuredUserAgentPage(serviceResult: $serviceResult, query: $query);

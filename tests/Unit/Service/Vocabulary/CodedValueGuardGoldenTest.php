@@ -37,6 +37,7 @@ use OCA\OpenRegister\Exception\CodedValueException;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueWrite;
 use OCA\OpenRegister\Service\Vocabulary\ConceptHierarchy;
 use OCA\OpenRegister\Service\Vocabulary\ConceptLifecycle;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
@@ -146,7 +147,7 @@ class CodedValueGuardGoldenTest extends TestCase {
 		foreach (self::objects() as $name => $object) {
 			$violations = $this->guard->collectViolations(new \OCA\OpenRegister\Service\Vocabulary\CodedValueWrite($object, self::schema(), $at));
 			try {
-				$this->guard->enforce($object, self::schema(), $at);
+				$this->guard->enforce(new CodedValueWrite(object: $object, schema: self::schema(), at: $at));
 				$thrown = null;
 			} catch (CodedValueException $e) {
 				$thrown = [$e->getMessage(), $e->getErrors()];

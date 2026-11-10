@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service\Aggregation;
 
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -43,26 +44,26 @@ class AggregationCacheTest extends TestCase {
 	public function testGetReturnsNullOnMiss(): void {
 		$this->cache->method('get')->willReturn(null);
 		$cache = $this->makeCache();
-		$this->assertNull($cache->get('reg', 'sch', 'totalOpen', []));
+		$this->assertNull($cache->get(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'totalOpen', filter: [])));
 	}
 
 	public function testGetReturnsDecodedArrayOnHit(): void {
 		$this->cache->method('get')->willReturn(json_encode(['value' => 42, 'backend' => 'postgres']));
 		$cache = $this->makeCache();
-		$result = $cache->get('reg', 'sch', 'totalOpen', []);
+		$result = $cache->get(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'totalOpen', filter: []));
 		$this->assertSame(['value' => 42, 'backend' => 'postgres'], $result);
 	}
 
 	public function testGetReturnsNullOnMalformedBlob(): void {
 		$this->cache->method('get')->willReturn('not json');
 		$cache = $this->makeCache();
-		$this->assertNull($cache->get('reg', 'sch', 'totalOpen', []));
+		$this->assertNull($cache->get(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'totalOpen', filter: [])));
 	}
 
 	public function testGetReturnsNullOnNonArrayJson(): void {
 		$this->cache->method('get')->willReturn(json_encode('scalar'));
 		$cache = $this->makeCache();
-		$this->assertNull($cache->get('reg', 'sch', 'totalOpen', []));
+		$this->assertNull($cache->get(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'totalOpen', filter: [])));
 	}
 
 	public function testSetWritesEncodedJsonWithTtl(): void {
@@ -75,7 +76,7 @@ class AggregationCacheTest extends TestCase {
 			);
 
 		$cache = $this->makeCache();
-		$cache->set('reg', 'sch', 'totalOpen', [], ['value' => 5]);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'totalOpen', filter: []), result: ['value' => 5]);
 	}
 
 	public function testEvictForSchemaBumpsVersionCounterNotGlobalClear(): void {
@@ -103,10 +104,10 @@ class AggregationCacheTest extends TestCase {
 		});
 
 		$cache = $this->makeCache();
-		$cache->set('reg-A', 'sch-A', 'totalOpen', [], []);
-		$cache->set('reg-B', 'sch-A', 'totalOpen', [], []);
-		$cache->set('reg-A', 'sch-B', 'totalOpen', [], []);
-		$cache->set('reg-A', 'sch-A', 'totalOverdue', [], []);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg-A', schemaSlug: 'sch-A', name: 'totalOpen', filter: []), result: []);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg-B', schemaSlug: 'sch-A', name: 'totalOpen', filter: []), result: []);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg-A', schemaSlug: 'sch-B', name: 'totalOpen', filter: []), result: []);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg-A', schemaSlug: 'sch-A', name: 'totalOverdue', filter: []), result: []);
 
 		// Each call should produce a distinct cache key — none of the four
 		// (register, schema, name) combos should collide.
@@ -125,8 +126,8 @@ class AggregationCacheTest extends TestCase {
 		});
 
 		$cache = $this->makeCache();
-		$cache->set('reg', 'sch', 'agg', ['a' => 1, 'b' => 2], []);
-		$cache->set('reg', 'sch', 'agg', ['b' => 2, 'a' => 1], []);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'agg', filter: ['a' => 1, 'b' => 2]), result: []);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'agg', filter: ['b' => 2, 'a' => 1]), result: []);
 
 		// Same filter content, different array order → same cache key
 		// (the cache ksorts the filter before hashing).
@@ -141,8 +142,8 @@ class AggregationCacheTest extends TestCase {
 		});
 
 		$cache = $this->makeCache();
-		$cache->set('reg', 'sch', 'agg', ['status' => 'open'], []);
-		$cache->set('reg', 'sch', 'agg', ['status' => 'closed'], []);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'agg', filter: ['status' => 'open']), result: []);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'agg', filter: ['status' => 'closed']), result: []);
 		$this->assertNotSame($captured[0], $captured[1]);
 	}
 
@@ -164,8 +165,8 @@ class AggregationCacheTest extends TestCase {
 		$this->userSession->method('getUser')->willReturnOnConsecutiveCalls($userA, $userB);
 
 		$cache = $this->makeCache();
-		$cache->set('reg', 'sch', 'agg', [], []);
-		$cache->set('reg', 'sch', 'agg', [], []);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'agg', filter: []), result: []);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'agg', filter: []), result: []);
 		$this->assertNotSame($captured[0], $captured[1]);
 	}
 
@@ -179,22 +180,22 @@ class AggregationCacheTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 
 		$cache = $this->makeCache();
-		$cache->set('reg', 'sch', 'agg', [], []);
-		$cache->set('reg', 'sch', 'agg', [], []);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'agg', filter: []), result: []);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'agg', filter: []), result: []);
 		$this->assertSame($captured[0], $captured[1], 'anonymous calls should hit the same cache key');
 	}
 
 	public function testGetSwallowsBackendException(): void {
 		$this->cache->method('get')->willThrowException(new \RuntimeException('redis down'));
 		$cache = $this->makeCache();
-		$this->assertNull($cache->get('reg', 'sch', 'agg', []));
+		$this->assertNull($cache->get(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'agg', filter: [])));
 	}
 
 	public function testSetSwallowsBackendException(): void {
 		$this->cache->method('set')->willThrowException(new \RuntimeException('redis down'));
 		$cache = $this->makeCache();
 		// Must not bubble — a cache write failure shouldn't break the response.
-		$cache->set('reg', 'sch', 'agg', [], ['value' => 1]);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'agg', filter: []), result: ['value' => 1]);
 		$this->expectNotToPerformAssertions();
 	}
 
@@ -205,8 +206,8 @@ class AggregationCacheTest extends TestCase {
 
 		$cache = new AggregationCache($factory, $this->userSession, $this->logger, $this->createMock(\OCA\OpenRegister\Service\OrganisationService::class));
 		// get/set/evict must all be no-ops when the backend is unavailable.
-		$this->assertNull($cache->get('reg', 'sch', 'agg', []));
-		$cache->set('reg', 'sch', 'agg', [], ['value' => 1]);
+		$this->assertNull($cache->get(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'agg', filter: [])));
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'agg', filter: []), result: ['value' => 1]);
 		$cache->evictForSchema('reg', 'sch');
 	}
 
@@ -256,7 +257,7 @@ class AggregationCacheTest extends TestCase {
 		$cache = $this->makeCache();
 		$query = AggregationQuery::create(metric: 'count', filter: ['status' => 'open']);
 
-		$cache->set('reg', 'sch', 'totalOpen', [], ['value' => 1]);
+		$cache->set(slot: new AggregationSlot(registerSlug: 'reg', schemaSlug: 'sch', name: 'totalOpen', filter: []), result: ['value' => 1]);
 		$cache->setAdhoc('reg', 'sch', $query, ['value' => 1, 'backend' => 'postgres', 'cached' => false]);
 
 		$this->assertCount(2, $captured);

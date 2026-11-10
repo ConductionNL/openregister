@@ -131,7 +131,9 @@ class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 		}
 
 		foreach ($entries as $entry) {
-			if ($this->entryAdmits(entry: $entry, userGroups: $userGroups, object: $object) === true) {
+			if ($this->namesAGroupOf(entry: $entry, userGroups: $userGroups) === true
+				&& $this->entryCovers(entry: $entry, object: $object) === true
+			) {
 				return true;
 			}
 		}
@@ -281,46 +283,77 @@ class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 	}//end groupOf()
 
 	/**
-	 * Whether one entry gives one of the caller's groups the right on this record.
+	 * Whether one entry names one of the caller's groups.
 	 *
-	 * @param mixed $entry The entry as stored.
+	 * @param mixed    $entry      The entry as stored.
 	 * @param string[] $userGroups The caller's group ids.
+	 *
+	 * @return bool True when it does.
+	 */
+	private function namesAGroupOf(mixed $entry, array $userGroups): bool {
+		$group = $this->groupOf(entry: $entry);
+
+		return $group !== null && in_array(needle: $group, haystack: $userGroups, strict: true) === true;
+	}//end namesAGroupOf()
+
+	/**
+	 * Whether one entry reaches this record: a plain group reaches every record, a narrowed one only its register and schemas.
+	 *
+	 * @param mixed        $entry  The entry as stored.
 	 * @param ObjectEntity $object The record.
 	 *
 	 * @return bool True when it does.
 	 */
-	private function entryAdmits(mixed $entry, array $userGroups, ObjectEntity $object): bool {
-		$group = $this->groupOf(entry: $entry);
-		if ($group === null || in_array(needle: $group, haystack: $userGroups, strict: true) === false) {
-			return false;
-		}
-
+	private function entryCovers(mixed $entry, ObjectEntity $object): bool {
 		if (is_array($entry) === false) {
 			return true;
 		}
 
-		if (array_key_exists('register', $entry) === true
-			&& $this->names(wanted: [$entry['register']], names: $this->namesOf(
-				id: (string)$object->getRegister(),
-				load: fn (string $id): Register => $this->registers->find(id: $id, _rbac: false, _multitenancy: false)
-			)) === false
-		) {
+		return $this->registerCovers(entry: $entry, object: $object) === true
+			&& $this->schemasCover(entry: $entry, object: $object) === true;
+	}//end entryCovers()
+
+	/**
+	 * Whether a narrowed entry's register, when it names one, is the record's register.
+	 *
+	 * @param array<string, mixed> $entry  The entry as stored.
+	 * @param ObjectEntity         $object The record.
+	 *
+	 * @return bool True when the entry names no register or names this one.
+	 */
+	private function registerCovers(array $entry, ObjectEntity $object): bool {
+		if (array_key_exists('register', $entry) === false) {
+			return true;
+		}
+
+		return $this->names(wanted: [$entry['register']], names: $this->namesOf(
+			id: (string)$object->getRegister(),
+			load: fn (string $id): Register => $this->registers->find(id: $id, _rbac: false, _multitenancy: false)
+		));
+	}//end registerCovers()
+
+	/**
+	 * Whether a narrowed entry's schema list, when it has one, names the record's schema.
+	 *
+	 * @param array<string, mixed> $entry  The entry as stored.
+	 * @param ObjectEntity         $object The record.
+	 *
+	 * @return bool True when the entry has no schema list or it names this schema; false for a list that is not a list.
+	 */
+	private function schemasCover(array $entry, ObjectEntity $object): bool {
+		if (array_key_exists('schemas', $entry) === false) {
+			return true;
+		}
+
+		if (is_array($entry['schemas']) === false) {
 			return false;
 		}
 
-		if (array_key_exists('schemas', $entry) === true) {
-			if (is_array($entry['schemas']) === false) {
-				return false;
-			}
-
-			return $this->names(wanted: $entry['schemas'], names: $this->namesOf(
-				id: (string)$object->getSchema(),
-				load: fn (string $id): Schema => $this->schemas->find(id: $id, _rbac: false, _multitenancy: false)
-			));
-		}
-
-		return true;
-	}//end entryAdmits()
+		return $this->names(wanted: $entry['schemas'], names: $this->namesOf(
+			id: (string)$object->getSchema(),
+			load: fn (string $id): Schema => $this->schemas->find(id: $id, _rbac: false, _multitenancy: false)
+		));
+	}//end schemasCover()
 
 	/**
 	 * Whether one of the wanted references is among the names a record answers to.

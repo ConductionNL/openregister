@@ -295,7 +295,7 @@ class AggregationControllerFilterSpellingTest extends TestCase {
 		$captured = null;
 		$runner->method('run')->willReturnCallback(
 			function (...$args) use (&$captured) {
-				$captured = ($args[5] ?? null);
+				$captured = $args[1]?->extraFilter;
 				return ['value' => 1, 'backend' => 'postgres'];
 			}
 		);

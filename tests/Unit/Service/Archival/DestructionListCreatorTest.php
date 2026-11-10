@@ -66,7 +66,7 @@ class DestructionListCreatorTest extends TestCase {
 
 		$objectMapper = $this->getMockBuilder(MagicMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['find', 'findAll'])
+			->onlyMethods(['find', 'findAllListed'])
 			->getMock();
 		$objectMapper->method('find')->willReturnCallback(
 			function (string|int $identifier): ObjectEntity {
@@ -77,7 +77,7 @@ class DestructionListCreatorTest extends TestCase {
 				return $this->objects[(string)$identifier];
 			}
 		);
-		$objectMapper->method('findAll')->willReturnCallback(fn (): array => $this->storedLists);
+		$objectMapper->method('findAllListed')->willReturnCallback(fn (): array => $this->storedLists);
 
 		$settings = $this->createMock(ObjectRetentionHandler::class);
 		$settings->method('getArchivalSettingsOnly')->willReturnCallback(fn (): array => $this->settings);

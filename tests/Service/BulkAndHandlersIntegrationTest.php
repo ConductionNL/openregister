@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Object\SaveObject\TemplateSource;
 
 /**
  * Integration tests for bulk operations and save-object handlers.
@@ -355,16 +356,13 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testProcessTwigLikeTemplateWithFallbacks(): void {
 		$data = ['ggm_naam' => 'Alt Name', 'type' => 'gemeente'];
-		$result = $this->metadataHandler->processTwigLikeTemplate(
-			$data,
-			'{{ name | ggm_naam }} - {{ type }}'
-		);
+		$result = $this->metadataHandler->renderTemplate(template: '{{ name | ggm_naam }} - {{ type }}', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Alt Name - gemeente', $result);
 	}
 
 	public function testProcessTwigLikeTemplateNoMatches(): void {
 		$data = ['x' => 'y'];
-		$result = $this->metadataHandler->processTwigLikeTemplate($data, 'no-template-here');
+		$result = $this->metadataHandler->renderTemplate(template: 'no-template-here', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertNull($result);
 	}
 
@@ -432,19 +430,13 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 
 	public function testProcessTwigLikeTemplateWithMapFilter(): void {
 		$data = ['richting' => 'AnaarB', 'name' => 'Route 1'];
-		$result = $this->metadataHandler->processTwigLikeTemplate(
-			$data,
-			'{{ name }} {{ richting | map: AnaarB=>, BnaarA=< }}'
-		);
+		$result = $this->metadataHandler->renderTemplate(template: '{{ name }} {{ richting | map: AnaarB=>, BnaarA=< }}', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Route 1 >', $result);
 	}
 
 	public function testProcessTwigLikeTemplateWithIfFilledFilter(): void {
 		$data = ['extern' => 'ja', 'name' => 'Service'];
-		$result = $this->metadataHandler->processTwigLikeTemplate(
-			$data,
-			'{{ name }} ({{ extern | ifFilled: extern, intern }})'
-		);
+		$result = $this->metadataHandler->renderTemplate(template: '{{ name }} ({{ extern | ifFilled: extern, intern }})', source: new TemplateSource(data: $data, schemaProperties: []));
 		$this->assertEquals('Service (extern)', $result);
 	}
 
@@ -453,11 +445,7 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 		// resolveRelationValue returns null for non-string values.
 		// Provide schemaProperties to skip resolveRelationValue for non-relation fields.
 		$data = ['tags' => ['a', 'b', 'c']];
-		$result = $this->metadataHandler->processTwigLikeTemplate(
-			$data,
-			'{{ tags }}',
-			['tags' => ['type' => 'array', 'items' => ['type' => 'string']]]
-		);
+		$result = $this->metadataHandler->renderTemplate(template: '{{ tags }}', source: new TemplateSource(data: $data, schemaProperties: ['tags' => ['type' => 'array', 'items' => ['type' => 'string']]]));
 		// With schemaProperties provided but 'tags' not a relation, resolveRelationValue
 		// returns null for arrays. The template replaces it with empty string.
 		// This is expected behavior — arrays are not meaningful as template values

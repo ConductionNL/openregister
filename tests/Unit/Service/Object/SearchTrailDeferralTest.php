@@ -28,8 +28,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SearchTrail;
-use OCA\OpenRegister\Service\Object\ViewScopeApplier;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
+use OCA\OpenRegister\Service\Object\ViewScopeApplier;
+use OCA\OpenRegister\Service\SearchMeasurement;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Tests\Support\ShutdownFunctionSpy;
@@ -73,7 +74,6 @@ class SearchTrailDeferralTest extends TestCase {
 			schemaMapper: $this->schemaMapper,
 			settingsService: $this->settingsService,
 			logger: $this->logger,
-			request: $this->request,
 			searchTrailService: $this->searchTrailService
 		);
 	}//end setUp()
@@ -144,13 +144,7 @@ class SearchTrailDeferralTest extends TestCase {
 
 		$this->searchTrailService->expects($this->once())
 			->method('createSearchTrail')
-			->with(
-				['_search' => 'deferred'],
-				5,
-				42,
-				12.5,
-				'database'
-			)
+			->with(['_search' => 'deferred'], new SearchMeasurement(5, 42, 12.5, 'database'))
 			->willReturn(new SearchTrail());
 
 		$this->handler->logSearchTrail(['_search' => 'deferred'], 5, 42, 12.5, 'database');
@@ -226,7 +220,7 @@ class SearchTrailDeferralTest extends TestCase {
 
 		$this->searchTrailService->expects($this->once())
 			->method('createSearchTrail')
-			->with(['_search' => 'deferred'], 5, 42, 12.5, 'database')
+			->with(['_search' => 'deferred'], new SearchMeasurement(5, 42, 12.5, 'database'))
 			->willReturn(new SearchTrail());
 
 		$this->handler->logSearchTrail(['_search' => 'deferred'], 5, 42, 12.5, 'database');

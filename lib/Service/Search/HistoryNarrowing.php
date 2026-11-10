@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Search;
 
+use OCA\OpenRegister\Db\StateChangePeriod;
 use OCA\OpenRegister\Db\StateHistoryMapperInterface;
 use Psr\Log\LoggerInterface;
 
@@ -111,8 +112,7 @@ class HistoryNarrowing {
 				current: $candidates,
 				next: $this->mapper->findObjectUuidsChangedBetween(
 					property: $property,
-					after: $period['after'],
-					before: $period['before']
+					period: new StateChangePeriod(after: $period['after'], before: $period['before'])
 				)
 			);
 		}

@@ -19,7 +19,6 @@ use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -171,7 +170,6 @@ class SearchQueryHandlerBuildSearchQueryGoldenTest extends TestCase {
 			$schemaMapper,
 			$this->createMock(SettingsService::class),
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(IRequest::class),
 			$this->createMock(SearchTrailService::class),
 			$session,
 			$expander
