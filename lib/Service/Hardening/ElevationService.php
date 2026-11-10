@@ -111,24 +111,45 @@ class ElevationService implements ElevationServiceInterface {
 	public function elevate(string $password): bool {
 		$user = $this->identity->userSession->getUser();
 		if ($user === null || $password === '') {
-			$this->posture->audit->refused(
-				change: new HardeningFact(fact: 'elevation.refused', before: '', after: ''),
-				refusal: 'No signed-in account, or no password given.'
-			);
-
-			return false;
+			return $this->refuseElevation(account: '', refusal: 'No signed-in account, or no password given.');
 		}
 
 		$uid = $user->getUID();
 		if ($this->identity->users->checkPassword($uid, $password) === false) {
-			$this->posture->audit->refused(
-				change: new HardeningFact(fact: 'elevation.refused', before: '', after: $uid),
-				refusal: 'The password was not confirmed.'
-			);
-
-			return false;
+			return $this->refuseElevation(account: $uid, refusal: 'The password was not confirmed.');
 		}
 
+		$this->grantElevation(uid: $uid);
+
+		return true;
+
+	}//end elevate()
+
+	/**
+	 * Audit a refused elevation.
+	 *
+	 * @param string $account The account that asked, or the empty string when there is none.
+	 * @param string $refusal Why it was refused.
+	 *
+	 * @return boolean Always false: nothing was elevated.
+	 */
+	private function refuseElevation(string $account, string $refusal): bool {
+		$this->posture->audit->refused(
+			change: new HardeningFact(fact: 'elevation.refused', before: '', after: $account),
+			refusal: $refusal
+		);
+
+		return false;
+	}//end refuseElevation()
+
+	/**
+	 * Start the elevated period for this session and audit the grant.
+	 *
+	 * @param string $uid The account whose password was confirmed.
+	 *
+	 * @return void
+	 */
+	private function grantElevation(string $uid): void {
 		$now = $this->time->getTime();
 		$this->identity->session->set(self::SESSION_KEY, $now);
 		$this->posture->audit->accepted(
@@ -138,10 +159,7 @@ class ElevationService implements ElevationServiceInterface {
 				after: ['user' => $uid, 'periodSeconds' => $this->periodSeconds()]
 			)
 		);
-
-		return true;
-
-	}//end elevate()
+	}//end grantElevation()
 
 	/**
 	 * End the elevated period without ending the session.
