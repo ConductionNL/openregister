@@ -224,7 +224,7 @@ class CalculationsController extends Controller {
 	 */
 	private function trialAnswer(array $result): JSONResponse {
 		return new JSONResponse($result, $this->statusFor(result: $result));
-	}//end evaluate()
+	}//end trialAnswer()
 
 	/**
 	 * The stored object a trial names, when it names one in full.
