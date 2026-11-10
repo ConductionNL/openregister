@@ -38,6 +38,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 
 /**
  * EmailsController handles email relation operations for objects in registers.
@@ -313,10 +314,12 @@ class EmailsController extends Controller {
 		$this->emailLinkService->assertAccountOwnership(accountId: (int)$data['mailAccountId']);
 
 		$link = $this->emailService->linkEmail(
-			$object->getUuid(),
-			(int)$object->getRegister(),
-			(int)$data['mailAccountId'],
-			(int)$data['mailMessageId']
+			request: new EmailLinkRequest(
+				objectUuid: $object->getUuid(),
+				registerId: (int)$object->getRegister(),
+				mailAccountId: (int)$data['mailAccountId'],
+				mailMessageId: (int)$data['mailMessageId']
+			)
 		);
 
 		return new JSONResponse($link, 201);
