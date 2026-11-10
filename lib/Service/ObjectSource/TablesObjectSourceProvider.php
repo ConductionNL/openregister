@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -69,19 +70,33 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	private const UUID_SCAN_CAP = 1000;
 
 	/**
+	 * The acting-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param TablesProviderParts $parts       The reader, row mapper, uuid derivation and managed-schema lookup.
-	 * @param IUserSession        $userSession Acting-user session (RBAC scoping).
-	 * @param LoggerInterface     $logger      Logger for read diagnostics.
+	 * @param TablesProviderParts $parts   The reader, row mapper, uuid derivation and managed-schema lookup.
+	 * @param LinkSessionRuntime  $session The acting-user session and the logger for read failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly TablesProviderParts $parts,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		LinkSessionRuntime $session,
 	) {
+		$this->userSession = $session->userSession;
+		$this->logger = $session->logger;
 	}//end __construct()
 
 	/**

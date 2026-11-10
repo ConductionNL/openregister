@@ -55,7 +55,7 @@ class CalendarEventObjectSourceProviderTest extends TestCase {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isInstalled')->willReturn($appsThere);
 
-		return new CalendarEventObjectSourceProvider($service, $appManager, new NullLogger());
+		return new CalendarEventObjectSourceProvider(calendarEventService: $service, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: new NullLogger()));
 	}//end provider()
 
 	/**
