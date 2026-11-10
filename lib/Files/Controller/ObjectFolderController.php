@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
 use OCA\OpenRegister\Files\Controller\Support\ObjectFolderControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
@@ -112,7 +113,8 @@ class ObjectFolderController extends Controller {
 	 * @param string $register The register slug or id.
 	 * @param string $schema   The schema slug or id.
 	 * @param string $id       The object uuid or id.
-	 * @param string $path     The folder, relative to the object folder; empty for its root.
+	 *
+	 * The `path` param names the folder, relative to the object folder; empty or absent for its root.
 	 *
 	 * @return JSONResponse The listing, with `canChange`; or 400, 404.
 	 *
@@ -124,9 +126,9 @@ class ObjectFolderController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function index(string $register, string $schema, string $id, string $path = ''): JSONResponse {
+	public function index(string $register, string $schema, string $id): JSONResponse {
 		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
-		return $this->answer(work: fn (): JSONResponse => $this->listing(object: $this->ensureReadable(ref: $ref), path: $path));
+		return $this->answer(work: fn (): JSONResponse => $this->listing(object: $this->ensureReadable(ref: $ref), path: $this->text(name: 'path')));
 	}//end index()
 
 	/**
@@ -150,8 +152,8 @@ class ObjectFolderController extends Controller {
 	 * @param string $register The register slug or id.
 	 * @param string $schema   The schema slug or id.
 	 * @param string $id       The object uuid or id.
-	 * @param string $name     The new folder's name.
-	 * @param string $path     Where, relative to the object folder; empty for its root.
+	 *
+	 * The `name` param is the new folder's name; `path` says where, relative to the object folder, empty for its root.
 	 *
 	 * @return JSONResponse The new folder (201); or 400, 403, 404, 409.
 	 *
@@ -160,10 +162,10 @@ class ObjectFolderController extends Controller {
 	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
 	#[NoAdminRequired]
-	public function create(string $register, string $schema, string $id, string $name = '', string $path = ''): JSONResponse {
+	public function create(string $register, string $schema, string $id): JSONResponse {
 		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 		return $this->answer(work: fn (): JSONResponse => new JSONResponse(
-			data: $this->browser->createFolder(object: $this->ensureChangeable(ref: $ref), path: $path, name: $name),
+			data: $this->browser->createFolder(object: $this->ensureChangeable(ref: $ref), path: $this->text(name: 'path'), name: $this->text(name: 'name')),
 			statusCode: 201
 		));
 	}//end create()
@@ -178,7 +180,8 @@ class ObjectFolderController extends Controller {
 	 * @param string $register The register slug or id.
 	 * @param string $schema   The schema slug or id.
 	 * @param string $id       The object uuid or id.
-	 * @param string $path     The target folder, relative to the object folder.
+	 *
+	 * The `path` param names the target folder, relative to the object folder.
 	 *
 	 * @return JSONResponse 201 with `stored`; 207 with `stored` and `rejected`; 400, 403, 404; 409 when every file was a taken name.
 	 *
@@ -187,9 +190,9 @@ class ObjectFolderController extends Controller {
 	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
 	#[NoAdminRequired]
-	public function upload(string $register, string $schema, string $id, string $path = ''): JSONResponse {
+	public function upload(string $register, string $schema, string $id): JSONResponse {
 		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
-		return $this->answer(work: fn (): JSONResponse => $this->uploadInto(object: $this->ensureChangeable(ref: $ref), path: $path));
+		return $this->answer(work: fn (): JSONResponse => $this->uploadInto(object: $this->ensureChangeable(ref: $ref), path: $this->text(name: 'path')));
 	}//end upload()
 
 	/**
@@ -219,7 +222,8 @@ class ObjectFolderController extends Controller {
 	 * @param string $schema   The schema slug or id.
 	 * @param string $id       The object uuid or id.
 	 * @param int    $nodeId   The file or folder.
-	 * @param string $name     The new name.
+	 *
+	 * The `name` param is the new name.
 	 *
 	 * @return JSONResponse The renamed node; or 400, 403, 404, 409.
 	 *
@@ -228,10 +232,10 @@ class ObjectFolderController extends Controller {
 	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
 	#[NoAdminRequired]
-	public function rename(string $register, string $schema, string $id, int $nodeId, string $name = ''): JSONResponse {
+	public function rename(string $register, string $schema, string $id, int $nodeId): JSONResponse {
 		$ref = new ObjectRef(register: $register, schema: $schema, id: $id);
 		return $this->answer(work: fn (): JSONResponse => new JSONResponse(
-			data: $this->browser->rename(object: $this->ensureChangeable(ref: $ref), nodeId: $nodeId, name: $name)
+			data: $this->browser->rename(object: $this->ensureChangeable(ref: $ref), nodeId: $nodeId, name: $this->text(name: 'name'))
 		));
 	}//end rename()
 
@@ -283,6 +287,17 @@ class ObjectFolderController extends Controller {
 			return $this->responder->failure(e: $e);
 		}
 	}//end answer()
+
+	/**
+	 * A text param of the request, as the dispatcher would bind a `string $name = ''` argument.
+	 *
+	 * @param string $name The param's name.
+	 *
+	 * @return string The value, or '' when absent.
+	 */
+	private function text(string $name): string {
+		return LinkedSourceActions::optionalString(request: $this->request, param: $name) ?? '';
+	}//end text()
 
 	/**
 	 * The object, when the signed-in person may read it.
