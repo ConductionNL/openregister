@@ -249,7 +249,7 @@ class GitHubIssuesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function create(): JSONResponse {
-		$user = $this->services->platform->userSession->getUser();
+		$user = $this->services->platform->session->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(['error' => 'unauthenticated'], Http::STATUS_UNAUTHORIZED);
 		}
@@ -466,7 +466,7 @@ class GitHubIssuesController extends Controller {
 			}
 		}
 
-		$this->services->platform->logger->error(
+		$this->services->platform->session->logger->error(
 			message: '[GitHubIssuesController] GitHub proxy error',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'error_class' => $exception::class]
 		);

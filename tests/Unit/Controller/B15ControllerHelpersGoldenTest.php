@@ -32,6 +32,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\CredentialOauth2ControllerFac
 use OCA\OpenRegister\Tests\Unit\Controller\Support\GitHubIssuesControllerFactory;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -257,7 +258,8 @@ final class B15ControllerHelpersGoldenTest extends TestCase {
 			$rateLimiter,
 			$userSession,
 			$cacheFactory,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(IGroupManager::class)
 		);
 
 		$this->assertSame(200, $controller->index()->getStatus());

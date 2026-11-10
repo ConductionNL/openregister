@@ -40,6 +40,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\GitHubIssuesControllerFactory
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -102,7 +103,8 @@ class GitHubIssuesControllerCharacterisationTest extends TestCase {
 			rateLimiter: $this->rateLimiter,
 			userSession: $this->userSession,
 			cacheFactory: $cacheFactory,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 	}
 
