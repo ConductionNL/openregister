@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Dmn\DecisionEvaluationException;
 use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
+use OCA\OpenRegister\Service\Flow\FieldAssignment;
 use OCA\OpenRegister\Service\Flow\FlowFieldPath;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
@@ -308,22 +309,26 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 		foreach ($this->columnNames(columns: (array)($table['outputs'] ?? [])) as $name) {
 			FlowFieldPath::assign(
 				json: $json,
-				path: (string)($outputMapping[$name] ?? $name),
-				value: ($result['outputs'][$name] ?? null)
+				write: new FieldAssignment(
+					path: (string)($outputMapping[$name] ?? $name),
+					value: ($result['outputs'][$name] ?? null)
+				)
 			);
 		}
 
 		if ($resultKey !== '') {
 			FlowFieldPath::assign(
 				json: $json,
-				path: $resultKey,
-				value: [
-					'hitPolicy' => $result['hitPolicy'],
-					'matchedRuleIds' => $result['matchedRuleIds'],
-					'defaulted' => $result['defaulted'],
-					'tableName' => (string)($table['name'] ?? ''),
-					'tableKey' => (string)($table['key'] ?? ''),
-				]
+				write: new FieldAssignment(
+					path: $resultKey,
+					value: [
+						'hitPolicy' => $result['hitPolicy'],
+						'matchedRuleIds' => $result['matchedRuleIds'],
+						'defaulted' => $result['defaulted'],
+						'tableName' => (string)($table['name'] ?? ''),
+						'tableKey' => (string)($table['key'] ?? ''),
+					]
+				)
 			);
 		}
 
