@@ -183,15 +183,12 @@ final class MapperEntityEventsTest extends TestCase {
 		$objects->method('getStatistics')->willReturn(['total' => 0]);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($objects);
-		[$session, $groups, $organisations] = $this->caller();
 		$mapper = new RegisterMapper(
 			$this->connection(),
 			$this->createMock(SchemaMapperInterface::class),
 			$this->dispatcher(),
 			$container,
-			$organisations,
-			$session,
-			$groups,
+			$this->tenancy(),
 			$this->createMock(IAppConfig::class),
 			new NullLogger()
 		);

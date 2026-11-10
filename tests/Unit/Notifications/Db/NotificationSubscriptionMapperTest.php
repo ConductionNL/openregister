@@ -30,6 +30,7 @@ use OCP\AppFramework\Db\Entity;
 use OCP\DB\Exception as DbException;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Notifications\Db\SubscriptionKey;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper
@@ -55,7 +56,7 @@ final class NotificationSubscriptionMapperTest extends TestCase {
 		$mapper = new NotificationSubscriptionMapper($this->database());
 
 		try {
-			$mapper->subscribe('alice', null, null);
+			$mapper->subscribeTo(key: new SubscriptionKey(userId: 'alice', registerId: null, schemaId: null));
 			$this->fail('Expected InvalidArgumentException');
 		} catch (InvalidArgumentException $e) {
 			$this->assertStringContainsString('at least one of registerId / schemaId', $e->getMessage());
@@ -67,7 +68,7 @@ final class NotificationSubscriptionMapperTest extends TestCase {
 		$this->queuedRows = [[['id' => 4, 'user_id' => 'alice', 'register_id' => 2, 'schema_id' => null, 'created' => '2026-01-02 03:04:05']]];
 		$mapper = new NotificationSubscriptionMapper($this->database());
 
-		$result = $mapper->subscribe('alice', 2, null);
+		$result = $mapper->subscribeTo(key: new SubscriptionKey(userId: 'alice', registerId: 2, schemaId: null));
 
 		$this->assertSame(4, $result->getId());
 		$this->assertSame(2, $result->getRegisterId());
@@ -84,7 +85,7 @@ final class NotificationSubscriptionMapperTest extends TestCase {
 		$this->queuedRows = [[]];
 		$mapper = new NotificationSubscriptionMapper($this->database());
 
-		$result = $mapper->subscribe('bob', null, 9);
+		$result = $mapper->subscribeTo(key: new SubscriptionKey(userId: 'bob', registerId: null, schemaId: 9));
 
 		$this->assertSame('bob', $result->getUserId());
 		$this->assertNull($result->getRegisterId());
@@ -103,7 +104,7 @@ final class NotificationSubscriptionMapperTest extends TestCase {
 			}
 		};
 
-		$result = $mapper->subscribe('bob', 1, 2);
+		$result = $mapper->subscribeTo(key: new SubscriptionKey(userId: 'bob', registerId: 1, schemaId: 2));
 
 		$this->assertSame(11, $result->getId());
 		$this->assertSame(2, substr_count($this->log(), 'executeQuery()'));
@@ -118,13 +119,13 @@ final class NotificationSubscriptionMapperTest extends TestCase {
 		};
 
 		$this->expectException(DoesNotExistException::class);
-		$mapper->subscribe('bob', 1, 2);
+		$mapper->subscribeTo(key: new SubscriptionKey(userId: 'bob', registerId: 1, schemaId: 2));
 	}
 
 	public function testUnsubscribeDeletesTheExactScopeAndReportsTheDeletion(): void {
 		$mapper = new NotificationSubscriptionMapper($this->database());
 
-		$this->assertTrue($mapper->unsubscribe('alice', 3, null));
+		$this->assertTrue($mapper->unsubscribeFrom(key: new SubscriptionKey(userId: 'alice', registerId: 3, schemaId: null)));
 		$log = $this->log();
 		$this->assertStringContainsString('delete(openregister_notification_subscriptions, NULL)', $log);
 		$this->assertStringContainsString('eq(register_id, :p2, NULL)', $log);

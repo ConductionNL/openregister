@@ -77,30 +77,6 @@ class SipPackageBuilder {
 	}//end __construct()
 
 	/**
-	 * Build SIP package(s) for a list of objects.
-	 *
-	 * Returns an array of file paths to generated ZIP archives. Multiple archives
-	 * are created when the combined file size exceeds the maximum package size.
-	 *
-	 * @param string $transferId       The transfer list UUID.
-	 * @param array  $objectsWithFiles Objects and their file metadata (object, files[]).
-	 * @param int    $maxPackageSize   Maximum package size in bytes.
-	 * @param string $format           Output format: `zip` (default) or `bagit` (RFC 8493).
-	 *
-	 * @return array<int, string> Array of file paths to generated SIP archives.
-	 *
-	 * @throws InvalidArgumentException If no objects are provided or the format is unknown.
-	 *
-	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-bagit-output/spec.md
-	 *   (Requirement: BagIt is a serialization option on the existing builder)
-	 */
-	public function build(string $transferId, array $objectsWithFiles, int $maxPackageSize = 0, string $format = 'zip'): array {
-		return $this->package(request: new TransferPackageRequest(
-			transferId: $transferId, objectsWithFiles: $objectsWithFiles, maxPackageSize: $maxPackageSize, format: $format
-		));
-	}//end build()
-
-	/**
 	 * Build SIP package(s) for a transfer: more than one when its files exceed the maximum package size.
 	 *
 	 * @param TransferPackageRequest $request The transfer's objects, size limit and format.

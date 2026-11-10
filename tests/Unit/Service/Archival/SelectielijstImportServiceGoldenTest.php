@@ -55,8 +55,8 @@ class SelectielijstImportServiceGoldenTest extends TestCase {
 		$registerMapper->method('find')->willReturn(new Register());
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
-		$objectMapper = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['findAll'])->getMock();
-		$objectMapper->method('findAll')->willReturnCallback(
+		$objectMapper = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['findAllListed'])->getMock();
+		$objectMapper->method('findAllListed')->willReturnCallback(
 			function (): array {
 				$objects = ['not an entity'];
 				foreach ($this->stored as $data) {

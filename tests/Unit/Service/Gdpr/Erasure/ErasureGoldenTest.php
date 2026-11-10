@@ -57,6 +57,7 @@ use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewUnknownException;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRefusedException;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner;
 use OCA\OpenRegister\Service\Gdpr\Erasure\SubjectPartyCounter;
+use OCA\OpenRegister\Service\Gdpr\GdprCallerMembership;
 use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IResult;
@@ -767,7 +768,7 @@ final class ErasureGoldenTest extends TestCase {
 			}
 		);
 
-		return new ErasurePreviewStore($mapper, $session, $groups, new NullLogger());
+		return new ErasurePreviewStore($mapper, new GdprCallerMembership($session, $groups, new NullLogger()));
 	}//end store()
 
 	private function row(string $status, string $owner = 'handler', ?DateTime $consumedAt = null): ErasurePreview {

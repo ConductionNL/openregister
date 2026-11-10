@@ -204,29 +204,10 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	}//end normaliseEntryType()
 
 	/**
-	 * Link an existing NC TimeManager entry to an OR object.
+	 * Link an existing TimeManager entry to an OR object.
 	 *
 	 * Idempotent: a duplicate link raises a 409 Exception. Entry metadata
 	 * (name/duration/billable/started_at) is cached at link time.
-	 *
-	 * @param LinkTarget $target    The object to link to.
-	 * @param string     $entryType Entry kind (`client`|`task`|`time`).
-	 * @param string     $id        Upstream entry uuid.
-	 *
-	 * @return TimeTrackerLink The persisted link row.
-	 *
-	 * @throws Exception On missing user (401), bad type (400), missing
-	 *                   entry (404), duplicate (409), TimeManager
-	 *                   unavailable (503).
-	 *
-	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the link-entry contract is owned by the integration-time-tracker capability.
-	 */
-	public function linkEntry(LinkTarget $target, string $entryType, string $id): TimeTrackerLink {
-		return $this->linkTimeEntry(target: $target, entry: new TimeEntry(type: $entryType, id: $id));
-	}//end linkEntry()
-
-	/**
-	 * Link an existing TimeManager entry to an OR object (value-object form of linkEntry()).
 	 *
 	 * @param LinkTarget $target The object to link to.
 	 * @param TimeEntry  $entry  The entry kind and its upstream uuid, as requested.
@@ -239,7 +220,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/integration-time-tracker/spec.md
 	 */
-	public function linkTimeEntry(LinkTarget $target, TimeEntry $entry): TimeTrackerLink {
+	public function linkEntry(LinkTarget $target, TimeEntry $entry): TimeTrackerLink {
 		$uid   = $this->requireUid();
 		$entry = new TimeEntry(type: $this->normaliseEntryType(entryType: $entry->type), id: $this->requireEntryId(id: $entry->id));
 		$this->assertEntryUnlinked(target: $target, key: $this->entryLink(entryType: $entry->type, id: $entry->id));
@@ -249,7 +230,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->timeTrackerLinkMapper->insert($link);
-	}//end linkTimeEntry()
+	}//end linkEntry()
 
 	/**
 	 * The trimmed entry id, once TimeManager is known to be available.

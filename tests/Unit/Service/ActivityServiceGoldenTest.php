@@ -120,7 +120,7 @@ class ActivityServiceGoldenTest extends TestCase {
 	}//end login()
 
 	private function service(?SchemaMapper $schemas = null, ?DeepLinkRegistryService $links = null): ActivityService {
-		return new ActivityService($this->manager, $this->session, new \OCA\OpenRegister\Notifications\Service\ActivityEntries($this->urls, $this->logger, $schemas, $links), $this->logger);
+		return new ActivityService($this->manager, $this->session, new \OCA\OpenRegister\Notifications\Service\ActivityEntries(new \OCA\OpenRegister\Notifications\Service\ObjectDeepLinks($this->urls, $links), $this->logger, $schemas), $this->logger);
 	}//end service()
 
 	private function object(?string $owner = 'owner'): ObjectEntity {

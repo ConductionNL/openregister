@@ -301,9 +301,7 @@ class PermissionCatalogue implements PermissionCatalogueInterface {
 	 * stopped at the first unknown verb would turn one bad paste into five round
 	 * trips.
 	 *
-	 * @param array|null $authorization   The block as written.
-	 * @param mixed      $roleDefinitions The register's role definitions, when there are any.
-	 * @param string     $subject         What this belongs to, for the message.
+	 * @param GrantDeclaration $declaration The block and role definitions as written, and what they belong to.
 	 *
 	 * @return void
 	 *
@@ -311,11 +309,11 @@ class PermissionCatalogue implements PermissionCatalogueInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function assertGrantable(?array $authorization, mixed $roleDefinitions, string $subject): void {
+	public function assertGrantable(GrantDeclaration $declaration): void {
 		$this->refuseAny(
 			findings: array_merge(
-				$this->verbFindings(authorization: $authorization, subject: $subject),
-				$this->roleFindings(roleDefinitions: $roleDefinitions, subject: $subject)
+				$this->verbFindings(authorization: $declaration->authorization, subject: $declaration->subject),
+				$this->roleFindings(roleDefinitions: $declaration->roleDefinitions, subject: $declaration->subject)
 			)
 		);
 	}//end assertGrantable()

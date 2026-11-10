@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Archival;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\RetentionClock;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use Psr\Log\LoggerInterface;
@@ -448,7 +449,9 @@ class ArchivalNominationService implements ArchivalNominationServiceInterface, A
 		$period = $found['period'];
 		$disposalDate = null;
 		if ($period !== null) {
-			$disposalDate = $this->retentionService->calculateArchiveActionDate(object: $run->object, schema: $run->schema, retentionPeriod: $period);
+			$disposalDate = $this->retentionService->calculateArchiveActionDate(
+				clock: new RetentionClock(object: $run->object, schema: $run->schema, retentionPeriod: $period)
+			);
 		}
 
 		if ($this->cannotBeCounted(found: $found, disposalDate: $disposalDate) === true) {

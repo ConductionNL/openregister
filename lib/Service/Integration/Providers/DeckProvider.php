@@ -61,17 +61,31 @@ class DeckProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'deck';
 
 	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param DeckLinkService $deckLinkService Tier-2 backing service.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
+	 * @param AppProviderDescription $description     The app manager and localisation.
+	 * @param DeckLinkService        $deckLinkService Tier-2 backing service.
 	 */
 	public function __construct(
+		AppProviderDescription $description,
 		private DeckLinkService $deckLinkService,
-		private IAppManager $appManager,
-		private IL10N $l10n,
 	) {
+		$this->appManager = $description->appManager;
+		$this->l10n = $description->l10n;
 	}//end __construct()
 
 	public function getId(): string {

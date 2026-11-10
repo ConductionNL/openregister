@@ -30,6 +30,8 @@ use DateTime;
 use OCA\OpenRegister\BackgroundJob\Support\WebhookDeliveryStores;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
+use OCA\OpenRegister\Service\WebhookDelivery;
+use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -207,10 +209,11 @@ class WebhookRetryJob extends TimedJob {
 				);
 
 				$success = $this->webhookService->deliverWebhook(
-					webhook: $webhook,
-					eventName: $log->getEventClass(),
-					payload: $log->getPayloadArray(),
-					attempt: $log->getAttempt() + 1
+					new WebhookDelivery(
+						webhook: $webhook,
+						event: new WebhookEvent(name: $log->getEventClass(), payload: $log->getPayloadArray()),
+						attempt: $log->getAttempt() + 1
+					)
 				);
 
 				if ($success === true) {

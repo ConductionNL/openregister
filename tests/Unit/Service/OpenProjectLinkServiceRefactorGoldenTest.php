@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\WorkPackageDraft;
 use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTime;
 use Exception;
@@ -161,7 +162,7 @@ class OpenProjectLinkServiceRefactorGoldenTest extends TestCase {
 			}
 		);
 		$target = (new LinkTarget('obj-1', 3))->inSchema(4);
-		return $this->outcome(fn () => $this->service->createAndLinkWorkPackage($target, $project, $subject, $type));
+		return $this->outcome(fn () => $this->service->createAndLinkDraft($target, new WorkPackageDraft($project, $subject, $type)));
 	}//end observeCreate()
 
 	private function observeLink(bool $connector, array|Exception|null $row): array {
