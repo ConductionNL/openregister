@@ -178,9 +178,10 @@ class DeleteFileHandler {
 	 */
 	private function deleteAndConfirm(File $file): bool {
 		$fileId = $file->getId();
+		$path   = $file->getPath();
 		try {
 			$file->delete();
-			return $this->confirmGone(fileId: $fileId);
+			return $this->confirmGone(fileId: $fileId, path: $path);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[DeleteFileHandler] Failed to delete file: ' . $e->getMessage(),
@@ -198,12 +199,18 @@ class DeleteFileHandler {
 	 * there. Saying true here would make every caller (the example set
 	 * remover, the merge) believe a file is gone that is not.
 	 *
-	 * @param int $fileId The file id.
+	 * The trash bin keeps the file id when it takes a deleted file, so a node
+	 * with the id at another path is a file that left; only one still at its
+	 * own path survived the delete.
 	 *
-	 * @return bool True when no node has the id any more.
+	 * @param int         $fileId The file id.
+	 * @param string|null $path   The file's path before the delete.
+	 *
+	 * @return bool True when no node with the id is left at the file's path.
 	 */
-	private function confirmGone(int $fileId): bool {
-		if ($this->rootFolder->getFirstNodeById($fileId) === null) {
+	private function confirmGone(int $fileId, ?string $path): bool {
+		$survivor = $this->rootFolder->getFirstNodeById($fileId);
+		if ($survivor === null || $survivor->getPath() !== $path) {
 			return true;
 		}
 

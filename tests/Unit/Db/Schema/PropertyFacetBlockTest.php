@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\Schema;
 
+use OCA\OpenRegister\Db\Schema\FacetBlockStamp;
 use OCA\OpenRegister\Db\Schema\PropertyFacetBlock;
 use PHPUnit\Framework\TestCase;
 
@@ -36,7 +37,7 @@ class PropertyFacetBlockTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoPropertiesHasNoBlock(): void {
-		$this->assertNull((new PropertyFacetBlock())->built([], '2.0', 1700000000));
+		$this->assertNull((new PropertyFacetBlock())->builtFor([], new FacetBlockStamp('2.0', 1700000000)));
 	}//end testNoPropertiesHasNoBlock()
 
 	/**
@@ -50,12 +51,12 @@ class PropertyFacetBlockTest extends TestCase {
 			'name' => ['type' => 'string'],
 		];
 
-		$block = (new PropertyFacetBlock())->built($properties, null, 1700000000);
+		$block = (new PropertyFacetBlock())->builtFor($properties, new FacetBlockStamp(null, 1700000000));
 
 		$this->assertSame(1700000000, $block['generated_at']);
 		$this->assertSame('1.0', $block['schema_version']);
 		$this->assertSame(['status'], array_keys($block['object_fields']));
 		$this->assertSame(['open', 'closed'], $block['object_fields']['status']['predefined_values']);
-		$this->assertSame('2.1', (new PropertyFacetBlock())->built($properties, '2.1', 1)['schema_version']);
+		$this->assertSame('2.1', (new PropertyFacetBlock())->builtFor($properties, new FacetBlockStamp('2.1', 1))['schema_version']);
 	}//end testTheBlockListsFacetablePropertiesAndCarriesTheStamp()
 }//end class

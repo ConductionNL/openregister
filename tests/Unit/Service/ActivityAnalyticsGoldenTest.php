@@ -111,7 +111,7 @@ class ActivityAnalyticsGoldenTest extends TestCase {
 				userSession: $this->session($w['uid']),
 				groupManager: $this->createMock(IGroupManager::class),
 			);
-			$outcome = $this->outcome(fn () => $service->register(...$args));
+			$outcome = $this->outcome(fn () => $service->registerSeries(draft: self::seriesDraft(...$args)));
 			$outcome['widgets'] = $this->normalise($registry->listPageWidgets());
 			$actual['series ' . $name] = $outcome;
 		}
@@ -293,4 +293,20 @@ class ActivityAnalyticsGoldenTest extends TestCase {
 
 		return $mapper;
 	}//end seriesMapper()
+
+	private static function seriesDraft(
+		string $seriesKey,
+		array $labels,
+		array $datasets,
+		?string $title = null,
+		string $chartType = 'line',
+		string $visibility = 'private',
+		?int $registerId = null,
+		?int $schemaId = null
+	): \OCA\OpenRegister\Service\AnalyticsSeriesDraft {
+		return (new \OCA\OpenRegister\Service\AnalyticsSeriesDraft(seriesKey: $seriesKey, title: $title))
+			->withData(labels: $labels, datasets: $datasets)
+			->shownAs(chartType: $chartType, visibility: $visibility)
+			->inScope(registerId: $registerId, schemaId: $schemaId);
+	}
 }//end class

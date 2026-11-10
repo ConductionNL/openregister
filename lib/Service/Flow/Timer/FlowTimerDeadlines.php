@@ -75,7 +75,7 @@ final class FlowTimerDeadlines {
 
 		$fireAt = $this->applyRoll(scope: $scope);
 		$rungs = $this->ladder->resolveLadder(timer: $timer)['rungs'];
-		$next = $this->ladder->nextRungAt(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $scope->calendar);
+		$next = $this->ladder->nextRungAt(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $scope->calendar));
 		$timer->setNextRungAt($this->values->mutableOrNull(value: $next));
 	}//end recompute()
 

@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaChangelogMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
@@ -89,7 +90,6 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 	 */
 	private function versioning(?LoggerInterface $logger = null): SchemaVersioningService {
 		return new SchemaVersioningService(
-			diffService: new SchemaDiffService(),
 			changelogMapper: $this->changelogMapper,
 			runs: new SchemaPopulationRuns($this->createMock(SchemaRunMapper::class), $this->createMock(SchemaRunEntryMapper::class), $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class)),
 			userSession: $this->userSession,
@@ -134,7 +134,7 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 			classification: 'breaking',
 			bump: 'major'
 		);
-		$this->versioning(logger: $logger)->recordChangelog(schemaId: 12, version: '2.0.0', changeSet: $changeSet, acknowledged: true);
+		$this->versioning(logger: $logger)->recordChange(schemaId: 12, record: new SchemaChangeRecord(changeSet: $changeSet, acknowledged: true, version: '2.0.0'));
 	}//end testAnAcknowledgedBreakingChangeIsNotWarnedAbout()
 
 	/**

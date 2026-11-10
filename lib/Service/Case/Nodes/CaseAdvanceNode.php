@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Case\Nodes;
 
 use OCA\OpenRegister\Db\CaseItem;
+use OCA\OpenRegister\Service\Case\CaseItemTransition;
 use RuntimeException;
 use UnexpectedValueException;
 
@@ -242,7 +243,8 @@ class CaseAdvanceNode extends CaseNodeBase implements CaseAdvanceNodeInterface {
 		$plan = $this->steps->plans->getPlan(objectUuid: $objectUuid, uid: $uid);
 		$row = $this->liveRealisation(items: (array)($plan['items'] ?? []), key: $move['key']);
 		if ($row !== null) {
-			$moved = $this->steps->plans->transition(itemUuid: (string)$row['uuid'], to: $move['to'], uid: $uid, reason: $move['reason']);
+			$transition = new CaseItemTransition(itemUuid: (string)$row['uuid'], to: $move['to'], actor: $uid, reason: $move['reason']);
+			$moved = $this->steps->plans->transition(transition: $transition);
 
 			return ['item' => $move['key'], 'state' => (string)$moved->getState()];
 		}

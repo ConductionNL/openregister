@@ -22,6 +22,7 @@ namespace Unit\Service\Survivorship;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Survivorship\SourceFreshness;
+use OCA\OpenRegister\Service\Survivorship\TierPosition;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTuple;
 use PHPUnit\Framework\TestCase;
@@ -96,7 +97,7 @@ class TrustTierResolverTest extends TestCase {
 		$tierOrder = ['discard', 'bronze', 'silver', 'gold'];
 		$anchor = new DateTimeImmutable('2026-02-01');
 		// 120 days elapsed (2026-02-01 -> 2026-06-01), decay window 90.
-		$result = $this->resolver->applyFreshnessDecay('gold', $tierOrder, new SourceFreshness(90, $anchor, $this->asOf));
+		$result = $this->resolver->applyFreshnessDecay(new TierPosition('gold', $tierOrder), new SourceFreshness(90, $anchor, $this->asOf));
 
 		$this->assertSame('silver', $result);
 	}//end testApplyFreshnessDecayStepsOneTierDown()
@@ -104,7 +105,7 @@ class TrustTierResolverTest extends TestCase {
 	public function testApplyFreshnessDecayWithinWindowUnchanged(): void {
 		$tierOrder = ['discard', 'bronze', 'silver', 'gold'];
 		$anchor = new DateTimeImmutable('2026-05-20');
-		$result = $this->resolver->applyFreshnessDecay('gold', $tierOrder, new SourceFreshness(90, $anchor, $this->asOf));
+		$result = $this->resolver->applyFreshnessDecay(new TierPosition('gold', $tierOrder), new SourceFreshness(90, $anchor, $this->asOf));
 
 		$this->assertSame('gold', $result);
 	}//end testApplyFreshnessDecayWithinWindowUnchanged()
@@ -113,11 +114,11 @@ class TrustTierResolverTest extends TestCase {
 		$tierOrder = ['discard', 'bronze', 'silver', 'gold'];
 
 		// Null decay days -> unchanged.
-		$this->assertSame('gold', $this->resolver->applyFreshnessDecay('gold', $tierOrder, new SourceFreshness(null, new DateTimeImmutable('2020-01-01'), $this->asOf)));
+		$this->assertSame('gold', $this->resolver->applyFreshnessDecay(new TierPosition('gold', $tierOrder), new SourceFreshness(null, new DateTimeImmutable('2020-01-01'), $this->asOf)));
 		// Null anchor -> unchanged.
-		$this->assertSame('gold', $this->resolver->applyFreshnessDecay('gold', $tierOrder, new SourceFreshness(10, null, $this->asOf)));
+		$this->assertSame('gold', $this->resolver->applyFreshnessDecay(new TierPosition('gold', $tierOrder), new SourceFreshness(10, null, $this->asOf)));
 		// Non-positive decay days -> unchanged.
-		$this->assertSame('gold', $this->resolver->applyFreshnessDecay('gold', $tierOrder, new SourceFreshness(0, new DateTimeImmutable('2020-01-01'), $this->asOf)));
+		$this->assertSame('gold', $this->resolver->applyFreshnessDecay(new TierPosition('gold', $tierOrder), new SourceFreshness(0, new DateTimeImmutable('2020-01-01'), $this->asOf)));
 	}//end testApplyFreshnessDecayNullSafe()
 
 	public function testStepDownAtWeakestTierStaysUnchanged(): void {

@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\DisposalSweep;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -167,10 +168,10 @@ class RetentionServiceHoldAndSweepGoldenTest extends TestCase {
 		$this->assertSame(
 			[RetentionService::REFUSAL_ALREADY_LISTED, RetentionService::REFUSAL_LEGAL_HOLD, RetentionService::REFUSAL_NOT_DUE, null],
 			[
-				$this->service->destructionRefusal($objects[5], '2026-01-01', ['destroy-listed']),
-				$this->service->destructionRefusal($objects[6], '2026-01-01', []),
-				$this->service->destructionRefusal($objects[7], '2026-01-01', []),
-				$this->service->destructionRefusal($objects[4], '2026-01-01', ['destroy-listed']),
+				$this->service->destructionRefusalIn($objects[5], new DisposalSweep('2026-01-01', ['destroy-listed'])),
+				$this->service->destructionRefusalIn($objects[6], new DisposalSweep('2026-01-01', [])),
+				$this->service->destructionRefusalIn($objects[7], new DisposalSweep('2026-01-01', [])),
+				$this->service->destructionRefusalIn($objects[4], new DisposalSweep('2026-01-01', ['destroy-listed'])),
 			]
 		);
 	}//end testTheSweepsAcceptAndRefuseTheSameObjectsAsBefore()
