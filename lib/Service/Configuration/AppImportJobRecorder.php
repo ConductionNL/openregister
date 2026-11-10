@@ -341,6 +341,7 @@ class AppImportJobRecorder {
 			return $key;
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return self::KEY_PREFIX . sha1($appId);
 	}//end key()
 }//end class

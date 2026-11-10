@@ -683,6 +683,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 			$schemaPart = (string)$schemaId;
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		$hash = md5(self::TEMPLATE_ID_NS . ':' . $schemaPart . ':' . (string)$chain['name']);
 
 		return [
