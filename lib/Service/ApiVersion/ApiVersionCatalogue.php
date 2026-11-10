@@ -265,25 +265,42 @@ class ApiVersionCatalogue implements ApiVersionCatalogueInterface {
 	private function resolve(): array {
 		$rejected = [];
 
-		$administered = $this->readAdministered(rejected: $rejected);
-		if ($administered !== []) {
-			$candidate = $this->buildVersions(declarations: $administered, rejected: $rejected);
-			if ($this->isUsable(versions: $candidate, rejected: $rejected) === true) {
-				$this->rejected = $rejected;
-				return $candidate;
-			}
-
-			$this->logger->error(
-				'OpenRegister: the administered API version declaration is not usable; falling back to the built-in contract.',
-				['rejections' => $rejected]
-			);
-		}
-
+		$candidate      = $this->administeredVersions(rejected: $rejected);
 		$this->rejected = $rejected;
+		if ($candidate !== null) {
+			return $candidate;
+		}
 
 		return $this->buildVersions(declarations: self::BUILT_IN, rejected: $rejected);
 
 	}//end resolve()
+
+	/**
+	 * The administered versions, when there are any and they can be served; a set that cannot is logged.
+	 *
+	 * @param array<string, string> $rejected Refusals collected so far, added to in place.
+	 *
+	 * @return array<string, ApiVersion>|null The versions, or null to fall back to the built-in contract.
+	 */
+	private function administeredVersions(array &$rejected): ?array {
+		$administered = $this->readAdministered(rejected: $rejected);
+		if ($administered === []) {
+			return null;
+		}
+
+		$candidate = $this->buildVersions(declarations: $administered, rejected: $rejected);
+		if ($this->isUsable(versions: $candidate, rejected: $rejected) === true) {
+			return $candidate;
+		}
+
+		$this->logger->error(
+			'OpenRegister: the administered API version declaration is not usable; falling back to the built-in contract.',
+			['rejections' => $rejected]
+		);
+
+		return null;
+
+	}//end administeredVersions()
 
 	/**
 	 * Why a candidate declaration could not be served, without storing it.

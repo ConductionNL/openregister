@@ -136,26 +136,48 @@ class ApiCapabilitiesService implements ApiCapabilitiesServiceInterface {
 	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function publicCapabilities(): array {
-		$served = $this->catalogue->served();
-
-		$contracts = [];
-		foreach ($served as $version) {
-			$identifier = $version->id;
-			$contracts[$identifier] = (self::CONTRACT_PATH . $identifier . '/oas');
-		}
+		$contracts = $this->contractPaths();
 
 		return [
 			'currentVersion' => $this->catalogue->current()->id,
 			'versionHeader' => ApiVersionNegotiator::REQUEST_HEADER,
-			'apiVersions' => array_values(array_map(
-				static fn (ApiVersion $version): array => $version->jsonSerialize(),
-				$this->catalogue->all()
-			)),
+			'apiVersions' => $this->publishedVersions(),
 			'contracts' => $contracts,
 			'limits' => $this->limits(),
 		];
 
 	}//end publicCapabilities()
+
+	/**
+	 * The OpenAPI contract path of every served version, by identifier.
+	 *
+	 * @return array<string, string> The contract paths.
+	 */
+	private function contractPaths(): array {
+		$contracts = [];
+		foreach ($this->catalogue->served() as $version) {
+			$identifier = $version->id;
+			$contracts[$identifier] = (self::CONTRACT_PATH . $identifier . '/oas');
+		}
+
+		return $contracts;
+
+	}//end contractPaths()
+
+	/**
+	 * Every version, as published.
+	 *
+	 * @return array<int, array<string, mixed>> The versions.
+	 */
+	private function publishedVersions(): array {
+		return array_values(
+			array_map(
+				static fn (ApiVersion $version): array => $version->jsonSerialize(),
+				$this->catalogue->all()
+			)
+		);
+
+	}//end publishedVersions()
 
 	/**
 	 * The public half plus the operational switches.
