@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\NotificationHistory;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
+use OCA\OpenRegister\Notifications\Db\RecipientNotice;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
@@ -148,7 +149,7 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 		$uid = $this->requireCaller();
 		$this->requireOwn(id: $id, userId: $uid);
 
-		$this->mapper->snooze(id: $id, recipient: $uid, until: $until);
+		$this->mapper->snooze(notice: new RecipientNotice(id: $id, recipient: $uid), until: $until);
 
 		return $this->requireOwn(id: $id, userId: $uid);
 
@@ -169,7 +170,7 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 		$uid = $this->requireCaller();
 		$this->requireOwn(id: $id, userId: $uid);
 
-		$this->mapper->archive(id: $id, recipient: $uid);
+		$this->mapper->archive(notice: new RecipientNotice(id: $id, recipient: $uid));
 
 		return $this->requireOwn(id: $id, userId: $uid);
 

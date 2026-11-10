@@ -455,7 +455,6 @@ class CalendarCharacterisationTest extends TestCase {
 		}
 
 		return new ObjectDateEventBuilder(
-			writer: new IcalendarWriter(),
 			deadlines: $this->createMock(DeadlineDateResolver::class),
 			attendees: $attendees
 		);

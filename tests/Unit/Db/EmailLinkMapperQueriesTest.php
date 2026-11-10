@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\MailMessageKey;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -163,7 +164,7 @@ class EmailLinkMapperQueriesTest extends TestCase {
 	public function testFindByObjectAccountMessageUidBindsTheUid(): void {
 		$this->results[] = [['id' => 9]];
 
-		$link = $this->mapper->findByObjectAccountMessageUid('obj-1', 3, 31, 'uid-77');
+		$link = $this->mapper->findByObjectAccountMessageUid('obj-1', new MailMessageKey(3, 31, 'uid-77'));
 
 		$this->assertSame(9, $link?->getId());
 		$this->assertSame(
@@ -181,7 +182,7 @@ class EmailLinkMapperQueriesTest extends TestCase {
 	 * @return void
 	 */
 	public function testFindByObjectAccountMessageUidMatchesANullUid(): void {
-		$this->assertNull($this->mapper->findByObjectAccountMessageUid('obj-1', 3, 31, null));
+		$this->assertNull($this->mapper->findByObjectAccountMessageUid('obj-1', new MailMessageKey(3, 31, null)));
 		$this->assertStringEndsWith('andWhere(isNull(mail_message_uid)) executeQuery()', $this->sql());
 		$this->assertCount(3, $this->params);
 	}//end testFindByObjectAccountMessageUidMatchesANullUid()
@@ -194,7 +195,7 @@ class EmailLinkMapperQueriesTest extends TestCase {
 	public function testFindByObjectAccountMessageUidWithTwoRowsIsNull(): void {
 		$this->results[] = [['id' => 1], ['id' => 2]];
 
-		$this->assertNull($this->mapper->findByObjectAccountMessageUid('obj-1', 3, 31, 'uid-77'));
+		$this->assertNull($this->mapper->findByObjectAccountMessageUid('obj-1', new MailMessageKey(3, 31, 'uid-77')));
 	}//end testFindByObjectAccountMessageUidWithTwoRowsIsNull()
 
 	/**

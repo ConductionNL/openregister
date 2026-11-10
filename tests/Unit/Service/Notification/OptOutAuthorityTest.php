@@ -35,6 +35,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority
@@ -132,7 +133,7 @@ class OptOutAuthorityTest extends TestCase {
 	public function testAnOptedOutAddressIsRefusedAndTheOtherCarriesItsLink(): void {
 		$this->optedOut = ['jan@example.nl'];
 
-		$decisions = $this->authority()->ask('email', 'service', ['jan@example.nl', 'piet@example.nl'], 'flow-run:7');
+		$decisions = $this->authority()->askQuestion(new OptOutQuestion(channel: 'email', category: 'service', addresses: ['jan@example.nl', 'piet@example.nl'], correlationId: 'flow-run:7'));
 
 		$this->assertFalse($decisions['jan@example.nl']['send']);
 		$this->assertSame('opted-out', $decisions['jan@example.nl']['code']);
@@ -169,7 +170,7 @@ class OptOutAuthorityTest extends TestCase {
 		$this->listener = $listener;
 		$this->logger->expects($this->atLeastOnce())->method('warning');
 
-		$decisions = $this->authority(integriqInstalled: $installed)->ask('email', 'service', ['jan@example.nl']);
+		$decisions = $this->authority(integriqInstalled: $installed)->askQuestion(new OptOutQuestion(channel: 'email', category: 'service', addresses: ['jan@example.nl'], correlationId: ''));
 
 		$this->assertSame(['jan@example.nl' => ['send' => false, 'code' => 'authority-unavailable', 'unsubscribe' => null]], $decisions);
 	}
@@ -180,7 +181,7 @@ class OptOutAuthorityTest extends TestCase {
 	public function testWithoutAnAnswerABesluitIsSentWithoutALink(string $listener, bool $installed): void {
 		$this->listener = $listener;
 
-		$decisions = $this->authority(integriqInstalled: $installed)->ask('email', 'besluit', ['jan@example.nl']);
+		$decisions = $this->authority(integriqInstalled: $installed)->askQuestion(new OptOutQuestion(channel: 'email', category: 'besluit', addresses: ['jan@example.nl'], correlationId: ''));
 
 		$this->assertSame(['jan@example.nl' => ['send' => true, 'code' => 'exempt', 'unsubscribe' => null]], $decisions);
 	}
@@ -188,14 +189,14 @@ class OptOutAuthorityTest extends TestCase {
 	public function testAnUnknownCategoryIsAskedAsServiceAndIsNeverExempt(): void {
 		$this->listener = 'ignore';
 
-		$decisions = $this->authority()->ask('email', 'nieuwsbrief', ['jan@example.nl']);
+		$decisions = $this->authority()->askQuestion(new OptOutQuestion(channel: 'email', category: 'nieuwsbrief', addresses: ['jan@example.nl'], correlationId: ''));
 
 		$this->assertSame('service', $this->events[0]->getCategory());
 		$this->assertFalse($decisions['jan@example.nl']['send']);
 	}
 
 	public function testMarketingAsksForConsent(): void {
-		$this->authority()->ask('email', 'marketing', ['jan@example.nl']);
+		$this->authority()->askQuestion(new OptOutQuestion(channel: 'email', category: 'marketing', addresses: ['jan@example.nl'], correlationId: ''));
 
 		$this->assertTrue($this->events[0]->requiresConsent());
 	}
@@ -204,17 +205,17 @@ class OptOutAuthorityTest extends TestCase {
 		$this->checkValue = 'false';
 		$this->listener = 'ignore';
 
-		$decisions = $this->authority()->ask('email', 'service', ['jan@example.nl']);
+		$decisions = $this->authority()->askQuestion(new OptOutQuestion(channel: 'email', category: 'service', addresses: ['jan@example.nl'], correlationId: ''));
 
 		$this->assertSame([], $this->events);
 		$this->assertTrue($decisions['jan@example.nl']['send']);
 
 		$this->checkValue = 'no';
-		$this->assertFalse($this->authority()->ask('email', 'service', ['jan@example.nl'])['jan@example.nl']['send']);
+		$this->assertFalse($this->authority()->askQuestion(new OptOutQuestion(channel: 'email', category: 'service', addresses: ['jan@example.nl'], correlationId: ''))['jan@example.nl']['send']);
 	}
 
 	public function testNoAddressesAsksNothing(): void {
-		$this->assertSame([], $this->authority()->ask('email', 'service', []));
+		$this->assertSame([], $this->authority()->askQuestion(new OptOutQuestion(channel: 'email', category: 'service', addresses: [], correlationId: '')));
 		$this->assertSame([], $this->events);
 	}
 

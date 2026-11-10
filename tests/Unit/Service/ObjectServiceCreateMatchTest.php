@@ -205,9 +205,10 @@ class ObjectServiceCreateMatchTest extends TestCase {
 	 * @return void
 	 */
 	public function testACreateThatSatisfiesTheMatchIsAllowed(): void {
+		$this->expectNotToPerformAssertions();
+
 		$this->checkCreate(['user' => 'alice', 'hours' => 4]);
 
-		$this->addToAssertionCount(1);
 	}//end testACreateThatSatisfiesTheMatchIsAllowed()
 
 	/**
@@ -279,9 +280,10 @@ class ObjectServiceCreateMatchTest extends TestCase {
 	 * @return void
 	 */
 	public function testOrdinaryPropertiesBesideAMetadataKeyStillCount(): void {
+		$this->expectNotToPerformAssertions();
+
 		$this->checkCreate(object: ['user' => 'alice', '_owner' => 'bob', 'hours' => 4]);
 
-		$this->addToAssertionCount(count: 1);
 	}//end testOrdinaryPropertiesBesideAMetadataKeyStillCount()
 
 	/**
@@ -293,6 +295,8 @@ class ObjectServiceCreateMatchTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPrivateDefaultScopeDoesNotBlockACreate(): void {
+		$this->expectNotToPerformAssertions();
+
 		$schema = new Schema();
 		$schema->setId(682);
 		$schema->setTitle('Private note');
@@ -307,6 +311,5 @@ class ObjectServiceCreateMatchTest extends TestCase {
 
 		$this->checkCreate(['title' => 'mine']);
 
-		$this->addToAssertionCount(1);
 	}//end testAPrivateDefaultScopeDoesNotBlockACreate()
 }//end class

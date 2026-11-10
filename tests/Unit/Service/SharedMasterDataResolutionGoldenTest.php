@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
+use OCA\OpenRegister\Service\DeclaredPair;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -125,20 +126,20 @@ class SharedMasterDataResolutionGoldenTest extends TestCase {
 	 */
 	public function testResolution(): void {
 		$service = $this->service($this->rows());
-		$this->assertSame([], $service->holdersForResource(7, 7, []));
-		$this->assertSame([], $service->holdersForResource(null, null, ['B']));
+		$this->assertSame([], $service->holdersForResource(new DeclaredPair(7, 7), []));
+		$this->assertSame([], $service->holdersForResource(new DeclaredPair(null, null), ['B']));
 		$this->assertSame(0, $this->reads);
 
-		$this->assertSame(['A', 'F'], $service->holdersForResource(7, 7, ['B']));
-		$this->assertSame(['A'], $service->holdersForResource(7, null, ['C', 'X']));
-		$this->assertSame(['F'], $service->holdersForResource(null, 7, ['B']));
-		$this->assertSame(['A'], $service->holdersForResource(7, 7, ['C']));
-		$this->assertSame([], $service->holdersForResource(7, 7, ['B', 'A', 'F']));
-		$this->assertSame(['F'], $service->holdersForResource(7, 7, ['B', 'A']));
-		$this->assertSame(['A'], $service->holdersForResource(8, 99, ['D']));
-		$this->assertSame(['E', 'G'], $service->holdersForResource(16, 0, ['B']));
+		$this->assertSame(['A', 'F'], $service->holdersForResource(new DeclaredPair(7, 7), ['B']));
+		$this->assertSame(['A'], $service->holdersForResource(new DeclaredPair(7, null), ['C', 'X']));
+		$this->assertSame(['F'], $service->holdersForResource(new DeclaredPair(null, 7), ['B']));
+		$this->assertSame(['A'], $service->holdersForResource(new DeclaredPair(7, 7), ['C']));
+		$this->assertSame([], $service->holdersForResource(new DeclaredPair(7, 7), ['B', 'A', 'F']));
+		$this->assertSame(['F'], $service->holdersForResource(new DeclaredPair(7, 7), ['B', 'A']));
+		$this->assertSame(['A'], $service->holdersForResource(new DeclaredPair(8, 99), ['D']));
+		$this->assertSame(['E', 'G'], $service->holdersForResource(new DeclaredPair(16, 0), ['B']));
 		foreach ([9, 10, 11, 12, 13, 14, 15] as $nothing) {
-			$this->assertSame([], $service->holdersForResource($nothing, null, ['A', 'B']), 'register '.$nothing);
+			$this->assertSame([], $service->holdersForResource(new DeclaredPair($nothing, null), ['A', 'B']), 'register '.$nothing);
 		}
 
 		// A JSON object is read for its values, so register 13 counts as shared with B.
