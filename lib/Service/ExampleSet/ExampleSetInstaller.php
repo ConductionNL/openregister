@@ -893,7 +893,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		}
 
 		$gaps = [];
-		$data = $this->objects->values->fillObject(object: $object, context: $context, gaps: $gaps);
+		$data = $this->objects->values->fillObject(object: $object, scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
 		if ($gaps !== []) {
 			return ['data' => [], 'sent' => [], 'refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))];
 		}
@@ -920,7 +920,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 */
 	private function lookedUp(ExampleSetResolveScope $scope, array $lookup): array {
 		$gaps   = [];
-		$where  = (array) $this->objects->values->fill(value: (array) ($lookup['where'] ?? []), context: $scope->context, gaps: $gaps);
+		$where  = (array) $this->objects->values->fill(
+			value: (array) ($lookup['where'] ?? []),
+			scope: new ExampleSetFillScope(context: $scope->context, gaps: $gaps)
+		);
 		$schema = (string) ($lookup['schema'] ?? '');
 		$from   = (string) $lookup['register'];
 		if ($gaps !== []) {
@@ -1160,7 +1163,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			}
 
 			$gaps = [];
-			$this->objects->values->fill(value: (string) $entry['value'], context: $context, gaps: $gaps);
+			$this->objects->values->fill(value: (string) $entry['value'], scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
 			if ($entry['generate'] === false && $gaps !== []) {
 				$refusals[] = $where.': cannot resolve '.implode(', ', array_unique($gaps));
 			}
@@ -1197,7 +1200,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$gaps   = [];
 		$target = new ExampleSetConfigValue(
 			at: new ExampleSetConfigKey(app: $fragment['app'], key: $entry['key']),
-			value: (string) $this->objects->values->fill(value: (string) $entry['value'], context: $run->context, gaps: $gaps),
+			value: (string) $this->objects->values->fill(value: (string) $entry['value'], scope: new ExampleSetFillScope(context: $run->context, gaps: $gaps)),
 			type: (string) ($entry['type'] ?? 'string'),
 			kind: ExampleSetConfigValue::kindOf(entry: $entry)
 		);
@@ -1259,8 +1262,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		foreach (($fragment['userPreferences'] ?? []) as $entry) {
 			$where = $fragment['file'].': user preference "'.$entry['key'].'"';
 			$gaps  = [];
-			$uid   = $this->objects->values->fill(value: $entry['user'], context: $context, gaps: $gaps);
-			$this->objects->values->fill(value: $entry['value'], context: $context, gaps: $gaps);
+			$uid   = $this->objects->values->fill(value: $entry['user'], scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
+			$this->objects->values->fill(value: $entry['value'], scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
 			if (is_string($uid) === false) {
 				$gaps[] = (string) $entry['user'];
 			}
@@ -1308,8 +1311,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	private function installPreference(ExampleSetInstallRun $run, array $entry): void {
 		$app   = $run->fragment['app'];
 		$gaps  = [];
-		$uid   = (string) $this->objects->values->fill(value: $entry['user'], context: $run->context, gaps: $gaps);
-		$value = (string) $this->objects->values->fill(value: $entry['value'], context: $run->context, gaps: $gaps);
+		$uid   = (string) $this->objects->values->fill(value: $entry['user'], scope: new ExampleSetFillScope(context: $run->context, gaps: $gaps));
+		$value = (string) $this->objects->values->fill(value: $entry['value'], scope: new ExampleSetFillScope(context: $run->context, gaps: $gaps));
 		$name  = $app.'/'.$uid.'/'.$entry['key'];
 		$run->report['userPreferences'][$name] = 'kept';
 		if (isset($run->record['userPreferences'][$name]) === true) {
