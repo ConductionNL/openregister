@@ -91,17 +91,31 @@ class AuditTrailPageService implements AuditTrailPageServiceInterface {
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-the-filtered-audit-list-exports-with-its-hash-chain
 	 */
 	public function export(AuditTrailQuery $query, string $format, bool $includeChanges, ?string $actor): array {
+		return $this->exportRows(export: new AuditTrailExport(query: $query, format: $format, includeChanges: $includeChanges, actor: $actor));
+	}//end export()
+
+	/**
+	 * Export inline under the ceiling, or queue the export for the requester above it.
+	 *
+	 * @param AuditTrailExport $export The query, format, change-summary flag and requester.
+	 *
+	 * @return array{queued: bool, rows: int, file: array{content: string, filename: string, contentType: string}|null} The outcome.
+	 *
+	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-the-filtered-audit-list-exports-with-its-hash-chain
+	 */
+	private function exportRows(AuditTrailExport $export): array {
+		$query = $export->query;
 		$collected = $this->pageQuery->collect(filters: $query->filters, search: $query->search, ceiling: JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT);
 
 		if ($collected['truncated'] === true) {
 			$this->jobList->add(
 				JobHandles::AUDIT_TRAIL_EXPORT,
 				[
-					'actor' => $actor,
+					'actor' => $export->actor,
 					'filters' => $query->filters,
 					'search' => $query->search,
-					'format' => $format,
-					'includeChanges' => $includeChanges,
+					'format' => $export->format,
+					'includeChanges' => $export->includeChanges,
 				]
 			);
 
@@ -109,13 +123,13 @@ class AuditTrailPageService implements AuditTrailPageServiceInterface {
 		}
 
 		$file = $this->logService->exportRows(
-			format: $format,
+			format: $export->format,
 			logs: $collected['results'],
-			config: ['includeChanges' => $includeChanges]
+			config: ['includeChanges' => $export->includeChanges]
 		);
 
 		return ['queued' => false, 'rows' => count($collected['results']), 'file' => $file];
-	}//end export()
+	}//end exportRows()
 
 	/**
 	 * The query a page or an export is selected under.

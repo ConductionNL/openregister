@@ -57,6 +57,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectEntityIndex;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectLoader;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectWriter;
+use OCA\OpenRegister\Service\Gdpr\Subject\SubjectWriteLabel;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectRetentionGate;
 use Psr\Log\LoggerInterface;
 
@@ -213,10 +214,9 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		$this->pseudonymise(match: $match, subjectId: $subjectId);
 		$this->records->writer->attribute(object: $match->object);
 
-		return $this->records->writer->persist(
+		return $this->records->writer->persistAs(
 			object: $match->object,
-			op: 'erase',
-			identifier: (string)($match->object->getUuid() ?? '')
+			label: new SubjectWriteLabel(op: 'erase', identifier: (string)($match->object->getUuid() ?? ''))
 		);
 	}//end pseudonymiseObject()
 
@@ -267,7 +267,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		$object->setObject(array_merge($current, $changes));
 		$this->records->writer->attribute(object: $object);
 
-		return $this->records->writer->persist(object: $object, op: 'rectify', identifier: $objectIdentifier);
+		return $this->records->writer->persistAs(object: $object, label: new SubjectWriteLabel(op: 'rectify', identifier: $objectIdentifier));
 	}//end rectify()
 
 	/**
@@ -336,18 +336,15 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * (active flag + reason + timestamp), RBAC/tenant scoped, attributed
 	 * to the DSAR activity. Jurisdiction wording stays in the leaf app.
 	 *
-	 * @param string $objectIdentifier Object id/uuid.
-	 * @param bool $restricted Whether processing is restricted.
-	 * @param string $reason Reason recorded on the marker.
+	 * @param string         $objectIdentifier Object id/uuid.
+	 * @param ProcessingFlag $flag             Whether processing is restricted, and the reason recorded on the marker.
 	 *
 	 * @return array<string, mixed>|null Updated object envelope, or null on miss.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 */
-	public function setRestriction(string $objectIdentifier, bool $restricted, string $reason): ?array {
+	public function setRestriction(string $objectIdentifier, ProcessingFlag $flag): ?array {
 		return $this->setMarker(
 			objectIdentifier: $objectIdentifier,
-			marker: new ProcessingMarker(op: 'restrict', active: $restricted, reason: $reason)
+			marker: new ProcessingMarker(op: 'restrict', active: $flag->active, reason: $flag->reason)
 		);
 
 	}//end setRestriction()
@@ -355,18 +352,15 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	/**
 	 * Flag/unflag objection on a single object (art-21).
 	 *
-	 * @param string $objectIdentifier Object id/uuid.
-	 * @param bool $objected Whether the subject objects to processing.
-	 * @param string $reason Reason recorded on the marker.
+	 * @param string         $objectIdentifier Object id/uuid.
+	 * @param ProcessingFlag $flag             Whether the subject objects to processing, and the reason recorded on the marker.
 	 *
 	 * @return array<string, mixed>|null Updated object envelope, or null on miss.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 */
-	public function setObjection(string $objectIdentifier, bool $objected, string $reason): ?array {
+	public function setObjection(string $objectIdentifier, ProcessingFlag $flag): ?array {
 		return $this->setMarker(
 			objectIdentifier: $objectIdentifier,
-			marker: new ProcessingMarker(op: 'object', active: $objected, reason: $reason)
+			marker: new ProcessingMarker(op: 'object', active: $flag->active, reason: $flag->reason)
 		);
 
 	}//end setObjection()
@@ -635,7 +629,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		$object->setObject($payload);
 		$this->records->writer->attribute(object: $object);
 
-		return $this->records->writer->persist(object: $object, op: $marker->op, identifier: $objectIdentifier);
+		return $this->records->writer->persistAs(object: $object, label: new SubjectWriteLabel(op: $marker->op, identifier: $objectIdentifier));
 	}//end setMarker()
 
 	/**

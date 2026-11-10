@@ -178,13 +178,29 @@ class ApiVersionMiddleware extends Middleware {
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function afterException($controller, $methodName, Exception $exception): Response {
+		return $this->refusalResponse(exception: $exception);
+
+	}//end afterException()
+
+	/**
+	 * The response of a ApiVersionRefusedException; anything else is re-thrown.
+	 *
+	 * @param Exception $exception The thrown exception.
+	 *
+	 * @return Response The refusal.
+	 *
+	 * @throws Exception The passed-in exception when it is not ours to handle.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 */
+	private function refusalResponse(Exception $exception): Response {
 		if ($exception instanceof ApiVersionRefusedException) {
 			return $exception->toResponse();
 		}
 
 		throw $exception;
 
-	}//end afterException()
+	}//end refusalResponse()
 
 	/**
 	 * Name the answering contract, and its end date when it has one.
@@ -200,6 +216,20 @@ class ApiVersionMiddleware extends Middleware {
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function afterController($controller, $methodName, Response $response): Response {
+		return $this->withVersionHeaders(response: $response);
+
+	}//end afterController()
+
+	/**
+	 * Name the answering contract on an API response, and its end date when it has one.
+	 *
+	 * @param Response $response The response to decorate.
+	 *
+	 * @return Response The decorated response.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 */
+	private function withVersionHeaders(Response $response): Response {
 		if ($this->isApiRequest() === false) {
 			return $response;
 		}
@@ -217,7 +247,7 @@ class ApiVersionMiddleware extends Middleware {
 
 		return $this->addDeprecationHeaders(response: $response, version: $version);
 
-	}//end afterController()
+	}//end withVersionHeaders()
 
 	/**
 	 * Add the RFC 8594 deprecation headers for a deprecated version.

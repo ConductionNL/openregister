@@ -147,6 +147,21 @@ class TaskVtodoWriteBackGate implements TaskVtodoWriteBackGateInterface {
 		$attempt = new WriteBackAttempt(taskUuid: $taskUuid, task: $task, verb: $verb, actor: $actor);
 		$this->assertCalendarVerb(attempt: $attempt);
 
+		return $this->performOrRefuse(attempt: $attempt);
+	}//end request()
+
+	/**
+	 * Perform an admitted calendar verb; a refusal from the lifecycle is
+	 * recorded as a refused write-back and rethrown.
+	 *
+	 * @param WriteBackAttempt $attempt The admitted attempt.
+	 *
+	 * @return Task The task after the verb.
+	 *
+	 * @throws TaskAccessDeniedException When the lifecycle denies the verb.
+	 * @throws TaskConflictException|TaskValidationException When it refuses it.
+	 */
+	private function performOrRefuse(WriteBackAttempt $attempt): Task {
 		try {
 			return $this->perform(attempt: $attempt);
 		} catch (TaskAccessDeniedException $denied) {
@@ -157,7 +172,7 @@ class TaskVtodoWriteBackGate implements TaskVtodoWriteBackGateInterface {
 			$this->refusal->refuse(attempt: $attempt, reason: $refused->getMessage());
 			throw $refused;
 		}
-	}//end request()
+	}//end performOrRefuse()
 
 	/**
 	 * Whether a document is a projected VTODO.

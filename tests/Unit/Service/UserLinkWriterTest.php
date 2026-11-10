@@ -72,7 +72,7 @@ class UserLinkWriterTest extends TestCase {
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('linkToRoute')->willReturn('/index.php/avatar/jan/64');
 
-		$this->writer = new UserLinkWriter($this->links, $this->users, $this->session, $urls);
+		$this->writer = new UserLinkWriter($this->links, new \OCA\OpenRegister\Service\UserDirectory(session: $this->session, users: $this->users, groups: $this->createMock(\OCP\IGroupManager::class)), $urls);
 	}//end setUp()
 
 	/**

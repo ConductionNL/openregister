@@ -66,9 +66,7 @@ class AuditTrailMapperRevertQueryTest extends TestCase {
 
 		$this->mapper = new AuditTrailMapper(
 			db: $this->database->idbConnection(),
-			userSession: $this->createMock(IUserSession::class),
-			request: $this->createMock(IRequest::class),
-			services: new AuditTrailMapperServices(container: $container, logger: new NullLogger())
+			services: new AuditTrailMapperServices(container: $container, logger: new NullLogger(), userSession: $this->createMock(IUserSession::class), request: $this->createMock(IRequest::class))
 		);
 
 		// The object was created, then edited twice; another object was edited in between.

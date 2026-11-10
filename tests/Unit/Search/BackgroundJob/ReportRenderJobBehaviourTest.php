@@ -86,7 +86,7 @@ class ReportRenderJobBehaviourTest extends TestCase {
 	private function runJob(): void {
 		$job = new ReportRenderJob(
 			$this->createMock(ITimeFactory::class),
-			new ReportRenderSources($this->registerMapper, $this->schemaMapper, $this->objectMapper),
+			new ReportRenderSources(new \OCA\OpenRegister\Db\SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper)),
 			new ReportRenderDelivery($this->renderService, $this->rootFolder),
 			new ReportRenderPlatform($this->appConfig, $this->logger)
 		);

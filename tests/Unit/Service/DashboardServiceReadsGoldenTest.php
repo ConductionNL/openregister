@@ -115,7 +115,7 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapper::class);
 		$sizes = new DashboardSizes($objects, $audit, new RegisterSchemaLookup($registers, $schemas), $logger);
 
-		return new DashboardService(new \OCA\OpenRegister\Search\Service\DashboardMappers($objects, $audit, $webhooks, $registers), $sizes, $logger);
+		return new DashboardService(new \OCA\OpenRegister\Search\Service\DashboardMappers(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $objects), $audit, $webhooks), $sizes, $logger);
 	}
 
 	/**

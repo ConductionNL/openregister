@@ -130,7 +130,24 @@ class OptOutAuthority implements OptOutAuthorityInterface {
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function ask(string $channel, string $category, array $addresses, string $correlationId = ''): array {
-		$addresses = $this->cleanAddresses(addresses: $addresses);
+		return $this->askQuestion(
+			question: new OptOutQuestion(channel: $channel, category: $category, addresses: $addresses, correlationId: $correlationId)
+		);
+	}//end ask()
+
+	/**
+	 * Ask once for the batch of addresses a question names.
+	 *
+	 * The addresses are cleaned and the category normalised before integriq is asked.
+	 *
+	 * @param OptOutQuestion $question The channel, category, addresses and correlation id.
+	 *
+	 * @return array<string, array{send: bool, code: string, unsubscribe: array<string, mixed>|null}> By address.
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 */
+	public function askQuestion(OptOutQuestion $question): array {
+		$addresses = $this->cleanAddresses(addresses: $question->addresses);
 		if ($addresses === []) {
 			return [];
 		}
@@ -139,9 +156,15 @@ class OptOutAuthority implements OptOutAuthorityInterface {
 			return $this->uniform(addresses: $addresses, code: self::CODE_CHECK_OFF);
 		}
 
-		$category = self::normaliseCategory(category: $category);
-		return $this->answer(question: new OptOutQuestion(channel: $channel, category: $category, addresses: $addresses, correlationId: $correlationId));
-	}//end ask()
+		return $this->answer(
+			question: new OptOutQuestion(
+				channel: $question->channel,
+				category: self::normaliseCategory(category: $question->category),
+				addresses: $addresses,
+				correlationId: $question->correlationId
+			)
+		);
+	}//end askQuestion()
 
 	/**
 	 * The addresses as strings, without empties and duplicates.

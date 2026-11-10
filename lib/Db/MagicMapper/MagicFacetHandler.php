@@ -234,24 +234,43 @@ class MagicFacetHandler {
 	private bool $lazyResolved = false;
 
 	/**
+	 * The object name cache, resolved from the container on first use.
+	 *
+	 * @var \OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface|null
+	 */
+	private ?\OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface $cacheHandler = null;
+
+	/**
+	 * The cache factory, resolved from the container on first use.
+	 *
+	 * @var ICacheFactory|null
+	 */
+	private ?ICacheFactory $cacheFactory = null;
+
+	/**
+	 * The table prefix, read from the system config on first use.
+	 *
+	 * @var string|null
+	 */
+	private ?string $tablePrefix = null;
+
+	/**
 	 * Constructor for MagicFacetHandler
 	 *
-	 * @param IDBConnection $db Database connection for queries
-	 * @param LoggerInterface $logger Logger for debugging and error reporting
-	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface|null $cacheHandler Cache handler for name resolution
-	 * @param ICacheFactory|null $cacheFactory Cache factory for distributed caching
+	 * The object name cache, the cache factory and the system config are
+	 * resolved from the container on first use, which keeps MagicMapper →
+	 * CacheHandler → RegisterMapper → MagicMapper from becoming a cycle.
+	 *
+	 * @param IDBConnection           $db            Database connection for queries
+	 * @param LoggerInterface         $logger        Logger for debugging and error reporting
 	 * @param MagicSearchHandler|null $searchHandler Search handler for shared query building
-	 * @param ContainerInterface|null $container Container for lazy resolution
-	 * @param IConfig|null $config Nextcloud config for reading the table prefix
+	 * @param ContainerInterface|null $container     Container for lazy resolution
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
-		private ?\OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface $cacheHandler = null,
-		private ?ICacheFactory $cacheFactory = null,
 		private readonly ?MagicSearchHandler $searchHandler = null,
 		private readonly ?ContainerInterface $container = null,
-		private readonly ?IConfig $config = null,
 	) {
 	}//end __construct()
 
@@ -298,12 +317,25 @@ class MagicFacetHandler {
 	 * @return string The configured table prefix (e.g. `oc_`).
 	 */
 	private function getTablePrefix(): string {
-		if ($this->config === null) {
+		if ($this->tablePrefix === null) {
+			$this->tablePrefix = $this->readTablePrefix();
+		}
+
+		return $this->tablePrefix;
+	}//end getTablePrefix()
+
+	/**
+	 * Read `dbtableprefix` from the system config in the container; `oc_` when there is none.
+	 *
+	 * @return string The configured table prefix.
+	 */
+	private function readTablePrefix(): string {
+		if ($this->container === null || $this->container->has(IConfig::class) === false) {
 			return 'oc_';
 		}
 
-		return (string)$this->config->getSystemValue('dbtableprefix', 'oc_');
-	}//end getTablePrefix()
+		return (string)$this->container->get(IConfig::class)->getSystemValue('dbtableprefix', 'oc_');
+	}//end readTablePrefix()
 
 	/**
 	 * Lazily resolve CacheHandler and ICacheFactory from container.

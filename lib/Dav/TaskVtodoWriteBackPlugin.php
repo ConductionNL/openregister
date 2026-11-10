@@ -45,7 +45,6 @@ use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Sabre\DAV\Exception\Forbidden;
-use Sabre\DAV\ICollection;
 use Sabre\DAV\INode;
 use Sabre\DAV\Server;
 use Sabre\DAV\ServerPlugin;
@@ -121,6 +120,9 @@ class TaskVtodoWriteBackPlugin extends ServerPlugin {
 	/**
 	 * An existing calendar object is being overwritten.
 	 *
+	 * Sabre hands the hook its arguments in this order, the body and the flag by reference after the node, so the
+	 * signature stays as Sabre calls it; the work is in replacementFor().
+	 *
 	 * @param string $path The DAV path.
 	 * @param INode $node The node being written.
 	 * @param resource|string|null $data The incoming body, by reference.
@@ -135,48 +137,53 @@ class TaskVtodoWriteBackPlugin extends ServerPlugin {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-unauthorized-write-back-is-undone-and-explained
 	 */
 	public function beforeWriteContent(string $path, INode $node, &$data, &$modified): void {
-		if ($this->isCalendarPath(path: $path) === false) {
-			return;
-		}
-
-		$body = $this->bodyOf(data: $data);
-		if ($body === null || $this->gate->isProjected(calendarData: $body) === false) {
-			return;
-		}
-
-		$replacement = $this->guard(
-			call: fn (): ?string => $this->gate->handleWrite(calendarData: $body, actor: $this->actor())
-		);
-
+		$replacement = $this->replacementFor(path: $path, data: $data);
 		if ($replacement !== null) {
-			$data = $replacement;
+			$data     = $replacement;
 			$modified = true;
 		}
 	}//end beforeWriteContent()
 
 	/**
+	 * The engine's rendering of a projected task body being written, after the gate allowed the write.
+	 *
+	 * @param string $path The DAV path.
+	 * @param mixed  $data The incoming body: a string, a stream, or null.
+	 *
+	 * @return string|null The replacement document, or null when the write is not a projected task or needs none.
+	 *
+	 * @throws Forbidden When the gate refuses.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-unauthorized-write-back-is-undone-and-explained
+	 */
+	private function replacementFor(string $path, mixed $data): ?string {
+		$body = $this->projectedBody(path: $path, data: $data);
+		if ($body === null) {
+			return null;
+		}
+
+		return $this->guard(
+			call: fn (): ?string => $this->gate->handleWrite(calendarData: $body, actor: $this->actor())
+		);
+	}//end replacementFor()
+
+	/**
 	 * A new calendar object is being created.
+	 *
+	 * Sabre also passes the calendar and a modified flag (by reference) after the body; a refusal replaces nothing and
+	 * the calendar plays no part, so the hook takes the path and the body only.
 	 *
 	 * @param string $path The DAV path.
 	 * @param resource|string|null $data The incoming body, by reference.
-	 * @param ICollection $parent The calendar.
-	 * @param bool $modified Unused: a refusal replaces nothing.
 	 *
 	 * @return void
 	 *
 	 * @throws Forbidden When the body forges a task identity.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parent and flag are Sabre's hook signature.
-	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
 	 */
-	public function beforeCreateFile(string $path, &$data, ICollection $parent, &$modified): void {
-		if ($this->isCalendarPath(path: $path) === false) {
-			return;
-		}
-
-		$body = $this->bodyOf(data: $data);
-		if ($body === null || $this->gate->isProjected(calendarData: $body) === false) {
+	public function beforeCreateFile(string $path, &$data): void {
+		if ($this->projectedBody(path: $path, data: $data) === null) {
 			return;
 		}
 
@@ -187,6 +194,28 @@ class TaskVtodoWriteBackPlugin extends ServerPlugin {
 
 		throw new Forbidden('A calendar entry cannot create an engine task. Only OpenRegister writes task entries into a calendar.');
 	}//end beforeCreateFile()
+
+	/**
+	 * The body of a write to a calendar object that is a projected engine task.
+	 *
+	 * @param string $path The DAV path.
+	 * @param mixed  $data The incoming body: a string, a stream, or null.
+	 *
+	 * @return string|null The body, or null when the path is no calendar object, the body is unreadable, or it is not
+	 *                     a projected task.
+	 */
+	private function projectedBody(string $path, mixed $data): ?string {
+		if ($this->isCalendarPath(path: $path) === false) {
+			return null;
+		}
+
+		$body = $this->bodyOf(data: $data);
+		if ($body === null || $this->gate->isProjected(calendarData: $body) === false) {
+			return null;
+		}
+
+		return $body;
+	}//end projectedBody()
 
 	/**
 	 * A calendar object is being deleted.

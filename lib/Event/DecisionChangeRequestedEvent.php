@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Db\Decision;
-use OCA\OpenRegister\Service\Decision\ReviewPolicy;
+use OCA\OpenRegister\Kernel\Contracts\ReviewPolicyInterface;
 
 /**
  * A vetoable question: may this user change this decision?
@@ -60,20 +60,20 @@ class DecisionChangeRequestedEvent extends AbstractDecisionRequestEvent {
 	/**
 	 * Constructor.
 	 *
-	 * @param Decision             $decision The decision someone wants to change.
-	 * @param string               $actorId  The user who wants to change it.
-	 * @param ReviewPolicy         $policy   The policy that applies.
-	 * @param array<string, mixed> $subject  What the decision is on: subjectType,
-	 *                                       subjectId and, when known, register,
-	 *                                       schema, objectUuid and fileId.
-	 * @param bool                 $allowed  OpenRegister's own answer from the policy.
+	 * @param Decision              $decision The decision someone wants to change.
+	 * @param string                $actorId  The user who wants to change it.
+	 * @param ReviewPolicyInterface $policy   The policy that applies.
+	 * @param array<string, mixed>  $subject  What the decision is on: subjectType,
+	 *                                        subjectId and, when known, register,
+	 *                                        schema, objectUuid and fileId.
+	 * @param bool                  $allowed  OpenRegister's own answer from the policy.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-answer-who-supervises-req-dec-002
 	 */
 	public function __construct(
 		private readonly Decision $decision,
 		string $actorId,
-		ReviewPolicy $policy,
+		ReviewPolicyInterface $policy,
 		array $subject,
 		private bool $allowed,
 	) {

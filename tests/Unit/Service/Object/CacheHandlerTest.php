@@ -2586,7 +2586,7 @@ class CacheHandlerTest extends TestCase {
 		$method = $ref->getMethod('queryTableForNames');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->handler, 'test_table', []);
+		$result = $method->invoke($this->handler, new \OCA\OpenRegister\Service\Object\NameTableQuery(tableName: 'test_table', uuids: [], source: null));
 		$this->assertSame([], $result);
 	}
 
@@ -2958,7 +2958,7 @@ class CacheHandlerTest extends TestCase {
 		$method = $ref->getMethod('queryTableForNames');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($handler, 'test_table', ['fallback-uuid-1']);
+		$result = $method->invoke($handler, new \OCA\OpenRegister\Service\Object\NameTableQuery(tableName: 'test_table', uuids: ['fallback-uuid-1'], source: null));
 
 		// After 2 failures + 1 success, should have found the name.
 		$this->assertIsArray($result);
@@ -3009,7 +3009,7 @@ class CacheHandlerTest extends TestCase {
 		$method = $ref->getMethod('queryTableForNames');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($handler, 'oc_test_table', ['direct-uuid-1']);
+		$result = $method->invoke($handler, new \OCA\OpenRegister\Service\Object\NameTableQuery(tableName: 'oc_test_table', uuids: ['direct-uuid-1'], source: null));
 
 		$this->assertIsArray($result);
 		// If mock worked correctly, name should be resolved.

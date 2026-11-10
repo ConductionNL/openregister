@@ -71,11 +71,11 @@ class McpProtocolService {
 	private const SESSION_TTL = 3600;
 
 	/**
-	 * Distributed cache for MCP sessions
+	 * Distributed cache for MCP sessions, created on first use
 	 *
-	 * @var ICache
+	 * @var ICache|null
 	 */
-	private ICache $sessionCache;
+	private ?ICache $sessionCache = null;
 
 	/**
 	 * McpProtocolService constructor
@@ -85,14 +85,24 @@ class McpProtocolService {
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		ICacheFactory $cacheFactory,
+		private readonly ICacheFactory $cacheFactory,
 		private readonly ISecureRandom $secureRandom,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->sessionCache = $cacheFactory->createDistributed(
-			prefix: 'openregister_mcp_sessions'
-		);
 	}//end __construct()
+
+	/**
+	 * The distributed session cache, created on first use.
+	 *
+	 * @return ICache The cache.
+	 */
+	private function sessions(): ICache {
+		if ($this->sessionCache === null) {
+			$this->sessionCache = $this->cacheFactory->createDistributed(prefix: 'openregister_mcp_sessions');
+		}
+
+		return $this->sessionCache;
+	}//end sessions()
 
 	/**
 	 * Handle MCP initialize request
@@ -158,7 +168,7 @@ class McpProtocolService {
 			characters: ISecureRandom::CHAR_ALPHANUMERIC
 		);
 
-		$this->sessionCache->set(
+		$this->sessions()->set(
 			key: $sessionId,
 			value: $userId,
 			ttl: self::SESSION_TTL
@@ -182,7 +192,7 @@ class McpProtocolService {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-4
 	 */
 	public function validateSession(string $sessionId): ?string {
-		$userId = $this->sessionCache->get(key: $sessionId);
+		$userId = $this->sessions()->get(key: $sessionId);
 
 		if ($userId === null) {
 			$this->logger->debug(
@@ -205,7 +215,7 @@ class McpProtocolService {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-4
 	 */
 	public function destroySession(string $sessionId): void {
-		$this->sessionCache->remove(key: $sessionId);
+		$this->sessions()->remove(key: $sessionId);
 
 		$this->logger->debug(
 			message: '[MCP] Session destroyed',

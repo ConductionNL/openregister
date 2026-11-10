@@ -77,47 +77,41 @@ final class CalculationRecomputer {
 		$payload = $this->payloadBuilder->build(object: $object, schema: $target->schema);
 		$changed = false;
 		foreach ($target->calcs as $name => $spec) {
-			$label = sprintf('"%s" failed on %s', (string)$name, (string)$object->getUuid());
-			$outcome = $this->recompute(payload: $payload, expression: ($spec['expression'] ?? null), label: $label);
-			if ($outcome === []) {
+			$expression = ($spec['expression'] ?? null);
+			if ($this->isSkipped(payload: $payload, expression: $expression) === true) {
 				continue;
 			}
 
-			$changed = ($changed || ($payload[(string)$name] ?? null) !== $outcome[0]);
+			try {
+				$value = $this->evaluate(payload: $payload, expression: $expression);
+			} catch (EvaluationException $e) {
+				// A failing calculation is skipped like the save-time listener skips it.
+				$this->warnFailed(label: sprintf('"%s" failed on %s', (string)$name, (string)$object->getUuid()), failure: $e);
+				continue;
+			}
+
+			$changed = ($changed || ($payload[(string)$name] ?? null) !== $value);
 			// Later calculations may reference this one's fresh value.
-			$payload[(string)$name] = $outcome[0];
+			$payload[(string)$name] = $value;
 		}
 
 		return $changed;
 	}//end changes()
 
 	/**
-	 * Recompute one calculation, or skip it.
+	 * Log a failing calculation; it never fails the sweep.
 	 *
-	 * A failing calculation is logged and skipped, mirroring the save-time
-	 * listener; it never fails the sweep.
+	 * @param string $label Names the calculation and the object.
+	 * @param EvaluationException $failure The evaluation failure.
 	 *
-	 * @param array<string, mixed> $payload The evaluation payload.
-	 * @param mixed $expression The calculation's expression.
-	 * @param string $label Names the calculation and the object in a failure message.
-	 *
-	 * @return array{0?: mixed} The value as the only element, or empty when skipped.
+	 * @return void
 	 */
-	private function recompute(array $payload, mixed $expression, string $label): array {
-		if ($this->isSkipped(payload: $payload, expression: $expression) === true) {
-			return [];
-		}
-
-		try {
-			return [$this->evaluate(payload: $payload, expression: $expression)];
-		} catch (EvaluationException $e) {
-			$this->logger->warning(
-				message: '[TemporalCalculationSweep] calculation ' . $label . ': ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [];
-		}
-	}//end recompute()
+	private function warnFailed(string $label, EvaluationException $failure): void {
+		$this->logger->warning(
+			message: '[TemporalCalculationSweep] calculation ' . $label . ': ' . $failure->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end warnFailed()
 
 	/**
 	 * Whether a calculation is left out of the recompute.

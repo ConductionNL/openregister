@@ -31,7 +31,6 @@ namespace OCA\OpenRegister\Search\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Search\Controller\Support\GraphQLControllerServices;
-use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
@@ -52,14 +51,12 @@ class GraphQLController extends Controller {
 	/**
 	 * GraphQLController constructor.
 	 *
-	 * @param IRequest                  $request        Request object
-	 * @param GraphQLService            $graphQLService GraphQL service
-	 * @param GraphQLControllerServices $explorer       The services the explorer page is rendered with
+	 * @param IRequest                  $request  Request object
+	 * @param GraphQLControllerServices $services The GraphQL executor and the explorer page's services
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly GraphQLService $graphQLService,
-		private readonly GraphQLControllerServices $explorer,
+		private readonly GraphQLControllerServices $services,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 
@@ -108,7 +105,7 @@ class GraphQLController extends Controller {
 		$variables = ($data['variables'] ?? null);
 		$operationName = ($data['operationName'] ?? null);
 
-		$result = $this->graphQLService->execute($query, $variables, $operationName);
+		$result = $this->services->graphQLService->execute($query, $variables, $operationName);
 
 		// Determine HTTP status: 200 for data (even with partial errors), 400 for query errors only.
 		$status = 200;
@@ -206,7 +203,7 @@ class GraphQLController extends Controller {
 	 * @return string The HTML content
 	 */
 	private function getGraphiQLHtml(): string {
-		$endpoint = $this->explorer->urlGenerator->linkToRoute('openregister.graphQL.execute');
+		$endpoint = $this->services->urlGenerator->linkToRoute('openregister.graphQL.execute');
 
 		// Ensure /index.php is included for environments without URL rewriting.
 		if (str_contains(haystack: $endpoint, needle: '/index.php') === false) {
@@ -214,8 +211,8 @@ class GraphQLController extends Controller {
 		}
 
 		// Get CSP nonce for inline scripts and CSRF request token for auth.
-		$nonce = $this->explorer->nonceManager->getNonce();
-		$requestToken = $this->explorer->csrfManager->getToken()->getEncryptedValue();
+		$nonce = $this->services->nonceManager->getNonce();
+		$requestToken = $this->services->csrfManager->getToken()->getEncryptedValue();
 
 		return <<<HTML
 <!DOCTYPE html>

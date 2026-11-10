@@ -32,6 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\PrincipalReachControllerServices;
 use OCA\OpenRegister\Service\Rbac\PrincipalReachListerInterface;
 use OCA\OpenRegister\Service\Rbac\ReachRevocationServiceInterface;
 use OCP\AppFramework\Controller;
@@ -44,21 +46,32 @@ use OCP\IRequest;
  */
 class PrincipalReachController extends Controller {
 	/**
+	 * The listing.
+	 *
+	 * @var PrincipalReachListerInterface
+	 */
+	private readonly PrincipalReachListerInterface $reach;
+
+	/**
+	 * The one act.
+	 *
+	 * @var ReachRevocationServiceInterface
+	 */
+	private readonly ReachRevocationServiceInterface $revocation;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                 $appName    The app name.
-	 * @param IRequest               $request    The request.
-	 * @param PrincipalReachListerInterface  $reach      The listing.
-	 * @param ReachRevocationServiceInterface $revocation The one act.
+	 * @param IRequest                         $request  The request.
+	 * @param PrincipalReachControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly PrincipalReachListerInterface $reach,
-		private readonly ReachRevocationServiceInterface $revocation,
+		PrincipalReachControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->reach = $services->reach;
+		$this->revocation = $services->revocation;
 	}//end __construct()
 
 	/**

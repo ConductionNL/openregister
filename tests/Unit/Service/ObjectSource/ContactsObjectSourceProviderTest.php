@@ -70,7 +70,7 @@ class ContactsObjectSourceProviderTest extends TestCase {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isInstalled')->willReturn($appThere);
 
-		return new ContactsObjectSourceProvider($manager, $appManager, new NullLogger());
+		return new ContactsObjectSourceProvider(contactsManager: $manager, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: new NullLogger()));
 	}//end provider()
 
 	/**

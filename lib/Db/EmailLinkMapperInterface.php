@@ -61,6 +61,18 @@ interface EmailLinkMapperInterface {
 	public function findByObjectUuid(string $objectUuid, ?int $limit = null, ?int $offset = null): array;
 
 	/**
+	 * One page of an object's email links, newest mail first.
+	 *
+	 * @param string    $objectUuid The object UUID.
+	 * @param ListQuery $query      The page; unbounded for every link.
+	 *
+	 * @return EmailLink[] Array of email links.
+	 *
+	 * @spec exclude ADR-011 ListQuery variant of findByObjectUuid(), no capability of its own
+	 */
+	public function findByObject(string $objectUuid, ListQuery $query): array;
+
+	/**
 	 * Find email links by sender address.
 	 *
 	 * @param string $sender The sender email address.

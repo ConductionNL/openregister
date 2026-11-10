@@ -92,59 +92,95 @@ class InheritedGeoCollector implements InheritedGeoCollectorInterface {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function collect(ObjectEntity $object, ?Schema $schema, bool $_rbac = true): array {
+		$own = $this->ownFeatures(object: $object);
+		$inherited = $this->inheritedFeatures(references: $this->referencesOf(object: $object, schema: $schema), _rbac: $_rbac);
+
+		return [
+			'type' => 'FeatureCollection',
+			'features' => array_merge($own, $this->markSuperseded(inherited: $inherited, own: $own)),
+		];
+	}//end collect()
+
+	/**
+	 * The record's own features, stamped as its own.
+	 *
+	 * @param ObjectEntity $object The record whose features are read.
+	 *
+	 * @return array<int, array> The own features.
+	 */
+	private function ownFeatures(ObjectEntity $object): array {
 		$own = $this->featuresOf(source: $object->getGeo());
 		foreach ($own as $index => $feature) {
 			$own[$index]['properties']['_source'] = 'own';
 			$own[$index]['properties']['_superseded'] = false;
 		}
 
-		$inherited = [];
-		if ($schema !== null) {
-			$inherited = $this->inheritedFeatures(
-				object: $object,
-				sources: $schema->getGeoInheritance(),
-				_rbac: $_rbac
-			);
-		}
-
-		// A feature the record holds itself outranks an inherited one for the
-		// same purpose. The inherited one stays in the answer and is marked,
-		// because "where did the other pin go" is a question a caseworker asks
-		// out loud, and silence is the worst answer available.
-		$ownPurposes = array_column(array_column($own, 'properties'), '_purpose');
-		foreach ($inherited as $index => $feature) {
-			$superseded = in_array($feature['properties']['_purpose'], $ownPurposes, true);
-			$inherited[$index]['properties']['_superseded'] = $superseded;
-		}
-
-		return [
-			'type' => 'FeatureCollection',
-			'features' => array_merge($own, $inherited),
-		];
-	}//end collect()
+		return $own;
+	}//end ownFeatures()
 
 	/**
-	 * Collect the features of every declared reference.
+	 * Mark each inherited feature the record holds a feature of its own purpose for.
 	 *
-	 * @param ObjectEntity $object  The record doing the inheriting.
-	 * @param array        $sources The declared reference properties.
-	 * @param bool         $_rbac   Apply the caller's access to referenced records.
+	 * A feature the record holds itself outranks an inherited one for the
+	 * same purpose. The inherited one stays in the answer and is marked,
+	 * because "where did the other pin go" is a question a caseworker asks
+	 * out loud, and silence is the worst answer available.
 	 *
-	 * @return array<int, array> The inherited features, each naming its relation.
+	 * @param array<int, array> $inherited The inherited features.
+	 * @param array<int, array> $own       The record's own features.
+	 *
+	 * @return array<int, array> The inherited features, each with `_superseded`.
 	 */
-	private function inheritedFeatures(ObjectEntity $object, array $sources, bool $_rbac): array {
+	private function markSuperseded(array $inherited, array $own): array {
+		$ownPurposes = array_column(array_column($own, 'properties'), '_purpose');
+		foreach ($inherited as $index => $feature) {
+			$inherited[$index]['properties']['_superseded'] = in_array($feature['properties']['_purpose'], $ownPurposes, true);
+		}
+
+		return $inherited;
+	}//end markSuperseded()
+
+	/**
+	 * Every declared geo-inheriting reference with its value on the record.
+	 *
+	 * A schema declaring no inheritance, or no schema, gives none.
+	 *
+	 * @param ObjectEntity $object The record doing the inheriting.
+	 * @param Schema|null  $schema Its schema, holding the inheritance declaration.
+	 *
+	 * @return array<int, InheritedReference> The references.
+	 */
+	private function referencesOf(ObjectEntity $object, ?Schema $schema): array {
+		$sources = [];
+		if ($schema !== null) {
+			$sources = $schema->getGeoInheritance();
+		}
+
 		if ($sources === []) {
 			return [];
 		}
 
 		$data = ($object->getObject() ?? []);
-		$features = [];
-
+		$references = [];
 		foreach ($sources as $source) {
-			$features = array_merge(
-				$features,
-				$this->featuresThrough(source: $source, value: ($data[$source['through']] ?? null), _rbac: $_rbac)
-			);
+			$references[] = new InheritedReference(source: $source, value: ($data[$source['through']] ?? null));
+		}
+
+		return $references;
+	}//end referencesOf()
+
+	/**
+	 * Collect the features of every declared reference.
+	 *
+	 * @param array<int, InheritedReference> $references The declared references with their values.
+	 * @param bool                           $_rbac      Apply the caller's access to referenced records.
+	 *
+	 * @return array<int, array> The inherited features, each naming its relation.
+	 */
+	private function inheritedFeatures(array $references, bool $_rbac): array {
+		$features = [];
+		foreach ($references as $reference) {
+			$features = array_merge($features, $this->featuresThrough(reference: $reference, _rbac: $_rbac));
 		}
 
 		return $features;
@@ -153,22 +189,23 @@ class InheritedGeoCollector implements InheritedGeoCollectorInterface {
 	/**
 	 * Collect the features of every record one reference property points at.
 	 *
-	 * @param array $source The declared reference property, with its optional label.
-	 * @param mixed $value  The reference property's value on the inheriting record.
-	 * @param bool  $_rbac  Apply the caller's access to referenced records.
+	 * @param InheritedReference $reference The declared reference property and its value.
+	 * @param bool               $_rbac     Apply the caller's access to referenced records.
 	 *
 	 * @return array<int, array> The inherited features through this property.
 	 */
-	private function featuresThrough(array $source, mixed $value, bool $_rbac): array {
+	private function featuresThrough(InheritedReference $reference, bool $_rbac): array {
 		$features = [];
-		foreach ($this->identifiers(value: $value) as $identifier) {
+		foreach ($this->identifiers(value: $reference->value) as $identifier) {
 			$referenced = $this->read(identifier: $identifier, _rbac: $_rbac);
 			if ($referenced === null) {
 				continue;
 			}
 
+			$provenance = $this->provenance(source: $reference->source, referenced: $referenced);
 			foreach ($this->featuresOf(source: $referenced->getGeo()) as $feature) {
-				$features[] = $this->stampInherited(feature: $feature, source: $source, referenced: $referenced);
+				$feature['properties'] = array_replace($feature['properties'], $provenance);
+				$features[] = $feature;
 			}
 		}
 
@@ -176,24 +213,25 @@ class InheritedGeoCollector implements InheritedGeoCollectorInterface {
 	}//end featuresThrough()
 
 	/**
-	 * Stamp an inherited feature with where it came from.
+	 * Where an inherited feature came from, as the properties it is stamped with.
 	 *
-	 * @param array        $feature    The referenced record's feature.
 	 * @param array        $source     The declared reference property, with its optional label.
 	 * @param ObjectEntity $referenced The record the feature was read from.
 	 *
-	 * @return array The feature, carrying its provenance.
+	 * @return array<string, mixed> The provenance properties.
 	 */
-	private function stampInherited(array $feature, array $source, ObjectEntity $referenced): array {
-		$feature['properties']['_source'] = 'inherited';
-		$feature['properties']['_through'] = $source['through'];
-		$feature['properties']['_fromObject'] = (string)$referenced->getUuid();
+	private function provenance(array $source, ObjectEntity $referenced): array {
+		$provenance = [
+			'_source' => 'inherited',
+			'_through' => $source['through'],
+			'_fromObject' => (string)$referenced->getUuid(),
+		];
 		if (isset($source['label']) === true) {
-			$feature['properties']['_relationLabel'] = $source['label'];
+			$provenance['_relationLabel'] = $source['label'];
 		}
 
-		return $feature;
-	}//end stampInherited()
+		return $provenance;
+	}//end provenance()
 
 	/**
 	 * Read a referenced record, or nothing when the caller may not.

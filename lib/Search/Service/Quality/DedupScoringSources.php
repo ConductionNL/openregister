@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Quality;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -32,18 +33,32 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  */
 final class DedupScoringSources {
 	/**
+	 * Schema lookup for the dedup annotation.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register lookup, the boundary the schema resolves inside.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Bundle the services.
 	 *
-	 * @param SchemaMapperInterface   $schemaMapper   Schema lookup for the dedup annotation.
-	 * @param RegisterMapperInterface $registerMapper Register lookup, the boundary the schema resolves inside.
-	 * @param SimilarityCalculator    $similarity     Pure field-similarity primitives, for the comparator.
+	 * @param SchemaCatalogInterface $catalog    The register and schema mappers.
+	 * @param SimilarityCalculator   $similarity Pure field-similarity primitives, for the comparator.
 	 *
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-6
 	 */
 	public function __construct(
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly RegisterMapperInterface $registerMapper,
+		SchemaCatalogInterface $catalog,
 		public readonly SimilarityCalculator $similarity,
 	) {
+		$this->schemaMapper   = $catalog->schemas();
+		$this->registerMapper = $catalog->registers();
 	}//end __construct()
 }//end class
