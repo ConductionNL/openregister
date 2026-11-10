@@ -69,6 +69,16 @@ class FlowRunAssigneeAnswerGuardGoldenTest extends TestCase {
 			$this->assertFalse($this->may($assignee, 'alice', $nobody), 'string, caller ' . json_encode($nobody));
 			$this->assertFalse($this->may($assignee, ['type' => 'user', 'id' => 'alice'], $nobody), 'typed, caller ' . json_encode($nobody));
 		}
+
+		$everybody = $this->createMock(IGroupManager::class);
+		$everybody->method('isInGroup')->willReturn(true);
+		$registry = $this->createMock(PrincipalResolverRegistry::class);
+		$registry->method('resolveAll')->willReturn(['']);
+		$open = new FlowRunAssignee(groupManager: $everybody, principals: $registry);
+		foreach (['', '   '] as $blank) {
+			$this->assertFalse($this->may($open, 'bezwaar', $blank), 'a blank caller is refused before any group lookup');
+			$this->assertFalse($this->may($open, ['type' => 'role', 'id' => 'x'], $blank), 'a blank caller is refused before any resolution');
+		}
 	}//end testUnassignedIsOpenAndAssignedIsNeverAnonymous()
 
 	/**
