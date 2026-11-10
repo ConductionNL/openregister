@@ -1754,27 +1754,12 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	private function joinedProjectionKeyMap(array $joinSpec, string $qualified): array {
 		if (is_string($joinSpec['on'] ?? null) === true) {
-			throw new RuntimeException(
-				'Grouping by "' . $qualified . '" requires the explicit join.on map '
-				. '({parentField: joinedField}); the "Schema.column" shorthand infers the parent key '
-				. 'from the group fields, which are the joined ones here.'
-			);
+			throw self::joinShorthandRefusal(qualified: $qualified);
 		}
 
-		$onMap = [];
-		$onClause = ($joinSpec['on'] ?? null);
-		if (is_array($onClause) === true) {
-			foreach ($onClause as $parentField => $joinedField) {
-				if (is_string($parentField) === true && is_string($joinedField) === true) {
-					$onMap[$parentField] = $this->stripSchemaPrefix(ref: $joinedField);
-				}
-			}
-		}
-
+		$onMap = $this->explicitJoinOnMap(onClause: ($joinSpec['on'] ?? null));
 		if ($onMap === []) {
-			throw new RuntimeException(
-				'Grouping by "' . $qualified . '" needs the join\'s `on` mapping to locate the parent key.'
-			);
+			throw self::joinWithoutOnRefusal(qualified: $qualified);
 		}
 
 		// Single-key joins only. A composite key would need a tuple lookup per
@@ -1782,14 +1767,77 @@ class AggregationRunner implements AggregationRunnerInterface {
 		// on the first key alone, which would over-merge groups and inflate
 		// every total.
 		if (count($onMap) > 1) {
-			throw new RuntimeException(
-				'Grouping by a joined field is supported for single-key joins only; "'
-				. $qualified . '" joins on ' . count($onMap) . ' keys.'
-			);
+			throw self::compositeJoinRefusal(qualified: $qualified, keys: count($onMap));
 		}
 
 		return $onMap;
 	}//end joinedProjectionKeyMap()
+
+	/**
+	 * The explicit `on` map of a join, `{parentField: joinedField}` with the
+	 * schema prefix stripped; entries that are not string to string are skipped.
+	 *
+	 * @param mixed $onClause The join's `on` clause
+	 *
+	 * @return array<string, string> The parent field to joined field map; empty without one.
+	 */
+	private function explicitJoinOnMap(mixed $onClause): array {
+		$onMap = [];
+		if (is_array($onClause) === false) {
+			return $onMap;
+		}
+
+		foreach ($onClause as $parentField => $joinedField) {
+			if (is_string($parentField) === true && is_string($joinedField) === true) {
+				$onMap[$parentField] = $this->stripSchemaPrefix(ref: $joinedField);
+			}
+		}
+
+		return $onMap;
+	}//end explicitJoinOnMap()
+
+	/**
+	 * The refusal of a joined group field whose join uses the `Schema.column` shorthand.
+	 *
+	 * @param string $qualified The joined group field
+	 *
+	 * @return RuntimeException
+	 */
+	private static function joinShorthandRefusal(string $qualified): RuntimeException {
+		return new RuntimeException(
+			'Grouping by "' . $qualified . '" requires the explicit join.on map '
+			. '({parentField: joinedField}); the "Schema.column" shorthand infers the parent key '
+			. 'from the group fields, which are the joined ones here.'
+		);
+	}//end joinShorthandRefusal()
+
+	/**
+	 * The refusal of a joined group field whose join has no usable `on` map.
+	 *
+	 * @param string $qualified The joined group field
+	 *
+	 * @return RuntimeException
+	 */
+	private static function joinWithoutOnRefusal(string $qualified): RuntimeException {
+		return new RuntimeException(
+			'Grouping by "' . $qualified . '" needs the join\'s `on` mapping to locate the parent key.'
+		);
+	}//end joinWithoutOnRefusal()
+
+	/**
+	 * The refusal of a joined group field on a composite-key join.
+	 *
+	 * @param string $qualified The joined group field
+	 * @param int    $keys      How many keys the join has
+	 *
+	 * @return RuntimeException
+	 */
+	private static function compositeJoinRefusal(string $qualified, int $keys): RuntimeException {
+		return new RuntimeException(
+			'Grouping by a joined field is supported for single-key joins only; "'
+			. $qualified . '" joins on ' . $keys . ' keys.'
+		);
+	}//end compositeJoinRefusal()
 
 	/**
 	 * Hydrate and filter the joined schema's rows for a group-field projection.
@@ -2242,14 +2290,26 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return $this->valueMatchesAnyOf(rowValue: $value, candidates: [$criterion]);
 		}
 
-		foreach ($criterion as $op => $onValue) {
+		return $this->operatorMapMatches(value: $value, operators: $criterion);
+	}//end criterionMatches()
+
+	/**
+	 * Whether a value passes every operator of an operator map, in map order.
+	 *
+	 * @param mixed $value     The row value
+	 * @param array $operators The operator map, such as `{gte: 1, lt: 5}`
+	 *
+	 * @return bool True when every operator passes.
+	 */
+	private function operatorMapMatches(mixed $value, array $operators): bool {
+		foreach ($operators as $op => $onValue) {
 			if ($this->operatorCheck(op: (string)$op)($value, $onValue) === false) {
 				return false;
 			}
 		}
 
 		return true;
-	}//end criterionMatches()
+	}//end operatorMapMatches()
 
 	/**
 	 * The check of a single operator, applied as `$check($value, $onValue)`.
@@ -4284,35 +4344,57 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function mergeJoinedValues(array $groups, JoinedValueLookup $lookup): array {
-		$parentFields = array_keys($lookup->onMap);
-
 		foreach ($groups as $index => $group) {
 			if (is_array($group) === false) {
 				continue;
 			}
 
-			$tuple = [];
-			foreach ($parentFields as $parentField) {
-				if (isset($group['keys']) === true && is_array($group['keys']) === true) {
-					$tuple[] = ($group['keys'][$parentField] ?? null);
-					continue;
-				}
-
-				$tuple[] = ($group['key'] ?? null);
-			}
-
-			$tupleKey = $this->joinTupleKey(values: $tuple);
-
-			$joined = [];
-			foreach ($lookup->aliases as $alias) {
-				$joined[$alias] = ($lookup->values[$tupleKey][$alias] ?? null);
-			}
-
-			$groups[$index]['joined'] = $joined;
-		}//end foreach
+			$groups[$index]['joined'] = $this->joinedValuesOf(group: $group, lookup: $lookup);
+		}
 
 		return $groups;
 	}//end mergeJoinedValues()
+
+	/**
+	 * The joined values of one grouped row, every alias present and null on a miss.
+	 *
+	 * @param array             $group  The parent grouped row.
+	 * @param JoinedValueLookup $lookup The join map, the select aliases and the joined values by merge key.
+	 *
+	 * @return array<string, mixed> The joined values by alias.
+	 */
+	private function joinedValuesOf(array $group, JoinedValueLookup $lookup): array {
+		$tupleKey = $this->joinTupleKey(values: self::groupJoinTuple(group: $group, parentFields: array_keys($lookup->onMap)));
+
+		$joined = [];
+		foreach ($lookup->aliases as $alias) {
+			$joined[$alias] = ($lookup->values[$tupleKey][$alias] ?? null);
+		}
+
+		return $joined;
+	}//end joinedValuesOf()
+
+	/**
+	 * The values of a grouped row's parent join fields: from its `keys` map, else its single `key`.
+	 *
+	 * @param array             $group        The parent grouped row.
+	 * @param array<int, mixed> $parentFields The parent fields of the join.
+	 *
+	 * @return array<int, mixed> The tuple, one value per parent field.
+	 */
+	private static function groupJoinTuple(array $group, array $parentFields): array {
+		$tuple = [];
+		foreach ($parentFields as $parentField) {
+			if (isset($group['keys']) === true && is_array($group['keys']) === true) {
+				$tuple[] = ($group['keys'][$parentField] ?? null);
+				continue;
+			}
+
+			$tuple[] = ($group['key'] ?? null);
+		}
+
+		return $tuple;
+	}//end groupJoinTuple()
 
 	/**
 	 * Resolve a join `on` clause to an ordered `parentField => joinedField` map.
@@ -5081,57 +5163,82 @@ class AggregationRunner implements AggregationRunnerInterface {
 	private function resolveAtSelfReferences(array $where, array $parentRow): array {
 		$resolved = [];
 		foreach ($where as $key => $value) {
-			if (is_array($value) === true) {
-				$resolved[$key] = $this->resolveAtSelfReferences(
-					where: $value,
-					parentRow: $parentRow
-				);
-				continue;
-			}
-
-			if (is_string($value) === true && str_starts_with($value, '@self.') === true) {
-				// Strip the leading '@self.' prefix (6 characters) to get the field name.
-				$fieldName = substr($value, 6);
-
-				// AN UNANSWERABLE CORRELATION IS AN ERROR, NOT AN EMPTY FILTER.
-				//
-				// This used to resolve to null and was described as failing
-				// closed. It does not: the null is applied as a real filter
-				// VALUE, so the aggregation returns the target rows whose own
-				// field is null. For a segment P&L keyed on `@self.code` that
-				// is the unassigned-cost-centre total — returned confidently,
-				// under HTTP 200, identically for every parent record, with
-				// nothing in the envelope naming what went wrong.
-				//
-				// No production caller supplies a parent row today (the REST
-				// controller, ReportRenderService and ThresholdEvaluationService
-				// all call run() without one), so silence here means every such
-				// declaration answers wrongly rather than visibly.
-				//
-				// A key PRESENT but null is left alone: correlating on null is a
-				// legitimate query. It is the ABSENT key — no parent row, or a
-				// typo in the field name — that is refused.
-				if (array_key_exists($fieldName, $parentRow) === false) {
-					throw new RuntimeException(
-						sprintf(
-							'Cannot resolve "%s": the parent row supplies no "%s" field. '
-							.'A cross-schema aggregation correlating on @self requires the '
-							.'caller to pass the parent object as parentRow.',
-							$value,
-							$fieldName
-						)
-					);
-				}
-
-				$resolved[$key] = $parentRow[$fieldName];
-				continue;
-			}
-
-			$resolved[$key] = $value;
-		}//end foreach
+			$resolved[$key] = $this->resolvedWhereValue(value: $value, parentRow: $parentRow);
+		}
 
 		return $resolved;
 	}//end resolveAtSelfReferences()
+
+	/**
+	 * One where value with its `@self.*` references resolved: a nested map
+	 * recursively, a reference from the parent row, anything else as is.
+	 *
+	 * @param mixed                $value     The where value.
+	 * @param array<string, mixed> $parentRow Parent object's field values.
+	 *
+	 * @return mixed The resolved value.
+	 */
+	private function resolvedWhereValue(mixed $value, array $parentRow): mixed {
+		if (is_array($value) === true) {
+			return $this->resolveAtSelfReferences(
+				where: $value,
+				parentRow: $parentRow
+			);
+		}
+
+		if (is_string($value) === true && str_starts_with($value, '@self.') === true) {
+			return self::parentRowValue(reference: $value, parentRow: $parentRow);
+		}
+
+		return $value;
+	}//end resolvedWhereValue()
+
+	/**
+	 * The parent row's value for an `@self.<field>` reference.
+	 *
+	 * @param string               $reference The `@self.<field>` reference.
+	 * @param array<string, mixed> $parentRow Parent object's field values.
+	 *
+	 * @return mixed The field's value, null included.
+	 *
+	 * @throws RuntimeException When the parent row has no such field.
+	 */
+	private static function parentRowValue(string $reference, array $parentRow): mixed {
+		// Strip the leading '@self.' prefix (6 characters) to get the field name.
+		$fieldName = substr($reference, 6);
+
+		// AN UNANSWERABLE CORRELATION IS AN ERROR, NOT AN EMPTY FILTER.
+		//
+		// This used to resolve to null and was described as failing
+		// closed. It does not: the null is applied as a real filter
+		// VALUE, so the aggregation returns the target rows whose own
+		// field is null. For a segment P&L keyed on `@self.code` that
+		// is the unassigned-cost-centre total — returned confidently,
+		// under HTTP 200, identically for every parent record, with
+		// nothing in the envelope naming what went wrong.
+		//
+		// No production caller supplies a parent row today (the REST
+		// controller, ReportRenderService and ThresholdEvaluationService
+		// all call run() without one), so silence here means every such
+		// declaration answers wrongly rather than visibly.
+		//
+		// A key PRESENT but null is left alone: correlating on null is a
+		// legitimate query. It is the ABSENT key — no parent row, or a
+		// typo in the field name — that is refused.
+		if (array_key_exists($fieldName, $parentRow) === false) {
+			throw new RuntimeException(
+				sprintf(
+					'Cannot resolve "%s": the parent row supplies no "%s" field. '
+					.'A cross-schema aggregation correlating on @self requires the '
+					.'caller to pass the parent object as parentRow.',
+					$reference,
+					$fieldName
+				)
+			);
+		}
+
+		return $parentRow[$fieldName];
+	}//end parentRowValue()
 
 	/**
 	 * Find the first register that contains the given schema.
