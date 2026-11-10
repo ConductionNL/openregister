@@ -1,13 +1,9 @@
 # pr	head	last_approved	reason
-9065	efb39dce45d2bc20513dbae99b5abc2e1b9dc1d5	-	access title, path or words
+9070	effbd40711fceefc4aecff2e5d766642df1f4884	d8149e6b2ef852e4c3488cca3e95589da32fc96a	code moved into a strict_types file
 9096	419c6eda0b08421a31bd8e179c31011b53548c2b	-	access title, path or words
 9099	69329d2a81b5e030c1101cf4b3b19fc45bcfef54	-	access title, path or words
 9103	b409f99500643aab47a4def5511f931e5038250e	-	access title, path or words
-9108	d481f4408bc1e5ce977a4262a78429a82f10af26	-	access title, path or words
 9123	8cc6cca57cf433bd9f606af26c2b5470f83784cf	-	access title, path or words
-9126	dd03ab01d548ff9bb7b634f6d2d9d896722ce08f	-	access title, path or words
-9127	bafb0f4fdb7baa9eb94799409a937abe60931692	-	access title, path or words
-9128	7e5a93e16b9194a4166a3b79aac7fe6769f24cfa	-	access title, path or words
 9807	c73842fbfea9dca6c5f0032897d408ff022d3a19	-	access title, path or words
 9808	d2f6b05816eafe9f87911a968fa60c88560b4b83	-	access title, path or words
 9810	60b29d147578aa927cc36644775cc813df9153f9	-	access title, path or words
