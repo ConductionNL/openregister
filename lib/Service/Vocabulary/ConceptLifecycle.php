@@ -101,19 +101,18 @@ class ConceptLifecycle {
 	 *
 	 * A deprecated concept and an out-of-window concept are both unofferable,
 	 * for different reasons, and a caller that wants the reason asks
-	 * {@see self::describeWindow()}.
+	 * {@see self::describeWindow()}. A caller whose declaration still offers
+	 * deprecated concepts asks {@see self::isWithinWindow()} alone.
 	 *
 	 * @param array<string,mixed> $concept The concept's decoded object data.
-	 * @param DateTimeInterface $at The instant to judge the window at.
-	 * @param boolean $allowDeprecated Whether a deprecated concept still counts as offerable.
+	 * @param DateTimeInterface   $at      The instant to judge the window at.
 	 *
 	 * @return boolean True when the value may be put in front of someone.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function isOfferable(array $concept, DateTimeInterface $at, bool $allowDeprecated = false): bool {
-		$blocked = ($allowDeprecated === false && ($concept['deprecated'] ?? false) === true);
-		return $blocked === false && $this->isWithinWindow(concept: $concept, at: $at);
+	public function isOfferable(array $concept, DateTimeInterface $at): bool {
+		return ($concept['deprecated'] ?? false) !== true && $this->isWithinWindow(concept: $concept, at: $at);
 	}//end isOfferable()
 
 	/**
