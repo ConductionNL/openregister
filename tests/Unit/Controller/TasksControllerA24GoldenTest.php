@@ -354,7 +354,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 	 */
 	public function testAggregateRefusedWithoutSession(): void {
 		$inbox = $this->createMock(TaskInboxService::class);
-		$inbox->expects($this->never())->method('inbox');
+		$inbox->expects($this->never())->method('inboxPage');
 
 		$cases = [
 			$this->aggregate(params: [], uid: null, inbox: $inbox, groups: null)->allUserTasks(),
@@ -374,7 +374,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 	 */
 	public function testAggregateRefusesUnknownState(): void {
 		$inbox = $this->createMock(TaskInboxService::class);
-		$inbox->expects($this->never())->method('inbox');
+		$inbox->expects($this->never())->method('inboxPage');
 
 		$response = $this->aggregate(params: ['state' => 'nonsense-state'], uid: 'alice', inbox: $inbox, groups: null)->allUserTasks();
 
@@ -390,7 +390,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 	public function testAggregateCriteria(): void {
 		$seen = [];
 		$inbox = $this->createMock(TaskInboxService::class);
-		$inbox->method('inbox')->willReturnCallback(function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$seen): array {
+		$inbox->method('inboxPage')->willReturnCallback(function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$seen): array {
 			$limit = $page->limit;
 			$offset = $page->offset;
 			$seen[] = [$criteria, $limit, $offset];
@@ -430,7 +430,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 	public function testAggregateOverdueAndFailure(): void {
 		$seen = [];
 		$inbox = $this->createMock(TaskInboxService::class);
-		$inbox->method('inbox')->willReturnCallback(function (TaskInboxCriteria $criteria) use (&$seen): array {
+		$inbox->method('inboxPage')->willReturnCallback(function (TaskInboxCriteria $criteria) use (&$seen): array {
 			$seen[] = $criteria;
 			throw new Exception('query failed');
 		});

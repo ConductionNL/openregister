@@ -188,39 +188,104 @@ final class TaskInboxCriteria {
 	public readonly bool $openFirst;
 
 	/**
-	 * Constructor.
+	 * Constructor, with the flat named values other apps pass.
 	 *
-	 * @param TaskInboxAudience       $audience  The caller and the scope of the read.
-	 * @param TaskInboxSelection|null $selection The filters, due window, anchor and sort; the defaults when null.
+	 * @param string             $uid            The caller.
+	 * @param array<int, string> $groupIds       The caller's groups.
+	 * @param bool               $isAdmin        Whether the caller is an administrator.
+	 * @param string             $scope          One of the SCOPE_* constants.
+	 * @param array<int, string> $states         Only tasks in these states.
+	 * @param bool|null          $isTerminal     Only terminal (true) or open (false) tasks.
+	 * @param string|null        $priority       Only tasks with this priority.
+	 * @param string|null        $objectUuid     Only tasks about this object.
+	 * @param string|null        $runUuid        Only tasks of this flow run.
+	 * @param DateTime|null      $overdueAt      Only tasks overdue at this moment.
+	 * @param DateTime|null      $dueAfter       Only tasks due after this moment.
+	 * @param DateTime|null      $dueBefore      Only tasks due before this moment.
+	 * @param string             $sort           One of the SORT_* constants.
+	 * @param bool               $sortDescending Whether the sort runs descending.
+	 * @param string|null        $kind           Only tasks of this kind.
+	 * @param bool               $includeBlocked Whether tasks waiting on another task are listed.
+	 * @param bool               $openFirst      Whether open tasks sort before terminal ones.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The public signature dossiq calls by name.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    The public signature dossiq calls by name.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	public function __construct(
-		TaskInboxAudience $audience,
-		?TaskInboxSelection $selection = null,
+		string $uid,
+		array $groupIds=[],
+		bool $isAdmin=false,
+		string $scope=self::SCOPE_ASSIGNED,
+		array $states=[],
+		?bool $isTerminal=null,
+		?string $priority=null,
+		?string $objectUuid=null,
+		?string $runUuid=null,
+		?DateTime $overdueAt=null,
+		?DateTime $dueAfter=null,
+		?DateTime $dueBefore=null,
+		string $sort=self::SORT_DUE,
+		bool $sortDescending=false,
+		?string $kind=null,
+		bool $includeBlocked=false,
+		bool $openFirst=false,
 	) {
-		$selection = ($selection ?? new TaskInboxSelection());
-		$order = $selection->order;
-		$this->uid = $audience->uid;
-		$this->groupIds = $audience->groupIds;
-		$this->isAdmin = $audience->isAdmin;
-		$this->scope = $audience->scope;
-		$this->states = $selection->filter->states;
-		$this->isTerminal = $selection->filter->isTerminal;
-		$this->priority = $selection->filter->priority;
-		$this->objectUuid = $selection->anchor->objectUuid;
-		$this->runUuid = $selection->anchor->runUuid;
-		$this->overdueAt = $selection->window->overdueAt;
-		$this->dueAfter = $selection->window->dueAfter;
-		$this->dueBefore = $selection->window->dueBefore;
-		$this->sort = $order->sort;
-		$this->sortDescending = $order->sortDescending;
-		$this->kind = $selection->filter->kind;
-		$this->includeBlocked = $selection->anchor->includeBlocked;
-		$this->openFirst = $order->openFirst;
-
+		$this->uid            = $uid;
+		$this->groupIds       = $groupIds;
+		$this->isAdmin        = $isAdmin;
+		$this->scope          = $scope;
+		$this->states         = $states;
+		$this->isTerminal     = $isTerminal;
+		$this->priority       = $priority;
+		$this->objectUuid     = $objectUuid;
+		$this->runUuid        = $runUuid;
+		$this->overdueAt      = $overdueAt;
+		$this->dueAfter       = $dueAfter;
+		$this->dueBefore      = $dueBefore;
+		$this->sort           = $sort;
+		$this->sortDescending = $sortDescending;
+		$this->kind           = $kind;
+		$this->includeBlocked = $includeBlocked;
+		$this->openFirst      = $openFirst;
 	}//end __construct()
+
+	/**
+	 * The criteria for an audience and a selection.
+	 *
+	 * @param TaskInboxAudience       $audience  The caller and the scope of the read.
+	 * @param TaskInboxSelection|null $selection The filters, due window, anchor and sort; the defaults when null.
+	 *
+	 * @return self The criteria.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	public static function of(TaskInboxAudience $audience, ?TaskInboxSelection $selection=null): self {
+		$selection = ($selection ?? new TaskInboxSelection());
+
+		return new self(
+			uid: $audience->uid,
+			groupIds: $audience->groupIds,
+			isAdmin: $audience->isAdmin,
+			scope: $audience->scope,
+			states: $selection->filter->states,
+			isTerminal: $selection->filter->isTerminal,
+			priority: $selection->filter->priority,
+			objectUuid: $selection->anchor->objectUuid,
+			runUuid: $selection->anchor->runUuid,
+			overdueAt: $selection->window->overdueAt,
+			dueAfter: $selection->window->dueAfter,
+			dueBefore: $selection->window->dueBefore,
+			sort: $selection->order->sort,
+			sortDescending: $selection->order->sortDescending,
+			kind: $selection->filter->kind,
+			includeBlocked: $selection->anchor->includeBlocked,
+			openFirst: $selection->order->openFirst
+		);
+	}//end of()
 
 	/**
 	 * Every stored `assignee` value that means "this caller".

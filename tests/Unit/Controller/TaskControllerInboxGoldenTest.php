@@ -69,7 +69,7 @@ final class TaskControllerInboxGoldenTest extends TestCase {
 	public function testEveryParameterReachesTheCriteriaAndThePage(): void {
 		$controller = $this->controller();
 		$seen       = [];
-		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
+		$this->inbox->expects($this->once())->method('inboxPage')->willReturnCallback(
 			function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$seen): array {
 				$seen = [
 					'uid' => $criteria->uid, 'groupIds' => $criteria->groupIds, 'isAdmin' => $criteria->isAdmin, 'scope' => $criteria->scope,
@@ -119,7 +119,7 @@ final class TaskControllerInboxGoldenTest extends TestCase {
 	public function testBlankKindAndRunAreNoFilter(): void {
 		$controller = $this->controller();
 		$seen       = [];
-		$this->inbox->method('inbox')->willReturnCallback(
+		$this->inbox->method('inboxPage')->willReturnCallback(
 			function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$seen): array {
 				$seen = [$criteria->kind, $criteria->runUuid, $criteria->states, $criteria->sort, $criteria->sortDescending];
 				return ['results' => [], 'total' => 0, 'limit' => $page->limit, 'offset' => $page->offset];
@@ -133,7 +133,7 @@ final class TaskControllerInboxGoldenTest extends TestCase {
 
 	public function testWithoutASessionTheListingIsRefused(): void {
 		$controller = $this->controller(uid: null);
-		$this->inbox->expects($this->never())->method('inbox');
+		$this->inbox->expects($this->never())->method('inboxPage');
 
 		$response = $controller->index();
 

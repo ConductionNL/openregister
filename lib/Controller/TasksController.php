@@ -231,7 +231,7 @@ class TasksController extends Controller {
 			$criteria = $this->criteria(uid: $uid, filter: $filter);
 
 			return new JSONResponse(
-				data: $this->inbox->inbox(criteria: $criteria, page: new TaskInboxPage(limit: $asked['limit'], offset: $asked['offset']))
+				data: $this->inbox->inboxPage(criteria: $criteria, page: new TaskInboxPage(limit: $asked['limit'], offset: $asked['offset']))
 			);
 		} catch (Throwable $failure) {
 			return new JSONResponse(
@@ -255,7 +255,7 @@ class TasksController extends Controller {
 	private function criteria(string $uid, array $filter): TaskInboxCriteria {
 		$sort = $filter['sort'];
 
-		return new TaskInboxCriteria(
+		return TaskInboxCriteria::of(
 			audience: new TaskInboxAudience(uid: $uid, groupIds: $this->groupIds(), isAdmin: $this->isAdmin(uid: $uid), scope: $filter['scope']),
 			selection: new TaskInboxSelection(
 				filter: new TaskInboxFilter(states: $filter['states'], isTerminal: $this->requestedTerminal()),

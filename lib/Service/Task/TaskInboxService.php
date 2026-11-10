@@ -117,7 +117,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	public function inbox(TaskInboxCriteria $criteria, ?TaskInboxPage $page = null): array {
+	public function inboxPage(TaskInboxCriteria $criteria, ?TaskInboxPage $page = null): array {
 		$page = ($page ?? new TaskInboxPage());
 
 		if (trim($criteria->uid) === '') {
@@ -136,6 +136,21 @@ class TaskInboxService implements TaskInboxServiceInterface {
 		}
 
 		return $page->envelope(results: $results, total: $total);
+	}//end inboxPage()
+
+	/**
+	 * One inbox page, by the window other apps pass positionally.
+	 *
+	 * @param TaskInboxCriteria $criteria Scope, filters, sort and identity.
+	 * @param int               $limit    The page size, clamped to 1..500.
+	 * @param int               $offset   The page start.
+	 *
+	 * @return array{results: array<int, array<string, mixed>>, total: int, limit: int, offset: int} The page.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	public function inbox(TaskInboxCriteria $criteria, int $limit=25, int $offset=0): array {
+		return $this->inboxPage(criteria: $criteria, page: new TaskInboxPage(limit: $limit, offset: $offset));
 	}//end inbox()
 
 	/**

@@ -47,7 +47,7 @@ final class TaskInboxCriteriaNamesTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheBareUidIsAlwaysAName(): void {
-		$this->assertContains('alice', (new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')))->assigneeNames());
+		$this->assertContains('alice', (TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'alice')))->assigneeNames());
 	}//end testTheBareUidIsAlwaysAName()
 
 	/**
@@ -56,7 +56,7 @@ final class TaskInboxCriteriaNamesTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheCallersTypedReferenceIsAName(): void {
-		$this->assertContains('user:alice', (new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')))->assigneeNames());
+		$this->assertContains('user:alice', (TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'alice')))->assigneeNames());
 	}//end testTheCallersTypedReferenceIsAName()
 
 	/**
@@ -69,7 +69,7 @@ final class TaskInboxCriteriaNamesTest extends TestCase {
 	 * @return void
 	 */
 	public function testEveryGroupTheCallerIsInIsAName(): void {
-		$names = (new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice', groupIds: ['bezwaar', 'reviewers'])))->assigneeNames();
+		$names = (TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'alice', groupIds: ['bezwaar', 'reviewers'])))->assigneeNames();
 
 		$this->assertContains('group:bezwaar', $names);
 		$this->assertContains('group:reviewers', $names);
@@ -85,7 +85,7 @@ final class TaskInboxCriteriaNamesTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoNameIsEverAnAgentReference(): void {
-		$names = (new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'scribe', groupIds: ['agents'])))->assigneeNames();
+		$names = (TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'scribe', groupIds: ['agents'])))->assigneeNames();
 
 		foreach ($names as $name) {
 			$this->assertStringStartsNotWith('agent:', $name);
@@ -103,7 +103,7 @@ final class TaskInboxCriteriaNamesTest extends TestCase {
 	public function testAnEmptyGroupIdIsNotAName(): void {
 		$this->assertNotContains(
 			'group:',
-			(new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice', groupIds: ['', '  '])))->assigneeNames()
+			(TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'alice', groupIds: ['', '  '])))->assigneeNames()
 		);
 	}//end testAnEmptyGroupIdIsNotAName()
 
@@ -113,7 +113,7 @@ final class TaskInboxCriteriaNamesTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheListHasNoDuplicates(): void {
-		$names = (new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice', groupIds: ['bezwaar', 'bezwaar'])))->assigneeNames();
+		$names = (TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'alice', groupIds: ['bezwaar', 'bezwaar'])))->assigneeNames();
 
 		$this->assertSame(array_values(array_unique($names)), $names);
 	}//end testTheListHasNoDuplicates()

@@ -40,7 +40,7 @@ interface TaskInboxServiceInterface {
 	 *
 	 * @return array{results: array<int, array<string, mixed>>, total: int, limit: int, offset: int} The page.
 	 */
-	public function inbox(TaskInboxCriteria $criteria, ?TaskInboxPage $page = null): array;
+	public function inboxPage(TaskInboxCriteria $criteria, ?TaskInboxPage $page = null): array;
 
 	/**
 	 * One task as an API row, with its subject context resolved.

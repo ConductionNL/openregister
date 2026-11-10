@@ -31,6 +31,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxAudience;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
+use OCA\OpenRegister\Db\TaskInboxFilter;
+use OCA\OpenRegister\Db\TaskInboxOrder;
+use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskInboxPage;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
@@ -111,7 +114,7 @@ class TaskInboxServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testPaginationReportsTheDatastoreTotalOverTheSameCriteria(): void {
-		$criteria = new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice'));
+		$criteria = TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'alice'));
 		$seenByFind = null;
 		$seenByCount = null;
 
@@ -132,7 +135,7 @@ class TaskInboxServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->inbox->inbox(criteria: $criteria, page: new TaskInboxPage(limit: 25, offset: 0));
+		$result = $this->inbox->inboxPage(criteria: $criteria, page: new TaskInboxPage(limit: 25, offset: 0));
 
 		$this->assertCount(25, $result['results']);
 		$this->assertSame(120, $result['total']);
@@ -150,7 +153,7 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks->expects($this->never())->method('findInbox');
 		$this->tasks->expects($this->never())->method('countInbox');
 
-		$result = $this->inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: ' ')));
+		$result = $this->inbox->inboxPage(criteria: TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: ' ')));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
@@ -171,7 +174,7 @@ class TaskInboxServiceTest extends TestCase {
 		);
 		$this->tasks->method('countInbox')->willReturn(0);
 
-		$this->inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')), page: new TaskInboxPage(limit: 99999));
+		$this->inbox->inboxPage(criteria: TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'alice')), page: new TaskInboxPage(limit: 99999));
 	}//end testTheLimitIsClamped()
 
 	/**
@@ -241,7 +244,7 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks->method('findInbox')->willReturn([$first, $second]);
 		$this->tasks->method('countInbox')->willReturn(2);
 
-		$result = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')));
+		$result = $inbox->inboxPage(criteria: TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'alice')));
 
 		$this->assertSame(expected: '2026-0074', actual: $result['results'][0]['subject']['identifier']);
 		$this->assertSame(expected: 'Bezwaar parkeerboete Havenstraat', actual: $result['results'][0]['subject']['title']);
@@ -293,7 +296,7 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks->method('findInbox')->willReturn([$first, $second, $third]);
 		$this->tasks->method('countInbox')->willReturn(3);
 
-		$result = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')));
+		$result = $inbox->inboxPage(criteria: TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'alice')));
 
 		$this->assertSame('Zaak 42', $result['results'][0]['subject']['title']);
 		$this->assertSame('zaak', $result['results'][0]['subject']['schema']);
@@ -370,7 +373,7 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks->method('findInbox')->willReturn([$first, $second]);
 		$this->tasks->method('countInbox')->willReturn(2);
 
-		$result = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')));
+		$result = $inbox->inboxPage(criteria: TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'alice')));
 
 		$this->assertSame('Zaak 7', $result['results'][0]['subject']['title']);
 		$this->assertSame('Zaak oud', $result['results'][1]['subject']['title']);
@@ -402,7 +405,7 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks->method('findInbox')->willReturn([$task]);
 		$this->tasks->method('countInbox')->willReturn(1);
 
-		$result = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')));
+		$result = $inbox->inboxPage(criteria: TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'alice')));
 
 		$this->assertSame('zaken', $result['results'][0]['subject']['register']);
 		$this->assertSame('Zaak 42', $result['results'][0]['subject']['title'], 'the flat title fallback still answers');
@@ -424,7 +427,7 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks->method('findInbox')->willReturn([$task]);
 		$this->tasks->method('countInbox')->willReturn(1);
 
-		$result = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')));
+		$result = $inbox->inboxPage(criteria: TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'alice')));
 
 		$this->assertSame(1, $result['total']);
 		$this->assertNull($result['results'][0]['subject']);
@@ -448,7 +451,7 @@ class TaskInboxServiceTest extends TestCase {
 		);
 		$this->tasks->method('countInbox')->willReturn(1);
 
-		$result = $this->inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')), page: new TaskInboxPage(limit: 0, offset: -5));
+		$result = $this->inbox->inboxPage(criteria: TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'alice')), page: new TaskInboxPage(limit: 0, offset: -5));
 
 		$this->assertSame(1, $result['limit']);
 		$this->assertNull($result['results'][0]['subject']);
@@ -483,4 +486,36 @@ class TaskInboxServiceTest extends TestCase {
 		$this->assertSame(30, $row['daysOverdue']);
 		$this->assertArrayNotHasKey('overdue', $task->jsonSerialize());
 	}//end testTheProjectionLivesOnTheRowOnly()
+
+	/**
+	 * dossiq builds the criteria from flat named values and reads a page positionally; both reach the datastore as given.
+	 *
+	 * @return void
+	 */
+	public function testTheFlatCriteriaAndPositionalWindowReachTheDatastore(): void {
+		$seen = [];
+		$this->tasks->expects($this->exactly(2))->method('findInbox')->willReturnCallback(
+			function (TaskInboxCriteria $c, int $limit, int $offset) use (&$seen): array {
+				$seen[] = [$c, $limit, $offset];
+
+				return [];
+			}
+		);
+		$this->tasks->method('countInbox')->willReturn(0);
+
+		$flat = new TaskInboxCriteria(...['uid' => 'alice', 'groupIds' => ['handlers'], 'scope' => TaskInboxCriteria::SCOPE_POOLED, 'isTerminal' => false, 'openFirst' => true]);
+		$page = $this->inbox->inbox($flat, 40, 0);
+		$this->inbox->inbox(criteria: $flat, limit: 10, offset: 20);
+
+		$this->assertSame(['results' => [], 'total' => 0, 'limit' => 40, 'offset' => 0], $page);
+		$this->assertSame([$flat, 40, 0], $seen[0]);
+		$this->assertSame([10, 20], [$seen[1][1], $seen[1][2]]);
+		$this->assertEquals(
+			TaskInboxCriteria::of(
+				audience: new TaskInboxAudience(uid: 'alice', groupIds: ['handlers'], scope: TaskInboxCriteria::SCOPE_POOLED),
+				selection: new TaskInboxSelection(filter: new TaskInboxFilter(isTerminal: false), order: new TaskInboxOrder(openFirst: true))
+			),
+			$flat
+		);
+	}//end testTheFlatCriteriaAndPositionalWindowReachTheDatastore()
 }//end class

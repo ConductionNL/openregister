@@ -102,7 +102,7 @@ class TaskKindTest extends TestCase {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
 		$mapper->findInbox(
-			criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL), selection: new TaskInboxSelection(filter: new TaskInboxFilter(kind: 'reminder')))
+			criteria: TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL), selection: new TaskInboxSelection(filter: new TaskInboxFilter(kind: 'reminder')))
 		);
 
 		$this->assertTrue($this->saw('expr.eq', 'kind'));
@@ -121,7 +121,7 @@ class TaskKindTest extends TestCase {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
 		$mapper->findInbox(
-			criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL))
+			criteria: TaskInboxCriteria::of(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL))
 		);
 
 		$this->assertFalse($this->saw('expr.eq', 'kind'));

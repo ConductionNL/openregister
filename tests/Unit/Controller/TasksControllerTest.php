@@ -320,7 +320,7 @@ class TasksControllerTest extends TestCase {
 		$payload = ['results' => [['uuid' => 't-1']], 'total' => 1, 'limit' => 50, 'offset' => 0];
 
 		$captured = null;
-		$inbox->expects($this->once())->method('inbox')
+		$inbox->expects($this->once())->method('inboxPage')
 			->willReturnCallback(
 				static function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$captured, $payload) {
 					$limit = $page->limit;
@@ -355,7 +355,7 @@ class TasksControllerTest extends TestCase {
 		]);
 
 		$captured = null;
-		$inbox->method('inbox')
+		$inbox->method('inboxPage')
 			->willReturnCallback(
 				static function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$captured) {
 					$limit = $page->limit;
@@ -375,7 +375,7 @@ class TasksControllerTest extends TestCase {
 	public function testAllUserTasksAcceptsTheLegacyLimitAndOffsetSpellings(): void {
 		[$controller, $inbox] = $this->inboxController('alice', ['limit' => '15', 'offset' => '5']);
 
-		$inbox->expects($this->once())->method('inbox')
+		$inbox->expects($this->once())->method('inboxPage')
 			->with($this->anything(), new TaskInboxPage(limit: 15, offset: 5))
 			->willReturn(['results' => [], 'total' => 0, 'limit' => 15, 'offset' => 5]);
 
@@ -385,7 +385,7 @@ class TasksControllerTest extends TestCase {
 	public function testAllUserTasksCapsThePageSizeAtTwoHundred(): void {
 		[$controller, $inbox] = $this->inboxController('alice', ['_limit' => '100000']);
 
-		$inbox->expects($this->once())->method('inbox')
+		$inbox->expects($this->once())->method('inboxPage')
 			->with($this->anything(), new TaskInboxPage(limit: 200, offset: 0))
 			->willReturn(['results' => [], 'total' => 0, 'limit' => 200, 'offset' => 0]);
 
@@ -394,7 +394,7 @@ class TasksControllerTest extends TestCase {
 
 	public function testAllUserTasksRefusesAnUnmappedStatusRatherThanIgnoringIt(): void {
 		[$controller, $inbox] = $this->inboxController('alice', ['status' => 'whatever']);
-		$inbox->expects($this->never())->method('inbox');
+		$inbox->expects($this->never())->method('inboxPage');
 
 		$result = $controller->allUserTasks();
 
@@ -404,7 +404,7 @@ class TasksControllerTest extends TestCase {
 
 	public function testAllUserTasksWithoutASessionIsUnauthorized(): void {
 		[$controller, $inbox] = $this->inboxController(null);
-		$inbox->expects($this->never())->method('inbox');
+		$inbox->expects($this->never())->method('inboxPage');
 
 		$result = $controller->allUserTasks();
 
@@ -413,7 +413,7 @@ class TasksControllerTest extends TestCase {
 
 	public function testAllUserTasksReturns500WhenTheInboxFails(): void {
 		[$controller, $inbox] = $this->inboxController('alice');
-		$inbox->method('inbox')->willThrowException(new \RuntimeException('database down'));
+		$inbox->method('inboxPage')->willThrowException(new \RuntimeException('database down'));
 
 		$result = $controller->allUserTasks();
 

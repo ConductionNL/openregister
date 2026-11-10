@@ -182,7 +182,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testIndexReturnsTheInboxPageForTheSession(): void {
-		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
+		$this->inbox->expects($this->once())->method('inboxPage')->willReturnCallback(
 			function (TaskInboxCriteria $criteria, TaskInboxPage $page): array {
 				$limit = $page->limit;
 				$offset = $page->offset;
@@ -213,7 +213,7 @@ class TaskControllerTest extends TestCase {
 	 */
 	public function testIndexPassesOpenFirstIntoTheCriteria(): void {
 		$seen = [];
-		$this->inbox->expects($this->exactly(2))->method('inbox')->willReturnCallback(
+		$this->inbox->expects($this->exactly(2))->method('inboxPage')->willReturnCallback(
 			function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$seen): array {
 				$limit = $page->limit;
 				$offset = $page->offset;
@@ -597,7 +597,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testIndexPassesEveryFilterIntoTheCriteria(): void {
-		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
+		$this->inbox->expects($this->once())->method('inboxPage')->willReturnCallback(
 			function (TaskInboxCriteria $criteria): array {
 				$this->assertSame(TaskInboxCriteria::SCOPE_POOLED, $criteria->scope);
 				$this->assertSame(['active', 'enabled'], $criteria->states);
@@ -635,7 +635,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testIndexPassesADueWindowIntoTheCriteria(): void {
-		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
+		$this->inbox->expects($this->once())->method('inboxPage')->willReturnCallback(
 			function (TaskInboxCriteria $criteria): array {
 				$this->assertNotNull($criteria->dueAfter);
 				$this->assertNotNull($criteria->dueBefore);
@@ -667,7 +667,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testIndexRefusesAnUnparseableDueInstant(): void {
-		$this->inbox->expects($this->never())->method('inbox');
+		$this->inbox->expects($this->never())->method('inboxPage');
 
 		$response = $this->controller->index(dueBefore: 'next tuesday-ish');
 
@@ -680,7 +680,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testIndexWithoutADueWindowCarriesNone(): void {
-		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
+		$this->inbox->expects($this->once())->method('inboxPage')->willReturnCallback(
 			function (TaskInboxCriteria $criteria): array {
 				$this->assertNull($criteria->dueAfter);
 				$this->assertNull($criteria->dueBefore);
@@ -701,7 +701,7 @@ class TaskControllerTest extends TestCase {
 	 */
 	public function testIndexPassesIncludeBlockedIntoTheCriteria(): void {
 		$seen = [];
-		$this->inbox->expects($this->exactly(2))->method('inbox')->willReturnCallback(
+		$this->inbox->expects($this->exactly(2))->method('inboxPage')->willReturnCallback(
 			function (TaskInboxCriteria $criteria) use (&$seen): array {
 				$seen[] = $criteria->includeBlocked;
 
@@ -721,7 +721,7 @@ class TaskControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testIndexWithoutOverdueCarriesNoClock(): void {
-		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
+		$this->inbox->expects($this->once())->method('inboxPage')->willReturnCallback(
 			function (TaskInboxCriteria $criteria): array {
 				$this->assertNull($criteria->overdueAt);
 				$this->assertNull($criteria->isTerminal);
@@ -798,7 +798,7 @@ class TaskControllerTest extends TestCase {
 		$groups = $this->createMock(originalClassName: IGroupManager::class);
 		$groups->method('getUserGroupIds')->willThrowException(new RuntimeException('ldap down'));
 		$groups->method('isAdmin')->willThrowException(new RuntimeException('ldap down'));
-		$this->inbox->expects($this->once())->method('inbox')->willReturnCallback(
+		$this->inbox->expects($this->once())->method('inboxPage')->willReturnCallback(
 			function (TaskInboxCriteria $criteria): array {
 				$this->assertSame([], $criteria->groupIds);
 				$this->assertFalse($criteria->isAdmin);

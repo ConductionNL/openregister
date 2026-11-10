@@ -336,9 +336,9 @@ class TaskController extends Controller {
 
 		$audience = new TaskInboxAudience(uid: $uid, groupIds: $this->groupIds(uid: $uid), isAdmin: $this->isAdmin(uid: $uid), scope: $scope);
 		$due = new TaskInboxDueWindow(overdueAt: $overdueAt, dueAfter: $window['after'], dueBefore: $window['before']);
-		$criteria = new TaskInboxCriteria(audience: $audience, selection: $this->inboxSelection(query: $query, due: $due));
+		$criteria = TaskInboxCriteria::of(audience: $audience, selection: $this->inboxSelection(query: $query, due: $due));
 
-		return new JSONResponse($this->inbox->inbox(criteria: $criteria, page: new TaskInboxPage(limit: $query->limit, offset: (int)$query->offset)));
+		return new JSONResponse($this->inbox->inboxPage(criteria: $criteria, page: new TaskInboxPage(limit: $query->limit, offset: (int)$query->offset)));
 	}//end inboxPage()
 
 	/**

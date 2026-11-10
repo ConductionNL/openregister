@@ -284,7 +284,7 @@ class TaskScheduledNotificationJob extends TimedJob {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-deadline-notifications-filter-on-the-derived-predicate
 	 */
 	private function candidates(DateTime $now, int $offset): array {
-		$criteria = new TaskInboxCriteria(
+		$criteria = TaskInboxCriteria::of(
 			audience: new TaskInboxAudience(uid: self::SWEEP_UID, isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL),
 			selection: new TaskInboxSelection(
 				filter: new TaskInboxFilter(isTerminal: false),
