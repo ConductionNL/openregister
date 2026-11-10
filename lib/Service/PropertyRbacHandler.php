@@ -47,6 +47,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\WriteOnlyValue;
+use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
@@ -537,19 +538,20 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 * FieldEncryptionHandler::encryptProperties() — restoring ciphertext before encryption
 	 * would double-encrypt it and corrupt the secret beyond recovery.
 	 *
-	 * @param array $prepared The prepared update payload, mutated copy returned.
-	 * @param array $stored The RAW stored object (never a rendered one).
-	 * @param array<int, string> $omittedPaths Declared paths absent from the incoming payload.
+	 * @param array            $prepared The prepared update payload, mutated copy returned.
+	 * @param OmittedWriteOnly $omitted  The RAW stored object (never a rendered one) and the declared paths absent
+	 *                                   from the incoming payload.
 	 *
 	 * @return array The payload with omitted write-only values carried forward.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
 	 */
-	public function restoreWriteOnlyValues(array $prepared, array $stored, array $omittedPaths): array {
+	public function restoreWriteOnlyValues(array $prepared, OmittedWriteOnly $omitted): array {
+		$stored = $omitted->stored;
 		// Nothing stored at a location: the value was never set. Restoring would
 		// invent a key that never existed, so leave the payload alone there and
 		// let normal PUT semantics apply.
-		foreach (array_filter($omittedPaths, fn ($path): bool => $this->paths->exists(path: $path, object: $stored)) as $path) {
+		foreach (array_filter($omitted->paths, fn ($path): bool => $this->paths->exists(path: $path, object: $stored)) as $path) {
 			$prepared = $this->paths->restore(
 				prepared: $prepared,
 				stored: new WriteOnlyValue(path: $path, value: $this->paths->read(path: $path, object: $stored))
