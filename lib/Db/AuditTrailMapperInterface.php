@@ -549,41 +549,6 @@ interface AuditTrailMapperInterface {
 	public function getStatisticsGroupedBySchema(array $schemaIds): array;
 
 	/**
-	 * Create a custom audit trail entry for archival operations, or for any
-	 * other caller that needs a non-CRUD action recorded with an explicit
-	 * actor.
-	 *
-	 * `$actorId`/`$actorName` exist for callers acting on behalf of a
-	 * non-human principal — e.g. `registry-subscriptions`' inbound update
-	 * endpoint, which authenticates as a connector's app-password account
-	 * but must audit the REGISTRY (`registry:brp`) as the actor, not
-	 * whichever Nextcloud account the app password happens to belong to.
-	 * Omit both to keep the previous session-derived behavior unchanged.
-	 *
-	 * @param ObjectEntity $object The object the entry relates to
-	 * @param string $action The archival action (e.g., archival.destroyed)
-	 * @param array $context Additional context data
-	 * @param string|null $actorId Explicit actor id, bypassing the session user. Null uses the session.
-	 * @param string|null $actorName Explicit actor display name, paired with $actorId.
-	 * @param string|null $ipAddress The calling address, for callers that have one and must record it.
-	 *
-	 * `$ipAddress` exists for a principal that is not a session at all: an
-	 * access link is opened by somebody with no account, and reconstructing a
-	 * wrong publication needs where it was opened from as much as when. Omit it
-	 * and the column is left exactly as before, so no existing caller changes.
-	 *
-	 * @return AuditTrail The created audit trail entry
-	 *
-	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
-	 */
-	public function createAuditTrailEntry(
-		ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null,
-		?string $ipAddress = null
-	): AuditTrail;
-
-	/**
 	 * Record a non-CRUD action on one object, with an explicit actor when one is named.
 	 *
 	 * @param AuditTrail\ObjectAuditEvent $event The object, action, context, and the explicit actor and address.

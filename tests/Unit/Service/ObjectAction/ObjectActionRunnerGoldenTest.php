@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -101,14 +102,16 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 		// The real ObjectActionAudit writes the entry, so the acting user is
 		// the one its gate reads: record() no longer takes a userId argument.
 		$this->trail = $this->createMock(AuditTrailMapperInterface::class);
-		$this->trail->method('createAuditTrailEntry')->willReturnCallback(
-			function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
-				$this->audited[] = array_combine(
-					['object', 'action', 'kind', 'run', 'inputsDigest', 'changes', 'outcome', 'userId'],
-					[$object, $context['declaredAction'], $context['kind'], $context['run'], $context['inputsDigest'], $context['changes'], $context['outcome'], $actorId]
-				);
-				return new AuditTrail();
-			}
+		$this->trail->method('recordObjectEvent')->willReturnCallback(
+			AuditTrailEvents::positional(
+				function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
+					$this->audited[] = array_combine(
+						['object', 'action', 'kind', 'run', 'inputsDigest', 'changes', 'outcome', 'userId'],
+						[$object, $context['declaredAction'], $context['kind'], $context['run'], $context['inputsDigest'], $context['changes'], $context['outcome'], $actorId]
+					);
+					return new AuditTrail();
+				}
+			)
 		);
 		$this->transitions = $this->createMock(TransitionEngine::class);
 		$this->transitions->method('availableActions')->willReturn([['action' => 'reopen']]);

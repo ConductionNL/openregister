@@ -69,6 +69,7 @@ use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -289,11 +290,13 @@ class ObjectActionSelfAssignTest extends TestCase {
 		// The real ObjectActionAudit writes the entry, so the acting user is
 		// the one its gate reads: record() no longer takes a userId argument.
 		$trail = $this->createMock(AuditTrailMapperInterface::class);
-		$trail->method('createAuditTrailEntry')->willReturnCallback(
-			function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
-				$this->audited[] = [$object, $context['declaredAction'], $context['kind'], $context['run'], $context['inputsDigest'], $context['changes'], $context['outcome'], $actorId];
-				return new AuditTrail();
-			}
+		$trail->method('recordObjectEvent')->willReturnCallback(
+			AuditTrailEvents::positional(
+				function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
+					$this->audited[] = [$object, $context['declaredAction'], $context['kind'], $context['run'], $context['inputsDigest'], $context['changes'], $context['outcome'], $actorId];
+					return new AuditTrail();
+				}
+			)
 		);
 
 		$checks   = new ObjectActionRunnerChecks(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)), new ObjectActionInputs(new OasRequestValidator()));

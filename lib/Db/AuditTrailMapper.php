@@ -32,9 +32,7 @@ use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
 use OCA\OpenRegister\Db\AuditTrail\HardeningChange;
-use OCA\OpenRegister\Db\AuditTrail\NamedActor;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
-use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailStatistics;
 use DateTime;
@@ -222,7 +220,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		//
 		// Attribution is applied here as well as in buildEntry(), which
 		// covers the entry points that do NOT build their row there —
-		// createAuditTrailEntry() (archival/retention) and
+		// recordObjectEvent() (archival/retention) and
 		// recordToolInvocation() (MCP). Both can be reached from inside a
 		// flow. Re-applying to a row the builder already stamped is idempotent:
 		// it reads the same ambient frame and writes the same three values.
@@ -2702,51 +2700,12 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end getStatisticsGroupedBySchema()
 
 	/**
-	 * Create a custom audit trail entry for archival operations, or for any
-	 * other caller that needs a non-CRUD action recorded with an explicit
-	 * actor.
-	 *
-	 * `$actorId`/`$actorName` exist for callers acting on behalf of a
-	 * non-human principal — e.g. `registry-subscriptions`' inbound update
-	 * endpoint, which authenticates as a connector's app-password account
-	 * but must audit the REGISTRY (`registry:brp`) as the actor, not
-	 * whichever Nextcloud account the app password happens to belong to.
-	 * Omit both to keep the previous session-derived behavior unchanged.
-	 *
-	 * @param ObjectEntity $object The object the entry relates to
-	 * @param string $action The archival action (e.g., archival.destroyed)
-	 * @param array $context Additional context data
-	 * @param string|null $actorId Explicit actor id, bypassing the session user. Null uses the session.
-	 * @param string|null $actorName Explicit actor display name, paired with $actorId.
-	 * @param string|null $ipAddress The calling address, for callers that have one and must record it.
-	 *
-	 * `$ipAddress` exists for a principal that is not a session at all: an
-	 * access link is opened by somebody with no account, and reconstructing a
-	 * wrong publication needs where it was opened from as much as when. Omit it
-	 * and the column is left exactly as before, so no existing caller changes.
-	 *
-	 * @return AuditTrail The created audit trail entry
-	 *
-	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
-	 *
-	 */
-	public function createAuditTrailEntry(
-		ObjectEntity $object,
-		string $action,
-		array $context = [],
-		?string $actorId = null,
-		?string $actorName = null,
-		?string $ipAddress = null,
-	): AuditTrail {
-		$options = new ObjectAuditEventOptions(actor: new NamedActor(id: $actorId, name: $actorName), ipAddress: $ipAddress);
-
-		return $this->recordObjectEvent(event: new ObjectAuditEvent(object: $object, action: $action, context: $context, options: $options));
-	}//end createAuditTrailEntry()
-
-	/**
 	 * Record a non-CRUD action on one object, with an explicit actor when one is named.
 	 *
-	 * The typed form of {@see createAuditTrailEntry()}, which keeps its signature for other apps.
+	 * A caller acting for a non-human principal names it as the actor: the
+	 * registry of an inbound update (`registry:brp`) rather than the account its
+	 * app password belongs to, or an access link with the address it was opened
+	 * from. Without a named actor the session user is the actor.
 	 *
 	 * @param ObjectAuditEvent $event The object, action, context, and the explicit actor and address.
 	 *
@@ -2768,7 +2727,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end recordObjectEvent()
 
 	/**
-	 * The actor a createAuditTrailEntry() row names.
+	 * The actor a recordObjectEvent() row names.
 	 *
 	 * An explicit actor id is used with its name, or with itself when no name
 	 * is given. Without one the session user is the actor, and the given name

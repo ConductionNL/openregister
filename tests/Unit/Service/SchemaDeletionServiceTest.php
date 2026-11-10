@@ -317,7 +317,7 @@ class SchemaDeletionServiceTest extends TestCase {
 	 * REQ (deletion-audit-trail): one audit entry per cascaded object, carrying the
 	 * full pre-delete snapshot and the cascade trigger context.
 	 *
-	 * The entries go through AuditTrailMapper::createAuditTrailEntry(), which is the
+	 * The entries go through AuditTrailMapper::recordObjectEvent(), which is the
 	 * hash-chaining insert path (ADR-003) — writing them any other way would break the
 	 * chain. They are written BEFORE the rows are removed and BEFORE the table is
 	 * dropped, which is what makes the objects reconstructible afterwards; that

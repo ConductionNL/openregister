@@ -10,7 +10,7 @@
  * entry is built from the object's identifiers alone, and no property value
  * is read.
  *
- * It is written through AuditTrailMapper::createAuditTrailEntry(), the entry
+ * It is written through AuditTrailMapper::recordObjectEvent(), the entry
  * point every recorded moment that is not a plain change uses, so it is
  * hash-chained and shows where other audit rows show.
  *
