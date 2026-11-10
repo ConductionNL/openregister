@@ -218,11 +218,7 @@ class SipSchemaDeclaredFactsTest extends TestCase {
 		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
 
-		$annotations = new ObjectArchivalAnnotation(
-			schemaMapper: $schemaMapper,
-			evaluator: new RetentionEvaluator(logger: new NullLogger()),
-			logger: new NullLogger()
-		);
+		$annotations = new ObjectArchivalAnnotation(lookup: new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup(schemaMapper: $schemaMapper, logger: new NullLogger()), evaluator: new RetentionEvaluator(logger: new NullLogger()));
 
 		$eventMapper = $this->createMock(originalClassName: MdtoEventMapper::class);
 		$eventMapper->method('forObject')->willReturn([]);

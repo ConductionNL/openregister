@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
@@ -86,14 +87,14 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectTreeSources $sources  Reads children, the hierarchy declaration and the node cap.
-	 * @param ObjectTreeMappers $mappers  Loads objects, filters them by read access, resolves register and schema.
-	 * @param RenderObject      $renderer Strips what the caller may not read from the properties a node carries.
-	 * @param LoggerInterface   $logger   The logger.
+	 * @param ObjectTreeSources      $sources  Reads children, the hierarchy declaration and the node cap.
+	 * @param SchemaCatalogInterface $catalog  Loads objects, filters them by read access, resolves register and schema.
+	 * @param RenderObject           $renderer Strips what the caller may not read from the properties a node carries.
+	 * @param LoggerInterface        $logger   The logger.
 	 */
 	public function __construct(
 		private readonly ObjectTreeSources $sources,
-		private readonly ObjectTreeMappers $mappers,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly RenderObject $renderer,
 		private readonly LoggerInterface $logger,
 	) {
@@ -336,8 +337,8 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 			// Metadata only: which table and which declaration. Access to the
 			// rows is decided per node below.
 			return [
-				'register' => $this->mappers->registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false),
-				'schema' => $this->mappers->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false),
+				'register' => $this->catalog->registers()->find(id: $registerId, _rbac: false, _multitenancy: false),
+				'schema' => $this->catalog->schemas()->find(id: $schemaId, _rbac: false, _multitenancy: false),
 			];
 		} catch (Throwable $e) {
 			return null;
@@ -622,7 +623,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 			return $uuids;
 		}
 
-		$readable = $this->mappers->objectMapper->readableUuidsOrNull(
+		$readable = $this->catalog->tables()->readableUuidsOrNull(
 			registerId: (int)$walk['register']->getId(),
 			schemaId: (int)$walk['schema']->getId(),
 			uuids: array_map('strval', array_keys($uuids))
@@ -643,7 +644,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * @return array<string, ObjectEntity> Uuid => object.
 	 */
 	private function load(array $walk, array $uuids): array {
-		return $this->mappers->objectMapper->findObjectsByUuidsInRegisterSchema(
+		return $this->catalog->tables()->findObjectsByUuidsInRegisterSchema(
 			register: $walk['register'],
 			schema: $walk['schema'],
 			uuids: array_map('strval', $uuids)

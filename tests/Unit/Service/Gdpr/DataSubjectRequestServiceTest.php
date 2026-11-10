@@ -143,10 +143,7 @@ class DataSubjectRequestServiceTest extends TestCase {
 				logger: $this->createMock(LoggerInterface::class)
 			)), retentionGate: new SubjectRetentionGate(
 				retentionService: $this->retentionService,
-				archivalGuard: new ArchivalRetentionGuard(
-					$this->schemaMapper,
-					$this->createMock(LoggerInterface::class)
-				)
+				archivalGuard: new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->schemaMapper, $this->createMock(LoggerInterface::class)))
 			), deadline: new DataSubjectDeadline(), logger: $this->createMock(LoggerInterface::class));
 
 	}//end setUp()
@@ -432,10 +429,7 @@ class DataSubjectRequestServiceTest extends TestCase {
 				logger: $this->createMock(LoggerInterface::class)
 			)), retentionGate: new SubjectRetentionGate(
 				retentionService: $this->retentionService,
-				archivalGuard: new ArchivalRetentionGuard(
-					$this->schemaMapper,
-					$this->createMock(LoggerInterface::class)
-				)
+				archivalGuard: new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->schemaMapper, $this->createMock(LoggerInterface::class)))
 			), deadline: new DataSubjectDeadline(), logger: $this->createMock(LoggerInterface::class));
 	}//end rebuildServiceWithSchemaMapper()
 
