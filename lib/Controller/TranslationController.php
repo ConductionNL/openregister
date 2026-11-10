@@ -34,8 +34,8 @@ use OCA\OpenRegister\Controller\Support\BulkTranslation;
 use OCA\OpenRegister\Controller\Support\TranslationControllerServices;
 use OCA\OpenRegister\Controller\Support\TranslationFilter;
 use OCA\OpenRegister\Controller\Support\TranslationSearchOptions;
+use OCA\OpenRegister\Controller\Support\TranslationSearchRequest;
 use OCA\OpenRegister\Controller\Support\TranslationSlot;
-use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -125,36 +125,22 @@ class TranslationController extends Controller {
 	 *   side-by-side per matched row so editorial tooling can render the
 	 *   source / target pair without a follow-up round trip.
 	 *
-	 * @param string|null $query Optional full-text query.
-	 * @param string|null $language Optional language filter.
-	 * @param string|null $status Optional status filter.
-	 * @param string|null $objectUuid Optional object UUID filter.
-	 * @param int|null $limit Maximum number of results.
-	 * @param string|null $sourceLanguage Optional source-language filter.
-	 * @param string|null $isOutOfDate When set to "true"/"1", restrict to outdated status.
-	 * @param string|null $compareToSource When set to "true"/"1", attach `sourceValue` per row.
+	 * Reads its query parameters from the request (TranslationSearchRequest):
+	 * `query`, `language`, `status`, `objectUuid`, `limit` (1..1000, default
+	 * 100), `sourceLanguage`, `isOutOfDate` and `compareToSource`.
 	 *
 	 * @return JSONResponse JSON response with results and count.
 	 *
 	 * @NoCSRFRequired
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) TranslationSearchRequest::fromParams() is the value object's named constructor.
+	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
 	 */
-	public function search(
-		string|null $query = null,
-		string|null $language = null,
-		string|null $status = null,
-		string|null $objectUuid = null,
-		int|null $limit = 100,
-		string|null $sourceLanguage = null,
-		string|null $isOutOfDate = null,
-		string|null $compareToSource = null,
-	): JSONResponse {
-		$filter = new TranslationFilter(language: $language, status: $status, objectUuid: $objectUuid, sourceLanguage: $sourceLanguage);
-		$listing = new ListQuery(limit: max(1, min(1000, (int)($limit ?? 100))), search: $query);
-		$options = new TranslationSearchOptions(listing: $listing, isOutOfDate: $isOutOfDate, compareToSource: $compareToSource);
+	public function search(): JSONResponse {
+		$search = TranslationSearchRequest::fromParams(params: $this->request->getParams());
 
-		return $this->searchRows(filter: $filter, options: $options);
+		return $this->searchRows(filter: $search->filter, options: $search->options);
 	}//end search()
 
 	/**

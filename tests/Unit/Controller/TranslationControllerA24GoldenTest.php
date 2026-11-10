@@ -145,15 +145,14 @@ class TranslationControllerA24GoldenTest extends TestCase {
 	}//end recordSearch()
 
 	/**
-	 * Search, as the router would call it: raw params in the request, cast arguments positionally.
+	 * Search, as the router would call it: raw params in the request.
 	 *
-	 * @param array<string, mixed> $raw  Raw request params.
-	 * @param array<int, mixed>    $args The dispatcher-cast arguments, positionally.
+	 * @param array<string, mixed> $raw Raw request params.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function search(array $raw, array $args): array {
-		$response = $this->controller($raw)->search(...$args);
+	private function search(array $raw): array {
+		$response = $this->controller($raw)->search();
 		$this->assertSame(200, $response->getStatus());
 		return $response->getData();
 	}//end search()
@@ -168,7 +167,7 @@ class TranslationControllerA24GoldenTest extends TestCase {
 		$this->status->expects($this->never())->method('searchWithSourceValues');
 		$this->assertSame(
 			['results' => [['search', null, null, null, null, 100, null, false]], 'count' => 1],
-			$this->search([], [])
+			$this->search([])
 		);
 	}
 
@@ -190,15 +189,15 @@ class TranslationControllerA24GoldenTest extends TestCase {
 		];
 		$this->assertSame(
 			[['search', 'q', 'nl', 'draft', 'u', 1000, 'en', true]],
-			$this->search($raw, ['q', 'nl', 'draft', 'u', 5000, 'en', ' Yes '])['results']
+			$this->search($raw)['results']
 		);
-		$this->assertSame(1, $this->search(['limit' => '0'], [null, null, null, null, 0])['results'][0][5]);
-		$this->assertSame(1, $this->search(['limit' => '-4'], [null, null, null, null, -4])['results'][0][5]);
-		$this->assertSame(1, $this->search(['limit' => ''], [null, null, null, null, 0])['results'][0][5]);
-		$this->assertSame(7, $this->search(['limit' => '7'], [null, null, null, null, 7])['results'][0][5]);
-		$this->assertFalse($this->search(['isOutOfDate' => 'nope'], [null, null, null, null, 100, null, 'nope'])['results'][0][7]);
-		$this->assertFalse($this->search(['isOutOfDate' => ''], [null, null, null, null, 100, null, ''])['results'][0][7]);
-		$this->assertTrue($this->search(['isOutOfDate' => 'ON'], [null, null, null, null, 100, null, 'ON'])['results'][0][7]);
+		$this->assertSame(1, $this->search(['limit' => '0'])['results'][0][5]);
+		$this->assertSame(1, $this->search(['limit' => '-4'])['results'][0][5]);
+		$this->assertSame(1, $this->search(['limit' => ''])['results'][0][5]);
+		$this->assertSame(7, $this->search(['limit' => '7'])['results'][0][5]);
+		$this->assertFalse($this->search(['isOutOfDate' => 'nope'])['results'][0][7]);
+		$this->assertFalse($this->search(['isOutOfDate' => ''])['results'][0][7]);
+		$this->assertTrue($this->search(['isOutOfDate' => 'ON'])['results'][0][7]);
 	}
 
 	/**
@@ -211,7 +210,7 @@ class TranslationControllerA24GoldenTest extends TestCase {
 		$this->status->expects($this->never())->method('search');
 		$this->assertSame(
 			['results' => [['searchWithSourceValues', null, 'de', null, null, 100, null, true]], 'count' => 1],
-			$this->search(['language' => 'de', 'isOutOfDate' => '1', 'compareToSource' => 'true'], [null, 'de', null, null, 100, null, '1', 'true'])
+			$this->search(['language' => 'de', 'isOutOfDate' => '1', 'compareToSource' => 'true'])
 		);
 	}
 
