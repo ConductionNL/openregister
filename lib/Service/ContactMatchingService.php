@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\ContactDetails;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCP\ICache;
@@ -292,23 +293,17 @@ class ContactMatchingService implements ContactMatcherInterface {
 	 * Calls matchByEmail first, then matchByName and matchByOrganization if provided.
 	 * Deduplicates by object UUID, keeping the highest confidence match.
 	 *
-	 * @param string $email The email address (required)
-	 * @param string|null $name The display name (optional)
-	 * @param string|null $organization The organization name (optional)
+	 * @param ContactDetails $contact The email address (required), display name and organization name (optional).
 	 *
 	 * @return array Combined, deduplicated match results sorted by confidence
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function matchContact(
-		string $email,
-		?string $name = null,
-		?string $organization = null,
-	): array {
+	public function matchContact(ContactDetails $contact): array {
 		// Email matching (highest confidence), then name (medium), then organization (lowest).
-		$allMatches = $this->byUuid(matches: $this->matchByEmail(email: $email));
-		$allMatches = $this->withNameMatches(allMatches: $allMatches, name: $name);
-		$allMatches = $this->withOrganizationMatches(allMatches: $allMatches, organization: $organization);
+		$allMatches = $this->byUuid(matches: $this->matchByEmail(email: $contact->email));
+		$allMatches = $this->withNameMatches(allMatches: $allMatches, name: $contact->name);
+		$allMatches = $this->withOrganizationMatches(allMatches: $allMatches, organization: $contact->organization);
 
 		return $this->byConfidence(matches: $allMatches);
 	}//end matchContact()

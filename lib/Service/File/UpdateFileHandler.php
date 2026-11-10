@@ -196,31 +196,20 @@ class UpdateFileHandler {
 	 * This method updates the content and/or tags of an existing file. When updating tags,
 	 * it preserves any existing 'object:' tags while replacing other user-defined tags.
 	 *
-	 * @param string|int $filePath The path or file ID.
-	 * @param string|resource|null $content Optional content of the file: a byte string, a readable
-	 *                                      stream resource (streamed straight to storage), or null
-	 *                                      to update only metadata/tags.
-	 * @param array $tags Optional array of tags.
-	 * @param ObjectEntity|null $object Optional object entity.
+	 * @param FileOverwrite $overwrite The path or file ID; the content (a byte string, a readable stream resource
+	 *                                 streamed straight to storage, or null to update only the tags); the tags;
+	 *                                 and the object whose folder is searched first.
 	 *
 	 * @return File The updated file.
 	 *
 	 * @throws Exception If the file doesn't exist or if file operations fail.
 	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function updateFile(
-		string|int $filePath,
-		mixed $content = null,
-		array $tags = [],
-		?ObjectEntity $object = null,
-	): File {
-		$this->note(level: 'debug', message: "Original file path received: '$filePath'");
-		$file = $this->findFile(filePath: $filePath, object: $object);
-		return $this->applyChange(file: $file, change: new FileContentChange(content: $content, tags: $tags));
+	public function updateFile(FileOverwrite $overwrite): File {
+		$this->note(level: 'debug', message: "Original file path received: '$overwrite->filePath'");
+		$file = $this->findFile(filePath: $overwrite->filePath, object: $overwrite->object);
+		return $this->applyChange(file: $file, change: new FileContentChange(content: $overwrite->content, tags: $overwrite->tags));
 	}//end updateFile()
 
 	/**
@@ -629,6 +618,7 @@ class UpdateFileHandler {
 	 */
 	private function contentMd5(mixed $content): string {
 		if (is_resource($content) === false) {
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- Md5 is the checksum Nextcloud stores for the file, compared to skip an unchanged write.
 			return md5(string: $content);
 		}
 

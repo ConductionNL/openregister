@@ -38,8 +38,16 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Db/ListQuery.php',
 		'Db/RegisterSchema.php',
 		'Kernel/Contracts/ExampleSetInstallInput.php',
+		'Kernel/Contracts/ContactDetails.php',
+		'Kernel/Contracts/KeywordChunkSearch.php',
+		'Kernel/Contracts/MergeInstruction.php',
 		'Kernel/Contracts/ObjectRef.php',
+		'Kernel/Contracts/PreferenceAddress.php',
+		'Kernel/Contracts/PreferenceWrite.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/ReportCaller.php',
+		'Kernel/Contracts/ScheduledReportUpdate.php',
+		'Kernel/Contracts/TimerSubjectRef.php',
 	];
 
 	/**
@@ -49,8 +57,19 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	 */
 	private const KERNEL_LEAVES = [
 		'Kernel/Contracts/ExampleSetInstallInput.php',
+		'Kernel/Contracts/ContactDetails.php',
+		'Kernel/Contracts/KeywordChunkSearch.php',
+		'Kernel/Contracts/MergeInstruction.php',
 		'Kernel/Contracts/ObjectRef.php',
+		'Kernel/Contracts/PreferenceAddress.php',
+		'Kernel/Contracts/PreferenceWrite.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/ReportCaller.php',
+		'Kernel/Contracts/ScheduledReportUpdate.php',
+		'Kernel/Contracts/RelationDecisionUpdate.php',
+		'Kernel/Contracts/TimerAnchorMove.php',
+		'Kernel/Contracts/TimerChange.php',
+		'Kernel/Contracts/TimerSubjectRef.php',
 	];
 
 	/**

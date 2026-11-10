@@ -239,7 +239,7 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 	 * in a change; an existing account still passes.
 	 */
 	public function testAnAccountIdTheSetDoesNotDeclareIsStillRefused(): void {
-		$this->accounts->createUser(uid: 'kees.bestaand', displayName: 'Kees', email: '', password: 'x');
+		$this->accounts->createAccount(account: new \OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount(uid: 'kees.bestaand', displayName: 'Kees', email: '', password: 'x'));
 		$this->app(app: 'crm', fragment: [
 			'objects' => [
 				['key' => 'ticket-1', 'register' => 'crm', 'schema' => 'ticket', 'data' => ['assignee' => 'nobody.here']],

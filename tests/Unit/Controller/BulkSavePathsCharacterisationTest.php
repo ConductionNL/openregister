@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -82,8 +83,8 @@ class BulkSavePathsCharacterisationTest extends TestCase {
 		$objects->method('getRegister')->willReturn(1);
 		$objects->method('getSchema')->willReturn($schemaId);
 		$objects->method('saveObjectsStreaming')->willReturnCallback(
-			function (...$args): BatchOperationStatus {
-				$this->calls[] = ['stream', array_slice($args, 0, 3)];
+			function (StreamingSave $save): BatchOperationStatus {
+				$this->calls[] = ['stream', [$save->rows, $save->register, $save->schema]];
 				$status = new BatchOperationStatus();
 				$status->start();
 				$status->recordCreated('11111111-1111-1111-1111-111111111111');

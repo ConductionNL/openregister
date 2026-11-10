@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -326,13 +327,13 @@ class DedupCreatePolicyTest extends TestCase {
 
 		$captured = [];
 		$this->auditTrailMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (ObjectEntity $subject, string $action, array $context) use (&$captured): AuditTrail {
 					$captured = ['uuid' => $subject->getUuid(), 'action' => $action, 'context' => $context];
 					return new AuditTrail();
 				}
-			);
+			));
 
 		$this->policy->recordOverride($object, $this->oneMatch());
 
@@ -350,7 +351,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testNoOverrideWritesNoAuditEntry(): void {
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->policy->recordOverride(new ObjectEntity(), []);
 	}//end testNoOverrideWritesNoAuditEntry()

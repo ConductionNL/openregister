@@ -98,6 +98,17 @@ class SchemaMapperCompositionGoldenTest extends TestCase {
 		return $row;
 	}//end row()
 
+	/**
+	 * A schema already in hand, with the identifiers the composition search matches on.
+	 */
+	private static function known(?int $id, ?string $uuid, ?string $slug): Schema {
+		$schema = new Schema();
+		$schema->setId($id);
+		$schema->setUuid($uuid);
+		$schema->setSlug($slug);
+		return $schema;
+	}//end known()
+
 	private static function parent(int $id = 2, array $properties = ['name' => self::NAME], array $required = ['name']): array {
 		return self::row($id, 'parent-' . $id, ['properties' => $properties, 'required' => $required]);
 	}//end parent()
@@ -234,12 +245,12 @@ class SchemaMapperCompositionGoldenTest extends TestCase {
 	public function testExtendedByMatchesGolden(): void {
 		$found = [['uuid' => 'a'], ['uuid' => null], ['uuid' => 'b']];
 		$cases = [
-			'known uuid and slug' => [[$found], [5, 'u', 's']],
-			'known uuid' => [[$found], [5, 'u', null]],
-			'known slug' => [[$found], ['5', null, 's']],
-			'known empty' => [[$found], ['', '', '']],
-			'looked up' => [[[self::row(7, 'seven')], $found], ['seven', null, null]],
-			'lookup finds nothing' => [[[]], ['gone', null, null]],
+			'known uuid and slug' => [[$found], [self::known(5, 'u', 's')]],
+			'known uuid' => [[$found], [self::known(5, 'u', null)]],
+			'known slug' => [[$found], [self::known(5, null, 's')]],
+			'known empty' => [[$found], [self::known(null, '', '')]],
+			'looked up' => [[[self::row(7, 'seven')], $found], ['seven']],
+			'lookup finds nothing' => [[[]], ['gone']],
 		];
 		$actual = [];
 		foreach ($cases as $name => [$queue, $args]) {

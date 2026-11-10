@@ -83,6 +83,19 @@ class DefinitionWriteRights implements DefinitionWriteRightsInterface {
 			return false;
 		}
 
+		$named = self::entriesNamedBy(rules: $rules);
+
+		return array_intersect($this->groupManager->getUserGroupIds($user), array_filter($named, 'is_string')) !== [];
+	}//end mayManage()
+
+	/**
+	 * What each `manage` entry names: the entry itself, or the `group` of an array entry.
+	 *
+	 * @param array<mixed> $rules The `manage` rule.
+	 *
+	 * @return array<int, mixed> One named value per entry, in order; not yet filtered to group ids.
+	 */
+	private static function entriesNamedBy(array $rules): array {
 		$named = [];
 		foreach ($rules as $entry) {
 			if (is_array($entry) === true) {
@@ -92,6 +105,6 @@ class DefinitionWriteRights implements DefinitionWriteRightsInterface {
 			$named[] = $entry;
 		}
 
-		return array_intersect($this->groupManager->getUserGroupIds($user), array_filter($named, 'is_string')) !== [];
-	}//end mayManage()
+		return $named;
+	}//end entriesNamedBy()
 }//end class

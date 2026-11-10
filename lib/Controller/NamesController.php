@@ -121,7 +121,7 @@ class NamesController extends Controller {
 		// SEC-CTRL-2: require authentication — this endpoint must not leak object/
 		// organisation names anonymously. Dropped @PublicPage.
 		if ($this->userSession->getUser() === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequiredResponse();
 		}
 
 		// Names follow read rights, decided in CacheHandler itself: the caller
@@ -132,104 +132,12 @@ class NamesController extends Controller {
 		$startTime = microtime(true);
 
 		try {
-			// Check if specific IDs were requested.
-			$requestedIds = $this->request->getParam('ids');
+			$names = $this->lookupNamesForQuery(startTime: $startTime);
 
-			/*
-			 * Initialize names array before conditional assignment.
-			 *
-			 * @var array<string, string> $names
-			 */
-
-			$names = [];
-
-			// Handle different input formats for IDs.
-			if ($requestedIds !== null) {
-				// Parse IDs from different possible formats.
-				if (is_string($requestedIds) === true) {
-					// Handle comma-separated string or JSON array string.
-					if (str_starts_with($requestedIds, '[') === true) {
-						$requestedIds = json_decode($requestedIds, true) ?? [];
-					}
-
-					if (is_string($requestedIds) === true) {
-						$requestedIds = array_map('trim', explode(',', $requestedIds));
-					}
-				}
-
-				// Not `is_string() === false && ...`: every path above turns a
-				// string into an array (explode/array_map, or json_decode of a
-				// '['-prefixed string), and a non-string never enters that block,
-				// so the string test here can only ever be true.
-				if (is_array($requestedIds) === false) {
-					$requestedIds = [(string)$requestedIds];
-				}
-
-				/*
-				 * Get names for specific IDs.
-				 *
-				 * @var array<string, string> $names
-				 */
-
-				$names = $this->objectCacheService->getMultipleObjectNames($requestedIds);
-
-				$this->logger->debug(
-					message: '[NamesController] 📦 BULK NAME LOOKUP REQUEST',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'requested_count' => count($requestedIds),
-						'found_count' => count($names),
-						'execution_time' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
-					]
-				);
-			}//end if
-
-			if ($requestedIds === null) {
-				// Get all object names (triggers warmup if needed).
-				$names = $this->objectCacheService->getAllObjectNames();
-
-				$this->logger->debug(
-					message: '[NamesController] 📋 ALL NAMES REQUEST',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'total_names' => count($names),
-						'execution_time' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
-					]
-				);
-			}
-
-			$executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
-			return new JSONResponse(
-				data: [
-					'names' => $names,
-					'total' => count($names),
-					'cached' => true,
-					'execution_time' => $executionTime . 'ms',
-					'cache_stats' => $this->objectCacheService->getStats(),
-				]
-			);
+			return $this->namesResponse(names: $names, startTime: $startTime);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[NamesController] Names endpoint failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to retrieve object names',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->lookupFailedResponse(logMessage: '[NamesController] Names endpoint failed', exception: $e);
+		}
 	}//end index()
 
 	/**
@@ -279,7 +187,7 @@ class NamesController extends Controller {
 		// SEC-CTRL-2: require authentication — per-ids name resolution must not be
 		// reachable anonymously. Dropped @PublicPage.
 		if ($this->userSession->getUser() === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequiredResponse();
 		}
 
 		// The lookup (getMultipleObjectNames()) only resolves ids the caller may read, so a
@@ -287,76 +195,275 @@ class NamesController extends Controller {
 		$startTime = microtime(true);
 
 		try {
-			// Get JSON body content.
-			$inputData = $this->request->getParams();
-
-			// Support both 'ids' in JSON body and form data.
-			$requestedIds = $inputData['ids'] ?? null;
-
-			if ($requestedIds === null || is_array($requestedIds) === false) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Invalid request: ids array is required in request body',
-						'example' => ['ids' => ['uuid-1', 'uuid-2', 'uuid-3']],
-					],
-					statusCode: 400
-				);
-			}
-
-			// Filter and validate IDs.
-			$requestedIds = array_filter(array_map('trim', $requestedIds));
-
-			if (empty($requestedIds) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'No valid IDs provided in request',
-					],
-					statusCode: 400
-				);
-			}
-
-			$names = $this->objectCacheService->getMultipleObjectNames($requestedIds);
-			$executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
-			$this->logger->debug(
-				message: '[NamesController] 📦 BULK NAME POST REQUEST',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'requested_count' => count($requestedIds),
-					'found_count' => count($names),
-					'execution_time' => $executionTime . 'ms',
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'names' => $names,
-					'total' => count($names),
-					'requested' => count($requestedIds),
-					'cached' => true,
-					'execution_time' => $executionTime . 'ms',
-					'cache_stats' => $this->objectCacheService->getStats(),
-				]
-			);
+			return $this->lookupPostedNames(startTime: $startTime);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[NamesController] POST names endpoint failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to retrieve object names',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->lookupFailedResponse(logMessage: '[NamesController] POST names endpoint failed', exception: $e);
+		}
 	}//end create()
+
+	/**
+	 * Answer an anonymous caller.
+	 *
+	 * @return JSONResponse 401 response
+	 */
+	private function authenticationRequiredResponse(): JSONResponse {
+		return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+	}//end authenticationRequiredResponse()
+
+	/**
+	 * Resolve the names the GET query asks for: the listed ids, or every name when no ids are given.
+	 *
+	 * @param float $startTime Request start, for the logged execution time
+	 *
+	 * @return array<string, string> Names keyed by id
+	 */
+	private function lookupNamesForQuery(float $startTime): array {
+		// Check if specific IDs were requested.
+		$requestedIds = $this->request->getParam('ids');
+
+		if ($requestedIds === null) {
+			return $this->lookupAllNames(startTime: $startTime);
+		}
+
+		return $this->lookupRequestedNames(
+			requestedIds: $this->normaliseQueryIds(requestedIds: $requestedIds),
+			startTime: $startTime
+		);
+	}//end lookupNamesForQuery()
+
+	/**
+	 * Turn the `ids` query value into a list of ids.
+	 *
+	 * Accepts a comma-separated string, a JSON array string or an array; any other
+	 * scalar becomes a one-element list.
+	 *
+	 * @param mixed $requestedIds The raw `ids` query value (never null)
+	 *
+	 * @return array<int|string, mixed> The requested ids
+	 */
+	private function normaliseQueryIds(mixed $requestedIds): array {
+		// Parse IDs from different possible formats.
+		if (is_string($requestedIds) === true) {
+			// Handle comma-separated string or JSON array string.
+			if (str_starts_with($requestedIds, '[') === true) {
+				$requestedIds = json_decode($requestedIds, true) ?? [];
+			}
+
+			if (is_string($requestedIds) === true) {
+				$requestedIds = array_map('trim', explode(',', $requestedIds));
+			}
+		}
+
+		// Not `is_string() === false && ...`: every path above turns a
+		// string into an array (explode/array_map, or json_decode of a
+		// '['-prefixed string), and a non-string never enters that block,
+		// so the string test here can only ever be true.
+		if (is_array($requestedIds) === false) {
+			$requestedIds = [(string)$requestedIds];
+		}
+
+		return $requestedIds;
+	}//end normaliseQueryIds()
+
+	/**
+	 * Resolve the names of the given ids and log the bulk lookup.
+	 *
+	 * @param array<int|string, mixed> $requestedIds The ids to resolve
+	 * @param float                    $startTime    Request start, for the logged execution time
+	 *
+	 * @return array<string, string> Names keyed by id
+	 */
+	private function lookupRequestedNames(array $requestedIds, float $startTime): array {
+		$names = $this->objectCacheService->getMultipleObjectNames($requestedIds);
+
+		$this->logger->debug(
+			message: '[NamesController] 📦 BULK NAME LOOKUP REQUEST',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'requested_count' => count($requestedIds),
+				'found_count' => count($names),
+				'execution_time' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
+			]
+		);
+
+		return $names;
+	}//end lookupRequestedNames()
+
+	/**
+	 * Resolve every object name (triggers warmup if needed) and log the lookup.
+	 *
+	 * @param float $startTime Request start, for the logged execution time
+	 *
+	 * @return array<string, string> Names keyed by id
+	 */
+	private function lookupAllNames(float $startTime): array {
+		$names = $this->objectCacheService->getAllObjectNames();
+
+		$this->logger->debug(
+			message: '[NamesController] 📋 ALL NAMES REQUEST',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'total_names' => count($names),
+				'execution_time' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
+			]
+		);
+
+		return $names;
+	}//end lookupAllNames()
+
+	/**
+	 * Build the GET response around the resolved names.
+	 *
+	 * @param array<string, string> $names     Names keyed by id
+	 * @param float                 $startTime Request start, for the reported execution time
+	 *
+	 * @return JSONResponse The names response
+	 */
+	private function namesResponse(array $names, float $startTime): JSONResponse {
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+		return new JSONResponse(
+			data: [
+				'names' => $names,
+				'total' => count($names),
+				'cached' => true,
+				'execution_time' => $executionTime . 'ms',
+				'cache_stats' => $this->objectCacheService->getStats(),
+			]
+		);
+	}//end namesResponse()
+
+	/**
+	 * Validate the posted `ids` and resolve their names.
+	 *
+	 * @param float $startTime Request start, for the reported execution time
+	 *
+	 * @return JSONResponse The names response, or a 400 for missing or empty ids
+	 */
+	private function lookupPostedNames(float $startTime): JSONResponse {
+		// Get JSON body content.
+		$inputData = $this->request->getParams();
+
+		// Support both 'ids' in JSON body and form data.
+		$requestedIds = $inputData['ids'] ?? null;
+
+		if ($requestedIds === null || is_array($requestedIds) === false) {
+			return $this->idsArrayRequiredResponse();
+		}
+
+		// Filter and validate IDs.
+		$requestedIds = array_filter(array_map('trim', $requestedIds));
+
+		if (empty($requestedIds) === true) {
+			return $this->noValidIdsResponse();
+		}
+
+		return $this->postedNamesResponse(requestedIds: $requestedIds, startTime: $startTime);
+	}//end lookupPostedNames()
+
+	/**
+	 * Answer a POST whose body carries no `ids` array.
+	 *
+	 * @return JSONResponse 400 response with an example body
+	 */
+	private function idsArrayRequiredResponse(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'Invalid request: ids array is required in request body',
+				'example' => ['ids' => ['uuid-1', 'uuid-2', 'uuid-3']],
+			],
+			statusCode: 400
+		);
+	}//end idsArrayRequiredResponse()
+
+	/**
+	 * Answer a POST whose `ids` are all blank.
+	 *
+	 * @return JSONResponse 400 response
+	 */
+	private function noValidIdsResponse(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'No valid IDs provided in request',
+			],
+			statusCode: 400
+		);
+	}//end noValidIdsResponse()
+
+	/**
+	 * Resolve the posted ids, log the lookup and build the POST response.
+	 *
+	 * @param array<int|string, string> $requestedIds The trimmed, non-empty ids
+	 * @param float                     $startTime    Request start, for the reported execution time
+	 *
+	 * @return JSONResponse The names response
+	 */
+	private function postedNamesResponse(array $requestedIds, float $startTime): JSONResponse {
+		$names = $this->objectCacheService->getMultipleObjectNames($requestedIds);
+		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+
+		$this->logger->debug(
+			message: '[NamesController] 📦 BULK NAME POST REQUEST',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'requested_count' => count($requestedIds),
+				'found_count' => count($names),
+				'execution_time' => $executionTime . 'ms',
+			]
+		);
+
+		return new JSONResponse(
+			data: [
+				'names' => $names,
+				'total' => count($names),
+				'requested' => count($requestedIds),
+				'cached' => true,
+				'execution_time' => $executionTime . 'ms',
+				'cache_stats' => $this->objectCacheService->getStats(),
+			]
+		);
+	}//end postedNamesResponse()
+
+	/**
+	 * Log a failed name lookup and answer 500 with its message.
+	 *
+	 * @param string     $logMessage The error line to log
+	 * @param \Exception $exception  The failure
+	 *
+	 * @return JSONResponse 500 response
+	 */
+	private function lookupFailedResponse(string $logMessage, \Exception $exception): JSONResponse {
+		$this->logLookupFailure(logMessage: $logMessage, exception: $exception);
+
+		return new JSONResponse(
+			data: [
+				'error' => 'Failed to retrieve object names',
+				'message' => $exception->getMessage(),
+			],
+			statusCode: 500
+		);
+	}//end lookupFailedResponse()
+
+	/**
+	 * Log a failed name lookup with its message and trace.
+	 *
+	 * @param string     $logMessage The error line to log
+	 * @param \Exception $exception  The failure
+	 *
+	 * @return void
+	 */
+	private function logLookupFailure(string $logMessage, \Exception $exception): void {
+		$this->logger->error(
+			message: $logMessage,
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $exception->getMessage(),
+				'trace' => $exception->getTraceAsString(),
+			]
+		);
+	}//end logLookupFailure()
 }//end class
