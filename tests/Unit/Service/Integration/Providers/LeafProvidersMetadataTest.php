@@ -171,9 +171,8 @@ class LeafProvidersMetadataTest extends TestCase {
 		if ($class === TalkProvider::class) {
 			return new $class(
 				container: $this->createMock(ContainerInterface::class),
-				appManager: $appManager,
+				description: new \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription($appManager, $l10n),
 				userSession: $this->createMock(IUserSession::class),
-				l10n: $l10n,
 			);
 		}
 

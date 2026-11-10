@@ -67,11 +67,7 @@ class XwikiProviderTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		$this->provider = new XwikiProvider(
-			router: $this->router,
-			appManager: $this->appManager,
-			l10n: $l10n,
-		);
+		$this->provider = new XwikiProvider(routing: new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($this->router, $this->appManager, $l10n));
 	}//end setUp()
 
 	public function testMetadataMatchesLeafSpec(): void {
@@ -110,7 +106,7 @@ class XwikiProviderTest extends TestCase {
 		);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
-		$disabled = new XwikiProvider($this->router, $appManager2, $l10n);
+		$disabled = new XwikiProvider(new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($this->router, $appManager2, $l10n));
 		$this->assertFalse($disabled->isEnabled());
 	}//end testIsEnabledMirrorsOpenConnectorInstall()
 
@@ -287,7 +283,7 @@ class XwikiProviderTest extends TestCase {
 			['reference' => 'Sales.Pitch', 'title' => 'Live Pitch', 'space' => 'Sales', 'url' => 'https://wiki/live']
 		);
 
-		$provider = new XwikiProvider($this->router, $this->appManager, $l10n, $mapper);
+		$provider = new XwikiProvider(new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($this->router, $this->appManager, $l10n), $mapper);
 		$rows = $provider->list('decidesk', 'meeting', 'obj-1');
 
 		$this->assertCount(1, $rows);
@@ -314,7 +310,7 @@ class XwikiProviderTest extends TestCase {
 
 		$this->router->method('call')->willThrowException(new \RuntimeException('upstream down'));
 
-		$provider = new XwikiProvider($this->router, $this->appManager, $l10n, $mapper);
+		$provider = new XwikiProvider(new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($this->router, $this->appManager, $l10n), $mapper);
 		$rows = $provider->list('decidesk', 'meeting', 'obj-1');
 
 		$this->assertCount(1, $rows);

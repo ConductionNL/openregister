@@ -128,8 +128,13 @@ class IntegrationMockModeTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
+		$router = $this->realMockRouter(mockResponse: $mockResponse, mockMeta: $mockMeta);
+		if ($class === \OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider::class) {
+			return new $class(routing: new \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting($router, $appManager, $l10n), logger: new NullLogger());
+		}
+
 		return new $class(
-			router: $this->realMockRouter(mockResponse: $mockResponse, mockMeta: $mockMeta),
+			router: $router,
 			appManager: $appManager,
 			l10n: $l10n,
 			logger: new NullLogger(),

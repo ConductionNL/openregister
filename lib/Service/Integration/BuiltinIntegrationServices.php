@@ -91,9 +91,14 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-xwiki/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\XwikiProvider::class => [
-			'router'          => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
-			'appManager'      => \OCP\App\IAppManager::class,
-			'l10n'            => \OCP\IL10N::class,
+			'routing' => [
+				\OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting::class,
+				[
+					'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
 			'xwikiLinkMapper' => \OCA\OpenRegister\Db\XwikiLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-xwiki/spec.md
@@ -118,10 +123,15 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-registry/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider::class => [
-			'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
-			'appManager' => \OCP\App\IAppManager::class,
-			'l10n'       => \OCP\IL10N::class,
-			'logger'     => \Psr\Log\LoggerInterface::class,
+			'routing' => [
+				\OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting::class,
+				[
+					'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
+			'logger'  => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-openproject/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider::class => [
@@ -229,9 +239,14 @@ final class BuiltinIntegrationServices {
 		// @spec openspec/specs/integration-talk/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\TalkProvider::class => [
 			'container'      => self::CONTAINER,
-			'appManager'     => \OCP\App\IAppManager::class,
+			'description'    => [
+				\OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription::class,
+				[
+					'appManager' => \OCP\App\IAppManager::class,
+					'l10n'       => \OCP\IL10N::class,
+				],
+			],
 			'userSession'    => \OCP\IUserSession::class,
-			'l10n'           => \OCP\IL10N::class,
 			'talkLinkMapper' => \OCA\OpenRegister\Db\TalkLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-talk/spec.md

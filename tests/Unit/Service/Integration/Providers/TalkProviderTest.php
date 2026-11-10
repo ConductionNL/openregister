@@ -41,12 +41,7 @@ class TalkProviderTest extends TestCase {
 		$this->l10n = $this->createMock(IL10N::class);
 		$this->l10n->method('t')->willReturnArgument(0);
 
-		$this->provider = new TalkProvider(
-			$this->container,
-			$this->appManager,
-			$this->userSession,
-			$this->l10n,
-		);
+		$this->provider = new TalkProvider($this->container, new \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription($this->appManager, $this->l10n), $this->userSession);
 	}
 
 	/**
@@ -241,7 +236,7 @@ class TalkProviderTest extends TestCase {
 				}
 			);
 
-			$provider = new TalkProvider($container, $this->appManager, $this->userSession, $this->l10n);
+			$provider = new TalkProvider($container, new \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription($this->appManager, $this->l10n), $this->userSession);
 
 			$rows = $provider->list('r', 's', 'x', []);
 
