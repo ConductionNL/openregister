@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -34,7 +33,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
 use OCP\IUser;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -88,20 +86,6 @@ class CorrectionService implements CorrectionServiceInterface {
 	public const ACTION = 'correction';
 
 	/**
-	 * The audit trail.
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private readonly AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * PSR logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface     $objectService The write path a correction goes through.
@@ -113,10 +97,8 @@ class CorrectionService implements CorrectionServiceInterface {
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly OpenRegisterActionAuthService $actionAuth,
 		private readonly IUserSession $userSession,
-		CorrectionAuditing $auditing,
+		private readonly CorrectionAuditing $auditing,
 	) {
-		$this->auditTrailMapper = $auditing->auditTrailMapper;
-		$this->logger = $auditing->logger;
 	}//end __construct()
 
 	/**
@@ -285,9 +267,9 @@ class CorrectionService implements CorrectionServiceInterface {
 	private function writeCorrectionEntry(ObjectEntity $object, array $context): ?AuditTrail {
 		$actor = $context['correction']['actor'];
 		try {
-			return $this->auditTrailMapper->createAuditTrailEntry(object: $object, action: self::ACTION, context: $context, actorId: $actor);
+			return $this->auditing->auditTrailMapper->createAuditTrailEntry(object: $object, action: self::ACTION, context: $context, actorId: $actor);
 		} catch (Throwable $e) {
-			$this->logger->error(
+			$this->auditing->logger->error(
 				message: '[CorrectionService] The correction landed and the audit entry did not',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $object->getUuid(), 'error' => $e->getMessage()]
 			);
@@ -319,9 +301,9 @@ class CorrectionService implements CorrectionServiceInterface {
 		$entry->setAction(self::ACTION);
 		$entry->setChanged(array_merge($entry->getChanged(), $context));
 		try {
-			return $this->auditTrailMapper->update($entry);
+			return $this->auditing->auditTrailMapper->update($entry);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->auditing->logger->warning(
 				message: '[CorrectionService] Could not relabel the audit entry as a correction',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'auditId' => $auditId, 'error' => $e->getMessage()]
 			);
@@ -347,7 +329,7 @@ class CorrectionService implements CorrectionServiceInterface {
 		}
 
 		try {
-			$entry = $this->auditTrailMapper->find((int)$auditId);
+			$entry = $this->auditing->auditTrailMapper->find((int)$auditId);
 		} catch (Throwable $e) {
 			return null;
 		}

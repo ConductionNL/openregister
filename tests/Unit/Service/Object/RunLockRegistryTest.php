@@ -74,12 +74,7 @@ final class RunLockRegistryTest extends TestCase {
 	 * @return RunLockRegistry The service.
 	 */
 	private function registry(): RunLockRegistry {
-		return new RunLockRegistry(
-			$this->rows,
-			$this->magic,
-			$this->audit,
-			$this->createMock(LoggerInterface::class)
-		);
+		return new RunLockRegistry($this->rows, new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->magic, $this->audit, $this->createMock(LoggerInterface::class), $this->createStub(\OCP\EventDispatcher\IEventDispatcher::class)));
 	}//end registry()
 
 	/**
