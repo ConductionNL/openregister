@@ -63,7 +63,7 @@ class LifecycleInitialStateListenerTest extends TestCase {
 		$this->references = $this->createMock(ReferenceResolver::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->listener = new LifecycleInitialStateListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $this->logger),
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())),
 			$this->references,
 			$this->logger
 		);
