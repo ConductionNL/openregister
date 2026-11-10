@@ -124,8 +124,20 @@ class SecurityTxtBuilder implements SecurityTxtBuilderInterface {
 		$lines = [
 			'Contact: ' . $contact,
 			'Expires: ' . $expires->format('Y-m-d\TH:i:s\Z'),
+			...$this->optionalLines(),
 		];
 
+		return (implode("\n", $lines) . "\n");
+
+	}//end build()
+
+	/**
+	 * The Policy and Preferred-Languages lines, each only when administered.
+	 *
+	 * @return array<int, string> The lines, Policy first.
+	 */
+	private function optionalLines(): array {
+		$lines = [];
 		$policy = $this->read(key: self::POLICY_KEY);
 		if ($policy !== null && $this->isHttpUrl(value: $policy) === true) {
 			$lines[] = 'Policy: ' . $policy;
@@ -136,9 +148,8 @@ class SecurityTxtBuilder implements SecurityTxtBuilderInterface {
 			$lines[] = 'Preferred-Languages: ' . $languages;
 		}
 
-		return (implode("\n", $lines) . "\n");
-
-	}//end build()
+		return $lines;
+	}//end optionalLines()
 
 	/**
 	 * Whether a disclosure contact is administered.
