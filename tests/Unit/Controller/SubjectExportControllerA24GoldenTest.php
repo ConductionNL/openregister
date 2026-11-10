@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\SubjectExportController;
 use OCA\OpenRegister\Db\SubjectExport;
+use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportRequest;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\IRequest;
@@ -78,7 +79,7 @@ final class SubjectExportControllerA24GoldenTest extends TestCase {
 
 	public function testARequestPassesTheTrimmedFields(): void {
 		$export = $this->export();
-		$this->exports->expects($this->once())->method('request')->with('123456782', 'bsn', null)->willReturn($export);
+		$this->exports->expects($this->once())->method('requestFor')->with($this->equalTo(new SubjectExportRequest('123456782', 'bsn', null)))->willReturn($export);
 
 		$response = $this->controller(['subject' => ' 123456782 ', 'type' => ' bsn ', 'request' => '  '])->create();
 
@@ -86,7 +87,7 @@ final class SubjectExportControllerA24GoldenTest extends TestCase {
 	}//end testARequestPassesTheTrimmedFields()
 
 	public function testANumericSubjectIsCastToText(): void {
-		$this->exports->expects($this->once())->method('request')->with('42', null, '7')->willReturn($this->export());
+		$this->exports->expects($this->once())->method('requestFor')->with($this->equalTo(new SubjectExportRequest('42', null, '7')))->willReturn($this->export());
 
 		$this->controller(['subject' => 42, 'request' => 7])->create();
 	}//end testANumericSubjectIsCastToText()

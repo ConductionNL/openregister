@@ -84,22 +84,8 @@ class SubjectExportService implements SubjectExportServiceInterface, SubjectExpo
 	}//end __construct()
 
 	/**
-	 * Ask for a subject's own export. Queues the assembly, writes nothing else.
-	 *
-	 * @param string      $subject   The data subject.
-	 * @param string|null $type      Optional PII type filter.
-	 * @param string|null $requestId The data subject request this answers.
-	 *
-	 * @return SubjectExport The recorded request.
-	 *
-	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
-	 */
-	public function request(string $subject, ?string $type = null, ?string $requestId = null): SubjectExport {
-		return $this->enqueue(request: new SubjectExportRequest(subject: trim($subject), type: $type, requestId: $requestId));
-	}//end request()
-
-	/**
-	 * Record a pending export for the current actor, queue its assembly, audit it.
+	 * Ask for a subject's own export. Records a pending export for the current
+	 * actor, queues its assembly and audits it; writes nothing else.
 	 *
 	 * @param SubjectExportRequest $request The subject, type filter and request id.
 	 *
@@ -107,10 +93,10 @@ class SubjectExportService implements SubjectExportServiceInterface, SubjectExpo
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
-	private function enqueue(SubjectExportRequest $request): SubjectExport {
+	public function requestFor(SubjectExportRequest $request): SubjectExport {
 		$export = $this->queue->mapper->createFromArray(
 			[
-				'subject' => $request->subject,
+				'subject' => trim($request->subject),
 				'subjectType' => $request->type,
 				'requestId' => $request->requestId,
 				'status' => SubjectExport::STATUS_PENDING,
@@ -123,7 +109,22 @@ class SubjectExportService implements SubjectExportServiceInterface, SubjectExpo
 		$this->audit(export: $export, event: 'requested');
 
 		return $export;
-	}//end enqueue()
+	}//end requestFor()
+
+	/**
+	 * Ask for a subject's own export by its parts; see requestFor().
+	 *
+	 * @param string      $subject   The data subject.
+	 * @param string|null $type      Optional PII type filter.
+	 * @param string|null $requestId The data subject request this answers.
+	 *
+	 * @return SubjectExport The recorded request.
+	 *
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
+	 */
+	public function request(string $subject, ?string $type = null, ?string $requestId = null): SubjectExport {
+		return $this->requestFor(request: new SubjectExportRequest(subject: $subject, type: $type, requestId: $requestId));
+	}//end request()
 
 	/**
 	 * Assemble one pending export. Called by the background job.
