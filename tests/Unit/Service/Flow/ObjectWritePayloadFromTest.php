@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
@@ -221,11 +222,11 @@ class ObjectWritePayloadFromTest extends TestCase {
 			}
 		);
 
-		$this->node->execute(
-			$this->items([['source' => ['name' => 'a', 'title' => 'A', 'nested' => ['x' => 1]]]]),
-			$this->config(),
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['source' => ['name' => 'a', 'title' => 'A', 'nested' => ['x' => 1]]]]),
+			config: $this->config(),
+			context: $this->registerContext
+		));
 
 		$this->assertSame(
 			['name' => 'a', 'title' => 'A', 'nested' => ['x' => 1]],
@@ -248,11 +249,11 @@ class ObjectWritePayloadFromTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/payloadFrom/');
 
-		$this->node->execute(
-			$this->items([['somethingElse' => ['name' => 'a']]]),
-			$this->config(),
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['somethingElse' => ['name' => 'a']]]),
+			config: $this->config(),
+			context: $this->registerContext
+		));
 	}//end testAnUnresolvablePathThrowsRatherThanWritingBlank()
 
 	/**
@@ -266,11 +267,11 @@ class ObjectWritePayloadFromTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node->execute(
-			$this->items([['source' => 'not-an-object']]),
-			$this->config(),
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['source' => 'not-an-object']]),
+			config: $this->config(),
+			context: $this->registerContext
+		));
 	}//end testAScalarAtThePathThrows()
 
 	/**
@@ -283,11 +284,11 @@ class ObjectWritePayloadFromTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessageMatches('/alternatives/');
 
-		$this->node->execute(
-			$this->items([['source' => ['name' => 'a']]]),
-			$this->config(['fields' => ['title' => '{{source.name}}']]),
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['source' => ['name' => 'a']]]),
+			config: $this->config(['fields' => ['title' => '{{source.name}}']]),
+			context: $this->registerContext
+		));
 	}//end testFieldsAndPayloadFromTogetherAreRefused()
 
 	/**
@@ -302,11 +303,11 @@ class ObjectWritePayloadFromTest extends TestCase {
 
 		$this->expectException(UnexpectedValueException::class);
 
-		$this->node->execute(
-			$this->items([['source' => ['name' => 'a']]]),
-			$config,
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['source' => ['name' => 'a']]]),
+			config: $config,
+			context: $this->registerContext
+		));
 	}//end testNeitherFieldsNorPayloadFromIsRefused()
 
 	/**
@@ -318,17 +319,17 @@ class ObjectWritePayloadFromTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessageMatches('/payloadFrom/');
 
-		$this->node->execute(
-			$this->items([['source' => ['name' => 'a']]]),
-			$this->config(
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['source' => ['name' => 'a']]]),
+			config: $this->config(
 				[
 					'operation' => ObjectWriteNode::OP_DELETE,
 					'match' => [['property' => 'name', 'value' => '{{source.name}}']],
 					'confirmDelete' => true,
 				]
 			),
-			$this->registerContext
-		);
+			context: $this->registerContext
+		));
 	}//end testPayloadFromIsMeaninglessForADelete()
 
 	/**

@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
@@ -190,7 +191,7 @@ final class ObjectWriteBulkGoldenTest extends TestCase {
 
 		$outcome = [];
 		try {
-			$outcome['out'] = $this->node()->execute(items: $case['items'], config: $config, context: $context);
+			$outcome['out'] = $this->node()->execute(new FlowNodeCall(items: $case['items'], config: $config, context: $context));
 		} catch (Throwable $e) {
 			$outcome['failure'] = get_class($e) . ': ' . $e->getMessage();
 		}

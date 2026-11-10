@@ -9,6 +9,7 @@ use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\ObjectService;
@@ -52,7 +53,7 @@ class DecisionTableNodeStoredTableTest extends TestCase {
 	}
 
 	public function testAStepDecidesWithAStoredTable(): void {
-		$out = $this->node()->execute(
+		$out = $this->node()->execute(new FlowNodeCall(
 			items: [FlowItems::item(json: ['parcel' => ['kg' => 7]])],
 			config: [
 				'tableRef' => 'parcel-carrier',
@@ -60,7 +61,7 @@ class DecisionTableNodeStoredTableTest extends TestCase {
 				'resultKey' => 'decision',
 			],
 			context: []
-		);
+		));
 
 		$json = $out[0][FlowItems::JSON];
 		$this->assertSame('freight', $json['carrier']);

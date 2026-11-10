@@ -52,6 +52,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use Exception;
 use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Db\OpenProjectLinkMapperInterface;
@@ -430,7 +431,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 */
 	private function callPicker(array $options): array {
 		try {
-			return $this->router->call(provider: $this->provider, method: 'GET', path: '', options: $options);
+			return $this->router->call(provider: $this->provider, request: new UpstreamRequest(method: 'GET', path: '', options: $options));
 		} catch (ProviderUnavailableException $e) {
 			throw $this->unavailable(exception: $e);
 		} catch (Throwable $e) {

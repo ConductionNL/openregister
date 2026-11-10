@@ -108,7 +108,7 @@ class ExampleSetReadStates extends ExampleSetEngineRows {
 			return $refusal;
 		}
 
-		if (isset($data['seenAt']) === true && $this->moment(value: $data['seenAt']) === null) {
+		if (isset($data['seenAt']) === true && ExampleSetDateValue::moment(value: $data['seenAt']) === null) {
 			return 'seenAt is a date and time';
 		}
 
@@ -145,7 +145,7 @@ class ExampleSetReadStates extends ExampleSetEngineRows {
 		$sighting->setObjectUuid((string) $data['objectUuid']);
 		$sighting->setRegister($this->textOrNull(value: ($data['register'] ?? null)));
 		$sighting->setSchema($this->textOrNull(value: ($data['schema'] ?? null)));
-		$sighting->setLastSeenAt($this->moment(value: ($data['seenAt'] ?? null)));
+		$sighting->setLastSeenAt(ExampleSetDateValue::moment(value: ($data['seenAt'] ?? null)));
 		return $sighting;
 	}//end sighting()
 

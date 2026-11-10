@@ -282,6 +282,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			return;
 		}
 
+		// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is a copy this app staged in the temp dir; only a staged path is removed.
 		if (is_file((string)$path) === true && unlink((string)$path) === false) {
 			$this->store->logger->warning(
 				message: '[ImportPreviewService] The staged source could not be removed',
@@ -316,8 +317,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 * written (D-1).
 	 *
 	 * @param ImportPreview $preview The previewed preview.
-	 * @param string|null $sourceHash The sha256 of the file being committed.
-	 * @param IUser|null $currentUser The actor.
+	 * @param ImportCommit  $commit  The sha256 of the file being committed, and the actor.
 	 *
 	 * @return ImportPreview The preview, in state committed.
 	 *
@@ -325,9 +325,9 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	public function commit(ImportPreview $preview, ?string $sourceHash, ?IUser $currentUser = null): ImportPreview {
-		$this->assertCommittable(preview: $preview, sourceHash: $sourceHash);
-		return $this->applyDecisions(run: $this->commitRun(preview: $preview, currentUser: $currentUser));
+	public function commit(ImportPreview $preview, ImportCommit $commit): ImportPreview {
+		$this->assertCommittable(preview: $preview, sourceHash: $commit->sourceHash);
+		return $this->applyDecisions(run: $this->commitRun(preview: $preview, currentUser: $commit->currentUser));
 	}//end commit()
 
 	/**

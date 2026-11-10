@@ -19,10 +19,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Calculation;
 
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -141,7 +143,10 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 
 	public function testANewObjectCountsEveryFieldAsChangedAndSkipsBrokenRegisterSchemas(): void {
 		$this->rows->expects($this->once())->method('findAllInRegisterSchemaTable')
-			->with($this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), ReferencedCalculationRefresher::SYNC_LIMIT, null, ['caseType' => 'type-1'])
+			->with(
+				$this->isInstanceOf(RegisterSchema::class),
+				new ListQuery(ReferencedCalculationRefresher::SYNC_LIMIT, null, ['caseType' => 'type-1'])
+			)
 			->willReturn([$this->referrer('case-1'), $this->referrer('case-2')]);
 		$this->objects->expects($this->exactly(2))->method('saveObject');
 
@@ -285,7 +290,10 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 		$register->setSchemas([2, 3]);
 		$this->registers->method('find')->willReturn($register);
 		$this->rows->expects($this->once())->method('findAllInRegisterSchemaTable')
-			->with($register, $this->callback(static fn (Schema $s): bool => $s->getSlug() === 'case'), ReferencedCalculationRefresher::SYNC_LIMIT, null, ['caseType' => 'type-1'])
+			->with(
+				$this->callback(static fn (RegisterSchema $t): bool => $t->register === $register && $t->schema->getSlug() === 'case'),
+				new ListQuery(ReferencedCalculationRefresher::SYNC_LIMIT, null, ['caseType' => 'type-1'])
+			)
 			->willReturn([]);
 
 		$this->refresher()->refresh($this->caseType(['title' => 'same', 'startableFlows' => [1]]), $this->caseType(['title' => 'same']));

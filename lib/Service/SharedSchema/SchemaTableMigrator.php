@@ -115,22 +115,9 @@ class SchemaTableMigrator {
 	 */
 	public static function planColumnMapping(array $sourceColumns, array $targetColumns): array {
 		$target  = array_map('strtolower', array_map('strval', $targetColumns));
-		$mapped  = [];
-		$dropped = [];
-
-		foreach ($sourceColumns as $column) {
-			$column = (string)$column;
-			if ($column === '_id') {
-				continue;
-			}
-
-			if (in_array(strtolower($column), $target, true) === true) {
-				$mapped[] = $column;
-				continue;
-			}
-
-			$dropped[] = $column;
-		}
+		$columns = array_filter(array_map('strval', $sourceColumns), static fn (string $column): bool => $column !== '_id');
+		$mapped  = array_filter($columns, static fn (string $column): bool => in_array(strtolower($column), $target, true));
+		$dropped = array_filter($columns, static fn (string $column): bool => in_array(strtolower($column), $target, true) === false);
 
 		sort($mapped);
 		sort($dropped);
@@ -160,12 +147,7 @@ class SchemaTableMigrator {
 			throw new RuntimeException('Refusing to build a copy statement with no columns.');
 		}
 
-		$quoted = [];
-		foreach ($copy->columns as $column) {
-			$quoted[] = self::quoteIdentifier(name: (string)$column, quote: $quote);
-		}
-
-		$list = implode(', ', $quoted);
+		$list = implode(', ', self::quoteColumns(columns: $copy->columns, quote: $quote));
 
 		return sprintf(
 			'INSERT INTO %s (%s) SELECT %s FROM %s',
@@ -175,6 +157,25 @@ class SchemaTableMigrator {
 			self::quoteIdentifier(name: $copy->sourceTable, quote: $quote)
 		);
 	}//end buildCopySql()
+
+	/**
+	 * Quote each column name for interpolation, refusing an unsafe one.
+	 *
+	 * @param array  $columns The column names.
+	 * @param string $quote   The identifier quote character.
+	 *
+	 * @return string[] The quoted column names.
+	 *
+	 * @throws RuntimeException When a column name is unsafe.
+	 */
+	private static function quoteColumns(array $columns, string $quote): array {
+		$quoted = [];
+		foreach ($columns as $column) {
+			$quoted[] = self::quoteIdentifier(name: (string)$column, quote: $quote);
+		}
+
+		return $quoted;
+	}//end quoteColumns()
 
 	/**
 	 * The bare magic-table name for a register/schema pair.
@@ -304,35 +305,101 @@ class SchemaTableMigrator {
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function migrate(RegisterSchema $table, int $oldId): array {
-		$registerId = $table->registerId();
-		$sourceBare = $this->tableNameFor(registerId: $registerId, schemaId: $oldId);
-		$source     = ($this->prefix() . $sourceBare);
+		$restamp = new RowRestamp(registerId: $table->registerId(), oldId: $oldId, newId: $table->schemaId());
 
-		if ($this->tableExists(table: $source) === false) {
+		if ($this->tableExists(table: ($this->prefix() . $this->sourceTableOf(restamp: $restamp))) === false) {
 			return ['rows' => 0, 'unmapped' => [], 'backup' => null];
 		}
 
+		return $this->moveRows(table: $table, restamp: $restamp);
+	}//end migrate()
+
+	/**
+	 * The bare name of the shared table a register's rows are moved out of.
+	 *
+	 * @param RowRestamp $restamp The register id and the shared schema id being left behind.
+	 *
+	 * @return string The bare (unprefixed) source table name.
+	 */
+	private function sourceTableOf(RowRestamp $restamp): string {
+		return $this->tableNameFor(registerId: $restamp->registerId, schemaId: $restamp->oldId);
+	}//end sourceTableOf()
+
+	/**
+	 * Copy, restamp and set aside an existing source table, and log the move.
+	 *
+	 * @param RegisterSchema $table   The register being split off and its new schema.
+	 * @param RowRestamp     $restamp The register id and the old and new schema ids.
+	 *
+	 * @return array{rows: int, unmapped: string[], backup: string} The outcome of the move.
+	 */
+	private function moveRows(RegisterSchema $table, RowRestamp $restamp): array {
+		$prefix     = $this->prefix();
+		$sourceBare = $this->sourceTableOf(restamp: $restamp);
+		$targetBare = $this->ensureTargetTable(table: $table);
+		$mapping    = $this->mapColumns(sourceTable: $sourceBare, targetTable: $targetBare);
+		$copy       = new TableCopy(sourceTable: ($prefix . $sourceBare), targetTable: ($prefix . $targetBare), columns: $mapping['mapped']);
+		$rows       = $this->copyAndRestamp(copy: $copy, restamp: $restamp);
+		$result     = ['rows' => $rows, 'unmapped' => $mapping['unmapped'], 'backup' => $this->setAside(source: $copy->sourceTable)];
+
+		$this->logger->warning(
+			message: self::moveSummary(copy: $copy, result: $result),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $restamp->registerId, 'schema' => $restamp->oldId]
+		);
+
+		return $result;
+	}//end moveRows()
+
+	/**
+	 * Make sure the replacement schema's table exists and return its bare name.
+	 *
+	 * @param RegisterSchema $table The register and its new schema.
+	 *
+	 * @return string The bare (unprefixed) target table name.
+	 */
+	private function ensureTargetTable(RegisterSchema $table): string {
 		$this->magicMapper->ensureTableForRegisterSchema(register: $table->register, schema: $table->schema);
-		$targetBare = $this->magicMapper->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema);
+		return $this->magicMapper->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema);
+	}//end ensureTargetTable()
 
-		$mapping = self::planColumnMapping(
-			sourceColumns: $this->columnsOf(table: $sourceBare),
-			targetColumns: $this->columnsOf(table: $targetBare)
+	/**
+	 * Map the source table's columns onto the target table's columns.
+	 *
+	 * @param string $sourceTable The bare source table name.
+	 * @param string $targetTable The bare target table name.
+	 *
+	 * @return array{mapped: string[], unmapped: string[]} The column mapping.
+	 */
+	private function mapColumns(string $sourceTable, string $targetTable): array {
+		return self::planColumnMapping(
+			sourceColumns: $this->columnsOf(table: $sourceTable),
+			targetColumns: $this->columnsOf(table: $targetTable)
 		);
+	}//end mapColumns()
 
-		$quote = $this->quoteChar();
-		$this->db->executeStatement(
-			self::buildCopySql(
-				copy: new TableCopy(sourceTable: $source, targetTable: ($this->prefix() . $targetBare), columns: $mapping['mapped']),
-				quote: $quote
-			)
-		);
+	/**
+	 * Copy the mapped rows into the target table, then repoint their schema references.
+	 *
+	 * @param TableCopy  $copy    The source and target tables and the columns to copy.
+	 * @param RowRestamp $restamp The register id and the old and new schema ids.
+	 *
+	 * @return int The number of rows restamped.
+	 */
+	private function copyAndRestamp(TableCopy $copy, RowRestamp $restamp): int {
+		$this->db->executeStatement(self::buildCopySql(copy: $copy, quote: $this->quoteChar()));
 
-		$rows = $this->restamp(
-			table: ($this->prefix() . $targetBare),
-			restamp: new RowRestamp(registerId: $registerId, oldId: $oldId, newId: $table->schemaId())
-		);
+		return $this->restamp(table: $copy->targetTable, restamp: $restamp);
+	}//end copyAndRestamp()
 
+	/**
+	 * Rename the source table to its backup name.
+	 *
+	 * @param string $source The fully qualified source table.
+	 *
+	 * @return string The fully qualified backup table name.
+	 */
+	private function setAside(string $source): string {
+		$quote  = $this->quoteChar();
 		$backup = ($source . self::BACKUP_SUFFIX);
 		$this->db->executeStatement(
 			sprintf(
@@ -342,21 +409,28 @@ class SchemaTableMigrator {
 			)
 		);
 
-		$this->logger->warning(
-			message: sprintf(
-				'[SharedSchemaDedupe] Moved %d row(s) from %s to %s; source kept as %s; %d unmapped column(s): %s.',
-				$rows,
-				$source,
-				($this->prefix() . $targetBare),
-				$backup,
-				count($mapping['unmapped']),
-				implode(', ', $mapping['unmapped'])
-			),
-			context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $registerId, 'schema' => $oldId]
-		);
+		return $backup;
+	}//end setAside()
 
-		return ['rows' => $rows, 'unmapped' => $mapping['unmapped'], 'backup' => $backup];
-	}//end migrate()
+	/**
+	 * Describe a completed move for the operator log.
+	 *
+	 * @param TableCopy                                                   $copy   The tables the rows moved between.
+	 * @param array{rows: int, unmapped: string[], backup: string|null} $result The outcome of the move.
+	 *
+	 * @return string The log message.
+	 */
+	private static function moveSummary(TableCopy $copy, array $result): string {
+		return sprintf(
+			'[SharedSchemaDedupe] Moved %d row(s) from %s to %s; source kept as %s; %d unmapped column(s): %s.',
+			$result['rows'],
+			$copy->sourceTable,
+			$copy->targetTable,
+			$result['backup'],
+			count($result['unmapped']),
+			implode(', ', $result['unmapped'])
+		);
+	}//end moveSummary()
 
 	/**
 	 * Repoint the copied rows' denormalised schema references at the new id.
@@ -384,14 +458,26 @@ class SchemaTableMigrator {
 			['new' => (string)$newId, 'old' => (string)$oldId]
 		);
 
+		$this->rewriteUris(table: $table, restamp: $restamp);
+
+		return $rows;
+	}//end restamp()
+
+	/**
+	 * Repoint the register-bounded `_uri` segment of the copied rows at the new schema id.
+	 *
+	 * @param string     $table   The fully qualified target table.
+	 * @param RowRestamp $restamp The register id and the old and new schema ids.
+	 *
+	 * @return void
+	 */
+	private function rewriteUris(string $table, RowRestamp $restamp): void {
+		$quoted = self::quoteIdentifier(name: $table, quote: $this->quoteChar());
+
 		try {
 			$this->db->executeStatement(
 				sprintf('UPDATE %s SET _uri = REPLACE(_uri, :old, :new) WHERE _uri LIKE :match', $quoted),
-				[
-					'old'   => sprintf('/%d/%d/', $restamp->registerId, $oldId),
-					'new'   => sprintf('/%d/%d/', $restamp->registerId, $newId),
-					'match' => sprintf('%%/%d/%d/%%', $restamp->registerId, $oldId),
-				]
+				self::uriRewriteParameters(restamp: $restamp)
 			);
 		} catch (Throwable $e) {
 			// A stale `_uri` is a cosmetic link, not a correctness boundary: the
@@ -402,9 +488,22 @@ class SchemaTableMigrator {
 				context: ['file' => __FILE__, 'line' => __LINE__],
 			);
 		}
+	}//end rewriteUris()
 
-		return $rows;
-	}//end restamp()
+	/**
+	 * The bound parameters of the `_uri` rewrite.
+	 *
+	 * @param RowRestamp $restamp The register id and the old and new schema ids.
+	 *
+	 * @return array{old: string, new: string, match: string} The parameters.
+	 */
+	private static function uriRewriteParameters(RowRestamp $restamp): array {
+		return [
+			'old'   => sprintf('/%d/%d/', $restamp->registerId, $restamp->oldId),
+			'new'   => sprintf('/%d/%d/', $restamp->registerId, $restamp->newId),
+			'match' => sprintf('%%/%d/%d/%%', $restamp->registerId, $restamp->oldId),
+		];
+	}//end uriRewriteParameters()
 
 	/**
 	 * Check whether a fully qualified table exists.

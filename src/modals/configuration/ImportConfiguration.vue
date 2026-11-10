@@ -401,6 +401,14 @@ import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import { checkConfigurationVersion } from '../../services/configurationDisplay.js'
+import {
+	discoverTabState,
+	importDialogState,
+	repositoryTabState,
+	syncSettings,
+	tokenAvailability,
+	urlAndUploadTabState,
+} from './importConfigurationState.js'
 
 /**
  * Import a discovered configuration from GitHub (a result with a repository) or GitLab.
@@ -458,6 +466,16 @@ function isValidUrl(value) {
 	}
 }
 
+/**
+ * A branch as a select option.
+ *
+ * @param {object} branch The branch
+ * @return {{id: string, label: string}} The option
+ */
+function branchOption(branch) {
+	return { id: branch.name, label: branch.name }
+}
+
 export default {
 	name: 'ImportConfiguration',
 	components: {
@@ -487,46 +505,13 @@ export default {
 
 	data() {
 		return {
-			activeTab: 0,
-			loading: false,
-			success: false,
-			successMessage: '',
-			error: null,
-
-			// Token availability
-			hasGithubToken: false,
-			hasGitlabToken: false,
-
-			// Discover tab
-			searchQuery: '',
-			searchSource: 'github',
-			searchLoading: false,
-			searchResults: [],
-			searchError: null,
-			hasSearched: false,
-
-			// Repository tab
-			repoSource: 'GitHub',
-			repoOwner: '',
-			repoNamespace: '',
-			repoName: '',
-			branches: [],
-			selectedBranch: null,
-			configFiles: [],
-			selectedFile: null,
-
-			// URL tab
-			importUrl: '',
-			urlError: null,
-
-			// File upload tab
-			selectedUploadFile: null,
-			isDragging: false,
-			fileError: null,
-
+			...importDialogState(),
+			...tokenAvailability(),
+			...discoverTabState(),
+			...repositoryTabState(),
+			...urlAndUploadTabState(),
 			// Sync settings (shared)
-			syncEnabled: true,
-			syncInterval: 24,
+			...syncSettings(),
 		}
 	},
 
@@ -739,39 +724,81 @@ export default {
 		async fetchBranches() {
 			this.loading = true
 			this.error = null
-			this.branches = []
-			this.selectedBranch = null
-			this.configFiles = []
-			this.selectedFile = null
+			this.clearRepositoryChoice()
 
 			try {
-				const params =
-					this.repoSource === 'GitHub'
-						? { owner: this.repoOwner, repo: this.repoName }
-						: { namespace: this.repoNamespace, project: this.repoName }
-
-				const branches = await configurationStore.getBranches(
-					this.repoSource.toLowerCase(),
-					params,
-				)
-
-				this.branches = branches.map((b) => ({ id: b.name, label: b.name }))
-				// Pre-select default/main branch if available
-				const defaultBranch = branches.find(
-					(b) => b.default || b.name === 'main' || b.name === 'master',
-				)
-				if (defaultBranch) {
-					this.selectedBranch = {
-						id: defaultBranch.name,
-						label: defaultBranch.name,
-					}
-					await this.fetchConfigurationFiles()
-				}
+				const branches = await this.requestBranches()
+				this.branches = branches.map(branchOption)
+				await this.selectDefaultBranch(branches)
 			} catch (error) {
 				this.error = error.message || 'Failed to fetch branches'
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Ask the chosen source for the repository's branches.
+		 *
+		 * @return {Promise<Array<object>>} The branches
+		 */
+		requestBranches() {
+			return configurationStore.getBranches(
+				this.repoSource.toLowerCase(),
+				this.repositoryParams(),
+			)
+		},
+
+		/**
+		 * Forget the branches and files of the previous repository.
+		 *
+		 * @return {void}
+		 */
+		clearRepositoryChoice() {
+			this.branches = []
+			this.selectedBranch = null
+			this.configFiles = []
+			this.selectedFile = null
+		},
+
+		/**
+		 * Pre-select the default (or main/master) branch when there is one,
+		 * and list its configuration files.
+		 *
+		 * @param {Array<object>} branches The repository's branches
+		 * @return {Promise<void>}
+		 */
+		async selectDefaultBranch(branches) {
+			const defaultBranch = branches.find(
+				(b) => b.default || b.name === 'main' || b.name === 'master',
+			)
+			if (defaultBranch) {
+				this.selectedBranch = branchOption(defaultBranch)
+				await this.fetchConfigurationFiles()
+			}
+		},
+
+		/**
+		 * The repository as the chosen source names it.
+		 *
+		 * @return {object} GitHub owner and repo, or GitLab namespace and project
+		 */
+		repositoryParams() {
+			return this.repoSource === 'GitHub'
+				? { owner: this.repoOwner, repo: this.repoName }
+				: { namespace: this.repoNamespace, project: this.repoName }
+		},
+
+		/**
+		 * The repository and the selected branch, as the chosen source names them.
+		 *
+		 * @return {object} The repository with its GitHub branch or GitLab ref
+		 */
+		branchParams() {
+			const branch = this.selectedBranch.id
+			return this.repoSource === 'GitHub'
+				? { ...this.repositoryParams(), branch }
+				: { ...this.repositoryParams(), ref: branch }
 		},
 
 		/**
@@ -786,22 +813,9 @@ export default {
 			this.selectedFile = null
 
 			try {
-				const params =
-					this.repoSource === 'GitHub'
-						? {
-								owner: this.repoOwner,
-								repo: this.repoName,
-								branch: this.selectedBranch.id,
-							}
-						: {
-								namespace: this.repoNamespace,
-								project: this.repoName,
-								ref: this.selectedBranch.id,
-							}
-
 				this.configFiles = await configurationStore.getConfigurationFiles(
 					this.repoSource.toLowerCase(),
-					params,
+					this.branchParams(),
 				)
 			} catch (error) {
 				this.error = error.message || 'Failed to fetch configuration files'
@@ -873,16 +887,12 @@ export default {
 
 			if (this.repoSource === 'GitHub') {
 				await configurationStore.importFromGitHub({
-					owner: this.repoOwner,
-					repo: this.repoName,
-					branch: this.selectedBranch.id,
+					...this.branchParams(),
 					...params,
 				})
 			} else {
 				await configurationStore.importFromGitLab({
-					namespace: this.repoNamespace,
-					project: this.repoName,
-					ref: this.selectedBranch.id,
+					...this.branchParams(),
 					...params,
 				})
 			}

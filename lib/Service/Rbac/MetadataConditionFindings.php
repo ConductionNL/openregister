@@ -90,15 +90,14 @@ class MetadataConditionFindings implements MetadataConditionFindingsInterface {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function assertRegisterSavable(Register $register, string $subject): void {
-		if ($this->findings(authorization: $register->getAuthorization(), context: $subject) === []) {
+		if ($this->findings(edit: new AuthorizationEdit(authorization: $register->getAuthorization()), context: $subject) === []) {
 			return;
 		}
 
 		$this->assertNone(
 			findings: $this->findings(
-				authorization: $register->getAuthorization(),
-				context: $subject,
-				stored: $this->stored->registerAuthorization(id: $register->getId())
+				edit: new AuthorizationEdit(authorization: $register->getAuthorization(), stored: $this->stored->registerAuthorization(id: $register->getId())),
+				context: $subject
 			)
 		);
 	}//end assertRegisterSavable()
@@ -112,18 +111,17 @@ class MetadataConditionFindings implements MetadataConditionFindingsInterface {
 	 * a save can remove a bad rule or edit around one; only adding or changing one
 	 * is refused.
 	 *
-	 * @param array|null $authorization The block.
-	 * @param string     $context       What the block belongs to, for the message.
-	 * @param array|null $stored        The block as stored, when saving over one.
+	 * @param AuthorizationEdit $edit    The block and, when saving over one, the block as stored.
+	 * @param string            $context What the block belongs to, for the message.
 	 *
 	 * @return array<int, string> The findings; empty when every condition can match.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
-	public function findings(?array $authorization, string $context, ?array $stored = null): array {
+	public function findings(AuthorizationEdit $edit, string $context): array {
 		return array_map(
 			fn (array $condition): string => $this->findingFor(condition: $condition, context: $context),
-			$this->addedConditions(authorization: $authorization, stored: $stored)
+			$this->addedConditions(authorization: $edit->authorization, stored: $edit->stored)
 		);
 	}//end findings()
 
@@ -180,9 +178,9 @@ class MetadataConditionFindings implements MetadataConditionFindingsInterface {
 	 */
 	public function schemaFindings(Schema $schema, ?Schema $stored = null): array {
 		$name = sprintf('schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? $schema->getId()));
-		$findings = $this->findings(authorization: $schema->getAuthorization(), context: $name, stored: $stored?->getAuthorization());
+		$findings = $this->findings(edit: new AuthorizationEdit(authorization: $schema->getAuthorization(), stored: $stored?->getAuthorization()), context: $name);
 		foreach ($this->stored->propertyBlocks(save: new SchemaSave(schema: $schema, stored: $stored), name: $name) as $block) {
-			$findings = array_merge($findings, $this->findings(authorization: $block['authorization'], context: $block['context'], stored: $block['stored']));
+			$findings = array_merge($findings, $this->findings(edit: new AuthorizationEdit(authorization: $block['authorization'], stored: $block['stored']), context: $block['context']));
 		}
 
 		return $findings;

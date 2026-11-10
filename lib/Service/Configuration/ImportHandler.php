@@ -624,20 +624,7 @@ class ImportHandler {
 		}
 
 		try {
-			$declared = $this->rbacGroupCollector()->fromDocument(document: $data);
-			if (empty($declared) === true) {
-				return;
-			}
-
-			$this->groupProvisioner->provision(groups: $declared, declaredBy: ($appId ?? 'unknown'));
-
-			if ($appId !== null) {
-				$this->appConfig->setValueString(
-					'openregister',
-					"declared_groups_{$appId}",
-					json_encode(array_values($declared))
-				);
-			}
+			$this->provisionGroupsOf(data: $data, appId: $appId);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[ImportHandler] declared-group provisioning failed: ' . $e->getMessage(),
@@ -645,6 +632,46 @@ class ImportHandler {
 			);
 		}//end try
 	}//end provisionDeclaredGroups()
+
+	/**
+	 * Provision the groups a configuration document declares and record them for the app.
+	 *
+	 * @param array<string, mixed> $data  The decoded configuration document.
+	 * @param string|null          $appId The declaring app id, when known.
+	 *
+	 * @return void
+	 *
+	 * @throws \Throwable When the group backend refuses a write.
+	 */
+	private function provisionGroupsOf(array $data, ?string $appId): void {
+		$declared = $this->rbacGroupCollector()->fromDocument(document: $data);
+		if (empty($declared) === true) {
+			return;
+		}
+
+		$this->groupProvisioner->provision(groups: $declared, declaredBy: ($appId ?? 'unknown'));
+		$this->recordDeclaredGroups(declared: $declared, appId: $appId);
+	}//end provisionGroupsOf()
+
+	/**
+	 * Persist an app's declared groups, so the reconciler can restore them later.
+	 *
+	 * @param string[]    $declared The declared group ids.
+	 * @param string|null $appId    The declaring app id; nothing is recorded without one.
+	 *
+	 * @return void
+	 */
+	private function recordDeclaredGroups(array $declared, ?string $appId): void {
+		if ($appId === null) {
+			return;
+		}
+
+		$this->appConfig->setValueString(
+			'openregister',
+			"declared_groups_{$appId}",
+			json_encode(array_values($declared))
+		);
+	}//end recordDeclaredGroups()
 
 	/**
 	 * Resolve the acting user for import-time object/folder operations.
@@ -672,37 +699,25 @@ class ImportHandler {
 			return $sessionUser;
 		}
 
+		return $this->fallbackActingUser();
+	}//end resolveActingUser()
+
+	/**
+	 * The acting user without a session: the first admin, else any first enabled user, else none.
+	 *
+	 * @return IUser|null The fallback acting user, or null when none is resolvable.
+	 */
+	private function fallbackActingUser(): ?IUser {
 		// No session (occ/installer/cron): prefer the first admin.
-		try {
-			if ($this->groupManager !== null) {
-				$adminGroup = $this->groupManager->get('admin');
-				if ($adminGroup !== null) {
-					$admins = $adminGroup->getUsers();
-					if (count($admins) > 0) {
-						return reset($admins);
-					}
-				}
-			}
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[ImportHandler] Failed to resolve admin acting user from admin group: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		$adminUser = $this->firstAdminUser();
+		if ($adminUser !== null) {
+			return $adminUser;
 		}
 
 		// Secondary fallback: any first enabled user.
-		try {
-			if ($this->userManager !== null) {
-				$users = $this->userManager->search('', 1, 0);
-				if (count($users) > 0) {
-					return reset($users);
-				}
-			}
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[ImportHandler] Failed to resolve any fallback acting user: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		$anyUser = $this->firstEnabledUser();
+		if ($anyUser !== null) {
+			return $anyUser;
 		}
 
 		$this->logger->warning(
@@ -710,7 +725,82 @@ class ImportHandler {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 		return null;
-	}//end resolveActingUser()
+	}//end fallbackActingUser()
+
+	/**
+	 * The first member of the `admin` group; a failing lookup is logged and gives none.
+	 *
+	 * @return IUser|null The first admin, or null.
+	 */
+	private function firstAdminUser(): ?IUser {
+		try {
+			return $this->firstMemberOfAdminGroup();
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ImportHandler] Failed to resolve admin acting user from admin group: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end firstAdminUser()
+
+	/**
+	 * The first member of the `admin` group, when there is a group manager and the group has members.
+	 *
+	 * @return IUser|null The first admin, or null.
+	 */
+	private function firstMemberOfAdminGroup(): ?IUser {
+		if ($this->groupManager === null) {
+			return null;
+		}
+
+		$adminGroup = $this->groupManager->get('admin');
+		if ($adminGroup === null) {
+			return null;
+		}
+
+		$admins = $adminGroup->getUsers();
+		if (count($admins) === 0) {
+			return null;
+		}
+
+		return reset($admins);
+	}//end firstMemberOfAdminGroup()
+
+	/**
+	 * Any first enabled user, as the secondary fallback; a failing search is logged and gives none.
+	 *
+	 * @return IUser|null The first user found, or null.
+	 */
+	private function firstEnabledUser(): ?IUser {
+		try {
+			return $this->firstUserFound();
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ImportHandler] Failed to resolve any fallback acting user: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end firstEnabledUser()
+
+	/**
+	 * The first user a user search finds, when there is a user manager.
+	 *
+	 * @return IUser|null The first user found, or null.
+	 */
+	private function firstUserFound(): ?IUser {
+		if ($this->userManager === null) {
+			return null;
+		}
+
+		$users = $this->userManager->search('', 1, 0);
+		if (count($users) > 0) {
+			return reset($users);
+		}
+
+		return null;
+	}//end firstUserFound()
 
 	/**
 	 * Set the MagicMapper dependency for ensuring magic mapper tables exist.
@@ -1459,16 +1549,11 @@ class ImportHandler {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function withoutOrphanCleanupForNonAdmin(array $data): array {
-		$user = $this->userSession?->getUser();
-		if ($user === null || $this->groupManager?->isAdmin($user->getUID()) === true) {
+		if ($this->importerKeepsOrphanCleanup() === true) {
 			return $data;
 		}
 
-		$configuration = ($data['configuration'] ?? null);
-		if (is_string($configuration) === true) {
-			$configuration = json_decode($configuration, associative: true);
-		}
-
+		$configuration = $this->decodedConfiguration(configuration: ($data['configuration'] ?? null));
 		if (is_array($configuration) === true && array_key_exists('orphanCleanup', $configuration) === true) {
 			unset($configuration['orphanCleanup']);
 			$data['configuration'] = $configuration;
@@ -1476,6 +1561,32 @@ class ImportHandler {
 
 		return $data;
 	}//end withoutOrphanCleanupForNonAdmin()
+
+	/**
+	 * Whether the importer may keep `orphanCleanup`: no signed-in user, or an administrator.
+	 *
+	 * @return bool True when the flag is kept.
+	 */
+	private function importerKeepsOrphanCleanup(): bool {
+		$user = $this->userSession?->getUser();
+
+		return $user === null || $this->groupManager?->isAdmin($user->getUID()) === true;
+	}//end importerKeepsOrphanCleanup()
+
+	/**
+	 * A schema `configuration` value, decoded when it arrives as a JSON string.
+	 *
+	 * @param mixed $configuration The raw configuration value.
+	 *
+	 * @return mixed The decoded array, or the value as given.
+	 */
+	private function decodedConfiguration(mixed $configuration): mixed {
+		if (is_string($configuration) === true) {
+			return json_decode($configuration, associative: true);
+		}
+
+		return $configuration;
+	}//end decodedConfiguration()
 
 	/**
 	 * Normalise every property of an imported schema and map its slugs to ids.
@@ -1578,13 +1689,7 @@ class ImportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function resolveImportedObjectConfigurations(array $property): array {
-		if (is_object($property['objectConfiguration'] ?? null) === true) {
-			$property['objectConfiguration'] = (array)$property['objectConfiguration'];
-		}
-
-		if (is_array($property['objectConfiguration'] ?? null) === true) {
-			$property['objectConfiguration'] = $this->resolveConfigurationSlugs(config: $property['objectConfiguration'], where: 'schema property');
-		}
+		$property = $this->withResolvedObjectConfiguration(definition: $property, where: 'schema property');
 
 		if (($property['items'] ?? null) !== null && is_object($property['items']) === true) {
 			$property['items'] = (array)$property['items'];
@@ -1594,19 +1699,30 @@ class ImportHandler {
 			return $property;
 		}
 
-		if (is_object($property['items']['objectConfiguration'] ?? null) === true) {
-			$property['items']['objectConfiguration'] = (array)$property['items']['objectConfiguration'];
-		}
-
-		if (is_array($property['items']['objectConfiguration'] ?? null) === true) {
-			$property['items']['objectConfiguration'] = $this->resolveConfigurationSlugs(
-				config: $property['items']['objectConfiguration'],
-				where: 'array items schema property'
-			);
-		}
+		$property['items'] = $this->withResolvedObjectConfiguration(definition: $property['items'], where: 'array items schema property');
 
 		return $property;
 	}//end resolveImportedObjectConfigurations()
+
+	/**
+	 * Resolve the register and schema slugs of a definition's `objectConfiguration`, object form included.
+	 *
+	 * @param array  $definition The property or items definition.
+	 * @param string $where      Where the configuration sits, for the log.
+	 *
+	 * @return array The definition.
+	 */
+	private function withResolvedObjectConfiguration(array $definition, string $where): array {
+		if (is_object($definition['objectConfiguration'] ?? null) === true) {
+			$definition['objectConfiguration'] = (array)$definition['objectConfiguration'];
+		}
+
+		if (is_array($definition['objectConfiguration'] ?? null) === true) {
+			$definition['objectConfiguration'] = $this->resolveConfigurationSlugs(config: $definition['objectConfiguration'], where: $where);
+		}
+
+		return $definition;
+	}//end withResolvedObjectConfiguration()
 
 	/**
 	 * Resolve the `register` and `schema` slugs of one objectConfiguration to ids.
@@ -1971,70 +2087,154 @@ class ImportHandler {
 
 		// Lower(schemaSlug) => [lower(registerSlug), ...] this import's registers
 		// declare wanting that slug.
-		$registersForSlug = [];
-		foreach ($registers as $registerSlug => $registerData) {
-			if (is_array($registerData) === false) {
-				continue;
-			}
-
-			$schemaSlugs = ($registerData['schemas'] ?? null);
-			if (is_array($schemaSlugs) === false) {
-				continue;
-			}
-
-			$registerSlugLower = strtolower((string)$registerSlug);
-			foreach ($schemaSlugs as $schemaSlug) {
-				if (is_string($schemaSlug) === false || $schemaSlug === '') {
-					continue;
-				}
-
-				$registersForSlug[strtolower($schemaSlug)][] = $registerSlugLower;
-			}
-		}//end foreach
-
+		$registersForSlug = $this->registersPerSchemaSlug(registers: $registers);
 		if ($registersForSlug === []) {
 			return [];
 		}
 
-		// Lower(registerSlug) => its pre-import schema id list, fetched once and
-		// cached across every schema slug that references the same register.
-		$regSchemaIds = [];
+		return $this->candidateSchemaIdsPerSlug(registersForSlug: $registersForSlug);
+	}//end computeRegisterScopedSchemaIds()
+
+	/**
+	 * The candidate schema ids of every declared schema slug.
+	 *
+	 * @param array<string, string[]> $registersForSlug Lower(schemaSlug) => [lower(registerSlug), ...].
+	 *
+	 * @return array<string, int[]> Lower-cased schema slug => candidate schema ids.
+	 */
+	private function candidateSchemaIdsPerSlug(array $registersForSlug): array {
+		// Lower(registerSlug) => its pre-import schema id list, fetched once per
+		// register in the order the slugs first reference it.
+		$regSchemaIds = $this->currentSchemaIdsPerRegister(registersForSlug: $registersForSlug);
 		$result = [];
 		foreach ($registersForSlug as $schemaSlugLower => $registerSlugs) {
-			$ids = [];
-			foreach (array_unique($registerSlugs) as $registerSlugLower) {
-				if (array_key_exists($registerSlugLower, $regSchemaIds) === false) {
-					try {
-						// CRITICAL: disable RBAC and multitenancy, mirroring importRegister()'s
-						// own lookup (~:764) — this precompute must see a register that exists
-						// regardless of the importing context's current tenant/permissions, or a
-						// real register would be misread as "doesn't exist yet" and this slug
-						// would wrongly fork a duplicate schema instead of resolving to the
-						// existing one.
-						$existingRegister = $this->registerMapper->find(
-							id: $registerSlugLower,
-							_rbac: false,
-							_multitenancy: false
-						);
-						$regSchemaIds[$registerSlugLower] = $existingRegister->getSchemas();
-					} catch (\Throwable $ignore) {
-						// Register does not exist yet (fresh import) — nothing to scope against.
-						$regSchemaIds[$registerSlugLower] = [];
-					}
-				}
-
-				foreach ($regSchemaIds[$registerSlugLower] as $candidateId) {
-					if (is_numeric($candidateId) === true) {
-						$ids[] = (int)$candidateId;
-					}
-				}
-			}//end foreach
-
-			$result[$schemaSlugLower] = array_values(array_unique($ids));
-		}//end foreach
+			$result[$schemaSlugLower] = $this->candidateSchemaIds(registerSlugs: $registerSlugs, regSchemaIds: $regSchemaIds);
+		}
 
 		return $result;
-	}//end computeRegisterScopedSchemaIds()
+	}//end candidateSchemaIdsPerSlug()
+
+	/**
+	 * The lower-cased register slugs that declare each lower-cased schema slug.
+	 *
+	 * @param array $registers The raw `components.registers` map, register slug => register data.
+	 *
+	 * @return array<string, string[]> Lower(schemaSlug) => [lower(registerSlug), ...].
+	 */
+	private function registersPerSchemaSlug(array $registers): array {
+		$registersForSlug = [];
+		foreach ($registers as $registerSlug => $registerData) {
+			$registerSlugLower = strtolower((string)$registerSlug);
+			foreach ($this->declaredSchemaSlugs(registerData: $registerData) as $schemaSlug) {
+				$registersForSlug[strtolower($schemaSlug)][] = $registerSlugLower;
+			}
+		}
+
+		return $registersForSlug;
+	}//end registersPerSchemaSlug()
+
+	/**
+	 * The non-empty string schema slugs one raw register declares.
+	 *
+	 * @param mixed $registerData The raw register data.
+	 *
+	 * @return string[] The declared slugs, in order.
+	 */
+	private function declaredSchemaSlugs(mixed $registerData): array {
+		if (is_array($registerData) === false) {
+			return [];
+		}
+
+		$schemaSlugs = ($registerData['schemas'] ?? null);
+		if (is_array($schemaSlugs) === false) {
+			return [];
+		}
+
+		return $this->usableSchemaSlugs(schemaSlugs: $schemaSlugs);
+	}//end declaredSchemaSlugs()
+
+	/**
+	 * The entries of a raw schema slug list that are non-empty strings.
+	 *
+	 * @param array $schemaSlugs The raw `schemas` list of a register.
+	 *
+	 * @return string[] The usable slugs, in order.
+	 */
+	private function usableSchemaSlugs(array $schemaSlugs): array {
+		$usable = [];
+		foreach ($schemaSlugs as $schemaSlug) {
+			if (is_string($schemaSlug) === true && $schemaSlug !== '') {
+				$usable[] = $schemaSlug;
+			}
+		}
+
+		return $usable;
+	}//end usableSchemaSlugs()
+
+	/**
+	 * The pre-import schema id list of every register the slugs reference,
+	 * looked up once each, in the order the slugs first reference them.
+	 *
+	 * @param array<string, string[]> $registersForSlug Lower(schemaSlug) => [lower(registerSlug), ...].
+	 *
+	 * @return array<string, array> Lower(registerSlug) => its current schema id list.
+	 */
+	private function currentSchemaIdsPerRegister(array $registersForSlug): array {
+		$regSchemaIds = [];
+		foreach (array_unique(array_merge(...array_values($registersForSlug))) as $registerSlugLower) {
+			$regSchemaIds[$registerSlugLower] = $this->currentSchemaIdsOf(registerSlugLower: $registerSlugLower);
+		}
+
+		return $regSchemaIds;
+	}//end currentSchemaIdsPerRegister()
+
+	/**
+	 * The schema id list a register has before this import, or none when it does not exist yet.
+	 *
+	 * @param string $registerSlugLower The lower-cased register slug.
+	 *
+	 * @return array The register's current schema ids.
+	 */
+	private function currentSchemaIdsOf(string $registerSlugLower): array {
+		try {
+			// CRITICAL: disable RBAC and multitenancy, mirroring importRegister()'s
+			// own lookup (~:764) — this precompute must see a register that exists
+			// regardless of the importing context's current tenant/permissions, or a
+			// real register would be misread as "doesn't exist yet" and this slug
+			// would wrongly fork a duplicate schema instead of resolving to the
+			// existing one.
+			$existingRegister = $this->registerMapper->find(
+				id: $registerSlugLower,
+				_rbac: false,
+				_multitenancy: false
+			);
+			return $existingRegister->getSchemas();
+		} catch (\Throwable $ignore) {
+			// Register does not exist yet (fresh import) — nothing to scope against.
+			return [];
+		}
+	}//end currentSchemaIdsOf()
+
+	/**
+	 * The numeric schema ids a slug may resolve to: the union of its registers' current ids.
+	 *
+	 * @param string[]             $registerSlugs Lower-cased slugs of the registers declaring the schema slug.
+	 * @param array<string, array> $regSchemaIds  Lower(registerSlug) => its current schema id list.
+	 *
+	 * @return int[] The distinct candidate ids, in order.
+	 */
+	private function candidateSchemaIds(array $registerSlugs, array $regSchemaIds): array {
+		$ids = [];
+		foreach (array_unique($registerSlugs) as $registerSlugLower) {
+			foreach ($regSchemaIds[$registerSlugLower] as $candidateId) {
+				if (is_numeric($candidateId) === true) {
+					$ids[] = (int)$candidateId;
+				}
+			}
+		}
+
+		return array_values(array_unique($ids));
+	}//end candidateSchemaIds()
 
 	/**
 	 * Import configuration data from JSON structure.
@@ -2555,18 +2755,8 @@ class ImportHandler {
 		foreach ($run->data['components']['registers'] as $slug => $registerData) {
 			$slug = strtolower($slug);
 			$component = new ImportComponent(key: $slug, data: $registerData);
-			if (($registerData['schemas'] ?? null) !== null && is_array($registerData['schemas']) === true) {
-				$component->data['schemas'] = $this->registerSchemaIds(run: $run, schemaSlugs: $registerData['schemas']);
-			}
-
-			// Propagate parent-level x-openregister.type onto the register so
-			// consuming apps can filter mock/demo data via
-			// `GET /api/registers?filters[type]=mock`. A per-register `type`
-			// takes precedence, so one configuration file can mix register types.
-			$parentType = ($run->data['x-openregister']['type'] ?? null);
-			if (isset($component->data['type']) === false && $parentType !== null && $parentType !== '') {
-				$component->data['type'] = (string)$parentType;
-			}
+			$this->linkCreatedSchemas(run: $run, component: $component);
+			$this->inheritConfigurationType(run: $run, component: $component);
 
 			$register = $this->importRegisterComponent(run: $run, component: $component);
 			if ($register !== null) {
@@ -2574,6 +2764,38 @@ class ImportHandler {
 			}
 		}
 	}//end importRegisterComponents()
+
+	/**
+	 * Replace a register's listed schema slugs with the ids of the schemas this import created.
+	 *
+	 * @param ImportRun       $run       The import.
+	 * @param ImportComponent $component The register component.
+	 *
+	 * @return void
+	 */
+	private function linkCreatedSchemas(ImportRun $run, ImportComponent $component): void {
+		if (($component->data['schemas'] ?? null) !== null && is_array($component->data['schemas']) === true) {
+			$component->data['schemas'] = $this->registerSchemaIds(run: $run, schemaSlugs: $component->data['schemas']);
+		}
+	}//end linkCreatedSchemas()
+
+	/**
+	 * Give a register without its own `type` the configuration's `x-openregister.type`.
+	 *
+	 * Consuming apps filter mock/demo data via `GET /api/registers?filters[type]=mock`.
+	 * A per-register `type` takes precedence, so one configuration file can mix register types.
+	 *
+	 * @param ImportRun       $run       The import.
+	 * @param ImportComponent $component The register component.
+	 *
+	 * @return void
+	 */
+	private function inheritConfigurationType(ImportRun $run, ImportComponent $component): void {
+		$parentType = ($run->data['x-openregister']['type'] ?? null);
+		if (isset($component->data['type']) === false && $parentType !== null && $parentType !== '') {
+			$component->data['type'] = (string)$parentType;
+		}
+	}//end inheritConfigurationType()
 
 	/**
 	 * The ids of the schemas a register lists, taken from the schemas this import created.
@@ -2844,29 +3066,63 @@ class ImportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function listedSeedObjects(array $data): array {
+		$candidates = array_merge(
+			$this->seedCandidates(seedBucket: ($data['components']['objects'] ?? null)),
+			$this->seedCandidates(seedBucket: ($data['objects'] ?? null))
+		);
+
+		return $this->firstOccurrences(candidates: $candidates);
+	}//end listedSeedObjects()
+
+	/**
+	 * The seed candidates without later duplicates of the same `@self` identity.
+	 *
+	 * A candidate without an identity is always kept.
+	 *
+	 * @param list<array> $candidates The seed candidates, in order.
+	 *
+	 * @return list<array> The seed objects, first occurrence kept.
+	 */
+	private function firstOccurrences(array $candidates): array {
 		$seedObjects = [];
 		$seedSeen = [];
-		foreach ([($data['components']['objects'] ?? null), ($data['objects'] ?? null)] as $seedBucket) {
-			foreach ((array)$seedBucket as $seedCandidate) {
-				if (is_array($seedBucket) === false || is_array($seedCandidate) === false) {
-					continue;
-				}
-
-				$seedKey = $this->seedIdentity(seedSelf: $seedCandidate['@self'] ?? []);
-				if ($seedKey !== '' && isset($seedSeen[$seedKey]) === true) {
-					continue;
-				}
-
-				if ($seedKey !== '') {
-					$seedSeen[$seedKey] = true;
-				}
-
-				$seedObjects[] = $seedCandidate;
+		foreach ($candidates as $seedCandidate) {
+			$seedKey = $this->seedIdentity(seedSelf: $seedCandidate['@self'] ?? []);
+			if ($seedKey !== '' && isset($seedSeen[$seedKey]) === true) {
+				continue;
 			}
+
+			if ($seedKey !== '') {
+				$seedSeen[$seedKey] = true;
+			}
+
+			$seedObjects[] = $seedCandidate;
 		}
 
 		return $seedObjects;
-	}//end listedSeedObjects()
+	}//end firstOccurrences()
+
+	/**
+	 * The seed objects of one authoring location: its array entries, when it is a list.
+	 *
+	 * @param mixed $seedBucket `components.objects` or the top-level `objects`.
+	 *
+	 * @return list<array> The seed candidates, in order.
+	 */
+	private function seedCandidates(mixed $seedBucket): array {
+		if (is_array($seedBucket) === false) {
+			return [];
+		}
+
+		$candidates = [];
+		foreach ($seedBucket as $seedCandidate) {
+			if (is_array($seedCandidate) === true) {
+				$candidates[] = $seedCandidate;
+			}
+		}
+
+		return $candidates;
+	}//end seedCandidates()
 
 	/**
 	 * The identity a seed object is de-duplicated by: its uuid, else register/schema/slug.
@@ -3622,42 +3878,8 @@ class ImportHandler {
 	 * @return array{0: ?Register, 1: ?Schema} The resolved register and schema.
 	 */
 	private function resolveImportRegisterSchema(array $objectData, ?string $appId = null): array {
-		$rawRegister = $objectData['@self']['register'] ?? null;
-		$rawSchema = $objectData['@self']['schema'] ?? null;
-
-		$registerObject = $this->registersMap[$rawRegister] ?? null;
-		if ($registerObject instanceof Register === false
-			&& is_string($rawRegister) === true
-			&& $rawRegister !== ''
-		) {
-			try {
-				$registerObject = $this->registerMapper->find($rawRegister, _rbac: false, _multitenancy: false);
-				$this->registersMap[$rawRegister] = $registerObject;
-			} catch (\Throwable $e) {
-				$registerObject = null;
-			}
-		}
-
-		$schemaObject = $this->schemasMap[$rawSchema] ?? null;
-		if ($schemaObject instanceof Schema === false
-			&& is_string($rawSchema) === true
-			&& $rawSchema !== ''
-		) {
-			try {
-				$schemaObject = $this->schemaMapper->find($rawSchema, _rbac: false, _multitenancy: false);
-				$this->schemasMap[$rawSchema] = $schemaObject;
-			} catch (\Throwable $e) {
-				$schemaObject = null;
-			}
-		}
-
-		if ($registerObject instanceof Register === false) {
-			$registerObject = null;
-		}
-
-		if ($schemaObject instanceof Schema === false) {
-			$schemaObject = null;
-		}
+		$registerObject = $this->seedRegister(rawRegister: $objectData['@self']['register'] ?? null);
+		$schemaObject = $this->seedSchema(rawSchema: $objectData['@self']['schema'] ?? null);
 
 		if ($registerObject !== null
 			&& $schemaObject !== null
@@ -3670,6 +3892,80 @@ class ImportHandler {
 	}//end resolveImportRegisterSchema()
 
 	/**
+	 * The register a seed's `@self.register` names: from the import map, else looked up.
+	 *
+	 * @param mixed $rawRegister The raw `@self.register` value.
+	 *
+	 * @return Register|null The register, or null when it cannot be resolved.
+	 */
+	private function seedRegister(mixed $rawRegister): ?Register {
+		$registerObject = $this->registersMap[$rawRegister] ?? null;
+		if ($registerObject instanceof Register) {
+			return $registerObject;
+		}
+
+		if (is_string($rawRegister) === false || $rawRegister === '') {
+			return null;
+		}
+
+		return $this->lookUpSeedRegister(rawRegister: $rawRegister);
+	}//end seedRegister()
+
+	/**
+	 * Look a seed's register up (RBAC/multitenancy bypassed) and remember it in the import map.
+	 *
+	 * @param string $rawRegister The register slug or id.
+	 *
+	 * @return Register|null The register, or null when the lookup fails.
+	 */
+	private function lookUpSeedRegister(string $rawRegister): ?Register {
+		try {
+			$registerObject = $this->registerMapper->find($rawRegister, _rbac: false, _multitenancy: false);
+			$this->registersMap[$rawRegister] = $registerObject;
+			return $registerObject;
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end lookUpSeedRegister()
+
+	/**
+	 * The schema a seed's `@self.schema` names: from the import map, else looked up.
+	 *
+	 * @param mixed $rawSchema The raw `@self.schema` value.
+	 *
+	 * @return Schema|null The schema, or null when it cannot be resolved.
+	 */
+	private function seedSchema(mixed $rawSchema): ?Schema {
+		$schemaObject = $this->schemasMap[$rawSchema] ?? null;
+		if ($schemaObject instanceof Schema) {
+			return $schemaObject;
+		}
+
+		if (is_string($rawSchema) === false || $rawSchema === '') {
+			return null;
+		}
+
+		return $this->lookUpSeedSchema(rawSchema: $rawSchema);
+	}//end seedSchema()
+
+	/**
+	 * Look a seed's schema up (RBAC/multitenancy bypassed) and remember it in the import map.
+	 *
+	 * @param string $rawSchema The schema slug or id.
+	 *
+	 * @return Schema|null The schema, or null when the lookup fails.
+	 */
+	private function lookUpSeedSchema(string $rawSchema): ?Schema {
+		try {
+			$schemaObject = $this->schemaMapper->find($rawSchema, _rbac: false, _multitenancy: false);
+			$this->schemasMap[$rawSchema] = $schemaObject;
+			return $schemaObject;
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end lookUpSeedSchema()
+
+	/**
 	 * Look up the UUID of an already-imported object with the given
 	 * register + schema + slug, so re-imports reuse the same identity.
 	 *
@@ -3679,17 +3975,8 @@ class ImportHandler {
 	 * @return string|null The existing object UUID, or null when none exists.
 	 */
 	private function findExistingSeedUuid(RegisterSchema $table, string $slug): ?string {
-		$search = [
-			'@self' => [
-				'register' => (int)$table->register->getId(),
-				'schema' => (int)$table->schema->getId(),
-				'slug' => $slug,
-			],
-			'_limit' => 1,
-		];
-
 		try {
-			$results = $this->objectService->searchObjects(query: $search, _rbac: false, _multitenancy: false);
+			$results = $this->objectService->searchObjects(query: $this->seedSlugQuery(table: $table, slug: $slug), _rbac: false, _multitenancy: false);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -3698,7 +3985,36 @@ class ImportHandler {
 			return null;
 		}
 
-		$existing = $results[0];
+		return $this->storedSeedUuid(existing: $results[0]);
+	}//end findExistingSeedUuid()
+
+	/**
+	 * The search for the one stored object with this register, schema and slug.
+	 *
+	 * @param RegisterSchema $table The resolved register and schema.
+	 * @param string         $slug  The seed object slug.
+	 *
+	 * @return array The search query.
+	 */
+	private function seedSlugQuery(RegisterSchema $table, string $slug): array {
+		return [
+			'@self' => [
+				'register' => (int)$table->register->getId(),
+				'schema' => (int)$table->schema->getId(),
+				'slug' => $slug,
+			],
+			'_limit' => 1,
+		];
+	}//end seedSlugQuery()
+
+	/**
+	 * The uuid of a stored seed found by findExistingSeedUuid().
+	 *
+	 * @param mixed $existing The first search result: an object entity or its serialised array.
+	 *
+	 * @return string|null The non-empty uuid, or null when it carries none.
+	 */
+	private function storedSeedUuid(mixed $existing): ?string {
 		if ($existing instanceof ObjectEntity) {
 			$existing = $existing->jsonSerialize();
 		}
@@ -3707,13 +4023,23 @@ class ImportHandler {
 			return null;
 		}
 
-		$uuid = $existing['@self']['id'] ?? $existing['id'] ?? null;
+		return $this->nonEmptyUuid(uuid: $existing['@self']['id'] ?? $existing['id'] ?? null);
+	}//end storedSeedUuid()
+
+	/**
+	 * The uuid when it is a non-empty string.
+	 *
+	 * @param mixed $uuid The candidate uuid.
+	 *
+	 * @return string|null The uuid, or null.
+	 */
+	private function nonEmptyUuid(mixed $uuid): ?string {
 		if (is_string($uuid) === true && $uuid !== '') {
 			return $uuid;
 		}
 
 		return null;
-	}//end findExistingSeedUuid()
+	}//end nonEmptyUuid()
 
 
 
@@ -4017,57 +4343,140 @@ class ImportHandler {
 			return;
 		}
 
-		foreach ($schemas as $schema) {
-			if ($schema instanceof Schema === false || $schema->getId() === null) {
-				continue;
-			}
-
-			$schemaId = (int)$schema->getId();
-
-			try {
-				$registerIds = $this->registerMapper->getAllRegisterIdsWithSchema(schemaId: $schemaId);
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[ImportHandler] Could not resolve registers for imported schema; magic table not reconciled',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'schema_id' => $schemaId,
-						'error' => $e->getMessage(),
-					]
-				);
-				continue;
-			}
-
-			foreach ($registerIds as $registerId) {
-				try {
-					$register = $this->registerMapper->find(
-						id: (int)$registerId,
-						_rbac: false,
-						_multitenancy: false
-					);
-
-					$this->magicMapper->ensureTableForRegisterSchema(
-						register: $register,
-						schema: $schema
-					);
-				} catch (\Exception $e) {
-					$this->logger->warning(
-						message: '[ImportHandler] Failed to reconcile magic table for imported schema',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schema_id' => $schemaId,
-							'schema_slug' => $schema->getSlug(),
-							'register_id' => $registerId,
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end foreach
-		}//end foreach
-
+		foreach ($this->persistedSchemas(schemas: $schemas) as $schema) {
+			$this->reconcileMagicTablesOf(schema: $schema);
+		}
 	}//end ensureMagicTablesForImportedSchemas()
+
+	/**
+	 * The entries of an import result that are schemas with an id.
+	 *
+	 * @param array $schemas The imported entries.
+	 *
+	 * @return Schema[] The persisted schemas, in order.
+	 */
+	private function persistedSchemas(array $schemas): array {
+		$persisted = [];
+		foreach ($schemas as $schema) {
+			if ($schema instanceof Schema && $schema->getId() !== null) {
+				$persisted[] = $schema;
+			}
+		}
+
+		return $persisted;
+	}//end persistedSchemas()
+
+	/**
+	 * Reconcile the magic table of a schema in every register that owns it.
+	 *
+	 * @param Schema $schema The imported schema.
+	 *
+	 * @return void
+	 */
+	private function reconcileMagicTablesOf(Schema $schema): void {
+		$registerIds = $this->registerIdsOwningSchema(schemaId: (int)$schema->getId());
+		if ($registerIds === null) {
+			return;
+		}
+
+		foreach ($registerIds as $registerId) {
+			$this->reconcileMagicTable(schema: $schema, registerId: $registerId);
+		}
+	}//end reconcileMagicTablesOf()
+
+	/**
+	 * The ids of the registers that list a schema; a failing lookup is logged and gives none.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return array|null The register ids, or null when they cannot be resolved.
+	 */
+	private function registerIdsOwningSchema(int $schemaId): ?array {
+		try {
+			return $this->registerMapper->getAllRegisterIdsWithSchema(schemaId: $schemaId);
+		} catch (\Exception $e) {
+			$this->warnOwningRegistersUnresolved(schemaId: $schemaId, error: $e);
+			return null;
+		}
+	}//end registerIdsOwningSchema()
+
+	/**
+	 * Warn that a schema's owning registers could not be resolved.
+	 *
+	 * @param int        $schemaId The schema id.
+	 * @param \Exception $error    The lookup failure.
+	 *
+	 * @return void
+	 */
+	private function warnOwningRegistersUnresolved(int $schemaId, \Exception $error): void {
+		$this->logger->warning(
+			message: '[ImportHandler] Could not resolve registers for imported schema; magic table not reconciled',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schema_id' => $schemaId,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end warnOwningRegistersUnresolved()
+
+	/**
+	 * Reconcile a schema's magic table in one register; a failure is logged, never thrown.
+	 *
+	 * @param Schema $schema     The imported schema.
+	 * @param mixed  $registerId The owning register's id.
+	 *
+	 * @return void
+	 */
+	private function reconcileMagicTable(Schema $schema, mixed $registerId): void {
+		try {
+			$this->ensureMagicTableIn(schema: $schema, registerId: $registerId);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[ImportHandler] Failed to reconcile magic table for imported schema',
+				context: $this->magicTableContext(schema: $schema, registerId: $registerId) + ['error' => $e->getMessage()]
+			);
+		}
+	}//end reconcileMagicTable()
+
+	/**
+	 * Create or sync the magic table of a schema in one register (RBAC/multitenancy bypassed).
+	 *
+	 * @param Schema $schema     The imported schema.
+	 * @param mixed  $registerId The owning register's id.
+	 *
+	 * @return void
+	 */
+	private function ensureMagicTableIn(Schema $schema, mixed $registerId): void {
+		$register = $this->registerMapper->find(
+			id: (int)$registerId,
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$this->magicMapper->ensureTableForRegisterSchema(
+			register: $register,
+			schema: $schema
+		);
+	}//end ensureMagicTableIn()
+
+	/**
+	 * The log context naming a schema and register whose magic table failed to reconcile.
+	 *
+	 * @param Schema $schema     The imported schema.
+	 * @param mixed  $registerId The owning register's id.
+	 *
+	 * @return array<string, mixed> The context, without the error.
+	 */
+	private function magicTableContext(Schema $schema, mixed $registerId): array {
+		return [
+			'file' => __FILE__,
+			'line' => __LINE__,
+			'schema_id' => (int)$schema->getId(),
+			'schema_slug' => $schema->getSlug(),
+			'register_id' => $registerId,
+		];
+	}//end magicTableContext()
 
 	/**
 	 * Auto-create or reconcile a Register entity for application-type imports

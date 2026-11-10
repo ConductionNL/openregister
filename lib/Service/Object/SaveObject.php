@@ -82,6 +82,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
+use OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation;
 use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget;
@@ -1773,7 +1774,7 @@ class SaveObject implements SaveObjectInterface {
 			container: $this->container
 		);
 
-		return $this->orphanGuard->allows(row: $orphan, register: $scope['register'], schema: $scope['schema']);
+		return $this->orphanGuard->allows(row: $orphan, table: new RegisterSchema(register: $scope['register'], schema: $scope['schema']));
 	}//end orphanMayBeDeleted()
 
 	/**
@@ -2662,12 +2663,8 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		$updatedObject = $this->updateObject(
-			register: $call->register,
-			schema: $call->schema,
-			data: $call->data,
-			existingObject: $preparedObject,
-			silent: $call->flags->silent,
-			oldObject: $oldObject
+			update: new StoredObjectUpdate(register: $call->register, schema: $call->schema, data: $call->data, existingObject: $preparedObject),
+			options: new ObjectUpdateOptions(silent: $call->flags->silent, oldObject: $oldObject)
 		);
 
 		$this->settleOrphans(parent: (string)$preparedObject->getUuid());
@@ -2758,10 +2755,12 @@ class SaveObject implements SaveObjectInterface {
 		unset($this->pendingOrphans[(string)$existingObject->getUuid()]);
 
 		return $this->prepareObjectForUpdate(
-			existingObject: $existingObject,
-			schema: $call->schema,
-			payload: new ObjectPayload(data: $call->data, selfData: $call->selfData),
-			currentUser: $call->flags->currentUser
+			preparation: new UpdatePreparation(
+				existingObject: $existingObject,
+				schema: $call->schema,
+				payload: new ObjectPayload(data: $call->data, selfData: $call->selfData),
+				currentUser: $call->flags->currentUser
+			)
 		);
 	}//end prepareUpdatedObject()
 
@@ -3174,10 +3173,8 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Prepares an object for update by applying all necessary transformations.
 	 *
-	 * @param ObjectEntity $existingObject The existing object entity to prepare.
-	 * @param Schema $schema The schema of the object.
-	 * @param ObjectPayload $payload The updated object data and the @self metadata.
-	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
+	 * @param UpdatePreparation $preparation The stored object, its schema, the updated data with its @self metadata,
+	 *                                       and the explicit acting user for `@self.folder` access checks.
 	 *
 	 * @return ObjectEntity The prepared object entity.
 	 *
@@ -3185,14 +3182,12 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function prepareObjectForUpdate(
-		ObjectEntity $existingObject,
-		Schema $schema,
-		ObjectPayload $payload,
-		?IUser $currentUser = null,
-	): ObjectEntity {
-		$data     = $payload->data;
-		$selfData = $payload->selfData;
+	private function prepareObjectForUpdate(UpdatePreparation $preparation): ObjectEntity {
+		$existingObject = $preparation->existingObject;
+		$schema         = $preparation->schema;
+		$currentUser    = $preparation->currentUser;
+		$data           = $preparation->payload->data;
+		$selfData       = $preparation->payload->selfData;
 
 		// The stored record as property rules see it, taken before this request's
 		// `@self` is applied to the entity.
@@ -4137,35 +4132,27 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Updates an existing object.
 	 *
-	 * @param Register|int|string $register The register containing the object.
-	 * @param Schema|int|string $schema The schema to validate against.
-	 * @param array $data The updated object data.
-	 * @param ObjectEntity $existingObject The existing object to update.
-	 * @param bool $silent Whether to skip audit trail creation and events (default: false).
-	 * @param ObjectEntity|null $oldObject The original object before changes (optional).
+	 * @param StoredObjectUpdate  $update  The register, schema, new data and the stored object to update.
+	 * @param ObjectUpdateOptions $options Silent mode and the original object before changes.
 	 *
 	 * @return ObjectEntity The updated object entity.
 	 *
 	 * @throws Exception If there is an error during update.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Silent flag needed for audit trail control
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function updateObject(
-		Register|int|string $register,
-		Schema|int|string $schema,
-		array $data,
-		ObjectEntity $existingObject,
-		bool $silent = false,
-		?ObjectEntity $oldObject = null,
+		StoredObjectUpdate $update,
+		ObjectUpdateOptions $options = new ObjectUpdateOptions(),
 	): ObjectEntity {
-		$run = new ObjectUpdateRun();
-		$run->silent = $silent;
+		$existingObject = $update->existingObject;
+		$data           = $update->data;
+		$run            = new ObjectUpdateRun();
+		$run->silent    = $options->silent;
 
 		// Prefer the caller's oldObject (handleObjectUpdate): a clone taken here may
 		// already hold data prepareObjectForUpdate changed in place.
-		$run->oldObject = ($oldObject ?? clone $existingObject);
+		$run->oldObject = ($options->oldObject ?? clone $existingObject);
 
 		if (($data['@self'] ?? null) !== null && is_array($data['@self']) === true) {
 			$run->selfData = $data['@self'];
@@ -4175,10 +4162,12 @@ class SaveObject implements SaveObjectInterface {
 		$run->data = $data;
 
 		// Resolve register and schema to entity objects if needed.
+		$register = $update->register;
 		if (is_int($register) === true || is_string($register) === true) {
 			$register = $this->registerMapper->find(id: (int)$register, _multitenancy: false);
 		}
 
+		$schema = $update->schema;
 		if (is_int($schema) === true || is_string($schema) === true) {
 			$schema = $this->schemaMapper->find(id: (int)$schema, _multitenancy: false);
 		}
@@ -4192,7 +4181,7 @@ class SaveObject implements SaveObjectInterface {
 		$updatedEntity = $this->objectFiles()->storeForUpdate(run: $run, updated: $updatedEntity);
 
 		// Bidirectional relations; skipped in silent mode (cascaded sub-objects) for performance.
-		if ($silent === false) {
+		if ($options->silent === false) {
 			$this->inverseRelations()->update(saved: $updatedEntity, write: new InverseRelationWrite(register: $register, schema: $schema));
 		}
 
@@ -4215,9 +4204,11 @@ class SaveObject implements SaveObjectInterface {
 		$registerId = $run->register->getId();
 		$schemaId = $run->schema->getId();
 		$preparedObject = $this->prepareObjectForUpdate(
-			existingObject: $existingObject,
-			schema: $run->schema,
-			payload: new ObjectPayload(data: $run->data, selfData: $run->selfData)
+			preparation: new UpdatePreparation(
+				existingObject: $existingObject,
+				schema: $run->schema,
+				payload: new ObjectPayload(data: $run->data, selfData: $run->selfData)
+			)
 		);
 		$preparedObject = $this->recalculateArchiveDate(run: $run, preparedObject: $preparedObject);
 

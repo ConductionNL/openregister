@@ -44,6 +44,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\DenyRowTest;
+use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
@@ -603,7 +605,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @return bool True when the list returns nothing.
 	 */
 	private function unconditionallyDenied(RbacAccessCall $call, array $principals): bool {
-		$unconditional = $this->denyResolver()->unconditionalDenial(authorization: $call->authorization, action: $call->action, principals: $principals);
+		$unconditional = $this->denyResolver()->unconditionalDenial(
+			authorization: $call->authorization,
+			question: new DenyQuestion(action: $call->action, principals: $principals)
+		);
 		if ($unconditional === null) {
 			return false;
 		}
@@ -625,9 +630,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function conditionalDenyTerm(RbacAccessCall $call, array $principals): string|false {
 		$rowTest = $this->denyResolver()->notDeniedRowSql(
-			columnName: $call->authorizationColumn(),
-			action: $call->action,
-			isPostgres: $this->isPostgres(),
+			test: new DenyRowTest(columnName: $call->authorizationColumn(), action: $call->action, isPostgres: $this->isPostgres()),
 			principals: $principals
 		);
 
@@ -649,7 +652,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function negatedConditionalDenials(RbacAccessCall $call, array $principals): array|false {
 		$columns = $call->columns();
-		$denials = $this->denyResolver()->conditionalDenials(authorization: $call->authorization, action: $call->action, principals: $principals);
+		$denials = $this->denyResolver()->conditionalDenials(
+			authorization: $call->authorization,
+			question: new DenyQuestion(action: $call->action, principals: $principals)
+		);
 		$negated = [];
 		foreach ($denials as $denial) {
 			$compiled = $this->denialPredicateSql(rule: $denial['rule'], columns: $columns);
@@ -1373,26 +1379,18 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * a stored row goes through {@see hasRowPermission()}, which reads them off
 	 * the row.
 	 *
-	 * @param Schema $schema Schema to check
-	 * @param string $action CRUD action to check
-	 * @param string|null $objectOwner Optional object owner for ownership check
-	 * @param array|null $objectData Optional object data for conditional checks
+	 * @param RbacPermissionAsk $ask The schema, the action, and optionally the object owner and data
 	 *
 	 * @return bool True if user has permission
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	public function hasPermission(
-		Schema $schema,
-		string $action,
-		?string $objectOwner = null,
-		?array $objectData = null,
-	): bool {
-		$check = $this->permissionCheckFor(schema: $schema, action: $action)
-			->onObject(objectData: $objectData, objectAuthorization: null)
+	public function hasPermission(RbacPermissionAsk $ask): bool {
+		$check = $this->permissionCheckFor(schema: $ask->schema, action: $ask->action)
+			->onObject(objectData: $ask->objectData, objectAuthorization: null)
 			->identifiedBy(objectUuid: null);
 
-		return $this->verdictOf(check: $check, objectOwner: $objectOwner);
+		return $this->verdictOf(check: $check, objectOwner: $ask->objectOwner);
 	}//end hasPermission()
 
 	/**
@@ -1400,18 +1398,18 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * The row supplies every object fact of the check: its owner, its match
 	 * envelope, its own `_authorization` (carrying scope and deny) and its uuid
-	 * (for per-object grants).
+	 * (for per-object grants). Only the ask's schema and action are read; an
+	 * owner or data on the ask never stands in for the row's.
 	 *
-	 * @param Schema       $schema Schema to check
-	 * @param string       $action CRUD action to check
-	 * @param ObjectEntity $row    The stored row
+	 * @param RbacPermissionAsk $ask The schema and the action
+	 * @param ObjectEntity      $row The stored row
 	 *
 	 * @return bool True if user has permission
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	public function hasRowPermission(Schema $schema, string $action, ObjectEntity $row): bool {
-		$check = $this->permissionCheckFor(schema: $schema, action: $action)
+	public function hasRowPermission(RbacPermissionAsk $ask, ObjectEntity $row): bool {
+		$check = $this->permissionCheckFor(schema: $ask->schema, action: $ask->action)
 			->onObject(objectData: $row->getMatchEnvelope(), objectAuthorization: $row->getAuthorization())
 			->identifiedBy(objectUuid: $row->getUuid());
 
@@ -1739,7 +1737,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	private function denyBlockSelects(RbacPermissionCheck $check, array $block): bool {
 		$resolver = $this->denyResolver();
 		$principals = $resolver->principalsFor(userId: $check->userId, userGroups: $check->userGroups);
-		if ($resolver->unconditionalDenial(authorization: $block, action: $check->action, principals: $principals) !== null) {
+		if ($resolver->unconditionalDenial(authorization: $block, question: new DenyQuestion(action: $check->action, principals: $principals)) !== null) {
 			return true;
 		}
 
@@ -1749,7 +1747,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		return $this->anyDenialSelects(
 			check: $check,
-			denials: $resolver->conditionalDenials(authorization: $block, action: $check->action, principals: $principals)
+			denials: $resolver->conditionalDenials(
+				authorization: $block,
+				question: new DenyQuestion(action: $check->action, principals: $principals)
+			)
 		);
 	}//end denyBlockSelects()
 

@@ -51,6 +51,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
@@ -249,13 +250,11 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 *
 	 * @param string $source The seeded source slug to send through
 	 *                       (MUST be in {@see ALLOWED_SOURCES}).
-	 * @param array<string,mixed> $body The provider-shaped request body the
-	 *                                  consuming app composed.
-	 * @param string $path Path relative to the source base URL
-	 *                     (e.g. `2010-04-01/Accounts/{SID}/Messages.json`,
-	 *                     `{PhoneNumberID}/messages`, `message`).
-	 * @param array<string,string> $headers Optional extra request headers
-	 *                                      (e.g. a per-call Content-Type).
+	 * @param OutboundMessage $message The path relative to the source base URL
+	 *                                 (e.g. `2010-04-01/Accounts/{SID}/Messages.json`,
+	 *                                 `{PhoneNumberID}/messages`, `message`), the
+	 *                                 provider-shaped body the consuming app composed,
+	 *                                 and optional extra request headers.
 	 *
 	 * @return array<string,mixed> `{ status: 'sent', response }` on success, or
 	 *                             `{ unavailable: true, cause }` when the source
@@ -263,10 +262,10 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
 	 */
-	public function dispatch(string $source, array $body, string $path, array $headers = []): array {
-		$options = ['body' => $body, 'headers' => $this->withJsonAccept(headers: $headers)];
+	public function dispatch(string $source, OutboundMessage $message): array {
+		$options = ['body' => $message->body, 'headers' => $this->withJsonAccept(headers: $message->headers)];
 
-		return $this->sendThrough(source: trim($source), send: fn (): array => $this->send(path: $path, options: $options));
+		return $this->sendThrough(source: trim($source), send: fn (): array => $this->send(path: $message->path, options: $options));
 	}//end dispatch()
 
 	/**
@@ -314,7 +313,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 */
 	private function send(string $path, array $options): array {
 		try {
-			$response = $this->router->call(provider: $this, method: 'POST', path: ltrim($path, '/'), options: $options);
+			$response = $this->router->call(provider: $this, request: new UpstreamRequest(method: 'POST', path: ltrim($path, '/'), options: $options));
 		} catch (ProviderUnavailableException $e) {
 			return $this->degraded(cause: $e->getCause());
 		} catch (Throwable $e) {

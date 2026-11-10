@@ -287,32 +287,62 @@ export default {
 			this.error = null
 
 			try {
-				const entityId = this.$route.params.id
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/entities/{id}', {
-						id: entityId,
-					}),
-				)
-
-				if (response.data.success) {
-					this.entity = response.data.data
-					// Relations are returned in the same response.
-					this.relations = response.data.relations || []
-				} else {
-					this.error =
-						response.data.message
-						|| t('openregister', 'Failed to load entity')
-				}
+				const response = await axios.get(this.entityUrl())
+				this.showEntityAnswer(response.data)
 			} catch (error) {
-				console.error('Failed to load entity:', error)
-				this.error =
-					error.response?.data?.message
-					|| t('openregister', 'Failed to load entity')
-				showError(this.error)
+				this.showEntityFailure(error)
 			} finally {
 				this.loading = false
 				this.loadingRelations = false
 			}
+		},
+
+		/**
+		 * The URL of the entity the route names.
+		 *
+		 * @spec exclude detail-view API fetch plumbing (linked-entity-types contract)
+		 * @return {string} The URL
+		 */
+		entityUrl() {
+			const entityId = this.$route.params.id
+			return generateUrl('/apps/openregister/api/entities/{id}', {
+				id: entityId,
+			})
+		},
+
+		/**
+		 * Take the entity and its relations from a successful answer, or the
+		 * refusal's message.
+		 *
+		 * @spec exclude detail-view API fetch plumbing (linked-entity-types contract)
+		 * @param {object} data The answer
+		 * @return {void}
+		 */
+		showEntityAnswer(data) {
+			if (data.success) {
+				this.entity = data.data
+				// Relations are returned in the same response.
+				this.relations = data.relations || []
+			} else {
+				this.error =
+					data.message
+					|| t('openregister', 'Failed to load entity')
+			}
+		},
+
+		/**
+		 * Log and show a failed entity load in the API's words or the default.
+		 *
+		 * @spec exclude detail-view API fetch plumbing (linked-entity-types contract)
+		 * @param {Error} error The failed request
+		 * @return {void}
+		 */
+		showEntityFailure(error) {
+			console.error('Failed to load entity:', error)
+			this.error =
+				error.response?.data?.message
+				|| t('openregister', 'Failed to load entity')
+			showError(this.error)
 		},
 
 		/**
