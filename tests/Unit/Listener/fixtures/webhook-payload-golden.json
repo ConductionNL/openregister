@@ -12,7 +12,7 @@
                 "objectType": "agent",
                 "action": "created",
                 "agent": {
-                    "entity": "Agent",
+                    "entity": "AgentInterface",
                     "from": "getAgent"
                 }
             }
@@ -31,7 +31,7 @@
                 "objectType": "agent",
                 "action": "deleted",
                 "agent": {
-                    "entity": "Agent",
+                    "entity": "AgentInterface",
                     "from": "getAgent"
                 }
             }
@@ -50,7 +50,7 @@
                 "objectType": "agent",
                 "action": "updated",
                 "agent": {
-                    "entity": "Agent",
+                    "entity": "AgentInterface",
                     "from": "getAgent"
                 }
             }
@@ -183,7 +183,7 @@
                 "objectType": "conversation",
                 "action": "created",
                 "conversation": {
-                    "entity": "Conversation",
+                    "entity": "ConversationInterface",
                     "from": "getConversation"
                 }
             }
@@ -202,7 +202,7 @@
                 "objectType": "conversation",
                 "action": "deleted",
                 "conversation": {
-                    "entity": "Conversation",
+                    "entity": "ConversationInterface",
                     "from": "getConversation"
                 }
             }
@@ -221,7 +221,7 @@
                 "objectType": "conversation",
                 "action": "updated",
                 "conversation": {
-                    "entity": "Conversation",
+                    "entity": "ConversationInterface",
                     "from": "getConversation"
                 }
             }
@@ -1087,7 +1087,7 @@
                 "objectType": "view",
                 "action": "created",
                 "view": {
-                    "entity": "View",
+                    "entity": "ViewInterface",
                     "from": "getView"
                 }
             }
@@ -1106,7 +1106,7 @@
                 "objectType": "view",
                 "action": "deleted",
                 "view": {
-                    "entity": "View",
+                    "entity": "ViewInterface",
                     "from": "getView"
                 }
             }
@@ -1125,7 +1125,7 @@
                 "objectType": "view",
                 "action": "updated",
                 "view": {
-                    "entity": "View",
+                    "entity": "ViewInterface",
                     "from": "getView"
                 }
             }

@@ -24,13 +24,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\PreferencesControllerServices;
 use OCA\OpenRegister\Controller\Support\PreferencesUserValues;
-use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IConfig;
 use OCP\IRequest;
-use OCP\IUserSession;
 
 /**
  * Per-user preferences controller.
@@ -44,19 +43,25 @@ class PreferencesController extends Controller {
 	private readonly PreferencesUserValues $values;
 
 	/**
+	 * The controller's collaborators.
+	 *
+	 * @var PreferencesControllerServices
+	 */
+	private readonly PreferencesControllerServices $services;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest $request The request.
-	 * @param IConfig $config The Nextcloud config (user values).
-	 * @param IUserSession $userSession The user session.
+	 * @param IRequest                      $request  The request.
+	 * @param PreferencesControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		IRequest $request,
-		IConfig $config,
-		private readonly IUserSession $userSession,
+		PreferencesControllerServices $services,
 	) {
-		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
-		$this->values = new PreferencesUserValues(config: $config, appName: AppIdentity::APP_ID);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->services = $services;
+		$this->values   = new PreferencesUserValues(config: $services->config, appName: Application::APP_ID);
 	}//end __construct()
 
 	/**
@@ -72,13 +77,12 @@ class PreferencesController extends Controller {
 	 * @spec openspec/specs/apphost-boilerplate/spec.md#requirement-generic-preferences-controller
 	 */
 	public function getPreference(string $key): JSONResponse {
-		return $this->values->forUser(
-			user: $this->userSession->getUser(),
-			key: $key,
-			action: fn (string $userId, string $storedKey): JSONResponse => new JSONResponse(
-				data: ['value' => $this->values->read(userId: $userId, storedKey: $storedKey)]
-			)
-		);
+		$slot = $this->values->slotFor(user: $this->services->session->userSession->getUser(), key: $key);
+		if ($slot instanceof JSONResponse) {
+			return $slot;
+		}
+
+		return new JSONResponse(data: ['value' => $this->values->read(slot: $slot)]);
 	}//end getPreference()
 
 	/**
@@ -95,12 +99,11 @@ class PreferencesController extends Controller {
 	 * @spec openspec/specs/apphost-boilerplate/spec.md#requirement-generic-preferences-controller
 	 */
 	public function setPreference(string $key, string $value = ''): JSONResponse {
-		return $this->values->forUser(
-			user: $this->userSession->getUser(),
-			key: $key,
-			action: fn (string $userId, string $storedKey): JSONResponse => new JSONResponse(
-				data: ['value' => $this->values->write(userId: $userId, storedKey: $storedKey, value: $value)]
-			)
-		);
+		$slot = $this->values->slotFor(user: $this->services->session->userSession->getUser(), key: $key);
+		if ($slot instanceof JSONResponse) {
+			return $slot;
+		}
+
+		return new JSONResponse(data: ['value' => $this->values->write(slot: $slot, value: $value)]);
 	}//end setPreference()
 }//end class

@@ -22,11 +22,10 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -51,48 +50,6 @@ use Psr\Container\ContainerInterface;
 class RevertHandler implements RevertHandlerInterface {
 
 	/**
-	 * Audit trail mapper
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * Container
-	 *
-	 * @var ContainerInterface
-	 */
-	private ContainerInterface $container;
-
-	/**
-	 * Event dispatcher
-	 *
-	 * @var IEventDispatcher
-	 */
-	private IEventDispatcher $eventDispatcher;
-
-	/**
-	 * Object entity mapper
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private MagicMapperInterface $objectEntityMapper;
-
-	/**
-	 * Permission handler for RBAC enforcement
-	 *
-	 * @var PermissionCheckInterface
-	 */
-	private PermissionCheckInterface $permissionHandler;
-
-	/**
-	 * Validator the save path uses, so a revert meets the same schema.
-	 *
-	 * @var ObjectValidatorInterface
-	 */
-	private ObjectValidatorInterface $validateHandler;
-
-	/**
 	 * RevertHandler constructor.
 	 *
 	 * @param RevertStores $stores The audit trail, the object mapper and the save-path validator.
@@ -101,17 +58,11 @@ class RevertHandler implements RevertHandlerInterface {
 	 * @param PermissionCheckInterface $permissionHandler Permission handler for RBAC.
 	 */
 	public function __construct(
-		RevertStores $stores,
-		ContainerInterface $container,
-		IEventDispatcher $eventDispatcher,
-		PermissionCheckInterface $permissionHandler,
+		private readonly RevertStores $stores,
+		private readonly ContainerInterface $container,
+		private readonly IEventDispatcher $eventDispatcher,
+		private readonly PermissionCheckInterface $permissionHandler,
 	) {
-		$this->auditTrailMapper = $stores->auditTrailMapper;
-		$this->container = $container;
-		$this->eventDispatcher = $eventDispatcher;
-		$this->objectEntityMapper = $stores->objectEntityMapper;
-		$this->permissionHandler = $permissionHandler;
-		$this->validateHandler = $stores->validateHandler;
 	}//end __construct()
 
 	/**
@@ -134,21 +85,29 @@ class RevertHandler implements RevertHandlerInterface {
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function revert(string $register, string $schema, string $id, RevertPoint $point): ObjectEntity {
+		return $this->revertAt(ref: new ObjectRef(register: $register, schema: $schema, id: $id), point: $point);
+	}//end revert()
+
+	/**
+	 * Revert the object an address names to a previous state.
+	 *
+	 * @param ObjectRef   $ref   The register, schema and object id as the route names them.
+	 * @param RevertPoint $point The point to revert to, and whether to overwrite the version.
+	 *
+	 * @return ObjectEntity The reverted object
+	 *
+	 * @throws DoesNotExistException If object not found, or not under the named register/schema
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function revertAt(ObjectRef $ref, RevertPoint $point): ObjectEntity {
 		// Get the object with RBAC and multitenancy enforced (tenant-scoped find).
-		$context = $this->objectEntityMapper->findAcrossAllSources(identifier: $id, includeDeleted: false);
-
-		// The route may name register and schema by id, UUID or slug, as every
-		// other object route allows (#4161).
-		if ($this->namesEntity(given: $register, stored: (string) $context['object']->getRegister(), entity: $context['register']) === false
-			|| $this->namesEntity(given: $schema, stored: (string) $context['object']->getSchema(), entity: $context['schema']) === false
-		) {
-			throw new DoesNotExistException('Object not found in specified register/schema');
-		}
-
+		$context = $this->stores->objectEntityMapper->findAcrossAllSources(identifier: $ref->id, includeDeleted: false);
+		$this->assertAddressed(ref: $ref, context: $context);
 		$this->assertMayRevert(context: $context);
 
 		// Revert from the object just checked: looked up again, the URL id could name another row.
-		$revertedObject = $this->auditTrailMapper->revertObject(
+		$revertedObject = $this->stores->auditTrailMapper->revertObject(
 			identifier: $context['object'],
 			until: $point->until,
 			overwriteVersion: $point->overwriteVersion
@@ -158,7 +117,32 @@ class RevertHandler implements RevertHandlerInterface {
 		$this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent(object: $savedObject, until: $point->until));
 
 		return $savedObject;
-	}//end revert()
+	}//end revertAt()
+
+	/**
+	 * Answer not found unless the address names the register and schema the object is stored under.
+	 *
+	 * The route may name register and schema by id, UUID or slug, as every
+	 * other object route allows (#4161).
+	 *
+	 * @param ObjectRef $ref     The register and schema as the route names them.
+	 * @param array     $context The object, register and schema from the lookup.
+	 *
+	 * @return void
+	 *
+	 * @throws DoesNotExistException If the address names another register or schema.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function assertAddressed(ObjectRef $ref, array $context): void {
+		$registerNames = $this->namesOf(stored: (string) $context['object']->getRegister(), entity: $context['register']);
+		$schemaNames = $this->namesOf(stored: (string) $context['object']->getSchema(), entity: $context['schema']);
+		if (in_array((string) $ref->register, $registerNames, true) === false
+			|| in_array((string) $ref->schema, $schemaNames, true) === false
+		) {
+			throw new DoesNotExistException('Object not found in specified register/schema');
+		}
+	}//end assertAddressed()
 
 	/**
 	 * Refuse a revert the caller may not make, in this order: no update
@@ -205,37 +189,38 @@ class RevertHandler implements RevertHandlerInterface {
 	 */
 	private function saveReverted(ObjectEntity $reverted, array $context): ObjectEntity {
 		$this->validateAgainstCurrentSchema(object: $reverted, schema: $context['schema']);
-		$savedObject = $this->objectEntityMapper->update(entity: $reverted, register: $context['register'], schema: $context['schema']);
+		$savedObject = $this->stores->objectEntityMapper->update(entity: $reverted, register: $context['register'], schema: $context['schema']);
 
 		if ($this->isAuditTrailsEnabled() === true) {
-			$this->auditTrailMapper->createAuditTrail(old: $context['object'], new: $savedObject, action: 'revert');
+			$this->stores->auditTrailMapper->createAuditTrail(old: $context['object'], new: $savedObject, action: 'revert');
 		}
 
 		return $savedObject;
 	}//end saveReverted()
 
 	/**
-	 * Whether a route segment names the object's register or schema
+	 * The names a route may use for a stored register or schema: its stored id,
+	 * and its UUID and slug when the looked-up entity is that stored one.
 	 *
-	 * @param string      $given  The route segment: an id, a UUID or a slug.
-	 * @param string      $stored The id the object stores.
-	 * @param Register|Schema|null $entity The resolved register or schema, when known.
+	 * An empty UUID or slug is no name, so an empty route segment only matches
+	 * an empty stored id.
 	 *
-	 * @return bool True when the segment names the stored entity.
+	 * @param string               $stored The id the object is stored under.
+	 * @param Register|Schema|null $entity The register or schema the lookup returned.
+	 *
+	 * @return string[] The accepted names.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	private function namesEntity(string $given, string $stored, Register|Schema|null $entity): bool {
-		if ($given === $stored) {
-			return true;
-		}
-
+	private function namesOf(string $stored, Register|Schema|null $entity): array {
 		if ($entity === null || (string) $entity->getId() !== $stored) {
-			return false;
+			return [$stored];
 		}
 
-		return in_array($given, [(string) $entity->getUuid(), (string) $entity->getSlug()], true) === true && $given !== '';
-	}//end namesEntity()
+		$aliases = [(string) $entity->getUuid(), (string) $entity->getSlug()];
+
+		return array_merge([$stored], array_filter($aliases, fn (string $name): bool => $name !== ''));
+	}//end namesOf()
 
 	/**
 	 * Validate restored data against the schema as it is now.
@@ -260,7 +245,7 @@ class RevertHandler implements RevertHandlerInterface {
 
 		$notSupplied = new NotSuppliedHandler();
 		$data = ($object->getObject() ?? []);
-		$result = $this->validateHandler->validateObject(
+		$result = $this->stores->validateHandler->validateObject(
 			object: $notSupplied->stripForValidation(object: $data),
 			schema: $schema,
 			notSupplied: $notSupplied->declared(object: $data)
@@ -268,7 +253,7 @@ class RevertHandler implements RevertHandlerInterface {
 
 		if ($result->isValid() === false) {
 			throw new ValidationException(
-				message: $this->validateHandler->generateErrorMessage(result: $result),
+				message: $this->stores->validateHandler->generateErrorMessage(result: $result),
 				errors: $result->error()
 			);
 		}

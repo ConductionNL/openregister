@@ -29,9 +29,11 @@ namespace Unit\Service\Export;
 
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ExportProfileMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
@@ -74,8 +76,7 @@ final class ExportProfileServiceTest extends TestCase {
 		return new ExportProfileService(
 			new ExportProfileStores(
 				$this->mapper,
-				$registers,
-				$schemas,
+				new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)),
 			),
 			new ExportProfileSteps(
 				$this->exportService,

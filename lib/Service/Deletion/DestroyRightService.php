@@ -119,7 +119,7 @@ class DestroyRightService {
 			);
 		}
 
-		if ($this->holdsRight(schema: $schema, object: $object, userId: $user->getUID()) === false) {
+		if ($this->holdsRight(schema: $schema, object: $object) === false) {
 			return new DestructionRefusedException(
 				rule: 'destroy-right-missing',
 				reason: 'User ' . $user->getUID() . ' does not hold the destroy right on schema '
@@ -170,15 +170,21 @@ class DestroyRightService {
 	}//end declaredGroups()
 
 	/**
-	 * Whether the caller holds the declared right.
+	 * Whether the session's caller holds the declared right.
+	 *
+	 * The caller is read from the session; no caller holds no right.
 	 *
 	 * @param Schema       $schema The schema.
 	 * @param ObjectEntity $object The object.
-	 * @param string       $userId The caller.
 	 *
 	 * @return bool True when the caller may destroy.
 	 */
-	private function holdsRight(Schema $schema, ObjectEntity $object, string $userId): bool {
+	private function holdsRight(Schema $schema, ObjectEntity $object): bool {
+		$userId = $this->userSession->getUser()?->getUID();
+		if ($userId === null) {
+			return false;
+		}
+
 		try {
 			return $this->permissionHandler->hasPermission(
 				schema: $schema,

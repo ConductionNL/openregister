@@ -1,0 +1,2344 @@
+{
+    "pg / two objects / preUpdate true / managed false": {
+        "events": [
+            {
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_0"
+                ]
+            },
+            {
+                "transaction": "beginTransaction"
+            },
+            {
+                "prepare": "SELECT column_name\n                        FROM information_schema.columns\n                        WHERE table_name = ? AND table_schema = 'public'"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_0"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_bulk_0",
+                    "columns": [
+                        "_uuid",
+                        "_register",
+                        "_schema",
+                        "_slug",
+                        "_name",
+                        "_owner",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "slug",
+                    "table": "openregister_table_bulk_0"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_bulk_0\" WHERE \"_uuid\" IN (?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 1,
+                    "total_uuids": 2,
+                    "existing_uuids": 2,
+                    "new_uuids": 0
+                }
+            },
+            {
+                "prepare": "INSERT INTO \"oc_openregister_table_bulk_0\" (\"_uuid\", \"_register\", \"_schema\", \"_owner\", \"_created\", \"_updated\", \"_name\", \"_slug\", \"_version\", \"title\") VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6,:p7,:p8,:p9),(:p10,:p11,:p12,:p13,:p14,:p15,:p16,:p17,:p18,:p19) ON CONFLICT (_uuid) DO UPDATE SET \"_register\" = EXCLUDED.\"_register\", \"_schema\" = EXCLUDED.\"_schema\", \"_updated\" = NOW(), \"_name\" = EXCLUDED.\"_name\", \"_slug\" = EXCLUDED.\"_slug\", \"title\" = EXCLUDED.\"title\""
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": 3,
+                    "p2": 4,
+                    "p3": "alice",
+                    "p4": "<stamp>",
+                    "p5": "<stamp>",
+                    "p6": null,
+                    "p7": "one",
+                    "p8": "0.0.1",
+                    "p9": "One",
+                    "p10": "u-2",
+                    "p11": 3,
+                    "p12": 4,
+                    "p13": null,
+                    "p14": "<stamp>",
+                    "p15": "<stamp>",
+                    "p16": null,
+                    "p17": "two-top",
+                    "p18": "0.0.1",
+                    "p19": "Two"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 1,
+                    "objects": 2,
+                    "table": "openregister_table_bulk_0",
+                    "sql_size_kb": 0.44,
+                    "sql_preview": "INSERT INTO \"oc_openregister_table_bulk_0\" (\"_uuid\", \"_register\", \"_schema\", \"_owner\", \"_created\", \"_updated\", \"_name\", \"_slug\", \"_version\", \"title\") "
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_bulk_0\" WHERE \"_uuid\" IN (?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 1,
+                    "uuids_requested": 2,
+                    "objects_returned": 2,
+                    "created": 0,
+                    "updated": 1,
+                    "unchanged": 1
+                }
+            },
+            {
+                "transaction": "commit"
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-1",
+                "_updated": "<stamp>",
+                "title": "stored u-1",
+                "object_status": "updated",
+                "_pre_update_row": {
+                    "_uuid": "u-1",
+                    "_updated": "<stamp>",
+                    "title": "stored u-1"
+                },
+                "operation_start_time": "<stamp>"
+            },
+            {
+                "_uuid": "u-2",
+                "_updated": "<stamp>",
+                "title": "stored u-2",
+                "object_status": "unchanged",
+                "operation_start_time": "<stamp>"
+            }
+        ]
+    },
+    "pg / two objects / preUpdate false / managed true": {
+        "events": [
+            {
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_1"
+                ]
+            },
+            {
+                "transaction": "beginTransaction"
+            },
+            {
+                "prepare": "SELECT column_name\n                        FROM information_schema.columns\n                        WHERE table_name = ? AND table_schema = 'public'"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_1"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_bulk_1",
+                    "columns": [
+                        "_uuid",
+                        "_register",
+                        "_schema",
+                        "_slug",
+                        "_name",
+                        "_owner",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "slug",
+                    "table": "openregister_table_bulk_1"
+                }
+            },
+            {
+                "prepare": "SELECT \"_uuid\" FROM \"oc_openregister_table_bulk_1\" WHERE \"_uuid\" IN (?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 1,
+                    "total_uuids": 2,
+                    "existing_uuids": 2,
+                    "new_uuids": 0
+                }
+            },
+            {
+                "prepare": "INSERT INTO \"oc_openregister_table_bulk_1\" (\"_uuid\", \"_register\", \"_schema\", \"_owner\", \"_created\", \"_updated\", \"_name\", \"_slug\", \"_version\", \"title\") VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6,:p7,:p8,:p9),(:p10,:p11,:p12,:p13,:p14,:p15,:p16,:p17,:p18,:p19) ON CONFLICT (_uuid) DO UPDATE SET \"_register\" = EXCLUDED.\"_register\", \"_schema\" = EXCLUDED.\"_schema\", \"_updated\" = NOW(), \"_name\" = EXCLUDED.\"_name\", \"_slug\" = COALESCE(NULLIF(\"oc_openregister_table_bulk_1\".\"_slug\", ''), EXCLUDED.\"_slug\"), \"title\" = EXCLUDED.\"title\""
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": 3,
+                    "p2": 4,
+                    "p3": "alice",
+                    "p4": "<stamp>",
+                    "p5": "<stamp>",
+                    "p6": null,
+                    "p7": "one",
+                    "p8": "0.0.1",
+                    "p9": "One",
+                    "p10": "u-2",
+                    "p11": 3,
+                    "p12": 4,
+                    "p13": null,
+                    "p14": "<stamp>",
+                    "p15": "<stamp>",
+                    "p16": null,
+                    "p17": "two-top",
+                    "p18": "0.0.1",
+                    "p19": "Two"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 1,
+                    "objects": 2,
+                    "table": "openregister_table_bulk_1",
+                    "sql_size_kb": 0.5,
+                    "sql_preview": "INSERT INTO \"oc_openregister_table_bulk_1\" (\"_uuid\", \"_register\", \"_schema\", \"_owner\", \"_created\", \"_updated\", \"_name\", \"_slug\", \"_version\", \"title\") "
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_bulk_1\" WHERE \"_uuid\" IN (?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 1,
+                    "uuids_requested": 2,
+                    "objects_returned": 2,
+                    "created": 0,
+                    "updated": 1,
+                    "unchanged": 1
+                }
+            },
+            {
+                "transaction": "commit"
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-1",
+                "_updated": "<stamp>",
+                "title": "stored u-1",
+                "object_status": "updated",
+                "operation_start_time": "<stamp>"
+            },
+            {
+                "_uuid": "u-2",
+                "_updated": "<stamp>",
+                "title": "stored u-2",
+                "object_status": "unchanged",
+                "operation_start_time": "<stamp>"
+            }
+        ]
+    },
+    "pg / duplicate uuid / preUpdate true / managed false": {
+        "events": [
+            {
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_2"
+                ]
+            },
+            {
+                "transaction": "beginTransaction"
+            },
+            {
+                "prepare": "SELECT column_name\n                        FROM information_schema.columns\n                        WHERE table_name = ? AND table_schema = 'public'"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_bulk_2",
+                    "columns": [
+                        "_uuid",
+                        "_register",
+                        "_schema",
+                        "_slug",
+                        "_name",
+                        "_owner",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_2"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_2"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_bulk_2\" WHERE \"_uuid\" IN (?)"
+            },
+            {
+                "execute": [
+                    "u-1"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 1,
+                    "total_uuids": 1,
+                    "existing_uuids": 1,
+                    "new_uuids": 0
+                }
+            },
+            {
+                "prepare": "INSERT INTO \"oc_openregister_table_bulk_2\" (\"_uuid\", \"_register\", \"_schema\", \"_owner\", \"_created\", \"_updated\", \"_name\", \"_slug\", \"_version\", \"title\") VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6,:p7,:p8,:p9) ON CONFLICT (_uuid) DO UPDATE SET \"_register\" = EXCLUDED.\"_register\", \"_schema\" = EXCLUDED.\"_schema\", \"_updated\" = NOW(), \"_name\" = EXCLUDED.\"_name\", \"_slug\" = EXCLUDED.\"_slug\", \"title\" = EXCLUDED.\"title\""
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": 3,
+                    "p2": 4,
+                    "p3": null,
+                    "p4": "<stamp>",
+                    "p5": "<stamp>",
+                    "p6": null,
+                    "p7": null,
+                    "p8": "0.0.1",
+                    "p9": "second"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 1,
+                    "objects": 2,
+                    "table": "openregister_table_bulk_2",
+                    "sql_size_kb": 0.39,
+                    "sql_preview": "INSERT INTO \"oc_openregister_table_bulk_2\" (\"_uuid\", \"_register\", \"_schema\", \"_owner\", \"_created\", \"_updated\", \"_name\", \"_slug\", \"_version\", \"title\") "
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_bulk_2\" WHERE \"_uuid\" IN (?)"
+            },
+            {
+                "execute": [
+                    "u-1"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 1,
+                    "uuids_requested": 1,
+                    "objects_returned": 1,
+                    "created": 0,
+                    "updated": 1,
+                    "unchanged": 0
+                }
+            },
+            {
+                "transaction": "commit"
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-1",
+                "_updated": "<stamp>",
+                "title": "stored u-1",
+                "object_status": "updated",
+                "_pre_update_row": {
+                    "_uuid": "u-1",
+                    "_updated": "<stamp>",
+                    "title": "stored u-1"
+                },
+                "operation_start_time": "<stamp>"
+            }
+        ]
+    },
+    "pg / duplicate uuid / preUpdate false / managed true": {
+        "events": [
+            {
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_3"
+                ]
+            },
+            {
+                "transaction": "beginTransaction"
+            },
+            {
+                "prepare": "SELECT column_name\n                        FROM information_schema.columns\n                        WHERE table_name = ? AND table_schema = 'public'"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_3"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_bulk_3",
+                    "columns": [
+                        "_uuid",
+                        "_register",
+                        "_schema",
+                        "_slug",
+                        "_name",
+                        "_owner",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_3"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_3"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_3"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_3"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_3"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_3"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_3"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_3"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_3"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_3"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_3"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_3"
+                }
+            },
+            {
+                "prepare": "SELECT \"_uuid\" FROM \"oc_openregister_table_bulk_3\" WHERE \"_uuid\" IN (?)"
+            },
+            {
+                "execute": [
+                    "u-1"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 1,
+                    "total_uuids": 1,
+                    "existing_uuids": 1,
+                    "new_uuids": 0
+                }
+            },
+            {
+                "prepare": "INSERT INTO \"oc_openregister_table_bulk_3\" (\"_uuid\", \"_register\", \"_schema\", \"_owner\", \"_created\", \"_updated\", \"_name\", \"_slug\", \"_version\", \"title\") VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6,:p7,:p8,:p9) ON CONFLICT (_uuid) DO UPDATE SET \"_register\" = EXCLUDED.\"_register\", \"_schema\" = EXCLUDED.\"_schema\", \"_updated\" = NOW(), \"_name\" = EXCLUDED.\"_name\", \"_slug\" = COALESCE(NULLIF(\"oc_openregister_table_bulk_3\".\"_slug\", ''), EXCLUDED.\"_slug\"), \"title\" = EXCLUDED.\"title\""
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": 3,
+                    "p2": 4,
+                    "p3": null,
+                    "p4": "<stamp>",
+                    "p5": "<stamp>",
+                    "p6": null,
+                    "p7": null,
+                    "p8": "0.0.1",
+                    "p9": "second"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 1,
+                    "objects": 2,
+                    "table": "openregister_table_bulk_3",
+                    "sql_size_kb": 0.45,
+                    "sql_preview": "INSERT INTO \"oc_openregister_table_bulk_3\" (\"_uuid\", \"_register\", \"_schema\", \"_owner\", \"_created\", \"_updated\", \"_name\", \"_slug\", \"_version\", \"title\") "
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_bulk_3\" WHERE \"_uuid\" IN (?)"
+            },
+            {
+                "execute": [
+                    "u-1"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 1,
+                    "uuids_requested": 1,
+                    "objects_returned": 1,
+                    "created": 0,
+                    "updated": 1,
+                    "unchanged": 0
+                }
+            },
+            {
+                "transaction": "commit"
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-1",
+                "_updated": "<stamp>",
+                "title": "stored u-1",
+                "object_status": "updated",
+                "operation_start_time": "<stamp>"
+            }
+        ]
+    },
+    "pg / empty / preUpdate true / managed false": {
+        "events": [],
+        "result": []
+    },
+    "pg / empty / preUpdate false / managed true": {
+        "events": [],
+        "result": []
+    },
+    "pg / upsert fails": {
+        "events": [
+            {
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_6"
+                ]
+            },
+            {
+                "transaction": "beginTransaction"
+            },
+            {
+                "prepare": "SELECT column_name\n                        FROM information_schema.columns\n                        WHERE table_name = ? AND table_schema = 'public'"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_6"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_bulk_6",
+                    "columns": [
+                        "_uuid",
+                        "_register",
+                        "_schema",
+                        "_slug",
+                        "_name",
+                        "_owner",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "slug",
+                    "table": "openregister_table_bulk_6"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM \"oc_openregister_table_bulk_6\" WHERE \"_uuid\" IN (?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 1,
+                    "total_uuids": 2,
+                    "existing_uuids": 2,
+                    "new_uuids": 0
+                }
+            },
+            {
+                "prepare": "INSERT INTO \"oc_openregister_table_bulk_6\" (\"_uuid\", \"_register\", \"_schema\", \"_owner\", \"_created\", \"_updated\", \"_name\", \"_slug\", \"_version\", \"title\") VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6,:p7,:p8,:p9),(:p10,:p11,:p12,:p13,:p14,:p15,:p16,:p17,:p18,:p19) ON CONFLICT (_uuid) DO UPDATE SET \"_register\" = EXCLUDED.\"_register\", \"_schema\" = EXCLUDED.\"_schema\", \"_updated\" = NOW(), \"_name\" = EXCLUDED.\"_name\", \"_slug\" = EXCLUDED.\"_slug\", \"title\" = EXCLUDED.\"title\""
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": 3,
+                    "p2": 4,
+                    "p3": "alice",
+                    "p4": "<stamp>",
+                    "p5": "<stamp>",
+                    "p6": null,
+                    "p7": "one",
+                    "p8": "0.0.1",
+                    "p9": "One",
+                    "p10": "u-2",
+                    "p11": 3,
+                    "p12": 4,
+                    "p13": null,
+                    "p14": "<stamp>",
+                    "p15": "<stamp>",
+                    "p16": null,
+                    "p17": "two-top",
+                    "p18": "0.0.1",
+                    "p19": "Two"
+                }
+            },
+            {
+                "log": "error",
+                "message": "[MagicBulkHandler] UPSERT chunk failed",
+                "context": {
+                    "chunk": 1,
+                    "table": "openregister_table_bulk_6",
+                    "error": "refused: INSERT INTO"
+                }
+            },
+            {
+                "transaction": "rollBack"
+            },
+            {
+                "log": "error",
+                "message": "[MagicBulkHandler] Rolled back bulk upsert chunk after failure",
+                "context": {
+                    "chunk": 1,
+                    "table": "openregister_table_bulk_6",
+                    "error": "refused: INSERT INTO"
+                }
+            }
+        ],
+        "result": {
+            "thrown": "Exception: refused: INSERT INTO"
+        }
+    },
+    "mysql / two objects / preUpdate true / managed false": {
+        "events": [
+            {
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_7"
+                ]
+            },
+            {
+                "transaction": "beginTransaction"
+            },
+            {
+                "prepare": "SHOW COLUMNS FROM `oc_openregister_table_bulk_7`"
+            },
+            {
+                "execute": []
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_bulk_7",
+                    "columns": [
+                        "_uuid",
+                        "_register",
+                        "_schema",
+                        "_slug",
+                        "_name",
+                        "_owner",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "slug",
+                    "table": "openregister_table_bulk_7"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_bulk_7` WHERE `_uuid` IN (?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 1,
+                    "total_uuids": 2,
+                    "existing_uuids": 2,
+                    "new_uuids": 0
+                }
+            },
+            {
+                "prepare": "INSERT INTO `oc_openregister_table_bulk_7` (`_uuid`, `_register`, `_schema`, `_owner`, `_created`, `_updated`, `_name`, `_slug`, `_version`, `title`) VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6,:p7,:p8,:p9),(:p10,:p11,:p12,:p13,:p14,:p15,:p16,:p17,:p18,:p19) ON DUPLICATE KEY UPDATE `_register` = VALUES(`_register`), `_schema` = VALUES(`_schema`), `_updated` = NOW(), `_name` = VALUES(`_name`), `_slug` = VALUES(`_slug`), `title` = VALUES(`title`)"
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": 3,
+                    "p2": 4,
+                    "p3": "alice",
+                    "p4": "<stamp>",
+                    "p5": "<stamp>",
+                    "p6": null,
+                    "p7": "one",
+                    "p8": "0.0.1",
+                    "p9": "One",
+                    "p10": "u-2",
+                    "p11": 3,
+                    "p12": 4,
+                    "p13": null,
+                    "p14": "<stamp>",
+                    "p15": "<stamp>",
+                    "p16": null,
+                    "p17": "two-top",
+                    "p18": "0.0.1",
+                    "p19": "Two"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 1,
+                    "objects": 2,
+                    "table": "openregister_table_bulk_7",
+                    "sql_size_kb": 0.43,
+                    "sql_preview": "INSERT INTO `oc_openregister_table_bulk_7` (`_uuid`, `_register`, `_schema`, `_owner`, `_created`, `_updated`, `_name`, `_slug`, `_version`, `title`) "
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_bulk_7` WHERE `_uuid` IN (?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 1,
+                    "uuids_requested": 2,
+                    "objects_returned": 2,
+                    "created": 0,
+                    "updated": 1,
+                    "unchanged": 1
+                }
+            },
+            {
+                "transaction": "commit"
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-1",
+                "_updated": "<stamp>",
+                "title": "stored u-1",
+                "object_status": "updated",
+                "_pre_update_row": {
+                    "_uuid": "u-1",
+                    "_updated": "<stamp>",
+                    "title": "stored u-1"
+                },
+                "operation_start_time": "<stamp>"
+            },
+            {
+                "_uuid": "u-2",
+                "_updated": "<stamp>",
+                "title": "stored u-2",
+                "object_status": "unchanged",
+                "operation_start_time": "<stamp>"
+            }
+        ]
+    },
+    "mysql / two objects / preUpdate false / managed true": {
+        "events": [
+            {
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_8"
+                ]
+            },
+            {
+                "transaction": "beginTransaction"
+            },
+            {
+                "prepare": "SHOW COLUMNS FROM `oc_openregister_table_bulk_8`"
+            },
+            {
+                "execute": []
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_bulk_8",
+                    "columns": [
+                        "_uuid",
+                        "_register",
+                        "_schema",
+                        "_slug",
+                        "_name",
+                        "_owner",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "slug",
+                    "table": "openregister_table_bulk_8"
+                }
+            },
+            {
+                "prepare": "SELECT `_uuid` FROM `oc_openregister_table_bulk_8` WHERE `_uuid` IN (?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 1,
+                    "total_uuids": 2,
+                    "existing_uuids": 2,
+                    "new_uuids": 0
+                }
+            },
+            {
+                "prepare": "INSERT INTO `oc_openregister_table_bulk_8` (`_uuid`, `_register`, `_schema`, `_owner`, `_created`, `_updated`, `_name`, `_slug`, `_version`, `title`) VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6,:p7,:p8,:p9),(:p10,:p11,:p12,:p13,:p14,:p15,:p16,:p17,:p18,:p19) ON DUPLICATE KEY UPDATE `_register` = VALUES(`_register`), `_schema` = VALUES(`_schema`), `_updated` = NOW(), `_name` = VALUES(`_name`), `_slug` = COALESCE(NULLIF(`_slug`, ''), VALUES(`_slug`)), `title` = VALUES(`title`)"
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": 3,
+                    "p2": 4,
+                    "p3": "alice",
+                    "p4": "<stamp>",
+                    "p5": "<stamp>",
+                    "p6": null,
+                    "p7": "one",
+                    "p8": "0.0.1",
+                    "p9": "One",
+                    "p10": "u-2",
+                    "p11": 3,
+                    "p12": 4,
+                    "p13": null,
+                    "p14": "<stamp>",
+                    "p15": "<stamp>",
+                    "p16": null,
+                    "p17": "two-top",
+                    "p18": "0.0.1",
+                    "p19": "Two"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 1,
+                    "objects": 2,
+                    "table": "openregister_table_bulk_8",
+                    "sql_size_kb": 0.46,
+                    "sql_preview": "INSERT INTO `oc_openregister_table_bulk_8` (`_uuid`, `_register`, `_schema`, `_owner`, `_created`, `_updated`, `_name`, `_slug`, `_version`, `title`) "
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_bulk_8` WHERE `_uuid` IN (?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 1,
+                    "uuids_requested": 2,
+                    "objects_returned": 2,
+                    "created": 0,
+                    "updated": 1,
+                    "unchanged": 1
+                }
+            },
+            {
+                "transaction": "commit"
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-1",
+                "_updated": "<stamp>",
+                "title": "stored u-1",
+                "object_status": "updated",
+                "operation_start_time": "<stamp>"
+            },
+            {
+                "_uuid": "u-2",
+                "_updated": "<stamp>",
+                "title": "stored u-2",
+                "object_status": "unchanged",
+                "operation_start_time": "<stamp>"
+            }
+        ]
+    },
+    "mysql / duplicate uuid / preUpdate true / managed false": {
+        "events": [
+            {
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_9"
+                ]
+            },
+            {
+                "transaction": "beginTransaction"
+            },
+            {
+                "prepare": "SHOW COLUMNS FROM `oc_openregister_table_bulk_9`"
+            },
+            {
+                "execute": []
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_bulk_9",
+                    "columns": [
+                        "_uuid",
+                        "_register",
+                        "_schema",
+                        "_slug",
+                        "_name",
+                        "_owner",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_9"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_9"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_9"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_9"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_9"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_9"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_9"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_9"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_9"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_9"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_9"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_9"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_bulk_9` WHERE `_uuid` IN (?)"
+            },
+            {
+                "execute": [
+                    "u-1"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 1,
+                    "total_uuids": 1,
+                    "existing_uuids": 1,
+                    "new_uuids": 0
+                }
+            },
+            {
+                "prepare": "INSERT INTO `oc_openregister_table_bulk_9` (`_uuid`, `_register`, `_schema`, `_owner`, `_created`, `_updated`, `_name`, `_slug`, `_version`, `title`) VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6,:p7,:p8,:p9) ON DUPLICATE KEY UPDATE `_register` = VALUES(`_register`), `_schema` = VALUES(`_schema`), `_updated` = NOW(), `_name` = VALUES(`_name`), `_slug` = VALUES(`_slug`), `title` = VALUES(`title`)"
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": 3,
+                    "p2": 4,
+                    "p3": null,
+                    "p4": "<stamp>",
+                    "p5": "<stamp>",
+                    "p6": null,
+                    "p7": null,
+                    "p8": "0.0.1",
+                    "p9": "second"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 1,
+                    "objects": 2,
+                    "table": "openregister_table_bulk_9",
+                    "sql_size_kb": 0.38,
+                    "sql_preview": "INSERT INTO `oc_openregister_table_bulk_9` (`_uuid`, `_register`, `_schema`, `_owner`, `_created`, `_updated`, `_name`, `_slug`, `_version`, `title`) "
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_bulk_9` WHERE `_uuid` IN (?)"
+            },
+            {
+                "execute": [
+                    "u-1"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 1,
+                    "uuids_requested": 1,
+                    "objects_returned": 1,
+                    "created": 0,
+                    "updated": 1,
+                    "unchanged": 0
+                }
+            },
+            {
+                "transaction": "commit"
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-1",
+                "_updated": "<stamp>",
+                "title": "stored u-1",
+                "object_status": "updated",
+                "_pre_update_row": {
+                    "_uuid": "u-1",
+                    "_updated": "<stamp>",
+                    "title": "stored u-1"
+                },
+                "operation_start_time": "<stamp>"
+            }
+        ]
+    },
+    "mysql / duplicate uuid / preUpdate false / managed true": {
+        "events": [
+            {
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_10"
+                ]
+            },
+            {
+                "transaction": "beginTransaction"
+            },
+            {
+                "prepare": "SHOW COLUMNS FROM `oc_openregister_table_bulk_10`"
+            },
+            {
+                "execute": []
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_bulk_10",
+                    "columns": [
+                        "_uuid",
+                        "_register",
+                        "_schema",
+                        "_slug",
+                        "_name",
+                        "_owner",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_10"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_10"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_10"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_10"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_10"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_10"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_10"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_10"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_10"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_10"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_10"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_10"
+                }
+            },
+            {
+                "prepare": "SELECT `_uuid` FROM `oc_openregister_table_bulk_10` WHERE `_uuid` IN (?)"
+            },
+            {
+                "execute": [
+                    "u-1"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 1,
+                    "total_uuids": 1,
+                    "existing_uuids": 1,
+                    "new_uuids": 0
+                }
+            },
+            {
+                "prepare": "INSERT INTO `oc_openregister_table_bulk_10` (`_uuid`, `_register`, `_schema`, `_owner`, `_created`, `_updated`, `_name`, `_slug`, `_version`, `title`) VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6,:p7,:p8,:p9) ON DUPLICATE KEY UPDATE `_register` = VALUES(`_register`), `_schema` = VALUES(`_schema`), `_updated` = NOW(), `_name` = VALUES(`_name`), `_slug` = COALESCE(NULLIF(`_slug`, ''), VALUES(`_slug`)), `title` = VALUES(`title`)"
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": 3,
+                    "p2": 4,
+                    "p3": null,
+                    "p4": "<stamp>",
+                    "p5": "<stamp>",
+                    "p6": null,
+                    "p7": null,
+                    "p8": "0.0.1",
+                    "p9": "second"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Executed UPSERT chunk",
+                "context": {
+                    "chunk": 1,
+                    "objects": 2,
+                    "table": "openregister_table_bulk_10",
+                    "sql_size_kb": 0.41,
+                    "sql_preview": "INSERT INTO `oc_openregister_table_bulk_10` (`_uuid`, `_register`, `_schema`, `_owner`, `_created`, `_updated`, `_name`, `_slug`, `_version`, `title`)"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_bulk_10` WHERE `_uuid` IN (?)"
+            },
+            {
+                "execute": [
+                    "u-1"
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[MagicBulkHandler] Classification complete (using pre-upsert UUID check)",
+                "context": {
+                    "chunk": 1,
+                    "uuids_requested": 1,
+                    "objects_returned": 1,
+                    "created": 0,
+                    "updated": 1,
+                    "unchanged": 0
+                }
+            },
+            {
+                "transaction": "commit"
+            }
+        ],
+        "result": [
+            {
+                "_uuid": "u-1",
+                "_updated": "<stamp>",
+                "title": "stored u-1",
+                "object_status": "updated",
+                "operation_start_time": "<stamp>"
+            }
+        ]
+    },
+    "mysql / empty / preUpdate true / managed false": {
+        "events": [],
+        "result": []
+    },
+    "mysql / empty / preUpdate false / managed true": {
+        "events": [],
+        "result": []
+    },
+    "mysql / upsert fails": {
+        "events": [
+            {
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_bulk_13"
+                ]
+            },
+            {
+                "transaction": "beginTransaction"
+            },
+            {
+                "prepare": "SHOW COLUMNS FROM `oc_openregister_table_bulk_13`"
+            },
+            {
+                "execute": []
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Retrieved columns",
+                "context": {
+                    "table": "openregister_table_bulk_13",
+                    "columns": [
+                        "_uuid",
+                        "_register",
+                        "_schema",
+                        "_slug",
+                        "_name",
+                        "_owner",
+                        "_created",
+                        "_updated",
+                        "_version",
+                        "title"
+                    ]
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "ghost",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_organisation",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_description",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_summary",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_image",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_uri",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "_size",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Dropping column not in table",
+                "context": {
+                    "column": "slug",
+                    "table": "openregister_table_bulk_13"
+                }
+            },
+            {
+                "prepare": "SELECT * FROM `oc_openregister_table_bulk_13` WHERE `_uuid` IN (?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicBulkHandler] Pre-upsert UUID check",
+                "context": {
+                    "chunk": 1,
+                    "total_uuids": 2,
+                    "existing_uuids": 2,
+                    "new_uuids": 0
+                }
+            },
+            {
+                "prepare": "INSERT INTO `oc_openregister_table_bulk_13` (`_uuid`, `_register`, `_schema`, `_owner`, `_created`, `_updated`, `_name`, `_slug`, `_version`, `title`) VALUES (:p0,:p1,:p2,:p3,:p4,:p5,:p6,:p7,:p8,:p9),(:p10,:p11,:p12,:p13,:p14,:p15,:p16,:p17,:p18,:p19) ON DUPLICATE KEY UPDATE `_register` = VALUES(`_register`), `_schema` = VALUES(`_schema`), `_updated` = NOW(), `_name` = VALUES(`_name`), `_slug` = VALUES(`_slug`), `title` = VALUES(`title`)"
+            },
+            {
+                "execute": {
+                    "p0": "u-1",
+                    "p1": 3,
+                    "p2": 4,
+                    "p3": "alice",
+                    "p4": "<stamp>",
+                    "p5": "<stamp>",
+                    "p6": null,
+                    "p7": "one",
+                    "p8": "0.0.1",
+                    "p9": "One",
+                    "p10": "u-2",
+                    "p11": 3,
+                    "p12": 4,
+                    "p13": null,
+                    "p14": "<stamp>",
+                    "p15": "<stamp>",
+                    "p16": null,
+                    "p17": "two-top",
+                    "p18": "0.0.1",
+                    "p19": "Two"
+                }
+            },
+            {
+                "log": "error",
+                "message": "[MagicBulkHandler] UPSERT chunk failed",
+                "context": {
+                    "chunk": 1,
+                    "table": "openregister_table_bulk_13",
+                    "error": "refused: INSERT INTO"
+                }
+            },
+            {
+                "transaction": "rollBack"
+            },
+            {
+                "log": "error",
+                "message": "[MagicBulkHandler] Rolled back bulk upsert chunk after failure",
+                "context": {
+                    "chunk": 1,
+                    "table": "openregister_table_bulk_13",
+                    "error": "refused: INSERT INTO"
+                }
+            }
+        ],
+        "result": {
+            "thrown": "Exception: refused: INSERT INTO"
+        }
+    }
+}

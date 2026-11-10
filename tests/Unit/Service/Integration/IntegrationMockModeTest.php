@@ -129,21 +129,18 @@ class IntegrationMockModeTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		if (in_array($class, [KvkProvider::class, OpenCorporatesProvider::class], true) === false) {
+		$router = $this->realMockRouter(mockResponse: $mockResponse, mockMeta: $mockMeta);
+		if (in_array($class, [KvkProvider::class, OpenCorporatesProvider::class, MessageDispatchProvider::class], true) === true) {
 			return new $class(
-				router: $this->realMockRouter(mockResponse: $mockResponse, mockMeta: $mockMeta),
-				appManager: $appManager,
-				l10n: $l10n,
+				routing: new ConnectorRouting(router: $router, appManager: $appManager, l10n: $l10n),
 				logger: new NullLogger(),
 			);
 		}
 
 		return new $class(
-			routing: new ConnectorRouting(
-				router: $this->realMockRouter(mockResponse: $mockResponse, mockMeta: $mockMeta),
-				appManager: $appManager,
-				l10n: $l10n,
-			),
+			router: $router,
+			appManager: $appManager,
+			l10n: $l10n,
 			logger: new NullLogger(),
 		);
 	}//end provider()

@@ -40,7 +40,6 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
-use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IGroupManager;
@@ -104,7 +103,7 @@ class StateFieldRuleListenerTest extends TestCase {
 		return new StateFieldRuleListener(
 			new StateFieldRulePlatform($this->schemaMapper, $this->ruleRuns, $this->createMock(LoggerInterface::class)),
 			$resolver,
-			new StateConditionEvaluator($resolver, $dialect, new ConditionTracer($dialect))
+			new StateConditionEvaluator($resolver, $dialect)
 		);
 	}
 

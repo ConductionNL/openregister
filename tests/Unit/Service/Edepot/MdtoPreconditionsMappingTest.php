@@ -57,11 +57,7 @@ class MdtoPreconditionsMappingTest extends TestCase {
 
 		$this->mappingResolver = $this->createMock(MdtoMappingResolver::class);
 
-		$this->preconditions = new MdtoPreconditions(
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			new MdtoInputReaders($this->sourceReader, $this->createMock(MdtoBestandGenerator::class), $this->mappingResolver)
-		);
+		$this->preconditions = new MdtoPreconditions(new MdtoInputReaders($this->sourceReader, $this->createMock(MdtoBestandGenerator::class), $this->mappingResolver), new \OCA\OpenRegister\Service\Configuration\AppSettingsAccess($this->createMock(IAppConfig::class), $this->createMock(\OCP\App\IAppManager::class), $this->createMock(LoggerInterface::class)));
 	}
 
 	/**

@@ -65,14 +65,23 @@ class RegisterNotFoundException extends Exception {
 	 * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-clear-failure-when-auto-create-is-impossible-req-imp-ac-02
 	 */
 	public function __construct(string $registerSlugOrId, int $code = 404, ?Exception $previous = null, ?string $remedies = null) {
-		// Build error message with register identifier.
-		$message = "Register not found: '" . $registerSlugOrId . "'";
+		parent::__construct(message: self::messageFor(registerSlugOrId: $registerSlugOrId, remedies: $remedies), code: $code, previous: $previous);
+	}//end __construct()
 
+	/**
+	 * The message naming the register, with the remedies appended when given.
+	 *
+	 * @param string      $registerSlugOrId The register slug or ID that was not found.
+	 * @param string|null $remedies         Optional guidance appended to the message.
+	 *
+	 * @return string
+	 */
+	private static function messageFor(string $registerSlugOrId, ?string $remedies): string {
+		$message = "Register not found: '" . $registerSlugOrId . "'";
 		if ($remedies !== null && $remedies !== '') {
 			$message .= ' ' . $remedies;
 		}
 
-		// Call parent constructor to initialize base exception properties.
-		parent::__construct(message: $message, code: $code, previous: $previous);
-	}//end __construct()
+		return $message;
+	}//end messageFor()
 }//end class

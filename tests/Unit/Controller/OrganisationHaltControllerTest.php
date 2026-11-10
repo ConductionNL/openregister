@@ -52,7 +52,7 @@ class OrganisationHaltControllerTest extends TestCase {
 		$halts->method('list')->willReturn([['id' => 'h1']]);
 		$halts->method('release')->willReturnCallback(static fn (string $id): bool => ($id === 'h1'));
 
-		$controller = new OrganisationHaltController(appName: 'openregister', request: $this->createMock(IRequest::class), halts: $halts);
+		$controller = new OrganisationHaltController(request: $this->createMock(IRequest::class), halts: $halts);
 
 		$created = $controller->create(uuid: 'org-a', app: 'hermiq', reason: 'incident');
 		$this->assertSame(201, $created->getStatus());

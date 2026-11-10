@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\Support\TagsControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -149,8 +150,19 @@ class TagsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse JSON response with the object's tags
+	 */
+	private function indexForObject(ObjectRef $ref): JSONResponse {
 		try {
-			$object = $this->selectObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
+			$object = $this->selectObject(route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id));
 			if ($object === null) {
 				return $this->objectNotFound();
 			}
@@ -161,7 +173,7 @@ class TagsController extends Controller {
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}
-	}//end index()
+	}//end indexForObject()
 
 	/**
 	 * Add a tag to an object.
@@ -178,11 +190,22 @@ class TagsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
 	 */
 	public function add(string $register, string $schema, string $id): JSONResponse {
+		return $this->addForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end add()
+
+	/**
+	 * add() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse JSON response with the updated tags
+	 */
+	private function addForObject(ObjectRef $ref): JSONResponse {
 		return $this->changeTags(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
 			change: fn (ObjectEntity $object): JSONResponse => $this->addTag(object: $object)
 		);
-	}//end add()
+	}//end addForObject()
 
 	/**
 	 * Remove a tag from an object.
@@ -200,11 +223,23 @@ class TagsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
 	 */
 	public function remove(string $register, string $schema, string $id, string $tag): JSONResponse {
+		return $this->removeForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), tag: $tag);
+	}//end remove()
+
+	/**
+	 * remove() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 * @param string    $tag The tag name to remove
+	 *
+	 * @return JSONResponse JSON response with the updated tags
+	 */
+	private function removeForObject(ObjectRef $ref, string $tag): JSONResponse {
 		return $this->changeTags(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
 			change: fn (ObjectEntity $object): JSONResponse => $this->removeTag(object: $object, tag: $tag)
 		);
-	}//end remove()
+	}//end removeForObject()
 
 	/**
 	 * Select the object addressed by the route and load it through the read path.

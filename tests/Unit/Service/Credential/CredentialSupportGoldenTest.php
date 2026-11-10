@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkNotifier;
 use OCA\OpenRegister\Service\Credential\CredentialUpdateRequest;
+use OCA\OpenRegister\Service\Configuration\AppSettingsAccess;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -179,7 +180,7 @@ class CredentialSupportGoldenTest extends TestCase {
 		$manager->expects($this->once())->method('notify')->with($notification);
 
 		(new CredentialRelinkNotifier(eventDispatcher: $dispatcher, notifications: $manager, logger: $this->createMock(LoggerInterface::class)))
-			->announce(credentialId: 'cred-1', provider: 'mastodon', owner: 'alice', reason: 'invalid_grant');
+			->announce(event: new CredentialRelinkRequiredEvent(credentialId: 'cred-1', provider: 'mastodon', owner: 'alice', reason: 'invalid_grant'));
 
 		$this->assertCount(1, $events);
 		$this->assertInstanceOf(CredentialRelinkRequiredEvent::class, $events[0]);
@@ -201,7 +202,7 @@ class CredentialSupportGoldenTest extends TestCase {
 		$manager->expects($this->never())->method('createNotification');
 
 		(new CredentialRelinkNotifier(eventDispatcher: $dispatcher, notifications: $manager, logger: $this->createMock(LoggerInterface::class)))
-			->announce(credentialId: 'cred-1', provider: 'mastodon', owner: '', reason: 'invalid_grant');
+			->announce(event: new CredentialRelinkRequiredEvent(credentialId: 'cred-1', provider: 'mastodon', owner: '', reason: 'invalid_grant'));
 	}
 
 	public function testRelinkFailuresAreSwallowedAndTheOwnerStillTold(): void {
@@ -213,7 +214,7 @@ class CredentialSupportGoldenTest extends TestCase {
 		$logger->expects($this->exactly(2))->method('warning');
 
 		(new CredentialRelinkNotifier(eventDispatcher: $dispatcher, notifications: $manager, logger: $logger))
-			->announce(credentialId: 'cred-1', provider: 'mastodon', owner: 'alice', reason: 'invalid_grant');
+			->announce(event: new CredentialRelinkRequiredEvent(credentialId: 'cred-1', provider: 'mastodon', owner: 'alice', reason: 'invalid_grant'));
 	}
 
 	/**
@@ -307,7 +308,7 @@ class CredentialSupportGoldenTest extends TestCase {
 			 * @param object|null $service The fake service.
 			 */
 			public function __construct(IAppConfig $appConfig, IAppManager $appManager, LoggerInterface $logger, private readonly ?object $service) {
-				parent::__construct(appConfig: $appConfig, appManager: $appManager, logger: $logger);
+				parent::__construct(settings: new AppSettingsAccess(appConfig: $appConfig, appManager: $appManager, logger: $logger));
 			}
 
 			/**
@@ -351,7 +352,7 @@ class CredentialSupportGoldenTest extends TestCase {
 			 * @param object $service The fake service.
 			 */
 			public function __construct(IAppConfig $appConfig, IAppManager $appManager, LoggerInterface $logger, private readonly object $service) {
-				parent::__construct(appConfig: $appConfig, appManager: $appManager, logger: $logger);
+				parent::__construct(settings: new AppSettingsAccess(appConfig: $appConfig, appManager: $appManager, logger: $logger));
 			}
 
 			/**

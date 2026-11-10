@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace Unit\Service\Lifecycle;
 
 use DateTime;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\BackgroundJob\AutoTransitionJob;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -127,10 +128,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$l10n->method('getLanguageCode')->willReturn('en');
 
 		$this->runner = new AutoTransitionRunner(
-			new AutoTransitionDecider(
-				$this->container,
-				$this->schemaMapper,
-				new AutoTransitionSelector(
+			new AutoTransitionDecider($this->container, new SchemaReading($this->schemaMapper, $this->logger), new AutoTransitionSelector(
 					new LifecycleConditionEvaluator(
 						$this->createMock(IUserSession::class),
 						$groupManager,
@@ -138,9 +136,7 @@ class AutoTransitionRunnerTest extends TestCase {
 						$this->realConditionDialect()
 					),
 					$this->logger
-				),
-				$this->logger
-			),
+				)),
 			$this->container,
 			// A REAL queue around the mocked deferral service, not a mocked queue:
 			// the dedupe key, the entry shape and the kill-switch rule are the

@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\TalkLink;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\TalkLink\RoomPickerQuery;
+use OCA\OpenRegister\Service\TalkLink\TalkViewer;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -160,7 +162,7 @@ class TalkRoomFieldsOptionalGettersTest extends TestCase {
 			'getLastMessage' => new TalkRoomFieldsComment($created),
 		]);
 
-		$fields = $this->fields()->cacheFields($room, 'alice', new TalkRoomFieldsParticipants(5));
+		$fields = $this->fields()->cacheFields($room, new TalkViewer('alice', new TalkRoomFieldsParticipants(5)));
 
 		$this->assertSame(12, $fields['roomId']);
 		$this->assertSame('Zaak 42', $fields['roomName']);
@@ -178,7 +180,7 @@ class TalkRoomFieldsOptionalGettersTest extends TestCase {
 	public function testAnEmptyDisplayNameKeepsTheRoomNameAndABlankDescriptionFallsBackToTheTypeLabel(): void {
 		$room = new TalkRoomFieldsFullRoom(['getName' => 'Raw', 'getDisplayName:alice' => '', 'getType' => 1, 'getDescription' => '   ']);
 
-		$fields = $this->fields()->cacheFields($room, 'alice', null);
+		$fields = $this->fields()->cacheFields($room, new TalkViewer('alice', null));
 
 		$this->assertSame('Raw', $fields['roomName']);
 		$this->assertSame('nl:Direct message', $fields['subtitle']);
@@ -188,7 +190,7 @@ class TalkRoomFieldsOptionalGettersTest extends TestCase {
 		$labels = [];
 		foreach ([1, 2, 3, 4, 6, 5] as $type) {
 			$room = new TalkRoomFieldsFullRoom(['getName' => 'R', 'getType' => $type, 'getDescription' => new RuntimeException('no')]);
-			$labels[$type] = $this->fields()->cacheFields($room, 'u', null)['subtitle'];
+			$labels[$type] = $this->fields()->cacheFields($room, new TalkViewer('u', null))['subtitle'];
 		}
 
 		$this->assertSame(
@@ -200,13 +202,13 @@ class TalkRoomFieldsOptionalGettersTest extends TestCase {
 	public function testAnEmptyNameIsStoredAsNull(): void {
 		$room = new TalkRoomFieldsFullRoom(['getName' => ' [or:x] ', 'getDisplayName:u' => new RuntimeException('no')]);
 
-		$this->assertNull($this->fields()->cacheFields($room, 'u', null)['roomName']);
+		$this->assertNull($this->fields()->cacheFields($room, new TalkViewer('u', null))['roomName']);
 	}
 
 	public function testANonDateLastActivityAndANonObjectLastMessageAreNull(): void {
 		$room = new TalkRoomFieldsFullRoom(['getName' => 'R', 'getLastActivity' => '2026-01-01', 'getLastMessage' => 'text']);
 
-		$fields = $this->fields()->cacheFields($room, 'u', null);
+		$fields = $this->fields()->cacheFields($room, new TalkViewer('u', null));
 
 		$this->assertNull($fields['lastActivity']);
 		$this->assertNull($fields['lastMessage']);
@@ -216,7 +218,7 @@ class TalkRoomFieldsOptionalGettersTest extends TestCase {
 		foreach ([new RuntimeException('no date'), 'yesterday'] as $created) {
 			$room = new TalkRoomFieldsFullRoom(['getName' => 'R', 'getLastMessage' => new TalkRoomFieldsComment($created)]);
 
-			$this->assertNull($this->fields()->cacheFields($room, 'u', null)['lastMessage']['timestamp']);
+			$this->assertNull($this->fields()->cacheFields($room, new TalkViewer('u', null))['lastMessage']['timestamp']);
 		}
 	}
 
@@ -225,15 +227,15 @@ class TalkRoomFieldsOptionalGettersTest extends TestCase {
 
 		$this->assertSame(
 			['actor' => ['type' => '', 'id' => ''], 'text' => '', 'timestamp' => null],
-			$this->fields()->cacheFields($room, 'u', null)['lastMessage']
+			$this->fields()->cacheFields($room, new TalkViewer('u', null))['lastMessage']
 		);
 	}
 
 	public function testAParticipantServiceWithoutTheCounterOrThatThrowsGivesNoCount(): void {
 		$room = new TalkRoomFieldsFullRoom(['getName' => 'R']);
 
-		$this->assertNull($this->fields()->cacheFields($room, 'u', new \stdClass())['participantCount']);
-		$this->assertNull($this->fields()->cacheFields($room, 'u', new TalkRoomFieldsParticipants(new RuntimeException('x')))['participantCount']);
+		$this->assertNull($this->fields()->cacheFields($room, new TalkViewer('u', new \stdClass()))['participantCount']);
+		$this->assertNull($this->fields()->cacheFields($room, new TalkViewer('u', new TalkRoomFieldsParticipants(new RuntimeException('x'))))['participantCount']);
 	}
 
 	public function testPickerRowsMatchOnTheDisplayNameAndCountParticipants(): void {
@@ -244,14 +246,14 @@ class TalkRoomFieldsOptionalGettersTest extends TestCase {
 
 		$this->assertSame(
 			[['token' => 't1', 'name' => 'Bouwdossier', 'type' => 3, 'participantCount' => 7]],
-			$this->fields()->pickerRows($rooms, 'alice', 'dossier', new TalkRoomFieldsParticipants(7))
+			$this->fields()->pickerRows($rooms, new RoomPickerQuery(new TalkViewer('alice', new TalkRoomFieldsParticipants(7)), 'dossier'))
 		);
 	}
 
 	public function testAnEmptySearchMatchesEveryRoom(): void {
 		$rooms = [new TalkRoomFieldsFullRoom(['getToken' => 't1', 'getName' => 'A', 'getType' => 2])];
 
-		$this->assertCount(1, $this->fields()->pickerRows($rooms, 'u', '  ', null));
-		$this->assertCount(1, $this->fields()->pickerRows($rooms, 'u', null, null));
+		$this->assertCount(1, $this->fields()->pickerRows($rooms, new RoomPickerQuery(new TalkViewer('u', null), '  ')));
+		$this->assertCount(1, $this->fields()->pickerRows($rooms, new RoomPickerQuery(new TalkViewer('u', null), null)));
 	}
 }

@@ -228,11 +228,11 @@ class ExampleSetCatalogue implements ExampleSetCatalogueInterface {
 	private function orderOf(array $fragments, array $enabled): array {
 		$strings = static fn (mixed $value): array => array_values(array_map('strval', (array) $value));
 
-		return $this->order->order(
+		return $this->order->order(apps: new FragmentOrdering(
 			after: array_map(static fn (array $fragment): array => $strings($fragment['after'] ?? []), $fragments),
 			enabled: $enabled,
 			expected: $strings($fragments[ExampleSetOrder::CAST_APP]['apps'] ?? [])
-		);
+		));
 	}//end orderOf()
 
 	/**

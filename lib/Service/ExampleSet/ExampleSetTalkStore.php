@@ -98,28 +98,15 @@ class ExampleSetTalkStore {
 	}//end available()
 
 	/**
-	 * The owner's group conversation of this name, or a new one with the participants in it.
-	 *
-	 * @param string             $owner        The account that owns a new conversation.
-	 * @param string             $name         The conversation's name.
-	 * @param array<int, string> $participants Accounts added besides the owner.
-	 *
-	 * @return array{token: string, id: int, created: bool}
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
-	 */
-	public function room(string $owner, string $name, array $participants): array {
-		return $this->openRoom(room: new ExampleSetTalkRoom(owner: $owner, name: $name, participants: $participants));
-	}//end room()
-
-	/**
 	 * Find the owner's group room by name, or make it with the participants.
 	 *
 	 * @param ExampleSetTalkRoom $room The owner, name and participants.
 	 *
 	 * @return array{token: string, id: int, created: bool}
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
-	private function openRoom(ExampleSetTalkRoom $room): array {
+	public function openRoom(ExampleSetTalkRoom $room): array {
 		$found = $this->groupRoom(owner: $room->owner, name: $room->name);
 		if ($found !== null) {
 			return ['token' => (string) $found->getToken(), 'id' => (int) $found->getId(), 'created' => false];
@@ -183,20 +170,32 @@ class ExampleSetTalkStore {
 	public function heldCall(string $token, string $owner, array $call, array $joined): void {
 		$start = new DateTime((string) $call['start']);
 		$end   = new DateTime((string) $call['end']);
-		$room = $this->container->get(self::MANAGER)->getRoomByToken($token);
-		$chat = $this->container->get(self::CHAT);
+		$room  = $this->container->get(self::MANAGER)->getRoomByToken($token);
+		$chat  = $this->container->get(self::CHAT);
 		$chat->addSystemMessage($room, null, 'users', $owner, (string) json_encode(['message' => 'call_started', 'parameters' => []]), $start, false);
-		$ended = [
+		$ended = self::callEnded(joined: $joined, seconds: max(0, $end->getTimestamp() - $start->getTimestamp()));
+		$chat->addSystemMessage($room, null, 'users', $owner, (string) json_encode($ended), $end, false);
+	}//end heldCall()
+
+	/**
+	 * The system message that ends a held call.
+	 *
+	 * @param array<int, string> $joined  Who joined it.
+	 * @param int                $seconds How long it lasted.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function callEnded(array $joined, int $seconds): array {
+		return [
 			'message'    => 'call_ended',
 			'parameters' => [
 				'users'    => array_values($joined),
 				'cloudIds' => [],
 				'guests'   => 0,
-				'duration' => max(0, $end->getTimestamp() - $start->getTimestamp()),
+				'duration' => $seconds,
 			],
 		];
-		$chat->addSystemMessage($room, null, 'users', $owner, (string) json_encode($ended), $end, false);
-	}//end heldCall()
+	}//end callEnded()
 
 	/**
 	 * Whether the conversation still exists.

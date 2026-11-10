@@ -215,6 +215,54 @@ class ReadHistoryService {
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
 	 */
 	public function registerProcessingReadList(array $objects, array $query = [], string $action = self::READ_ACTION): void {
+		$this->registerListRead(objects: $objects, read: new ProcessingListRead(query: $query, action: $action));
+
+	}//end registerProcessingReadList()
+
+	/**
+	 * Register a list or search read on the AVG processing log.
+	 *
+	 * The value-object form of registerProcessingReadList(), with the same
+	 * grouping, reporting and fail-soft behaviour.
+	 *
+	 * @param array<int|string, mixed> $objects The listed objects: ObjectEntity or rendered arrays.
+	 * @param ProcessingListRead       $read    The query parameters and the action of the read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
+	 */
+	public function registerListRead(array $objects, ProcessingListRead $read): void {
+		$groups = $this->groupedByTable(objects: $objects);
+		if ($groups === []) {
+			return;
+		}
+
+		try {
+			$service = $this->container->get(ProcessingLogService::class);
+			foreach ($groups as $group) {
+				$service->logReadList(objects: $group, action: $read->action, query: $read->query);
+			}
+
+			$service->flush();
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				message: '[AVG] processing-log list read hook skipped',
+				context: ['exception' => $e->getMessage()]
+			);
+		}
+
+	}//end registerListRead()
+
+	/**
+	 * The listed rows as ObjectEntities grouped per register and schema; rows
+	 * that cannot be attributed are counted and reported, not dropped silently.
+	 *
+	 * @param array<int|string, mixed> $objects The listed objects: ObjectEntity or rendered arrays.
+	 *
+	 * @return array<string, list<ObjectEntity>> The groups, keyed `register|schema`.
+	 */
+	private function groupedByTable(array $objects): array {
 		$groups = [];
 		$unattributed = 0;
 		foreach ($objects as $row) {
@@ -234,25 +282,9 @@ class ReadHistoryService {
 			);
 		}
 
-		if ($groups === []) {
-			return;
-		}
+		return $groups;
 
-		try {
-			$service = $this->container->get(ProcessingLogService::class);
-			foreach ($groups as $group) {
-				$service->logReadList(objects: $group, action: $action, query: $query);
-			}
-
-			$service->flush();
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[AVG] processing-log list read hook skipped',
-				context: ['exception' => $e->getMessage()]
-			);
-		}
-
-	}//end registerProcessingReadList()
+	}//end groupedByTable()
 
 	/**
 	 * A listed row as an ObjectEntity, or null when it cannot be attributed.

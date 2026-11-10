@@ -110,14 +110,8 @@ class AccessLinkActs implements AccessLinkActsInterface {
 	 */
 	public function upload(AccessLink $link, ObjectEntity $object, string $fileName, string $content): array {
 		unset($link);
+		$stored = $this->files->addFile(objectEntity: $object, fileName: $fileName, content: $content, share: false);
 
-		return $this->files->formatFile(
-			$this->files->addFile(
-				objectEntity: $object,
-				fileName: $fileName,
-				content: $content,
-				share: false
-			)
-		);
+		return $this->files->formatFile($stored);
 	}//end upload()
 }//end class

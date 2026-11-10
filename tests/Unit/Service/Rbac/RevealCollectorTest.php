@@ -42,7 +42,9 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
+use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -90,7 +92,7 @@ class RevealCollectorTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testOneLookIsOneEntry(): void {
-		$this->collector->record('alice', 'object-1', 'bsn', 24, 14);
+		$this->collector->record('alice', 'object-1', 'bsn', 24);
 
 		$entries = $this->collector->take();
 
@@ -101,6 +103,35 @@ class RevealCollectorTest extends TestCase {
 		$this->assertSame('bsn', $entries[0]['property']);
 		$this->assertSame(24, $entries[0]['schema']);
 	}//end testOneLookIsOneEntry()
+
+	/**
+	 * A named reveal records the same entry, register included, and an
+	 * incomplete one records nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	public function testANamedRevealIsOneEntry(): void {
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-1', 'bsn', 24), 14);
+		$this->collector->recordReveal(new PropertyReveal('alice', 'object-1', 'bsn', 24), 14);
+		$this->collector->recordReveal(new PropertyReveal('', 'object-1', 'bsn'));
+
+		$entries = $this->collector->take();
+
+		$this->assertCount(1, $entries);
+		$this->assertSame(
+			[
+				'action' => RevealCollector::ACTION,
+				'user' => 'alice',
+				'object' => 'object-1',
+				'property' => 'bsn',
+				'schema' => 24,
+				'register' => 14,
+			],
+			$entries[0]
+		);
+	}//end testANamedRevealIsOneEntry()
 
 	/**
 	 * 🔴 A list of forty reveals forty times, and that count is the finding.
@@ -230,8 +261,8 @@ class RevealCollectorTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testATrustedRunWritesOneEntry(): void {
-		$this->collector->recordProcess('retention-sweep', 'run-7', 120000);
-		$this->collector->recordProcess('retention-sweep', 'run-7', 120000);
+		$this->collector->recordProcess(new RevealingProcess('retention-sweep', 'run-7'), 120000);
+		$this->collector->recordProcess(new RevealingProcess('retention-sweep', 'run-7'), 120000);
 
 		$entries = $this->collector->take();
 
@@ -252,8 +283,8 @@ class RevealCollectorTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testTwoRunsAreTwoEntries(): void {
-		$this->collector->recordProcess('retention-sweep', 'run-7', 10);
-		$this->collector->recordProcess('retention-sweep', 'run-8', 10);
+		$this->collector->recordProcess(new RevealingProcess('retention-sweep', 'run-7'), 10);
+		$this->collector->recordProcess(new RevealingProcess('retention-sweep', 'run-8'), 10);
 
 		$this->assertSame(2, $this->collector->count());
 	}//end testTwoRunsAreTwoEntries()
@@ -266,7 +297,7 @@ class RevealCollectorTest extends TestCase {
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function testAnUnnamedProcessRecordsNothing(): void {
-		$this->collector->recordProcess('', 'run-7', 10);
+		$this->collector->recordProcess(new RevealingProcess('', 'run-7'), 10);
 
 		$this->assertSame(0, $this->collector->count());
 	}//end testAnUnnamedProcessRecordsNothing()

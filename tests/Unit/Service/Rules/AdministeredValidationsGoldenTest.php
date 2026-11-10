@@ -23,8 +23,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 
 use OCA\OpenRegister\Service\Rules\AdministeredValidations;
+use OCA\OpenRegister\Service\Rules\ConditionEvaluation;
 use OCA\OpenRegister\Service\Rules\ConditionRefusedException;
 use OCA\OpenRegister\Service\Rules\NamedConditionEvaluator;
+use OCA\OpenRegister\Service\Rules\ValidationInput;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -56,8 +58,8 @@ class AdministeredValidationsGoldenTest extends TestCase {
 	protected function setUp(): void {
 		$evaluator = $this->createMock(NamedConditionEvaluator::class);
 		$evaluator->method('holds')->willReturnCallback(
-			function (mixed $node, array $document, array $library): bool {
-				$this->calls[] = json_encode([$node, $document, $library]);
+			function (mixed $node, ConditionEvaluation $evaluation): bool {
+				$this->calls[] = json_encode([$node, $evaluation->document, $evaluation->library]);
 				if ($node === 'broken') {
 					throw new ConditionRefusedException('lib.broken', 'it references itself');
 				}
@@ -210,17 +212,17 @@ class AdministeredValidationsGoldenTest extends TestCase {
 		];
 		$this->assertSame(
 			$expected,
-			$this->validations->evaluate($annotation, ['bedrag' => 60000], ['lib' => ['expression' => true]], 'en_GB')
+			$this->validations->evaluate(annotation: $annotation, input: new ValidationInput(document: ['bedrag' => 60000], library: ['lib' => ['expression' => true]], language: 'en_GB'))
 		);
 		$this->assertCount(7, $this->calls);
 		$this->assertSame('[null,{"bedrag":60000},{"lib":{"expression":true}}]', $this->calls[6]);
 
 		$this->calls = [];
-		$this->assertSame(['refusals' => [], 'warnings' => []], $this->validations->evaluate(null, []));
+		$this->assertSame(['refusals' => [], 'warnings' => []], $this->validations->evaluate(annotation: null, input: new ValidationInput(document: [], library: [], language: 'nl')));
 		$this->assertSame([], $this->calls);
 
 		$nudge    = ['condition' => 'violated', 'severity' => 'warn', 'message' => ['nl' => 'Standaard', 'en' => 'Default']];
-		$defaults = $this->validations->evaluate(['n' => $nudge], ['a' => 1]);
+		$defaults = $this->validations->evaluate(annotation: ['n' => $nudge], input: new ValidationInput(document: ['a' => 1], library: [], language: 'nl'));
 		$this->assertSame('Standaard', $defaults['warnings'][0]['message']);
 		$this->assertSame('["violated",{"a":1},[]]', $this->calls[0]);
 	}//end testEvaluate()

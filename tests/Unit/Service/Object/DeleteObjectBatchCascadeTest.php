@@ -126,9 +126,8 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 			$this->objectMapper,
 			$this->cacheHandler,
 			$this->userSession,
-			$this->auditTrailMapper,
+			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->createMock(LoggerInterface::class)),
 			$this->settingsService,
-			$this->createMock(LoggerInterface::class),
 			$this->integrityService,
 			$this->createMock(IDBConnection::class),
 			$this->createMock(OrganisationMapper::class)

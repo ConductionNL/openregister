@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Db;
 
 use DateTime;
 use DateTimeZone;
+use OCA\OpenRegister\Notifications\Db\DispatchIdempotencyKey;
 use OCA\OpenRegister\Notifications\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
@@ -68,7 +69,7 @@ final class NotificationDispatchLogMapperTest extends TestCase {
 		$mapper = new NotificationDispatchLogMapper($this->database());
 		$before = (new DateTime('now', new DateTimeZone('UTC')))->modify('-60 seconds')->format('Y-m-d H:i:s');
 
-		$this->assertTrue($mapper->isDuplicate('slug', 'key', 60));
+		$this->assertTrue($mapper->isDuplicate(new DispatchIdempotencyKey('slug', 'key'), 60));
 		$after = (new DateTime('now', new DateTimeZone('UTC')))->modify('-60 seconds')->format('Y-m-d H:i:s');
 		$log = $this->log();
 		$this->assertStringContainsString('where(eq(notification_slug, :p1, NULL))', $log);
@@ -82,7 +83,7 @@ final class NotificationDispatchLogMapperTest extends TestCase {
 
 	public function testIsNotDuplicateWhenNoRowInTheWindow(): void {
 		$this->queuedRows = [[['c' => '0']]];
-		$this->assertFalse((new NotificationDispatchLogMapper($this->database()))->isDuplicate('slug', 'key'));
+		$this->assertFalse((new NotificationDispatchLogMapper($this->database()))->isDuplicate(new DispatchIdempotencyKey('slug', 'key')));
 	}
 
 	public function testRecordInsertsSlugKeyAndUtcTimestamp(): void {

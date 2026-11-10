@@ -145,7 +145,7 @@ class SearchTrailServiceTest extends TestCase {
 
 		$result = $this->service->getSearchTrail(1);
 
-		$this->assertInstanceOf(SearchTrail::class, $result);
+		$this->assertSame($trail, $result);
 	}
 
 	// ── cleanupSearchTrails ──
@@ -736,7 +736,9 @@ class SearchTrailServiceTest extends TestCase {
 		$result = $this->service->getSearchTrail(1);
 
 		// Should not throw, register/schema names remain null.
-		$this->assertInstanceOf(SearchTrail::class, $result);
+		$this->assertSame($trail, $result);
+		$this->assertNull($result->getRegisterName());
+		$this->assertNull($result->getSchemaName());
 	}
 
 	// ── cleanupSearchTrails additional branches ──

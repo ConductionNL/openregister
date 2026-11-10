@@ -109,7 +109,7 @@ final class FlowItems {
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
 	public static function item(array $json, array $binary = [], ?int $fromItemIndex = null, ?string $output = null): array {
-		return FlowItemShape::item(json: $json, binary: $binary, fromItemIndex: $fromItemIndex, output: $output);
+		return FlowItemShape::item(json: $json, options: new FlowItemOptions(binary: $binary, fromItemIndex: $fromItemIndex, output: $output));
 	}//end item()
 
 	/**
@@ -171,7 +171,7 @@ final class FlowItems {
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md#requirement-resuming-carries-the-runs-own-items-req-fr-003
 	 */
 	public static function refreshSubjectProjection(array $items, object $subject, string $subjectUuid): array {
-		return FlowSubjectItems::refreshSubjectProjection(items: $items, subject: $subject, subjectUuid: $subjectUuid);
+		return FlowSubjectItems::refreshSubjectProjection(items: $items, subject: new LiveSubject(subject: $subject, uuid: $subjectUuid));
 	}//end refreshSubjectProjection()
 
 }//end class

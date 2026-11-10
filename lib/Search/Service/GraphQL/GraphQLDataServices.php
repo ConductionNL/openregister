@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\GraphQL;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
@@ -33,18 +34,32 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
  */
 final class GraphQLDataServices {
 	/**
+	 * Register mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectOperationsInterface $objectService  Object service
-	 * @param RegisterMapperInterface   $registerMapper Register mapper
-	 * @param SchemaMapperInterface     $schemaMapper   Schema mapper
+	 * @param ObjectOperationsInterface $objectService Object service
+	 * @param SchemaCatalogInterface    $catalog       The register and schema mappers.
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objectService,
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
+		SchemaCatalogInterface $catalog,
 	) {
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper   = $catalog->schemas();
 	}//end __construct()
 }//end class

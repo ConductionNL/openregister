@@ -131,15 +131,14 @@ class PortalPartyResolver {
 			);
 		}
 
-		return $this->resolve(case: $object->getObject(), role: $role, caseUuid: $objectUuid);
+		return $this->resolve(case: new PortalCase(data: $object->getObject(), uuid: $objectUuid), role: $role);
 	}//end resolveFromObject()
 
 	/**
 	 * Resolve a role against a case's data.
 	 *
-	 * @param array<string, mixed> $case The case object's data.
-	 * @param string $role The party role.
-	 * @param string $caseUuid The case, for the refusal message.
+	 * @param PortalCase $case The case object: its data, and its uuid for the refusal message.
+	 * @param string     $role The party role.
 	 *
 	 * @return string The party reference, `party:<ref>`.
 	 *
@@ -147,20 +146,20 @@ class PortalPartyResolver {
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
 	 */
-	public function resolve(array $case, string $role, string $caseUuid = ''): string {
+	public function resolve(PortalCase $case, string $role): string {
 		$role = trim($role);
 		if ($role === '') {
 			$role = self::DEFAULT_ROLE;
 		}
 
-		$reference = $this->referenceOf(value: ($case[$role] ?? null));
+		$reference = $this->referenceOf(value: ($case->data[$role] ?? null));
 		if ($reference === '') {
-			$reference = $this->fromPartyLists(case: $case, role: $role);
+			$reference = $this->fromPartyLists(case: $case->data, role: $role);
 		}
 
 		if ($reference === '') {
 			throw new PortalPartyNotFoundException(
-				message: sprintf("Case '%s' names no party for role '%s'; the portal task cannot be addressed.", $caseUuid, $role)
+				message: sprintf("Case '%s' names no party for role '%s'; the portal task cannot be addressed.", $case->uuid, $role)
 			);
 		}
 

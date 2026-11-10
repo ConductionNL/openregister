@@ -29,6 +29,7 @@ use OCA\OpenRegister\Controller\Support\RelationsObjectLookup;
 use OCA\OpenRegister\Controller\Support\RelationTypeLookup;
 use OCA\OpenRegister\Controller\Support\RelationsRecords;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -257,10 +258,21 @@ class RelationsController extends Controller {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse 200 with the relations, 404 when the object does not exist,
+	 */
+	private function indexForObject(ObjectRef $ref): JSONResponse {
 		try {
 			// A DoesNotExistException from the lookup is deliberately not caught
 			// there: "no such object" stays distinguishable from a null read.
-			$object = $this->lookup->find(register: $register, schema: $schema, id: $id);
+			$object = $this->lookup->find(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
@@ -269,11 +281,11 @@ class RelationsController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifier(id: $id);
+			return $this->ambiguousIdentifier(id: $ref->id);
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 500);
 		}//end try
-	}//end index()
+	}//end indexForObject()
 
 	/**
 	 * The relations of a resolved object, grouped or as a timeline as the request asks.
