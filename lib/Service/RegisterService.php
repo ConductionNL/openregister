@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Serializer\RegisterExpansion;
+use OCA\OpenRegister\Service\Serializer\RegisterListExtension;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\Files\Node;
 use OCP\IDBConnection;
@@ -312,7 +313,7 @@ class RegisterService implements RegisterServiceInterface {
 	 * Companion to {@see findAll()} that returns serialized arrays with
 	 * `_extend` honored. When `schemas` + `@self.stats` are both
 	 * requested, per-register stats are pre-computed and handed to the
-	 * serializer via `serializeMany()`.
+	 * serializer via `serializePage()`.
 	 *
 	 * @param int|null $limit Maximum number of results.
 	 * @param int|null $offset Pagination offset.
@@ -350,7 +351,10 @@ class RegisterService implements RegisterServiceInterface {
 			_multitenancy: $_multitenancy
 		);
 
-		return $this->registerSerializer->serializeMany($registers, $_extend, $this->statsByRegisterId(registers: $registers, _extend: $_extend));
+		return $this->registerSerializer->serializePage(
+			registers: $registers,
+			extension: new RegisterListExtension(extend: $_extend, schemaStatsByRegisterId: $this->statsByRegisterId(registers: $registers, _extend: $_extend))
+		);
 	}//end findAllSerialized()
 
 	/**
