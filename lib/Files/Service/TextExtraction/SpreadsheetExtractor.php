@@ -109,8 +109,9 @@ class SpreadsheetExtractor {
 	}//end assertLibraryAvailable()
 
 	/**
-	 * The text of every sheet in spreadsheet bytes.
+	 * The text of every sheet in spreadsheet bytes, or '' when no sheet holds a value.
 	 *
+	 * Each sheet is a header line, a tab-separated line per non-empty row, and a blank line.
 	 * PhpSpreadsheet loads from a path, so the bytes go through a temporary file.
 	 *
 	 * @param string $content The file bytes.
@@ -124,23 +125,30 @@ class SpreadsheetExtractor {
 		$spreadsheet = SpreadsheetIOFactory::load($tempPath);
 
 		$text = '';
+		$rows = '';
 		foreach ($spreadsheet->getAllSheets() as $sheet) {
-			$text .= $this->sheetText(sheet: $sheet);
+			$sheetRows = $this->sheetRows(sheet: $sheet);
+			$rows .= $sheetRows;
+			$text .= 'Sheet: ' . $sheet->getTitle() . "\n" . $sheetRows . "\n";
 		}
 
 		fclose($tempFile);
+		if ($rows === '') {
+			return '';
+		}
+
 		return $text;
 	}//end readText()
 
 	/**
-	 * One sheet as a header line, a tab-separated line per non-empty row, and a blank line.
+	 * One sheet's non-empty rows, each as a tab-separated line.
 	 *
 	 * @param Worksheet $sheet The sheet.
 	 *
 	 * @return string
 	 */
-	private function sheetText(Worksheet $sheet): string {
-		$text = 'Sheet: ' . $sheet->getTitle() . "\n";
+	private function sheetRows(Worksheet $sheet): string {
+		$text = '';
 		$highestRow = $sheet->getHighestRow();
 		$columns = $this->columnsUpTo(highestColumn: $sheet->getHighestColumn());
 		for ($row = 1; $row <= $highestRow; $row++) {
@@ -148,8 +156,8 @@ class SpreadsheetExtractor {
 			$text .= $this->rowLine(sheet: $sheet, coordinates: $coordinates);
 		}
 
-		return $text . "\n";
-	}//end sheetText()
+		return $text;
+	}//end sheetRows()
 
 	/**
 	 * The column letters from A up to and including the highest column.
