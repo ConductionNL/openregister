@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\SharedSchema\OwnerCandidates;
 use OCA\OpenRegister\Service\SharedSchema\SchemaIdSwap;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaOwnership;
 use OCA\OpenRegister\Service\SharedSchema\SharedSchemaStore;
+use OCA\OpenRegister\Service\SharedSchema\SplitTableColumns;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -493,7 +494,9 @@ class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 			'definition'   => $definition,
 			'table'        => $bare,
 			'rows'         => $this->store->migrator->countRows(table: $bare),
-			'unmapped'     => $this->store->migrator->planUnmapped(table: $bare, definition: $definition, content: $shared['content']),
+			'unmapped'     => $this->store->migrator->planUnmapped(
+				split: new SplitTableColumns(table: $bare, definition: $definition, content: $shared['content'])
+			),
 		];
 	}//end planSplit()
 
