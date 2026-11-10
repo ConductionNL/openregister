@@ -528,28 +528,13 @@ class SecurityService implements LoginSecurityInterface, RateLimitResetInterface
 	 * counter, applying a lockout when either threshold is crossed. Callers
 	 * (the middleware) MUST swallow any exception this throws (fail-open).
 	 *
-	 * @param string $identity The authentication identity (username/token id) or '' if unknown
-	 * @param string $ipAddress The trusted client IP address of the failed attempt
-	 * @param string $reason The reason for authentication failure
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
-	 */
-	public function recordFailedAuthAttempt(string $identity, string $ipAddress, string $reason = 'inbound_auth_failed'): void {
-		$this->recordFailedAuth(attempt: new FailedAttempt(subject: $identity, ipAddress: $ipAddress, reason: $reason));
-	}//end recordFailedAuthAttempt()
-
-	/**
-	 * Record a failed inbound authentication attempt, as {@see recordFailedAuthAttempt()} describes.
-	 *
 	 * @param FailedAttempt $attempt The identity ('' when unknown), trusted client address and failure reason.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
-	public function recordFailedAuth(FailedAttempt $attempt): void {
+	public function recordFailedAuthAttempt(FailedAttempt $attempt): void {
 		$run = new AuthFailureRun(
 			compositeKey: $this->buildAuthCompositeKey(identity: $attempt->subject, ipAddress: $attempt->ipAddress),
 			who: ['identity' => $attempt->subject, 'ip_address' => $this->sanitizeForCacheKey(input: $attempt->ipAddress)],
@@ -567,7 +552,7 @@ class SecurityService implements LoginSecurityInterface, RateLimitResetInterface
 			event: 'failed_auth_attempt',
 			context: $run->who + ['reason' => $attempt->reason] + $counts + ['lockout_triggered' => $lockoutTriggered]
 		);
-	}//end recordFailedAuth()
+	}//end recordFailedAuthAttempt()
 
 
 	/**
