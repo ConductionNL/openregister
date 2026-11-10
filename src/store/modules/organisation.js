@@ -3,6 +3,8 @@ import { Organisation } from '../../entities/index.js'
 import { loadNextcloudGroupsInto } from '../../services/groupSearch.js'
 import { listStateActions } from './listState.js'
 
+const ORGANISATIONS = '/index.php/apps/openregister/api/organisations'
+
 /**
  * Whether an organisation is the one a uuid or id names.
  *
@@ -22,27 +24,107 @@ function isOrganisation(organisation, organisationId) {
  * @return {Promise<{response: Response, data: object}>} The answer.
  * @throws {Error} The answer's message, else the HTTP status.
  */
-async function putOrganisation(organisationId, body) {
-	const response = await fetch(
-		`/index.php/apps/openregister/api/organisations/${organisationId}`,
-		{
-			method: 'PUT',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(body),
-		},
+function putOrganisation(organisationId, body) {
+	return fetchJsonOrExplain(
+		`${ORGANISATIONS}/${organisationId}`,
+		jsonRequest('PUT', body),
 	)
+}
 
+/**
+ * A request that sends a body as JSON.
+ *
+ * @param {string} method The HTTP method.
+ * @param {object} body The body.
+ * @return {object} The fetch options.
+ */
+function jsonRequest(method, body) {
+	return {
+		method,
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(body),
+	}
+}
+
+/**
+ * Send a request and read its JSON answer; a refusal throws its status.
+ *
+ * @param {string} endpoint The URL.
+ * @param {object} init The fetch options.
+ * @return {Promise<{response: Response, data: object}>} The answer.
+ * @throws {Error} The HTTP status.
+ */
+async function fetchJson(endpoint, init) {
+	const response = await fetch(endpoint, init)
+	if (!response.ok) {
+		throw new Error(`HTTP error! status: ${response.status}`)
+	}
+	return { response, data: await response.json() }
+}
+
+/**
+ * Send a request and read its JSON answer; a refusal throws the answer's
+ * message, else its status.
+ *
+ * @param {string} endpoint The URL.
+ * @param {object} init The fetch options.
+ * @return {Promise<{response: Response, data: object}>} The answer.
+ * @throws {Error} The answer's message, else the HTTP status.
+ */
+async function fetchJsonOrExplain(endpoint, init) {
+	const response = await fetch(endpoint, init)
 	if (!response.ok) {
 		const errorData = await response.json()
 		throw new Error(
 			errorData.message || `HTTP error! status: ${response.status}`,
 		)
 	}
-
 	return { response, data: await response.json() }
 }
+
+/**
+ * How each organisation action names a failure: what it was doing, for the
+ * log, and what it failed to do, for the thrown error.
+ */
+const FAILURES = {
+	setActiveOrganisationById: ['setting active organisation', 'set active organisation'],
+	joinOrganisation: ['joining organisation', 'join organisation'],
+	leaveOrganisation: ['leaving organisation', 'leave organisation'],
+	createOrganisation: ['creating organisation', 'create organisation'],
+	updateOrganisation: ['updating organisation', 'update organisation'],
+	searchOrganisations: ['searching organisations', 'search organisations'],
+}
+
+/**
+ * Log an action's failure and wrap it in the error the action throws.
+ *
+ * @param {string} action The action's name.
+ * @param {Error} error The failure.
+ * @return {Error} The error to throw, caused by the failure.
+ */
+function failureOf(action, error) {
+	const [doing, verb] = FAILURES[action]
+	console.error(`Error ${doing}:`, error)
+	return new Error(`Failed to ${verb}: ${error.message}`, { cause: error })
+}
+
+/**
+ * The fields an organisation carries that the server calculates or owns,
+ * and that a save must not send.
+ */
+const READ_ONLY_FIELDS = [
+	'id',
+	'uuid',
+	'users',
+	'userCount',
+	'groupCount',
+	'usage', // Usage is calculated by backend, not set by frontend
+	'owner',
+	'created',
+	'updated',
+]
 
 /**
  * Put a saved organisation into the list and, when it is the current one,
@@ -207,17 +289,11 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Thin API passthrough — POST /api/organisations/{uuid}/set-active; observable contract owned by tenant-lifecycle.
 		 */
 		async setActiveOrganisationById(uuid) {
-			const endpoint = `/index.php/apps/openregister/api/organisations/${uuid}/set-active`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = await response.json()
+				const { response, data } = await fetchJson(
+					`${ORGANISATIONS}/${uuid}/set-active`,
+					{ method: 'POST' },
+				)
 
 				if (data.activeOrganisation) {
 					this.setActiveOrganisation(data.activeOrganisation)
@@ -228,11 +304,7 @@ export const useOrganisationStore = defineStore('organisation', {
 
 				return { response, data }
 			} catch (error) {
-				console.error('Error setting active organisation:', error)
-				throw new Error(
-					`Failed to set active organisation: ${error.message}`,
-					{ cause: error },
-				)
+				throw failureOf('setActiveOrganisationById', error)
 			}
 		},
 		/**
@@ -245,34 +317,21 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Thin API passthrough — POST /api/organisations/{uuid}/join; observable contract owned by tenant-lifecycle.
 		 */
 		async joinOrganisation(uuid, userId = null) {
-			const endpoint = `/index.php/apps/openregister/api/organisations/${uuid}/join`
 			try {
 				// Prepare request body with optional userId
 				const requestBody = userId ? { userId } : {}
 
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(requestBody),
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = await response.json()
+				const { response, data } = await fetchJson(
+					`${ORGANISATIONS}/${uuid}/join`,
+					jsonRequest('POST', requestBody),
+				)
 
 				// Refresh organisation list to show new membership
 				await this.refreshOrganisationList()
 
 				return { response, data }
 			} catch (error) {
-				console.error('Error joining organisation:', error)
-				throw new Error(`Failed to join organisation: ${error.message}`, {
-					cause: error,
-				})
+				throw failureOf('joinOrganisation', error)
 			}
 		},
 		// Leave an organisation
@@ -281,17 +340,11 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Thin API passthrough — POST /api/organisations/{uuid}/leave; observable contract owned by tenant-lifecycle.
 		 */
 		async leaveOrganisation(uuid) {
-			const endpoint = `/index.php/apps/openregister/api/organisations/${uuid}/leave`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = await response.json()
+				const { response, data } = await fetchJson(
+					`${ORGANISATIONS}/${uuid}/leave`,
+					{ method: 'POST' },
+				)
 
 				// Refresh organisation list and active organisation
 				await this.refreshOrganisationList()
@@ -299,10 +352,7 @@ export const useOrganisationStore = defineStore('organisation', {
 
 				return { response, data }
 			} catch (error) {
-				console.error('Error leaving organisation:', error)
-				throw new Error(`Failed to leave organisation: ${error.message}`, {
-					cause: error,
-				})
+				throw failureOf('leaveOrganisation', error)
 			}
 		},
 		// Delete an organisation (owner only)
@@ -335,26 +385,11 @@ export const useOrganisationStore = defineStore('organisation', {
 		 * @spec exclude Thin API passthrough — POST /api/organisations; observable contract owned by tenant-lifecycle.
 		 */
 		async createOrganisation(organisationData) {
-			const endpoint = '/index.php/apps/openregister/api/organisations'
-
 			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(organisationData),
-				})
-
-				if (!response.ok) {
-					const errorData = await response.json()
-					throw new Error(
-						errorData.message
-							|| `HTTP error! status: ${response.status}`,
-					)
-				}
-
-				const data = await response.json()
+				const { response, data } = await fetchJsonOrExplain(
+					ORGANISATIONS,
+					jsonRequest('POST', organisationData),
+				)
 				const savedOrganisation = data.organisation || data
 
 				// Update local state
@@ -365,10 +400,7 @@ export const useOrganisationStore = defineStore('organisation', {
 
 				return { response, data: savedOrganisation }
 			} catch (error) {
-				console.error('Error creating organisation:', error)
-				throw new Error(`Failed to create organisation: ${error.message}`, {
-					cause: error,
-				})
+				throw failureOf('createOrganisation', error)
 			}
 		},
 
@@ -401,10 +433,7 @@ export const useOrganisationStore = defineStore('organisation', {
 
 				return { response, data: savedOrganisation }
 			} catch (error) {
-				console.error('Error updating organisation:', error)
-				throw new Error(`Failed to update organisation: ${error.message}`, {
-					cause: error,
-				})
+				throw failureOf('updateOrganisation', error)
 			}
 		},
 
@@ -431,15 +460,9 @@ export const useOrganisationStore = defineStore('organisation', {
 			const cleaned = { ...organisationItem }
 
 			// Remove read-only/calculated fields that should not be sent to the server
-			delete cleaned.id
-			delete cleaned.uuid
-			delete cleaned.users
-			delete cleaned.userCount
-			delete cleaned.groupCount
-			delete cleaned.usage // Usage is calculated by backend, not set by frontend
-			delete cleaned.owner
-			delete cleaned.created
-			delete cleaned.updated
+			for (const field of READ_ONLY_FIELDS) {
+				delete cleaned[field]
+			}
 
 			// Remove empty slug to avoid database errors
 			if (cleaned.slug === '' || cleaned.slug === null) {
@@ -476,25 +499,14 @@ export const useOrganisationStore = defineStore('organisation', {
 			params.append('_limit', limit)
 			params.append('_offset', offset)
 
-			const endpoint = `/index.php/apps/openregister/api/organisations/search?${params.toString()}`
-
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const data = await response.json()
-
+				const { data } = await fetchJson(
+					`${ORGANISATIONS}/search?${params.toString()}`,
+					{ method: 'GET' },
+				)
 				return data.organisations || []
 			} catch (error) {
-				console.error('Error searching organisations:', error)
-				throw new Error(`Failed to search organisations: ${error.message}`, {
-					cause: error,
-				})
+				throw failureOf('searchOrganisations', error)
 			}
 		},
 		// Clear cache

@@ -794,7 +794,7 @@
   },
   "src/store/modules/organisation.js": {
     "no-console": {
-      "count": 9
+      "count": 4
     }
   },
   "src/store/modules/quality.js": {
