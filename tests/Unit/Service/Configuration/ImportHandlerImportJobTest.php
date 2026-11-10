@@ -42,6 +42,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use OCA\OpenRegister\Service\Configuration\FinishedImportJob;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
@@ -159,8 +160,8 @@ class ImportHandlerImportJobTest extends TestCase {
 			}
 		);
 		$this->recorder->expects($this->once())
-			->method('record')
-			->with('learniq.demo', 'job-1', '0.2.0', 0)
+			->method('recordFinished')
+			->with(new FinishedImportJob(appId: 'learniq.demo', importJobId: 'job-1', version: '0.2.0', objectsWritten: 0))
 			->willReturn(true);
 
 		$result = $this->handler($this->recorder)->importFromApp('learniq.demo', ['components' => []], '0.2.0');
@@ -179,7 +180,7 @@ class ImportHandlerImportJobTest extends TestCase {
 	public function testAnUnrecordedJobReturnsANullImportJobId(): void {
 		$this->appConfig->method('getValueString')->willReturn('');
 		$this->recorder->method('begin')->willReturn('job-2');
-		$this->recorder->method('record')->willReturn(false);
+		$this->recorder->method('recordFinished')->willReturn(false);
 
 		$result = $this->handler($this->recorder)->importFromApp('learniq.demo', ['components' => []], '0.2.0');
 
@@ -195,7 +196,7 @@ class ImportHandlerImportJobTest extends TestCase {
 		$this->appConfig->method('getValueString')->willThrowException(new RuntimeException('database gone'));
 		$this->recorder->method('begin')->willReturn('job-3');
 		$this->recorder->expects($this->once())->method('end');
-		$this->recorder->expects($this->never())->method('record');
+		$this->recorder->expects($this->never())->method('recordFinished');
 
 		$this->expectException(Exception::class);
 
