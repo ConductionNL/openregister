@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Db\TenantUsage;
 use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Db\TenantUsage\UsageBucket;
 use OCA\OpenRegister\Db\UsageMeasurement;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -50,7 +51,7 @@ final class TenantUsageUpsertTest extends TestCase {
 		$mapper->expects($this->never())->method('update');
 		$mapper->expects($this->once())->method('insert')->willReturnArgument(0);
 
-		$row = $mapper->upsertUsage('org-1', $period, new UsageMeasurement(4, 512, 9));
+		$row = $mapper->upsertUsage(new UsageBucket('org-1', $period), new UsageMeasurement(4, 512, 9));
 
 		$this->assertSame(
 			['org-1', $period, 4, 512, 9],
@@ -71,7 +72,7 @@ final class TenantUsageUpsertTest extends TestCase {
 		$mapper->expects($this->never())->method('insert');
 		$mapper->expects($this->once())->method('update')->willReturnArgument(0);
 
-		$row = $mapper->upsertUsage('org-1', new DateTime('2026-03-01T10:00:00+00:00'), new UsageMeasurement(4, 512, 0));
+		$row = $mapper->upsertUsage(new UsageBucket('org-1', new DateTime('2026-03-01T10:00:00+00:00')), new UsageMeasurement(4, 512, 0));
 
 		$this->assertSame($existing, $row);
 		$this->assertSame([14, 612, 0], [$row->getRequestCount(), $row->getBandwidthBytes(), $row->getStorageBytes()]);
