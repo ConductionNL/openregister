@@ -7518,8 +7518,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * PUT semantics, inherited from `saveObject()`: `$data` becomes the object's
      * data in full, so a stored property absent from `$data` is written away
-     * rather than left alone. There is no read of the existing object here, so a
-     * one-key payload stores a one-key object and reports success.
+     * rather than left alone. The stored object is read only for where it lives,
+     * never merged, so a one-key payload stores a one-key object and reports success.
      *
      * Callers holding a PARTIAL payload want `patchObject()`, which reads,
      * merges and then saves. Both are published on `ObjectServiceInterface`;
@@ -7537,6 +7537,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return ObjectEntity Replaced object entity
      *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If no object answers to the identifier
      * @throws \Exception If update fails
      *
      * @see self::patchObject() for the merging counterpart.
@@ -7549,8 +7550,18 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
-        $data['id'] = $objectId;
-        return $this->saveObject(object: $data, _rbac: $_rbac, _multitenancy: $_multitenancy);
+        // The save is addressed at the stored row's own register and schema, so it
+        // neither inherits the service's last context nor turns into a create elsewhere.
+        $stored = $this->objectMapper->find(identifier: $objectId, _rbac: $_rbac, _multitenancy: $_multitenancy);
+
+        $data['id'] = ($stored->getUuid() ?? $objectId);
+        return $this->saveObject(
+            object: $data,
+            register: $stored->getRegister(),
+            schema: $stored->getSchema(),
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
     }//end updateObject()
 
     /**

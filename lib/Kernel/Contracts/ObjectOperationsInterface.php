@@ -1312,8 +1312,8 @@ interface ObjectOperationsInterface {
      *
      * PUT semantics, inherited from `saveObject()`: `$data` becomes the object's
      * data in full, so a stored property absent from `$data` is written away
-     * rather than left alone. There is no read of the existing object here, so a
-     * one-key payload stores a one-key object and reports success.
+     * rather than left alone. The stored object is read only for where it lives,
+     * never merged, so a one-key payload stores a one-key object and reports success.
      *
      * Callers holding a PARTIAL payload want `patchObject()`, which reads,
      * merges and then saves. Both are published on `ObjectServiceInterface`;
