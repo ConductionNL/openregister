@@ -25,9 +25,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\OrganisationActingUser;
 use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -76,7 +78,7 @@ class OrganisationProjectedFieldsTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			organisationService: $service
 		);
-		$provider->update(register: new Register(), schema: new Schema(), id: 'org-uuid', data: $data);
+		$provider->update(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: 'org-uuid', data: $data);
 
 		return [$existing, $saves];
 	}
