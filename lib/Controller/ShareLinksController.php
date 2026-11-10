@@ -101,10 +101,9 @@ class ShareLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->shareLinkService->getLinkedShares($object->getUuid()))
-		);
+		$action = $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->shareLinkService->getLinkedShares($object->getUuid()));
+
+		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end index()
 
 	/**
@@ -126,10 +125,7 @@ class ShareLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->createOn(...)
-		);
+		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $this->createOn(...));
 	}//end create()
 
 	/**
@@ -222,15 +218,24 @@ class ShareLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $shareId): JSONResponse {
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object) use ($shareId): JSONResponse {
-				$this->shareLinkService->revokeShare($object->getUuid(), $shareId);
+		$action = fn (ObjectEntity $object): JSONResponse => $this->revokeOn(object: $object, shareId: $shareId);
 
-				return new JSONResponse(['success' => true]);
-			}
-		);
+		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end destroy()
+
+	/**
+	 * Revoke one share of the object.
+	 *
+	 * @param ObjectEntity $object  The object.
+	 * @param string       $shareId The share.
+	 *
+	 * @return JSONResponse Success.
+	 */
+	private function revokeOn(ObjectEntity $object, string $shareId): JSONResponse {
+		$this->shareLinkService->revokeShare($object->getUuid(), $shareId);
+
+		return new JSONResponse(['success' => true]);
+	}//end revokeOn()
 
 	/**
 	 * List the files inside an object's folder that can be shared.
@@ -247,10 +252,9 @@ class ShareLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function files(string $register, string $schema, string $id): JSONResponse {
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->shareLinkService->getShareableFiles($object->getUuid()))
-		);
+		$action = $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->shareLinkService->getShareableFiles($object->getUuid()));
+
+		return $this->onLinkedObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end files()
 
 	/**

@@ -146,7 +146,6 @@ class ObjectIntegrationsControllerTest extends TestCase {
 	): ObjectIntegrationsController {
 		$request = $request ?? $this->createMock(IRequest::class);
 		return new ObjectIntegrationsController(
-			appName: 'openregister',
 			request: $request,
 			services: new ObjectIntegrationsControllerServices(
 				domain: new ObjectIntegrationsDomain(
@@ -410,6 +409,18 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_CREATED, $response->getStatus());
 		$this->assertSame(['title' => 'X'], $stub->createCalled['payload']);
 	}//end testCreateReturns201()
+
+	/**
+	 * A create that fails keeps the failure's own status: only a success becomes 201.
+	 *
+	 * @return void
+	 */
+	public function testAFailedCreateKeepsItsStatus(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(new _ControllerStubProvider('stub'));
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->buildController($registry)->create('r', 's', 'o', 'missing')->getStatus());
+	}//end testAFailedCreateKeepsItsStatus()
 
 	public function testAnItemOfAnotherObjectAnswers404(): void {
 		$provider = new class('stub') extends _ControllerStubProvider {

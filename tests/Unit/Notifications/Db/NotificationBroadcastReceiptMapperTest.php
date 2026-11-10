@@ -74,7 +74,11 @@ final class NotificationBroadcastReceiptMapperTest extends TestCase {
 		$seen = new DateTime('2026-04-05 06:07:08');
 		$mapper = new NotificationBroadcastReceiptMapper($this->database());
 
-		$receipt = $mapper->acknowledge('b-1', 'alice', $seen);
+		$given = new NotificationBroadcastReceipt();
+		$given->setBroadcastUuid('b-1');
+		$given->setUserId('alice');
+		$given->setSeenAt($seen);
+		$receipt = $mapper->acknowledgeReceipt($given);
 
 		$this->assertSame('b-1', $receipt->getBroadcastUuid());
 		$this->assertSame('alice', $receipt->getUserId());

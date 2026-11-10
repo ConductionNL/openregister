@@ -159,9 +159,8 @@ class ObjectsProviderSearchGoldenTest extends TestCase {
 		$preview = new ObjectPreviewFormatter($urlGenerator, $l10n, $sources, $logger);
 		$provider = new ObjectsProvider(
 			$objectService,
-			$schemaMapper,
-			new \OCA\OpenRegister\Search\ObjectsProviderOutput($l10n, new ObjectSearchResultFormatter($urlGenerator, $deepLinks, $preview), $logger),
-			$registerMapper
+			new \OCA\OpenRegister\Db\SchemaCatalog($registerMapper, $schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
+			new \OCA\OpenRegister\Search\ObjectsProviderOutput($l10n, new ObjectSearchResultFormatter($urlGenerator, $deepLinks, $preview), $logger)
 		);
 
 		try {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
+use OCA\OpenRegister\Service\File\FileSession;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCP\ICacheFactory;
 use OCP\IGroupManager;
@@ -35,9 +36,7 @@ class FileLockHandlerTest extends TestCase {
 
 		$this->handler = new FileLockHandler(
 			$this->cacheFactory,
-			$this->userSession,
-			$this->groupManager,
-			$this->logger
+			new FileSession($this->userSession, $this->groupManager, $this->logger)
 		);
 	}
 
@@ -73,7 +72,7 @@ class FileLockHandlerTest extends TestCase {
 		$this->handler->lockFile(42);
 
 		// Change user to user-2.
-		$handler2 = new FileLockHandler($this->cacheFactory, $this->userSession, $this->groupManager, $this->logger);
+		$handler2 = new FileLockHandler($this->cacheFactory, new FileSession($this->userSession, $this->groupManager, $this->logger));
 
 		// We need a new handler to simulate a different user;
 		// but same handler is fine as long as user context changes.

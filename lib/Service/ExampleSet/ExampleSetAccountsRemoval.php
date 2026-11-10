@@ -152,7 +152,14 @@ final class ExampleSetAccountsRemoval {
 	 */
 	public function removeUsers(array $users, array &$report): array {
 		foreach ($users as $uid => $how) {
-			if ($this->letGoOf(uid: $uid, how: $how, report: $report) === true) {
+			if ($how === 'adopted') {
+				// An adopted account was there before the set: it is let go of, not deleted.
+				$report['left'][] = $uid;
+				unset($users[$uid]);
+				continue;
+			}
+
+			if ($this->deleted(uid: $uid, report: $report) === true) {
 				unset($users[$uid]);
 			}
 		}
@@ -161,21 +168,14 @@ final class ExampleSetAccountsRemoval {
 	}//end removeUsers()
 
 	/**
-	 * Let go of one account of the set: forget an adopted one (named under `left`), delete a created one; false when
-	 * it could not be deleted (named under `failed`).
+	 * Delete an account the set made, counting it, or report it failed.
 	 *
 	 * @param int|string           $uid    The account.
-	 * @param mixed                $how    `created` or `adopted`.
-	 * @param array<string, mixed> $report The report; counts, adopted accounts and failures are added.
+	 * @param array<string, mixed> $report The removal report, updated in place.
 	 *
-	 * @return bool
+	 * @return bool Whether the account is gone.
 	 */
-	private function letGoOf(int|string $uid, mixed $how, array &$report): bool {
-		if ($how === 'adopted') {
-			$report['left'][] = $uid;
-			return true;
-		}
-
+	private function deleted(int|string $uid, array &$report): bool {
 		if ($this->accounts->deleteUser(uid: $uid) === false) {
 			$report['failed'][] = 'account '.$uid;
 			return false;
@@ -184,5 +184,5 @@ final class ExampleSetAccountsRemoval {
 		$report['removed']['accounts']++;
 
 		return true;
-	}//end letGoOf()
+	}//end deleted()
 }//end class

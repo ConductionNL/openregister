@@ -84,8 +84,11 @@ class VocabularyControllerTest extends TestCase {
 				objectService: $this->objectService,
 				options: $this->options,
 				declarationResolver: new \OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver(
-					schemaMapper: $this->schemaMapper,
-					declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory(),
+					tables: new \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables(
+						schemas: $this->schemaMapper,
+						declarations: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory(),
+						objects: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)
+					),
 					request: $request
 				)
 			)

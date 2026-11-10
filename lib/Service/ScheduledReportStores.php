@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Db\ScheduledReportMapperInterface;
 
@@ -36,18 +37,32 @@ use OCA\OpenRegister\Notifications\Db\ScheduledReportMapperInterface;
  */
 final class ScheduledReportStores {
 	/**
+	 * Register lookup (create/update validation).
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup (create/update validation).
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param ScheduledReportMapperInterface $mapper         Scheduled report mapper.
-	 * @param RegisterMapperInterface        $registerMapper Register lookup (create/update validation).
-	 * @param SchemaMapperInterface          $schemaMapper   Schema lookup (create/update validation).
+	 * @param ScheduledReportMapperInterface $mapper  Scheduled report mapper.
+	 * @param SchemaCatalogInterface         $catalog Register, schema and magic-table mappers.
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	public function __construct(
 		public readonly ScheduledReportMapperInterface $mapper,
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
+		SchemaCatalogInterface $catalog,
 	) {
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper   = $catalog->schemas();
 	}//end __construct()
 }//end class

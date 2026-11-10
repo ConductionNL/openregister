@@ -21,6 +21,8 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\DeletedLens;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -139,7 +141,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 		$this->functions = [];
 		$handler = $this->handler(userId: 'alice');
 		$queryBuilder = (new ReflectionClass(MagicSearchHandler::class))->getProperty('db')->getValue($handler)->getQueryBuilder();
-		$apply->invoke($handler, $queryBuilder, ['_deleted' => DeletedLens::ANY], $quiet);
+		$apply->invoke($handler, new TableFilterRun(qb: $queryBuilder, query: ['_deleted' => DeletedLens::ANY], table: new MagicReadTable(schema: $quiet)));
 		$this->assertSame(["(t._status IS NULL OR t._status <> 'draft')"], $this->functions);
 	}//end testASchemaKeepsOwnDraftsOutOnBothPaths()
 
@@ -177,7 +179,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 			$this->functions = [];
 			$handler = $this->handler(userId: $userId);
 			$queryBuilder = (new ReflectionClass(MagicSearchHandler::class))->getProperty('db')->getValue($handler)->getQueryBuilder();
-			$apply->invoke($handler, $queryBuilder, (['_deleted' => DeletedLens::ANY] + $query));
+			$apply->invoke($handler, new TableFilterRun(qb: $queryBuilder, query: (['_deleted' => DeletedLens::ANY] + $query), table: new MagicReadTable(schema: new Schema())));
 
 			$this->assertSame([$expected], $this->functions);
 		}
@@ -185,7 +187,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 		$this->functions = [];
 		$handler = $this->handler(userId: 'alice');
 		$queryBuilder = (new ReflectionClass(MagicSearchHandler::class))->getProperty('db')->getValue($handler)->getQueryBuilder();
-		$apply->invoke($handler, $queryBuilder, ['_deleted' => DeletedLens::ANY, '_drafts' => 'any']);
+		$apply->invoke($handler, new TableFilterRun(qb: $queryBuilder, query: ['_deleted' => DeletedLens::ANY, '_drafts' => 'any'], table: new MagicReadTable(schema: new Schema())));
 		$this->assertSame([], $this->functions);
 	}//end testTheSingleTablePathCarriesTheSameLens()
 
