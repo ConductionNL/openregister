@@ -61,21 +61,19 @@ final class TemporalSchemaSweeper {
 	 *
 	 * @param SweepTarget $target The register, schema and calculations.
 	 * @param MagicTableRowReaderInterface $rows Raw per-table object enumeration.
-	 * @param array<string, int> $summary Running summary counters (by reference).
 	 *
-	 * @return void
+	 * @return array<string, int> The counters this target adds to the sweep summary.
 	 *
 	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
 	 *   (Scenario: Tier crossing notifies exactly once)
 	 */
-	public function sweep(SweepTarget $target, MagicTableRowReaderInterface $rows, array &$summary): void {
+	public function sweep(SweepTarget $target, MagicTableRowReaderInterface $rows): array {
 		$objects = $this->objects(target: $target, rows: $rows);
 		if ($objects === null) {
-			$summary['errors']++;
-			return;
+			return [TemporalObjectRefresher::FAILED => 1];
 		}
 
-		$this->sweepObjects(objects: $objects, target: $target, summary: $summary);
+		return $this->sweepObjects(objects: $objects, target: $target);
 	}//end sweep()
 
 	/**
@@ -83,11 +81,11 @@ final class TemporalSchemaSweeper {
 	 *
 	 * @param array<int, ObjectEntity> $objects The target's objects.
 	 * @param SweepTarget $target The register, schema and calculations.
-	 * @param array<string, int> $summary Running summary counters (by reference).
 	 *
-	 * @return void
+	 * @return array<string, int> The evaluated, rewritten and error counts.
 	 */
-	private function sweepObjects(array $objects, SweepTarget $target, array &$summary): void {
+	private function sweepObjects(array $objects, SweepTarget $target): array {
+		$counts = [];
 		$terminals = $this->terminals->of(schema: $target->schema);
 		foreach ($objects as $object) {
 			// Terminal cases are left alone (spec scenario) — their clock no
@@ -96,12 +94,14 @@ final class TemporalSchemaSweeper {
 				continue;
 			}
 
-			$summary['objectsEvaluated']++;
+			$counts['objectsEvaluated'] = (($counts['objectsEvaluated'] ?? 0) + 1);
 			$counter = $this->refresher->refresh(object: $object, target: $target);
 			if ($counter !== null) {
-				$summary[$counter]++;
+				$counts[$counter] = (($counts[$counter] ?? 0) + 1);
 			}
 		}
+
+		return $counts;
 	}//end sweepObjects()
 
 	/**

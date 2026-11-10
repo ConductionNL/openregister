@@ -148,7 +148,7 @@ class RetentionSweepServiceGoldenTest extends TestCase {
 			}
 		);
 
-		return new RetentionSweepService(new RetentionSweepSources($accessor, $dsr, $time), $retention, $logger, new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class)));
+		return new RetentionSweepService(new RetentionSweepSources($accessor, $dsr, $time), $retention, $logger, new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class))));
 
 	}//end build()
 

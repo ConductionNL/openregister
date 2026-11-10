@@ -222,7 +222,7 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 				logger: $logger
 			)), retentionGate: new SubjectRetentionGate(
 				retentionService: $this->retentionService,
-				archivalGuard: new ArchivalRetentionGuard($this->schemaMapper, $logger)
+				archivalGuard: new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->schemaMapper, $logger))
 			), deadline: new DataSubjectDeadline(), logger: $logger);
 
 	}//end buildService()
