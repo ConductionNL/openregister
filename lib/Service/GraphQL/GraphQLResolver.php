@@ -24,6 +24,8 @@
 
 namespace OCA\OpenRegister\Service\GraphQL;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use GraphQL\Deferred;
@@ -213,7 +215,9 @@ class GraphQLResolver {
 		$this->checkSchemaPermission(schema: $schema, action: 'create');
 
 		$input = $args['input'];
-		$this->refuseForbiddenFields(fields: $this->rights->propertyRbac->getUnauthorizedProperties($schema, [], $input, true));
+		$this->refuseForbiddenFields(
+			fields: $this->rights->propertyRbac->getUnauthorizedProperties(new PropertyWriteCheck($schema, new PropertyAccessRequest([], true), $input))
+		);
 
 		$register = $this->findRegisterForSchema(schema: $schema);
 
@@ -247,7 +251,11 @@ class GraphQLResolver {
 		try {
 			// Check property-level write RBAC against the stored record.
 			$stored = $this->objects->getObject->find(id: $id, register: $register, schema: $schema, _audit: false);
-			$this->refuseForbiddenFields(fields: $this->rights->propertyRbac->getUnauthorizedProperties($schema, $stored->getMatchEnvelope(), $input, false));
+			$this->refuseForbiddenFields(
+				fields: $this->rights->propertyRbac->getUnauthorizedProperties(
+					new PropertyWriteCheck($schema, new PropertyAccessRequest($stored->getMatchEnvelope(), false), $input)
+				)
+			);
 
 			return $this->objectToArray(object: $this->objects->objectService->saveObject($input, [], $register, $schema, $id));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {

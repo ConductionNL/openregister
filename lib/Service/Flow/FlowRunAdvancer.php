@@ -241,12 +241,9 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 
 		// A resumed walk reads its items from the run, never from a seed, so a
 		// subjectless run needs only the bare marking holder here.
-		return $this->runner->advanceStream(
-			run: $run,
-			flow: $flow,
-			subject: ($subject ?? new stdClass()),
-			streamId: $streamId,
-			budget: $budget
+		return $this->runner->advanceBranch(
+			pass: new FlowRunPass(run: $run, flow: $flow, subject: ($subject ?? new stdClass())),
+			advance: new FlowStreamAdvance(streamId: $streamId, budget: $budget)
 		);
 	}//end advanceStream()
 

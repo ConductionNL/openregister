@@ -218,12 +218,10 @@ class ExportProfileService implements ExportProfileServiceInterface {
 		}
 
 		$objects = $this->steps->exportService->fetchExportObjects(
-			register: $register,
-			schema: $schema,
-			filters: $profile->getFiltersArray()
+			request: new ExportRequest(register: $register, schema: $schema, filters: $profile->getFiltersArray())
 		);
 
-		$written = $this->steps->writer->write(profile: $profile, objects: $objects, schema: $schema);
+		$written = $this->steps->writer->write(projection: new ProfileProjection(profile: $profile, schema: $schema), objects: $objects);
 
 		$this->recorder->recordCompleted(
 			profile: ($profile->getName() ?? ''),

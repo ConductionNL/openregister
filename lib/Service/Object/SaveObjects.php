@@ -60,6 +60,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use Exception;
 use InvalidArgumentException;
@@ -1040,7 +1041,7 @@ class SaveObjects {
 			return $row;
 		}
 
-		return ExplicitReveal::restoreMasked(schema: $run->rowSchema, incoming: $row, stored: ($run->rowExisting->getObject() ?? []));
+		return ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $run->rowSchema, incoming: $row, stored: ($run->rowExisting->getObject() ?? [])));
 	}//end restoreRevealedValues()
 
 	/**
@@ -3222,6 +3223,7 @@ class SaveObjects {
 	 * @return bool
 	 */
 	private function dispatchesChunkEvents(bool $events): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $events === true && $this->reporting->eventDispatcher !== null && SystemOperationContext::isActive() === false;
 	}//end dispatchesChunkEvents()
 

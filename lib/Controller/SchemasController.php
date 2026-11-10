@@ -30,6 +30,7 @@ use OCA\OpenRegister\Controller\Support\SchemaRemoval;
 use OCA\OpenRegister\Controller\Support\SchemasControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -62,6 +63,7 @@ use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaTeardownInterface;
+use OCA\OpenRegister\Service\SchemaImport\GgmUpload;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
@@ -690,7 +692,7 @@ class SchemasController extends Controller {
 				// Get register counts for all schemas in one call.
 				$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
 				$schemaArr['stats'] = [
-					'objects' => $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
+					'objects' => $this->objectEntityMapper->getStatistics(scope: new StatisticsScope(schemaId: $schemaArr['id'])),
 					'logs' => $this->auditLogStats(schemaId: (int)$schemaArr['id']),
 					'files' => [ 'total' => 0, 'size' => 0 ],
 					// Add the number of registers referencing this schema.
@@ -1788,7 +1790,7 @@ class SchemasController extends Controller {
 			// only returns a real count when BOTH register AND schema are present
 			// in the @self filter, and silently returns 0 on single-axis queries,
 			// which would let DELETE silently succeed on schemas with objects.
-			$objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaToDelete->getId());
+			$objectStats = $this->objectEntityMapper->getStatistics(scope: new StatisticsScope(schemaId: $schemaToDelete->getId()));
 			$objectCount = (int)($objectStats['total'] ?? 0);
 
 			if ($deleteObjects === true) {
@@ -2361,7 +2363,7 @@ class SchemasController extends Controller {
 			// Default every key: mapper variants (and mocked test doubles) may
 			// return partial maps, which otherwise emits "Undefined array key"
 			// PHP warnings for empty schemas.
-			$objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $id);
+			$objectStats = $this->objectEntityMapper->getStatistics(scope: new StatisticsScope(schemaId: $id));
 			$objectStats = array_merge(
 				['total' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0, 'size' => 0],
 				$objectStats
@@ -2727,10 +2729,8 @@ class SchemasController extends Controller {
 			if ($dialect === 'ggm' && isset($document['objecttypen']) === true) {
 				// Treat the uploaded body as a normalised GGM intermediate.
 				$imported = $this->schemaImportService->importGgmUpload(
-					normalised: $document,
-					reference: $reference,
-					options: ImportOptions::fromArray($this->request->getParams()),
-					sourceLabel: 'upload'
+					upload: new GgmUpload(normalised: $document, reference: $reference, sourceLabel: 'upload'),
+					options: ImportOptions::fromArray($this->request->getParams())
 				);
 			} else {
 				$imported = $this->schemaImportService->import(

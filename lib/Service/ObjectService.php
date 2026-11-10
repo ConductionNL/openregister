@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Formats\UuidFormat;
+use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -108,7 +109,11 @@ use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Service\Object\SearchOptions;
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCA\OpenRegister\Service\Object\LockRunStep;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
@@ -516,6 +521,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function runAsSystem(callable $operation)
     {
+        // NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
         return SystemOperationContext::run($operation);
     }//end runAsSystem()
 
@@ -1719,7 +1725,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         try {
             $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
-                ->registerProcessingReadList(objects: $objects, query: $query);
+                ->registerListRead(objects: $objects, read: new \OCA\OpenRegister\Service\Interaction\ProcessingListRead(query: $query));
         } catch (\Throwable $e) {
             // Fail-soft: read logging never breaks the list.
             $this->logger->debug(
@@ -3234,7 +3240,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             return $object;
         }
 
-        return ExplicitReveal::restoreMasked(schema: $this->currentSchema, incoming: $object, stored: ($existing->getObject() ?? []));
+        return ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $this->currentSchema, incoming: $object, stored: ($existing->getObject() ?? [])));
     }//end restoreMaskedReveals()
 
     /**
@@ -4148,8 +4154,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             return;
         }
 
-        $shared->assertWritable(table: SharedMasterDataService::REGISTERS, id: $registerId, activeOrgUuids: $organisations);
-        $shared->assertWritable(table: SharedMasterDataService::SCHEMAS, id: $schemaId, activeOrgUuids: $organisations);
+        $shared->assertWritable(row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: $registerId), activeOrgUuids: $organisations);
+        $shared->assertWritable(row: new DeclaredRow(table: SharedMasterDataService::SCHEMAS, id: $schemaId), activeOrgUuids: $organisations);
     }//end rejectSharedMasterDataDelete()
 
     /**
@@ -4834,10 +4840,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            ids: $ids,
-            uses: $uses,
-            views: $views,
-            _viewScopeRequired: $_viewScopeRequired
+            options: new SearchOptions(
+                selection: new ObjectSelection(ids: $ids, uses: $uses),
+                views: $views,
+                viewScopeRequired: $_viewScopeRequired
+            )
         );
     }//end searchObjects()
 
@@ -5018,8 +5025,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            ids: $ids,
-            uses: $uses
+            selection: new ObjectSelection(ids: $ids, uses: $uses)
         );
     }//end countSearchObjects()
 
@@ -5823,14 +5829,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function lock(LockRequest $request, bool $advisory=false): array
     {
-        return $this->lockHandler->lock(
-            identifier: $request->identifier,
-            process: $request->process,
-            duration: $request->duration,
-            advisory: $advisory,
-            runUuid: $request->runUuid,
-            nodeId: $request->nodeId
-        );
+        return $this->lockHandler->lock(request: $request, advisory: $advisory);
     }//end lock()
 
     /**
@@ -5852,9 +5851,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function unlockObject(string|int $identifier, bool $advisory=false, ?string $runUuid=null): bool
     {
         return $this->lockHandler->unlock(
-            identifier: (string) $identifier,
-            advisory: $advisory,
-            runUuid: $runUuid
+            request: new UnlockRequest(identifier: (string) $identifier, advisory: $advisory, runUuid: $runUuid, break: false)
         );
     }//end unlockObject()
 
@@ -6129,9 +6126,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->saveHandler->clearReferenceValidationCache();
 
         return $this->saveHandler->saveObjectsStreaming(
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
-            rows: $objects
+            save: new StreamingSave(register: $this->currentRegister, schema: $this->currentSchema, rows: $objects)
         );
     }//end streamIntoContext()
 
@@ -6418,10 +6413,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         $permitted = $this->migratableObjectIds(table: $source, objectIds: $migration->objectIds);
         $report    = $this->migrationHandler->migrateObjects(
-            source: [$migration->source->register, $migration->source->schema],
-            target: [$migration->target->register, $migration->target->schema],
-            objectIds: $permitted,
-            mapping: $migration->mapping
+            migration: new ObjectMigration(
+                source: $migration->source,
+                target: $migration->target,
+                objectIds: $permitted,
+                mapping: $migration->mapping
+            )
         );
 
         return $this->reportUnmigratedAsNotFound(
@@ -7311,10 +7308,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
 
         return $schemaDeletionService->deleteObjectsBySchema(
-            registerId: (int) $table->register,
-            schemaId: (int) $table->schema,
-            hardDelete: $hardDelete,
-            triggeredBy: \OCA\OpenRegister\Service\SchemaDeletionService::TRIGGER_BULK_DELETE
+            table: new RegisterSchemaRef(register: (int) $table->register, schema: (int) $table->schema),
+            options: new TableDeletionOptions(hardDelete: $hardDelete, triggeredBy: \OCA\OpenRegister\Service\SchemaDeletionService::TRIGGER_BULK_DELETE)
         );
     }//end deleteObjectsOfTable()
 
@@ -7350,7 +7345,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         return $schemaDeletionService->deleteObjectsByRegister(
             register: $register,
-            hardDelete: $hardDelete
+            options: new TableDeletionOptions(hardDelete: $hardDelete)
         );
     }//end deleteObjectsByRegister()
 

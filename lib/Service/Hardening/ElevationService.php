@@ -112,10 +112,8 @@ class ElevationService implements ElevationServiceInterface {
 		$user = $this->identity->userSession->getUser();
 		if ($user === null || $password === '') {
 			$this->posture->audit->refused(
-				fact: 'elevation.refused',
-				before: '',
-				after: '',
-				refusal: 'No signed-in account, or no password given.',
+				change: new HardeningFact(fact: 'elevation.refused', before: '', after: ''),
+				refusal: 'No signed-in account, or no password given.'
 			);
 
 			return false;
@@ -124,10 +122,8 @@ class ElevationService implements ElevationServiceInterface {
 		$uid = $user->getUID();
 		if ($this->identity->users->checkPassword($uid, $password) === false) {
 			$this->posture->audit->refused(
-				fact: 'elevation.refused',
-				before: '',
-				after: $uid,
-				refusal: 'The password was not confirmed.',
+				change: new HardeningFact(fact: 'elevation.refused', before: '', after: $uid),
+				refusal: 'The password was not confirmed.'
 			);
 
 			return false;
@@ -136,9 +132,11 @@ class ElevationService implements ElevationServiceInterface {
 		$now = $this->time->getTime();
 		$this->identity->session->set(self::SESSION_KEY, $now);
 		$this->posture->audit->accepted(
-			fact: 'elevation.granted',
-			before: '',
-			after: ['user' => $uid, 'periodSeconds' => $this->periodSeconds()]
+			change: new HardeningFact(
+				fact: 'elevation.granted',
+				before: '',
+				after: ['user' => $uid, 'periodSeconds' => $this->periodSeconds()]
+			)
 		);
 
 		return true;
@@ -223,10 +221,12 @@ class ElevationService implements ElevationServiceInterface {
 		}
 
 		$this->posture->audit->refused(
-			fact: 'elevation.lapsed',
-			before: '',
-			after: ($this->identity->userSession->getUser()?->getUID() ?? ''),
-			refusal: 'The administration write was refused: the elevated period had lapsed.',
+			change: new HardeningFact(
+				fact: 'elevation.lapsed',
+				before: '',
+				after: ($this->identity->userSession->getUser()?->getUID() ?? '')
+			),
+			refusal: 'The administration write was refused: the elevated period had lapsed.'
 		);
 
 		throw new ElevationRequiredException(periodSeconds: $this->periodSeconds());

@@ -50,6 +50,8 @@ use OCA\OpenRegister\Service\Credential\CredentialUpdateRequests;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Service\Sharing\ShareGrantee;
+use OCA\OpenRegister\Service\Sharing\ShareListCheck;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriverInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -780,10 +782,8 @@ class CredentialController extends Controller {
 			}
 
 			$admits = $this->services->tokens->shareDeriver->grants(
-				sharedWith: ($data[SharePrincipalDeriverInterface::PROP_SHARED_WITH] ?? null),
-				userId: $caller->uid,
-				userGroups: $caller->groups,
-				permissions: ['use', null]
+				grantee: new ShareGrantee(userId: $caller->uid, groups: $caller->groups),
+				check: new ShareListCheck(sharedWith: ($data[SharePrincipalDeriverInterface::PROP_SHARED_WITH] ?? null), permissions: ['use', null])
 			);
 
 			if ($admits === false) {

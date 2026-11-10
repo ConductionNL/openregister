@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
@@ -69,7 +70,7 @@ final class AuditTrailEntryWithoutChangesTest extends TestCase {
 	public static function entries(): array {
 		return [
 			'purpose refusal' => [static fn (AuditTrailMapper $mapper) => $mapper->recordPurposeRefusal(refusal: new PurposeRefusal(rule: 'purpose-missing', target: new AuditedObject(register: 1, schema: 2)))],
-			'party query refusal' => [static fn (AuditTrailMapper $mapper) => $mapper->createPartyQueryRefusalEntry(query: 'jansen', cap: 10, would: 40)],
+			'party query refusal' => [static fn (AuditTrailMapper $mapper) => $mapper->recordPartyQueryRefusal(refusal: new PartyQueryRefusal(query: 'jansen', cap: 10, would: 40))],
 			'shared master data refusal' => [
 				static fn (AuditTrailMapper $mapper) => $mapper->recordSharedMasterDataRefusal(
 					refusal: new SharedMasterDataRefusal(holderOrganisation: 'org-a', sourceOrganisation: 'org-b', resourceType: 'object')

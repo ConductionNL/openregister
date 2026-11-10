@@ -1047,7 +1047,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('getDetailedStatistics')
+			->method('detailedStatistics')
 			->willReturn($expected);
 
 		$result = $this->service->auditReads()->getAuditTrailStatistics(new DashboardScope());
@@ -1059,7 +1059,7 @@ class DashboardServiceTest extends TestCase {
 		$expected = ['total' => 5, 'creates' => 2, 'updates' => 1, 'deletes' => 1, 'reads' => 1];
 
 		$this->auditTrailMapper
-			->method('getDetailedStatistics')
+			->method('detailedStatistics')
 			->willReturn($expected);
 
 		$result = $this->service->auditReads()->getAuditTrailStatistics(new DashboardScope(1, 2), 48);
@@ -1069,7 +1069,7 @@ class DashboardServiceTest extends TestCase {
 
 	public function testGetAuditTrailStatisticsReturnsZeroOnError(): void {
 		$this->auditTrailMapper
-			->method('getDetailedStatistics')
+			->method('detailedStatistics')
 			->willThrowException(new Exception('error'));
 
 		$result = $this->service->auditReads()->getAuditTrailStatistics(new DashboardScope());
@@ -1093,7 +1093,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('getActionDistribution')
+			->method('actionDistribution')
 			->willReturn($expected);
 
 		$result = $this->service->auditReads()->getAuditTrailActionDistribution(new DashboardScope());
@@ -1105,7 +1105,7 @@ class DashboardServiceTest extends TestCase {
 		$expected = ['actions' => [['name' => 'delete', 'count' => 3]]];
 
 		$this->auditTrailMapper
-			->method('getActionDistribution')
+			->method('actionDistribution')
 			->willReturn($expected);
 
 		$result = $this->service->auditReads()->getAuditTrailActionDistribution(new DashboardScope(1, 2), 48);
@@ -1115,7 +1115,7 @@ class DashboardServiceTest extends TestCase {
 
 	public function testGetAuditTrailActionDistributionReturnsEmptyOnError(): void {
 		$this->auditTrailMapper
-			->method('getActionDistribution')
+			->method('actionDistribution')
 			->willThrowException(new Exception('error'));
 
 		$result = $this->service->auditReads()->getAuditTrailActionDistribution(new DashboardScope());
@@ -1135,7 +1135,7 @@ class DashboardServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('getMostActiveObjects')
+			->method('mostActiveObjects')
 			->willReturn($expected);
 
 		$result = $this->service->auditReads()->getMostActiveObjects(new ActivityWindow(new DashboardScope()));
@@ -1147,7 +1147,7 @@ class DashboardServiceTest extends TestCase {
 		$expected = ['objects' => [['id' => 5, 'name' => 'Obj', 'count' => 10]]];
 
 		$this->auditTrailMapper
-			->method('getMostActiveObjects')
+			->method('mostActiveObjects')
 			->willReturn($expected);
 
 		$result = $this->service->auditReads()->getMostActiveObjects((new DashboardScope(1, 2))->mostActive(5, 48));
@@ -1157,7 +1157,7 @@ class DashboardServiceTest extends TestCase {
 
 	public function testGetMostActiveObjectsReturnsEmptyOnError(): void {
 		$this->auditTrailMapper
-			->method('getMostActiveObjects')
+			->method('mostActiveObjects')
 			->willThrowException(new Exception('error'));
 
 		$result = $this->service->auditReads()->getMostActiveObjects(new ActivityWindow(new DashboardScope()));

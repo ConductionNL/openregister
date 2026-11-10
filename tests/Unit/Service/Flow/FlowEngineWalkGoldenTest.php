@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
@@ -369,8 +370,10 @@ class FlowEngineWalkGoldenTest extends TestCase {
 
 		$result = $engine->run(
 			start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->run), subject: new stdClass(), dispatcher: new GoldenWalkDispatcher(behaviour: ($case['behaviour'] ?? []), trace: $trace)))->withContext(context: $context)->withStreams(streams: $streams),
-			items: [FlowItems::item(json: ['n' => ($case['seed'] ?? 1)])],
-			startAt: ($case['startAt'] ?? null)
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => ($case['seed'] ?? 1)])],
+				startAt: ($case['startAt'] ?? null)
+			)
 		);
 
 		$result['log'] = self::clip(lines: $result['log']);

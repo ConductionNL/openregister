@@ -208,25 +208,6 @@ class ReadHistoryService {
 	 * log rather than dropped silently. Fail-soft, like registerProcessingRead().
 	 *
 	 * @param array<int|string, mixed> $objects The listed objects: ObjectEntity or rendered arrays.
-	 * @param array<string, mixed>     $query   The query parameters of the list or search.
-	 * @param string                   $action  `read` or `export`.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
-	 */
-	public function registerProcessingReadList(array $objects, array $query = [], string $action = self::READ_ACTION): void {
-		$this->registerListRead(objects: $objects, read: new ProcessingListRead(query: $query, action: $action));
-
-	}//end registerProcessingReadList()
-
-	/**
-	 * Register a list or search read on the AVG processing log.
-	 *
-	 * The value-object form of registerProcessingReadList(), with the same
-	 * grouping, reporting and fail-soft behaviour.
-	 *
-	 * @param array<int|string, mixed> $objects The listed objects: ObjectEntity or rendered arrays.
 	 * @param ProcessingListRead       $read    The query parameters and the action of the read.
 	 *
 	 * @return void

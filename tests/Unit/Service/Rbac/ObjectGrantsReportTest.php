@@ -141,9 +141,8 @@ class ObjectGrantsReportTest extends TestCase {
 		// colleague made and swallows a failed read, so it is never what the
 		// grants list is built from.
 		$shareReader = $this->createMock(ObjectShareReader::class);
-		$shareReader->method('sharesOn')->willReturnCallback(
-			static fn (ObjectEntity $object, array $sharers, bool $complete = false): array => $complete === true ? $shares : []
-		);
+		$shareReader->method('completeSharesOn')->willReturn($shares);
+		$shareReader->method('sharesOn')->willReturn([]);
 		$lister = $this->createMock(InheritedGrantLister::class);
 		$lister->method('inheritedSharesFor')->willReturnCallback(
 			static fn (ObjectEntity $object, bool $complete = false): array => $complete === true ? $inherited : []

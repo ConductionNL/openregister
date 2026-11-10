@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -34,6 +35,7 @@ use OCA\OpenRegister\Service\BulkTranslationService;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationCsvCodec;
+use OCA\OpenRegister\Service\Translation\LanguagePair;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -194,7 +196,7 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 
 	public function testIdentityProviderReturnsInputVerbatim(): void {
 		$provider = new IdentityTranslationProvider();
-		$this->assertSame('Hello world', $provider->translate('Hello world', 'en', 'nl'));
+		$this->assertSame('Hello world', $provider->translate('Hello world', new LanguagePair('en', 'nl')));
 		$this->assertSame('identity', $provider->getIdentifier());
 	}
 
@@ -226,7 +228,7 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 		$this->assertSame('Hoi wereld', $result['translated']['title'], 'identity provider returns source verbatim');
 
 		// Sidecar should now have EN slots with machine_translated status.
-		$titleEn = $this->translationMapper->findOne((string)$this->testObject->getUuid(), 'title', 'en');
+		$titleEn = $this->translationMapper->findOne(new TranslationSlot((string)$this->testObject->getUuid(), 'title', 'en'));
 		$this->assertNotNull($titleEn);
 		$this->assertSame(Translation::STATUS_MACHINE_TRANSLATED, $titleEn->getStatus());
 		$this->assertSame('provider:identity', $titleEn->getTranslator());

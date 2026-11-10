@@ -1159,9 +1159,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * Refused on a terminal task (the reason names its terminal state) and a
 	 * no-op on a task that is already enabled or active.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param string $source The enabling identity recorded as actor.
-	 * @param string $reason Why, recorded on the audit.
+	 * @param string      $uuid    The task uuid.
+	 * @param TaskTrigger $trigger The enabling identity recorded as actor, and why, recorded on the audit.
 	 *
 	 * @return Task The enabled task.
 	 *
@@ -1169,8 +1168,8 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
-	public function enable(string $uuid, string $source, string $reason): Task {
-		$act = new TaskAct(verb: 'enable', actor: $source, reason: $reason, state: Task::STATE_ENABLED);
+	public function enable(string $uuid, TaskTrigger $trigger): Task {
+		$act = new TaskAct(verb: 'enable', actor: $trigger->source, reason: $trigger->reason, state: Task::STATE_ENABLED);
 
 		return $this->enableWaiting(uuid: $uuid, act: $act);
 	}//end enable()

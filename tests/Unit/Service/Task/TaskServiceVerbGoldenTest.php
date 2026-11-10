@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\Task\TaskLifecycleServices;
 use OCA\OpenRegister\Service\Task\TaskPerformerResolver;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTables;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -633,18 +634,18 @@ class TaskServiceVerbGoldenTest extends TestCase {
 		$task = $this->task(state: Task::STATE_TERMINATED);
 		$this->stored($task);
 		$this->expectRefusal(
-			fn () => $this->service()->enable(uuid: 'T-7', source: 's', reason: 'r'),
+			fn () => $this->service()->enable(uuid: 'T-7', trigger: new TaskTrigger(source: 's', reason: 'r')),
 			TaskConflictException::class,
 			"Verb 'enable' refused: task 'T-7' is already in terminal state 'terminated'."
 		);
 
 		$task->setState(Task::STATE_ACTIVE);
 		$task->setIsTerminal(false);
-		$this->assertSame($task, $this->service()->enable(uuid: 't-7', source: 's', reason: 'r'));
+		$this->assertSame($task, $this->service()->enable(uuid: 't-7', trigger: new TaskTrigger(source: 's', reason: 'r')));
 		$this->assertSame([], $this->written);
 
 		$task->setState(Task::STATE_AVAILABLE);
-		$done = $this->service()->enable(uuid: 't-7', source: 'timer', reason: 'due');
+		$done = $this->service()->enable(uuid: 't-7', trigger: new TaskTrigger(source: 'timer', reason: 'due'));
 		$this->assertSame([Task::STATE_ENABLED, 'enable'], [$done->getState(), $done->getLastAction()]);
 		$this->assertSame(['enable', 'timer', 'due'], [$this->onlyAudit()['action'], $this->onlyAudit()['actor'], $this->onlyAudit()['reason']]);
 	}//end testEnableRefusesTerminalSkipsOpenAndEnablesAvailable()

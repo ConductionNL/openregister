@@ -35,10 +35,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Listener\UniqueConstraintListenerInterface;
 use OCA\OpenRegister\Service\Import\MatchLookupFailedException;
+use OCA\OpenRegister\Service\Import\MatchQuery;
 use OCA\OpenRegister\Service\Import\MatchResolver;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCP\Lock\ILockingProvider;
@@ -156,11 +159,12 @@ class UpsertOnKeyHandler implements UpsertOnKeyHandlerInterface {
 	 */
 	private function lookup(UpsertOnKeyRequest $request, array $constraint): array {
 		try {
-			return $this->matchResolver->resolve(
-				object: $request->object,
-				matchKey: $constraint['properties'],
-				register: $request->register,
-				schema: $request->schema
+			return $this->matchResolver->matchesOf(
+				query: new MatchQuery(
+					object: $request->object,
+					matchKey: $constraint['properties'],
+					table: new RegisterSchema(register: $request->register, schema: $request->schema)
+				)
 			);
 		} catch (MatchLookupFailedException $exception) {
 			// A lookup that could not run is not "no match": creating now
