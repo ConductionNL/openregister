@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\AnalyticsLinkService;
 use OCA\OpenRegister\Service\CollectiveLinkService;
 use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\OpenProjectLinkService;
+use OCA\OpenRegister\Service\TimeTracker\TimeEntry;
 use OCA\OpenRegister\Service\TimeTrackerLinkService;
 use OCA\OpenRegister\Service\XwikiLinkService;
 use OCP\AppFramework\Db\Entity;
@@ -133,7 +134,12 @@ class LinkHydrateGoldenTest extends TestCase {
 			$method = 'buildLink';
 		}
 
-		$link = (fn (...$args) => $this->{$method}(...$args))->call($service, ...[...$id, $info]);
+		$args = [...$id, $info];
+		if ($kind === 'timetracker') {
+			$args = [new TimeEntry(type: $id[0], id: $id[1]), $info];
+		}
+
+		$link = (fn (...$args) => $this->{$method}(...$args))->call($service, ...$args);
 		(new LinkTarget('obj-1', 3))->inSchema(4)->stamp($link, 'alice');
 		return $link;
 	}//end build()

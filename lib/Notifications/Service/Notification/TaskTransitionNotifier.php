@@ -61,7 +61,10 @@ final class TaskTransitionNotifier implements TaskTransitionNotifierInterface {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
 	 */
 	public function notifyTransition(Task $task, array $extra, array $context): void {
-		$adapter = TaskObjectAdapters::forTask(task: $task, row: $this->inbox->enrich(task: $task), extra: $extra);
+		$adapter = TaskObjectAdapters::forTask(
+			task: $task,
+			options: new TaskAdapterOptions(row: $this->inbox->enrich(task: $task), extra: $extra)
+		);
 
 		$this->dispatcher->dispatchWithSchema(
 			object: $adapter,

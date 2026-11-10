@@ -104,7 +104,6 @@ class ObjectWatchersControllerTest extends TestCase {
 		}
 
 		return new ObjectWatchersController(
-			'openregister',
 			$request,
 			new ObjectWatchersControllerServices(
 				objectService: $this->objects,
@@ -133,7 +132,6 @@ class ObjectWatchersControllerTest extends TestCase {
 		$this->objects->method('setObject')->willThrowException(new RuntimeException('not found in magic table'));
 		$this->watchers->expects($this->never())->method('watch');
 		$controller = new ObjectWatchersController(
-			'openregister',
 			$this->createMock(IRequest::class),
 			new ObjectWatchersControllerServices(
 				objectService: $this->objects,
@@ -228,7 +226,7 @@ class ObjectWatchersControllerTest extends TestCase {
 			userManager: $this->users,
 			logger: $this->logger
 		);
-		$controller = new ObjectWatchersController('openregister', $request, $services);
+		$controller = new ObjectWatchersController($request, $services);
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->watch('r', 's', 'x')->getStatus());
 	}//end testANonEntityIsNotFound()

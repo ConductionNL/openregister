@@ -30,6 +30,7 @@ use OCA\OpenRegister\Search\BackgroundJob\SearchJobHandlesInterface;
 use OCA\OpenRegister\Db\JobRun;
 use OCA\OpenRegister\Db\JobRunFilter as RunQuery;
 use OCA\OpenRegister\Db\JobRunMapperInterface;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 use Throwable;
 
@@ -95,33 +96,29 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 		int $limit = JobRunMapperInterface::DEFAULT_LIMIT,
 		int $offset = 0,
 	): array {
-		$jobClass    = $filter->jobClass;
-		$outcome     = $filter->outcome;
-		$windowHours = $filter->windowHours;
-
-		$since = null;
-
-		if ($windowHours !== null && $windowHours > 0) {
-			$since = new DateTime('-'.$windowHours.' hours');
-		}
-
-		$rows = $this->runs->findRecent(
-			filter: new RunQuery(jobClass: $jobClass, outcome: $outcome, since: $since),
-			limit: $limit,
-			offset: $offset
-		);
-
-		return [
-			'results' => array_map(static fn (JobRun $run): array => $run->jsonSerialize(), $rows),
-			'total' => $this->runs->countRecent(jobClass: $jobClass, outcome: $outcome, since: $since),
-			'filters' => [
-				'job' => $jobClass,
-				'outcome' => $outcome,
-				'windowHours' => $windowHours,
-			],
-		];
+		return $this->runPage(filter: $filter, page: new ListQuery(limit: $limit, offset: $offset));
 
 	}//end runs()
+
+	/**
+	 * One page of the run history (value-object form of runs()).
+	 *
+	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
+	 * @param ListQuery    $page   The limit and offset of the page.
+	 *
+	 * @return array<string, mixed> The rows, and how many there are.
+	 */
+	private function runPage(JobRunFilter $filter, ListQuery $page): array {
+		$query = new RunQuery(jobClass: $filter->jobClass, outcome: $filter->outcome, since: $this->since(filter: $filter));
+		$rows  = $this->runs->findRecent(filter: $query, limit: $page->limit, offset: ($page->offset ?? 0));
+
+		return [
+			'results' => $this->serialised(rows: $rows),
+			'total' => $this->runs->countRecent(jobClass: $query->jobClass, outcome: $query->outcome, since: $query->since),
+			'filters' => ['job' => $filter->jobClass, 'outcome' => $filter->outcome, 'windowHours' => $filter->windowHours],
+		];
+
+	}//end runPage()
 
 	/**
 	 * Start a job by hand, once.
@@ -233,6 +230,34 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 		];
 
 	}//end alerts()
+
+	/**
+	 * The rows as the console lists them.
+	 *
+	 * @param JobRun[] $rows The run rows.
+	 *
+	 * @return array<int, array<string, mixed>> The serialised rows.
+	 */
+	private function serialised(array $rows): array {
+		return array_map(static fn (JobRun $run): array => $run->jsonSerialize(), $rows);
+
+	}//end serialised()
+
+	/**
+	 * The start of the filter's period, or null when it has none.
+	 *
+	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
+	 *
+	 * @return DateTime|null The moment the period starts.
+	 */
+	private function since(JobRunFilter $filter): ?DateTime {
+		if ($filter->windowHours === null || $filter->windowHours <= 0) {
+			return null;
+		}
+
+		return new DateTime('-'.$filter->windowHours.' hours');
+
+	}//end since()
 
 	/**
 	 * The unix time of a job's last run, 0 when it never ran.

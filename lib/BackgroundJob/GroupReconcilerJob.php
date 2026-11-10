@@ -32,7 +32,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Authorization\GroupReconcilerInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -46,18 +45,24 @@ use Throwable;
  */
 class GroupReconcilerJob extends TimedJob {
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for GroupReconcilerJob.
 	 *
-	 * @param ITimeFactory $time Time factory.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
 	 * @param GroupReconcilerInterface $reconciler The declared-group reconciler.
-	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		JobRuntime $runtime,
 		private readonly GroupReconcilerInterface $reconciler,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: 3600);
 	}//end __construct()
 

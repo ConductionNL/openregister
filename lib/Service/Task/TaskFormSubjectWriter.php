@@ -65,9 +65,8 @@ final class TaskFormSubjectWriter {
 	/**
 	 * Write the payload to the subject through one of the two existing paths, never a third.
 	 *
-	 * @param Task $task The task.
+	 * @param TaskFormSubmission $submission The opened task and the submitted values.
 	 * @param array<string, mixed>|null $form The resolved form description.
-	 * @param array<string, mixed> $data The submitted field values.
 	 *
 	 * @return void
 	 *
@@ -77,27 +76,28 @@ final class TaskFormSubjectWriter {
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
-	public function write(Task $task, ?array $form, array $data): void {
+	public function write(TaskFormSubmission $submission, ?array $form): void {
 		if (self::isFieldForm(form: $form) === false) {
 			// No form, or an external one: no field values are accepted at
 			// all. An empty payload skips the allowlist entirely, so a
 			// form-less completion is exactly what it was before.
-			if ($data !== []) {
-				$this->allowlist(declared: [], data: $data);
+			if ($submission->data !== []) {
+				$this->allowlist(declared: [], data: $submission->data);
 			}
 
 			return;
 		}
 
-		$objectUuid = self::subjectOf(task: $task);
+		// A field form needs a subject, whichever path writes it.
+		$objectUuid = self::subjectOf(task: $submission->task);
 		$action = self::actionOf(form: $form);
 		if ($action !== null) {
-			$this->transition(objectUuid: $objectUuid, action: $action, data: $data);
+			$this->transition(target: new TaskSubjectTransition(objectUuid: $objectUuid, action: $action), data: $submission->data);
 
 			return;
 		}
 
-		$this->writeInline(task: $task, form: $form, data: $data);
+		$this->writeInline(submission: $submission, form: $form);
 	}//end write()
 
 	/**
@@ -153,19 +153,18 @@ final class TaskFormSubjectWriter {
 	/**
 	 * The inline path: allowlist the declared fields, then save what was accepted.
 	 *
-	 * @param Task $task The task.
+	 * @param TaskFormSubmission $submission The opened task and the submitted values.
 	 * @param array<string, mixed> $form The resolved form description.
-	 * @param array<string, mixed> $data The submitted field values.
 	 *
 	 * @return void
 	 */
-	private function writeInline(Task $task, array $form, array $data): void {
-		$accepted = $this->allowlist(declared: self::declaredFields(form: $form), data: $data);
+	private function writeInline(TaskFormSubmission $submission, array $form): void {
+		$accepted = $this->allowlist(declared: self::declaredFields(form: $form), data: $submission->data);
 		if ($accepted === []) {
 			return;
 		}
 
-		$this->inline->save(task: $task, accepted: $accepted);
+		$this->inline->save(task: $submission->task, accepted: $accepted);
 	}//end writeInline()
 
 	/**
@@ -214,8 +213,7 @@ final class TaskFormSubjectWriter {
 	/**
 	 * The transition path: allowlist, merge and lifecycle flip in one save.
 	 *
-	 * @param string $objectUuid The subject object.
-	 * @param string $action The lifecycle action.
+	 * @param TaskSubjectTransition $target The subject object and the lifecycle action.
 	 * @param array<string, mixed> $data The submitted values.
 	 *
 	 * @return void
@@ -226,9 +224,9 @@ final class TaskFormSubjectWriter {
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
-	private function transition(string $objectUuid, string $action, array $data): void {
+	private function transition(TaskSubjectTransition $target, array $data): void {
 		try {
-			$this->engine->transition(objectId: $objectUuid, action: $action, data: $data);
+			$this->engine->transition(objectId: $target->objectUuid, action: $target->action, data: $data);
 		} catch (InvalidTransitionInputException $refused) {
 			// The engine's kind is not recoverable from its declaration here,
 			// so read it off the message the same method wrote.

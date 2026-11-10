@@ -109,7 +109,7 @@ class TablesSchemaSyncService implements TablesSchemaReconcilerInterface {
 			$stats['skipped']++;
 		}
 
-		$stats['retired'] = $this->retireMissing(register: $register, keepTableIds: $seenTableIds);
+		$stats['retired'] = $this->retireMissing(run: new TablesRetireRun(register: $register, keepTableIds: $seenTableIds));
 
 		return $stats;
 	}//end reconcile()
@@ -130,7 +130,7 @@ class TablesSchemaSyncService implements TablesSchemaReconcilerInterface {
 			return false;
 		}
 
-		$retired = $this->retireMissing(register: $register, keepTableIds: [], onlyTableId: $tableId);
+		$retired = $this->retireMissing(run: new TablesRetireRun(register: $register, keepTableIds: [], onlyTableId: $tableId));
 
 		return $retired > 0;
 	}//end retireByTableId()
@@ -261,20 +261,18 @@ class TablesSchemaSyncService implements TablesSchemaReconcilerInterface {
 	/**
 	 * Retire managed schemas whose table is no longer present.
 	 *
-	 * @param Register $register The `tables` register.
-	 * @param array<int, int> $keepTableIds Table ids to keep (empty when only retiring one).
-	 * @param int|null $onlyTableId When set, retire only this table's schema.
+	 * @param TablesRetireRun $run The register and the tables this pass retires.
 	 *
 	 * @return int The number of schemas retired.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function retireMissing(Register $register, array $keepTableIds, ?int $onlyTableId = null): int {
-		[$retired, $schemaIds] = $this->retireEach(register: $register, keepTableIds: $keepTableIds, onlyTableId: $onlyTableId);
+	private function retireMissing(TablesRetireRun $run): int {
+		[$retired, $schemaIds] = $this->retireEach(run: $run);
 
 		if ($retired > 0) {
-			$register->setSchemas($schemaIds);
-			$this->registerMapper->update($register);
+			$run->register->setSchemas($schemaIds);
+			$this->registerMapper->update($run->register);
 		}
 
 		return $retired;
@@ -283,17 +281,15 @@ class TablesSchemaSyncService implements TablesSchemaReconcilerInterface {
 	/**
 	 * Retire each retirable managed schema and drop the retired ones from the register's list.
 	 *
-	 * @param Register        $register     The `tables` register.
-	 * @param array<int, int> $keepTableIds Table ids to keep (empty when only retiring one).
-	 * @param int|null        $onlyTableId  When set, retire only this table's schema.
+	 * @param TablesRetireRun $run The register and the tables this pass retires.
 	 *
 	 * @return array{0: int, 1: array<int, mixed>} [schemas retired, the register's remaining schema references].
 	 */
-	private function retireEach(Register $register, array $keepTableIds, ?int $onlyTableId): array {
+	private function retireEach(TablesRetireRun $run): array {
 		$retired = 0;
-		$schemaIds = $register->getSchemas();
-		foreach ($this->managedSchemasByTableId(register: $register) as $tableId => $schema) {
-			if (self::isRetirable(tableId: $tableId, keepTableIds: $keepTableIds, onlyTableId: $onlyTableId) === false) {
+		$schemaIds = $run->register->getSchemas();
+		foreach ($this->managedSchemasByTableId(register: $run->register) as $tableId => $schema) {
+			if (self::isRetirable(run: $run, tableId: $tableId) === false) {
 				continue;
 			}
 
@@ -314,18 +310,17 @@ class TablesSchemaSyncService implements TablesSchemaReconcilerInterface {
 	/**
 	 * Whether a mirrored table's schema is up for retirement.
 	 *
-	 * @param mixed           $tableId      The mirrored table.
-	 * @param array<int, int> $keepTableIds Table ids to keep.
-	 * @param int|null        $onlyTableId  When set, only this table is retired.
+	 * @param TablesRetireRun $run     The tables this pass keeps, or the one table it retires.
+	 * @param mixed           $tableId The mirrored table.
 	 *
 	 * @return bool
 	 */
-	private static function isRetirable(mixed $tableId, array $keepTableIds, ?int $onlyTableId): bool {
-		if ($onlyTableId !== null) {
-			return $tableId === $onlyTableId;
+	private static function isRetirable(TablesRetireRun $run, mixed $tableId): bool {
+		if ($run->onlyTableId !== null) {
+			return $tableId === $run->onlyTableId;
 		}
 
-		return in_array($tableId, $keepTableIds, true) === false;
+		return in_array($tableId, $run->keepTableIds, true) === false;
 	}//end isRetirable()
 
 	/**

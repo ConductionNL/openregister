@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 use DateTimeImmutable;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessagePolicy;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Notifications\Service\Notification\ClaimAttempt;
 
 /**
  * The scheduled-message sweep.
@@ -150,7 +151,7 @@ class ScheduledMessagePolicyTest extends TestCase {
 	}//end testAClaimWithNoMomentIsTreatedAsStaleRatherThanEternal()
 
 	public function testTheClaimComparesTheStateAndTheAttemptCount(): void {
-		$claim = $this->policy->claim($this->message(['attempts' => 2]), 'worker-a', $this->now);
+		$claim = $this->policy->claim($this->message(['attempts' => 2]), new ClaimAttempt('worker-a', $this->now));
 
 		// Both, so two sweeps that read the same row cannot both write: the
 		// second finds the attempt count moved and backs off. The failure this

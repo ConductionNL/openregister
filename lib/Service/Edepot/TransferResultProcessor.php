@@ -62,26 +62,25 @@ final class TransferResultProcessor {
 	/**
 	 * Record every object's outcome and set the list's status and transferResult.
 	 *
-	 * @param array<string,mixed>            $transferList     The transfer list.
-	 * @param array<int,TransportResult>     $results          Transport results.
-	 * @param array<int,array<string,mixed>> $objectsWithFiles The objects with files.
-	 * @param TransferContext                $context          The delivery the results came back from.
+	 * @param array<string,mixed> $transferList The transfer list.
+	 * @param TransferDelivery    $delivery     The results, the objects sent and the delivery.
 	 *
 	 * @return array<string,mixed> Updated transfer list.
 	 *
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
 	 *   (Scenario: Proof created on confirmed transfer)
 	 */
-	public function process(array $transferList, array $results, array $objectsWithFiles, TransferContext $context): array {
-		$merged = self::mergedResults(results: $results, objectsWithFiles: $objectsWithFiles);
+	public function process(array $transferList, TransferDelivery $delivery): array {
+		$merged = self::mergedResults(results: $delivery->results, objectsWithFiles: $delivery->objectsWithFiles);
 
-		$transferList['status'] = $this->applyOutcomes(objectsWithFiles: $objectsWithFiles, merged: $merged, context: $context);
+		$transferList['status'] = $this->applyOutcomes(delivery: $delivery, merged: $merged);
 		if ($transferList['status'] === TransferListService::STATUS_FAILED) {
-			$this->auditLog->failed(transferList: $transferList, error: implode('; ', self::errorsOf(results: $results)), transport: '');
+			$failure = new TransferFailure(error: implode('; ', self::errorsOf(results: $delivery->results)), transport: '');
+			$this->auditLog->failed(transferList: $transferList, failure: $failure);
 		}
 
 		$transferList['transferResult'] = [
-			'completedAt' => $context->confirmedAt,
+			'completedAt' => $delivery->context->confirmedAt,
 			'objectResults' => $merged,
 		];
 
@@ -102,16 +101,16 @@ final class TransferResultProcessor {
 	/**
 	 * Record each object's outcome and derive the list's status from them.
 	 *
-	 * @param array<int,array<string,mixed>>       $objectsWithFiles The objects with files.
-	 * @param array<string, array<string, mixed>>  $merged           Per-object results by uuid.
-	 * @param TransferContext                      $context          The delivery.
+	 * @param TransferDelivery                    $delivery The objects sent and the delivery.
+	 * @param array<string, array<string, mixed>> $merged   Per-object results by uuid.
 	 *
 	 * @return string The status.
 	 */
-	private function applyOutcomes(array $objectsWithFiles, array $merged, TransferContext $context): string {
+	private function applyOutcomes(TransferDelivery $delivery, array $merged): string {
+		$context    = $delivery->context;
 		$allSuccess = true;
 		$anySuccess = false;
-		foreach ($objectsWithFiles as $item) {
+		foreach ($delivery->objectsWithFiles as $item) {
 			$objResult = ($merged[$item['object']->getUuid()] ?? self::NO_RESULT);
 			if ($objResult['accepted'] === true) {
 				$anySuccess = true;

@@ -33,6 +33,8 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use OCA\OpenRegister\Files\Service\ChunkSizing;
+use OCA\OpenRegister\Files\Service\SplitLevel;
+use OCA\OpenRegister\Files\Service\SourceStamp;
 use OCA\OpenRegister\Files\Service\ExtractionSource;
 
 /**
@@ -513,31 +515,31 @@ class TextExtractionServiceTest extends TestCase {
 	// ────────────────────────────────────────────────────────
 
 	public function testIsSourceUpToDateReturnsFalseWhenForceReExtract(): void {
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, true]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), true]);
 		$this->assertFalse($result);
 	}
 
 	public function testIsSourceUpToDateReturnsFalseWhenNoChunks(): void {
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(null);
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, false]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), false]);
 		$this->assertFalse($result);
 	}
 
 	public function testIsSourceUpToDateReturnsTrueWhenChunksNewer(): void {
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(200);
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, false]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), false]);
 		$this->assertTrue($result);
 	}
 
 	public function testIsSourceUpToDateReturnsTrueWhenChunksEqual(): void {
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(100);
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, false]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), false]);
 		$this->assertTrue($result);
 	}
 
 	public function testIsSourceUpToDateReturnsFalseWhenChunksOlder(): void {
 		$this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(50);
-		$result = $this->invokePrivate('isSourceUpToDate', [1, 'file', 100, false]);
+		$result = $this->invokePrivate('isSourceUpToDate', [new SourceStamp(sourceType: 'file', sourceId: 1, timestamp: 100), false]);
 		$this->assertFalse($result);
 	}
 
@@ -810,14 +812,14 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testRecursiveSplitWithEmptySeparatorsFallsToFixedSize(): void {
 		$text = str_repeat('X', 500);
-		$result = $this->invokePrivate('recursiveSplit', [$text, [], new ChunkSizing(200, 0)]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: [], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertGreaterThan(1, count($result));
 	}
 
 	public function testRecursiveSplitShortTextReturnsSingleChunk(): void {
 		$text = 'Short text';
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n", ' '], new ChunkSizing(200, 0)]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n", ' '], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertCount(1, $result);
 		$this->assertSame('Short text', $result[0]['text']);
@@ -1783,7 +1785,7 @@ class TextExtractionServiceTest extends TestCase {
 		$para2 = str_repeat('Second paragraph content. ', 6); // ~156 chars
 		$text = $para1 . "\n\n" . $para2;
 		// Total ~310 chars, chunkSize=200 triggers splitting at \n\n.
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n", ' '], new ChunkSizing(200, 20)]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(200, 20))]);
 
 		$this->assertGreaterThan(1, count($result));
 	}
@@ -1793,7 +1795,7 @@ class TextExtractionServiceTest extends TestCase {
 		$largePart = str_repeat('word ', 100); // 500 chars
 		$text = $largePart . "\n\n" . 'Short part here for testing.';
 
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n", ' '], new ChunkSizing(200, 0)]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertGreaterThan(1, count($result));
 	}
@@ -1801,7 +1803,7 @@ class TextExtractionServiceTest extends TestCase {
 	public function testRecursiveSplitLastChunkPreserved(): void {
 		// Ensure the last chunk is not lost.
 		$text = str_repeat('Sentence one. ', 10) . "\n\n" . str_repeat('Sentence two. ', 10);
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n"], new ChunkSizing(200, 0)]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n"], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertNotEmpty($result);
 		// Last chunk should contain "Sentence two".
@@ -1812,7 +1814,7 @@ class TextExtractionServiceTest extends TestCase {
 	public function testRecursiveSplitLastChunkTooSmallIsFiltered(): void {
 		// Last remaining text below MIN_CHUNK_SIZE (100) should be filtered.
 		$text = str_repeat('A long sentence that exceeds the chunk size limit. ', 8) . "\n\nTiny.";
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n", ' '], new ChunkSizing(200, 0)]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(200, 0))]);
 
 		foreach ($result as $chunk) {
 			$this->assertGreaterThanOrEqual(100, strlen(trim($chunk['text'])));
@@ -1821,7 +1823,7 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testRecursiveSplitWithZeroOverlap(): void {
 		$text = str_repeat('Part one. ', 15) . "\n\n" . str_repeat('Part two. ', 15);
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n", '. ', ' '], new ChunkSizing(200, 0)]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n", '. ', ' '], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertGreaterThan(1, count($result));
 		foreach ($result as $chunk) {
@@ -1837,7 +1839,7 @@ class TextExtractionServiceTest extends TestCase {
 		$para3 = str_repeat('CC ', 40); // ~120 chars
 		$text = $para1 . "\n\n" . $para2 . "\n\n" . $para3;
 
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n", ' '], new ChunkSizing(150, 200)]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(150, 200))]);
 
 		$this->assertIsArray($result);
 		$this->assertNotEmpty($result);
@@ -3104,7 +3106,7 @@ class TextExtractionServiceTest extends TestCase {
 	public function testRecursiveSplitSingleLargeSegmentUsesSubChunks(): void {
 		// A single large block (no separators present) — forces recursion on sub-separators.
 		$largePart = str_repeat('X', 600);
-		$result = $this->invokePrivate('recursiveSplit', [$largePart, ["\n\n", ' '], new ChunkSizing(200, 0)]);
+		$result = $this->invokePrivate('recursiveSplit', [$largePart, new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertGreaterThan(1, count($result));
 		foreach ($result as $chunk) {
@@ -3116,7 +3118,7 @@ class TextExtractionServiceTest extends TestCase {
 		// Single split element that is <= chunkSize goes into the currentChunk = $split branch.
 		$text = "\n\nsmall part that is exactly small";
 		// text after splitting on \n\n: ['', 'small part that is exactly small']
-		$result = $this->invokePrivate('recursiveSplit', [$text, ["\n\n", ' '], new ChunkSizing(200, 0)]);
+		$result = $this->invokePrivate('recursiveSplit', [$text, new SplitLevel(separators: ["\n\n", ' '], sizing: new ChunkSizing(200, 0))]);
 
 		$this->assertIsArray($result);
 	}

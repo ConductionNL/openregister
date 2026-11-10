@@ -80,7 +80,7 @@ final class TaskVtodoRenderer {
 		self::addSchedule(vtodo: $vtodo, task: $task);
 		self::addCompletion(vtodo: $vtodo, task: $task);
 		$this->addIdentity(vtodo: $vtodo, task: $task);
-		self::addObjectLink(vtodo: $vtodo, task: $task, title: $title);
+		self::addObjectLink(vtodo: $vtodo, task: $task);
 
 		return $vcalendar->serialize();
 	}//end render()
@@ -161,13 +161,14 @@ final class TaskVtodoRenderer {
 	/**
 	 * The subject object's address and a LINK to it, when the task has a located subject.
 	 *
+	 * The link's label is the VTODO's SUMMARY, the display title render() set.
+	 *
 	 * @param Component $vtodo The VTODO being built.
 	 * @param Task $task The task.
-	 * @param string $title The display title, the link's label.
 	 *
 	 * @return void
 	 */
-	private static function addObjectLink(Component $vtodo, Task $task, string $title): void {
+	private static function addObjectLink(Component $vtodo, Task $task): void {
 		$objectUuid = trim((string)$task->getObjectUuid());
 		if ($objectUuid === '' || $task->getRegisterId() === null || $task->getSchemaId() === null) {
 			return;
@@ -177,7 +178,7 @@ final class TaskVtodoRenderer {
 		$vtodo->add('X-OPENREGISTER-SCHEMA', (string)$task->getSchemaId());
 		$vtodo->add('X-OPENREGISTER-OBJECT', $objectUuid);
 		$href = sprintf('/apps/openregister/api/objects/%d/%d/%s', $task->getRegisterId(), $task->getSchemaId(), $objectUuid);
-		$vtodo->add('LINK', $href, self::linkParameters(title: $title));
+		$vtodo->add('LINK', $href, self::linkParameters(title: (string)($vtodo->select('SUMMARY')[0] ?? '')));
 	}//end addObjectLink()
 
 	/**

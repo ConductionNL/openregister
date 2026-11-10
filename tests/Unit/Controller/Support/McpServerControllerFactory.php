@@ -18,7 +18,6 @@ final class McpServerControllerFactory {
 	/**
 	 * The constructor arguments of McpServerController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param McpProtocolService $protocolService Constructor argument.
 	 * @param McpToolsService $toolsService Constructor argument.
@@ -30,7 +29,6 @@ final class McpServerControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Mcp\Service\Mcp\McpProtocolService $protocolService,
 		\OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService $toolsService,
@@ -40,7 +38,6 @@ final class McpServerControllerFactory {
 		\OCA\OpenRegister\Service\Mcp\McpAgentScope $agentScope,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Mcp\Controller\Support\McpServerControllerServices(
 				domain: new \OCA\OpenRegister\Mcp\Controller\Support\McpServerDomain(

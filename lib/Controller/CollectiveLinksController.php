@@ -36,6 +36,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\CollectiveLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -55,20 +57,36 @@ class CollectiveLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var CollectiveLinkServiceInterface
+	 */
+	private readonly CollectiveLinkServiceInterface $linkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param CollectiveLinkServiceInterface $linkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param CollectiveLinksControllerServices $services The collective links controller services.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly CollectiveLinkServiceInterface $linkService,
-		private readonly ObjectOperationsInterface $objectService,
+		CollectiveLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->linkService = $services->linkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
@@ -86,14 +104,7 @@ class CollectiveLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		if ($this->linkService->isCollectivesAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Collectives');
-		}
-
-		return $this->listLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->linkService->getLinkedPages($object->getUuid()))
-		);
+		return $this->linkedPages(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 	}//end index()
 
 	/**
@@ -113,26 +124,7 @@ class CollectiveLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		if ($this->linkService->isCollectivesAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Collectives');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$pageId = (int)$this->request->getParam('pageId', 0);
-				if ($pageId === 0) {
-					return new JSONResponse(['error' => 'pageId is required'], 400);
-				}
-
-				$link = $this->linkService->linkPage(
-					$this->linkTargetOf(object: $object),
-					$pageId
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
-		);
+		return $this->pageLinked(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 	}//end link()
 
 	/**
@@ -152,32 +144,7 @@ class CollectiveLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
-		if ($this->linkService->isCollectivesAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Collectives');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$collectiveId = (int)$this->request->getParam('collectiveId', 0);
-				if ($collectiveId === 0) {
-					return new JSONResponse(['error' => 'collectiveId is required'], 400);
-				}
-
-				$title = (string)$this->request->getParam('title', '');
-				if (trim($title) === '') {
-					return new JSONResponse(['error' => 'title is required'], 400);
-				}
-
-				$link = $this->linkService->createAndLinkPage(
-					$this->linkTargetOf(object: $object),
-					$collectiveId,
-					$title
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
-		);
+		return $this->pageCreated(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 	}//end createAndLink()
 
 	/**
@@ -196,18 +163,7 @@ class CollectiveLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function destroy(string $register, string $schema, string $id, string $pageId): JSONResponse {
-		if ($this->linkService->isCollectivesAvailable() === false) {
-			return $this->appNotInstalled(appName: 'NC Collectives');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object) use ($pageId): JSONResponse {
-				$this->linkService->unlinkPage($object->getUuid(), (int)$pageId);
-
-				return new JSONResponse(['success' => true]);
-			}
-		);
+		return $this->pageUnlinked(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), pageId: $pageId);
 	}//end destroy()
 
 	/**
@@ -256,6 +212,139 @@ class CollectiveLinksController extends Controller {
 		$collectives = $this->linkService->getAvailableCollectives();
 		return new JSONResponse(['results' => $collectives, 'total' => count($collectives)]);
 	}//end collectives()
+
+	/**
+	 * The Collectives pages linked to the routed object.
+	 *
+	 * @param ObjectLinkRoute $route The object the route names.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function linkedPages(ObjectLinkRoute $route): JSONResponse {
+		if ($this->linkService->isCollectivesAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Collectives');
+		}
+
+		return $this->listLinkedObject(
+			route: $route,
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->linkService->getLinkedPages($object->getUuid()))
+		);
+	}//end linkedPages()
+
+	/**
+	 * Link the page the request names to the routed object.
+	 *
+	 * @param ObjectLinkRoute $route The object the route names.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function pageLinked(ObjectLinkRoute $route): JSONResponse {
+		if ($this->linkService->isCollectivesAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Collectives');
+		}
+
+		return $this->onLinkedObject(route: $route, action: fn (ObjectEntity $object): JSONResponse => $this->linkPageTo(object: $object));
+	}//end pageLinked()
+
+	/**
+	 * Link the page the request names to a resolved object.
+	 *
+	 * @param ObjectEntity $object The resolved object.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function linkPageTo(ObjectEntity $object): JSONResponse {
+		$pageId = (int)$this->request->getParam('pageId', 0);
+		if ($pageId === 0) {
+			return new JSONResponse(['error' => 'pageId is required'], 400);
+		}
+
+		$link = $this->linkService->linkPage(
+			$this->linkTargetOf(object: $object),
+			$pageId
+		);
+
+		return new JSONResponse($link->jsonSerialize(), 201);
+	}//end linkPageTo()
+
+	/**
+	 * Create the page the request describes and link it to the routed object.
+	 *
+	 * @param ObjectLinkRoute $route The object the route names.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function pageCreated(ObjectLinkRoute $route): JSONResponse {
+		if ($this->linkService->isCollectivesAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Collectives');
+		}
+
+		return $this->onLinkedObject(route: $route, action: fn (ObjectEntity $object): JSONResponse => $this->createPageFor(object: $object));
+	}//end pageCreated()
+
+	/**
+	 * Create the page the request describes and link it to a resolved object.
+	 *
+	 * @param ObjectEntity $object The resolved object.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function createPageFor(ObjectEntity $object): JSONResponse {
+		$collectiveId = (int)$this->request->getParam('collectiveId', 0);
+		if ($collectiveId === 0) {
+			return new JSONResponse(['error' => 'collectiveId is required'], 400);
+		}
+
+		$title = (string)$this->request->getParam('title', '');
+		if (trim($title) === '') {
+			return new JSONResponse(['error' => 'title is required'], 400);
+		}
+
+		$link = $this->linkService->createAndLinkPage($this->linkTargetOf(object: $object), $collectiveId, $title);
+
+		return new JSONResponse($link->jsonSerialize(), 201);
+	}//end createPageFor()
+
+	/**
+	 * Unlink a page from the routed object.
+	 *
+	 * @param ObjectLinkRoute $route  The object the route names.
+	 * @param string          $pageId Page id (numeric).
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec exclude Private helper of a link route action; the link REST contract is owned by
+	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
+	 */
+	private function pageUnlinked(ObjectLinkRoute $route, string $pageId): JSONResponse {
+		if ($this->linkService->isCollectivesAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC Collectives');
+		}
+
+		return $this->onLinkedObject(
+			route: $route,
+			action: function (ObjectEntity $object) use ($pageId): JSONResponse {
+				$this->linkService->unlinkPage($object->getUuid(), (int)$pageId);
+
+				return new JSONResponse(['success' => true]);
+			}
+		);
+	}//end pageUnlinked()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.

@@ -37,7 +37,6 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 use DateTimeImmutable;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use DateTimeInterface;
-use DateTimeZone;
 
 /**
  * Walks an hours term through a calendar's declared windows.
@@ -69,23 +68,7 @@ class ServiceHoursClock {
 	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public function due(DateTimeInterface $from, float $hours, WorkingCalendar $calendar, ServiceHours $windows): DateTimeImmutable {
-		$moment = self::inZone(moment: $from, calendar: $calendar);
-		$remaining = (int)round($hours * 60);
-		if ($remaining <= 0) {
-			return $moment;
-		}
-
-		// 🔴 NOT A BEST GUESS. A calendar that never opens has no answer to
-		// "when are four hours up", and returning the cap's date would put a
-		// deadline on a case that nobody could tell from a real one.
-		return (new ServiceHoursWalk(calendar: $calendar, windows: $windows))->dueAfter(moment: $moment, minutes: $remaining)
-			?? throw new FlowTimerValidationException(
-				message: sprintf(
-					"Working calendar '%s' has no open service hours in the next %d days, so an hours term cannot be computed against it.",
-					$calendar->getSlug(),
-					self::MAX_WALK_DAYS
-				)
-			);
+		return (new ServiceHoursFrame(calendar: $calendar, windows: $windows))->due(from: $from, hours: $hours);
 	}//end due()
 
 	/**
@@ -110,18 +93,7 @@ class ServiceHoursClock {
 	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public function elapsed(DateTimeInterface $from, DateTimeInterface $to, WorkingCalendar $calendar, ServiceHours $windows): float {
-		$start = self::inZone(moment: $from, calendar: $calendar);
-		$end = self::inZone(moment: $to, calendar: $calendar);
-		if ($end <= $start) {
-			return 0.0;
-		}
-
-		$minutes = (new ServiceHoursWalk(calendar: $calendar, windows: $windows))->minutesBetween(start: $start, end: $end)
-			?? throw new FlowTimerValidationException(
-				message: sprintf('Measuring service hours between %s and %s exceeds %d calendar days.', $from->format('c'), $to->format('c'), self::MAX_WALK_DAYS)
-			);
-
-		return round(($minutes / 60), 4);
+		return (new ServiceHoursFrame(calendar: $calendar, windows: $windows))->elapsed(from: $from, to: $to);
 	}//end elapsed()
 
 	/**
@@ -157,18 +129,6 @@ class ServiceHoursClock {
 			'windows' => $applied,
 		];
 	}//end diagnostic()
-
-	/**
-	 * An instant in the calendar's zone.
-	 *
-	 * @param DateTimeInterface $moment   The instant.
-	 * @param WorkingCalendar   $calendar The calendar whose zone counts.
-	 *
-	 * @return DateTimeImmutable The same instant, in that zone.
-	 */
-	private static function inZone(DateTimeInterface $moment, WorkingCalendar $calendar): DateTimeImmutable {
-		return (new DateTimeImmutable('@'.$moment->getTimestamp()))->setTimezone(new DateTimeZone($calendar->getTimezone()));
-	}//end inZone()
 
 	/**
 	 * One minute as `HH:MM`, for the diagnostic.

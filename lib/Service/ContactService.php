@@ -29,8 +29,6 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCP\IURLGenerator;
 use OCP\IUser;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Sabre\VObject\Document;
 use Sabre\VObject\Parameter;
 use Sabre\VObject\Property;
@@ -55,41 +53,6 @@ use Sabre\VObject\Reader;
 class ContactService implements ContactServiceInterface {
 
 	/**
-	 * Contact link mapper.
-	 *
-	 * @var ContactLinkMapperInterface
-	 */
-	private readonly ContactLinkMapperInterface $contactLinkMapper;
-
-	/**
-	 * CardDAV backend.
-	 *
-	 * @var CardDavBackend
-	 */
-	private readonly CardDavBackend $cardDavBackend;
-
-	/**
-	 * User session.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * URL generator (webroot-aware deep links).
-	 *
-	 * @var IURLGenerator
-	 */
-	private readonly IURLGenerator $urlGenerator;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ContactLinkMapperInterface $contactLinkMapper Contact link mapper
@@ -100,16 +63,11 @@ class ContactService implements ContactServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		ContactLinkMapperInterface $contactLinkMapper,
-		CardDavBackend $cardDavBackend,
-		LinkSessionRuntime $runtime,
-		IURLGenerator $urlGenerator,
+		private readonly ContactLinkMapperInterface $contactLinkMapper,
+		private readonly CardDavBackend $cardDavBackend,
+		private readonly LinkSessionRuntime $runtime,
+		private readonly IURLGenerator $urlGenerator,
 	) {
-		$this->contactLinkMapper = $contactLinkMapper;
-		$this->cardDavBackend = $cardDavBackend;
-		$this->userSession = $runtime->userSession;
-		$this->logger = $runtime->logger;
-		$this->urlGenerator = $urlGenerator;
 	}//end __construct()
 
 	/**
@@ -253,7 +211,7 @@ class ContactService implements ContactServiceInterface {
 			$link->setAvatarUrl($vfields['avatarUrl']);
 			$this->contactLinkMapper->update($link);
 		} catch (\Throwable $e) {
-			$this->logger->debug(
+			$this->runtime->logger->debug(
 				'Failed to persist re-enriched vCard fields: ' . $e->getMessage()
 			);
 		}
@@ -320,7 +278,7 @@ class ContactService implements ContactServiceInterface {
 
 			return rtrim($base, '/') . '/' . rawurlencode('All contacts') . '/' . $token;
 		} catch (\Throwable $e) {
-			$this->logger->debug('Failed to build contact deep-link: ' . $e->getMessage());
+			$this->runtime->logger->debug('Failed to build contact deep-link: ' . $e->getMessage());
 			return null;
 		}//end try
 	}//end buildContactDeepLink()
@@ -448,7 +406,7 @@ class ContactService implements ContactServiceInterface {
 		try {
 			return Reader::read($cardData);
 		} catch (\Throwable $e) {
-			$this->logger->debug('vCard parse failed for enrichment: ' . $e->getMessage());
+			$this->runtime->logger->debug('vCard parse failed for enrichment: ' . $e->getMessage());
 			return null;
 		}
 	}//end readCard()
@@ -465,7 +423,7 @@ class ContactService implements ContactServiceInterface {
 		try {
 			$card = $this->cardDavBackend->getCard($addressbookId, $contactUri);
 		} catch (\Throwable $e) {
-			$this->logger->debug('vCard lookup failed for enrichment: ' . $e->getMessage());
+			$this->runtime->logger->debug('vCard lookup failed for enrichment: ' . $e->getMessage());
 			return null;
 		}
 
@@ -613,18 +571,10 @@ class ContactService implements ContactServiceInterface {
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function linkContact(
-		string $objectUuid,
-		int $registerId,
-		int $addressbookId,
-		string $contactUri,
-		?string $role = null,
-		?int $schemaId = null,
-	): ContactLink {
-		return $this->linkCard(
-			card: new ContactCardRef(addressbookId: $addressbookId, contactUri: $contactUri),
-			placement: new ContactPlacement(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, role: $role)
-		);
+	public function linkContact(string $objectUuid, int $registerId, int $addressbookId, string $contactUri, ?string $role = null,
+		?int $schemaId = null): ContactLink {
+		$placement = new ContactPlacement(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, role: $role);
+		return $this->linkCard(card: new ContactCardRef(addressbookId: $addressbookId, contactUri: $contactUri), placement: $placement);
 	}//end linkContact()
 
 	/**
@@ -636,8 +586,10 @@ class ContactService implements ContactServiceInterface {
 	 * @return ContactLink The created or updated link.
 	 *
 	 * @throws Exception If the contact does not exist (404), or nobody is logged in.
+	 *
+	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	private function linkCard(ContactCardRef $card, ContactPlacement $placement): ContactLink {
+	public function linkCard(ContactCardRef $card, ContactPlacement $placement): ContactLink {
 		$found = $this->requireCard(card: $card);
 		$user = $this->requireUser();
 
@@ -695,7 +647,7 @@ class ContactService implements ContactServiceInterface {
 	 * @throws Exception If nobody is logged in.
 	 */
 	private function requireUser(): IUser {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
@@ -842,16 +794,9 @@ class ContactService implements ContactServiceInterface {
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function createAndLinkContact(
-		string $objectUuid,
-		int $registerId,
-		array $data,
-		?int $schemaId = null,
-	): ContactLink {
-		return $this->createCard(
-			placement: new ContactPlacement(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, role: $data['role'] ?? null),
-			data: $data
-		);
+	public function createAndLinkContact(string $objectUuid, int $registerId, array $data, ?int $schemaId = null): ContactLink {
+		$placement = new ContactPlacement(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, role: $data['role'] ?? null);
+		return $this->createCard(placement: $placement, data: $data);
 	}//end createAndLinkContact()
 
 	/**
@@ -863,8 +808,10 @@ class ContactService implements ContactServiceInterface {
 	 * @return ContactLink The created link.
 	 *
 	 * @throws Exception If no user or addressbook.
+	 *
+	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	private function createCard(ContactPlacement $placement, array $data): ContactLink {
+	public function createCard(ContactPlacement $placement, array $data): ContactLink {
 		$user = $this->requireUser();
 
 		$addressbook = $this->findUserAddressbook();
@@ -971,12 +918,25 @@ class ContactService implements ContactServiceInterface {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	public function updateRole(int $linkId, string $role, ?string $objectUuid = null): ContactLink {
-		$link = $this->findLinkOf(linkId: $linkId, objectUuid: $objectUuid);
+		return $this->assignRole(link: $this->findLinkOf(linkId: $linkId, objectUuid: $objectUuid), role: $role);
+	}//end updateRole()
+
+	/**
+	 * Give a contact link a new role, on the vCard (best effort) and on the link row.
+	 *
+	 * @param ContactLink $link The link, already resolved within the caller's object.
+	 * @param string      $role The new role.
+	 *
+	 * @return ContactLink The updated link.
+	 *
+	 * @spec openspec/specs/contactpersonen-handling/spec.md
+	 */
+	public function assignRole(ContactLink $link, string $role): ContactLink {
 		$this->retagRole(link: $link, role: $role);
 		$link->setRole($role);
 
 		return $this->contactLinkMapper->update($link);
-	}//end updateRole()
+	}//end assignRole()
 
 	/**
 	 * Replace the role on the vCard of a link, best-effort; a user link has no vCard.
@@ -1001,7 +961,7 @@ class ContactService implements ContactServiceInterface {
 				$this->cardDavBackend->updateCard($link->getAddressbookId(), $link->getContactUri(), $vcard->serialize());
 			}
 		} catch (Exception $e) {
-			$this->logger->warning('Failed to update vCard role: ' . $e->getMessage());
+			$this->runtime->logger->warning('Failed to update vCard role: ' . $e->getMessage());
 		}
 	}//end retagRole()
 
@@ -1046,7 +1006,7 @@ class ContactService implements ContactServiceInterface {
 				$this->cardDavBackend->updateCard($link->getAddressbookId(), $link->getContactUri(), $vcard->serialize());
 			}
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->runtime->logger->warning(
 				'Failed to clean vCard properties (link row will still be removed): ' . $e->getMessage(),
 				[
 					'linkId' => $linkId,
@@ -1131,7 +1091,7 @@ class ContactService implements ContactServiceInterface {
 		// pass an arbitrary (enumerable CardDAV) contact UID and learn which
 		// OpenRegister objects reference contacts belonging to other users.
 		$allowedAddressbookIds = $this->currentUserAddressbookIds();
-		if ($this->userSession->getUser() === null) {
+		if ($this->runtime->userSession->getUser() === null) {
 			return [];
 		}
 
@@ -1166,7 +1126,7 @@ class ContactService implements ContactServiceInterface {
 	 * @return array<int, int> Addressbook IDs, or [] when anonymous / none.
 	 */
 	private function currentUserAddressbookIds(): array {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession->getUser();
 		if ($user === null) {
 			return [];
 		}
@@ -1197,7 +1157,7 @@ class ContactService implements ContactServiceInterface {
 		foreach ($links as $link) {
 			try {
 				if ($link->isUserLink() === true) {
-					$this->logger->debug('User link, no vCard to clean: ' . $link->getContactUid());
+					$this->runtime->logger->debug('User link, no vCard to clean: ' . $link->getContactUid());
 					continue;
 				}
 
@@ -1214,7 +1174,7 @@ class ContactService implements ContactServiceInterface {
 					);
 				}
 			} catch (Exception $e) {
-				$this->logger->warning(
+				$this->runtime->logger->warning(
 					'Failed to clean vCard for contact ' . $link->getContactUid() . ': ' . $e->getMessage()
 				);
 			}
@@ -1231,7 +1191,7 @@ class ContactService implements ContactServiceInterface {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	private function findUserAddressbook(): ?array {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession->getUser();
 		if ($user === null) {
 			return null;
 		}

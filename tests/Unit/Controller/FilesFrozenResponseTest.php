@@ -69,7 +69,6 @@ class FilesFrozenResponseTest extends TestCase {
 		$fileService->expects($this->never())->method('updateFile');
 
 		return FilesControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$fileService,
 			$objectService,

@@ -50,26 +50,21 @@ class HandoffMappingEvaluator {
 	 *
 	 * @param array<string, mixed> $mapping The declared mapping (contract field → expression;
 	 *                                      each expression is validated as an array at runtime).
-	 * @param array<string, mixed> $sourceData The source object's data.
-	 * @param array<string, mixed> $provenance The engine-filled source pointer `{app, register, schema, uuid}`.
+	 * @param HandoffMappingSource $source  The source object's data and its provenance pointer.
 	 *
 	 * @return array<string, mixed> Contract field → evaluated value (fields evaluating to null are omitted).
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Scenario: Semantic references are carried, not copied)
 	 */
-	public function evaluate(array $mapping, array $sourceData, array $provenance): array {
+	public function evaluate(array $mapping, HandoffMappingSource $source): array {
 		$result = [];
 		foreach ($mapping as $field => $expression) {
 			if (is_array($expression) === false) {
 				continue;
 			}
 
-			$value = $this->evaluateExpression(
-				expression: $expression,
-				sourceData: $sourceData,
-				provenance: $provenance
-			);
+			$value = $this->evaluateExpression(expression: $expression, source: $source);
 			if ($value !== null) {
 				$result[(string)$field] = $value;
 			}
@@ -82,8 +77,7 @@ class HandoffMappingEvaluator {
 	 * Evaluate one mapping expression.
 	 *
 	 * @param array<string, mixed> $expression The expression (exactly one of the five kinds).
-	 * @param array<string, mixed> $sourceData The source object's data.
-	 * @param array<string, mixed> $provenance The engine-filled source pointer.
+	 * @param HandoffMappingSource $source     The source object's data and its provenance pointer.
 	 *
 	 * @return mixed The evaluated value, or null when the expression yields nothing
 	 *               (e.g. `from` on an absent property without a `default`).
@@ -91,31 +85,31 @@ class HandoffMappingEvaluator {
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Requirement: `x-openregister-handoff` declarative dialect)
 	 */
-	private function evaluateExpression(array $expression, array $sourceData, array $provenance): mixed {
+	private function evaluateExpression(array $expression, HandoffMappingSource $source): mixed {
 		if (array_key_exists('const', $expression) === true) {
 			return $expression['const'];
 		}
 
 		if (array_key_exists('provenance', $expression) === true) {
-			return $provenance;
+			return $source->provenance;
 		}
 
 		if (array_key_exists('template', $expression) === true) {
 			return $this->interpolate(
 				template: (string)$expression['template'],
-				data: $sourceData
+				data: $source->data
 			);
 		}
 
 		if (array_key_exists('semanticRef', $expression) === true) {
 			return $this->carryReference(
 				property: (string)$expression['semanticRef'],
-				sourceData: $sourceData
+				sourceData: $source->data
 			);
 		}
 
 		if (array_key_exists('from', $expression) === true) {
-			$value = ($sourceData[(string)$expression['from']] ?? null);
+			$value = ($source->data[(string)$expression['from']] ?? null);
 			if ($value === null && array_key_exists('default', $expression) === true) {
 				return $expression['default'];
 			}

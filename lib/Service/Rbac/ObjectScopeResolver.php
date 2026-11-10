@@ -179,12 +179,20 @@ class ObjectScopeResolver implements ObjectScopeResolverInterface {
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
-	public function admitsUnconditionally(
-		?string $userId,
-		array $userGroups,
-		?string $objectOwner,
-		?array $authorization = null,
-	): bool {
+	public function admitsUnconditionally(?string $userId, array $userGroups, ?string $objectOwner, ?array $authorization = null): bool {
+		return $this->admitsByGroup(userGroups: $userGroups, authorization: $authorization) === true
+			|| $this->isNamedOwner(userId: $userId, objectOwner: $objectOwner) === true;
+	}//end admitsUnconditionally()
+
+	/**
+	 * Whether the caller is an administrator or a member of the object's owning group.
+	 *
+	 * @param string[]                  $userGroups    The caller's groups.
+	 * @param array<string, mixed>|null $authorization The object's authorization block.
+	 *
+	 * @return bool True when a group admits the caller.
+	 */
+	private function admitsByGroup(array $userGroups, ?array $authorization): bool {
 		if (in_array(needle: self::ADMIN_GROUP, haystack: $userGroups, strict: true) === true) {
 			return true;
 		}
@@ -193,16 +201,25 @@ class ObjectScopeResolver implements ObjectScopeResolverInterface {
 		// before the uid comparison because a member of the owning group need
 		// not be the named owner, which is the whole point of having one.
 		$ownerGroup = $this->ownerGroup(authorization: $authorization);
-		if ($ownerGroup !== null && in_array(needle: $ownerGroup, haystack: $userGroups, strict: true) === true) {
-			return true;
-		}
 
+		return $ownerGroup !== null && in_array(needle: $ownerGroup, haystack: $userGroups, strict: true) === true;
+	}//end admitsByGroup()
+
+	/**
+	 * Whether the caller is the object's named owner.
+	 *
+	 * @param string|null $userId      The caller.
+	 * @param string|null $objectOwner The object's owner.
+	 *
+	 * @return bool True when both are known and equal.
+	 */
+	private function isNamedOwner(?string $userId, ?string $objectOwner): bool {
 		if ($userId === null || $objectOwner === null) {
 			return false;
 		}
 
 		return $objectOwner === $userId;
-	}//end admitsUnconditionally()
+	}//end isNamedOwner()
 
 	/**
 	 * The group that owns one object, or null when no group does.
@@ -261,7 +278,7 @@ class ObjectScopeResolver implements ObjectScopeResolverInterface {
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md
 	 */
 	public function notPrivateSql(string $columnName, bool $defaultPrivate, bool $isPostgres): string {
-		$scope = $this->jsonKeySql(columnName: $columnName, key: self::SCOPE_KEY, isPostgres: $isPostgres);
+		$scope = $this->jsonKeySql(column: new AuthorizationColumn(name: $columnName, isPostgres: $isPostgres), key: self::SCOPE_KEY);
 
 		$organisation = "'" . self::SCOPE_ORGANISATION . "'";
 
@@ -288,18 +305,17 @@ class ObjectScopeResolver implements ObjectScopeResolverInterface {
 	 * platforms. Two hand-written extractions of the same JSON object is how the
 	 * predecessor change grew its divergences.
 	 *
-	 * @param string $columnName The `_authorization` column, qualified by the caller.
-	 * @param string $key The block key to read.
-	 * @param bool $isPostgres Whether the connected platform is PostgreSQL.
+	 * @param AuthorizationColumn $column The `_authorization` column and its platform.
+	 * @param string              $key    The block key to read.
 	 *
 	 * @return string An SQL expression yielding the key's value as text.
 	 */
-	private function jsonKeySql(string $columnName, string $key, bool $isPostgres): string {
-		if ($isPostgres === true) {
-			return "({$columnName})::jsonb ->> '" . $key . "'";
+	private function jsonKeySql(AuthorizationColumn $column, string $key): string {
+		if ($column->isPostgres === true) {
+			return "({$column->name})::jsonb ->> '" . $key . "'";
 		}
 
-		return "JSON_UNQUOTE(JSON_EXTRACT({$columnName}, '$." . $key . "'))";
+		return "JSON_UNQUOTE(JSON_EXTRACT({$column->name}, '$." . $key . "'))";
 	}//end jsonKeySql()
 
 	/**
@@ -331,7 +347,7 @@ class ObjectScopeResolver implements ObjectScopeResolverInterface {
 			return null;
 		}
 
-		$group = $this->jsonKeySql(columnName: $authColumn, key: self::OWNER_GROUP_KEY, isPostgres: $isPostgres);
+		$group = $this->jsonKeySql(column: new AuthorizationColumn(name: $authColumn, isPostgres: $isPostgres), key: self::OWNER_GROUP_KEY);
 
 		return '(' . $group . ' IN (' . implode(', ', $quotedUserGroups) . '))';
 	}//end ownedByMyGroupSql()

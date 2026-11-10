@@ -108,22 +108,45 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
 	 */
 	public function interpolate(string $template, array $data, array $context, array $languages = []): string {
+		return $this->render(template: $template, values: new PlaceholderValues(data: $data, context: $context, languages: $languages));
+	}//end interpolate()
+
+	/**
+	 * Fill every placeholder of a template from the values; an unanswered one stays as written.
+	 *
+	 * @param string            $template The template carrying `{{ key }}` placeholders.
+	 * @param PlaceholderValues $values   The data, the context and the language chain.
+	 *
+	 * @return string The interpolated string.
+	 */
+	private function render(string $template, PlaceholderValues $values): string {
 		return preg_replace_callback(
 			self::PLACEHOLDER,
-			function (array $matches) use ($data, $context, $languages): string {
-				$key = $matches[1];
-				if (array_key_exists($key, $data) === true) {
-					return $this->renderDataValue(value: $this->translatedValue(value: $data[$key], languages: $languages), placeholder: $matches[0]);
-				}
-
-				// A key context lacks reads as null, so it is left as it was found:
-				// a hole is harder to notice than a leak (see the docblock).
-				$value = $this->translatedValue(value: ($context[$key] ?? null), languages: $languages);
-				return $this->renderScalar(value: $value, placeholder: $matches[0]);
-			},
+			fn (array $matches): string => $this->fillPlaceholder(matches: $matches, values: $values),
 			$template
 		) ?? $template;
-	}//end interpolate()
+	}//end render()
+
+	/**
+	 * The text one placeholder renders as: the data value, else the context value.
+	 *
+	 * A key context lacks reads as null, so it is left as it was found: a hole
+	 * is harder to notice than a leak (see the interpolate() docblock).
+	 *
+	 * @param array<int, string> $matches The placeholder as written and its key.
+	 * @param PlaceholderValues  $values  The data, the context and the language chain.
+	 *
+	 * @return string The rendered text.
+	 */
+	private function fillPlaceholder(array $matches, PlaceholderValues $values): string {
+		$key = $matches[1];
+		if (array_key_exists($key, $values->data) === true) {
+			return $this->renderDataValue(value: $this->translatedValue(value: $values->data[$key], languages: $values->languages), placeholder: $matches[0]);
+		}
+
+		$value = $this->translatedValue(value: ($values->context[$key] ?? null), languages: $values->languages);
+		return $this->renderScalar(value: $value, placeholder: $matches[0]);
+	}//end fillPlaceholder()
 
 	/**
 	 * Render a data value: a relation UUID shows the related object's display
@@ -171,22 +194,22 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 	 * deliberate: this is one class of defect across two apps and a reader who
 	 * has met it once should recognise it here.
 	 *
-	 * @param string               $template The template carrying `{{ key }}` placeholders.
-	 * @param array<string, mixed> $data     The primary data.
-	 * @param array<string, mixed> $context  Secondary lookup values.
+	 * @param string            $template The template carrying `{{ key }}` placeholders.
+	 * @param PlaceholderValues $values   The primary data and the secondary lookup values.
 	 *
 	 * @return array<int, string> The unanswerable names, in the order they appear, without repeats.
 	 *
 	 * @spec openspec/changes/notification-placeholders-refuse/specs/notificatie-engine/spec.md
 	 */
-	public function unanswered(string $template, array $data, array $context): array {
+	public function unanswered(string $template, PlaceholderValues $values): array {
 		if (preg_match_all(self::PLACEHOLDER, $template, $matches) === false) {
 			return [];
 		}
 
 		$unanswered = array_filter(
 			$matches[1],
-			fn (string $key): bool => $this->answers(source: $data, key: $key) === false && $this->answers(source: $context, key: $key) === false
+			fn (string $key): bool => $this->answers(source: $values->data, key: $key) === false
+				&& $this->answers(source: $values->context, key: $key) === false
 		);
 
 		return array_values(array_unique($unanswered));
