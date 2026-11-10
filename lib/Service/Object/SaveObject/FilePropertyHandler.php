@@ -835,7 +835,7 @@ class FilePropertyHandler {
 			$extension = $this->getExtensionFromMimeType(mimeType: $mimeType);
 		}
 
-		return $this->parts->reader->fileData(content: $content, mimeType: $mimeType, extension: $extension);
+		return $this->parts->reader->fileData(content: $content, format: new FileFormat(mimeType: $mimeType, extension: $extension));
 	}//end parseFileDataFromUrl()
 
 	/**
