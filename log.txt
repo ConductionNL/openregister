@@ -2855,3 +2855,4 @@
 2026-11-10T19:58:14Z integrator-20261110T111852-c9674639 GREEN tree 23f27754ab on dev 8cd70ed9c1 prs 4 front=skip: Tests: 54883, Assertions: 181908, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 17.
 2026-11-10T19:58:43Z integrator-20261110T111852-c9674639 MERGED-TREE 23f27754ab: 4 PRs in one push, main now 23f27754ab = tested tree
 2026-11-10T20:00:53Z fixer-20261110T111909-8c3e817d fixer slot 1 done 20:00Z: merged main into 8662 8743 8824 8836 8857 8902 8914 8932 9061 9103 9025 8938 9001 9007 9121 9169 9088 9091 8800 9064 9067 9070 9073 9076 9079; all pushed
+2026-11-10T21:55:33Z coordinator RELEASED 33 leases: cloud account stopped ~20:18Z; resuming on a new account
