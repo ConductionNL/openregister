@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
+use OCA\OpenRegister\Db\Schema;
 use OCP\IRequest;
 use Throwable;
 
@@ -71,20 +72,55 @@ class VocabularyDeclarationResolver implements VocabularyDeclarationResolverInte
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function resolveDeclaration(string $schemaRef, string $property, string $schemeUri): ?CodedPropertyDeclaration {
-		if ($schemaRef !== '' && $property !== '') {
-			try {
-				$schema = $this->tables->schemas->find(id: $schemaRef);
-			} catch (Throwable $missing) {
-				return null;
-			}
-
-			$properties = ($schema->getProperties() ?? []);
-			$declaration = $this->tables->declarations->fromProperty(property: ($properties[$property] ?? null));
-			if ($declaration !== null) {
-				return $declaration;
-			}
+		if ($schemaRef === '' || $property === '') {
+			return $this->unsavedDeclaration(schemeUri: $schemeUri);
 		}
 
+		$schema = $this->findSchema(schemaRef: $schemaRef);
+		if ($schema === null) {
+			return null;
+		}
+
+		return ($this->savedDeclaration(schema: $schema, property: $property) ?? $this->unsavedDeclaration(schemeUri: $schemeUri));
+	}//end resolveDeclaration()
+
+	/**
+	 * The schema a reference names, or null when it cannot be read.
+	 *
+	 * @param string $schemaRef The schema id or slug.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function findSchema(string $schemaRef): ?Schema {
+		try {
+			return $this->tables->schemas->find(id: $schemaRef);
+		} catch (Throwable $missing) {
+			return null;
+		}
+	}//end findSchema()
+
+	/**
+	 * The declaration a saved schema property carries, or null when it is not coded.
+	 *
+	 * @param Schema $schema   The schema the property is declared on.
+	 * @param string $property The property name.
+	 *
+	 * @return CodedPropertyDeclaration|null The declaration.
+	 */
+	private function savedDeclaration(Schema $schema, string $property): ?CodedPropertyDeclaration {
+		$properties = ($schema->getProperties() ?? []);
+
+		return $this->tables->declarations->fromProperty(property: ($properties[$property] ?? null));
+	}//end savedDeclaration()
+
+	/**
+	 * The declaration of a scheme named on the query, or null when none is named.
+	 *
+	 * @param string $schemeUri The scheme uri, empty when none was given.
+	 *
+	 * @return CodedPropertyDeclaration|null The declaration.
+	 */
+	private function unsavedDeclaration(string $schemeUri): ?CodedPropertyDeclaration {
 		if ($schemeUri === '') {
 			return null;
 		}
@@ -94,7 +130,7 @@ class VocabularyDeclarationResolver implements VocabularyDeclarationResolverInte
 				CodedPropertyDeclaration::ANNOTATION => $this->declarationFromQuery(scheme: $schemeUri),
 			]
 		);
-	}//end resolveDeclaration()
+	}//end unsavedDeclaration()
 
 	/**
 	 * Build a declaration from the query, for a property that is not saved yet.

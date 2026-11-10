@@ -129,43 +129,32 @@ class CodedFilterExpander {
 	 * @return string[]
 	 */
 	private function expandValue(mixed $value, ?CodedPropertyDeclaration $declaration): array {
-		$branch = $this->branchOf(value: $value);
-		if ($branch === null || $declaration === null) {
+		$filter = BranchFilter::fromFilterValue(value: $value);
+		if ($filter === null || $declaration === null) {
 			return [];
 		}
 
-		return $this->valuesForBranch(
-			branch: $branch,
-			declaration: $declaration,
-			depth: $this->depthOf(value: $value)
-		);
+		return $this->valuesForBranch(declaration: $declaration, filter: $filter);
 	}//end expandValue()
 
 	/**
 	 * The stored values a branch stands for, in the declaration's storage form.
 	 *
-	 * @param string $branch The branch root's uri.
 	 * @param CodedPropertyDeclaration $declaration The property's declaration.
-	 * @param integer|null $depth The requested depth bound.
+	 * @param BranchFilter             $filter      The branch asked for and its optional depth bound.
 	 *
 	 * @return array<int,string> The stored values, empty when the branch is unresolvable.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function valuesForBranch(
-		string $branch,
-		CodedPropertyDeclaration $declaration,
-		?int $depth = null,
-	): array {
+	public function valuesForBranch(CodedPropertyDeclaration $declaration, BranchFilter $filter): array {
 		$conceptsByUri = $this->scheme->concepts->conceptsOf(schemeUri: $declaration->scheme);
-		if (isset($conceptsByUri[$branch]) === false) {
+		if (isset($conceptsByUri[$filter->root]) === false) {
 			return [];
 		}
 
 		$uris = $this->scheme->hierarchy->branchUris(
-			rootUri: $branch,
-			conceptsByUri: $conceptsByUri,
-			maxDepth: ($depth ?? $declaration->maxDepth)
+			branch: new ConceptBranch(rootUri: $filter->root, conceptsByUri: $conceptsByUri, maxDepth: ($filter->depth ?? $declaration->maxDepth))
 		);
 
 		if ($declaration->store === 'uri') {
@@ -207,59 +196,13 @@ class CodedFilterExpander {
 	 */
 	private function carriesBranchFilter(array $filters): bool {
 		foreach ($filters as $value) {
-			if ($this->branchOf(value: $value) !== null) {
+			if (BranchFilter::fromFilterValue(value: $value) !== null) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end carriesBranchFilter()
-
-	/**
-	 * The branch a filter value asks for, or null when it asks for none.
-	 *
-	 * @param mixed $value The filter value.
-	 *
-	 * @return string|null The branch root's uri.
-	 */
-	private function branchOf(mixed $value): ?string {
-		if (is_array($value) === false) {
-			return null;
-		}
-
-		$branch = ($value[self::BRANCH_KEY] ?? null);
-		if (is_string($branch) === false) {
-			return null;
-		}
-
-		$branch = trim($branch);
-
-		if ($branch === '') {
-			return null;
-		}
-
-		return $branch;
-	}//end branchOf()
-
-	/**
-	 * The depth bound a filter value asks for, or null.
-	 *
-	 * @param mixed $value The filter value.
-	 *
-	 * @return integer|null The requested depth.
-	 */
-	private function depthOf(mixed $value): ?int {
-		if (is_array($value) === false) {
-			return null;
-		}
-
-		$depth = ($value[self::DEPTH_KEY] ?? null);
-		if (is_numeric($depth) === false) {
-			return null;
-		}
-
-		return (int)$depth;
-	}//end depthOf()
 
 	/**
 	 * Resolve the single schema a query names, or null.

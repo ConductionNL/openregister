@@ -78,12 +78,7 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 		?string $context = null,
 		?DateTimeInterface $asOf = null,
 	): array {
-		$query = $this->query(declaration: $declaration, scope: [$language, $context, $asOf]);
-		if ($query === null) {
-			return [];
-		}
-
-		return $this->optionsFor(query: $query);
+		return $this->optionsFor(query: $this->query(declaration: $declaration, scope: [$language, $context, $asOf]));
 	}//end options()
 
 	/**
@@ -107,7 +102,17 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 		string $language = 'nl',
 		?DateTimeInterface $asOf = null,
 	): array {
-		$query = $this->query(declaration: $declaration, scope: [$language, null, $asOf]);
+		return $this->treeFor(query: $this->query(declaration: $declaration, scope: [$language, null, $asOf]));
+	}//end tree()
+
+	/**
+	 * The option tree of the query, one root per tree root uri.
+	 *
+	 * @param CodedOptionQuery|null $query The call's inputs, or null when the scheme holds no concepts.
+	 *
+	 * @return array<int,array<string,mixed>> The roots of the tree.
+	 */
+	private function treeFor(?CodedOptionQuery $query): array {
 		if ($query === null) {
 			return [];
 		}
@@ -116,16 +121,20 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 			fn (string $uri): array => $this->subtree(query: $query, uri: $uri),
 			$this->treeRootUris(query: $query)
 		);
-	}//end tree()
+	}//end treeFor()
 
 	/**
 	 * Every offerable option of the query, in candidate order.
 	 *
-	 * @param CodedOptionQuery $query The call's inputs.
+	 * @param CodedOptionQuery|null $query The call's inputs, or null when the scheme holds no concepts.
 	 *
 	 * @return array<int,array<string,mixed>> The options.
 	 */
-	private function optionsFor(CodedOptionQuery $query): array {
+	private function optionsFor(?CodedOptionQuery $query): array {
+		if ($query === null) {
+			return [];
+		}
+
 		$options = array_map(
 			fn ($uri): ?array => $this->optionFor(query: $query, uri: (string) $uri),
 			$this->candidateUris(query: $query)
@@ -144,10 +153,8 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 	 */
 	private function subtree(CodedOptionQuery $query, string $uri): array {
 		return $this->scheme->hierarchy->tree(
-			rootUri: $uri,
-			conceptsByUri: $query->conceptsByUri,
-			reading: $query->reading,
-			maxDepth: $query->declaration->maxDepth
+			branch: new ConceptBranch(rootUri: $uri, conceptsByUri: $query->conceptsByUri, maxDepth: $query->declaration->maxDepth),
+			reading: $query->reading
 		);
 	}//end subtree()
 
@@ -188,9 +195,7 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 		}
 
 		return $this->scheme->hierarchy->branchUris(
-			rootUri: $branch,
-			conceptsByUri: $query->conceptsByUri,
-			maxDepth: $query->declaration->maxDepth
+			branch: new ConceptBranch(rootUri: $branch, conceptsByUri: $query->conceptsByUri, maxDepth: $query->declaration->maxDepth)
 		);
 	}//end candidateUris()
 

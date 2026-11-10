@@ -83,7 +83,19 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function enforce(array $object, Schema $schema, ?DateTimeInterface $at = null): void {
-		$errors = $this->collectViolations(object: $object, schema: $schema, at: $at);
+		$this->refuse(errors: $this->collectViolations(write: new CodedValueWrite(object: $object, schema: $schema, at: $at)));
+	}//end enforce()
+
+	/**
+	 * Throw the refusals, when there are any.
+	 *
+	 * @param array<string,string> $errors The refusals keyed by property name.
+	 *
+	 * @return void
+	 *
+	 * @throws CodedValueException When at least one coded value is refused.
+	 */
+	private function refuse(array $errors): void {
 		if ($errors === []) {
 			return;
 		}
@@ -92,7 +104,7 @@ class CodedValueGuard implements CodedValueGuardInterface {
 			message: implode(' ', array_values($errors)),
 			errors: $errors
 		);
-	}//end enforce()
+	}//end refuse()
 
 	/**
 	 * Every refusal the object's coded values earn, keyed by property name.
@@ -101,21 +113,19 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	 * rather than refuse (a preview, a revalidation sweep) reads the same
 	 * list without catching an exception to get it.
 	 *
-	 * @param array<string,mixed> $object The submitted object data.
-	 * @param Schema $schema The schema being written against.
-	 * @param DateTimeInterface|null $at The instant to judge windows at; now when null.
+	 * @param CodedValueWrite $write The submitted object data, its schema and the instant to judge windows at.
 	 *
 	 * @return array<string,string> The refusals keyed by property name.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function collectViolations(array $object, Schema $schema, ?DateTimeInterface $at = null): array {
-		$declarations = $this->declarationsOf(schema: $schema);
+	public function collectViolations(CodedValueWrite $write): array {
+		$declarations = $this->declarationsOf(schema: $write->schema);
 		if ($declarations === []) {
 			return [];
 		}
 
-		$check = new CodedValueCheck(object: $object, asOf: $at);
+		$check = new CodedValueCheck(object: $write->object, asOf: $write->at);
 		return $this->violationsOf(declarations: $declarations, check: $check);
 	}//end collectViolations()
 
@@ -256,7 +266,7 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	 * @return array<string,mixed>|null The concept, or null when the scheme does not hold it.
 	 */
 	private function resolve(CodedPropertyDeclaration $declaration, string $value): ?array {
-		return $this->scheme->concepts->resolve(value: $value, schemeUri: $declaration->scheme, store: $declaration->store);
+		return $this->scheme->concepts->resolve(value: $value, declaration: $declaration);
 	}//end resolve()
 
 	/**
