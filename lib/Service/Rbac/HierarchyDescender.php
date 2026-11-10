@@ -269,29 +269,35 @@ class HierarchyDescender {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function childrenOf(string $table, string $parentColumn, array $parentUuids, ?int $limit = null): array {
-		if ($this->nothingToRead(parentUuids: $parentUuids, limit: $limit) === true) {
+		return $this->readChildren(
+			read: new ChildrenRead(table: $table, parentColumn: $parentColumn, limit: $limit),
+			parentUuids: $parentUuids
+		);
+	}//end childrenOf()
+
+	/**
+	 * Read the children of the given parents chunk by chunk, until the read's limit is met.
+	 *
+	 * @param ChildrenRead $read        The table, the parent column and the limit; collects the children.
+	 * @param string[]     $parentUuids The parents to read children of.
+	 *
+	 * @return array<string, string> Child UUID => parent UUID.
+	 */
+	private function readChildren(ChildrenRead $read, array $parentUuids): array {
+		if ($this->nothingToRead(parentUuids: $parentUuids, limit: $read->limit) === true) {
 			return [];
 		}
 
-		$children = [];
 		foreach (array_chunk($parentUuids, self::CHUNK) as $chunk) {
-			$children = array_replace(
-				$children,
-				$this->childrenInChunk(
-					table: $table,
-					parentColumn: $parentColumn,
-					parents: $chunk,
-					limit: $this->remainingOf(limit: $limit, found: count($children))
-				)
-			);
+			$read->children = array_replace($read->children, $this->childrenInChunk(read: $read, parents: $chunk));
 
-			if ($this->limitMet(limit: $limit, found: count($children)) === true) {
+			if ($read->limitMet() === true) {
 				break;
 			}
 		}
 
-		return $children;
-	}//end childrenOf()
+		return $read->children;
+	}//end readChildren()
 
 	/**
 	 * Whether a children read can be answered without a query: no parents, or a limit below one.
@@ -306,47 +312,19 @@ class HierarchyDescender {
 	}//end nothingToRead()
 
 	/**
-	 * How many more children a limited read may return, or null when unlimited.
-	 *
-	 * @param integer|null $limit The limit, or null for none.
-	 * @param integer      $found How many are already found.
-	 *
-	 * @return integer|null The remainder, or null.
-	 */
-	private function remainingOf(int|null $limit, int $found): int|null {
-		if ($limit === null) {
-			return null;
-		}
-
-		return ($limit - $found);
-	}//end remainingOf()
-
-	/**
-	 * Whether a limited read has found enough.
-	 *
-	 * @param integer|null $limit The limit, or null for none.
-	 * @param integer      $found How many are found.
-	 *
-	 * @return bool True when the limit is met.
-	 */
-	private function limitMet(int|null $limit, int $found): bool {
-		return ($limit !== null && $found >= $limit);
-	}//end limitMet()
-
-	/**
 	 * The children of one chunk of parents, as child uuid => parent uuid.
 	 *
-	 * @param string $table The magic table.
-	 * @param string $parentColumn The column naming the parent.
-	 * @param string[] $parents The parents of this chunk.
-	 * @param int|null $limit The most rows to read, or null for all of them.
+	 * @param ChildrenRead $read    The table, the parent column, and how many rows the read still takes.
+	 * @param string[]     $parents The parents of this chunk.
 	 *
 	 * @return array<string, string> Child UUID => parent UUID.
 	 */
-	private function childrenInChunk(string $table, string $parentColumn, array $parents, ?int $limit): array {
+	private function childrenInChunk(ChildrenRead $read, array $parents): array {
+		$parentColumn = $read->parentColumn;
+		$limit = $read->remaining();
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('_uuid', $parentColumn)
-			->from($table)
+			->from($read->table)
 			->where(
 				$qb->expr()->in(
 					$parentColumn,

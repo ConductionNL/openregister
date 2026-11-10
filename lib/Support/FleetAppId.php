@@ -37,7 +37,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Support;
 
 use OCA\OpenRegister\Support\FleetApp\FleetAppCatalogue;
+use OCA\OpenRegister\Support\FleetApp\FleetAppClass;
 use OCA\OpenRegister\Support\FleetApp\FleetAppNames;
+use OCA\OpenRegister\Support\FleetApp\FleetAppPath;
 use OCA\OpenRegister\Support\FleetApp\FleetAppProbe;
 use OCP\App\IAppManager;
 
@@ -134,7 +136,7 @@ final class FleetAppId
      */
     public static function appPath(IAppManager $appManager, string $canonical, string $suffix = ''): ?string
     {
-        return FleetAppNames::appPath(appManager: $appManager, canonical: $canonical, suffix: $suffix);
+        return FleetAppNames::appPath(appManager: $appManager, path: new FleetAppPath(canonical: $canonical, suffix: $suffix));
 
     }//end appPath()
 
@@ -177,7 +179,7 @@ final class FleetAppId
      */
     public static function className(IAppManager $appManager, string $canonical, string $relativeClass): ?string
     {
-        return FleetAppNames::className(appManager: $appManager, canonical: $canonical, relativeClass: $relativeClass);
+        return FleetAppNames::className(appManager: $appManager, class: new FleetAppClass(canonical: $canonical, relativeClass: $relativeClass));
 
     }//end className()
 

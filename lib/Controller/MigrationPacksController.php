@@ -43,6 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\MigrationPacksControllerServices;
 use OCA\OpenRegister\Exception\MigrationPackRefusedException;
@@ -102,18 +103,16 @@ class MigrationPacksController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
 	 * @param MigrationPacksControllerServices $services The controller's collaborators.
 	 *
 	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-pack-changes-must-be-limited-to-administrators-and-logged
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		MigrationPacksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->service = $services->service;
 		$this->session = $services->session;
 		$this->requestReader = $services->requestReader;

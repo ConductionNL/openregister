@@ -441,44 +441,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end __construct()
 
     /**
-     * Check if the current user has permission to perform a specific CRUD action on objects of a given schema
-
-    /**
-     * Check permission and throw exception if not granted
-     *
-     * @param Schema            $schema      Schema to check permissions for
-     * @param string            $action      Action to check permission for
-     * @param string|null       $userId      User ID to check permissions for
-     * @param string|null       $objectOwner Object owner ID
-     * @param bool              $_rbac       Whether to enforce RBAC checks
-     * @param ObjectEntity|null $object      Optional object entity for conditional authorization matching
-     * @param string|null       $register    The register written to, for a check whose object names none
-     *
-     * @return void
-     *
-     * @throws \Exception If permission is not granted
-     */
-    private function checkPermission(
-        Schema $schema,
-        string $action,
-        ?string $userId=null,
-        ?string $objectOwner=null,
-        bool $_rbac=true,
-        ?ObjectEntity $object=null,
-        ?string $register=null
-    ): void {
-        $this->permissionHandler->checkPermission(
-            schema: $schema,
-            action: $action,
-            userId: $userId,
-            objectOwner: $objectOwner,
-            _rbac: $_rbac,
-            object: $object,
-            register: $register
-        );
-    }//end checkPermission()
-
-    /**
      * The id of the register this service is set to, or null when none is set.
      *
      * @return string|null The register id.
@@ -1388,7 +1350,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function assertFindAllowed(ObjectEntity $object, ObjectFindRequest $request): void
     {
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'read',
             userId: null,
@@ -2812,7 +2774,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function assertMayCreate(SaveAccessRequest $request): void
     {
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'create',
             userId: null,
@@ -2837,7 +2799,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function assertMayUpdate(ObjectEntity $stored, bool $_rbac): void
     {
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'update',
             userId: null,
@@ -4190,7 +4152,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function assertMayDeleteRow(ObjectDeleteRequest $request, ObjectEntity $row): void
     {
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'delete',
             userId: $request->actingUserId(),
@@ -4293,7 +4255,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             return;
         }
 
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $this->currentSchema,
             action: 'delete',
             userId: $request->actingUserId(),
@@ -4348,7 +4310,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function deleteFromObjectSource(Schema $schema, ObjectDeleteRequest $request): bool
     {
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $schema,
             action: 'delete',
             userId: $request->actingUserId(),
@@ -5420,7 +5382,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // database — is consulted. A denied user receives the same
         // NotAuthorizedException a native schema raises, whether or not any
         // matching external rows exist.
-        $this->checkPermission(
+        $this->permissionHandler->checkPermission(
             schema: $schema,
             action: 'read',
             userId: null,
@@ -6273,7 +6235,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             throw new OcpDoesNotExistException('One or more registers/schemas not found');
         }
 
-        $this->checkPermission(schema: $targetSchemaEntity, action: 'create');
+        $this->permissionHandler->checkPermission(schema: $targetSchemaEntity, action: 'create');
 
         $permitted = $this->migratableObjectIds(
             register: $sourceRegisterEntity,

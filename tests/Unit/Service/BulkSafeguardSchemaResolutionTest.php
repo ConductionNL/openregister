@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -128,10 +129,9 @@ class BulkSafeguardSchemaResolutionTest extends TestCase {
 		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
 		$method->setAccessible(true);
 
-		$passed = $method->invokeArgs(
-			$this->service,
-			[$objects, new BulkBatchDefaults(null, $schema), ['rbac' => true, 'validation' => false], &$result]
-		);
+		$batch  = new SafeguardBatchRun(objects: $objects, defaults: new BulkBatchDefaults(null, $schema), flags: ['rbac' => true, 'validation' => false], result: $result);
+		$passed = $method->invokeArgs($this->service, [$batch]);
+		$result = $batch->result;
 
 		return [$passed, $result];
 	}//end runSafeguards()

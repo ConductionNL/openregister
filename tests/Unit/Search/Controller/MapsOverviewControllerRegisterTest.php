@@ -41,7 +41,7 @@ class MapsOverviewControllerRegisterTest extends TestCase {
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
 		$this->overviews = $this->createMock(MapsOverviewService::class);
-		$this->controller = new MapsOverviewController('openregister', $this->request, $this->overviews);
+		$this->controller = new MapsOverviewController($this->request, $this->overviews);
 	}
 
 	public function testRegisterForwardsEveryOptionalFieldAndAnswers201(): void {
