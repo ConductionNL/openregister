@@ -32,6 +32,8 @@ use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier;
+use OCA\OpenRegister\Service\Task\TaskAct;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskProjectionService;
@@ -129,7 +131,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 	public function testAHandMadeCalendarTaskIsNotTouched(): void {
 		$standalone = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:x\r\nSUMMARY:Buy milk\r\nSTATUS:COMPLETED\r\nEND:VTODO\r\nEND:VCALENDAR\r\n";
 		$this->mapper->expects($this->never())->method('findByUuid');
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		$this->assertNull($this->gate()->handleWrite($standalone, 'anyone'));
 		$this->assertFalse($this->gate()->isProjected($standalone));
@@ -141,8 +143,8 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 		$this->projector->method('isEcho')->willReturn(false);
 		$completed = TaskCalendarProjectorTest::assignedTask();
 		$completed->setState(Task::STATE_COMPLETED);
-		$this->tasks->expects($this->once())->method('complete')
-			->with(self::UUID, 'done', null, null, 'EXAMPLE_APPROVER_USER')
+		$this->tasks->expects($this->once())->method('completeWithAnswer')
+			->with(self::UUID, new TaskAnswer(outcome: 'done'), 'EXAMPLE_APPROVER_USER')
 			->willReturn($completed);
 		$this->tasks->expects($this->never())->method('cancel');
 		$this->projections->expects($this->never())->method('reconcileTask');
@@ -157,7 +159,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 		$this->taskExists(TaskCalendarProjectorTest::assignedTask());
 		$this->projector->method('isEcho')->willReturn(false);
 		// The lifecycle denies (and audits) exactly as it would for an API call.
-		$this->tasks->method('complete')
+		$this->tasks->method('completeWithAnswer')
 			->willThrowException(new TaskAccessDeniedException("Verb 'complete' denied: 'stranger' is not the assignee."));
 		// The lifecycle already recorded the denial; the gate must not double it.
 		$this->audits->expects($this->never())->method('insert');
@@ -177,7 +179,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 		$task->setIsTerminal(true);
 		$this->taskExists($task);
 		$this->projector->method('isEcho')->willReturn(false);
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 		$this->tasks->expects($this->never())->method('cancel');
 		$this->audits->expects($this->once())->method('insert')
 			->with(
@@ -197,7 +199,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 	public function testALostRaceIsAConflictThatRevertsNotAFailure(): void {
 		$this->taskExists(TaskCalendarProjectorTest::assignedTask());
 		$this->projector->method('isEcho')->willReturn(false);
-		$this->tasks->method('complete')
+		$this->tasks->method('completeWithAnswer')
 			->willThrowException(new TaskConflictException("Verb 'complete' lost a race: task is no longer open."));
 		$this->audits->expects($this->once())->method('insert');
 		$this->expectRevertAndNotice('EXAMPLE_APPROVER_USER', 'lost a race');
@@ -209,7 +211,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 	public function testASummaryEditNeverReachesTheEngineAndIsRestored(): void {
 		$this->taskExists(TaskCalendarProjectorTest::assignedTask());
 		$this->projector->method('isEcho')->willReturn(false);
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 		$this->tasks->expects($this->never())->method('cancel');
 		$this->audits->expects($this->never())->method('insert');
 		$this->dispatcher->expects($this->never())->method('dispatchWithSchema');
@@ -222,7 +224,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 	public function testTheProjectorsOwnEchoIsIgnored(): void {
 		$this->projector->method('isEcho')->with(self::UUID, $this->anything())->willReturn(true);
 		$this->mapper->expects($this->never())->method('findByUuid');
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		$this->assertNull($this->gate()->handleWrite($this->vtodo('COMPLETED'), 'EXAMPLE_APPROVER_USER'));
 	}
@@ -230,7 +232,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 	public function testAnUnknownTaskIdentityIsRefusedNotInvented(): void {
 		$this->projector->method('isEcho')->willReturn(false);
 		$this->mapper->method('findByUuid')->willThrowException(new DoesNotExistException('no such task'));
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		$this->expectException(DoesNotExistException::class);
 		$this->gate()->handleWrite($this->vtodo('COMPLETED'), 'EXAMPLE_APPROVER_USER');
@@ -243,13 +245,13 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 		$this->expectRevertAndNotice('EXAMPLE_APPROVER_USER', 'cannot be requested from a calendar');
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$this->gate()->request(self::UUID, 'assign', 'EXAMPLE_APPROVER_USER');
+		$this->gate()->request(self::UUID, new TaskAct('assign', 'EXAMPLE_APPROVER_USER'));
 	}
 
 	public function testANullActorIsPassedToTheLifecycleWhichDeniesIt(): void {
 		$this->taskExists(TaskCalendarProjectorTest::assignedTask());
 		$this->projector->method('isEcho')->willReturn(false);
-		$this->tasks->method('complete')->with(self::UUID, 'done', null, null, null)
+		$this->tasks->method('completeWithAnswer')->with(self::UUID, new TaskAnswer(outcome: 'done'), null)
 			->willThrowException(new TaskAccessDeniedException("Verb 'complete' denied: no acting identity."));
 		// Nobody to notify: the refusal is logged, never widened to anyone else.
 		$this->dispatcher->expects($this->never())->method('dispatchWithSchema');

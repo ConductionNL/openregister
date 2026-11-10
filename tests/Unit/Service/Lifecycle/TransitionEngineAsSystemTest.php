@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Lifecycle;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
@@ -430,7 +431,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 		$this->actions->enterSystem(uuid: self::OBJECT_ID, app: 'learniq');
 
 		try {
-			$row = $this->auditMapper()->buildAuditTrail(old: $this->draft(), new: $this->submitted());
+			$row = $this->auditMapper()->buildEntry(change: new AuditedChange(old: $this->draft(), new: $this->submitted()));
 		} finally {
 			$this->actions->leaveSystem(uuid: self::OBJECT_ID);
 		}
@@ -443,7 +444,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 	 * Control: an ordinary write carries no system mark.
 	 */
 	public function testOrdinaryAuditRowCarriesNoSystemMark(): void {
-		$row = $this->auditMapper()->buildAuditTrail(old: $this->draft(), new: $this->submitted());
+		$row = $this->auditMapper()->buildEntry(change: new AuditedChange(old: $this->draft(), new: $this->submitted()));
 
 		$this->assertArrayNotHasKey('transitionAsSystem', $row->getChanged());
 	}//end testOrdinaryAuditRowCarriesNoSystemMark()

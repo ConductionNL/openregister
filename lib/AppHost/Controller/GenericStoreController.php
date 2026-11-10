@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\AppHost\Controller;
 
 use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
+use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
@@ -442,7 +443,7 @@ class GenericStoreController extends Controller {
 		}
 
 		if ($descriptor->isFederated() === true) {
-			return $this->services->sources->catalog->search(descriptor: $descriptor, query: $query, kind: $kind);
+			return $this->services->sources->catalog->search(descriptor: $descriptor, search: new StoreSearch(query: $query, kind: $kind));
 		}
 
 		return $this->services->sources->storeService->search(descriptor: $descriptor, query: $query, kind: $kind);

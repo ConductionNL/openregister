@@ -28,6 +28,7 @@ use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
+use OCA\OpenRegister\Service\Handoff\HandoffSourceRef;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -95,7 +96,7 @@ class HandoffControllerGoldenTest extends TestCase {
 	public function testAvailabilityWrapsTheListAndPassesTheRoute(): void {
 		$this->service->expects($this->once())
 			->method('listAvailability')
-			->with('reg', 'sch', 'obj')
+			->with(new HandoffSourceRef(register: 'reg', schema: 'sch', id: 'obj'))
 			->willReturn([['id' => 'h1']]);
 
 		$response = $this->controller->availability('reg', 'sch', 'obj');

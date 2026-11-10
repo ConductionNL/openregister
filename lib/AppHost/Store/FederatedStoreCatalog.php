@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Store;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
+use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
@@ -101,20 +102,20 @@ class FederatedStoreCatalog {
 	 * Browse every declared type's published configuration.
 	 *
 	 * @param StoreDescriptor $descriptor The calling app's store parameters.
-	 * @param string|null     $query      Optional free-text filter.
-	 * @param string|null     $kind       Optional type-id filter, matching the surface's kind chips.
+	 * @param StoreSearch     $search     Optional free-text filter, and optional type-id filter matching the
+	 *                                    surface's kind chips.
 	 *
 	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
 	 *
 	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#scenario-a-configuration-set-reaches-the-store-surface
 	 */
-	public function search(StoreDescriptor $descriptor, ?string $query = null, ?string $kind = null): array {
+	public function search(StoreDescriptor $descriptor, StoreSearch $search = new StoreSearch()): array {
 		$cards = [];
 
 		foreach ($descriptor->types as $typeId) {
 			$declared = $this->ownedType(descriptor: $descriptor, typeId: $typeId);
-			if ($declared !== null && $this->kindExcludes(kind: $kind, typeId: $typeId) === false) {
-				$cards = [...$cards, ...$this->matchingCards(declared: $declared, query: $query)];
+			if ($declared !== null && $this->kindExcludes(kind: $search->kind, typeId: $typeId) === false) {
+				$cards = [...$cards, ...$this->matchingCards(declared: $declared, query: $search->query)];
 			}
 		}
 

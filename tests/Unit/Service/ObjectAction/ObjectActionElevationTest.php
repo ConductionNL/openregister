@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
+use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -243,7 +244,7 @@ class ObjectActionElevationTest extends TestCase {
 			$this->addToAssertionCount(1);
 		}
 
-		$this->assertFalse(ObjectActionElevationScope::allows(schemaId: 9, registerId: '4', verb: 'create'));
+		$this->assertFalse(ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create')));
 		$this->assertFalse($this->handler()->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna'));
 	}//end testTheElevationEndsWithTheRunEvenWhenItThrows()
 
@@ -262,7 +263,7 @@ class ObjectActionElevationTest extends TestCase {
 		ObjectActionElevationScope::run(
 			new ActionElevation('publish', 'anna', $this->entries()),
 			function () use ($mapper, $apply, $elevated, $ordinary): void {
-				ObjectActionElevationScope::allows(schemaId: 9, registerId: '4', verb: 'create');
+				ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create'));
 				$apply->invoke($mapper, $elevated);
 				$apply->invoke($mapper, $ordinary);
 			}

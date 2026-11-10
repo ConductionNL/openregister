@@ -29,6 +29,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\EmbeddingProbe;
 
 /**
  * Controller for LLM (Large Language Model) settings.
@@ -225,7 +226,8 @@ class LlmSettingsController extends Controller {
 				return $invalid;
 			}
 
-			$result = $this->vectorizationService->testEmbedding(provider: $provider, config: $config, testText: $testText);
+			$probe  = new EmbeddingProbe(provider: $provider, config: $config, testText: $testText);
+			$result = $this->vectorizationService->testEmbedding(probe: $probe);
 			return $this->testResult(result: $result);
 		} catch (Exception $e) {
 			return $this->testFailure(prefix: 'Failed to generate embedding: ', e: $e);

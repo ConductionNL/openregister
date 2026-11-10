@@ -40,6 +40,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\LinkTarget;
 
 /**
  * CalendarEventsController handles calendar event operations for objects.
@@ -337,12 +338,8 @@ class CalendarEventsController extends Controller {
 		}
 
 		$data['objectTitle'] = $object->getName() ?? $object->getUuid();
-		$link = $this->calendarLinkService->createAndLinkEvent(
-			objectUuid: $object->getUuid(),
-			registerId: (int)$object->getRegister(),
-			schemaId: (int)$object->getSchema(),
-			eventData: $data
-		);
+		$target = (new LinkTarget(objectUuid: $object->getUuid(), registerId: (int)$object->getRegister()))->inSchema(schemaId: (int)$object->getSchema());
+		$link = $this->calendarLinkService->createLinkedEvent(target: $target, eventData: $data);
 
 		return new JSONResponse($link->jsonSerialize(), 201);
 	}//end createdEvent()

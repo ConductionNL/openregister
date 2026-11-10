@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RemovedDraft;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -70,9 +71,9 @@ class DraftRemovalFrameTest extends TestCase {
 
 		$result = (new DraftRemovalFrame())->asJob(
 			'draft-expiry',
-			static fn (): string => $record->write($draft, null, null) === true ? 'written' : 'not written'
+			static fn (): string => $record->write(new RemovedDraft(draft: $draft, register: null, schema: null)) === true ? 'written' : 'not written'
 		);
-		$record->write($draft, null, null);
+		$record->write(new RemovedDraft(draft: $draft, register: null, schema: null));
 
 		$this->assertSame('written', $result);
 		$this->assertSame([DraftRemovalRecord::JOB_ACTOR_PREFIX . 'draft-expiry', null], $this->actors);
@@ -92,8 +93,8 @@ class DraftRemovalFrameTest extends TestCase {
 		$frame->asJob(
 			'outer',
 			static function () use ($frame, $record, $draft): void {
-				$frame->asJob('inner', static fn (): bool => $record->write($draft, null, null));
-				$record->write($draft, null, null);
+				$frame->asJob('inner', static fn (): bool => $record->write(new RemovedDraft(draft: $draft, register: null, schema: null)));
+				$record->write(new RemovedDraft(draft: $draft, register: null, schema: null));
 			}
 		);
 
@@ -121,7 +122,7 @@ class DraftRemovalFrameTest extends TestCase {
 			$this->assertSame('boom', $e->getMessage());
 		}
 
-		$record->write(new ObjectEntity(), null, null);
+		$record->write(new RemovedDraft(draft: new ObjectEntity(), register: null, schema: null));
 		$this->assertSame([null], $this->actors);
 
 	}//end testAThrowingOperationStillEndsTheFrame()

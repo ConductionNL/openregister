@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -55,13 +56,8 @@ class RelationHandlerBulkLoadGoldenTest extends TestCase {
 
 	private function handler(array &$calls): RelationHandler {
 		$mapper = $this->createMock(MagicMapperInterface::class);
-		$mapper->method('findAll')->willReturnCallback(function (...$args) use (&$calls) {
-			$position = 0;
-			foreach ((new ReflectionMethod(MagicMapperInterface::class, 'findAll'))->getParameters() as $i => $param) {
-				$position = $param->getName() === 'ids' ? $i : $position;
-			}
-
-			$ids = $args['ids'] ?? $args[$position] ?? [];
+		$mapper->method('findAllListed')->willReturnCallback(function (MagicListRequest $request) use (&$calls) {
+			$ids = ($request->ids ?? []);
 			$calls[] = ['findAll', count($ids), $ids[0] ?? null];
 			if (in_array('boom', $ids, true) === true) {
 				throw new RuntimeException('db');

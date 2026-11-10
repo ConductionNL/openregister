@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
@@ -119,9 +120,9 @@ class TaskScheduledNotificationJobTest extends TestCase {
 		);
 		$this->tasks->expects($this->never())->method('update');
 		$this->tasks->expects($this->never())->method('updateIfOpen');
-		$this->dedupe->method('findOne')->willReturn(null);
+		$this->dedupe->method('findByKey')->willReturn(null);
 		$this->dedupe->expects($this->once())->method('upsert')
-			->with($this->equalTo(new NotificationDedupeKey(TaskScheduledNotificationJob::DEDUPE_SCHEMA_ID, 'taskOverdue', 't-late')), $this->anything(), $this->anything(), true);
+			->with($this->equalTo(new NotificationDedupeKey(TaskScheduledNotificationJob::DEDUPE_SCHEMA_ID, 'taskOverdue', 't-late')), $this->callback(static fn (DedupeSighting $sighting): bool => $sighting->dispatched === true));
 		$this->dispatcher->expects($this->once())->method('dispatchWithSchema')
 			->with(
 				$this->callback(static fn (TaskObjectAdapter $adapter): bool => $adapter->getUuid() === 't-late'),
@@ -164,7 +165,7 @@ class TaskScheduledNotificationJobTest extends TestCase {
 		$this->tasks->method('findInbox')->willReturn([$task]);
 		$state = new NotificationDedupeState();
 		$state->setFingerprint(sha1((string)json_encode(['taskUuid' => 't-late'])));
-		$this->dedupe->method('findOne')->willReturn($state);
+		$this->dedupe->method('findByKey')->willReturn($state);
 		$this->dispatcher->expects($this->never())->method('dispatchWithSchema');
 
 		$this->runJob($this->job(new DateTime('2026-09-02T09:00:00+00:00')));

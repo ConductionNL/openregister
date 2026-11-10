@@ -25,6 +25,7 @@ use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -296,7 +297,7 @@ class MagicStatisticsHandlerGoldenTest extends TestCase {
 	 * @dataProvider filterCases
 	 */
 	public function testStatisticsFiltersIncludeAndExcludePairs(mixed $registerId, mixed $schemaId, array $exclude, array $expected): void {
-		$stats = $this->handler()->getStatistics(registerId: $registerId, schemaId: $schemaId, exclude: $exclude);
+		$stats = $this->handler()->getStatistics(new StatisticsScope(registerId: $registerId, schemaId: $schemaId, exclude: $exclude));
 		$this->assertSame($expected, $this->countedPairs());
 		$total = 0;
 		foreach ($expected as $pair) {

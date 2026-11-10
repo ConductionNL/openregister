@@ -161,11 +161,8 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	 * adding a second one: D-1 is one pending value against one live value,
 	 * and two rows for one address would make the deployment order-dependent.
 	 *
-	 * @param string      $setUuid   The set to draft into.
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference, null at instance level.
-	 * @param string      $configKey The configuration key.
-	 * @param mixed       $value     The pending value.
+	 * @param ConfigurationDraftTarget $target The set to draft into and the address of the value.
+	 * @param mixed                    $value  The pending value.
 	 *
 	 * @return ConfigurationDraft The pending value.
 	 *
@@ -173,15 +170,8 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function draftValue(string $setUuid, string $layer, ?string $layerRef, string $configKey, mixed $value): ConfigurationDraft {
-		return $this->stage(
-			setUuid: $setUuid,
-			change: new ConfigurationDraftChange(
-				address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey),
-				value: $value,
-				removes: false
-			)
-		);
+	public function draftValue(ConfigurationDraftTarget $target, mixed $value): ConfigurationDraft {
+		return $this->stage(setUuid: $target->setUuid, change: new ConfigurationDraftChange(address: $target->address, value: $value, removes: false));
 
 	}//end draftValue()
 
@@ -194,10 +184,7 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	 * restore the difference. A caller that has to pass `null, true` to say
 	 * "unset" is a caller that will one day pass `null, false` by mistake.
 	 *
-	 * @param string      $setUuid   The set to draft into.
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference, null at instance level.
-	 * @param string      $configKey The configuration key.
+	 * @param ConfigurationDraftTarget $target The set to draft into and the address of the value.
 	 *
 	 * @return ConfigurationDraft The pending removal.
 	 *
@@ -205,15 +192,8 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function draftRemoval(string $setUuid, string $layer, ?string $layerRef, string $configKey): ConfigurationDraft {
-		return $this->stage(
-			setUuid: $setUuid,
-			change: new ConfigurationDraftChange(
-				address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey),
-				value: null,
-				removes: true
-			)
-		);
+	public function draftRemoval(ConfigurationDraftTarget $target): ConfigurationDraft {
+		return $this->stage(setUuid: $target->setUuid, change: new ConfigurationDraftChange(address: $target->address, value: null, removes: true));
 
 	}//end draftRemoval()
 

@@ -349,11 +349,7 @@ class ViewMapper extends QBMapper implements ViewMapperInterface {
 		foreach ($this->findEntities(query: $qb) as $entity) {
 			$view = $entity->jsonSerialize();
 
-			$access = $resolver->accessFor(
-				view: $view,
-				userId: $reach->userId,
-				userGroups: $reach->groups
-			);
+			$access = $resolver->accessOf(view: $view, reach: $reach);
 
 			// A list holds what the view grants the caller: their own, the ones
 			// shared with them and the public ones. Another user's private view

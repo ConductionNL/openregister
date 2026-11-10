@@ -183,10 +183,8 @@ class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterf
 	 * Apply an inbound registry update (`registry-subscriptions` REQ 3) to
 	 * every object actively subscribed to `$registry`/`$identityValue`.
 	 *
-	 * @param string $registry The registry id posting the update (`brp`, `kvk`, ...).
-	 * @param string $identityValue The identity value the update is for.
-	 * @param array<string, mixed> $properties The changed properties the registry is offering.
-	 * @param string $eventReference The registry's own event reference for this change.
+	 * @param InboundUpdate $update The registry and identity value the update is for, the changed properties the
+	 *                              registry is offering and its own event reference for this change.
 	 *
 	 * @return array{matched: int, applied: array<int, string>, rejected: array<int, array{objectUuid: string, properties: array<int, string>}>}
 	 *         `matched` is how many active subscriptions exist for this
@@ -203,27 +201,7 @@ class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterf
 	 *
 	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-inbound-registry-update-writes-owned-properties-only
 	 */
-	public function applyInboundUpdate(
-		string $registry,
-		string $identityValue,
-		array $properties,
-		string $eventReference,
-	): array {
-		$identity = new RegistryIdentity(registry: $registry, identityValue: $identityValue);
-		return $this->applyUpdate(update: new InboundUpdate(identity: $identity, properties: $properties, eventReference: $eventReference));
-	}//end applyInboundUpdate()
-
-	/**
-	 * Apply one inbound update to every subscription active for its identity.
-	 *
-	 * @param InboundUpdate $update The update.
-	 *
-	 * @return array{matched: int, applied: array<int, string>, rejected: array<int, array{objectUuid: string, properties: array<int, string>}>}
-	 *         As {@see applyInboundUpdate()}.
-	 *
-	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-inbound-registry-update-writes-owned-properties-only
-	 */
-	private function applyUpdate(InboundUpdate $update): array {
+	public function applyInboundUpdate(InboundUpdate $update): array {
 		$rows = $this->subscriptionMapper->findActiveByIdentity(
 			registry: $update->identity->registry,
 			identityValue: $update->identity->identityValue
@@ -235,7 +213,7 @@ class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterf
 		}
 
 		return ['matched' => count($rows), 'applied' => $run->applied, 'rejected' => $run->rejected];
-	}//end applyUpdate()
+	}//end applyInboundUpdate()
 
 	/**
 	 * Apply the update to one subscribed object, or record why it was not.
