@@ -29,6 +29,8 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
@@ -36,7 +38,6 @@ use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -226,7 +227,10 @@ class GetObject
      */
     private function findInSource(ObjectSourceBinding $source, string $id): ObjectEntity
     {
-        $virtual = $source->provider?->find(register: $source->register, schema: $source->schema, id: $id, config: $source->config());
+        $virtual = $source->provider?->find(
+            source: new SourcedTable(table: new RegisterSchema(register: $source->register, schema: $source->schema), config: $source->config()),
+            id: $id
+        );
         if ($virtual === null) {
             throw new DoesNotExistException(sprintf('Object %s not found', $id));
         }
@@ -426,7 +430,10 @@ class GetObject
      */
     private function findAllInSource(ObjectSourceBinding $source, array $query): array
     {
-        return $source->provider?->findAll(register: $source->register, schema: $source->schema, query: $query, config: $source->config()) ?? [];
+        return $source->provider?->findAll(
+            source: new SourcedTable(table: new RegisterSchema(register: $source->register, schema: $source->schema), config: $source->config()),
+            query: $query
+        ) ?? [];
     }//end findAllInSource()
 
     /**
@@ -508,6 +515,6 @@ class GetObject
         unset($filters['object'], $filters['register'], $filters['schema']);
         $filters['object_uuid'] = $object->getUuid();
 
-        return $this->auditTrailMapper->findAll(filters: $filters, sort: ['created' => 'DESC']);
+        return $this->auditTrailMapper->findTrail(query: ListQuery::unbounded(filters: $filters, sort: ['created' => 'DESC']));
     }//end findLogs()
 }//end class

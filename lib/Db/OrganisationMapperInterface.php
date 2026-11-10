@@ -181,19 +181,6 @@ interface OrganisationMapperInterface {
 	public function findAll(int $limit = 50, int $offset = 0, ?array $filters = []): array;
 
 	/**
-	 * Find organisations by name with pagination
-	 *
-	 * @param string $name The name pattern to search for
-	 * @param int $limit Maximum number of results to return
-	 * @param int $offset Number of results to skip
-	 *
-	 * @return Organisation[]
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
-	 */
-	public function findByName(string $name, int $limit = 50, int $offset = 0): array;
-
-	/**
 	 * Find the organisations that are tenants of this installation (a NULL
 	 * `is_local_tenant` counts as a tenant), one list query at a time.
 	 *

@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OCA\OpenRegister\Controller\OrganisationController;
 use OCA\OpenRegister\Db\Organisation;
@@ -410,8 +411,8 @@ class OrganisationCrudTest extends TestCase {
 
 		$this->organisationMapper
 			->expects($this->once())
-			->method('findByName')
-			->with(name: 'ACME', limit: 50, offset: 0)
+			->method('findListByName')
+			->with('ACME', new ListQuery(50, 0))
 			->willReturn([$acmeOrg]);
 
 		// Act: Search organisations via controller.
@@ -625,8 +626,8 @@ class OrganisationCrudTest extends TestCase {
 
 		$this->organisationMapper
 			->expects($this->once())
-			->method('findByName')
-			->with(name: 'Tech', limit: 50, offset: 0)
+			->method('findListByName')
+			->with('Tech', new ListQuery(50, 0))
 			->willReturn([$tech1, $tech2]);
 
 		// Act: Search for 'Tech'.

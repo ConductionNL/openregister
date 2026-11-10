@@ -25,8 +25,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hinge;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Psr\Log\LoggerInterface;
@@ -276,12 +278,8 @@ class ReferencedByService implements ReferencedByServiceInterface {
 			}
 
 			$rows = $this->catalog->tables()->findAllInRegisterSchemaTable(
-				register: $register,
-				schema: $schema,
-				limit: $page->limit,
-				offset: $page->offset,
-				filters: $filters,
-				sort: ['_updated' => 'DESC']
+				table: new RegisterSchema(register: $register, schema: $schema),
+				listing: new ListQuery(limit: $page->limit, offset: $page->offset, filters: $filters, sort: ['_updated' => 'DESC'])
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(

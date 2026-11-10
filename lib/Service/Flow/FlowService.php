@@ -71,6 +71,38 @@ class FlowService implements FlowServiceInterface {
 	private const DEFAULT_APP = 'openregister';
 
 	/**
+	 * The client-editable string fields and their setters, in apply order.
+	 *
+	 * Part of the allowlist that IS the security boundary — see
+	 * {@see applyEditableFields()}.
+	 *
+	 * @var array<string, string>
+	 */
+	private const EDITABLE_STRING_FIELDS = [
+		'name' => 'setName',
+		'description' => 'setDescription',
+		'trigger' => 'setTrigger',
+		'triggerRegister' => 'setTriggerRegister',
+		'triggerSchema' => 'setTriggerSchema',
+		'cron' => 'setCron',
+		'executionMode' => 'setExecutionMode',
+		'notes' => 'setNotes',
+		'comment' => 'setComment',
+		'applicationSlug' => 'setApplicationSlug',
+	];
+
+	/**
+	 * The client-editable array fields and their setters, in apply order.
+	 *
+	 * @var array<string, string>
+	 */
+	private const EDITABLE_ARRAY_FIELDS = [
+		'nodes' => 'setNodes',
+		'edges' => 'setEdges',
+		'limits' => 'setLimits',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowDefinitionStore $definitions The flow table and the trigger index derived from its nodes.
@@ -137,12 +169,13 @@ class FlowService implements FlowServiceInterface {
 		}
 
 		return $this->definitions->mapper->findAllFlows(
-			app: $query->filters['app'] ?? null,
-			applicationSlug: $query->filters['applicationSlug'] ?? null,
-			organisation: $organisation,
-			enabled: $query->filters['enabled'] ?? null,
-			limit: $query->limit,
-			offset: ($query->offset ?? 0)
+			selection: new FlowSelection(
+				app: $query->filters['app'] ?? null,
+				applicationSlug: $query->filters['applicationSlug'] ?? null,
+				organisation: $organisation,
+				enabled: $query->filters['enabled'] ?? null
+			),
+			query: new ListQuery(limit: $query->limit, offset: ($query->offset ?? 0))
 		);
 	}//end listFlows()
 
@@ -497,53 +530,10 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function applyEditableFields(Flow $flow, array $data): void {
-		$strings = [
-			'name' => 'setName',
-			'description' => 'setDescription',
-			'trigger' => 'setTrigger',
-			'triggerRegister' => 'setTriggerRegister',
-			'triggerSchema' => 'setTriggerSchema',
-			'cron' => 'setCron',
-			'executionMode' => 'setExecutionMode',
-			'notes' => 'setNotes',
-			'comment' => 'setComment',
-			'applicationSlug' => 'setApplicationSlug',
-		];
+		$data = self::withNormalisedComment(data: $data);
 
-		// A flow authored as a definition file carries its rationale under the
-		// top-level `$comment` key — the JSON-Schema convention for "a human
-		// wrote this, no reader should interpret it". That key cannot be a
-		// column name, so it is normalised here rather than at every call site.
-		//
-		// `comment` wins when both are present: the explicit API field is a
-		// deliberate write, `$comment` is whatever the file happened to carry.
-		if (array_key_exists('$comment', $data) === true && array_key_exists('comment', $data) === false) {
-			$data['comment'] = $data['$comment'];
-		}
-
-		foreach ($strings as $key => $setter) {
-			if (array_key_exists($key, $data) === true) {
-				$value = $data[$key];
-				if ($value === null) {
-					$flow->$setter(null);
-					continue;
-				}
-
-				$flow->$setter((string)$value);
-			}
-		}
-
-		$arrays = [
-			'nodes' => 'setNodes',
-			'edges' => 'setEdges',
-			'limits' => 'setLimits',
-		];
-
-		foreach ($arrays as $key => $setter) {
-			if (array_key_exists($key, $data) === true) {
-				$flow->$setter((array)($data[$key] ?? []));
-			}
-		}
+		self::applyStringFields(flow: $flow, data: $data);
+		self::applyArrayFields(flow: $flow, data: $data);
 
 		if (array_key_exists('enabled', $data) === true) {
 			$flow->setEnabled((bool)$data['enabled']);
@@ -552,6 +542,69 @@ class FlowService implements FlowServiceInterface {
 		$this->applyInheritableSettings(flow: $flow, data: $data);
 
 	}//end applyEditableFields()
+
+	/**
+	 * The payload with a definition file's `$comment` carried over to `comment`.
+	 *
+	 * A flow authored as a definition file carries its rationale under the
+	 * top-level `$comment` key — the JSON-Schema convention for "a human
+	 * wrote this, no reader should interpret it". That key cannot be a
+	 * column name, so it is normalised here rather than at every call site.
+	 *
+	 * `comment` wins when both are present: the explicit API field is a
+	 * deliberate write, `$comment` is whatever the file happened to carry.
+	 *
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return array<string, mixed> The fields, normalised.
+	 */
+	private static function withNormalisedComment(array $data): array {
+		if (array_key_exists('$comment', $data) === true && array_key_exists('comment', $data) === false) {
+			$data['comment'] = $data['$comment'];
+		}
+
+		return $data;
+	}//end withNormalisedComment()
+
+	/**
+	 * Apply the present string fields: null is stored, anything else stringified.
+	 *
+	 * @param Flow                 $flow The flow to mutate.
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return void
+	 */
+	private static function applyStringFields(Flow $flow, array $data): void {
+		foreach (self::EDITABLE_STRING_FIELDS as $key => $setter) {
+			if (array_key_exists($key, $data) === false) {
+				continue;
+			}
+
+			$value = $data[$key];
+			if ($value === null) {
+				$flow->$setter(null);
+				continue;
+			}
+
+			$flow->$setter((string)$value);
+		}
+	}//end applyStringFields()
+
+	/**
+	 * Apply the present array fields: null becomes an empty array, a scalar a one-element array.
+	 *
+	 * @param Flow                 $flow The flow to mutate.
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return void
+	 */
+	private static function applyArrayFields(Flow $flow, array $data): void {
+		foreach (self::EDITABLE_ARRAY_FIELDS as $key => $setter) {
+			if (array_key_exists($key, $data) === true) {
+				$flow->$setter((array)($data[$key] ?? []));
+			}
+		}
+	}//end applyArrayFields()
 
 	/**
 	 * Apply the three settings a flow may inherit from the administrator default.
@@ -772,12 +825,14 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function start(Flow $flow, FlowRunOptions $options): FlowRun {
-		$run = $this->dispatch->runner->queue(
+		$run = $this->dispatch->runner->queueRun(
 			flowId: (string)$flow->getUuid(),
-			subject: $options->subject,
-			trigger: $options->trigger,
-			context: $options->context,
-			user: $this->caller()->actingUser()
+			options: new FlowRunQueueOptions(
+				subject: $options->subject,
+				trigger: $options->trigger,
+				context: $options->context,
+				user: $this->caller()->actingUser()
+			)
 		);
 
 		if ($options->sync === false) {

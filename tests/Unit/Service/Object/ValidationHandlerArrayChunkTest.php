@@ -9,6 +9,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -87,7 +90,7 @@ class ValidationHandlerArrayChunkTest extends TestCase {
 			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
-		$result = $handler->validateAndSaveObjectsBySchema(registerId: 3, schemaId: 4, saveCallback: [$saver, 'saveObjects']);
+		$result = $handler->validateAndSaveObjectsBySchema(revalidation: new SchemaRevalidation(table: new RegisterSchemaRef(register: 3, schema: 4), query: ListQuery::unbounded(), saveCallback: [$saver, 'saveObjects']));
 
 		$this->assertSame(expected: [[[$row, $entity->getObject()], 3, 4]], actual: $saver->calls);
 		$this->assertSame(expected: 2, actual: $result['processed']);

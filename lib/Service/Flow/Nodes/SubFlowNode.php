@@ -44,6 +44,10 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Service\Flow\FlowExecution;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -183,9 +187,7 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	 * what happens. Without `wait` the sub-flow is queued against the run's
 	 * subject and these items pass through untouched.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata (carries the sub-flow stack).
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The sub-flow's output items, or the input items when not waiting.
 	 *
@@ -193,7 +195,10 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	 *                                  or a sub-flow cycle or depth limit is hit.
 	 * @throws RuntimeException When a waited-on sub-run does not complete.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$target = $this->targetFor(config: $config, context: $context);
 		if ($target === null) {
 			return $items;
@@ -309,7 +314,10 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 		// Wait: run the sub-flow now, seeded with these items, and return what
 		// it produced. It gets its own persisted run and trace, so a sub-flow
 		// is as inspectable as a top-level one.
-		$child = $this->runs->execute(run: $child, flow: $run->target->flow, subject: new stdClass(), seedItems: $items);
+		$child = $this->runs->executePass(
+			pass: new FlowRunPass(run: $child, flow: $run->target->flow, subject: new stdClass()),
+			origin: new FlowRunOrigin(items: $items, startAt: null)
+		);
 
 		// The child ran to a stop; hand what it gathered back to the parent.
 		// The parent's own token instance is merged into, so this is what
@@ -366,19 +374,21 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function queueChild(SubFlowRun $run, array $childContext): FlowRun {
-		return $this->runs->queue(
+		return $this->runs->queueRun(
 			flowId: $run->target->flowId,
-			subject: $this->subjectDescriptor(context: $run->context),
-			trigger: 'sub-flow',
-			context: $childContext,
-			// The child inherits the parent's ACTING identity, not its
-			// provenance. Identity narrows along an invocation chain and never
-			// widens (ADR-099): a sub-flow may do what its caller could do, and
-			// nothing more. Passing `triggeredBy` here would hand the child the
-			// identity that CAUSED the parent, which for a scheduled run is a
-			// different — and possibly more privileged — user than the one the
-			// parent was actually executing as.
-			user: ($run->context['runAs'] ?? null)
+			options: new FlowRunQueueOptions(
+				subject: $this->subjectDescriptor(context: $run->context),
+				trigger: 'sub-flow',
+				context: $childContext,
+				// The child inherits the parent's ACTING identity, not its
+				// provenance. Identity narrows along an invocation chain and never
+				// widens (ADR-099): a sub-flow may do what its caller could do, and
+				// nothing more. Passing `triggeredBy` here would hand the child the
+				// identity that CAUSED the parent, which for a scheduled run is a
+				// different — and possibly more privileged — user than the one the
+				// parent was actually executing as.
+				user: ($run->context['runAs'] ?? null)
+			)
 		);
 	}//end queueChild()
 

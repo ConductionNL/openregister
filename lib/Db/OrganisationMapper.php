@@ -585,21 +585,6 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	}//end findList()
 
 	/**
-	 * Find organisations by name with pagination
-	 *
-	 * @param string $name The name pattern to search for
-	 * @param int $limit Maximum number of results to return
-	 * @param int $offset Number of results to skip
-	 *
-	 * @return Organisation[]
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
-	 */
-	public function findByName(string $name, int $limit = 50, int $offset = 0): array {
-		return $this->findListByName(name: $name, query: new ListQuery(limit: $limit, offset: $offset));
-	}//end findByName()
-
-	/**
 	 * Find the organisations whose name contains a pattern, one page at a time.
 	 *
 	 * @param string    $name  The name pattern to search for.

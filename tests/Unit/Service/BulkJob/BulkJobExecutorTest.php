@@ -30,6 +30,7 @@ namespace Unit\Service\BulkJob;
 
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
@@ -46,6 +47,7 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
@@ -210,9 +212,9 @@ final class BulkJobExecutorTest extends TestCase {
 		$action->method('getGuards')->willReturn($guards);
 		$action->method('requiresJustification')->willReturn(false);
 		$action->method('apply')->willReturnCallback(
-			function (ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null) use ($result, &$calls): BulkActionResult {
+			function (BulkStep $step) use ($result, &$calls): BulkActionResult {
 				if ($calls !== null) {
-					$calls[] = ['uuid' => $object->getUuid(), 'commit' => $commit];
+					$calls[] = ['uuid' => $step->object->getUuid(), 'commit' => $step->commit];
 				}
 
 				return ($result ?? BulkActionResult::applied());
@@ -444,14 +446,14 @@ final class BulkJobExecutorTest extends TestCase {
 
 		$context = null;
 		$this->auditTrailMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (ObjectEntity $object, string $action, array $ctx = [], ?string $actorId = null, ?string $actorName = null) use (&$context) {
 					$context = ['action' => $action, 'context' => $ctx, 'actor' => $actorId];
 
 					return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
 				}
-			);
+			));
 
 		$this->executor()->processBatch($job, 25);
 

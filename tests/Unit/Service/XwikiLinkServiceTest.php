@@ -32,6 +32,7 @@ namespace Unit\Service;
 
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Db\XwikiLinkMapper;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
@@ -227,7 +228,7 @@ class XwikiLinkServiceTest extends TestCase {
 
 		$this->provider->expects($this->once())
 			->method('create')
-			->with('1', '2', 'obj-1', ['space' => 'Sales', 'title' => 'New Page'])
+			->with(new ObjectRef(register: '1', schema: '2', id: 'obj-1'), ['space' => 'Sales', 'title' => 'New Page'])
 			->willReturn(
 				[
 					'reference' => 'Sales.NewPage',
@@ -314,7 +315,7 @@ class XwikiLinkServiceTest extends TestCase {
 
 		$this->provider->expects($this->once())
 			->method('list')
-			->with('', '', '', ['_search' => 'hand'])
+			->with(new ObjectRef(register: '', schema: '', id: ''), ['_search' => 'hand'])
 			->willReturn(
 				[
 					['reference' => 'Departments.Legal.Handbook', 'title' => 'Handbook', 'space' => 'Departments.Legal', 'url' => 'https://wiki/x'],
@@ -364,7 +365,7 @@ class XwikiLinkServiceTest extends TestCase {
 
 		$this->provider->expects($this->once())
 			->method('list')
-			->with('', '', '', ['_limit' => 10, '_page' => 1, '_search' => 'passport'])
+			->with(new ObjectRef(register: '', schema: '', id: ''), ['_limit' => 10, '_page' => 1, '_search' => 'passport'])
 			->willReturn(
 				[
 					['reference' => 'Kennisbank.Paspoort', 'title' => 'Paspoort', 'space' => 'Kennisbank', 'url' => 'https://wiki/p'],
@@ -387,7 +388,7 @@ class XwikiLinkServiceTest extends TestCase {
 		// Limit clamped 9999 -> 100, offset clamped -5 -> 0, so page = 1.
 		$this->provider->expects($this->once())
 			->method('list')
-			->with('', '', '', ['_limit' => 100, '_page' => 1])
+			->with(new ObjectRef(register: '', schema: '', id: ''), ['_limit' => 100, '_page' => 1])
 			->willReturn([]);
 
 		$result = $this->service->searchPages(new ListQuery(limit: 9999, offset: -5, search: null));

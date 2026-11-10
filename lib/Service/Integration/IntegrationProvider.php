@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 /**
  * Provider contract for pluggable integrations.
  *
@@ -205,9 +206,7 @@ interface IntegrationProvider {
 	 * counted/paged store, because the flat-list fallback sets
 	 * `total = count(items)`, which disables frontend load-more.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Optional list filters.
 	 *
 	 * @return array<int,array<string,mixed>>|array<string,mixed> Flat list
@@ -216,7 +215,7 @@ interface IntegrationProvider {
 	 * @spec exclude Interface method declaration — pure contract shape; the behaviour lives in the implementing
 	 *              providers (annotated to their integration-* change / pluggable-integration-registry task-1).
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array;
+	public function list(ObjectRef $ref, array $filters = []): array;
 
 	/**
 	 * Get a single linked thing by id.
@@ -230,9 +229,7 @@ interface IntegrationProvider {
 	 * list-only providers; the registry surfaces the failure via the
 	 * widget's empty state.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Linked-thing id.
 	 *
 	 * @return array<string,mixed> The linked thing.
@@ -240,7 +237,7 @@ interface IntegrationProvider {
 	 * @spec exclude Interface method declaration — pure contract shape; the behaviour lives in the implementing
 	 *              providers (annotated to their integration-* change / pluggable-integration-registry task-1).
 	 */
-	public function get(string $register, string $schema, string $objectId, string $entityId): array;
+	public function get(ObjectRef $ref, string $entityId): array;
 
 	/**
 	 * Create / attach a new linked thing.
@@ -248,9 +245,7 @@ interface IntegrationProvider {
 	 * Providers with `storage='query-time'` MUST throw
 	 * NotImplementedException — there is no local store to write to.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload New linked-thing fields.
 	 *
 	 * @return array<string,mixed> The created linked thing.
@@ -258,7 +253,7 @@ interface IntegrationProvider {
 	 * @spec exclude Interface method declaration — pure contract shape; the behaviour lives in the implementing
 	 *              providers (annotated to their integration-* change / pluggable-integration-registry task-1).
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array;
+	public function create(ObjectRef $ref, array $payload): array;
 
 	/**
 	 * Update a linked thing.
@@ -266,9 +261,7 @@ interface IntegrationProvider {
 	 * Providers with `storage='query-time'` MUST throw
 	 * NotImplementedException.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Linked-thing id.
 	 * @param array<string,mixed> $payload Update payload.
 	 *
@@ -277,7 +270,7 @@ interface IntegrationProvider {
 	 * @spec exclude Interface method declaration — pure contract shape; the behaviour lives in the implementing
 	 *              providers (annotated to their integration-* change / pluggable-integration-registry task-1).
 	 */
-	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array;
+	public function update(ObjectRef $ref, string $entityId, array $payload): array;
 
 	/**
 	 * Delete / unlink a linked thing.
@@ -285,9 +278,7 @@ interface IntegrationProvider {
 	 * Providers with `storage='query-time'` MUST throw
 	 * NotImplementedException.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Linked-thing id.
 	 *
 	 * @return void
@@ -295,7 +286,7 @@ interface IntegrationProvider {
 	 * @spec exclude Interface method declaration — pure contract shape; the behaviour lives in the implementing
 	 *              providers (annotated to their integration-* change / pluggable-integration-registry task-1).
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void;
+	public function delete(ObjectRef $ref, string $entityId): void;
 
 	/**
 	 * Health + auth status for display in admin UI and OCS capabilities.

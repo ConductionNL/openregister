@@ -255,13 +255,6 @@ class ObjectsProvider implements IFilteringProvider {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
 	 */
 	public function search(IUser $user, ISearchQuery $query): SearchResult {
-		/*
-		 * @var string|null $search
-		 */
-
-		$search = $query->getFilter('term')?->get();
-		$searchQuery = $this->buildBaseQuery(query: $query, search: $search);
-
 		$target = $this->resolveSchemaTarget(query: $query);
 		if ($target === null) {
 			return SearchResult::complete(
@@ -270,35 +263,8 @@ class ObjectsProvider implements IFilteringProvider {
 			);
 		}
 
-		if ($target['schema'] !== null) {
-			$searchQuery['@self']['schema'] = $target['schema'];
-		}
-
-		$schemaChunks = $target['chunks'];
-		$searchQuery = $this->withCreatedRange(searchQuery: $searchQuery, query: $query);
-		[$limit, $offset] = $this->pageWindow(query: $query);
-
-		$this->output->logger->debug(
-			message: '[ObjectsProvider] OpenRegister search requested',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'search_query' => $searchQuery,
-				'has_search' => empty($search) === false,
-				'limit' => $limit,
-				'offset' => $offset,
-				'schema_chunks' => count($schemaChunks),
-			]
-		);
-
-		// Widen the match to text OpenRegister has already extracted from
-		// attached files (ZKN-CONTENT-001), so a term that appears only inside
-		// an attached PDF is found. Safe because `QueryHandler` forwards `_rbac`
-		// and `_multitenancy` into `augmentWithChunkMatches()`: a chunk hit on an
-		// object the caller may not read is filtered by the same pipeline that
-		// filters a metadata hit. The row appended is the OWNING OBJECT, which
-		// has a deep-link URL, an icon and a title; a bare chunk would not.
-		$searchQuery['_content_search'] = true;
+		$page = $this->requestedPage(query: $query, schema: $target['schema']);
+		$this->logSearchRequested(page: $page, schemaChunks: $target['chunks']);
 
 		// Delegate to the OR search pipeline, one call per schema chunk.
 		// RBAC, tenant isolation, the published predicate, and soft-delete
@@ -306,42 +272,149 @@ class ObjectsProvider implements IFilteringProvider {
 		// access filter. A chunk that fails is logged as an error and
 		// skipped, so the top-bar search never errors out and never blanks
 		// the section for one broken table.
-		$searchResults = $this->searchChunks(
-			query: new ListQuery(limit: $limit, offset: $offset, filters: $searchQuery),
-			schemaChunks: $schemaChunks
-		);
+		$searchResults = $this->searchChunks(query: $this->withContentSearch(page: $page), schemaChunks: $target['chunks']);
+		$entries = $this->formatEntries(results: $searchResults['results'], term: $page->search);
+		$this->logSearchCompleted(entries: $entries, total: $searchResults['total']);
 
-		$searchResultEntries = [];
-		foreach ($searchResults['results'] as $result) {
-			$searchResultEntries[] = $this->output->resultFormatter->format(result: $result, term: $search);
+		return $this->resultPage(entries: $entries, page: $page);
+	}//end search()
+
+	/**
+	 * The requested page: the pipeline query for the term, register, schema and
+	 * created range, the page window, and the term itself.
+	 *
+	 * @param ISearchQuery $query  The search query from Nextcloud
+	 * @param mixed        $schema The explicit schema filter, or null for none
+	 *
+	 * @return ListQuery The page window; its filters are the pipeline query and its search is the term.
+	 */
+	private function requestedPage(ISearchQuery $query, mixed $schema): ListQuery {
+		/*
+		 * @var string|null $search
+		 */
+
+		$search = $query->getFilter('term')?->get();
+		$searchQuery = $this->buildBaseQuery(query: $query, search: $search);
+		if ($schema !== null) {
+			$searchQuery['@self']['schema'] = $schema;
 		}
 
+		$searchQuery = $this->withCreatedRange(searchQuery: $searchQuery, query: $query);
+		[$limit, $offset] = $this->pageWindow(query: $query);
+
+		return new ListQuery(limit: $limit, offset: $offset, filters: $searchQuery, search: $search);
+	}//end requestedPage()
+
+	/**
+	 * Log the search about to run.
+	 *
+	 * @param ListQuery              $page         The requested page
+	 * @param array<int, int[]|null> $schemaChunks The schema chunks it fans out over
+	 *
+	 * @return void
+	 */
+	private function logSearchRequested(ListQuery $page, array $schemaChunks): void {
+		$this->output->logger->debug(
+			message: '[ObjectsProvider] OpenRegister search requested',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'search_query' => $page->filters,
+				'has_search' => empty($page->search) === false,
+				'limit' => $page->limit,
+				'offset' => $page->offset,
+				'schema_chunks' => count($schemaChunks),
+			]
+		);
+	}//end logSearchRequested()
+
+	/**
+	 * The page the pipeline runs: the requested page, widened to file content.
+	 *
+	 * Widen the match to text OpenRegister has already extracted from
+	 * attached files (ZKN-CONTENT-001), so a term that appears only inside
+	 * an attached PDF is found. Safe because `QueryHandler` forwards `_rbac`
+	 * and `_multitenancy` into `augmentWithChunkMatches()`: a chunk hit on an
+	 * object the caller may not read is filtered by the same pipeline that
+	 * filters a metadata hit. The row appended is the OWNING OBJECT, which
+	 * has a deep-link URL, an icon and a title; a bare chunk would not.
+	 *
+	 * @param ListQuery $page The requested page
+	 *
+	 * @return ListQuery The page window with the content-search flag, without the term.
+	 */
+	private function withContentSearch(ListQuery $page): ListQuery {
+		$searchQuery = $page->filters;
+		$searchQuery['_content_search'] = true;
+
+		return new ListQuery(limit: $page->limit, offset: $page->offset, filters: $searchQuery);
+	}//end withContentSearch()
+
+	/**
+	 * Format the pipeline rows as Nextcloud search entries.
+	 *
+	 * @param array<int, mixed> $results The pipeline rows
+	 * @param string|null       $term    The search term
+	 *
+	 * @return array<int, mixed> The search entries
+	 */
+	private function formatEntries(array $results, ?string $term): array {
+		$searchResultEntries = [];
+		foreach ($results as $result) {
+			$searchResultEntries[] = $this->output->resultFormatter->format(result: $result, term: $term);
+		}
+
+		return $searchResultEntries;
+	}//end formatEntries()
+
+	/**
+	 * Log the finished search.
+	 *
+	 * @param array<int, mixed> $entries The search entries
+	 * @param int               $total   The summed pipeline total
+	 *
+	 * @return void
+	 */
+	private function logSearchCompleted(array $entries, int $total): void {
 		$this->output->logger->debug(
 			message: '[ObjectsProvider] OpenRegister search completed',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'results_count' => count($searchResultEntries),
-				'total_results' => $searchResults['total'],
+				'results_count' => count($entries),
+				'total_results' => $total,
 			]
 		);
+	}//end logSearchCompleted()
 
-		// A full page implies there may be more; hand back a paginated
-		// result carrying the next offset as the cursor. A short or empty
-		// page completes the result.
-		if (count($searchResultEntries) >= $limit) {
+	/**
+	 * The search result for one page of entries.
+	 *
+	 * A full page implies there may be more; hand back a paginated
+	 * result carrying the next offset as the cursor. A short or empty
+	 * page completes the result.
+	 *
+	 * @param array<int, mixed> $entries The search entries
+	 * @param ListQuery         $page    The requested page
+	 *
+	 * @return SearchResult
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SearchResult::paginated/complete is standard Nextcloud search pattern
+	 */
+	private function resultPage(array $entries, ListQuery $page): SearchResult {
+		if (count($entries) >= $page->limit) {
 			return SearchResult::paginated(
 				$this->getSectionName(),
-				$searchResultEntries,
-				($offset + $limit)
+				$entries,
+				(($page->offset ?? 0) + $page->limit)
 			);
 		}
 
 		return SearchResult::complete(
 			name: $this->getSectionName(),
-			entries: $searchResultEntries
+			entries: $entries
 		);
-	}//end search()
+	}//end resultPage()
 
 	/**
 	 * The pipeline query for the search term and the register filter.

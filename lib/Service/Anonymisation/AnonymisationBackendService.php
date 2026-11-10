@@ -295,12 +295,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 			case BackendState::METHOD_LLM:
 			default:
 				// LLM is deferred: report not-configured. Unknown methods behave the same.
-				return new ProbeResult(
-					reachable: false,
-					latencyMs: null,
-					error: ProbeResult::ERROR_NOT_CONFIGURED,
-					probedAt: $this->now(),
-				);
+				return $this->unreachable(error: ProbeResult::ERROR_NOT_CONFIGURED);
 		}//end switch
 	}//end freshProbe()
 
@@ -315,12 +310,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	private function detectOpenAnonymiser(): ProbeResult {
 		// AppAPI must be present for any ExApp detection.
 		if ($this->appManager->isEnabledForUser(self::APP_API) === false) {
-			return new ProbeResult(
-				reachable: false,
-				latencyMs: null,
-				error: ProbeResult::ERROR_APPAPI_MISSING,
-				probedAt: $this->now(),
-			);
+			return $this->unreachable(error: ProbeResult::ERROR_APPAPI_MISSING);
 		}
 
 		$fullEnabled = $this->appManager->isEnabledForUser(self::EXAPP_FULL);
@@ -334,23 +324,24 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 			return new ProbeResult(reachable: true, latencyMs: 0, error: null, probedAt: $this->now());
 		}
 
-		// Not enabled: distinguish installed-but-disabled from not-installed.
+		return $this->unreachable(error: $this->exAppAbsenceError());
+	}//end detectOpenAnonymiser()
+
+	/**
+	 * Why no OpenAnonymiser variant is enabled: installed-but-disabled, or not installed.
+	 *
+	 * @return string ProbeResult::ERROR_EXAPP_DISABLED or ProbeResult::ERROR_EXAPP_NOT_INSTALLED.
+	 */
+	private function exAppAbsenceError(): string {
 		$anyInstalled = ($this->appManager->isInstalled(self::EXAPP_FULL) === true
 			|| $this->appManager->isInstalled(self::EXAPP_LIGHT) === true);
 
 		if ($anyInstalled === true) {
-			$error = ProbeResult::ERROR_EXAPP_DISABLED;
-		} else {
-			$error = ProbeResult::ERROR_EXAPP_NOT_INSTALLED;
+			return ProbeResult::ERROR_EXAPP_DISABLED;
 		}
 
-		return new ProbeResult(
-			reachable: false,
-			latencyMs: null,
-			error: $error,
-			probedAt: $this->now(),
-		);
-	}//end detectOpenAnonymiser()
+		return ProbeResult::ERROR_EXAPP_NOT_INSTALLED;
+	}//end exAppAbsenceError()
 
 	/**
 	 * Resolve the app id of the active OpenAnonymiser ExApp.
@@ -495,54 +486,76 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 		$endpoint = trim((string)($settings['presidioApiEndpoint'] ?? ''));
 
 		if ($endpoint === '') {
-			return new ProbeResult(
-				reachable: false,
-				latencyMs: null,
-				error: ProbeResult::ERROR_NOT_CONFIGURED,
-				probedAt: $this->now(),
-			);
+			return $this->unreachable(error: ProbeResult::ERROR_NOT_CONFIGURED);
 		}
 
 		$start = microtime(true);
 		try {
-			$client = $this->clientService->newClient();
-			$response = $client->get(
-				rtrim($endpoint, '/') . '/health',
-				[
-					'timeout' => 10,
-					'connect_timeout' => 5,
-					'nextcloud' => ['allow_local_address' => true],
-				]
-			);
+			$response = $this->requestPresidioHealth(endpoint: $endpoint);
+			$latency  = (int)round((microtime(true) - $start) * 1000);
 
-			$latency = (int)round((microtime(true) - $start) * 1000);
-			$statusCode = $response->getStatusCode();
-
-			if ($statusCode >= 200 && $statusCode < 300) {
-				return new ProbeResult(reachable: true, latencyMs: $latency, error: null, probedAt: $this->now());
-			}
-
-			if ($statusCode >= 500) {
-				$error = ProbeResult::ERROR_HTTP_5XX;
-			} else {
-				$error = ProbeResult::ERROR_HTTP_4XX;
-			}
-
-			return new ProbeResult(
-				reachable: false,
-				latencyMs: $latency,
-				error: $error,
-				probedAt: $this->now(),
-			);
+			return $this->presidioHealthResult(latency: $latency, statusCode: $response->getStatusCode());
 		} catch (Throwable $e) {
-			return new ProbeResult(
-				reachable: false,
-				latencyMs: null,
-				error: $this->mapHttpException(message: $e->getMessage()),
-				probedAt: $this->now(),
-			);
-		}//end try
+			return $this->unreachable(error: $this->mapHttpException(message: $e->getMessage()));
+		}
 	}//end probePresidio()
+
+	/**
+	 * Ask the Presidio endpoint for its health.
+	 *
+	 * @param string $endpoint The configured endpoint, trimmed and non-empty.
+	 *
+	 * @return IResponse The health answer.
+	 */
+	private function requestPresidioHealth(string $endpoint): IResponse {
+		$client = $this->clientService->newClient();
+
+		return $client->get(
+			rtrim($endpoint, '/') . '/health',
+			[
+				'timeout' => 10,
+				'connect_timeout' => 5,
+				'nextcloud' => ['allow_local_address' => true],
+			]
+		);
+	}//end requestPresidioHealth()
+
+	/**
+	 * Read a Presidio health answer: reachable on a 2xx, else a 5xx or 4xx error, with the latency either way.
+	 *
+	 * @param int $latency    The round trip in milliseconds.
+	 * @param int $statusCode The HTTP status of the answer.
+	 *
+	 * @return ProbeResult The probe result.
+	 */
+	private function presidioHealthResult(int $latency, int $statusCode): ProbeResult {
+		if ($statusCode >= 200 && $statusCode < 300) {
+			return new ProbeResult(reachable: true, latencyMs: $latency, error: null, probedAt: $this->now());
+		}
+
+		if ($statusCode >= 500) {
+			return $this->unreachable(error: ProbeResult::ERROR_HTTP_5XX, latencyMs: $latency);
+		}
+
+		return $this->unreachable(error: ProbeResult::ERROR_HTTP_4XX, latencyMs: $latency);
+	}//end presidioHealthResult()
+
+	/**
+	 * An unreachable probe result, probed now.
+	 *
+	 * @param string   $error     One of the ProbeResult::ERROR_* codes.
+	 * @param int|null $latencyMs The round trip when the backend answered, else null.
+	 *
+	 * @return ProbeResult The probe result.
+	 */
+	private function unreachable(string $error, ?int $latencyMs = null): ProbeResult {
+		return new ProbeResult(
+			reachable: false,
+			latencyMs: $latencyMs,
+			error: $error,
+			probedAt: $this->now(),
+		);
+	}//end unreachable()
 
 	/**
 	 * Compose a hybrid probe result from its constituent backends.

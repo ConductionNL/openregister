@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
@@ -69,10 +70,10 @@ class UserTaskNodeOutsideARunBehaviourTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('openregister.user-task cannot create a task outside a persisted run');
 
-		$node->execute(
-			[FlowItems::item(json: ['name' => 'Case 7'])],
-			['title' => 'Approve {{ name }}', 'assignee' => 'alice'],
-			[FlowResumeState::CONTEXT_KEY => $state, FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'ask'), 'runUuid' => ' ', 'runAs' => 'owner']
-		);
+		$node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['name' => 'Case 7'])],
+			config: ['title' => 'Approve {{ name }}', 'assignee' => 'alice'],
+			context: [FlowResumeState::CONTEXT_KEY => $state, FlowNodeResumeState::CONTEXT_KEY => $state->forNode(nodeId: 'ask'), 'runUuid' => ' ', 'runAs' => 'owner']
+		));
 	}//end testAnAskOutsideAPersistedRunCreatesNothing()
 }//end class

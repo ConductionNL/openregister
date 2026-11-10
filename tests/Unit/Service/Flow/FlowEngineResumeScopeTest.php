@@ -34,6 +34,7 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
@@ -93,7 +94,10 @@ class ScopedAskStub implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$slot = $context[FlowNodeResumeState::CONTEXT_KEY];
 		$nodeId = $slot->nodeId();
 

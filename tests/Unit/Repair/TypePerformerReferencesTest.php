@@ -30,6 +30,8 @@ namespace Unit\Repair;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Repair\TypePerformerReferences;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
@@ -144,15 +146,8 @@ final class TypePerformerReferencesTest extends TestCase {
 	private function runStep(array $resolvers): void {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('findAllFlows')->willReturnCallback(
-			function (
-				?string $app = null,
-				?string $applicationSlug = null,
-				?string $organisation = null,
-				?bool $enabled = null,
-				int $limit = 100,
-				int $offset = 0,
-			): array {
-				return array_slice($this->flows, $offset, $limit);
+			function (FlowSelection $selection, ListQuery $query): array {
+				return array_slice($this->flows, (int)$query->offset, $query->limit);
 			}
 		);
 		$mapper->method('update')->willReturnCallback(

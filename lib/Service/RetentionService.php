@@ -507,21 +507,6 @@ class RetentionService implements RetentionServiceInterface {
 	}//end validateNotImmutable()
 
 	/**
-	 * Place a legal hold on an object.
-	 *
-	 * @param ObjectEntity $object   The object to place hold on
-	 * @param string       $reason   The reason for the legal hold
-	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
-	 *
-	 * @return ObjectEntity The object with legal hold applied
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	public function placeLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
-		return $this->placeHold(object: $object, order: new HoldOrder(reason: $reason, ownerKey: $ownerKey));
-	}//end placeLegalHold()
-
-	/**
 	 * Place a legal hold on an object, as ordered.
 	 *
 	 * @param ObjectEntity $object The object to place the hold on
@@ -542,21 +527,6 @@ class RetentionService implements RetentionServiceInterface {
 
 		return $object;
 	}//end placeHold()
-
-	/**
-	 * Release a legal hold on an object.
-	 *
-	 * @param ObjectEntity $object   The object to release hold from
-	 * @param string       $reason   The reason for releasing the hold
-	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
-	 *
-	 * @return ObjectEntity The object with legal hold released
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	public function releaseLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
-		return $this->releaseHold(object: $object, order: new HoldOrder(reason: $reason, ownerKey: $ownerKey));
-	}//end releaseLegalHold()
 
 	/**
 	 * Release a legal hold on an object, as ordered.

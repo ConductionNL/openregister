@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db;
 use OCA\OpenRegister\Service\Integration\Providers;
 use OCP\App\IAppManager;
@@ -286,7 +287,7 @@ class LinkRowsListGoldenTest extends TestCase {
 				$this->queries = [];
 				$this->dbMode = $mode;
 				try {
-					$rows = $this->provider($name, $installed, $links)->list('r', 's', 'obj-1', ['q' => 1]);
+					$rows = $this->provider($name, $installed, $links)->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), ['q' => 1]);
 				} catch (\Throwable $e) {
 					$rows = ['thrown' => get_class($e), 'message' => $e->getMessage()];
 				}

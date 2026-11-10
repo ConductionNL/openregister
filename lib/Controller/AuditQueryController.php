@@ -40,6 +40,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Handles GET /api/v2/audit and GET /api/v2/audit/export.
@@ -152,7 +153,7 @@ class AuditQueryController extends Controller {
 		$limit = (int)$this->request->getParam('limit', '50');
 		$offset = (int)$this->request->getParam('offset', '0');
 
-		$result = $this->auditQueryService->query(filters: $filters, limit: $limit, offset: $offset);
+		$result = $this->auditQueryService->query(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
 
 		return new JSONResponse(data: $result);
 	}//end query()
@@ -182,7 +183,7 @@ class AuditQueryController extends Controller {
 		$limit = (int)$this->request->getParam('limit', '200');
 		$offset = (int)$this->request->getParam('offset', '0');
 
-		$result = $this->auditQueryService->query(filters: $filters, limit: $limit, offset: $offset);
+		$result = $this->auditQueryService->query(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
 		$entries = $result['entries'];
 
 		if (strtolower($format) === 'json') {

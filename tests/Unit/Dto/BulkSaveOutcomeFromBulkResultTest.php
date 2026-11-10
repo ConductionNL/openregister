@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Dto;
 
+use OCA\OpenRegister\Dto\BulkRowCount;
 use OCA\OpenRegister\Dto\BulkSaveOutcome;
 use PHPUnit\Framework\TestCase;
 
@@ -32,7 +33,7 @@ final class BulkSaveOutcomeFromBulkResultTest extends TestCase {
 	 * @return void
 	 */
 	public function testACompleteSaveHasNoFailures(): void {
-		$outcome = BulkSaveOutcome::fromBulkResult(['invalid' => 'not-a-list'], 2, 2);
+		$outcome = BulkSaveOutcome::fromSaveResult(['invalid' => 'not-a-list'], new BulkRowCount(2, 2));
 		$this->assertSame(0, $outcome->failedCount());
 		$this->assertSame([], $outcome->failures());
 		$this->assertTrue($outcome->isComplete());
@@ -51,7 +52,7 @@ final class BulkSaveOutcomeFromBulkResultTest extends TestCase {
 				['index' => 'x', 'object' => 'not-a-row'],
 			],
 		];
-		$outcome = BulkSaveOutcome::fromBulkResult($bulk, 2, 0);
+		$outcome = BulkSaveOutcome::fromSaveResult($bulk, new BulkRowCount(2, 0));
 		$this->assertSame(2, $outcome->failedCount());
 		$this->assertSame(
 			[
@@ -72,7 +73,7 @@ final class BulkSaveOutcomeFromBulkResultTest extends TestCase {
 			'invalid' => [['index' => 0, 'object' => [], 'error' => 'no']],
 			'errors' => [['error' => 'db down'], ['type' => 'BulkSafeguardException', 'error' => 'hidden'], 'junk'],
 		];
-		$outcome = BulkSaveOutcome::fromBulkResult($bulk, 5, 1);
+		$outcome = BulkSaveOutcome::fromSaveResult($bulk, new BulkRowCount(5, 1));
 		$this->assertSame(4, $outcome->failedCount());
 		$failures = $outcome->failures();
 		$this->assertCount(2, $failures);
@@ -86,9 +87,9 @@ final class BulkSaveOutcomeFromBulkResultTest extends TestCase {
 			$failures[1]
 		);
 
-		$bare = BulkSaveOutcome::fromBulkResult(['errors' => 'none'], 1, 3);
+		$bare = BulkSaveOutcome::fromSaveResult(['errors' => 'none'], new BulkRowCount(1, 3));
 		$this->assertSame(0, $bare->failedCount());
-		$plain = BulkSaveOutcome::fromBulkResult([], 2, 1);
+		$plain = BulkSaveOutcome::fromSaveResult([], new BulkRowCount(2, 1));
 		$this->assertSame('1 object(s) were not written and the save path recorded no per-object reason.', $plain->failures()[0]['error']);
 	}//end testUnaccountedRowsAreReportedWithBatchErrors()
 }//end class

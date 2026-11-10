@@ -11,6 +11,7 @@ use OCA\OpenRegister\Event\RegistrySubscriptionRequestedEvent;
 use OCA\OpenRegister\Service\Registry\InboundUpdate;
 use OCA\OpenRegister\Service\Registry\RegistryIdentity;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionNotifier;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -59,12 +60,12 @@ class RegistrySubscriptionNotifierTest extends TestCase {
 
 	public function testRequestedWritesAnAuditEntry(): void {
 		$this->auditTrailMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with(
+			->method('recordObjectEvent')
+			->with(AuditTrailEvents::matching([
 				$this->anything(),
 				'registry.subscription.requested',
 				$this->anything(),
-			);
+			]));
 
 		$this->notifier->requested($this->personObject(), new RegistryIdentity('brp', '999990019'));
 	}
@@ -88,14 +89,14 @@ class RegistrySubscriptionNotifierTest extends TestCase {
 		$object = $this->personObject();
 
 		$this->auditTrailMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with(
+			->method('recordObjectEvent')
+			->with(AuditTrailEvents::matching([
 				$object,
 				'registry.update',
 				$this->anything(),
 				'registry:brp',
 				$this->anything(),
-			);
+			]));
 
 		$this->notifier->auditInboundUpdate($object, new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['address' => 'Dam 1'], 'evt-1'));
 	}
