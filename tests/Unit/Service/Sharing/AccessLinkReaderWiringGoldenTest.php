@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderSources;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
@@ -176,7 +177,7 @@ class AccessLinkReaderWiringGoldenTest extends TestCase {
 	public function testAViewLinkIsServedOnlyWithTheViewScopeRequired(): void {
 		$this->objects->expects($this->once())
 			->method('searchObjects')
-			->with(['_limit' => 200], false, false, null, null, ['view-uuid'], true)
+			->with(['_limit' => 200], false, false, $this->equalTo(new SearchOptions(views: ['view-uuid'], viewScopeRequired: true)))
 			->willReturn([$this->object()]);
 
 		$body = $this->reader->read(link: $this->link(AccessLink::SUBJECT_VIEW, 'view-uuid'));

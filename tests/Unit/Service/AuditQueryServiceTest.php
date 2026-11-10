@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\AuditQueryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -99,7 +100,7 @@ class AuditQueryServiceTest extends TestCase {
 
 		$this->objectService->expects($this->once())
 			->method('searchObjectsBySlug')
-			->with(registerSlug: 'procest', schemaSlug: 'aiAuditEntry', filters: [])
+			->with($this->equalTo(new RegisterSchemaRef(register: 'procest', schema: 'aiAuditEntry')), [])
 			->willReturn([$entry]);
 
 		$result = $this->service->query(
@@ -134,7 +135,7 @@ class AuditQueryServiceTest extends TestCase {
 
 		$this->objectService->expects($this->once())
 			->method('searchObjectsBySlug')
-			->with(registerSlug: 'procest', schemaSlug: 'aiAuditEntry', filters: ['objectId' => 'case-uuid'])
+			->with($this->equalTo(new RegisterSchemaRef(register: 'procest', schema: 'aiAuditEntry')), ['objectId' => 'case-uuid'])
 			->willReturn([]);
 
 		$this->service->query(
@@ -273,7 +274,7 @@ class AuditQueryServiceTest extends TestCase {
 		// exposure of every object type).
 		$this->objectService->expects($this->once())
 			->method('searchObjectsBySlug')
-			->with(registerSlug: 'procest', schemaSlug: 'aiAuditEntry', filters: [])
+			->with($this->equalTo(new RegisterSchemaRef(register: 'procest', schema: 'aiAuditEntry')), [])
 			->willReturn([$entry]);
 
 		$result = $this->service->query(filters: [], limit: 50, offset: 0);

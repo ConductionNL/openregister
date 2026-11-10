@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\AuditQueryService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
@@ -100,7 +101,8 @@ class AuditQueryServicePageGoldenTest extends TestCase {
 
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('searchObjectsBySlug')->willReturnCallback(
-			function (string $registerSlug, string $schemaSlug, array $filters = [], bool $_rbac = true, bool $_multitenancy = true) {
+			function (RegisterSchemaRef $target, array $filters = [], bool $_rbac = true, bool $_multitenancy = true) {
+				[$registerSlug, $schemaSlug] = [$target->register, $target->schema];
 				$this->searches[] = $registerSlug . '/' . $schemaSlug . ' ' . json_encode($filters) . ' #' . (int)$_rbac . (int)$_multitenancy;
 				if ($schemaSlug === 'broken') {
 					throw new DoesNotExistException('gone');

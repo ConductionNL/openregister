@@ -93,8 +93,8 @@ class QueryHandlerSearchObjectsPaginatedTest extends TestCase {
 			->onlyMethods(['searchObjectsPaginatedDatabase'])
 			->getMock();
 		$handler->method('searchObjectsPaginatedDatabase')->willReturnCallback(
-			function (array $query, bool $_rbac, bool $_multitenancy, bool $deleted, ?array $ids, ?string $uses) use ($source): array {
-				$this->calls[] = ['query' => $query, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'ids' => $ids, 'uses' => $uses];
+			function (array $query, bool $_rbac, bool $_multitenancy, ObjectSelection $selection) use ($source): array {
+				$this->calls[] = ['query' => $query, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'ids' => $selection->ids, 'uses' => $selection->uses];
 				$self = [];
 				if ($source !== null) {
 					$self['source'] = $source;

@@ -38,7 +38,9 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Db/ListQuery.php',
 		'Db/RegisterSchema.php',
 		'Kernel/Contracts/ObjectRef.php',
+		'Kernel/Contracts/ObjectSelection.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/SearchOptions.php',
 	];
 
 	/**
@@ -48,7 +50,9 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	 */
 	private const KERNEL_LEAVES = [
 		'Kernel/Contracts/ObjectRef.php',
+		'Kernel/Contracts/ObjectSelection.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/SearchOptions.php',
 	];
 
 	/**
@@ -184,7 +188,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	}//end testTheChecksAcceptAWellFormedClass()
 
 	/**
-	 * The offenders of one source check across the five classes.
+	 * The offenders of one source check across the listed classes.
 	 *
 	 * @param string $check The name of the check method.
 	 *

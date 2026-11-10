@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -49,8 +50,8 @@ class ExportServiceSelectedIdsTest extends TestCase {
 		$captured = ['unset'];
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('searchObjects')->willReturnCallback(
-			static function (array $query, bool $_rbac = true, bool $_multitenancy = true, ?array $ids = null) use (&$captured): array {
-				$captured = $ids;
+			static function (array $query, bool $_rbac = true, bool $_multitenancy = true, SearchOptions $options = new SearchOptions()) use (&$captured): array {
+				$captured = $options->selection->ids;
 				return [];
 			}
 		);

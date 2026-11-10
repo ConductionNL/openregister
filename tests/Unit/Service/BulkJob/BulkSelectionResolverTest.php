@@ -28,6 +28,7 @@ namespace Unit\Service\BulkJob;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -64,8 +65,8 @@ class BulkSelectionResolverTest extends TestCase {
 		$this->objects = $this->createMock(ObjectOperationsInterface::class);
 		$this->logger  = $this->createMock(LoggerInterface::class);
 		$this->objects->method('searchObjects')->willReturnCallback(
-			function (array $query=[], bool $_rbac=true, bool $_multitenancy=true, ?array $ids=null): array|int {
-				$this->calls[] = [$query, $ids, $_rbac, $_multitenancy];
+			function (array $query=[], bool $_rbac=true, bool $_multitenancy=true, SearchOptions $options=new SearchOptions()): array|int {
+				$this->calls[] = [$query, $options->selection->ids, $_rbac, $_multitenancy];
 				return $this->answer;
 			}
 		);
