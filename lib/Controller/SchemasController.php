@@ -62,6 +62,7 @@ use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaTeardownInterface;
@@ -1404,11 +1405,13 @@ class SchemasController extends Controller {
 
 		$changeSet = $this->schemaVersioningService->classify(
 			existing: $existing,
-			newDefinition: [
-				'properties' => ($data['properties'] ?? $existing->getProperties() ?? []),
-				'required' => ($data['required'] ?? $existing->getRequired() ?? []),
-			],
-			renames: $renames
+			incoming: new IncomingDefinition(
+				definition: [
+					'properties' => ($data['properties'] ?? $existing->getProperties() ?? []),
+					'required' => ($data['required'] ?? $existing->getRequired() ?? []),
+				],
+				renames: $renames
+			)
 		);
 
 		try {
