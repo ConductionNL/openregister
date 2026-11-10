@@ -29,8 +29,7 @@ namespace OCA\OpenRegister\Service\Edepot;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Configuration\AppSettingsAccess;
 
 /**
  * The checks that stand between an object and a document.
@@ -49,14 +48,12 @@ class MdtoPreconditions {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig $appConfig The app configuration for organisation settings.
-	 * @param LoggerInterface $logger Logger for error and warning messages.
-	 * @param MdtoInputReaders $readers The readers of what an object can supply.
+	 * @param MdtoInputReaders  $readers  The readers of what an object can supply.
+	 * @param AppSettingsAccess $settings The organisation settings, and the log for errors and warnings.
 	 */
 	public function __construct(
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
 		private readonly MdtoInputReaders $readers,
+		private readonly AppSettingsAccess $settings,
 	) {
 	}//end __construct()
 
@@ -188,7 +185,7 @@ class MdtoPreconditions {
 			return;
 		}
 
-		$this->logger->warning(
+		$this->settings->logger->warning(
 			message: '[MdtoXmlGenerator] Required MDTO elements carry the standard\'s "not recorded" term',
 			context: ['objectUuid' => $object->getUuid(), 'gaps' => $gaps]
 		);
@@ -207,7 +204,7 @@ class MdtoPreconditions {
 	 */
 	private function refuseGeneration(ObjectEntity $object, array $missing): never {
 		$missingStr = implode(', ', $missing);
-		$this->logger->error(
+		$this->settings->logger->error(
 			message: '[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: ' . $missingStr,
 			context: ['objectUuid' => $object->getUuid()]
 		);
@@ -261,7 +258,7 @@ class MdtoPreconditions {
 		}
 
 		$missing = array_merge($missing, self::missingFacts(facts: $this->readers->sourceReader->coreFacts(object: $object)));
-		if ($this->appConfig->getValueString('openregister', 'organisation_identifier', '') === '') {
+		if ($this->settings->appConfig->getValueString('openregister', 'organisation_identifier', '') === '') {
 			$missing[] = 'app_setting:organisation_identifier';
 		}
 

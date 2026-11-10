@@ -33,18 +33,32 @@ use OCP\IUserSession;
  */
 final class AuditQueryControllerServices {
 	/**
+	 * Active user session for the admin gate.
+	 *
+	 * @var IUserSession
+	 */
+	public readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for the admin gate.
+	 *
+	 * @var IGroupManager
+	 */
+	public readonly IGroupManager $groupManager;
+
+	/**
 	 * Bundle the services.
 	 *
+	 * @param SessionPrincipal $principal The session and group manager, kept as userSession and groupManager.
 	 * @param AuditQueryServiceInterface $auditQueryService Cross-schema audit-entry query service.
-	 * @param IUserSession $userSession Active user session for the admin gate.
-	 * @param IGroupManager $groupManager Group manager for the admin gate.
 	 *
 	 * @spec openspec/changes/public-audit-query-endpoint/tasks.md#task-2.1
 	 */
 	public function __construct(
+		SessionPrincipal $principal,
 		public readonly AuditQueryServiceInterface $auditQueryService,
-		public readonly IUserSession $userSession,
-		public readonly IGroupManager $groupManager,
 	) {
+		$this->userSession  = $principal->userSession;
+		$this->groupManager = $principal->groupManager;
 	}//end __construct()
 }//end class
