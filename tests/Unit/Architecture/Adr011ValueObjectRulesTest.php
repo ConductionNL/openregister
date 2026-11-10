@@ -37,6 +37,8 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	private const VALUE_OBJECTS = [
 		'Db/ListQuery.php',
 		'Db/RegisterSchema.php',
+		'Kernel/Contracts/DeckPlacement.php',
+		'Kernel/Contracts/MassValidationRequest.php',
 		'Kernel/Contracts/ContactDetails.php',
 		'Kernel/Contracts/KeywordChunkSearch.php',
 		'Kernel/Contracts/LinkedTaskDraft.php',
@@ -47,6 +49,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/RegisterSchemaRef.php',
 		'Kernel/Contracts/ReportCaller.php',
 		'Kernel/Contracts/ScheduledReportUpdate.php',
+		'Kernel/Contracts/TemplateRendering.php',
 		'Kernel/Contracts/TaskLocation.php',
 		'Kernel/Contracts/TimerSubjectRef.php',
 	];
@@ -57,6 +60,8 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	 * @var array<int, string>
 	 */
 	private const KERNEL_LEAVES = [
+		'Kernel/Contracts/DeckPlacement.php',
+		'Kernel/Contracts/MassValidationRequest.php',
 		'Kernel/Contracts/ContactDetails.php',
 		'Kernel/Contracts/KeywordChunkSearch.php',
 		'Kernel/Contracts/LinkedTaskDraft.php',
@@ -67,6 +72,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/RegisterSchemaRef.php',
 		'Kernel/Contracts/ReportCaller.php',
 		'Kernel/Contracts/ScheduledReportUpdate.php',
+		'Kernel/Contracts/TemplateRendering.php',
 		'Kernel/Contracts/RelationDecisionUpdate.php',
 		'Kernel/Contracts/TaskLocation.php',
 		'Kernel/Contracts/TimerAnchorMove.php',
