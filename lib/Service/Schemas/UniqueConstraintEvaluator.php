@@ -258,20 +258,20 @@ class UniqueConstraintEvaluator implements UniqueConstraintEvaluatorInterface {
 	 * The breach, in words, naming the combination and the conflicting object.
 	 *
 	 * @param array{name:string,properties:array<int,string>,action:string} $constraint The constraint.
-	 * @param array<string,mixed> $object The submitted object data.
-	 * @param string|null $conflictingId The uuid of an object already holding the combination.
+	 * @param UniqueConflict $conflict The submitted object data and who holds the combination already.
 	 *
 	 * @return string The message.
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
-	public function describeBreach(array $constraint, array $object, ?string $conflictingId): string {
+	public function describeBreach(array $constraint, UniqueConflict $conflict): string {
 		$message = sprintf(
 			'The combination %s (%s) is already in use.',
 			implode(' and ', $constraint['properties']),
-			$this->pairsOf(properties: $constraint['properties'], object: $object)
+			$this->pairsOf(properties: $constraint['properties'], object: $conflict->object)
 		);
 
+		$conflictingId = $conflict->conflictingId;
 		if ($conflictingId !== null && $conflictingId !== '') {
 			$message .= ' It is held by object ' . $conflictingId . '.';
 		}

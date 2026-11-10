@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Credential;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Event\CredentialRelinkRequiredEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
@@ -464,10 +465,12 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 		);
 
 		$this->steps->relinkNotifier->announce(
-			credentialId: $credentialId,
-			provider: (string)($credential['provider'] ?? ''),
-			owner: (string)($credential['owner'] ?? ''),
-			reason: $reason
+			event: new CredentialRelinkRequiredEvent(
+				credentialId: $credentialId,
+				provider: (string)($credential['provider'] ?? ''),
+				owner: (string)($credential['owner'] ?? ''),
+				reason: $reason
+			)
 		);
 	}//end markRelinkNeeded()
 

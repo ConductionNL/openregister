@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
@@ -111,7 +112,9 @@ final class OutdatedTranslations {
 			return;
 		}
 
-		$this->status->markDerivedTranslationsOutdated(objectUuid: (string)$run->updated->getUuid(), property: (string)$property, sourceLanguage: $source);
+		$this->status->markDerivedTranslationsOutdated(
+			source: new TranslationSlot(objectUuid: (string)$run->updated->getUuid(), property: (string)$property, language: $source)
+		);
 	}//end flagProperty()
 
 	/**

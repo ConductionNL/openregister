@@ -125,11 +125,26 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 		array $context = [],
 		array $roleGroups = [],
 	): array {
-		return $this->resolveFrom(
-			recipientsSpec: $recipientsSpec,
-			source: new RecipientSource(data: $data, object: $object, context: $context, roleGroups: $roleGroups)
-		);
+		$source = new RecipientSource(data: $data, object: $object, context: $context, roleGroups: $roleGroups);
+
+		return $this->resolveFromSource(recipientsSpec: $recipientsSpec, source: $source);
 	}//end resolveWithDiagnostics()
+
+	/**
+	 * Resolve a recipients spec against one source, and say which entries resolved to nobody.
+	 *
+	 * The outcome of {@see resolveWithDiagnostics()}, for a caller that holds the source.
+	 *
+	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
+	 * @param RecipientSource   $source         The object, its data, the trigger context and the role assignment.
+	 *
+	 * @return array{uids: array<int, string>, unresolved: array<int, array{kind: string, id: string, reason: string}>}
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-group-or-a-declared-role-is-a-recipient-req-nrg-001
+	 */
+	public function resolveFromSource(array $recipientsSpec, RecipientSource $source): array {
+		return $this->resolveFrom(recipientsSpec: $recipientsSpec, source: $source);
+	}//end resolveFromSource()
 
 	/**
 	 * Resolve a recipients spec against one source, with the entries that resolved to nobody.

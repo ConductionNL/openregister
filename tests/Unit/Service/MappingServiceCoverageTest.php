@@ -237,7 +237,7 @@ class MappingServiceCoverageTest extends TestCase {
 		$mapping = $this->createMapping(['arr' => 'val'], [], ['arr' => 'array']);
 		$result = $this->service->executeMapping($mapping, ['val' => 'test']);
 
-		$this->assertIsArray($result['arr']);
+		$this->assertSame(['test'], $result['arr']);
 	}
 
 	public function testCastToJson(): void {
@@ -468,8 +468,12 @@ class MappingServiceCoverageTest extends TestCase {
 
 		$this->cache->method('get')->with('test-id')->willReturn($cachedData);
 
+		$this->mappingMapper->expects($this->never())->method('find');
+
 		$result = $this->service->getMapping('test-id');
 		$this->assertInstanceOf(Mapping::class, $result);
+		$this->assertSame('test-mapping', $result->getName());
+		$this->assertSame(['a' => 'b'], $result->getMapping());
 	}
 
 	// =========================================================================
@@ -497,8 +501,8 @@ class MappingServiceCoverageTest extends TestCase {
 	// =========================================================================
 
 	public function testGetMappings(): void {
-		$this->mappingMapper->method('findAll')->willReturn([]);
+		$this->mappingMapper->expects($this->once())->method('findAll')->willReturn([]);
 		$result = $this->service->getMappings();
-		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 	}
 }

@@ -41,8 +41,7 @@ namespace OCA\OpenRegister\Service\Vocabulary;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use Throwable;
 
@@ -93,14 +92,12 @@ class ConceptRepository implements ConceptRepositoryInterface {
 	/**
 	 * Constructor.
 	 *
+	 * @param SchemaCatalogInterface     $catalog Resolves the vocabulary register and its conceptScheme and concept schemas.
 	 * @param MagicObjectSearchInterface $objects Reads objects out of a register/schema table.
-	 * @param RegisterMapperInterface $registers Resolves the vocabulary register.
-	 * @param SchemaMapperInterface $schemas Resolves the conceptScheme and concept schemas.
 	 */
 	public function __construct(
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly MagicObjectSearchInterface $objects,
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
 	) {
 
 	}//end __construct()
@@ -122,17 +119,17 @@ class ConceptRepository implements ConceptRepositoryInterface {
 		$this->resolutionAttempted = true;
 
 		try {
-			$register = $this->registers->find(
+			$register = $this->catalog->registers()->find(
 				id: VocabularyImportService::REGISTER,
 				_rbac: false,
 				_multitenancy: false
 			);
-			$scheme = $this->schemas->find(
+			$scheme = $this->catalog->schemas()->find(
 				id: VocabularyImportService::SCHEMA_SCHEME,
 				_rbac: false,
 				_multitenancy: false
 			);
-			$concept = $this->schemas->find(
+			$concept = $this->catalog->schemas()->find(
 				id: VocabularyImportService::SCHEMA_CONCEPT,
 				_rbac: false,
 				_multitenancy: false

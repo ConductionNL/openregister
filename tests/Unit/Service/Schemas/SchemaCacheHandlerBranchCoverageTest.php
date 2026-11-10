@@ -149,8 +149,11 @@ class SchemaCacheHandlerBranchCoverageTest extends TestCase {
 		$this->db->method('getQueryBuilder')
 			->willThrowException(new \Exception('DB error'));
 
+		$this->logger->expects($this->once())
+			->method('warning')
+			->with('[SchemaCacheHandler] Failed to clear schema cache', $this->anything());
+
 		$this->handler->clearSchemaCache(1);
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -162,8 +165,18 @@ class SchemaCacheHandlerBranchCoverageTest extends TestCase {
 		$qb->method('executeStatement')->willReturn(3);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
+		$deleted = null;
+		$this->logger->method('info')->willReturnCallback(
+			function (string $message, array $context = []) use (&$deleted): void {
+				if ($message === '[SchemaCacheHandler] Schema cache invalidated') {
+					$deleted = [$context['operation'], $context['deletedEntries']];
+				}
+			}
+		);
+
 		$this->handler->invalidateForSchemaChange(1, 'update');
-		$this->assertTrue(true);
+
+		$this->assertSame(['update', 3], $deleted);
 	}
 
 	public function testInvalidateForSchemaChangeDbException(): void {
@@ -172,8 +185,21 @@ class SchemaCacheHandlerBranchCoverageTest extends TestCase {
 			->willThrowException(new \Exception('Table not found'));
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
+		$deleted = null;
+		$this->logger->method('info')->willReturnCallback(
+			function (string $message, array $context = []) use (&$deleted): void {
+				if ($message === '[SchemaCacheHandler] Schema cache invalidated') {
+					$deleted = [$context['operation'], $context['deletedEntries']];
+				}
+			}
+		);
+
+		$this->logger->expects($this->once())->method('warning');
+
 		$this->handler->invalidateForSchemaChange(1, 'delete');
-		$this->assertTrue(true);
+
+		// The failed delete counts as nothing deleted; the change still completes.
+		$this->assertSame(['delete', 0], $deleted);
 	}
 
 	// =========================================================================
@@ -249,15 +275,4 @@ class SchemaCacheHandlerBranchCoverageTest extends TestCase {
 	// cacheSchemaConfiguration + cacheSchemaProperties
 	// =========================================================================
 
-	public function testCacheSchemaConfigurationAndProperties(): void {
-		$qb = $this->createMockQueryBuilder();
-		$qb->method('executeStatement')->willReturn(0);
-		$this->db->method('getQueryBuilder')->willReturn($qb);
-
-		$schema = $this->createTestSchema(1);
-
-		$this->handler->cacheSchemaConfiguration($schema);
-		$this->handler->cacheSchemaProperties($schema);
-		$this->assertTrue(true);
-	}
 }

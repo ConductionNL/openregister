@@ -60,7 +60,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsPlatform
  * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsDomain
  * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices
- * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ConnectionReporting
  * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsDomain
  * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsControllerServices
  * @covers \OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController
