@@ -633,12 +633,11 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$this->subjects->dispatcher->dispatchTyped(
 			new FlowTimerFiredEvent(
 				timer: $timer,
-				kind: FlowTimerFiredEvent::KIND_EXPIRY,
-				transition: 'expiry:' . (string)($timer->getOnExpiry() ?? 'none'),
-				rungKey: null,
-				recipients: [],
-				priority: 'critical',
-				message: null
+				firing: new TimerFiring(
+					kind: FlowTimerFiredEvent::KIND_EXPIRY,
+					transition: 'expiry:' . (string)($timer->getOnExpiry() ?? 'none')
+				),
+				notice: new EscalationNotice(priority: 'critical')
 			)
 		);
 		$this->projection()->project(timer: $timer);
@@ -700,13 +699,13 @@ class FlowTimerService implements FlowTimerControlInterface {
 			$this->subjects->dispatcher->dispatchTyped(
 				new FlowTimerFiredEvent(
 					timer: $timer,
-					kind: FlowTimerFiredEvent::KIND_RUNG,
-					transition: $transition,
-					rungKey: (string)$rung['key'],
-					recipients: $recipients,
-					priority: (string)$rung['priority'],
-					message: $rung['message'],
-					consequence: ($rung['consequence'] ?? null)
+					firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_RUNG, transition: $transition, rungKey: (string)$rung['key']),
+					notice: new EscalationNotice(
+						recipients: $recipients,
+						priority: (string)$rung['priority'],
+						message: $rung['message'],
+						consequence: ($rung['consequence'] ?? null)
+					)
 				)
 			);
 		}//end foreach
