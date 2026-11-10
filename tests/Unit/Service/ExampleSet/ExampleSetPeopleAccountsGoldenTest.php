@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountTerms;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsInstall;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount;
 
 class ExampleSetPeopleAccountsGoldenTest extends ExampleSetTestCase {
 	/**
@@ -28,11 +29,11 @@ class ExampleSetPeopleAccountsGoldenTest extends ExampleSetTestCase {
 	 * @return void
 	 */
 	public function testAccountsAreKeptAdoptedCreatedOrRefused(): void {
-		$this->accounts->createUser(uid: 'kept.one', displayName: 'Kept', email: '', password: 'theirs-kept');
-		$this->accounts->createUser(uid: 'adopted.one', displayName: 'Adopted', email: '', password: 'theirs-adopted');
-		$this->accounts->createUser(uid: 'recorded.one', displayName: 'Recorded', email: '', password: 'theirs-recorded');
-		$this->accounts->createUser(uid: 'svc.kept', displayName: 'Svc kept', email: '', password: 'theirs-svc-kept');
-		$this->accounts->createUser(uid: 'svc.adopted', displayName: 'Svc adopted', email: '', password: 'theirs-svc-adopted');
+		$this->accounts->createAccount(account: new ExampleSetNewAccount(uid: 'kept.one', displayName: 'Kept', email: '', password: 'theirs-kept'));
+		$this->accounts->createAccount(account: new ExampleSetNewAccount(uid: 'adopted.one', displayName: 'Adopted', email: '', password: 'theirs-adopted'));
+		$this->accounts->createAccount(account: new ExampleSetNewAccount(uid: 'recorded.one', displayName: 'Recorded', email: '', password: 'theirs-recorded'));
+		$this->accounts->createAccount(account: new ExampleSetNewAccount(uid: 'svc.kept', displayName: 'Svc kept', email: '', password: 'theirs-svc-kept'));
+		$this->accounts->createAccount(account: new ExampleSetNewAccount(uid: 'svc.adopted', displayName: 'Svc adopted', email: '', password: 'theirs-svc-adopted'));
 		$this->accounts->unseenUsers = ['raced.one', 'svc.raced', 'svc.raced.recorded'];
 
 		$record          = $this->record->read(set: 'demo');

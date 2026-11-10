@@ -52,9 +52,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 
 /**
@@ -90,20 +90,18 @@ class ConflictReport implements ConflictReportInterface {
 	/**
 	 * The conflicting properties, with the three readings each.
 	 *
-	 * @param ObjectEntity           $stored     The object as it is now.
-	 * @param Schema                 $schema     Its schema, for the field filter.
-	 * @param array<string, mixed>   $sent       What the caller is trying to write.
+	 * @param RefusedWrite           $write       The stored object, its schema and what the caller sent.
 	 * @param array<int, AuditTrail> $intervening The changes since the caller read, newest first.
 	 *
 	 * @return array<string, mixed> The 409 body.
 	 *
 	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
-	public function build(ObjectEntity $stored, Schema $schema, array $sent, array $intervening): array {
+	public function build(RefusedWrite $write, array $intervening): array {
 		$run = new ConflictRun(
-			schema: $schema,
-			current: $stored->getMatchEnvelope(),
-			sent: $sent,
+			schema: $write->schema,
+			current: $write->stored->getMatchEnvelope(),
+			sent: $write->sent,
 			changedByOthers: $this->changedByOthers(intervening: $intervening)
 		);
 
@@ -217,7 +215,7 @@ class ConflictReport implements ConflictReportInterface {
 	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-the-conflict-body-discloses-no-more-than-a-read-would-req-cso-002
 	 */
 	private function readingsFor(ConflictRun $run, string $property): array {
-		if ($this->properties->canReadProperty(schema: $run->schema, property: $property, object: $run->current) === false) {
+		if ($this->properties->canReadProperty(property: new SchemaProperty(schema: $run->schema, name: $property), request: new PropertyAccessRequest(object: $run->current)) === false) {
 			// Named, valueless. The caller learns their write collided and
 			// learns nothing they could not have read.
 			return ['status' => self::WITHHELD];

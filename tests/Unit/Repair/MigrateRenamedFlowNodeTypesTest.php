@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Tests\Unit\Repair;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCP\Migration\IOutput;
@@ -61,8 +63,8 @@ final class MigrateRenamedFlowNodeTypesTest extends TestCase {
 
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('findAllFlows')->willReturnCallback(
-			static function (?string $app = null, ?string $applicationSlug = null, ?string $org = null, ?bool $enabled = null, int $limit = 100, int $offset = 0) use ($flows): array {
-				return array_slice($flows, $offset, $limit);
+			static function (FlowSelection $selection, ListQuery $query) use ($flows): array {
+				return array_slice($flows, (int)$query->offset, $query->limit);
 			}
 		);
 		$mapper->method('update')->willReturnCallback(

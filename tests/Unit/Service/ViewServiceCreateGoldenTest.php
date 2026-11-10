@@ -22,6 +22,7 @@ use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Search\Service\ViewAudience;
 use OCA\OpenRegister\Search\Service\ViewDefinition;
+use OCA\OpenRegister\Search\Service\ViewEdit;
 use OCA\OpenRegister\Search\Service\ViewService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -96,11 +97,7 @@ final class ViewServiceCreateGoldenTest extends TestCase {
 	 */
 	public function testEveryFieldIsWritten(): void {
 		$service = $this->service(self::earlier(true));
-		$view    = $service->create(
-			new ViewDefinition('Mine', 'My view', ['schemas' => [], 'registers' => [3]], ['viewType' => 'table']),
-			new ViewAudience('alice', true, false, ['x' => ['group' => 'g', 'mode' => 'read']]),
-			self::ALERT
-		);
+		$view    = $service->create(new ViewEdit(definition: new ViewDefinition('Mine', 'My view', ['schemas' => [], 'registers' => [3]], ['viewType' => 'table']), audience: new ViewAudience('alice', true, false, ['x' => ['group' => 'g', 'mode' => 'read']]), alert: self::ALERT));
 
 		$this->assertSame(['insert'], $this->calls);
 		$this->assertSame(
@@ -127,7 +124,7 @@ final class ViewServiceCreateGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testOptionalFieldsDefaultToEmpty(): void {
-		$view = $this->service(self::earlier(false))->create(new ViewDefinition('Bare', '', []), new ViewAudience('alice', false, false));
+		$view = $this->service(self::earlier(false))->create(new ViewEdit(definition: new ViewDefinition('Bare', '', []), audience: new ViewAudience('alice', false, false)));
 
 		$fields = self::fields($view);
 		$this->assertNull($fields['presentation']);
@@ -142,7 +139,7 @@ final class ViewServiceCreateGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testANewDefaultClearsTheEarlierOne(): void {
-		$view = $this->service(self::earlier(true))->create(new ViewDefinition('New', '', []), new ViewAudience('alice', false, true));
+		$view = $this->service(self::earlier(true))->create(new ViewEdit(definition: new ViewDefinition('New', '', []), audience: new ViewAudience('alice', false, true)));
 
 		$this->assertTrue($view->getIsDefault());
 		$this->assertSame(['findAll:alice', 'update:Earlier:false', 'insert'], $this->calls);
@@ -156,14 +153,14 @@ final class ViewServiceCreateGoldenTest extends TestCase {
 	public function testRefusalsComeBeforeTheInsert(): void {
 		$service = $this->service(self::earlier(false));
 		try {
-			$service->create(new ViewDefinition('A', '', [], null), new ViewAudience('alice', false, false, null), ['operator' => 'nope']);
+			$service->create(new ViewEdit(definition: new ViewDefinition('A', '', [], null), audience: new ViewAudience('alice', false, false, null), alert: ['operator' => 'nope']));
 			$this->fail('A malformed alert must be refused.');
 		} catch (InvalidArgumentException $e) {
 			$this->assertSame([], $this->calls);
 		}
 
 		try {
-			$service->create(new ViewDefinition('B', '', [], ['viewType' => 'gantt']), new ViewAudience('alice', false, true));
+			$service->create(new ViewEdit(definition: new ViewDefinition('B', '', [], ['viewType' => 'gantt']), audience: new ViewAudience('alice', false, true)));
 			$this->fail('An unknown presentation must be refused.');
 		} catch (InvalidArgumentException $e) {
 			$this->assertSame('Unknown presentation viewType: gantt', $e->getMessage());

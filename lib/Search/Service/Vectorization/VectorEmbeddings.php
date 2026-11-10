@@ -430,10 +430,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	/**
 	 * Perform semantic similarity search
 	 *
-	 * @param string $query Query text to search for
-	 * @param int $limit Maximum number of results
-	 * @param array $filters Additional filters (entity_type, etc.)
-	 * @param string|null $provider Embedding provider
+	 * @param SemanticSearchRequest $request The query text, the maximum results, the filters and the embedding provider.
 	 *
 	 * @return array<int,array<string,mixed>> Search results
 	 *
@@ -441,14 +438,9 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function semanticSearch(
-		string $query,
-		int $limit = 10,
-		array $filters = [],
-		?string $provider = null,
-	): array {
-		$embedding = $this->generateEmbedding(text: $query, provider: $provider)['embedding'];
-		return $this->handlers->search->semanticSearch(query: new VectorQuery(embedding: $embedding, limit: $limit, filters: $filters));
+	public function semanticSearch(SemanticSearchRequest $request): array {
+		$embedding = $this->generateEmbedding(text: $request->query, provider: $request->provider)['embedding'];
+		return $this->handlers->search->semanticSearch(query: new VectorQuery(embedding: $embedding, limit: $request->limit, filters: $request->filters));
 	}//end semanticSearch()
 
 	/**

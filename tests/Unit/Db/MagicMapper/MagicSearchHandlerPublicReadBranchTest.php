@@ -28,8 +28,10 @@ namespace Unit\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeCondition;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -422,11 +424,7 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 		$organisation->expects($this->once())->method('applyOrganizationFilter');
 		$organisation->expects($this->never())->method('resolveOrganizationScope');
 
-		$this->searchHandler(organisation: $organisation)->buildFilteredQuery(
-			query: ['_multitenancy' => true, '_multitenancy_explicit' => true],
-			schema: $this->schema(read: [self::PUBLIC_OPEN_MARKED, self::TEAM_RULE], inherit: true),
-			tableName: 'openregister_table_1_7'
-		);
+		$this->searchHandler(organisation: $organisation)->buildFilteredQuery(query: ['_multitenancy' => true, '_multitenancy_explicit' => true], table: new MagicReadTable(schema: $this->schema(read: [self::PUBLIC_OPEN_MARKED, self::TEAM_RULE], inherit: true), tableName: 'openregister_table_1_7'));
 
 	}//end testAnExplicitListOnTheQueryBuilderPathGetsNoBranch()
 
@@ -638,7 +636,7 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 	 * @return array<int, string> The uuids the list returns, sorted.
 	 */
 	private function visibleRows(Schema $schema, array $query = []): array {
-		$conditions = $this->searchHandler()->buildWhereConditionsSql(query: $query, schema: $schema);
+		$conditions = $this->searchHandler()->buildWhereClause(request: new WhereClauseRequest(query: $query, table: new MagicReadTable(schema: $schema)));
 
 		$pdo = new PDO('sqlite::memory:');
 		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

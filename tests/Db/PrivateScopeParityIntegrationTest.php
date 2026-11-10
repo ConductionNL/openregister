@@ -50,6 +50,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\ScopeChange;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Rbac\GrantTerms;
@@ -1159,7 +1161,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 			'a custom verb must map to no core permission bit'
 		);
 		$this->assertFalse(
-			$this->grantResolver()->isGranted($this->testUid, $entity->getUuid(), 'besluit_nemen'),
+			$this->grantResolver()->isGranted(new GrantLookup($this->testUid, $entity->getUuid()), 'besluit_nemen'),
 			'a grant must not admit a verb it cannot carry'
 		);
 	}//end testAGrantCannotAdmitACustomVerb()
@@ -1593,7 +1595,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	private function assertRawEmitterCarriesTheScopePredicate(Schema $schema): void {
-		$result = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$joined = implode(' ', $result['conditions']);
 
 		$this->assertStringContainsString(

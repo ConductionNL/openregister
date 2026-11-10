@@ -83,7 +83,7 @@ class SaveObjectsSingleSchemaPreparationGoldenTest extends TestCase {
 		);
 
 		$handler = new SaveObjects(
-			stores: new BulkSaveStores(objectEntityMapper: $this->createMock(MagicMapper::class), schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $save),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)), saveHandler: $save),
 			session: new BulkSaveSession(userSession: $session, organisationService: $organisations),
 			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
 			checks: new BulkRowChecks()
