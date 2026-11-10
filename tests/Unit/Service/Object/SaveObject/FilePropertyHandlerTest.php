@@ -2372,7 +2372,7 @@ class FilePropertyHandlerTest extends TestCase {
 	// =========================================================================
 
 	public function testGetDangerousExecutableExtensionsContainsExpected(): void {
-		$result = (new \ReflectionClassConstant(FilePropertyHandler::class, 'DANGEROUS_EXECUTABLE_EXTENSIONS'))->getValue();
+		$result = (new \ReflectionClassConstant(\OCA\OpenRegister\Service\Object\SaveObject\FilePropertyParts::class, 'DANGEROUS_EXECUTABLE_EXTENSIONS'))->getValue();
 
 		$this->assertContains('exe', $result);
 		$this->assertContains('bat', $result);
