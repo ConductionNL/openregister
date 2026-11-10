@@ -4481,15 +4481,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * the caller keeps the rows that really are a suffixed variant. No RBAC or multitenancy
 	 * filter, as for every slug uniqueness query.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param string   $prefix   The slug prefix, taken literally.
-	 * @param int      $limit    Most rows to return.
+	 * @param RegisterSchema $table  The register and schema whose table to use.
+	 * @param string         $prefix The slug prefix, taken literally.
+	 * @param int            $limit  Most rows to return.
 	 *
 	 * @return list<array{slug: string, uuid: string}> The matches.
 	 */
-	public function findSlugsByPrefix(Register $register, Schema $schema, string $prefix, int $limit=50): array {
-		return ($this->slugTable(register: $register, schema: $schema)?->byPrefix(prefix: $prefix, limit: $limit) ?? []);
+	public function findSlugsByPrefix(RegisterSchema $table, string $prefix, int $limit=50): array {
+		return ($this->slugTable(register: $table->register, schema: $table->schema)?->byPrefix(prefix: $prefix, limit: $limit) ?? []);
 	}//end findSlugsByPrefix()
 
 	/**
@@ -4497,19 +4496,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * Resolved lazily, as on restore: the slug handler needs this mapper.
 	 *
-	 * @param ObjectEntity $entity   The object being moved (still carrying its uuid).
-	 * @param Register     $register The target register.
-	 * @param Schema       $schema   The target schema.
+	 * @param ObjectEntity   $entity The object being moved (still carrying its uuid).
+	 * @param RegisterSchema $table  The target register and schema.
 	 *
 	 * @return string|null The slug to store at the target.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function slugForMove(ObjectEntity $entity, Register $register, Schema $schema): ?string {
-		return $this->container->get(ObjectSlugTargetInterface::class)->slugForMove(
-			entity: $entity,
-			table: new RegisterSchema(register: $register, schema: $schema)
-		);
+	public function slugForMove(ObjectEntity $entity, RegisterSchema $table): ?string {
+		return $this->container->get(ObjectSlugTargetInterface::class)->slugForMove(entity: $entity, table: $table);
 	}//end slugForMove()
 
 	/**
@@ -4519,22 +4514,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * caller who cannot see the holder must still not take its slug. Soft-deleted
 	 * rows hold no slug, as on the read path.
 	 *
-	 * @param Register    $register    The register.
-	 * @param Schema      $schema      The schema.
-	 * @param string      $slug        The slug to look for.
+	 * @param RegisterSchema $table       The register and schema whose table to use.
+	 * @param string         $slug        The slug to look for.
 	 * @param string|null $excludeUuid The object being saved, which never collides with itself.
 	 *
 	 * @return list<string> The holders' uuids (at most one: enough to know the slug is taken).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function findSlugHolders(
-		Register $register,
-		Schema $schema,
-		string $slug,
-		?string $excludeUuid=null,
-	): array {
-		return ($this->slugTable(register: $register, schema: $schema)?->holders(slug: $slug, excludeUuid: $excludeUuid) ?? []);
+	public function findSlugHolders(RegisterSchema $table, string $slug, ?string $excludeUuid=null): array {
+		return ($this->slugTable(register: $table->register, schema: $table->schema)?->holders(slug: $slug, excludeUuid: $excludeUuid) ?? []);
 	}//end findSlugHolders()
 
 	/**
@@ -4545,17 +4534,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * row has none, absent when the row does not exist yet). The IN lists are
 	 * split into chunks of 1,000 values. No access filter, as findSlugHolders().
 	 *
-	 * @param Register      $register The register.
-	 * @param Schema        $schema   The schema.
-	 * @param list<string>  $slugs    Candidate slugs.
-	 * @param list<string>  $uuids    Uuids of the rows being decided.
+	 * @param RegisterSchema $table The register and schema whose table to use.
+	 * @param list<string>   $slugs Candidate slugs.
+	 * @param list<string>   $uuids Uuids of the rows being decided.
 	 *
 	 * @return array{holders: array<string, list<string>>, stored: array<string, string|null>}
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
-	public function findSlugState(Register $register, Schema $schema, array $slugs, array $uuids): array {
-		return ($this->slugTable(register: $register, schema: $schema)?->state(slugs: $slugs, uuids: $uuids) ?? ['holders' => [], 'stored' => []]);
+	public function findSlugState(RegisterSchema $table, array $slugs, array $uuids): array {
+		$column = $this->slugTable(register: $table->register, schema: $table->schema);
+		return ($column?->state(slugs: $slugs, uuids: $uuids) ?? ['holders' => [], 'stored' => []]);
 	}//end findSlugState()
 
 	/**
@@ -4663,22 +4652,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Only when the row still has no slug (null or empty), so a save that set
 	 * the slug while the backfill was planning is not undone.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param string   $uuid     The object.
-	 * @param string   $slug     The new slug.
+	 * @param RegisterSchema $table The register and schema whose table to use.
+	 * @param string         $uuid  The object.
+	 * @param string         $slug  The new slug.
 	 *
 	 * @return int Rows updated: 0 when the row changed in the meantime.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	public function updateSlugColumn(
-		Register $register,
-		Schema $schema,
-		string $uuid,
-		string $slug,
-	): int {
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+	public function updateSlugColumn(RegisterSchema $table, string $uuid, string $slug): int {
+		$tableName = $this->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema);
 
 		return (new MagicSlugTable(db: $this->db, tableName: $tableName))->fillEmpty(uuid: $uuid, slug: $slug);
 	}//end updateSlugColumn()

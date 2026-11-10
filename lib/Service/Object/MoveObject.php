@@ -47,6 +47,7 @@ use DateTime;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use Opis\JsonSchema\ValidationResult;
@@ -424,7 +425,8 @@ class MoveObject implements MoveObjectInterface {
 	private function assignTargetSlug(ObjectMove $move): ?string {
 		$object = $move->object;
 		$sourceSlug = $object->getSlug();
-		$object->setSlug($this->objects->slugForMove(entity: $object, register: $move->target->register, schema: $move->target->schema));
+		$target = new RegisterSchema(register: $move->target->register, schema: $move->target->schema);
+		$object->setSlug($this->objects->slugForMove(entity: $object, table: $target));
 
 		return $sourceSlug;
 	}//end assignTargetSlug()

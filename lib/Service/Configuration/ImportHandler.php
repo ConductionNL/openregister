@@ -4631,7 +4631,7 @@ class ImportHandler {
 
 		// `<base>-` of a suffixed variant, the base being cut to fit the column.
 		$prefix = substr($this->slugHandler->withSuffix(slug: $candidate, stamp: '00000000000000'), 0, -14);
-		foreach ($this->routingMapper->findSlugsByPrefix(register: $register, schema: $schema, prefix: $prefix) as $match) {
+		foreach ($this->routingMapper->findSlugsByPrefix(table: new RegisterSchema(register: $register, schema: $schema), prefix: $prefix) as $match) {
 			if ($this->slugHandler->isSuffixOf(slug: $match['slug'], candidate: $candidate) === false) {
 				continue;
 			}
