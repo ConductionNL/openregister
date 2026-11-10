@@ -3,6 +3,8 @@
 namespace Unit\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -223,8 +225,8 @@ class ExportServiceTest extends TestCase {
 
 		$this->propertyRbacHandler
 			->method('canReadProperty')
-			->willReturnCallback(function ($schema, $property, $object) {
-				return $property !== 'restricted_field';
+			->willReturnCallback(function (SchemaProperty $read, PropertyAccessRequest $request) {
+				return $read->name !== 'restricted_field';
 			});
 
 		$this->objectService
@@ -692,8 +694,8 @@ class ExportServiceTest extends TestCase {
 
 		$this->propertyRbacHandler
 			->method('canReadProperty')
-			->willReturnCallback(function ($schema, $property, $object) {
-				return $property !== 'secret_field';
+			->willReturnCallback(function (SchemaProperty $read, PropertyAccessRequest $request) {
+				return $read->name !== 'secret_field';
 			});
 
 		$this->objectService

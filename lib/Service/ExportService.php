@@ -1116,11 +1116,7 @@ class ExportService implements ObjectExporterInterface {
 				// Skip properties restricted by authorization rules the current user doesn't satisfy.
 				// Uses PropertyRbacHandler (the single source of truth for property-level RBAC).
 				// Empty object array causes conditional match rules to fail-closed (safe default for headers).
-				if ($this->propertyRbacHandler->canReadProperty(
-					schema: $schema,
-					property: $fieldName,
-					object: []
-				) === false
+				if ($this->propertyRbacHandler->canReadProperty(property: new SchemaProperty(schema: $schema, name: $fieldName), request: new PropertyAccessRequest(object: [])) === false
 				) {
 					continue;
 				}
