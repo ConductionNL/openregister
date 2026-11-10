@@ -110,12 +110,25 @@ class JwtValidator {
 			throw $this->invalid(reason: 'Invalid JWT format');
 		}
 
-		$header = json_decode((string)base64_decode(strtr($parts[0], '-_', '+/')), true);
+		$header = $this->decodedSegment(segment: $parts[0]);
 		if (is_array($header) === false || isset($header['alg']) === false) {
 			throw $this->invalid(reason: 'Invalid header');
 		}
 
-		$payload = json_decode((string)base64_decode(strtr($parts[1], '-_', '+/')), true);
+		return [$header, $this->payloadOf(segment: $parts[1])];
+	}//end decode()
+
+	/**
+	 * A token's payload segment, decoded; it must be an object that names its issuer.
+	 *
+	 * @param string $segment The base64url payload segment.
+	 *
+	 * @return array The payload.
+	 *
+	 * @throws AuthenticationException When the payload is unreadable or names no issuer.
+	 */
+	private function payloadOf(string $segment): array {
+		$payload = $this->decodedSegment(segment: $segment);
 		if (is_array($payload) === false) {
 			throw $this->invalid(reason: 'Invalid payload');
 		}
@@ -124,8 +137,19 @@ class JwtValidator {
 			throw $this->invalid(reason: 'No issuer mentioned');
 		}
 
-		return [$header, $payload];
-	}//end decode()
+		return $payload;
+	}//end payloadOf()
+
+	/**
+	 * One base64url token segment, JSON-decoded.
+	 *
+	 * @param string $segment The segment.
+	 *
+	 * @return mixed The decoded value, or null when it is not JSON.
+	 */
+	private function decodedSegment(string $segment): mixed {
+		return json_decode((string)base64_decode(strtr($segment, '-_', '+/')), true);
+	}//end decodedSegment()
 
 	/**
 	 * Verify the token under the algorithm the consumer's configuration pins.
@@ -425,22 +449,42 @@ class JwtValidator {
 
 		$cache = $this->jtiCache();
 		if ($cache === null) {
-			throw new AuthenticationException(
-				message: 'The token could not be validated',
-				details: ['reason' => 'A token id (jti) cannot be checked for replay on this instance']
-			);
+			throw $this->replayUncheckable();
 		}
 
 		$cacheKey = 'jti:' . hash('sha256', (string)$payload['jti']);
 		if ($cache->get($cacheKey) !== null) {
-			throw new AuthenticationException(
-				message: 'The token has already been used (jti replay)',
-				details: ['jti' => $payload['jti']]
-			);
+			throw $this->replayed(jti: $payload['jti']);
 		}
 
 		$cache->set($cacheKey, 1, max(1, $lifetime + self::CLOCK_SKEW_SECONDS));
 	}//end refuseReplay()
+
+	/**
+	 * The refusal of a token whose jti was already used.
+	 *
+	 * @param mixed $jti The token id.
+	 *
+	 * @return AuthenticationException The refusal.
+	 */
+	private function replayed(mixed $jti): AuthenticationException {
+		return new AuthenticationException(
+			message: 'The token has already been used (jti replay)',
+			details: ['jti' => $jti]
+		);
+	}//end replayed()
+
+	/**
+	 * The refusal of a token with a jti on an instance that cannot check it for replay (fail closed).
+	 *
+	 * @return AuthenticationException The refusal.
+	 */
+	private function replayUncheckable(): AuthenticationException {
+		return new AuthenticationException(
+			message: 'The token could not be validated',
+			details: ['reason' => 'A token id (jti) cannot be checked for replay on this instance']
+		);
+	}//end replayUncheckable()
 
 	/**
 	 * The distributed cache that remembers used token ids, or null without one.
