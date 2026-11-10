@@ -218,3 +218,6 @@ OCA\OpenRegister\Tests\Unit\Service\WebhookServiceTest::testDeliverWebhookSchedu
 /root/sigint/or/tests/Unit/Architecture/K21InterfaceBindingsTest.php:133
 /root/sigint/or/tests/Unit/Architecture/F09ConfigurationDeploymentInterfaceBindingsTest.php:128
 /root/sigint/or/tests/Unit/Dependencies/PhpWordReplacedTest.php:53
+/root/sigint/or/tests/Unit/Service/Credential/OAuth2ConnectServiceGoldenTest.php:433
+/root/sigint/or/tests/Unit/Service/Credential/OAuth2InstanceClientMintGoldenTest.php:186
+/root/sigint/or/tests/Unit/Service/Credential/OAuth2InstanceClientTest.php:238
