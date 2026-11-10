@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowRunEnding;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Db\FlowStreamMapper;
@@ -270,8 +271,11 @@ class FlowStreamWalkTest extends TestCase {
 		$walk->endStream(halt: (new FlowStreamHalt(streamId: 'a', claimed: ['p'], enabled: false))->because(reason: 'boom'), status: FlowRun::STATUS_FAILED);
 		$this->assertNull($walk->nextStream());
 
-		$this->commit->expects($this->once())->method('finalize')
-			->with($this->run, 'pass-1', false, FlowRun::STATUS_FAILED)
+		$this->commit->expects($this->once())->method('end')
+			->with(
+				$this->run,
+				$this->callback(static fn (FlowRunEnding $ending): bool => $ending->owner === 'pass-1' && $ending->enabled === false && $ending->forcedTerminal === FlowRun::STATUS_FAILED)
+			)
 			->willReturn(FlowRun::STATUS_FAILED);
 		$this->assertSame(FlowRun::STATUS_FAILED, $walk->finalize(enabled: false, forcedTerminal: FlowRun::STATUS_FAILED));
 	}//end testEndStreamAndFinalizeDelegateToTheCommitPath()

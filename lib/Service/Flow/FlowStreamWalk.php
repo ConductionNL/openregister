@@ -464,7 +464,10 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
 	 */
 	public function finalize(bool $enabled, ?string $forcedTerminal = null): string {
-		return $this->parts->commit->finalize(run: $this->run, owner: $this->limits->owner, enabled: $enabled, forcedTerminal: $forcedTerminal);
+		return $this->parts->commit->end(
+			run: $this->run,
+			ending: new FlowRunEnding(owner: $this->limits->owner, enabled: $enabled, forcedTerminal: $forcedTerminal, endedAt: new DateTime())
+		);
 	}//end finalize()
 
 	/**

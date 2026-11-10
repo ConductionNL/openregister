@@ -334,25 +334,6 @@ class FlowRunCommit {
 	 * an enabled-but-unclaimed transition leaves the run `queued`, which the
 	 * next pass drains — a missed pickup is latency, never a lost wake-up.
 	 *
-	 * @param FlowRun $run The run (refreshed in place).
-	 * @param string $owner The pass token whose claims are released.
-	 * @param bool $enabled Whether any transition is enabled on the committed marking.
-	 * @param string|null $forcedTerminal A run-level terminal outcome (stop, dead-letter, failure) that overrides the projection.
-	 *
-	 * @return string The derived status.
-	 *
-	 * @throws Throwable Rolls back and rethrows on any failure.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
-	 */
-	public function finalize(FlowRun $run, string $owner, bool $enabled, ?string $forcedTerminal = null): string {
-		return $this->end(run: $run, ending: new FlowRunEnding(owner: $owner, enabled: $enabled, forcedTerminal: $forcedTerminal, endedAt: new DateTime()));
-	}//end finalize()
-
-	/**
-	 * End one pass on a run under the run-row lock: release the pass's claims,
-	 * force a run-level terminal onto every live stream, then derive.
-	 *
 	 * @param FlowRun       $run    The run (refreshed in place).
 	 * @param FlowRunEnding $ending Whose pass ends, how, and when.
 	 *
@@ -360,7 +341,7 @@ class FlowRunCommit {
 	 *
 	 * @throws Throwable Rolls back and rethrows on any failure.
 	 */
-	private function end(FlowRun $run, FlowRunEnding $ending): string {
+	public function end(FlowRun $run, FlowRunEnding $ending): string {
 		$this->db->beginTransaction();
 		try {
 			$locked = $this->rows->runs->lockByUuid(uuid: (string)$run->getUuid());
