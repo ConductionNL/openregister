@@ -471,11 +471,11 @@ class FolderManagementHandler {
 	 *
 	 * @param Register $register The register whose stored folder id finds no folder.
 	 *
-	 * @return Folder|null The new folder.
+	 * @return Node The new folder.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	private function recreateRegisterFolder(Register $register): Folder|null {
+	private function recreateRegisterFolder(Register $register): Node {
 		$this->logger->warning(
 			message: "[FolderManagementHandler] Register {$register->getId()} has invalid folder ID, recreating folder",
 			context: ['file' => __FILE__, 'line' => __LINE__]
@@ -632,11 +632,11 @@ class FolderManagementHandler {
 	 *
 	 * @param ObjectEntity|string $objectEntity The object whose stored folder id finds no folder.
 	 *
-	 * @return Folder|null The new folder.
+	 * @return Folder The new folder.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	private function recreateObjectFolder(ObjectEntity|string $objectEntity): Folder|null {
+	private function recreateObjectFolder(ObjectEntity|string $objectEntity): Folder {
 		$this->logger->warning(
 			message: "[FolderManagementHandler] Object {$objectEntity->getId()} has invalid folder ID, recreating folder",
 			context: ['file' => __FILE__, 'line' => __LINE__]
