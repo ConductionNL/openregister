@@ -176,12 +176,12 @@ class NotificationTemplatingGoldenTest extends TestCase {
 
 		foreach (self::templates() as $name => $template) {
 			foreach (self::chains() as $chain => $languages) {
-				$out['interpolate'][$name][$chain] = $templating->interpolate($template, $data, $context, $languages);
+				$out['interpolate'][$name][$chain] = $templating->render(template: $template, values: new PlaceholderValues(data: $data, context: $context, languages: $languages));
 			}
 
-			$out['interpolate-no-resolver'][$name] = $plain->interpolate($template, $data, $context);
-			$out['interpolate-no-context'][$name]  = $templating->interpolate($template, $data, []);
-			$out['interpolate-no-data'][$name]     = $templating->interpolate($template, [], $context, ['nl']);
+			$out['interpolate-no-resolver'][$name] = $plain->render(template: $template, values: new PlaceholderValues(data: $data, context: $context));
+			$out['interpolate-no-context'][$name]  = $templating->render(template: $template, values: new PlaceholderValues(data: $data, context: []));
+			$out['interpolate-no-data'][$name]     = $templating->render(template: $template, values: new PlaceholderValues(data: [], context: $context, languages: ['nl']));
 			$out['unanswered'][$name]              = $templating->unanswered($template, new PlaceholderValues($data, $context));
 			$out['unanswered-empty'][$name]        = $templating->unanswered($template, new PlaceholderValues([], []));
 			$out['unanswered-context'][$name]      = $templating->unanswered($template, new PlaceholderValues([], $context));
