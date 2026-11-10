@@ -20,6 +20,8 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Service\SecurityService;
@@ -629,11 +631,13 @@ class FilePropertyHandler {
 	 */
 	private function addFile(FileStoreRequest $request, array $fileData): int {
 		$file = $this->fileService->addFile(
-			objectEntity: $request->objectEntity,
-			fileName: $this->generateFileName(request: $request, extension: $fileData['extension']),
-			content: $fileData['content'],
-			share: $request->fileConfig['autoShare'] ?? false,
-			tags: $this->prepareAutoTags(fileConfig: $request->fileConfig, propertyName: $request->propertyName)
+			target: new FileTarget(object: $request->objectEntity),
+			upload: new FileUpload(
+				fileName: $this->generateFileName(request: $request, extension: $fileData['extension']),
+				content: $fileData['content'],
+				share: $request->fileConfig['autoShare'] ?? false,
+				tags: $this->prepareAutoTags(fileConfig: $request->fileConfig, propertyName: $request->propertyName)
+			)
 		);
 
 		return $file->getId();
