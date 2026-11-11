@@ -664,3 +664,28 @@ portaliq	2264	bd261057c401c44dafd1f86d768b253f031e877b	GREEN	FV05:5	tree green: 
 portaliq	2266	6db2eef7de17b3dcccfd3a0f8b37789464c432ec	GREEN	FV05:5	tree green: phpunit and node specs no new failures vs development baseline
 portaliq	2268	7f5ea8d569a3014e41e880bfa1fcfe13b5fb2283	GREEN	FV05:5	tree green; its new PortalDraftDrainTest case fails only on the missing OpenRegister DraftOwner class, same environment cause as 3 baseline failures in that class
 portaliq	2270	f62b00d4ae19dc6823a271f18eca58a8b4e9ce72	GREEN	FV05:5	tree green: phpunit and node specs no new failures vs development baseline
+hermiq	1327	a60ee60c49877f713761d8792adc17128e1eadd2	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1328	b04a81f0fedadbc25b4cc82991403818aef98975	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1329	e7e4bd965ccec2d8f482ebd03b5ec81a2bc758ad	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1330	29e8e437925633cfcf209f667c60b43116dab51e	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1331	701df112cedf2ff3a4543e69525a95eee06a2472	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1332	6a3be0fd74756144ae2c8d2ae6cc442b3fc07aa3	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1333	94d651070c4d02b0527cff7c3962e13a423213f4	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1334	4754989d60fa0feb17976023d22593f64feed116	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1335	5a27a8cf94f953f5a19469889c422aec69d2c19f	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1336	c142c695a34841e09c37bb1b09786f9afd864dce	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1337	40a2e0bd9c21ff6a8bf3ee68595c9abbee8de8e6	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1338	a2a77e36ad2a3e7119711e5fb699a1490a47980f	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1339	0aac685fdb128f11d5e8463caddbf3d1c046c6d0	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1340	444844b6ee7e6352aa9e5d3ff807e9b6bf670b13	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1341	1ee44aafc83626660928d4d14836ed94aadd93d5	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1342	66c37f55c6a819c23b3734d37dda308f1850d20a	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1343	c400d9970c9701223058c8fd5570102749ac4a96	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1344	22fc3b80b97d655aea7afb3bf7317b04b230f657	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1345	d0bc647ecb655aba77af02011f61825c9b9d9a30	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1346	93b996b4a4e78c27ef1f9bd64264c48d161e8960	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1347	91fc0de6f018e8c835f858dd30c842a4387eef39	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1348	71f4d436376fd89bd90f88cab02b89e13fe3eb20	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1349	88a6424a4e00ac3da307412fe24808daaa9f8937	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1350	93d40bcbdae9165ac8297116d5ac3877e2590d08	GREEN	FV10:1	unit suites green beyond development baseline
+hermiq	1351	14efdacfa8870dc7a4af185773cd4a66a465ce89	GREEN	FV10:1	unit suites green beyond development baseline
