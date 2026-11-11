@@ -116,6 +116,20 @@ class SurveyExportRowsGoldenTest extends TestCase {
 		$this->assertSame(['surveyVersion', 'submittedAt', 'subjectObject', 'nps', 'Score', 'Wat kon beter?'], array_keys($rows[1]));
 	}//end testAnAnonymousExportCarriesNoRespondentKey()
 
+	public function testANumericHeadingKeepsItsColumnName(): void {
+		$questions = [['slug' => 'year', 'text' => '2024', 'order' => 1], ['slug' => '7', 'order' => 2]];
+		$answerSets = [['answers' => [['question' => 'year', 'value' => 'ja'], ['question' => '7', 'value' => 'nee']]]];
+
+		$rows = (new SurveyExportShaper())->rows(
+			new SurveyExport(survey: ['anonymity' => SurveyRules::ATTRIBUTED], questions: $questions, answerSets: $answerSets)
+		);
+
+		$this->assertSame(
+			['surveyVersion' => null, 'submittedAt' => null, 'subjectObject' => null, 'respondent' => null, 2024 => 'ja', 7 => 'nee'],
+			$rows[0]
+		);
+	}//end testANumericHeadingKeepsItsColumnName()
+
 	public function testAnAnonymousExportBelowItsMinimumIsRefusedWithTheReason(): void {
 		$survey = ['anonymity' => SurveyRules::ANONYMOUS, 'minimumResponses' => 3];
 		$reason = (new SurveyRules())->disclosure(survey: $survey, responseCount: 2)['reason'];

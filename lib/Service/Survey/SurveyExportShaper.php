@@ -93,7 +93,7 @@ class SurveyExportShaper {
 		$rows = [];
 
 		foreach ($export->answerSets as $answerSet) {
-			$rows[] = array_merge(
+			$rows[] = array_replace(
 				self::metadataColumns(answerSet: $answerSet, anonymous: $anonymous),
 				self::answerColumns(answerSet: $answerSet, ordered: $ordered)
 			);
