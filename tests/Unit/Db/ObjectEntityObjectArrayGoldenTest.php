@@ -405,17 +405,17 @@ final class ObjectEntityObjectArrayGoldenTest extends TestCase {
 	public function testDataSelfOrganisationNeverReplacesTheRecordsOrganisation(): void {
 		$entity = $this->populated();
 
-		$this->assertSame('organisation-v', $entity->getObjectArray(['@self' => ['organisation' => 'org-x']])['organisation']);
-		$this->assertSame('organisation-v', $entity->getObjectArray(['@self' => ['organisation' => ['uuid' => 'org-x']]])['organisation']);
-		$this->assertSame('organisation-v', $entity->getObjectArray(['@self' => ['organisation' => ['id' => 'org-x']]])['organisation']);
-		$this->assertSame('organisation-v', $entity->getObjectArray(['@self' => ['organisation' => ['name' => 'no id']]])['organisation']);
+		self::assertSame(expected: 'organisation-v', actual: $entity->getObjectArray(['@self' => ['organisation' => 'org-x']])['organisation']);
+		self::assertSame(expected: 'organisation-v', actual: $entity->getObjectArray(['@self' => ['organisation' => ['uuid' => 'org-x']]])['organisation']);
+		self::assertSame(expected: 'organisation-v', actual: $entity->getObjectArray(['@self' => ['organisation' => ['id' => 'org-x']]])['organisation']);
+		self::assertSame(expected: 'organisation-v', actual: $entity->getObjectArray(['@self' => ['organisation' => ['name' => 'no id']]])['organisation']);
 
 		$entity->setObject(['title' => 't', '@self' => ['organisation' => 'org-x']]);
-		$this->assertSame('organisation-v', $entity->jsonSerialize()['@self']['organisation']);
+		self::assertSame(expected: 'organisation-v', actual: $entity->jsonSerialize()['@self']['organisation']);
 
 		$orgless = new ObjectEntity();
-		$this->assertNull($orgless->getObjectArray(['@self' => ['organisation' => 'org-x']])['organisation']);
-		$this->assertNull($orgless->getObjectArray(['@self' => ['organisation' => ['uuid' => '']]])['organisation']);
+		self::assertNull(actual: $orgless->getObjectArray(['@self' => ['organisation' => 'org-x']])['organisation']);
+		self::assertNull(actual: $orgless->getObjectArray(['@self' => ['organisation' => ['uuid' => '']]])['organisation']);
 	}//end testDataSelfOrganisationNeverReplacesTheRecordsOrganisation()
 
 	/**
