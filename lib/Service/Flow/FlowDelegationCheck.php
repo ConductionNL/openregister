@@ -188,11 +188,7 @@ class FlowDelegationCheck {
 		try {
 			$resolved = $this->container->get(DelegationService::class);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[FlowDelegationCheck] Could not resolve the delegation service; refusing the run: '
-					. $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $run->flowId, 'runAs' => $run->runAs]
-			);
+			$this->logUnresolvable(run: $run, error: $e);
 
 			throw self::unreadable(run: $run, detail: 'The delegation store could not be reached, so the delegation is refused.');
 		}
@@ -203,6 +199,22 @@ class FlowDelegationCheck {
 
 		return $resolved;
 	}//end delegationService()
+
+	/**
+	 * Say that the delegation service could not be resolved, so the run is refused.
+	 *
+	 * @param DelegatedRun $run   The run being checked.
+	 * @param Throwable    $error Why it could not be resolved.
+	 *
+	 * @return void
+	 */
+	private function logUnresolvable(DelegatedRun $run, Throwable $error): void {
+		$this->logger->error(
+			message: '[FlowDelegationCheck] Could not resolve the delegation service; refusing the run: '
+				. $error->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $run->flowId, 'runAs' => $run->runAs]
+		);
+	}//end logUnresolvable()
 
 	/**
 	 * The fail-closed refusal for an unreachable delegation store.

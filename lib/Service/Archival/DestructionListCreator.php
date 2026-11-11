@@ -151,17 +151,12 @@ class DestructionListCreator implements DestructionListCreatorInterface {
 	 *         The eligible objects and the refused uuids, both in the order named.
 	 */
 	private function judge(array $uuids): array {
-		$today = (new DateTime())->format('Y-m-d');
-		$onOpenLists = $this->retention->getObjectsOnPendingDestructionLists();
+		$sweep = new DisposalSweep(today: (new DateTime())->format('Y-m-d'), excludeUuids: $this->retention->getObjectsOnPendingDestructionLists());
 
 		$judged = ['eligible' => [], 'refused' => []];
 		foreach (array_unique(array_map(static fn ($uuid): string => trim((string)$uuid), $uuids)) as $uuid) {
 			$object = $this->load(uuid: $uuid);
-			$reason = self::REFUSAL_NOT_FOUND;
-			if ($object !== null) {
-				$reason = $this->retention->destructionRefusalIn(object: $object, sweep: new DisposalSweep(today: $today, excludeUuids: $onOpenLists));
-			}
-
+			$reason = $this->refusalOf(object: $object, sweep: $sweep);
 			if ($reason !== null) {
 				$judged['refused'][] = ['uuid' => $uuid, 'reason' => $reason];
 				continue;
@@ -172,6 +167,22 @@ class DestructionListCreator implements DestructionListCreatorInterface {
 
 		return $judged;
 	}//end judge()
+
+	/**
+	 * Why a requested object may not be put on a destruction list, or null when it may.
+	 *
+	 * @param ObjectEntity|null $object The loaded object, null when it was not found.
+	 * @param DisposalSweep     $sweep  Today, and the objects already on an open list.
+	 *
+	 * @return string|null The refusal reason.
+	 */
+	private function refusalOf(?ObjectEntity $object, DisposalSweep $sweep): ?string {
+		if ($object === null) {
+			return self::REFUSAL_NOT_FOUND;
+		}
+
+		return $this->retention->destructionRefusalIn(object: $object, sweep: $sweep);
+	}//end refusalOf()
 
 	/**
 	 * One object by uuid, or null when there is none.

@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
+use OCA\OpenRegister\Service\ExampleSet\RecordLedger;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRowInstall;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
@@ -62,7 +64,7 @@ class ExampleSetRowInstallTest extends TestCase {
 		$report  = [];
 		$record  = ['users' => ['alice' => 'created']];
 		$fragment = ['app' => 'demo', 'file' => 'f.json', 'notes' => [['key' => 'n', 'data' => ['by' => 'alice']]]];
-		$this->assertFalse($install->fragment(fragment: $fragment, context: ['x' => 1], report: $report, record: $record));
+		$this->assertFalse($install->fragment(write: new ExampleSetFragmentWrite(fragment: $fragment, context: ['x' => 1], values: new ExampleSetValues()), ledger: new RecordLedger(report: $report, record: $record)));
 		$this->assertSame([['fill', ['x' => 1]], [['by' => 'alice'], ['alice'], ['x' => 1]]], $asked);
 		$this->assertSame(['notes' => ['demo/n' => 'failed'], 'dropped' => ['f.json: note "n": no']], $report);
 	}//end testRefusalAndFillContextAreAskedAndARefusedRowIsNotWritten()
@@ -86,7 +88,7 @@ class ExampleSetRowInstallTest extends TestCase {
 		$report  = [];
 		$record  = ['users' => []];
 		$fragment = ['app' => 'demo', 'file' => 'f.json', 'notes' => [['key' => 'n', 'data' => ['text' => 'hi']]]];
-		$this->assertTrue($install->fragment(fragment: $fragment, context: [], report: $report, record: $record));
+		$this->assertTrue($install->fragment(write: new ExampleSetFragmentWrite(fragment: $fragment, context: [], values: new ExampleSetValues()), ledger: new RecordLedger(report: $report, record: $record)));
 		$this->assertSame(['notes' => ['demo/n' => 'created']], $report);
 		$this->assertSame(['users' => [], 'notes' => ['demo/n' => ['id' => 9]]], $record);
 	}//end testAnAcceptedRowIsWrittenAndHeld()

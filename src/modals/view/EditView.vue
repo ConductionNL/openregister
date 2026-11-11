@@ -237,20 +237,9 @@ export default {
 			loadingUsers: false,
 			success: false,
 			error: null,
-			viewData: {
-				name: '',
-				description: '',
-				isPublic: false,
-				isDefault: false,
-				query: {},
-			},
+			viewData: emptyViewData(),
 
-			selectedGroups: [],
-			selectedUsers: [],
-			availableGroups: [],
-			availableUsers: [],
-			groupSearchDebounce: null,
-			userSearchDebounce: null,
+			...emptySharing(),
 		}
 	},
 
@@ -263,29 +252,12 @@ export default {
 			 */
 			handler(newView) {
 				if (newView) {
-					this.viewData = {
-						name: newView.name || '',
-						description: newView.description || '',
-						isPublic: newView.isPublic || false,
-						isDefault: newView.isDefault || false,
-						query: newView.query || newView.configuration || {},
-					}
+					this.viewData = viewFormData(newView)
 
 					// Initialize selected groups and users from the view
 					// Convert string IDs to objects for NcSelect
-					// A view's group shares are `sharedWith: [{ group, mode }]`.
-					// The mode of an existing share is kept; a new group reads.
-					this.selectedGroups = (newView.sharedWith || []).map(
-						(share) => ({
-							id: share.group,
-							name: share.group,
-							mode: share.mode || 'read',
-						}),
-					)
-					this.selectedUsers = (newView.sharedUsers || []).map((id) => ({
-						id,
-						name: id,
-					}))
+					this.selectedGroups = sharedGroupsOf(newView)
+					this.selectedUsers = sharedUsersOf(newView)
 
 					// Populate available options with currently selected items
 					this.availableGroups = [...this.selectedGroups]
@@ -490,6 +462,83 @@ export default {
 			this.$emit('close')
 		},
 	},
+}
+
+/**
+ * The form of a new view: unnamed, private, not the default, no query.
+ *
+ * @return {object} The form
+ */
+function emptyViewData() {
+	return {
+		name: '',
+		description: '',
+		isPublic: false,
+		isDefault: false,
+		query: {},
+	}
+}
+
+/**
+ * The sharing state of a new view: no groups or users chosen or offered, and
+ * no search pending.
+ *
+ * @return {object} The state
+ */
+function emptySharing() {
+	return {
+		selectedGroups: [],
+		selectedUsers: [],
+		availableGroups: [],
+		availableUsers: [],
+		groupSearchDebounce: null,
+		userSearchDebounce: null,
+	}
+}
+
+/**
+ * The form of a stored view; its query falls back to its configuration.
+ *
+ * @param {object} view The view
+ * @return {object} The form
+ */
+function viewFormData(view) {
+	return {
+		name: view.name || '',
+		description: view.description || '',
+		isPublic: view.isPublic || false,
+		isDefault: view.isDefault || false,
+		query: view.query || view.configuration || {},
+	}
+}
+
+/**
+ * The groups a view is shared with, as select options. A view's group shares
+ * are `sharedWith: [{ group, mode }]`; the mode of an existing share is kept,
+ * and a share without one reads.
+ *
+ * @param {object} view The view
+ * @return {Array<{id: string, name: string, mode: string}>} The options
+ */
+function sharedGroupsOf(view) {
+	return (view.sharedWith || []).map((share) => ({
+		id: share.group,
+		name: share.group,
+		mode: share.mode || 'read',
+	}))
+}
+
+/**
+ * The users a view is shared with, as select options.
+ *
+ * @param {object} view The view
+ * @return {Array<{id: string, name: string}>} The options
+ */
+function sharedUsersOf(view) {
+	return (view.sharedUsers || []).map((id) => ({
+		id,
+		name: id,
+	}))
 }
 </script>
 

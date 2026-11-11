@@ -31,7 +31,7 @@ namespace Unit\Repair;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\Flow\FlowSelection;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Repair\TypePerformerReferences;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
@@ -197,6 +197,20 @@ final class TypePerformerReferencesTest extends TestCase {
 
 		return $this->stored[0]->getNodes()[0]['config'];
 	}//end storedConfig()
+
+	/**
+	 * In a list, an empty entry is dropped and the rest typed; a scalar field stays a scalar.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyListEntryIsDroppedAndAScalarStaysAScalar(): void {
+		$this->flows = [$this->flowWith(['candidateGroups' => ['', 'bezwaar'], 'routingFallback' => 'alice'])];
+
+		$this->runStep([new NamedResolver('user', ['alice']), new NamedResolver('group', ['bezwaar'])]);
+
+		$this->assertSame([['type' => 'group', 'id' => 'bezwaar']], $this->storedConfig()['candidateGroups']);
+		$this->assertSame(['type' => 'user', 'id' => 'alice'], $this->storedConfig()['routingFallback']);
+	}//end testAnEmptyListEntryIsDroppedAndAScalarStaysAScalar()
 
 	/**
 	 * A string only one kind answers to is rewritten to that kind.

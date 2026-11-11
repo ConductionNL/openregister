@@ -28,6 +28,8 @@ use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\SeedRelatedTarget;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
@@ -176,12 +178,17 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 		}
 
 		$handler = new ImportHandler(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $logger,
 			appDataPath: '/tmp',
 			objectService: $this->createMock(ObjectService::class)
@@ -212,8 +219,9 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 				}
 			);
 			$taskService = $this->createMock(TaskService::class);
-			$taskService->method('createTask')->willReturnCallback(
-				function (...$args): array {
+			$taskService->method('createObjectTask')->willReturnCallback(
+				function (ObjectRef $ref, LinkedTaskDraft $draft): array {
+					$args = [$ref->register, $ref->schema, $ref->id, $draft->objectTitle, $draft->data];
 					$this->calls[] = ['createTask', $args];
 					if ($args[4]['summary'] === 'fail') {
 						throw new \RuntimeException('task failed');

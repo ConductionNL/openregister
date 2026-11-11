@@ -6,6 +6,8 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -502,7 +504,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')->willReturn([
+		$this->objectService->method('migrate')->willReturn([
 			'success' => true,
 			'migrated' => 1,
 		]);
@@ -524,7 +526,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')
+		$this->objectService->method('migrate')
 			->willThrowException(new \OCA\OpenRegister\Exception\NotAuthorizedException('No access'));
 
 		$result = $this->controller->migrate($this->objectService);
@@ -543,7 +545,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')
+		$this->objectService->method('migrate')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
 		$result = $this->controller->migrate($this->objectService);
@@ -561,7 +563,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')
+		$this->objectService->method('migrate')
 			->willThrowException(new Exception('Migration error'));
 
 		$result = $this->controller->migrate($this->objectService);
@@ -646,7 +648,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, null],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')->willReturn([
+		$this->objectService->method('validateAndSaveTable')->willReturn([
 			'processed' => 10,
 			'updated' => 8,
 			'failed' => 2,
@@ -671,7 +673,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, null],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')
+		$this->objectService->method('validateAndSaveTable')
 			->willThrowException(new DBException('Validation error'));
 
 		$result = $this->controller->validate();
@@ -2585,7 +2587,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')
+		$this->objectService->method('migrate')
 			->willThrowException(new \InvalidArgumentException('Invalid mapping'));
 
 		$result = $this->controller->migrate($this->objectService);
@@ -2606,7 +2608,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, '10'],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')->willReturn([
+		$this->objectService->method('validateAndSaveTable')->willReturn([
 			'processed' => 50,
 			'updated' => 45,
 			'failed' => 5,
@@ -3687,7 +3689,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, null],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')->willReturn([
+		$this->objectService->method('validateAndSaveTable')->willReturn([
 			'processed' => 10,
 			'updated' => 5,
 			'failed' => 5,
@@ -3796,7 +3798,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['name' => 'title', 'desc' => 'description'],
 		]);
 
-		$this->objectService->method('migrateObjects')->willReturn([
+		$this->objectService->method('migrate')->willReturn([
 			'success' => true,
 			'migrated' => 3,
 			'failed' => 0,
@@ -3957,7 +3959,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, '50'],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')->willReturn([
+		$this->objectService->method('validateAndSaveTable')->willReturn([
 			'processed' => 25,
 			'updated' => 20,
 			'failed' => 5,
@@ -6525,7 +6527,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testMigrateRefusals(array $params, string $expected): void {
 		$this->request->method('getParams')->willReturn($params);
-		$this->objectService->expects($this->never())->method('migrateObjects');
+		$this->objectService->expects($this->never())->method('migrate');
 
 		$result = $this->controller->migrate($this->objectService);
 
@@ -6542,7 +6544,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(
 			['sourceRegister' => '', 'sourceSchema' => '0', 'targetRegister' => 't', 'targetSchema' => 'u', 'objects' => ['o'], 'mapping' => ['a' => 'b']]
 		);
-		$this->objectService->expects($this->once())->method('migrateObjects')->with('', '0', 't', 'u', ['o'], ['a' => 'b'])->willReturn(['done' => 1]);
+		$this->objectService->expects($this->once())->method('migrate')->with(new ObjectMigration(source: new RegisterSchemaRef(register: '', schema: '0'), target: new RegisterSchemaRef(register: 't', schema: 'u'), objectIds: ['o'], mapping: ['a' => 'b']))->willReturn(['done' => 1]);
 
 		$this->assertSame(['done' => 1], $this->controller->migrate($this->objectService)->getData());
 	}

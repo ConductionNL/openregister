@@ -135,8 +135,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * escalation rule whose preBreach offset resolves before the anchor.
 	 *
 	 * @param array<string, mixed> $config The timer configuration.
-	 * @param string|null $actor The arming identity.
-	 * @param DateTimeInterface|null $now The clock; null means the real clock.
+	 * @param FlowTimerAct         $act    The arming identity and the clock ({@see FlowTimerAct::of()} reads the real clock).
 	 *
 	 * @return FlowTimer The armed timer.
 	 *
@@ -144,23 +143,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-deadline-declares-its-legal-effect-and-only-a-legal-one-enforces
 	 */
-	public function arm(array $config, ?string $actor, ?DateTimeInterface $now = null): FlowTimer {
-		return $this->armFor(config: $config, act: new FlowTimerAct(actor: $actor, now: $this->instant(now: $now)));
-	}//end arm()
-
-	/**
-	 * Arm a timer for one act: validate it against its timeline, then persist it.
-	 *
-	 * @param array<string, mixed> $config The timer configuration, as {@see arm()} documents it.
-	 * @param FlowTimerAct         $act    The arming identity and the clock.
-	 *
-	 * @return FlowTimer The armed timer.
-	 *
-	 * @throws FlowTimerValidationException On any refused value.
-	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-deadline-declares-its-legal-effect-and-only-a-legal-one-enforces
-	 */
-	public function armFor(array $config, FlowTimerAct $act): FlowTimer {
+	public function arm(array $config, FlowTimerAct $act): FlowTimer {
 		$timer = $this->factory()->build(config: $config, act: $act);
 		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 
@@ -174,7 +157,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 		);
 
 		return $this->transactional(mutation: fn (): FlowTimer => $this->insertArmed(timer: $timer, act: $act));
-	}//end armFor()
+	}//end arm()
 
 	/**
 	 * Insert a validated timer, record that it was armed and project it.
@@ -633,12 +616,11 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$this->subjects->dispatcher->dispatchTyped(
 			new FlowTimerFiredEvent(
 				timer: $timer,
-				kind: FlowTimerFiredEvent::KIND_EXPIRY,
-				transition: 'expiry:' . (string)($timer->getOnExpiry() ?? 'none'),
-				rungKey: null,
-				recipients: [],
-				priority: 'critical',
-				message: null
+				firing: new TimerFiring(
+					kind: FlowTimerFiredEvent::KIND_EXPIRY,
+					transition: 'expiry:' . (string)($timer->getOnExpiry() ?? 'none')
+				),
+				notice: new EscalationNotice(priority: 'critical')
 			)
 		);
 		$this->projection()->project(timer: $timer);
@@ -700,13 +682,13 @@ class FlowTimerService implements FlowTimerControlInterface {
 			$this->subjects->dispatcher->dispatchTyped(
 				new FlowTimerFiredEvent(
 					timer: $timer,
-					kind: FlowTimerFiredEvent::KIND_RUNG,
-					transition: $transition,
-					rungKey: (string)$rung['key'],
-					recipients: $recipients,
-					priority: (string)$rung['priority'],
-					message: $rung['message'],
-					consequence: ($rung['consequence'] ?? null)
+					firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_RUNG, transition: $transition, rungKey: (string)$rung['key']),
+					notice: new EscalationNotice(
+						recipients: $recipients,
+						priority: (string)$rung['priority'],
+						message: $rung['message'],
+						consequence: ($rung['consequence'] ?? null)
+					)
 				)
 			);
 		}//end foreach

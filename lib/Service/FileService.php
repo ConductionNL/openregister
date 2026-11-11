@@ -94,6 +94,7 @@ use OCA\OpenRegister\Service\File\ReadFileHandler;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
+use OCA\OpenRegister\Support\ContentDisposition;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\StreamResponse;
 use OCP\Files\File;
@@ -1573,41 +1574,12 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 		// response splitting via quotes, control chars, or non-ASCII bytes.
 		$response->addHeader(
 			'Content-Disposition',
-			$this->buildContentDisposition(disposition: 'attachment', filename: $file->getName())
+			(new ContentDisposition(disposition: 'attachment', filename: $file->getName()))->headerValue()
 		);
 		$response->addHeader('Content-Length', (string)$file->getSize());
 
 		return $response;
 	}//end streamFile()
-
-	/**
-	 * Build an RFC 6266 compliant Content-Disposition header value.
-	 *
-	 * SEC-CTRL-9: emits a sanitised ASCII `filename="..."` fallback plus a UTF-8
-	 * `filename*` parameter so a hostile or non-ASCII filename cannot split the
-	 * header or corrupt the response.
-	 *
-	 * @param string $disposition Either 'inline' or 'attachment'.
-	 * @param string $filename The raw file name.
-	 *
-	 * @return string The encoded Content-Disposition header value.
-	 */
-	private function buildContentDisposition(string $disposition, string $filename): string {
-		$clean = preg_replace('/[\x00-\x1F\x7F]/', '', $filename);
-		if ($clean === null) {
-			$clean = '';
-		}
-
-		$ascii = preg_replace('/[^\x20-\x7E]/', '_', $clean);
-		if ($ascii === null) {
-			$ascii = '';
-		}
-
-		$ascii = str_replace(['\\', '"'], '_', $ascii);
-		$encoded = rawurlencode($clean);
-
-		return $disposition . '; filename="' . $ascii . '"; filename*=UTF-8\'\'' . $encoded;
-	}//end buildContentDisposition()
 
 	/**
 	 * Publish a file by creating a public share link using direct database operations.

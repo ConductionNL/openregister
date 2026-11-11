@@ -347,10 +347,12 @@ final class FlowTimerFactory {
 	private function shiftAnchor(FlowTimer $timer): void {
 		$calendar = $this->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 		$anchorAt = $this->calculator->add(
-			from: DateTimeImmutable::createFromInterface($timer->getAnchorAt()),
-			value: (float)$timer->getAnchorOffset(),
-			unit: (string)$timer->getAnchorOffsetUnit(),
-			calendar: $calendar
+			addition: new SlaAddition(
+				start: DateTimeImmutable::createFromInterface($timer->getAnchorAt()),
+				value: (float)$timer->getAnchorOffset(),
+				unit: (string)$timer->getAnchorOffsetUnit(),
+				calendar: $calendar
+			)
 		);
 		$timer->setAnchorAt($this->values->mutable(value: $anchorAt));
 	}//end shiftAnchor()
@@ -390,10 +392,12 @@ final class FlowTimerFactory {
 		}
 
 		return $this->calculator->add(
-			from: $anchorAt,
-			value: (float)$prior->getAnchorOffset(),
-			unit: (string)$prior->getAnchorOffsetUnit(),
-			calendar: $scope->calendar
+			addition: new SlaAddition(
+				start: DateTimeImmutable::createFromInterface($anchorAt),
+				value: (float)$prior->getAnchorOffset(),
+				unit: (string)$prior->getAnchorOffsetUnit(),
+				calendar: $scope->calendar
+			)
 		);
 	}//end movedAnchor()
 

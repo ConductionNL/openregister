@@ -245,14 +245,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 
 		$response = $this->router->call(
 			provider: $this,
-			request: new UpstreamRequest(
-				method: 'POST',
-				path: 'personen',
-				options: [
-					'body' => $this->buildQueryBody(bsn: $bsn),
-					'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-				]
-			)
+			request: $this->personenRequest(body: $this->buildQueryBody(bsn: $bsn))
 		);
 
 		return $this->extractPersonen(response: $response);
@@ -291,14 +284,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 		try {
 			$envelope = $this->router->callWithMeta(
 				provider: $this,
-				request: new UpstreamRequest(
-					method: 'POST',
-					path: 'personen',
-					options: [
-						'body' => $this->buildQueryBody(bsn: $bsn),
-						'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-					]
-				)
+				request: $this->personenRequest(body: $this->buildQueryBody(bsn: $bsn))
 			);
 		} catch (ProviderUnavailableException $e) {
 			return $this->degraded(cause: $e->getCause());
@@ -346,18 +332,13 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 
 			$envelope = $this->router->callWithMeta(
 				provider: $this,
-				request: new UpstreamRequest(
-					method: 'POST',
-					path: 'personen',
-					options: [
-						'body' => [
-							'type' => 'ZoekMetAdresseerbaarObjectIdentificatie',
-							'adresseerbaarObjectIdentificatie' => $addressObjectId,
-							'fields' => ['burgerservicenummer'],
-						],
-						'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-						'withholdBodies' => true,
-					]
+				request: $this->personenRequest(
+					body: [
+						'type' => 'ZoekMetAdresseerbaarObjectIdentificatie',
+						'adresseerbaarObjectIdentificatie' => $addressObjectId,
+						'fields' => ['burgerservicenummer'],
+					],
+					extraOptions: ['withholdBodies' => true]
 				)
 			);
 		} catch (ProviderUnavailableException $e) {
@@ -372,6 +353,28 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 			'meta' => $this->shapeMeta(meta: ($envelope['meta'] ?? [])),
 		];
 	}//end countResidentsAtAddressObject()
+
+	/**
+	 * A HAL+JSON query to the BRP `personen` endpoint.
+	 *
+	 * @param array<string,mixed> $body         The query body.
+	 * @param array<string,mixed> $extraOptions Further connector options, after the body and headers.
+	 *
+	 * @return UpstreamRequest
+	 */
+	private function personenRequest(array $body, array $extraOptions=[]): UpstreamRequest {
+		return new UpstreamRequest(
+			method: 'POST',
+			path: 'personen',
+			options: array_merge(
+				[
+					'body' => $body,
+					'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
+				],
+				$extraOptions
+			)
+		);
+	}//end personenRequest()
 
 	/**
 	 * Build the `RaadpleegMetBurgerservicenummer` query body for the
@@ -463,19 +466,8 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 	 * @return array<int,array<string,mixed>>
 	 */
 	private function extractPersonen(array $response): array {
-		$list = [];
-		if (isset($response['personen']) === true && is_array($response['personen']) === true) {
-			$list = $response['personen'];
-		} elseif (isset($response['_embedded']['personen']) === true
-			&& is_array($response['_embedded']['personen']) === true
-		) {
-			$list = $response['_embedded']['personen'];
-		} elseif (array_is_list($response) === true) {
-			$list = $response;
-		}
-
 		$out = [];
-		foreach ($list as $row) {
+		foreach (self::personenList(response: $response) as $row) {
 			if (is_array($row) === true) {
 				$out[] = $row;
 			}
@@ -483,4 +475,45 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 
 		return $out;
 	}//end extractPersonen()
+
+	/**
+	 * The person list of a response: `personen`, else `_embedded.personen`, else a bare list, else none.
+	 *
+	 * @param array<string,mixed> $response Decoded source response (HAL+JSON).
+	 *
+	 * @return array<mixed> The rows, not yet checked to be objects.
+	 */
+	private static function personenList(array $response): array {
+		$direct = self::listUnder(container: $response, key: 'personen');
+		if ($direct !== null) {
+			return $direct;
+		}
+
+		$embedded = self::listUnder(container: ($response['_embedded'] ?? null), key: 'personen');
+		if ($embedded !== null) {
+			return $embedded;
+		}
+
+		if (array_is_list($response) === true) {
+			return $response;
+		}
+
+		return [];
+	}//end personenList()
+
+	/**
+	 * The array a container holds under a key, or null when the container or the value is not an array.
+	 *
+	 * @param mixed  $container The envelope, or part of it.
+	 * @param string $key       The key.
+	 *
+	 * @return array<mixed>|null
+	 */
+	private static function listUnder(mixed $container, string $key): ?array {
+		if (is_array($container) === false || isset($container[$key]) === false || is_array($container[$key]) === false) {
+			return null;
+		}
+
+		return $container[$key];
+	}//end listUnder()
 }//end class

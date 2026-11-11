@@ -149,7 +149,19 @@ final class ReferenceExistence {
 		$context = ['property' => $check->propertyName, 'uuid' => $check->uuid, 'targetSchema' => $check->schemaRef, 'cycleDepth' => count($cycle)];
 		$this->events->logger->warning(message: '[SaveObject] Circular reference detected during validation', context: $context);
 
-		throw new CircularReferenceException(
+		throw self::circularReference(check: $check, cycle: $cycle);
+	}//end refuseCycle()
+
+	/**
+	 * The refusal of a reference that closes a cycle of saves.
+	 *
+	 * @param ReferenceCheck $check The reference.
+	 * @param array          $cycle The save frames of the cycle.
+	 *
+	 * @return CircularReferenceException
+	 */
+	private static function circularReference(ReferenceCheck $check, array $cycle): CircularReferenceException {
+		return new CircularReferenceException(
 			referenceCycle: new ReferenceCycle(
 				referencedUuid: $check->uuid,
 				targetSchemaSlug: $check->schemaRef,
@@ -157,7 +169,7 @@ final class ReferenceExistence {
 			),
 			code: 422
 		);
-	}//end refuseCycle()
+	}//end circularReference()
 
 	/**
 	 * One frame of a cycle, as the refusal reports it.
@@ -191,7 +203,18 @@ final class ReferenceExistence {
 			return true;
 		}
 
-		throw new ReferenceValidationException(
+		throw self::brokenReference(check: $check);
+	}//end replay()
+
+	/**
+	 * The refusal of a reference to an object that does not exist.
+	 *
+	 * @param ReferenceCheck $check The reference.
+	 *
+	 * @return ReferenceValidationException
+	 */
+	private static function brokenReference(ReferenceCheck $check): ReferenceValidationException {
+		return new ReferenceValidationException(
 			reference: new BrokenReference(
 				propertyName: $check->propertyName,
 				referencedUuid: $check->uuid,
@@ -200,7 +223,7 @@ final class ReferenceExistence {
 			),
 			code: 422
 		);
-	}//end replay()
+	}//end brokenReference()
 
 	/**
 	 * Record the target schema of a reference and the slug its refusal names.

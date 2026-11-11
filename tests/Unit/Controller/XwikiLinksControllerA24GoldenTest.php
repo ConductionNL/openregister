@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\Support\XwikiLinksControllerServices;
 use OCA\OpenRegister\Controller\XwikiLinksController;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Service\XwikiLinkServiceInterface;
 use OCA\OpenRegister\Service\XwikiPageDraft;

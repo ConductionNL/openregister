@@ -287,16 +287,7 @@ class CaseTokenService implements CaseTokenServiceInterface {
 			return null;
 		}
 
-		$rendered = $read['objectService']->renderEntity(
-			entity: $entity,
-			_extend: [],
-			depth: 0,
-			filter: [],
-			fields: [],
-			unset: [],
-			_rbac: true,
-			_multitenancy: true
-		);
+		$rendered = $read['objectService']->renderEntity(entity: $entity, _rbac: true, _multitenancy: true);
 
 		return [
 			'token' => $row->getToken(),

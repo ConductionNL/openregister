@@ -112,4 +112,29 @@ class CaseTokenControllerTest extends TestCase {
 		$response = $this->controller->resolve('bad');
 		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 	}//end testAThrottlerFailureStillRefuses()
+	/**
+	 * A throttler failure is logged with its message, and the refusal stands.
+	 *
+	 * @return void
+	 */
+	public function testAThrottlerFailureIsLogged(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')
+			->with('CaseTokenController: registerAttempt failed: down');
+		$throttler = $this->createMock(IThrottler::class);
+		$throttler->expects($this->once())->method('registerAttempt')
+			->with(CaseTokenController::THROTTLE_ACTION, '192.0.2.7')
+			->willThrowException(new \RuntimeException('down'));
+		$request = $this->createMock(IRequest::class);
+		$request->method('getRemoteAddress')->willReturn('192.0.2.7');
+		$this->tokens->method('resolve')->willReturn(null);
+		$controller = new CaseTokenController(
+			$request,
+			new CaseTokenControllerServices($this->tokens, $throttler, $logger)
+		);
+
+		$response = $controller->resolve('bad');
+
+		$this->assertSame([Http::STATUS_NOT_FOUND, ['message' => 'Not Found']], [$response->getStatus(), $response->getData()]);
+	}//end testAThrottlerFailureIsLogged()
 }//end class

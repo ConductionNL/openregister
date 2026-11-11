@@ -8,6 +8,7 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\BackgroundJob\SyncConfigurationsJob;
+use OCA\OpenRegister\Db\ConfigurationSyncResult;
 use OCA\OpenRegister\Service\Config\ConfigurationRecords;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
@@ -586,8 +587,8 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$recorded = [];
 		$this->configurationMapper->method('updateSyncStatus')->willReturnCallback(
-			function (int $id, string $status, \DateTime $syncDate) use (&$recorded) {
-				$recorded[] = [$id, $status, abs($syncDate->getTimestamp() - time()) <= 5];
+			function (int $id, ConfigurationSyncResult $result) use (&$recorded) {
+				$recorded[] = [$id, $result->status, abs($result->syncDate->getTimestamp() - time()) <= 5];
 				return $this->createConfigEntity(['id' => $id]);
 			}
 		);
@@ -611,9 +612,9 @@ class SyncConfigurationsJobTest extends TestCase {
 		]);
 		$statuses = [];
 		$this->configurationMapper->method('updateSyncStatus')->willReturnCallback(
-			function (int $id, string $status, \DateTime $date, string $message = '') use (&$statuses) {
-				$statuses[] = "$id $status $message";
-				if ($status === 'failed') {
+			function (int $id, ConfigurationSyncResult $result) use (&$statuses) {
+				$statuses[] = "$id {$result->status} {$result->message}";
+				if ($result->status === 'failed') {
 					throw new \Exception('db gone');
 				}
 

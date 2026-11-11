@@ -79,28 +79,63 @@ class PropertyReadGuard {
 		}
 
 		if ($this->container === null) {
-			$this->logger->warning(
-				message: '[PropertyReadGuard] No container to resolve the property read rule; treating the property as unreadable',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property]
-			);
-			return false;
+			return $this->refuseWithoutContainer(property: $property);
 		}
 
-		try {
-			$rbac = $this->container->get(PropertyRbacHandler::class);
-
-			return $rbac->canReadProperty(property: new SchemaProperty(schema: $schema, name: $property), request: new PropertyAccessRequest(object: []));
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[PropertyReadGuard] Could not check the property read rule; treating the property as unreadable',
-				context: [
-					'file'      => __FILE__,
-					'line'      => __LINE__,
-					'property'  => $property,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return false;
-		}
+		return $this->checkedRead(property: new SchemaProperty(schema: $schema, name: $property), container: $this->container);
 	}//end mayRead()
+
+	/**
+	 * Refuse a governed property when there is no container to resolve its read rule.
+	 *
+	 * @param string $property The property name.
+	 *
+	 * @return bool Always false.
+	 */
+	private function refuseWithoutContainer(string $property): bool {
+		$this->logger->warning(
+			message: '[PropertyReadGuard] No container to resolve the property read rule; treating the property as unreadable',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property]
+		);
+		return false;
+	}//end refuseWithoutContainer()
+
+	/**
+	 * Ask the property read rule; a rule that cannot be evaluated refuses.
+	 *
+	 * @param SchemaProperty     $property  The schema and the property name.
+	 * @param ContainerInterface $container Resolves the property RBAC handler.
+	 *
+	 * @return bool Whether the caller may read the property.
+	 */
+	private function checkedRead(SchemaProperty $property, ContainerInterface $container): bool {
+		try {
+			$rbac = $container->get(PropertyRbacHandler::class);
+
+			return $rbac->canReadProperty(property: $property, request: new PropertyAccessRequest(object: []));
+		} catch (Throwable $e) {
+			return $this->refuseUncheckable(property: $property->name, error: $e);
+		}
+	}//end checkedRead()
+
+	/**
+	 * Refuse a property whose read rule could not be evaluated, saying why.
+	 *
+	 * @param string    $property The property name.
+	 * @param Throwable $error    Why the rule could not be evaluated.
+	 *
+	 * @return bool Always false.
+	 */
+	private function refuseUncheckable(string $property, Throwable $error): bool {
+		$this->logger->warning(
+			message: '[PropertyReadGuard] Could not check the property read rule; treating the property as unreadable',
+			context: [
+				'file'      => __FILE__,
+				'line'      => __LINE__,
+				'property'  => $property,
+				'exception' => $error->getMessage(),
+			]
+		);
+		return false;
+	}//end refuseUncheckable()
 }//end class

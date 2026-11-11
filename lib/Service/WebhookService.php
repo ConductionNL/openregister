@@ -673,8 +673,6 @@ class WebhookService {
 	 * @param array $payload Event payload
 	 *
 	 * @return bool
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple filter condition checks
 	 */
 	private function passesFilters(Webhook $webhook, array $payload): bool {
 		$filters = $webhook->getFiltersArray();
@@ -686,19 +684,30 @@ class WebhookService {
 		foreach ($filters as $key => $value) {
 			// Support dot notation for nested keys.
 			$actualValue = $this->getNestedValue(array: $payload, key: $key);
-
-			// If filter value is array, check if actual value is in array.
-			if (is_array($value) === true) {
-				if (in_array($actualValue, $value) === false) {
-					return false;
-				}
-			} elseif ($actualValue !== $value) {
+			if ($this->filterMatches(expected: $value, actual: $actualValue) === false) {
 				return false;
 			}
 		}
 
 		return true;
 	}//end passesFilters()
+
+	/**
+	 * Whether one payload value satisfies one filter value.
+	 *
+	 * @param mixed $expected The filter value; a list means "one of these" (loose comparison).
+	 * @param mixed $actual   The payload value.
+	 *
+	 * @return bool
+	 */
+	private function filterMatches(mixed $expected, mixed $actual): bool {
+		// If filter value is array, check if actual value is in array.
+		if (is_array($expected) === true) {
+			return in_array($actual, $expected);
+		}
+
+		return $actual === $expected;
+	}//end filterMatches()
 
 	/**
 	 * Get nested value from array using dot notation
@@ -985,10 +994,6 @@ class WebhookService {
 	 *
 	 * @return array Modified request data or original request data
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex request interception logic
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple webhook processing paths
-	 * Fallback when formatter is unavailable
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-must-support-pre-event-webhooks
 	 *   (finds before-event webhooks for the event type, formats the request as a CloudEvent, delivers to each,
 	 *   and continues past per-webhook failures, returning the request data)
@@ -1010,6 +1015,28 @@ class WebhookService {
 			return $request->getParams();
 		}
 
+		$event = $this->interceptionEvent(request: $request, eventType: $eventType);
+
+		// Get original request data.
+		$requestData = $request->getParams();
+
+		// Process each webhook; one failing does not stop the others.
+		foreach ($webhooks as $webhook) {
+			$this->interceptWith(webhook: $webhook, event: $event);
+		}
+
+		return $requestData;
+	}//end interceptRequest()
+
+	/**
+	 * The event an interception webhook receives: the request as a CloudEvent, in the standard webhook payload.
+	 *
+	 * @param IRequest $request   The HTTP request
+	 * @param string   $eventType The event type (e.g., 'object.creating')
+	 *
+	 * @return WebhookEvent The event.
+	 */
+	private function interceptionEvent(IRequest $request, string $eventType): WebhookEvent {
 		// Format request as CloudEvent if formatter is available.
 		// Default to basic request data, override with CloudEvent format if formatter available.
 		$cloudEvent = [
@@ -1025,62 +1052,76 @@ class WebhookService {
 			);
 		}
 
-		// Get original request data.
-		$requestData = $request->getParams();
-		$modifiedData = $requestData;
+		// Convert CloudEvent to standard webhook payload format.
+		return new WebhookEvent(name: $eventType, payload: ['objectType' => 'request', 'action' => $eventType, 'cloudEvent' => $cloudEvent]);
+	}//end interceptionEvent()
 
-		// Process each webhook.
-		foreach ($webhooks as $webhook) {
-			try {
-				// Convert CloudEvent to standard webhook payload format.
-				$webhookPayload = [
-					'objectType' => 'request',
-					'action' => $eventType,
-					'cloudEvent' => $cloudEvent,
-				];
+	/**
+	 * Deliver the interception event to one webhook, logging a failure instead of throwing it.
+	 *
+	 * @param Webhook      $webhook The webhook.
+	 * @param WebhookEvent $event   The interception event.
+	 *
+	 * @return void
+	 */
+	private function interceptWith(Webhook $webhook, WebhookEvent $event): void {
+		try {
+			// Interception blocks the object write, so the delivery timeout is capped hard — see INTERCEPTION_TIMEOUT_SECONDS.
+			$success = $this->deliverWebhook(
+				delivery: new WebhookDelivery(webhook: $webhook, event: $event, timeoutCapSeconds: self::INTERCEPTION_TIMEOUT_SECONDS)
+			);
+			if ($success === true && $this->shouldProcessResponse(webhook: $webhook) === true) {
+				$this->logResponseProcessingPending(webhook: $webhook, eventType: $event->name);
+			}
+		} catch (\Exception $e) {
+			// Log failure but continue processing other webhooks.
+			$this->logger->error(
+				message: '[WebhookService] Failed to deliver webhook during request interception',
+				context: $this->interceptionLogContext(webhook: $webhook, eventType: $event->name) + ['error' => $e->getMessage()]
+			);
+		}
+	}//end interceptWith()
 
-				// Deliver webhook. Interception blocks the object write, so the
-				// delivery timeout is capped hard — see INTERCEPTION_TIMEOUT_SECONDS.
-				$event = new WebhookEvent(name: $eventType, payload: $webhookPayload);
-				$success = $this->deliverWebhook(
-					delivery: new WebhookDelivery(webhook: $webhook, event: $event, timeoutCapSeconds: self::INTERCEPTION_TIMEOUT_SECONDS)
-				);
+	/**
+	 * Note that a delivered webhook wants its response processed, which is not implemented yet.
+	 *
+	 * Note: This is currently limited as we're using fire-and-forget delivery.
+	 * TODO: Implement response handling if needed.
+	 *
+	 * @param Webhook $webhook   The webhook.
+	 * @param string  $eventType The event type.
+	 *
+	 * @return void
+	 */
+	private function logResponseProcessingPending(Webhook $webhook, string $eventType): void {
+		$this->logger->info(
+			message: '[WebhookService] Webhook delivery successful but response processing not yet implemented',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'webhook_id' => $webhook->getId(),
+				'event_type' => $eventType,
+			]
+		);
+	}//end logResponseProcessingPending()
 
-				// Process response if webhook is configured to handle responses.
-				// Note: This is currently limited as we're using fire-and-forget delivery.
-				// TODO: Implement response handling if needed.
-				if ($success === true && $this->shouldProcessResponse(webhook: $webhook) === true) {
-					$this->logger->info(
-						message: '[WebhookService] Webhook delivery successful but response processing not yet implemented',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'webhook_id' => $webhook->getId(),
-							'event_type' => $eventType,
-						]
-					);
-				}
-			} catch (\Exception $e) {
-				// Log failure but continue processing other webhooks.
-				$this->logger->error(
-					message: '[WebhookService] Failed to deliver webhook during request interception',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'webhook_id' => $webhook->getId(),
-						'webhook_name' => $webhook->getName(),
-						'event_type' => $eventType,
-						'error' => $e->getMessage(),
-					]
-				);
-
-				// Continue processing other webhooks even if one fails.
-				continue;
-			}//end try
-		}//end foreach
-
-		return $modifiedData;
-	}//end interceptRequest()
+	/**
+	 * The log context naming the webhook and event of a failed interception.
+	 *
+	 * @param Webhook $webhook   The webhook.
+	 * @param string  $eventType The event type.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	private function interceptionLogContext(Webhook $webhook, string $eventType): array {
+		return [
+			'file' => __FILE__,
+			'line' => __LINE__,
+			'webhook_id' => $webhook->getId(),
+			'webhook_name' => $webhook->getName(),
+			'event_type' => $eventType,
+		];
+	}//end interceptionLogContext()
 
 	/**
 	 * Find webhooks configured for request interception

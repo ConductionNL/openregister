@@ -83,6 +83,22 @@ class ServiceHoursClock {
 	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public function diagnostic(WorkingCalendar $calendar, ServiceHours $windows): array {
+		return [
+			'calendar' => $calendar->getSlug(),
+			'timezone' => $calendar->getTimezone(),
+			'serviceHoursDeclared' => $windows->areDeclared(),
+			'windows' => $this->printedWindows(windows: $windows),
+		];
+	}//end diagnostic()
+
+	/**
+	 * The service-hour windows per ISO weekday, printed as HH:MM-HH:MM.
+	 *
+	 * @param ServiceHours $windows The service hours.
+	 *
+	 * @return array<int, array<int, string>> The printed windows.
+	 */
+	private function printedWindows(ServiceHours $windows): array {
 		$applied = [];
 		foreach ($windows->all() as $iso => $dayWindows) {
 			$printed = [];
@@ -93,13 +109,8 @@ class ServiceHoursClock {
 			$applied[(int)$iso] = $printed;
 		}
 
-		return [
-			'calendar' => $calendar->getSlug(),
-			'timezone' => $calendar->getTimezone(),
-			'serviceHoursDeclared' => $windows->areDeclared(),
-			'windows' => $applied,
-		];
-	}//end diagnostic()
+		return $applied;
+	}//end printedWindows()
 
 	/**
 	 * One minute as `HH:MM`, for the diagnostic.

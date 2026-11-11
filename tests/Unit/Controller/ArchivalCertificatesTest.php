@@ -220,8 +220,16 @@ class ArchivalCertificatesTest extends TestCase {
 
 		$data = $this->controller->listCertificates()->getData();
 
-		$this->assertFalse($data['configured']);
-		$this->assertSame([], $data['results']);
+		$this->assertSame(
+			[
+				'results' => [],
+				'total' => 0,
+				'missing' => [],
+				'configured' => false,
+				'error' => 'No destruction list register and schema are configured',
+			],
+			$data
+		);
 	}//end testAnUnconfiguredInstanceSaysSo()
 
 	public function testCreatingAListAnswers201WithTheRefusals(): void {

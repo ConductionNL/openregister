@@ -58,6 +58,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Delegation\DelegationRequest;
+use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -367,35 +368,57 @@ class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 			return $config;
 		}
 
-		// Only NOW does the delegation service become load-bearing, and only now
-		// does a resolution failure have to fail closed. Refusing every flow save
-		// because a container could not build a service most saves never touch
-		// would turn an infrastructure fault into an editing outage — the same
-		// reasoning that makes registry() return null rather than throw.
-		$delegation = $this->delegationService(savedBy: $savedBy, runAs: $runAs);
-
-		$verdict = $delegation->verdictFor(
-			request: new DelegationRequest(principal: $savedBy, actingAs: $runAs, scope: [], now: new DateTime())
-		);
+		$request = new DelegationRequest(principal: $savedBy, actingAs: $runAs, scope: [], now: new DateTime());
+		$verdict = $this->delegationVerdict(request: $request);
 		if ($verdict->permitted === true) {
 			$config[self::CONFIG_DECLARED_BY] = $savedBy;
 
 			return $config;
 		}
 
+		throw $this->delegationRefusal(request: $request, verdict: $verdict);
+	}//end validateDelegation()
+
+	/**
+	 * Whether the saver may act as the trigger's identity.
+	 *
+	 * @param DelegationRequest $request The saver acting as the trigger's identity, now.
+	 *
+	 * @return DelegationVerdict The verdict.
+	 */
+	private function delegationVerdict(DelegationRequest $request): DelegationVerdict {
+		// Only NOW does the delegation service become load-bearing, and only now
+		// does a resolution failure have to fail closed. Refusing every flow save
+		// because a container could not build a service most saves never touch
+		// would turn an infrastructure fault into an editing outage — the same
+		// reasoning that makes registry() return null rather than throw.
+		$delegation = $this->delegationService(savedBy: $request->principal, runAs: $request->actingAs);
+
+		return $delegation->verdictFor(request: $request);
+	}//end delegationVerdict()
+
+	/**
+	 * The refusal of a schedule trigger whose saver may not act as its identity.
+	 *
+	 * @param DelegationRequest $request The refused delegation.
+	 * @param DelegationVerdict $verdict Why it was refused.
+	 *
+	 * @return InvalidArgumentException The refusal.
+	 */
+	private function delegationRefusal(DelegationRequest $request, DelegationVerdict $verdict): InvalidArgumentException {
 		// The reason is in the message because the four refusals send the author
 		// to four different places — ask, wait, give up, or find an
 		// administrator. "Not allowed" sends them to all four.
-		throw new InvalidArgumentException(
+		return new InvalidArgumentException(
 			sprintf(
 				'The schedule trigger names "%s", but "%s" may not act as them (%s). %s',
-				$runAs,
-				$savedBy,
+				$request->actingAs,
+				$request->principal,
 				$verdict->reason,
 				$verdict->detail
 			)
 		);
-	}//end validateDelegation()
+	}//end delegationRefusal()
 
 	/**
 	 * Whether a trigger asserts a delegation: it names someone other than the saving user.

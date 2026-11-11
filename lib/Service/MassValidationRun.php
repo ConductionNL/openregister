@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -34,7 +36,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Re-saves objects in batches, serially or in chunks of batches, and collects the counts,
- * errors, timings and memory use of the run in the shape SettingsService::massValidateObjects()
+ * errors, timings and memory use of the run in the shape SettingsService::massValidate()
  * returns.
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4

@@ -63,6 +63,21 @@ class FlowSemanticVersion implements FlowSemanticVersionInterface {
 	 */
 	public const FIRST = '1.0.0';
 
+	/**
+	 * The preview of a flow's first publish: nothing removed, version FIRST.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const FIRST_PREVIEW = [
+		'verdict'      => FlowGraphDiff::MINOR,
+		'next'         => self::FIRST,
+		'removed'      => '',
+		'removedNodes' => [],
+		'removedEdges' => [],
+		'removedKeys'  => [],
+		'first'        => true,
+	];
+
 	// The provenance values (SOURCE_DERIVED, SOURCE_BACKFILL) are declared on FlowSemanticVersionInterface.
 
 	/**
@@ -183,42 +198,6 @@ class FlowSemanticVersion implements FlowSemanticVersionInterface {
 	}//end backfilled()
 
 	/**
-	 * The version a publish should produce, from the two graphs and the
-	 * author's request.
-	 *
-	 * The one call a publisher makes. It compares, reconciles the verdict with
-	 * what the author asked for, and numbers the result — so the caller holds
-	 * one collaborator rather than two and never sees a verdict it has no use
-	 * for.
-	 *
-	 * A null previous graph means there is nothing to have broken, so the
-	 * answer is the first version whatever else is true. That covers both a
-	 * flow's first publish and a previous definition that can no longer be
-	 * read.
-	 *
-	 * @param array|null $publishedGraph The graph that was live, or null.
-	 * @param array $candidateGraph The graph being published.
-	 * @param string|null $previousSemver The last semantic version, if any.
-	 * @param string|null $requested `major`, `minor`, or null.
-	 *
-	 * @return string The semantic version to store.
-	 *
-	 * @throws UnexpectedValueException When the author asked to call a removal minor.
-	 *
-	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-a-semantic-version-is-derived-at-publish-from-the-graph
-	 */
-	public function forPublish(
-		?array $publishedGraph,
-		array $candidateGraph,
-		?string $previousSemver,
-		?string $requested
-	): string {
-		$revision = new FlowGraphRevision(published: $publishedGraph, candidate: $candidateGraph, previousSemver: $previousSemver);
-
-		return $this->versionFor(revision: $revision, requested: $requested);
-	}//end forPublish()
-
-	/**
 	 * The semantic version a publish of this revision stores.
 	 *
 	 * @param FlowGraphRevision $revision  The live graph, the candidate, and the last semantic version.
@@ -275,15 +254,7 @@ class FlowSemanticVersion implements FlowSemanticVersionInterface {
 			// Nothing to have broken. The first publish is not "minor over
 			// nothing", it is the first publish, and saying so is the
 			// difference between a number and an explanation.
-			return [
-				'verdict'      => FlowGraphDiff::MINOR,
-				'next'         => self::FIRST,
-				'removed'      => '',
-				'removedNodes' => [],
-				'removedEdges' => [],
-				'removedKeys'  => [],
-				'first'        => true,
-			];
+			return self::FIRST_PREVIEW;
 		}
 
 		$comparison = $this->diff->compare(published: $revision->published, candidate: $revision->candidate);

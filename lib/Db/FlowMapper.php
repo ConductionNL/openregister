@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Db\Flow\TriggerLookup;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;

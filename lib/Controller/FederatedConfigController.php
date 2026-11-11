@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ConfigPublishRequest;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices;
 use OCA\OpenRegister\Service\Config\ConfigPublishTarget;
@@ -40,6 +41,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
 use UnexpectedValueException;
@@ -59,6 +61,13 @@ class FederatedConfigController extends Controller {
 	 * the nc-vue Configuration store settings pane via /api/preferences).
 	 */
 	private const CREDENTIAL_PREF = 'pref_federated-config-credential';
+
+	/**
+	 * Words in an install failure that make it a trust refusal (403) rather than a 500.
+	 *
+	 * @var list<string>
+	 */
+	private const FORBIDDEN_INSTALL_MARKERS = ['allowlist', 'trusted', 'signature', 'crossOrganisation'];
 
 	/**
 	 * The user session.
@@ -187,6 +196,17 @@ class FederatedConfigController extends Controller {
 			return new JSONResponse(['error' => 'An install needs a type.'], Http::STATUS_BAD_REQUEST);
 		}
 
+		return $this->runInstall(type: $type);
+	}//end install()
+
+	/**
+	 * Install the requested bundle of a type and map a failure to its status.
+	 *
+	 * @param string $type The shareable configuration type id.
+	 *
+	 * @return JSONResponse The install result, 404 unknown type, 403 trust failure, or 500.
+	 */
+	private function runInstall(string $type): JSONResponse {
 		try {
 			$result = $this->service->install(
 				typeId: $type,
@@ -196,23 +216,32 @@ class FederatedConfigController extends Controller {
 		} catch (UnexpectedValueException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		} catch (Throwable $e) {
-			// A blocked source, an untrusted key, a bad signature or a crossing rule
-			// is a 403; anything else a 500.
-			$status = Http::STATUS_INTERNAL_SERVER_ERROR;
 			$message = $e->getMessage();
-			if (str_contains($message, 'allowlist') === true
-				|| str_contains($message, 'trusted') === true
-				|| str_contains($message, 'signature') === true
-				|| str_contains($message, 'crossOrganisation') === true
-			) {
-				$status = Http::STATUS_FORBIDDEN;
-			}
-
-			return new JSONResponse(['error' => $message], $status);
-		}//end try
+			return new JSONResponse(['error' => $message], $this->installFailureStatus(message: $message));
+		}
 
 		return new JSONResponse($result);
-	}//end install()
+	}//end runInstall()
+
+	/**
+	 * The status of a failed install.
+	 *
+	 * A blocked source, an untrusted key, a bad signature or a crossing rule
+	 * is a 403; anything else a 500.
+	 *
+	 * @param string $message The failure message.
+	 *
+	 * @return integer 403 for a trust failure, 500 otherwise.
+	 */
+	private function installFailureStatus(string $message): int {
+		foreach (self::FORBIDDEN_INSTALL_MARKERS as $marker) {
+			if (str_contains($message, $marker) === true) {
+				return Http::STATUS_FORBIDDEN;
+			}
+		}
+
+		return Http::STATUS_INTERNAL_SERVER_ERROR;
+	}//end installFailureStatus()
 
 	/**
 	 * Publish a selection to a GitHub repository, using the user's chosen store
@@ -236,13 +265,29 @@ class FederatedConfigController extends Controller {
 			return new JSONResponse(['error' => 'You are not allowed to publish configuration.'], Http::STATUS_FORBIDDEN);
 		}
 
-		$type = trim((string)$this->request->getParam('type', ''));
-		$repo = trim((string)$this->request->getParam('repo', ''));
-		$path = trim((string)$this->request->getParam('path', ''));
-		if ($type === '' || $repo === '' || $path === '') {
+		$publish = new ConfigPublishRequest(
+			type: trim((string)$this->request->getParam('type', '')),
+			target: new ConfigPublishTarget(
+				repo: trim((string)$this->request->getParam('repo', '')),
+				path: trim((string)$this->request->getParam('path', ''))
+			)
+		);
+		if ($publish->isIncomplete() === true) {
 			return new JSONResponse(['error' => 'A publish needs a type, repo and path.'], Http::STATUS_BAD_REQUEST);
 		}
 
+		return $this->publishWithStoredCredential(user: $user, publish: $publish);
+	}//end publish()
+
+	/**
+	 * Publish with the store credential the user selected, or refuse when they chose none.
+	 *
+	 * @param IUser|null           $user    The publishing user.
+	 * @param ConfigPublishRequest $publish The type and the repo and path to publish to.
+	 *
+	 * @return JSONResponse The publish result, or a 4xx/5xx.
+	 */
+	private function publishWithStoredCredential(?IUser $user, ConfigPublishRequest $publish): JSONResponse {
 		$credentialId = $this->config->getUserValue($user->getUID(), self::APP_ID, self::CREDENTIAL_PREF, '');
 		if ($credentialId === '') {
 			return new JSONResponse(
@@ -251,20 +296,44 @@ class FederatedConfigController extends Controller {
 			);
 		}
 
+		$target = $this->withRequestedBranchAndVisibility(target: $publish->target);
+		return $this->runPublish(publish: new ConfigPublishRequest(type: $publish->type, target: $target), credentialId: $credentialId);
+	}//end publishWithStoredCredential()
+
+	/**
+	 * The target with the requested branch (main when none) and visibility.
+	 *
+	 * A newly created store repo is public by default; `visibility: private`
+	 * makes it private (the token must have rights to create private repos).
+	 *
+	 * @param ConfigPublishTarget $target The repo and path.
+	 *
+	 * @return ConfigPublishTarget The complete target.
+	 */
+	private function withRequestedBranchAndVisibility(ConfigPublishTarget $target): ConfigPublishTarget {
 		$branch = trim((string)$this->request->getParam('branch', ''));
 		if ($branch === '') {
 			$branch = 'main';
 		}
 
-		// A newly created store repo is public by default; `visibility: private`
-		// makes it private (the token must have rights to create private repos).
 		$private = (trim((string)$this->request->getParam('visibility', 'public')) === 'private');
+		return new ConfigPublishTarget(repo: $target->repo, path: $target->path, branch: $branch, private: $private);
+	}//end withRequestedBranchAndVisibility()
 
+	/**
+	 * Publish the requested selection and map a failure to its status.
+	 *
+	 * @param ConfigPublishRequest $publish      The type and the complete target.
+	 * @param string               $credentialId The user's chosen store credential.
+	 *
+	 * @return JSONResponse `{published, path, status}`, 404 unknown type, or 500.
+	 */
+	private function runPublish(ConfigPublishRequest $publish, string $credentialId): JSONResponse {
 		try {
 			$result = $this->service->publish(
-				typeId: $type,
+				typeId: $publish->type,
 				selection: (array)$this->request->getParam('selection', []),
-				target: new ConfigPublishTarget(repo: $repo, path: $path, branch: $branch, private: $private),
+				target: $publish->target,
 				credentialId: $credentialId
 			);
 		} catch (UnexpectedValueException $e) {
@@ -274,7 +343,7 @@ class FederatedConfigController extends Controller {
 		}
 
 		return new JSONResponse($result);
-	}//end publish()
+	}//end runPublish()
 
 	/**
 	 * The organisation's trust configuration (admin only).
@@ -386,14 +455,7 @@ class FederatedConfigController extends Controller {
 
 		// An authenticated search (higher rate limit) uses the user's chosen
 		// store credential when they have one; otherwise it is anonymous.
-		$credentialId = null;
-		$user = $this->userSession->getUser();
-		if ($user !== null) {
-			$stored = $this->config->getUserValue($user->getUID(), self::APP_ID, self::CREDENTIAL_PREF, '');
-			if ($stored !== '') {
-				$credentialId = $stored;
-			}
-		}
+		$credentialId = $this->optionalStoredCredential();
 
 		return new JSONResponse(['results' => $this->service->discover(topic: $topic, credentialId: $credentialId)]);
 	}//end discover()
@@ -427,14 +489,19 @@ class FederatedConfigController extends Controller {
 			return new JSONResponse(['error' => 'A fetch needs a repo and a path.'], Http::STATUS_BAD_REQUEST);
 		}
 
-		$credentialId = null;
-		$user = $this->userSession->getUser();
-		if ($user !== null) {
-			$stored = $this->config->getUserValue($user->getUID(), self::APP_ID, self::CREDENTIAL_PREF, '');
-			if ($stored !== '') {
-				$credentialId = $stored;
-			}
-		}
+		return $this->fetchBundleResponse(repo: $repo, path: $path);
+	}//end fetch()
+
+	/**
+	 * Fetch the bundle at a repo path, with the user's stored credential when there is one.
+	 *
+	 * @param string $repo The GitHub repository.
+	 * @param string $path The bundle's path in it.
+	 *
+	 * @return JSONResponse `{bundle}`, or 404 when it cannot be fetched.
+	 */
+	private function fetchBundleResponse(string $repo, string $path): JSONResponse {
+		$credentialId = $this->optionalStoredCredential();
 
 		try {
 			$bundle = $this->service->fetchBundle(repo: $repo, path: $path, credentialId: $credentialId);
@@ -443,7 +510,26 @@ class FederatedConfigController extends Controller {
 		}
 
 		return new JSONResponse(['bundle' => $bundle]);
-	}//end fetch()
+	}//end fetchBundleResponse()
+
+	/**
+	 * The signed-in user's chosen store credential, or null when anonymous or none is chosen.
+	 *
+	 * @return string|null The credential id, or null.
+	 */
+	private function optionalStoredCredential(): ?string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return null;
+		}
+
+		$stored = $this->config->getUserValue($user->getUID(), self::APP_ID, self::CREDENTIAL_PREF, '');
+		if ($stored === '') {
+			return null;
+		}
+
+		return $stored;
+	}//end optionalStoredCredential()
 
 	/**
 	 * This instance's signing public key, for other orgs to add to their trust list.

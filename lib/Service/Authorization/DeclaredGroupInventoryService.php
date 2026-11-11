@@ -71,49 +71,100 @@ class DeclaredGroupInventoryService implements DeclaredGroupInventoryInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function inventory(): array {
-		$declared = $this->reconciler->collectDeclared();
+		$declared  = $this->reconciler->collectDeclared();
 		$liveState = $this->provisioner->inventory(groups: $declared);
 
 		$rows = [];
-		$missing = 0;
-		$empty = 0;
-		$unknown = 0;
-
 		foreach ($declared as $group) {
-			$state = ($liveState[$group] ?? [
-				'exists' => false,
-				'members' => null,
-			]);
-			$exists = ($state['exists'] === true);
-			$members = $state['members'];
+			$rows[] = $this->inventoryRow(group: $group, liveState: $liveState);
+		}
 
-			// A group grants nobody anything when it is absent, or present with a
-			// KNOWN zero membership. An unknown count is explicitly not that case.
-			$grantsNobody = ($exists === false || $members === 0);
-
-			if ($exists === false) {
-				$missing++;
-			} elseif ($members === null) {
-				$unknown++;
-			} elseif ($members === 0) {
-				$empty++;
-			}
-
-			$rows[] = [
-				'group' => $group,
-				'exists' => $exists,
-				'members' => $members,
-				'grantsNobody' => $grantsNobody,
-			];
-		}//end foreach
-
-		return [
-			'groups' => $rows,
-			'declared' => count($declared),
-			'missing' => $missing,
-			'empty' => $empty,
-			'unknown' => $unknown,
-		];
+		return array_merge(
+			[
+				'groups' => $rows,
+				'declared' => count($declared),
+			],
+			$this->tally(rows: $rows)
+		);
 	}//end inventory()
+
+	/**
+	 * The inventory row of one declared group; a group the provisioner did not report is absent.
+	 *
+	 * @param string                                                  $group     The declared group id.
+	 * @param array<string, array{exists: bool, members: int|null}> $liveState The provisioner's live state, by group id.
+	 *
+	 * @return array{group: string, exists: bool, members: int|null, grantsNobody: bool} The row.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function inventoryRow(string $group, array $liveState): array {
+		$state   = ($liveState[$group] ?? [
+			'exists' => false,
+			'members' => null,
+		]);
+		$exists  = ($state['exists'] === true);
+		$members = $state['members'];
+
+		// A group grants nobody anything when it is absent, or present with a
+		// KNOWN zero membership. An unknown count is explicitly not that case.
+		return [
+			'group' => $group,
+			'exists' => $exists,
+			'members' => $members,
+			'grantsNobody' => ($exists === false || $members === 0),
+		];
+	}//end inventoryRow()
+
+	/**
+	 * Count the missing, empty and uncountable groups among the rows.
+	 *
+	 * @param array<int, array{group: string, exists: bool, members: int|null, grantsNobody: bool}> $rows The inventory rows.
+	 *
+	 * @return array{missing: int, empty: int, unknown: int} The counts.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function tally(array $rows): array {
+		$counts = [
+			'missing' => 0,
+			'empty' => 0,
+			'unknown' => 0,
+		];
+		foreach ($rows as $row) {
+			$state = $this->membershipState(row: $row);
+			if ($state !== null) {
+				$counts[$state]++;
+			}
+		}
+
+		return $counts;
+	}//end tally()
+
+	/**
+	 * Which count a row falls in: missing when absent, unknown when present but
+	 * uncountable, empty when present with a known zero, else none.
+	 *
+	 * @param array{group: string, exists: bool, members: int|null, grantsNobody: bool} $row The inventory row.
+	 *
+	 * @return string|null 'missing', 'unknown', 'empty', or null.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function membershipState(array $row): ?string {
+		if ($row['exists'] === false) {
+			return 'missing';
+		}
+
+		if ($row['members'] === null) {
+			return 'unknown';
+		}
+
+		if ($row['members'] === 0) {
+			return 'empty';
+		}
+
+		return null;
+	}//end membershipState()
 
 }//end class

@@ -323,20 +323,44 @@ final class ToolGrantSet {
 		foreach ($this->grants as $subjects) {
 			foreach ($subjects as $actions) {
 				foreach ($actions as $entries) {
-					foreach ($entries as $entry) {
-						if (is_array($entry) === true) {
-							$ids[] = (string)($entry['id'] ?? '');
-							continue;
-						}
-
-						$ids[] = (string)$entry;
-					}
+					array_push($ids, ...self::entryIds(entries: $entries));
 				}
 			}
 		}
 
 		return array_values(array_filter(array_unique($ids)));
 	}//end toolIds()
+
+	/**
+	 * The tool id of each entry of one action, in order.
+	 *
+	 * @param array<mixed> $entries The action's entries.
+	 *
+	 * @return array<int, string> The ids, one per entry.
+	 */
+	private static function entryIds(array $entries): array {
+		$ids = [];
+		foreach ($entries as $entry) {
+			$ids[] = self::entryId(entry: $entry);
+		}
+
+		return $ids;
+	}//end entryIds()
+
+	/**
+	 * The tool id one entry carries: a bare id, or the `id` of a constrained one.
+	 *
+	 * @param mixed $entry The entry.
+	 *
+	 * @return string The id.
+	 */
+	private static function entryId(mixed $entry): string {
+		if (is_array($entry) === true) {
+			return (string)($entry['id'] ?? '');
+		}
+
+		return (string)$entry;
+	}//end entryId()
 
 
 
@@ -359,20 +383,37 @@ final class ToolGrantSet {
 				continue;
 			}
 
-			foreach ($subjects as $subject => $actions) {
-				if (self::isUsableLevel(key: $subject, value: $actions) === false) {
-					continue;
-				}
-
-				$kept = self::sanitiseActions(actions: $actions);
-				if ($kept !== []) {
-					$clean[$app][$subject] = $kept;
-				}
+			$kept = self::sanitiseSubjects(subjects: $subjects);
+			if ($kept !== []) {
+				$clean[$app] = $kept;
 			}
 		}
 
 		return $clean;
 	}//end sanitise()
+
+	/**
+	 * The usable subjects of one app, each with its usable actions.
+	 *
+	 * @param array<mixed> $subjects The stored subjects for one app.
+	 *
+	 * @return array<string, array<string, array<int, string|array<string, mixed>>>> The clean subjects.
+	 */
+	private static function sanitiseSubjects(array $subjects): array {
+		$clean = [];
+		foreach ($subjects as $subject => $actions) {
+			if (self::isUsableLevel(key: $subject, value: $actions) === false) {
+				continue;
+			}
+
+			$kept = self::sanitiseActions(actions: $actions);
+			if ($kept !== []) {
+				$clean[$subject] = $kept;
+			}
+		}
+
+		return $clean;
+	}//end sanitiseSubjects()
 
 	/**
 	 * Whether one level of the stored structure is worth descending into.
@@ -405,23 +446,7 @@ final class ToolGrantSet {
 				continue;
 			}
 
-			// An action holds a LIST of entries, but a single unconstrained grant
-			// may be written as the bare id — that is the common case, and
-			// spelling every one of them `["id"]` in stored JSON would bury the
-			// few that genuinely carry constraints.
-			$candidates = $entry;
-			if (is_array($entry) === false || array_is_list($entry) === false) {
-				$candidates = [$entry];
-			}
-
-			$kept = [];
-			foreach ($candidates as $candidate) {
-				$one = ToolGrantCodec::sanitiseEntry(entry: $candidate);
-				if ($one !== null) {
-					$kept[] = $one;
-				}
-			}
-
+			$kept = self::sanitiseEntries(candidates: self::candidatesOf(entry: $entry));
 			if ($kept !== []) {
 				$clean[$action] = $kept;
 			}
@@ -429,5 +454,44 @@ final class ToolGrantSet {
 
 		return $clean;
 	}//end sanitiseActions()
+
+	/**
+	 * The entries one stored action holds, as a list.
+	 *
+	 * An action holds a LIST of entries, but a single unconstrained grant may be
+	 * written as the bare id — that is the common case, and spelling every one of
+	 * them `["id"]` in stored JSON would bury the few that genuinely carry
+	 * constraints. A single constrained entry (a map) is wrapped the same way.
+	 *
+	 * @param mixed $entry The stored action value.
+	 *
+	 * @return array<mixed> The candidate entries.
+	 */
+	private static function candidatesOf(mixed $entry): array {
+		if (is_array($entry) === false || array_is_list($entry) === false) {
+			return [$entry];
+		}
+
+		return $entry;
+	}//end candidatesOf()
+
+	/**
+	 * The usable entries among one action's candidates, in order.
+	 *
+	 * @param array<mixed> $candidates The candidate entries.
+	 *
+	 * @return array<int, string|array<string, mixed>> The clean entries.
+	 */
+	private static function sanitiseEntries(array $candidates): array {
+		$kept = [];
+		foreach ($candidates as $candidate) {
+			$one = ToolGrantCodec::sanitiseEntry(entry: $candidate);
+			if ($one !== null) {
+				$kept[] = $one;
+			}
+		}
+
+		return $kept;
+	}//end sanitiseEntries()
 
 }//end class

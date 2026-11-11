@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Observability;
 
+use Generator;
 use OCA\OpenRegister\AppHost\IHealthCheckProvider;
 use OCP\AppFramework\Http;
 use Psr\Log\LoggerInterface;
@@ -68,30 +69,13 @@ class HealthCheckExecutor {
 	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-2.2
 	 */
 	public function execute(ObservabilityManifest $manifest): HealthResult {
-		$checks = [];
+		$checks      = [];
 		$worstStatus = self::STATUS_OK;
 
-		foreach ($manifest->checks as $descriptor) {
-			[$ok, $message] = $this->runCheck(appId: $manifest->appId, descriptor: $descriptor);
-			$checks[$descriptor->id] = $this->formatCheckResult(ok: $ok, message: $message);
-
-			if ($ok === false) {
-				$worstStatus = $this->escalate(current: $worstStatus, severity: $descriptor->severity);
-			}
-		}
-
-		// Merge IHealthCheckProvider escape-hatch results.
-		foreach ($this->resolveProviderResults(appId: $manifest->appId) as $id => $result) {
-			$ok = ($result['ok'] ?? false) === true;
-			$severity = ($result['severity'] ?? 'critical');
-			if (in_array($severity, HealthCheckDescriptor::SEVERITIES, true) === false) {
-				$severity = 'critical';
-			}
-
-			$message = (string)($result['message'] ?? '');
-			$checks[$id] = $this->formatCheckResult(ok: $ok, message: $message);
-			if ($ok === false) {
-				$worstStatus = $this->escalate(current: $worstStatus, severity: $severity);
+		foreach ($this->outcomes(manifest: $manifest) as $id => $outcome) {
+			$checks[$id] = $this->formatCheckResult(ok: $outcome['ok'], message: $outcome['message']);
+			if ($outcome['ok'] === false) {
+				$worstStatus = $this->escalate(current: $worstStatus, severity: $outcome['severity']);
 			}
 		}
 
@@ -101,6 +85,42 @@ class HealthCheckExecutor {
 			httpStatusCode: $this->resolveHttpCode(status: $worstStatus, policy: $manifest->statusCodePolicy)
 		);
 	}//end execute()
+
+	/**
+	 * Every check outcome by id: the declared checks, run one at a time, then the
+	 * IHealthCheckProvider escape-hatch results merged in after them.
+	 *
+	 * @param ObservabilityManifest $manifest The parsed manifest.
+	 *
+	 * @return Generator<string, array{ok: bool, message: string, severity: string}>
+	 */
+	private function outcomes(ObservabilityManifest $manifest): Generator {
+		foreach ($manifest->checks as $descriptor) {
+			[$ok, $message] = $this->runCheck(appId: $manifest->appId, descriptor: $descriptor);
+			yield $descriptor->id => ['ok' => $ok, 'message' => $message, 'severity' => $descriptor->severity];
+		}
+
+		foreach ($this->resolveProviderResults(appId: $manifest->appId) as $id => $result) {
+			yield $id => self::providerOutcome(result: $result);
+		}
+	}//end outcomes()
+
+	/**
+	 * The outcome of one provider result; an unknown severity counts as critical.
+	 *
+	 * @param array<string, mixed> $result The provider's result.
+	 *
+	 * @return array{ok: bool, message: string, severity: string}
+	 */
+	private static function providerOutcome(array $result): array {
+		$ok       = ($result['ok'] ?? false) === true;
+		$severity = ($result['severity'] ?? 'critical');
+		if (in_array($severity, HealthCheckDescriptor::SEVERITIES, true) === false) {
+			$severity = 'critical';
+		}
+
+		return ['ok' => $ok, 'message' => (string)($result['message'] ?? ''), 'severity' => $severity];
+	}//end providerOutcome()
 
 	/**
 	 * Run a single check descriptor.
@@ -119,20 +139,30 @@ class HealthCheckExecutor {
 			return ($this->localChecks->run(appId: $appId, descriptor: $descriptor) ?? [false, 'unknown check']);
 		} catch (Throwable $e) {
 			// Log internals; return a generic message so health never leaks.
-			$logMessage = sprintf(
-				'[AppHost\\Health] Check "%s" (%s) for app "%s" threw: %s',
-				$descriptor->id,
-				$descriptor->type,
-				$appId,
-				$e->getMessage()
-			);
 			$this->logger->warning(
-				message: $logMessage,
+				message: self::failurePrefix(appId: $appId, descriptor: $descriptor) . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $appId]
 			);
 			return [false, 'check error'];
 		}//end try
 	}//end runCheck()
+
+	/**
+	 * The start of the log line of a check that threw, up to the exception message.
+	 *
+	 * @param string                $appId      Calling app id.
+	 * @param HealthCheckDescriptor $descriptor The check.
+	 *
+	 * @return string
+	 */
+	private static function failurePrefix(string $appId, HealthCheckDescriptor $descriptor): string {
+		return sprintf(
+			'[AppHost\\Health] Check "%s" (%s) for app "%s" threw: ',
+			$descriptor->id,
+			$descriptor->type,
+			$appId
+		);
+	}//end failurePrefix()
 
 	/**
 	 * Format a check outcome for the `checks` response map.

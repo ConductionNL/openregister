@@ -206,24 +206,6 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	/**
 	 * Remove a linked entity ID from an object's metadata column.
 	 *
-	 * @param string $objectUuid The object UUID
-	 * @param string $type The linked entity type
-	 * @param string $entityId The entity ID to remove
-	 *
-	 * @throws Exception If the type is invalid or the object is not found
-	 *
-	 * @return array The updated linked IDs array
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	public function removeLink(string $objectUuid, string $type, string $entityId): array {
-		return $this->removeLinkFrom(objectUuid: $objectUuid, link: new EntityLink(type: $type, entityId: $entityId));
-	}//end removeLink()
-
-	/**
-	 * Remove a linked entity ID from an object's metadata column.
-	 *
 	 * @param string     $objectUuid The object UUID
 	 * @param EntityLink $link       The linked entity type and id to remove
 	 *
@@ -234,7 +216,7 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function removeLinkFrom(string $objectUuid, EntityLink $link): array {
+	public function removeLink(string $objectUuid, EntityLink $link): array {
 		$this->validateType(type: $link->type);
 
 		$object = $this->magicMapper->find($objectUuid);
@@ -248,7 +230,7 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 		$this->writeObjectIds(object: $object, type: $link->type, ids: $existingIds);
 
 		return $existingIds;
-	}//end removeLinkFrom()
+	}//end removeLink()
 
 	/**
 	 * Store an object's new linked ids, after the write permission check.

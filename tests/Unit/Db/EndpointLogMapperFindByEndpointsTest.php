@@ -19,8 +19,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\EndpointLogMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\EndpointLogScope;
-use OCA\OpenRegister\Db\ListQuery;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 

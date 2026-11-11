@@ -50,6 +50,8 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 #[CoversClass(MagicRbacHandler::class)]
 #[CoversClass(MagicOrganizationHandler::class)]
@@ -96,13 +98,19 @@ class SystemOperationReadScopeTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn(['ambtenaar']);
 
 		return new class(
-			$this->session($withUser),
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(ContainerInterface::class),
-			$this->createMock(LoggerInterface::class)
+			new MagicMapperIdentity(
+				$this->session($withUser),
+				$groupManager,
+				$this->createMock(IUserManager::class)
+			),
+			new MagicRbacSettings(
+				$this->createMock(IAppConfig::class)
+			),
+			new MagicRbacSupport(
+				$this->createMock(ConditionMatcher::class),
+				$this->createMock(ContainerInterface::class),
+				$this->createMock(LoggerInterface::class)
+			)
 		) extends MagicRbacHandler {
 			/**
 			 * A web request, not the command line.

@@ -18,6 +18,7 @@ use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use ReflectionParameter;
 
 /**
  * What QueryHandler::searchObjectsPaginated() hands the database search and how it annotates the answer.
@@ -78,15 +79,17 @@ class QueryHandlerSearchObjectsPaginatedTest extends TestCase {
 			->method('applyViewsToQuery')
 			->willReturnCallback(fn (array $query, array $viewIds): array => $query + ['viewed' => $viewIds]);
 
-		$args = [];
-		foreach ((new ReflectionClass(QueryHandler::class))->getConstructor()->getParameters() as $param) {
-			$type   = $param->getType()->getName();
-			$args[] = match (true) {
+		// A final class is a constructor bundle: build it from its own parameters.
+		$argument = function (ReflectionParameter $param) use (&$argument, $searchQueries): mixed {
+			$type = $param->getType()->getName();
+			return match (true) {
 				$type === SearchQueryHandler::class => $searchQueries,
+				(new ReflectionClass($type))->isFinal() === true => new $type(...array_map($argument, (new ReflectionClass($type))->getConstructor()->getParameters())),
 				$param->isOptional() === true => $param->getDefaultValue(),
 				default => $this->createStub($type),
 			};
-		}
+		};
+		$args = array_map($argument, (new ReflectionClass(QueryHandler::class))->getConstructor()->getParameters());
 
 		$handler = $this->getMockBuilder(QueryHandler::class)
 			->setConstructorArgs($args)
