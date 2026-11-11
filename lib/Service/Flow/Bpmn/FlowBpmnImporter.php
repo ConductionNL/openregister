@@ -300,7 +300,10 @@ class FlowBpmnImporter {
 	private function nodeFrom(DOMElement $element, BpmnImportPass $pass): ?array {
 		$id = trim($element->getAttribute('id'));
 		$mapping = $this->mappingFor(element: $element, pass: $pass);
-		$pass->report->record(elementId: $id, kind: $mapping['kind'], verdict: $mapping['verdict'], action: $mapping['action']);
+		$pass->report->record(
+			elementId: $id,
+			reading: new BpmnReading(kind: $mapping['kind'], verdict: $mapping['verdict'], action: $mapping['action'])
+		);
 		if ($mapping['verdict'] === BpmnMappingReport::REFUSED) {
 			return null;
 		}

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -33,16 +34,34 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  */
 final class ArchivalRegisterMappers {
 	/**
-	 * Bundle the collaborators.
+	 * Register lookups.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register lookups.
-	 * @param SchemaMapperInterface   $schemaMapper   Schema lookups.
-	 * @param MagicMapperInterface    $objectMapper   Object reads and writes.
+	 * @var RegisterMapperInterface
 	 */
-	public function __construct(
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly MagicMapperInterface $objectMapper,
-	) {
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookups.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Object reads and writes.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	public readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Read the three mappers off the schema catalog.
+	 *
+	 * @param SchemaCatalogInterface $catalog The register, schema and magic mappers.
+	 */
+	public function __construct(SchemaCatalogInterface $catalog) {
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper = $catalog->schemas();
+		$this->objectMapper = $catalog->tables();
 	}//end __construct()
 }//end class

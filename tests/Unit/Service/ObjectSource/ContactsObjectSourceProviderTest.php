@@ -30,6 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
@@ -70,7 +72,7 @@ class ContactsObjectSourceProviderTest extends TestCase {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isInstalled')->willReturn($appThere);
 
-		return new ContactsObjectSourceProvider($manager, $appManager, new NullLogger());
+		return new ContactsObjectSourceProvider(contactsManager: $manager, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $appManager, container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: new NullLogger()));
 	}//end provider()
 
 	/**
@@ -142,7 +144,7 @@ class ContactsObjectSourceProviderTest extends TestCase {
 	public function testFindAllMapsAndFiltersSystemBook(): void {
 		[$register, $schema] = $this->binding();
 
-		$objects = $this->provider($this->contacts())->findAll($register, $schema);
+		$objects = $this->provider($this->contacts())->findAll(new SourcedTable(new RegisterSchema($register, $schema)));
 
 		$this->assertCount(2, $objects);
 
@@ -167,8 +169,8 @@ class ContactsObjectSourceProviderTest extends TestCase {
 		[$register, $schema] = $this->binding();
 		$provider = $this->provider($this->contacts());
 
-		$this->assertSame('Bob Bakker', $provider->find($register, $schema, 'contact-2')?->getObject()['fullName']);
-		$this->assertNull($provider->find($register, $schema, 'ghost'));
+		$this->assertSame('Bob Bakker', $provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'contact-2')?->getObject()['fullName']);
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'ghost'));
 	}//end testFindByUid()
 
 	/**
@@ -178,6 +180,6 @@ class ContactsObjectSourceProviderTest extends TestCase {
 	 */
 	public function testCount(): void {
 		[$register, $schema] = $this->binding();
-		$this->assertSame(2, $this->provider($this->contacts())->count($register, $schema));
+		$this->assertSame(2, $this->provider($this->contacts())->count(new SourcedTable(new RegisterSchema($register, $schema))));
 	}//end testCount()
 }//end class

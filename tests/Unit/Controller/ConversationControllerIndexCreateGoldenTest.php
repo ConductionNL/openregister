@@ -64,7 +64,6 @@ class ConversationControllerIndexCreateGoldenTest extends TestCase {
 		$this->organisationService = $this->createMock(OrganisationService::class);
 		$this->chatService         = $this->createMock(ChatService::class);
 		$this->controller          = ConversationControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->conversationMapper,
 			$this->createMock(MessageMapper::class),

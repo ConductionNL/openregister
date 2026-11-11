@@ -30,6 +30,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Controller\ObjectWatchersController;
 use OCA\OpenRegister\Notifications\Controller\Support\ObjectWatchersControllerServices;
 use OCA\OpenRegister\Notifications\Db\Watcher;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCP\IRequest;
 use OCP\IUserManager;
@@ -73,7 +74,6 @@ class ObjectWatchersControllerBehaviourTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(fn (string $key): mixed => $key === 'notify' ? $this->notify : null);
 		return new ObjectWatchersController(
-			'openregister',
 			$request,
 			new ObjectWatchersControllerServices($this->objects, $this->watchers, $this->users, $this->logger)
 		);
@@ -190,7 +190,7 @@ class ObjectWatchersControllerBehaviourTest extends TestCase {
 		$this->notify = $raw;
 		$this->found();
 		$this->watchers->expects($this->once())->method('watch')
-			->with($this->object, 'reg', 'sch', $expected)
+			->with(new AddressedObject(object: $this->object, register: 'reg', schema: 'sch'), $expected)
 			->willReturn(self::row('alice', true));
 		$response = $this->controller()->watch('reg', 'sch', 'id-1');
 		$this->assertSame(200, $response->getStatus());
@@ -235,7 +235,7 @@ class ObjectWatchersControllerBehaviourTest extends TestCase {
 	public function testAddKnownUserAnswersTheAddedRow(): void {
 		$this->found();
 		$this->users->method('userExists')->willReturn(true);
-		$this->watchers->expects($this->once())->method('addWatcher')->with($this->object, 'bob', 'reg', 'sch')
+		$this->watchers->expects($this->once())->method('addWatcher')->with(new AddressedObject(object: $this->object, register: 'reg', schema: 'sch'), 'bob')
 			->willReturn(self::row('bob', true));
 		$response = $this->controller()->add('reg', 'sch', 'id-1', 'bob');
 		$this->assertSame(200, $response->getStatus());

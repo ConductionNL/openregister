@@ -32,11 +32,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
-use OCA\OpenRegister\Service\Configuration\PreviewMappers;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * One local register `filinq` and schema `consent`, as the live configuration 8 had.
@@ -84,8 +83,7 @@ final class PreviewHandlerComesToRestTest extends TestCase {
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 
 		$this->handler = new PreviewHandler(
-			new PreviewMappers($this->registerMapper, $this->schemaMapper, $this->objectMapper),
-			$this->createMock(LoggerInterface::class),
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper),
 			$this->fetchHandler
 		);
 	}//end setUp()

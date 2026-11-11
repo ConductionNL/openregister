@@ -20,6 +20,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSelection;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSubmission;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueText;
+use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
+
 /**
  * Reads and writes repositories, configuration files, issues and the per-user token on GitHub. Implemented by GitHubHandler.
  */
@@ -38,12 +45,9 @@ interface GitHubClientInterface {
 	 *
 	 * Returns the structured response shape `{number, html_url, state, specRef?, used_server_pat}`.
 	 *
-	 * @param string $owner GitHub repo owner (validated by caller)
-	 * @param string $repo GitHub repo name (validated by caller)
-	 * @param string $title Issue title (3-200 chars, validated by caller)
-	 * @param string $body Issue body (>= 10 chars, validated by caller)
-	 * @param string|null $specRef Optional kebab-case capability slug
-	 * @param string $userId Nextcloud UID of the submitting user
+	 * @param GitHubIssueSubmission $submission The repository, the submitting user's Nextcloud UID (whose PAT is used, else the server PAT) and the
+	 *                                          optional validated spec reference.
+	 * @param GitHubIssueText       $text       The issue title and body.
 	 *
 	 * @return array{number: int, html_url: string, state: string, specRef?: string, used_server_pat: bool}
 	 *
@@ -53,24 +57,14 @@ interface GitHubClientInterface {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-8
 	 */
-	public function createIssue(
-		string $owner,
-		string $repo,
-		string $title,
-		string $body,
-		?string $specRef,
-		string $userId,
-	): array;
+	public function createIssue(GitHubIssueSubmission $submission, GitHubIssueText $text): array;
 
 	/**
 	 * Enrich configuration metadata by fetching actual file contents
 	 *
 	 * Uses raw.githubusercontent.com (doesn't count against API rate limit!)
 	 *
-	 * @param string $owner Repository owner
-	 * @param string $repo Repository name
-	 * @param string $path File path
-	 * @param string $branch Branch name
+	 * @param GitHubFileLocation $location The repository, file path and branch of the configuration file.
 	 *
 	 * @return (mixed|null|string)[]|null Configuration details from file, or null if failed
 	 *
@@ -87,7 +81,7 @@ interface GitHubClientInterface {
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function enrichConfigurationDetails(string $owner, string $repo, string $path, string $branch = 'main'): ?array;
+	public function enrichConfigurationDetails(GitHubFileLocation $location): ?array;
 
 	/**
 	 * Get list of branches for a repository
@@ -110,10 +104,7 @@ interface GitHubClientInterface {
 	/**
 	 * Get file content from a repository
 	 *
-	 * @param string $owner Repository owner
-	 * @param string $repo Repository name
-	 * @param string $path File path in repository
-	 * @param string $branch Branch name (default: main)
+	 * @param GitHubFileLocation $location The repository, file path and branch.
 	 *
 	 * @return array Decoded JSON content
 	 * @throws \Exception If file cannot be fetched or parsed
@@ -122,22 +113,19 @@ interface GitHubClientInterface {
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function getFileContent(string $owner, string $repo, string $path, string $branch = 'main'): array;
+	public function getFileContent(GitHubFileLocation $location): array;
 
 	/**
 	 * Get file SHA for a specific file (needed for updates)
 	 *
-	 * @param string $owner Repository owner
-	 * @param string $repo Repository name
-	 * @param string $path File path in repository
-	 * @param string $branch Branch name (default: main)
+	 * @param GitHubFileLocation $location The repository, file path and branch.
 	 *
 	 * @return string|null File SHA or null if file doesn't exist
 	 * @throws \Exception If API request fails
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function getFileSha(string $owner, string $repo, string $path, string $branch = 'main'): ?string;
+	public function getFileSha(GitHubFileLocation $location): ?string;
 
 	/**
 	 * Get repositories that the authenticated user has access to
@@ -214,10 +202,7 @@ interface GitHubClientInterface {
 	 * - *.openregister.json
 	 * - Files containing x-openregister property
 	 *
-	 * @param string $owner Repository owner
-	 * @param string $repo Repository name
-	 * @param string $branch Branch name (default: main)
-	 * @param string $path Directory path to search (default: root)
+	 * @param GitHubFileLocation $directory The repository, branch and directory to search ('' for the repository root).
 	 *
 	 * @return ((mixed|null|string)[]|mixed|null)[][]
 	 *
@@ -232,7 +217,7 @@ interface GitHubClientInterface {
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function listConfigurationFiles(string $owner, string $repo, string $branch = 'main', string $path = ''): array;
+	public function listConfigurationFiles(GitHubFileLocation $directory): array;
 
 	/**
 	 * List GitHub Issues for a repository, with sensitive fields stripped and pull requests excluded.
@@ -246,12 +231,7 @@ interface GitHubClientInterface {
 	 * `items` array with a `hint: github_pat_not_configured` marker when the PAT is missing (the
 	 * controller turns this into a clean HTTP 200 graceful-degradation response, task 1.7).
 	 *
-	 * @param string $owner GitHub repo owner (validated by caller)
-	 * @param string $repo GitHub repo name (validated by caller)
-	 * @param string $state Issue state filter (`open`, `closed`, or `all`)
-	 * @param string $sort Sort key (`reactions-+1` is the spec default)
-	 * @param int $perPage Page size (1-100)
-	 * @param array<string>|null $labels Optional label filter; null = no filter, 1+ = OR-merge
+	 * @param GitHubIssueSelection $selection The repository, state, sort order, page size and labels.
 	 *
 	 * @return array{items: array, hint?: string, github_status?: int, reset_at?: string}
 	 *
@@ -261,14 +241,7 @@ interface GitHubClientInterface {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-1
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-10
 	 */
-	public function listIssues(
-		string $owner,
-		string $repo,
-		string $state = 'open',
-		string $sort = 'reactions-+1',
-		int $perPage = 30,
-		?array $labels = null,
-	): array;
+	public function listIssues(GitHubIssueSelection $selection): array;
 
 	/**
 	 * Publish a configuration file to GitHub
@@ -276,13 +249,8 @@ interface GitHubClientInterface {
 	 * Creates or updates a file in the specified repository, branch, and path.
 	 * Uses the GitHub Contents API which requires the file SHA for updates.
 	 *
-	 * @param string $owner Repository owner
-	 * @param string $repo Repository name
-	 * @param string $path File path in repository (e.g., 'lib/Settings/config.json')
-	 * @param string $branch Branch name (default: main)
-	 * @param string $content File content (JSON string)
-	 * @param string $commitMessage Commit message
-	 * @param string|null $fileSha SHA of existing file (required for updates, null for new files)
+	 * @param GitHubFileLocation $location The repository, file path and branch to write.
+	 * @param GitHubFileWrite    $write    The content, commit message and, for an update, the current file SHA.
 	 *
 	 * @return (mixed|null|true)[] Response with commit SHA, file SHA, and commit info
 	 *
@@ -295,24 +263,15 @@ interface GitHubClientInterface {
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function publishConfiguration(
-		string $owner,
-		string $repo,
-		string $path,
-		string $branch,
-		string $content,
-		string $commitMessage,
-		?string $fileSha = null,
-	): array;
+	public function publishConfiguration(GitHubFileLocation $location, GitHubFileWrite $write): array;
 
 	/**
 	 * Search for OpenRegister configurations on GitHub
 	 *
 	 * Uses GitHub Code Search API to find JSON files containing x-openregister property
 	 *
-	 * @param string $search Search terms to filter results (optional)
-	 * @param int $page Page number for pagination
-	 * @param int $perPage Results per page (max 100)
+	 * @param string               $search Search terms, possibly empty.
+	 * @param RepositorySearchPage $page   The page and page size asked for.
 	 *
 	 * @return ((array|int|mixed|null|string)[][]|int|mixed)[]
 	 *
@@ -331,7 +290,7 @@ interface GitHubClientInterface {
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function searchConfigurations(string $search = '', int $page = 1, int $perPage = 30): array;
+	public function searchConfigurations(string $search, RepositorySearchPage $page): array;
 
 	/**
 	 * Set user-specific GitHub token

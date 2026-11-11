@@ -282,6 +282,9 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase {
 		$this->assertIsString($config->getTitle(), 'Title should be string.');
 		$this->assertIsBool($config->getAutoUpdate(), 'AutoUpdate should be boolean.');
 		$this->assertIsArray($config->getRegisters(), 'Registers should be array.');
+		$this->assertSame('new_value', $config->getTitle());
+		$this->assertFalse($config->getAutoUpdate());
+		$this->assertSame([1, 2, 3], $config->getRegisters());
 	}
 
 	/**

@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Db\Tenancy\EntityRbacTrait;
+use OCA\OpenRegister\Db\Tenancy\OrganisationFilterOptions;
 use OCA\OpenRegister\Db\Tenancy\OrganisationFilterTrait;
 use OCA\OpenRegister\Db\Tenancy\OrganisationWriteGuardTrait;
 use OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait;
@@ -111,32 +112,50 @@ trait MultiTenancyTrait {
 		string $tableAlias = '',
 		bool $multiTenancyEnabled = true,
 	): void {
-		if ($this->shouldSkipFiltering(multiTenancyEnabled: $multiTenancyEnabled) === true) {
+		$options = new OrganisationFilterOptions(
+			columnName: $columnName, allowNullOrg: $allowNullOrg,
+			tableAlias: $tableAlias, multiTenancyEnabled: $multiTenancyEnabled
+		);
+		$this->applyOrganisationScope(qb: $qb, options: $options);
+	}//end applyOrganisationFilter()
+
+	/**
+	 * Apply the organisation filter described by an options object.
+	 *
+	 * The same filter as applyOrganisationFilter(), which builds the options
+	 * and delegates here.
+	 *
+	 * @param IQueryBuilder             $qb      The query builder
+	 * @param OrganisationFilterOptions $options Column, alias, NULL-organisation and on/off settings
+	 *
+	 * @return void
+	 */
+	protected function applyOrganisationScope(IQueryBuilder $qb, OrganisationFilterOptions $options = new OrganisationFilterOptions()): void {
+		if ($this->shouldSkipFiltering(multiTenancyEnabled: $options->multiTenancyEnabled) === true) {
 			return;
 		}
 
 		$user = $this->getUserFromSession();
 		if ($user !== null || isset($this->userSession) === true) {
-			$this->applyScopedFilter(qb: $qb, user: $user, scope: $this->organisationScope(nullOrg: $allowNullOrg, column: $columnName, alias: $tableAlias));
+			$this->applyScopedFilter(qb: $qb, scope: $this->organisationScope(options: $options, user: $user));
 		}
-	}//end applyOrganisationFilter()
+	}//end applyOrganisationScope()
 
 	/**
 	 * Apply the filter for a resolved scope: with or without an active organisation.
 	 *
 	 * @param IQueryBuilder $qb    The query builder
-	 * @param mixed         $user  The session user, or null
-	 * @param array         $scope The scope (see OrganisationFilterTrait).
+	 * @param array         $scope The scope (see OrganisationFilterTrait) plus the session user under `user`.
 	 *
 	 * @return void
 	 */
-	private function applyScopedFilter(IQueryBuilder $qb, mixed $user, array $scope): void {
+	private function applyScopedFilter(IQueryBuilder $qb, array $scope): void {
 		if (empty($scope['activeOrgUuids']) === true) {
-			$this->applyNoActiveOrgFilter(qb: $qb, user: $user, allowNullOrg: $scope['allowNullOrg'], organisationColumn: $scope['organisationColumn']);
+			$this->applyNoActiveOrgFilter(qb: $qb, scope: $scope);
 			return;
 		}
 
-		$this->applyActiveOrgFilter(qb: $qb, user: $user, scope: $scope);
+		$this->applyActiveOrgFilter(qb: $qb, scope: $scope);
 	}//end applyScopedFilter()
 
 	/**
@@ -147,21 +166,21 @@ trait MultiTenancyTrait {
 	 * rather than by organisation, so a consumer of one code list gains that
 	 * code list and nothing else the holder owns.
 	 *
-	 * @param bool   $nullOrg Whether NULL organisation rows match.
-	 * @param string $column  The organisation column.
-	 * @param string $alias   Optional table alias.
+	 * @param OrganisationFilterOptions $options Column, alias and NULL-organisation settings.
+	 * @param mixed                     $user    The session user, or null.
 	 *
 	 * @return array The scope.
 	 */
-	private function organisationScope(bool $nullOrg, string $column, string $alias): array {
+	private function organisationScope(OrganisationFilterOptions $options, mixed $user): array {
 		$activeOrgUuids = $this->getActiveOrganisationUuids();
-		$organisationColumn = $this->buildQualifiedColumnName(columnName: $column, tableAlias: $alias);
+		$organisationColumn = $this->buildQualifiedColumnName(columnName: $options->columnName, tableAlias: $options->tableAlias);
 		return [
+			'user' => $user,
 			'activeOrgUuids' => $activeOrgUuids,
-			'allowNullOrg' => $nullOrg,
+			'allowNullOrg' => $options->allowNullOrg,
 			'organisationColumn' => $organisationColumn,
 			'sharedIds' => $this->sharedMasterDataIds(activeOrgUuids: $activeOrgUuids),
-			'sharedIdColumn' => $this->buildQualifiedColumnName(columnName: 'id', tableAlias: $alias),
+			'sharedIdColumn' => $this->buildQualifiedColumnName(columnName: 'id', tableAlias: $options->tableAlias),
 		];
 	}//end organisationScope()
 }//end trait

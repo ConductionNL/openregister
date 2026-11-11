@@ -279,6 +279,40 @@
             "#1 executeQuery()"
         ]
     },
+    "completed / organisation and subject": {
+        "result": [
+            {
+                "uuid": "r4",
+                "flowId": "f2",
+                "status": "completed",
+                "error": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(4)",
+            "#1 param :p1 = [\"completed\",\"stopped\",\"dead_letter\",\"failed\"], 102",
+            "#1 expr.in(status, :p1, NULL)",
+            "#1 where(in(status, :p1, NULL))",
+            "#1 param :p2 = org-1, 2",
+            "#1 expr.eq(organisation, :p2, NULL)",
+            "#1 andWhere(eq(organisation, :p2, NULL))",
+            "#1 param :p3 = s-1, 2",
+            "#1 expr.eq(subject_uuid, :p3, NULL)",
+            "#1 andWhere(eq(subject_uuid, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "completed / blank subject is refused": {
+        "result": [],
+        "queries": []
+    },
+    "completed / blank organisation is refused": {
+        "result": [],
+        "queries": []
+    },
     "expire / zero limit": {
         "result": [],
         "queries": []

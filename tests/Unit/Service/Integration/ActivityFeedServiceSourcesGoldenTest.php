@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\ActivityFeedMerge;
 use OCA\OpenRegister\Service\Integration\ActivityFeedObject;
 use OCA\OpenRegister\Service\Integration\ActivityFeedService;
@@ -64,8 +65,8 @@ class ActivityFeedServiceSourcesGoldenTest extends TestCase {
 			->onlyMethods(['page'])
 			->getMock();
 		$history->method('page')->willReturnCallback(
-			function (string $register, string $schema, string $id) use ($historyFails): array {
-				$this->calls[] = ['history', $register, $schema, $id];
+			function (ObjectRef $ref) use ($historyFails): array {
+				$this->calls[] = ['history', $ref->register, $ref->schema, $ref->id];
 				if ($historyFails === true) {
 					throw new RuntimeException('trail down');
 				}
@@ -79,8 +80,8 @@ class ActivityFeedServiceSourcesGoldenTest extends TestCase {
 			->onlyMethods(['list'])
 			->getMock();
 		$provider->method('list')->willReturnCallback(
-			function (string $register, string $schema, string $objectId, array $filters = []) use ($activityFails): array {
-				$this->calls[] = ['activity', $register, $schema, $objectId, $filters];
+			function (ObjectRef $ref, array $filters = []) use ($activityFails): array {
+				$this->calls[] = ['activity', $ref->register, $ref->schema, $ref->id, $filters];
 				if ($activityFails === true) {
 					throw new RuntimeException('activity down');
 				}
@@ -152,14 +153,13 @@ class ActivityFeedServiceSourcesGoldenTest extends TestCase {
 	}//end testTwoUnreadableSourcesAreNamedAuditFirst()
 
 	public function testOnlyArrayRowsOfTheThreeHandedInKindsAreMerged(): void {
-		$page = $this->service(false, true)->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'),
-			[],
-			[
+		$page = $this->service(false, true)->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'), new \OCA\OpenRegister\Service\Integration\ActivityFeedOptions(
+			handedIn: [
 				'mail' => 'not rows',
 				'note' => [['id' => 'n1', 'timestamp' => 400, 'summary' => 'gebeld']],
 				'other' => [['id' => 'x1', 'timestamp' => 500, 'summary' => 'ignored']],
 			]
-		);
+		));
 
 		$this->assertSame(['note'], array_column($page['rows'], 'kind'));
 		$this->assertSame(['activity'], $page['degraded']);

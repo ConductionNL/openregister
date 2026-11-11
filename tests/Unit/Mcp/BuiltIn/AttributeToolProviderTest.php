@@ -30,7 +30,9 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
+use OCA\OpenRegister\Mcp\ToolScanSubject;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AnnotationFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
@@ -78,7 +80,7 @@ class AttributeToolProviderTest extends TestCase {
 	 */
 	private function entriesFor(object $instance, string $appId = 'pipelinq'): array {
 		$scanner = new AttributeToolScanner();
-		$descriptors = $scanner->scanClass(appId: $appId, className: get_class($instance), logger: $this->logger);
+		$descriptors = $scanner->scanClass(subject: new ToolScanSubject(appId: $appId, className: get_class($instance), logger: $this->logger));
 
 		foreach ($descriptors as &$descriptor) {
 			$descriptor['instance'] = $instance;
@@ -187,7 +189,7 @@ class AttributeToolProviderTest extends TestCase {
 	public function testInvokeUnknownToolIdThrows(): void {
 		$provider = $this->provider([]);
 
-		$this->auditTrailMapper->expects($this->never())->method('createToolInvocationEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordToolInvocation');
 
 		$this->expectException(InvalidArgumentException::class);
 		$provider->invokeTool('pipelinq.createLead', []);
@@ -253,17 +255,12 @@ class AttributeToolProviderTest extends TestCase {
 
 		$capturedDigest = null;
 		$this->auditTrailMapper->expects($this->once())
-			->method('createToolInvocationEntry')
-			->willReturnCallback(function (
-				string $toolId,
-				string $paramsDigest,
-				array $resultSummary,
-				AuditedObject $about,
-			) use (&$capturedDigest) {
-				$capturedDigest = $paramsDigest;
-				$this->assertSame('pipelinq.createLead', $toolId);
-				$this->assertFalse($resultSummary['isError']);
-				$this->assertSame('lead-1', $about->objectUuid);
+			->method('recordToolInvocation')
+			->willReturnCallback(function (ToolInvocation $invocation) use (&$capturedDigest) {
+				$capturedDigest = $invocation->paramsDigest;
+				$this->assertSame('pipelinq.createLead', $invocation->toolId);
+				$this->assertFalse($invocation->resultSummary['isError']);
+				$this->assertSame('lead-1', $invocation->about->objectUuid);
 				return $this->createMock(AuditTrail::class);
 			});
 
@@ -278,14 +275,14 @@ class AttributeToolProviderTest extends TestCase {
 		$provider = $this->provider($this->entriesFor($instance));
 
 		$this->auditTrailMapper->expects($this->once())
-			->method('createToolInvocationEntry')
+			->method('recordToolInvocation')
 			->with(
-				'pipelinq.privilegedAction',
-				$this->anything(),
-				$this->callback(function ($summary) {
-					return $summary['isError'] === true && $summary['errorClass'] === RuntimeException::class;
-				}),
-				new AuditedObject(null, null, null, null)
+				$this->callback(function (ToolInvocation $invocation) {
+					$summary = $invocation->resultSummary;
+					return $invocation->toolId === 'pipelinq.privilegedAction'
+						&& $summary['isError'] === true && $summary['errorClass'] === RuntimeException::class
+						&& $invocation->about == new AuditedObject(null, null, null, null);
+				})
 			)
 			->willReturn($this->createMock(AuditTrail::class));
 
@@ -302,7 +299,7 @@ class AttributeToolProviderTest extends TestCase {
 		$instance = new AttributeFixtureService();
 		$provider = $this->provider($this->entriesFor($instance));
 
-		$this->auditTrailMapper->method('createToolInvocationEntry')->willThrowException(new RuntimeException('db down'));
+		$this->auditTrailMapper->method('recordToolInvocation')->willThrowException(new RuntimeException('db down'));
 
 		$result = $provider->invokeTool('pipelinq.logContactmoment', ['subject' => 'x']);
 

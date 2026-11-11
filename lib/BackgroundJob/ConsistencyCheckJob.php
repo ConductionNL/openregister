@@ -26,8 +26,6 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
-use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IConfig;
 
 /**
@@ -59,18 +57,16 @@ class ConsistencyCheckJob extends RecordedQueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory            $time     Time factory for the parent job class.
-	 * @param JobRunRecorderInterface          $recorder The wrapper that writes the run row.
+	 * @param RecordedJobRuntime $runtime The scheduler clock and the recorder that writes the run row.
 	 * @param ConsistencyCheckServiceInterface $check    The read-only check.
 	 * @param IConfig                 $config   Where the last result is stored.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		JobRunRecorderInterface $recorder,
+		RecordedJobRuntime $runtime,
 		private readonly ConsistencyCheckServiceInterface $check,
 		private readonly IConfig $config,
 	) {
-		parent::__construct(time: $time, recorder: $recorder);
+		parent::__construct(time: $runtime->time, recorder: $runtime->recorder);
 
 	}//end __construct()
 

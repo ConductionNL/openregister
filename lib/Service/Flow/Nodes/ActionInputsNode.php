@@ -32,7 +32,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
@@ -127,31 +129,50 @@ class ActionInputsNode extends LogicNodeBase implements IFlowNode, IFlowNodeConf
 	/**
 	 * Set `inputs` on every item from the run context and the held writeOnly values.
 	 *
-	 * @param array $items   The input items.
-	 * @param array $config  The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, each carrying `inputs`.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The interface fixes the signature.
-	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
-	public function execute(array $items, array $config, array $context): array {
-		$inputs = array_merge(
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$context = $call->context;
+		return $this->withInputs(items: $items, inputs: $this->inputsOf(context: $context));
+	}//end execute()
+
+	/**
+	 * The run's inputs merged with the held writeOnly values.
+	 *
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array The inputs every item carries.
+	 */
+	private function inputsOf(array $context): array {
+		return array_merge(
 			(array)($context['inputs'] ?? []),
 			ObjectActionSecrets::read(ref: ($context[ObjectActionSecrets::CONTEXT_KEY] ?? null))
 		);
+	}//end inputsOf()
 
+	/**
+	 * Every item with `inputs` set on its json.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $inputs The inputs to set.
+	 *
+	 * @return array The items, each carrying `inputs`.
+	 */
+	private function withInputs(array $items, array $inputs): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
 			$json['inputs'] = $inputs;
-			$out[] = FlowItems::item(json: $json, binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index);
+			$out[] = FlowItems::item(json: $json, options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index));
 		}
 
 		return $out;
-	}//end execute()
+	}//end withInputs()
 
 	/**
 	 * The BPMN kind.

@@ -18,27 +18,21 @@ final class ContextsControllerFactory {
 	/**
 	 * The constructor arguments of ContextsController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
-	 * @param RegisterMapperInterface $registerMapper Constructor argument.
-	 * @param SchemaMapperInterface $schemaMapper Constructor argument.
+	 * @param SchemaCatalogInterface $catalog Constructor argument.
 	 * @param JsonLdContextServiceInterface $contextService Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
-		\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper,
-		\OCA\OpenRegister\Db\SchemaMapperInterface $schemaMapper,
+		\OCA\OpenRegister\Db\SchemaCatalogInterface $catalog,
 		\OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface $contextService,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ContextsControllerServices(
-				registerMapper: $registerMapper,
-				schemaMapper: $schemaMapper,
+				catalog: $catalog,
 				contextService: $contextService,
 			),
 		];

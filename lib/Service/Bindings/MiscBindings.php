@@ -20,6 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Bindings;
 
+use OCA\OpenRegister\Service\Flow\FlowConsentParking;
+use OCA\OpenRegister\Service\Flow\FlowConsentSweepInterface;
+
 /**
  * Contract => service map for services that belong to no other map.
  *
@@ -37,5 +40,7 @@ final class MiscBindings {
 	 *
 	 * @var array<class-string, class-string>
 	 */
-	public const BINDINGS = [];
+	public const BINDINGS = [
+		FlowConsentSweepInterface::class => FlowConsentParking::class,
+	];
 }//end class

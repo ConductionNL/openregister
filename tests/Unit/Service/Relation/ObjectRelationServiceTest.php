@@ -28,10 +28,13 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Db\ObjectRelationMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Relation\Derivation;
 use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationStores;
+use OCA\OpenRegister\Service\Relation\ParentInheritance;
 use OCA\OpenRegister\Service\Relation\ProvenanceLink;
+use OCA\OpenRegister\Service\Relation\ProseMention;
 use OCA\OpenRegister\Service\Relation\RelationEndpoint;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -137,14 +140,12 @@ class ObjectRelationServiceTest extends TestCase {
 			]
 		);
 
-		$applied = $this->service->applyInheritance(
-			parent: $parent,
-			childData: ['onderwerp' => 'Deelzaak'],
-			inherits: [
-				'classification' => 'classificatie',
-				'confidentiality' => 'vertrouwelijkheid',
-				'responsible' => 'behandelaar',
-			]
+		$applied = $this->service->inherit(
+			inheritance: new ParentInheritance(parent: $parent, childData: ['onderwerp' => 'Deelzaak'], inherits: [
+					'classification' => 'classificatie',
+					'confidentiality' => 'vertrouwelijkheid',
+					'responsible' => 'behandelaar',
+				])
 		);
 
 		$this->assertSame('intern', $applied['data']['classificatie']);
@@ -162,12 +163,7 @@ class ObjectRelationServiceTest extends TestCase {
 			$applied['inherited']['classification']
 		);
 
-		$row = $this->service->recordDerivation(
-			parent: $parent,
-			child: $this->object('uuid-child'),
-			link: new ProvenanceLink(relationType: 'deelzaak'),
-			inherited: $applied['inherited']
-		);
+		$row = $this->service->recordDerived(derivation: new Derivation(parent: $parent, child: $this->object('uuid-child'), link: new ProvenanceLink(relationType: 'deelzaak'), inherited: $applied['inherited']));
 
 		$this->assertSame(ObjectRelation::ORIGIN_DERIVE, $row->getOrigin());
 		$this->assertSame('vertrouwelijk', $row->getInherited()['confidentiality']['value']);
@@ -184,12 +180,7 @@ class ObjectRelationServiceTest extends TestCase {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function testADerivationKeepsTheEntryItCameOutOf(): void {
-		$row = $this->service->recordDerivation(
-			parent: $this->object('uuid-parent'),
-			child: $this->object('uuid-child'),
-			link: new ProvenanceLink(entry: 'entry-9', relationType: 'deelzaak'),
-			inherited: ['classification' => ['property' => 'classificatie', 'value' => 'intern']]
-		);
+		$row = $this->service->recordDerived(derivation: new Derivation(parent: $this->object('uuid-parent'), child: $this->object('uuid-child'), link: new ProvenanceLink(entry: 'entry-9', relationType: 'deelzaak'), inherited: ['classification' => ['property' => 'classificatie', 'value' => 'intern']]));
 
 		$this->assertSame('entry-9', $row->getSourceEntry());
 		$this->assertSame(ObjectRelation::ORIGIN_DERIVE, $row->getOrigin());
@@ -202,10 +193,7 @@ class ObjectRelationServiceTest extends TestCase {
 	 * and neither reads as "took a null".
 	 */
 	public function testADerivationThatInheritedNothingRecordsNothing(): void {
-		$row = $this->service->recordDerivation(
-			parent: $this->object('uuid-parent'),
-			child: $this->object('uuid-child')
-		);
+		$row = $this->service->recordDerived(derivation: new Derivation(parent: $this->object('uuid-parent'), child: $this->object('uuid-child')));
 
 		$this->assertNull($row->getInherited());
 		$this->assertNull($row->getSourceEntry());
@@ -223,10 +211,8 @@ class ObjectRelationServiceTest extends TestCase {
 	public function testReclassifyingTheParentDoesNotReclassifyTheChild(): void {
 		$parent = $this->object('uuid-parent', ['classificatie' => 'intern']);
 
-		$applied = $this->service->applyInheritance(
-			parent: $parent,
-			childData: [],
-			inherits: ['classification' => 'classificatie']
+		$applied = $this->service->inherit(
+			inheritance: new ParentInheritance(parent: $parent, childData: [], inherits: ['classification' => 'classificatie'])
 		);
 
 		$this->assertSame('intern', $applied['data']['classificatie']);
@@ -245,10 +231,8 @@ class ObjectRelationServiceTest extends TestCase {
 	 * the same afterwards.
 	 */
 	public function testARoleTheParentDoesNotCarryInheritsNothing(): void {
-		$applied = $this->service->applyInheritance(
-			parent: $this->object('uuid-parent', ['classificatie' => 'intern']),
-			childData: [],
-			inherits: ['classification' => 'classificatie', 'confidentiality' => 'vertrouwelijkheid']
+		$applied = $this->service->inherit(
+			inheritance: new ParentInheritance(parent: $this->object('uuid-parent', ['classificatie' => 'intern']), childData: [], inherits: ['classification' => 'classificatie', 'confidentiality' => 'vertrouwelijkheid'])
 		);
 
 		$this->assertArrayNotHasKey('vertrouwelijkheid', $applied['data']);
@@ -260,10 +244,8 @@ class ObjectRelationServiceTest extends TestCase {
 	 * A value the child already carries is the child's own.
 	 */
 	public function testInheritanceDoesNotOverruleAValueTheChildAlreadyHas(): void {
-		$applied = $this->service->applyInheritance(
-			parent: $this->object('uuid-parent', ['classificatie' => 'intern']),
-			childData: ['classificatie' => 'openbaar'],
-			inherits: ['classification' => 'classificatie']
+		$applied = $this->service->inherit(
+			inheritance: new ParentInheritance(parent: $this->object('uuid-parent', ['classificatie' => 'intern']), childData: ['classificatie' => 'openbaar'], inherits: ['classification' => 'classificatie'])
 		);
 
 		$this->assertSame('openbaar', $applied['data']['classificatie']);
@@ -321,12 +303,11 @@ class ObjectRelationServiceTest extends TestCase {
 	public function testAProseReferenceWritesARowOnBothSides(): void {
 		$this->mapper->method('findByAnchor')->willReturn([]);
 
-		$rows = $this->service->recordProseReference(
-			source: new RelationEndpoint(uuid: 'uuid-a', register: 1, schema: 2),
+		$rows = $this->service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 'uuid-a', register: 1, schema: 2),
 			target: new RelationEndpoint(uuid: 'uuid-b', register: 1, schema: 3),
 			anchor: 'note-7',
 			relationType: 'noemt'
-		);
+		));
 
 		$this->assertCount(2, $rows);
 		$this->assertSame('uuid-a', $rows[0]->getSourceUuid());
@@ -348,11 +329,10 @@ class ObjectRelationServiceTest extends TestCase {
 		$existing->hydrate(['sourceUuid' => 'uuid-a', 'targetUuid' => 'uuid-b', 'anchor' => 'note-7']);
 		$this->mapper->method('findByAnchor')->willReturn([$existing]);
 
-		$this->assertSame([], $this->service->recordProseReference(
-			source: new RelationEndpoint(uuid: 'uuid-a'),
+		$this->assertSame([], $this->service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 'uuid-a'),
 			target: new RelationEndpoint(uuid: 'uuid-b'),
 			anchor: 'note-7'
-		));
+		)));
 		$this->assertSame([], $this->written);
 	}//end testTheSameMentionIsNotWrittenTwice()
 
@@ -360,11 +340,10 @@ class ObjectRelationServiceTest extends TestCase {
 	 * An object cannot mention itself into a relation with itself.
 	 */
 	public function testAnObjectDoesNotMentionItself(): void {
-		$this->assertSame([], $this->service->recordProseReference(
-			source: new RelationEndpoint(uuid: 'uuid-a'),
+		$this->assertSame([], $this->service->recordProseReference(mention: new ProseMention(source: new RelationEndpoint(uuid: 'uuid-a'),
 			target: new RelationEndpoint(uuid: 'uuid-a'),
 			anchor: 'note-7'
-		));
+		)));
 	}//end testAnObjectDoesNotMentionItself()
 
 	/**

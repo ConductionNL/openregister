@@ -50,6 +50,17 @@ class PurposeRegistry implements PurposeRegistryInterface {
 		. PurposeContext::PARAM . ' parameter.';
 
 	/**
+	 * What a read is told per refusal rule; a named purpose fills the `%s`.
+	 *
+	 * @var array<string, string>
+	 */
+	private const REASONS = [
+		PurposeRefusedException::RULE_MISSING => self::MISSING_REASON,
+		PurposeRefusedException::RULE_UNKNOWN => 'Purpose "%s" is not in the administered list.',
+		PurposeRefusedException::RULE_RETIRED => 'Purpose "%s" has been withdrawn and cannot carry a query.',
+	];
+
+	/**
 	 * The status an archived processing activity carries.
 	 *
 	 * @var string
@@ -113,11 +124,7 @@ class PurposeRegistry implements PurposeRegistryInterface {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function boundActivity(ProcessingPurpose $purpose): ?Verwerkingsactiviteit {
-		$reference = (string)($purpose->getActivity() ?? '');
-		if ($reference === '') {
-			$reference = (string)($purpose->getActivityUuid() ?? '');
-		}
-
+		$reference = $this->activityReference(purpose: $purpose);
 		if ($reference === '') {
 			return null;
 		}
@@ -135,6 +142,22 @@ class PurposeRegistry implements PurposeRegistryInterface {
 
 		return $activity;
 	}//end boundActivity()
+
+	/**
+	 * The activity a purpose names: its activity reference, else its activity UUID.
+	 *
+	 * @param ProcessingPurpose $purpose The purpose.
+	 *
+	 * @return string The reference, or '' when it names none.
+	 */
+	private function activityReference(ProcessingPurpose $purpose): string {
+		$reference = (string)($purpose->getActivity() ?? '');
+		if ($reference === '') {
+			return (string)($purpose->getActivityUuid() ?? '');
+		}
+
+		return $reference;
+	}//end activityReference()
 
 	/**
 	 * Resolve a named purpose to one that may carry a query, or refuse.
@@ -182,18 +205,16 @@ class PurposeRegistry implements PurposeRegistryInterface {
 	 */
 	private function activePurpose(string $named): ProcessingPurpose {
 		if ($named === '') {
-			$this->refuse(rule: PurposeRefusedException::RULE_MISSING, reason: self::MISSING_REASON, purpose: null);
+			$this->refuse(rule: PurposeRefusedException::RULE_MISSING, purpose: null);
 		}
 
 		$purpose = $this->purposes->resolveReference(reference: $named);
 		if ($purpose === null) {
-			$reason = sprintf('Purpose "%s" is not in the administered list.', $named);
-			$this->refuse(rule: PurposeRefusedException::RULE_UNKNOWN, reason: $reason, purpose: $named);
+			$this->refuse(rule: PurposeRefusedException::RULE_UNKNOWN, purpose: $named);
 		}
 
 		if ($purpose->getStatus() !== ProcessingPurpose::STATUS_ACTIVE) {
-			$reason = sprintf('Purpose "%s" has been withdrawn and cannot carry a query.', $named);
-			$this->refuse(rule: PurposeRefusedException::RULE_RETIRED, reason: $reason, purpose: $named);
+			$this->refuse(rule: PurposeRefusedException::RULE_RETIRED, purpose: $named);
 		}
 
 		return $purpose;
@@ -202,9 +223,8 @@ class PurposeRegistry implements PurposeRegistryInterface {
 	/**
 	 * Refuse the read, offering the usable codes instead.
 	 *
-	 * @param string      $rule    The refusal rule.
-	 * @param string      $reason  The sentence the caller reads.
-	 * @param string|null $purpose The code named, or null when none was.
+	 * @param string      $rule    The refusal rule, a key of REASONS.
+	 * @param string|null $purpose The code named, quoted in the reason, or null when none was.
 	 *
 	 * @throws PurposeRefusedException Always.
 	 *
@@ -212,7 +232,12 @@ class PurposeRegistry implements PurposeRegistryInterface {
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	private function refuse(string $rule, string $reason, ?string $purpose): never {
+	private function refuse(string $rule, ?string $purpose): never {
+		$reason = self::REASONS[$rule];
+		if ($purpose !== null) {
+			$reason = sprintf($reason, $purpose);
+		}
+
 		throw new PurposeRefusedException(rule: $rule, reason: $reason, purpose: $purpose, context: ['available' => $this->availableCodes()]);
 	}//end refuse()
 

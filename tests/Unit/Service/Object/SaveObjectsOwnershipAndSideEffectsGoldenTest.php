@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\Event;
@@ -139,7 +140,7 @@ class SaveObjectsOwnershipAndSideEffectsGoldenTest extends TestCase {
 		}
 
 		$emit = new ReflectionMethod(SaveObjects::class, 'emitChunkSideEffects');
-		$run  = static fn () => $emit->invoke($handler, $sideEffects, $case['events'], $case['audit']);
+		$run  = static fn () => $emit->invoke($handler, $sideEffects, self::bulkRun(events: $case['events'], audit: $case['audit']));
 		if (($case['system'] ?? false) === true) {
 			SystemOperationContext::run($run);
 		} else {
@@ -206,11 +207,7 @@ class SaveObjectsOwnershipAndSideEffectsGoldenTest extends TestCase {
 		);
 
 		return new SaveObjects(
-			stores: new BulkSaveStores(
-				objectEntityMapper: $this->createMock(MagicMapper::class),
-				schemaMapper: $this->createMock(SchemaMapper::class),
-				registerMapper: $this->createMock(RegisterMapper::class),
-				saveHandler: $this->createMock(SaveObject::class)
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)), saveHandler: $this->createMock(SaveObject::class)
 			),
 			session: new BulkSaveSession(userSession: $session, organisationService: $organisations, groupManager: $groups),
 			reporting: new BulkSaveReporting(
@@ -307,4 +304,20 @@ class SaveObjectsOwnershipAndSideEffectsGoldenTest extends TestCase {
 
 		return $mapper;
 	}//end auditMapper()
+
+	/**
+	 * A bulk save run carrying the events and audit flags the side effects read.
+	 *
+	 * @param bool $events Whether lifecycle events are dispatched.
+	 * @param bool $audit  Whether audit trail rows are written.
+	 *
+	 * @return BulkSaveRun
+	 */
+	private static function bulkRun(bool $events, bool $audit): BulkSaveRun {
+		$run         = new BulkSaveRun();
+		$run->events = $events;
+		$run->audit  = $audit;
+
+		return $run;
+	}//end bulkRun()
 }//end class

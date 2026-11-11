@@ -143,6 +143,7 @@ class ExplicitReveal implements ExplicitRevealInterface {
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
 	public function isTrusted(): bool {
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return $this->trusted > 0 || SystemOperationContext::isActive() === true;
 	}//end isTrusted()
 
@@ -244,13 +245,25 @@ class ExplicitReveal implements ExplicitRevealInterface {
 	 */
 	public static function maskAll(?Schema $schema, array $object): array {
 		foreach (self::explicitProperties(schema: $schema) as $name) {
-			if (array_key_exists($name, $object) === true && $object[$name] !== null && $object[$name] !== '') {
+			if (self::hasSetValue(object: $object, name: $name) === true) {
 				$object[$name] = self::mask(value: $object[$name]);
 			}
 		}
 
 		return $object;
 	}//end maskAll()
+
+	/**
+	 * Whether the object carries a value for this property that is not null or empty.
+	 *
+	 * @param array<string, mixed> $object The object.
+	 * @param string               $name   The property.
+	 *
+	 * @return bool
+	 */
+	private static function hasSetValue(array $object, string $name): bool {
+		return (array_key_exists($name, $object) === true && $object[$name] !== null && $object[$name] !== '');
+	}//end hasSetValue()
 
 	/**
 	 * Mask the explicit-reveal values of a history entry's change set:
@@ -297,40 +310,66 @@ class ExplicitReveal implements ExplicitRevealInterface {
 			return;
 		}
 
-		$order = (new OrderParameter(order: $query['_order'] ?? []))->fields();
-
-		foreach ($names as $name) {
-			if (array_key_exists($name, $query) === true || array_key_exists($name, $order) === true) {
-				throw new ExplicitRevealQueryException(
-					message: sprintf('\'%s\' is shown only on request, so it cannot be filtered or sorted on.', $name)
-				);
-			}
+		$name = self::firstFilteredOrSorted(names: $names, query: $query);
+		if ($name !== null) {
+			throw new ExplicitRevealQueryException(
+				message: sprintf('\'%s\' is shown only on request, so it cannot be filtered or sorted on.', $name)
+			);
 		}
 	}//end refuseOracleQuery()
 
 	/**
+	 * The first of these properties, in schema order, the query filters or sorts on.
+	 *
+	 * @param array<int, string> $names The explicit-reveal properties.
+	 * @param array<mixed>       $query The search query.
+	 *
+	 * @return string|null The property, or null when the query names none of them.
+	 */
+	private static function firstFilteredOrSorted(array $names, array $query): ?string {
+		$order = (new OrderParameter(order: $query['_order'] ?? []))->fields();
+
+		foreach ($names as $name) {
+			if (array_key_exists($name, $query) === true || array_key_exists($name, $order) === true) {
+				return $name;
+			}
+		}
+
+		return null;
+	}//end firstFilteredOrSorted()
+
+	/**
 	 * Put a stored value back where a write sends its mask.
 	 *
-	 * @param Schema|null          $schema   The schema.
-	 * @param array<string, mixed> $incoming The write payload.
-	 * @param array<string, mixed> $stored   The stored object, unrendered.
+	 * @param MaskedWrite $write The schema, the write payload and the stored object, unrendered.
 	 *
 	 * @return array<string, mixed> The payload.
 	 *
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
-	public static function restoreMasked(?Schema $schema, array $incoming, array $stored): array {
-		foreach (self::explicitProperties(schema: $schema) as $name) {
-			if (array_key_exists($name, $incoming) === false || array_key_exists($name, $stored) === false) {
-				continue;
-			}
-
-			$mask = self::mask(value: $stored[$name]);
-			if ($mask !== '' && $incoming[$name] === $mask) {
-				$incoming[$name] = $stored[$name];
-			}
+	public static function restoreMasked(MaskedWrite $write): array {
+		$incoming = $write->incoming;
+		foreach (array_intersect(self::explicitProperties(schema: $write->schema), array_keys($incoming), array_keys($write->stored)) as $name) {
+			$incoming[$name] = self::unmasked(sent: $incoming[$name], stored: $write->stored[$name]);
 		}
 
 		return $incoming;
 	}//end restoreMasked()
+
+	/**
+	 * The stored value when a write sent back its mask, otherwise what was sent.
+	 *
+	 * @param mixed $sent   The value in the write payload.
+	 * @param mixed $stored The stored value.
+	 *
+	 * @return mixed The value to write.
+	 */
+	private static function unmasked(mixed $sent, mixed $stored): mixed {
+		$mask = self::mask(value: $stored);
+		if ($mask !== '' && $sent === $mask) {
+			return $stored;
+		}
+
+		return $sent;
+	}//end unmasked()
 }//end class

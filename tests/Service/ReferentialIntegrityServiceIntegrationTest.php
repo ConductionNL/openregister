@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -26,6 +27,7 @@ use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Integration tests for ReferentialIntegrityService
@@ -105,7 +107,7 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 	protected function tearDown(): void {
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
+				$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Ignore
 			}
@@ -290,10 +292,8 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 
 		// Should not throw
 		$this->service->logRestrictBlock(
-			'test-object-uuid',
-			'1',
-			$analysis,
-			'admin'
+			new RefusedDeletion(objectUuid: 'test-object-uuid', schemaId: '1', userId: 'admin'),
+			$analysis
 		);
 
 		$this->assertTrue(true);

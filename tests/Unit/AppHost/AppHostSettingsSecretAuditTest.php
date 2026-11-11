@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
+use OCA\OpenRegister\AppHost\Service\AppHostSettingsServices;
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor;
@@ -154,7 +155,7 @@ class AppHostSettingsSecretAuditTest extends TestCase {
 				private readonly array $hookSecrets,
 				private readonly bool $resolverFails,
 			) {
-				parent::__construct($appId, $appConfig, $appManager, $container, $groupManager, $userSession, $logger);
+				parent::__construct($appId, new AppHostSettingsServices($appConfig, $appManager, $container, $logger), $groupManager, $userSession);
 			}
 
 			protected function configKeys(): array {

@@ -335,12 +335,23 @@ class NotificationDeliveryWindowService {
 			return null;
 		}
 
+		return $this->zoneNamed(tzName: $tzName);
+	}//end declaredZone()
+
+	/**
+	 * The zone of this name, null when `DateTimeZone` does not accept it.
+	 *
+	 * @param string $tzName IANA timezone name.
+	 *
+	 * @return DateTimeZone|null
+	 */
+	private function zoneNamed(string $tzName): ?DateTimeZone {
 		try {
 			return new DateTimeZone($tzName);
 		} catch (\Throwable $e) {
 			return null;
 		}
-	}//end declaredZone()
+	}//end zoneNamed()
 
 	/**
 	 * The Nextcloud server zone, null when there is no resolver or it fails.

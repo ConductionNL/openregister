@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectStateController;
+use OCA\OpenRegister\Controller\Support\ObjectStateControllerServices;
 use OCA\OpenRegister\Exception\ArchiveNotOfferedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
@@ -83,7 +84,7 @@ final class ObjectStateControllerTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		return new ObjectStateController('openregister', $this->request, $this->handler, $session);
+		return new ObjectStateController($this->request, new ObjectStateControllerServices($this->handler, $session));
 	}//end controller()
 
 	/**
@@ -93,7 +94,7 @@ final class ObjectStateControllerTest extends TestCase {
 	 */
 	public function testArchiveAnswersTheMarker(): void {
 		$this->request->method('getParam')->willReturn('afgehandeld');
-		$this->handler->method('archive')->willReturn(
+		$this->handler->method('archiveWith')->willReturn(
 			['uuid' => self::OBJ, 'archived' => ['by' => 'anna', 'at' => 'now', 'reason' => 'afgehandeld']]
 		);
 
@@ -114,7 +115,7 @@ final class ObjectStateControllerTest extends TestCase {
 	 */
 	public function testUnarchiveAnswersTheClearedMarker(): void {
 		$this->request->method('getParam')->willReturn(null);
-		$this->handler->method('unarchive')->willReturn(['uuid' => self::OBJ, 'archived' => null]);
+		$this->handler->method('unarchiveWith')->willReturn(['uuid' => self::OBJ, 'archived' => null]);
 
 		$response = $this->controller()->unarchive(
 			register: self::REGISTER,
@@ -136,7 +137,7 @@ final class ObjectStateControllerTest extends TestCase {
 		$this->handler->method('freeze')->willReturn(
 			['uuid' => self::OBJ, 'frozen' => ['by' => 'anna', 'at' => 'now', 'state' => null]]
 		);
-		$this->handler->method('unfreeze')->willReturn(['uuid' => self::OBJ, 'frozen' => null]);
+		$this->handler->method('unfreezeWith')->willReturn(['uuid' => self::OBJ, 'frozen' => null]);
 
 		$frozen = $this->controller()->freeze(
 			register: self::REGISTER,
@@ -165,7 +166,7 @@ final class ObjectStateControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAnonymousCallerIsRefused(): void {
-		$this->handler->expects($this->never())->method('archive');
+		$this->handler->expects($this->never())->method('archiveWith');
 
 		$response = $this->controller(signedIn: false)->archive(
 			register: self::REGISTER,
@@ -186,7 +187,7 @@ final class ObjectStateControllerTest extends TestCase {
 	 */
 	public function testASchemaWithoutTheAnnotationAnswersFourTwentyTwo(): void {
 		$this->request->method('getParam')->willReturn(null);
-		$this->handler->method('archive')->willThrowException(
+		$this->handler->method('archiveWith')->willThrowException(
 			new ArchiveNotOfferedException(message: 'no archive block')
 		);
 
@@ -207,7 +208,7 @@ final class ObjectStateControllerTest extends TestCase {
 	 */
 	public function testACallerWithoutUpdateAnswersForbidden(): void {
 		$this->request->method('getParam')->willReturn(null);
-		$this->handler->method('archive')->willThrowException(
+		$this->handler->method('archiveWith')->willThrowException(
 			new NotAuthorizedException(message: 'nope')
 		);
 
@@ -227,7 +228,7 @@ final class ObjectStateControllerTest extends TestCase {
 	 */
 	public function testAnUnknownObjectAnswersNotFound(): void {
 		$this->request->method('getParam')->willReturn(null);
-		$this->handler->method('archive')->willThrowException(new DoesNotExistException('gone'));
+		$this->handler->method('archiveWith')->willThrowException(new DoesNotExistException('gone'));
 
 		$response = $this->controller()->archive(
 			register: self::REGISTER,
@@ -249,7 +250,7 @@ final class ObjectStateControllerTest extends TestCase {
 	 */
 	public function testAnUnexpectedFailureLeaksNothing(): void {
 		$this->request->method('getParam')->willReturn(null);
-		$this->handler->method('archive')->willThrowException(
+		$this->handler->method('archiveWith')->willThrowException(
 			new \RuntimeException('SQLSTATE[42S22]: /var/www/html/custom_apps/openregister/lib/...')
 		);
 
@@ -275,8 +276,8 @@ final class ObjectStateControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturn('   ');
 
 		$this->handler->expects($this->once())
-			->method('archive')
-			->with(self::OBJ, null, self::REGISTER, self::SCHEMA)
+			->method('archiveWith')
+			->with(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(self::OBJ, null, self::REGISTER, self::SCHEMA))
 			->willReturn(['uuid' => self::OBJ, 'archived' => []]);
 
 		$this->controller()->archive(register: self::REGISTER, schema: self::SCHEMA, id: self::OBJ);

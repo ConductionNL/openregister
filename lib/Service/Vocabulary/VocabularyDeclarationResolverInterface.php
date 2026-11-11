@@ -37,13 +37,11 @@ interface VocabularyDeclarationResolverInterface {
 	 * the person choosing a branch is choosing it FROM that tree, so they need
 	 * it before the save rather than after.
 	 *
-	 * @param string $schemaRef The schema id or slug, empty when none was given.
-	 * @param string $property The property name, empty when none was given.
-	 * @param string $schemeUri The scheme uri for the unsaved path, empty when none was given.
+	 * @param DeclarationLookup $lookup The schema and property of a saved declaration, and the scheme uri for the unsaved path.
 	 *
 	 * @return CodedPropertyDeclaration|null The declaration, or null when neither source yields one.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function resolveDeclaration(string $schemaRef, string $property, string $schemeUri): ?CodedPropertyDeclaration;
+	public function resolveDeclaration(DeclarationLookup $lookup): ?CodedPropertyDeclaration;
 }//end interface

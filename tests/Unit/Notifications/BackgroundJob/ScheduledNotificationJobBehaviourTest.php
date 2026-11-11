@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationDelivery;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationJob;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledObjectSources;
+use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeState;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
@@ -45,6 +46,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Behaviour of ScheduledNotificationJob on the paths the contract tests leave out.
@@ -214,7 +217,7 @@ class ScheduledNotificationJobBehaviourTest extends TestCase
         $this->appConfig->method('getValueString')->willReturnArgument(2);
         $this->stateCache->method('get')->willReturn(null);
 
-        $this->dedupeMapper->expects($this->never())->method('findOne');
+        $this->dedupeMapper->expects($this->never())->method('findByKey');
         $this->dispatcher->expects($this->never())->method('dispatch');
         $this->logger->expects($this->once())->method('info')
             ->with('[ScheduledNotificationJob] fired "rule" on schema 7: matched=1 dispatched=0 deduped=0 of 2');
@@ -232,7 +235,7 @@ class ScheduledNotificationJobBehaviourTest extends TestCase
         $this->stateCache->method('get')->willReturn(null);
         $row = new NotificationDedupeState();
         $row->setFingerprint(sha1('constant'));
-        $this->dedupeMapper->method('findOne')->willReturn($row);
+        $this->dedupeMapper->method('findByKey')->willReturn($row);
         $this->dedupeMapper->method('upsert')->willThrowException(new RuntimeException('locked'));
 
         $this->dispatcher->expects($this->never())->method('dispatch');
@@ -260,7 +263,7 @@ class ScheduledNotificationJobBehaviourTest extends TestCase
 
         $expected = sha1((string)json_encode(['createdAt' => '2000-01-01T00:00:00+00:00'], (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)));
         $this->dedupeMapper->expects($this->once())->method('upsert')
-            ->with($this->anything(), $expected, $this->isInstanceOf(DateTime::class), true);
+            ->with($this->anything(), $this->callback(static fn (DedupeSighting $sighting): bool => $sighting->fingerprint === $expected && $sighting->dispatched === true));
 
         $this->runJob();
 
@@ -277,7 +280,7 @@ class ScheduledNotificationJobBehaviourTest extends TestCase
 
         $expected = sha1('{"a":1,"b":2}');
         $this->dedupeMapper->expects($this->once())->method('upsert')
-            ->with($this->anything(), $expected, $this->anything(), true);
+            ->with($this->anything(), $this->callback(static fn (DedupeSighting $sighting): bool => $sighting->fingerprint === $expected && $sighting->dispatched === true));
 
         $this->runJob();
 
@@ -294,7 +297,7 @@ class ScheduledNotificationJobBehaviourTest extends TestCase
 
         $expected = sha1(var_export(['bad' => "\xB1\x31", 'missing' => null], true));
         $this->dedupeMapper->expects($this->once())->method('upsert')
-            ->with($this->anything(), $expected, $this->anything(), true);
+            ->with($this->anything(), $this->callback(static fn (DedupeSighting $sighting): bool => $sighting->fingerprint === $expected && $sighting->dispatched === true));
 
         $this->runJob();
 
@@ -420,7 +423,7 @@ class ScheduledNotificationJobBehaviourTest extends TestCase
     {
         $job = new ScheduledNotificationJob(
             $this->createMock(ITimeFactory::class),
-            new ScheduledObjectSources($this->schemaMapper, $this->objectMapper, new ScheduledFilterEvaluator(logger: $this->logger)),
+            new ScheduledObjectSources(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->schemaMapper, tables: $this->objectMapper), new ScheduledFilterEvaluator(logger: $this->logger)),
             new ScheduledNotificationDelivery($this->dispatcher, $this->dedupeMapper, $this->appConfig, $this->logger),
             $this->cacheFactory
         );

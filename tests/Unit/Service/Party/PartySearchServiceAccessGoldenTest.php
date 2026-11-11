@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
+use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -80,11 +81,11 @@ class PartySearchServiceAccessGoldenTest extends TestCase {
 
 		$audit = $this->getMockBuilder(AuditTrailMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['createPartyQueryRefusalEntry'])
+			->onlyMethods(['recordPartyQueryRefusal'])
 			->getMock();
-		$audit->method('createPartyQueryRefusalEntry')->willReturnCallback(
-			function (...$args): AuditTrail {
-				$this->trail[] = $args;
+		$audit->method('recordPartyQueryRefusal')->willReturnCallback(
+			function (PartyQueryRefusal $refusal): AuditTrail {
+				$this->trail[] = [$refusal->query, $refusal->cap, $refusal->would, $refusal->schema];
 				return new AuditTrail();
 			}
 		);

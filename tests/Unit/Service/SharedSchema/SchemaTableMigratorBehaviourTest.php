@@ -26,8 +26,10 @@ use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\SharedSchema\SchemaTableMigrator;
+use OCA\OpenRegister\Service\SharedSchema\SplitTableColumns;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IConfig;
@@ -131,9 +133,11 @@ class SchemaTableMigratorBehaviourTest extends TestCase {
 		);
 
 		$unmapped = $this->migrator()->planUnmapped(
-			table: 'openregister_table_1_2',
-			definition: ['title' => 'own'],
-			content: ['title' => 'shared']
+			split: new SplitTableColumns(
+				table: 'openregister_table_1_2',
+				definition: ['title' => 'own'],
+				content: ['title' => 'shared']
+			)
 		);
 
 		$this->assertSame(['colour'], $unmapped);
@@ -156,7 +160,7 @@ class SchemaTableMigratorBehaviourTest extends TestCase {
 			}
 		);
 
-		$unmapped = $this->migrator()->planUnmapped(table: 'openregister_table_1_2', definition: null, content: ['title' => 'shared']);
+		$unmapped = $this->migrator()->planUnmapped(split: new SplitTableColumns(table: 'openregister_table_1_2', definition: null, content: ['title' => 'shared']));
 
 		$this->assertSame([], $unmapped);
 		$this->assertSame(['shared', 'shared'], $seen);
@@ -173,7 +177,7 @@ class SchemaTableMigratorBehaviourTest extends TestCase {
 		$this->logger->expects($this->once())->method('warning')
 			->with($this->stringContains('Could not predict columns: bad definition'));
 
-		$unmapped = $this->migrator()->planUnmapped(table: 't', definition: ['title' => 'x'], content: []);
+		$unmapped = $this->migrator()->planUnmapped(split: new SplitTableColumns(table: 't', definition: ['title' => 'x'], content: []));
 
 		$this->assertSame(['a', 'b'], $unmapped, 'Without a predicted target, every non-key column is unmapped.');
 	}//end testPlanUnmappedLogsWhenColumnsCannotBePredicted()
@@ -285,7 +289,7 @@ class SchemaTableMigratorBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['rows' => 0, 'unmapped' => [], 'backup' => null],
-			$this->migrator()->migrate(register: $register, schema: $schema, oldId: 2)
+			$this->migrator()->migrate(table: new RegisterSchema(register: $register, schema: $schema), oldId: 2)
 		);
 	}//end testMigrateWithoutSourceTableIsANoOp()
 
@@ -328,7 +332,7 @@ class SchemaTableMigratorBehaviourTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(8);
 
-		$result = $this->migrator()->migrate(register: $register, schema: $schema, oldId: 2);
+		$result = $this->migrator()->migrate(table: new RegisterSchema(register: $register, schema: $schema), oldId: 2);
 
 		$this->assertSame(
 			['rows' => 5, 'unmapped' => ['legacy'], 'backup' => 'oc_openregister_table_3_2_predupe'],
@@ -338,4 +342,47 @@ class SchemaTableMigratorBehaviourTest extends TestCase {
 		$this->assertStringContainsString('Could not rewrite _uri on oc_openregister_table_3_8: no _uri column', $warnings[0]);
 		$this->assertStringContainsString('1 unmapped column(s): legacy', $warnings[1]);
 	}//end testMigrateToleratesUriRewriteFailure()
+
+	/**
+	 * A completed split copies the mapped columns, then repoints `_schema` and
+	 * the register-bounded `_uri` segment from the old schema id to the new one.
+	 *
+	 * @return void
+	 */
+	public function testMigrateRestampsSchemaAndUriWithBoundParameters(): void {
+		$this->config->method('getSystemValue')->willReturn('oc_');
+		$this->tableProbe(answer: 1);
+		$this->db->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
+		$this->magic->method('getTableNameForRegisterSchema')->willReturn('openregister_table_3_8');
+		$this->magic->method('getExistingTableColumns')->willReturn(['_id' => [], '_uuid' => []]);
+
+		$executed = [];
+		$this->db->method('executeStatement')->willReturnCallback(
+			static function (string $sql, array $params=[]) use (&$executed): int {
+				$executed[] = [$sql, $params];
+				return 4;
+			}
+		);
+
+		$register = new Register();
+		$register->setId(3);
+		$schema = new Schema();
+		$schema->setId(8);
+
+		$result = $this->migrator()->migrate(table: new RegisterSchema(register: $register, schema: $schema), oldId: 2);
+
+		$this->assertSame(4, $result['rows']);
+		$this->assertSame(
+			[
+				['INSERT INTO "oc_openregister_table_3_8" ("_uuid") SELECT "_uuid" FROM "oc_openregister_table_3_2"', []],
+				['UPDATE "oc_openregister_table_3_8" SET _schema = :new WHERE _schema = :old', ['new' => '8', 'old' => '2']],
+				[
+					'UPDATE "oc_openregister_table_3_8" SET _uri = REPLACE(_uri, :old, :new) WHERE _uri LIKE :match',
+					['old' => '/3/2/', 'new' => '/3/8/', 'match' => '%/3/2/%'],
+				],
+				['ALTER TABLE "oc_openregister_table_3_2" RENAME TO "oc_openregister_table_3_2_predupe"', []],
+			],
+			$executed
+		);
+	}//end testMigrateRestampsSchemaAndUriWithBoundParameters()
 }//end class

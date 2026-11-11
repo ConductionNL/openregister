@@ -80,36 +80,50 @@ class DpiaPatternDetectionService implements DpiaPatternDetectorInterface {
 	 * reflects real volume) but are listed separately so the caller never
 	 * re-writes them (idempotency).
 	 *
-	 * @param array<int, mixed> $cases Case payloads (each element is validated as an array at
-	 *                                 runtime); each needs `receivedAt` + the group-by fields +
-	 *                                 optionally `dpiaRequired` and a caller-supplied `@uuid`.
-	 * @param array<string, mixed> $config The pack's `dpiaDetection` block (threshold, windowDays, groupBy).
-	 * @param DateTimeImmutable $now The evaluation clock.
+	 * @param DpiaDetectionRequest $request The case payloads, the pack's `dpiaDetection` block
+	 *                                      (threshold, windowDays, groupBy) and the evaluation clock.
 	 *
 	 * @return array<int, array{key: string, count: int, caseUuids: array<int, string>, unflaggedUuids: array<int, string>}> Triggering groups.
 	 *
 	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
 	 *   (Scenario: Threshold crossing flags the group)
 	 */
-	public function detect(array $cases, array $config, DateTimeImmutable $now): array {
-		$threshold = $this->positiveInt(config: $config, key: 'threshold');
-		$windowDays = $this->positiveInt(config: $config, key: 'windowDays');
-
-		// Fail-safe: an unusable configuration produces no groups — never a
-		// false DPIA flag (no-pack / no-block callers pass an empty config).
-		if ($threshold === 0 || $windowDays === 0) {
+	public function detect(DpiaDetectionRequest $request): array {
+		$run = $this->openRun(config: $request->config, now: $request->now);
+		if ($run === null) {
 			return [];
 		}
 
-		$groups = $this->groupCases(
-			cases: $cases,
+		$this->groupCases(run: $run, cases: $request->cases);
+
+		return array_values(array_filter($run->groups, static fn (array $group): bool => $group['count'] >= $run->threshold));
+	}//end detect()
+
+	/**
+	 * The detection a configuration describes, or null when it is unusable.
+	 *
+	 * Fail-safe: an unusable configuration produces no groups — never a
+	 * false DPIA flag (no-pack / no-block callers pass an empty config).
+	 *
+	 * @param array<string, mixed> $config The pack's `dpiaDetection` block (threshold, windowDays, groupBy).
+	 * @param DateTimeImmutable    $now    The evaluation clock.
+	 *
+	 * @return DpiaDetectionRun|null The run, or null when threshold or window is not positive.
+	 */
+	private function openRun(array $config, DateTimeImmutable $now): ?DpiaDetectionRun {
+		$threshold = $this->positiveInt(config: $config, key: 'threshold');
+		$windowDays = $this->positiveInt(config: $config, key: 'windowDays');
+		if ($threshold === 0 || $windowDays === 0) {
+			return null;
+		}
+
+		return new DpiaDetectionRun(
+			threshold: $threshold,
 			groupBy: $this->groupByOf(config: $config),
 			windowStart: $now->modify(sprintf('-%d days', $windowDays)),
 			now: $now
 		);
-
-		return array_values(array_filter($groups, static fn (array $group): bool => $group['count'] >= $threshold));
-	}//end detect()
+	}//end openRun()
 
 	/**
 	 * Build a group key from the configured characteristics, each value
@@ -169,24 +183,19 @@ class DpiaPatternDetectionService implements DpiaPatternDetectorInterface {
 	}//end positiveInt()
 
 	/**
-	 * Group every in-window case by its key, in first-seen order.
+	 * Group every in-window case by its key into the run, in first-seen order.
 	 *
-	 * @param array<int, mixed>  $cases       Case payloads.
-	 * @param array<int, mixed>  $groupBy     The grouping field names.
-	 * @param DateTimeImmutable  $windowStart Start of the rolling window.
-	 * @param DateTimeImmutable  $now         The evaluation clock.
+	 * @param DpiaDetectionRun  $run   The detection: grouping fields, window and groups.
+	 * @param array<int, mixed> $cases Case payloads.
 	 *
-	 * @return array<string, array{key: string, count: int, caseUuids: array<int, string>, unflaggedUuids: array<int, string>}>
+	 * @return void
 	 */
-	private function groupCases(array $cases, array $groupBy, DateTimeImmutable $windowStart, DateTimeImmutable $now): array {
-		$groups = [];
+	private function groupCases(DpiaDetectionRun $run, array $cases): void {
 		foreach ($cases as $case) {
-			if ($this->inWindow(entry: $case, windowStart: $windowStart, now: $now) === true) {
-				$this->tally(groups: $groups, entry: $case, key: $this->groupKey(case: $case, groupBy: $groupBy));
+			if ($this->inWindow(run: $run, entry: $case) === true) {
+				$this->tally(run: $run, entry: $case);
 			}
 		}
-
-		return $groups;
 
 	}//end groupCases()
 
@@ -212,20 +221,19 @@ class DpiaPatternDetectionService implements DpiaPatternDetectorInterface {
 	 *
 	 * A non-array case or an unusable `receivedAt` is outside.
 	 *
-	 * @param mixed             $entry       One element of the case list.
-	 * @param DateTimeImmutable $windowStart Start of the rolling window.
-	 * @param DateTimeImmutable $now         The evaluation clock.
+	 * @param DpiaDetectionRun $run   The detection: its window.
+	 * @param mixed            $entry One element of the case list.
 	 *
 	 * @return bool
 	 */
-	private function inWindow(mixed $entry, DateTimeImmutable $windowStart, DateTimeImmutable $now): bool {
+	private function inWindow(DpiaDetectionRun $run, mixed $entry): bool {
 		if (is_array($entry) === false) {
 			return false;
 		}
 
 		$receivedAt = $this->parseDate(value: ($entry['receivedAt'] ?? null));
 
-		return $receivedAt !== null && $receivedAt >= $windowStart && $receivedAt <= $now;
+		return $receivedAt !== null && $receivedAt >= $run->windowStart && $receivedAt <= $run->now;
 
 	}//end inWindow()
 
@@ -234,24 +242,24 @@ class DpiaPatternDetectionService implements DpiaPatternDetectorInterface {
 	 *
 	 * Every case counts; only a case with an `@uuid` / `id` is listed.
 	 *
-	 * @param array<string, array<string, mixed>> $groups The groups so far (mutated by reference).
-	 * @param array<string, mixed>                $entry  The case payload.
-	 * @param string                              $key    Its group key.
+	 * @param DpiaDetectionRun     $run   The detection: grouping fields and the groups so far.
+	 * @param array<string, mixed> $entry The case payload.
 	 *
 	 * @return void
 	 */
-	private function tally(array &$groups, array $entry, string $key): void {
-		$groups[$key] ??= ['key' => $key, 'count' => 0, 'caseUuids' => [], 'unflaggedUuids' => []];
-		$groups[$key]['count']++;
+	private function tally(DpiaDetectionRun $run, array $entry): void {
+		$key = $this->groupKey(case: $entry, groupBy: $run->groupBy);
+		$run->groups[$key] ??= ['key' => $key, 'count' => 0, 'caseUuids' => [], 'unflaggedUuids' => []];
+		$run->groups[$key]['count']++;
 
 		$uuid = (string)($entry['@uuid'] ?? ($entry['id'] ?? ''));
 		if ($uuid === '') {
 			return;
 		}
 
-		$groups[$key]['caseUuids'][] = $uuid;
+		$run->groups[$key]['caseUuids'][] = $uuid;
 		if (($entry['dpiaRequired'] ?? false) !== true) {
-			$groups[$key]['unflaggedUuids'][] = $uuid;
+			$run->groups[$key]['unflaggedUuids'][] = $uuid;
 		}
 
 	}//end tally()

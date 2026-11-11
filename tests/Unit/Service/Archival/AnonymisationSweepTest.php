@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\Archival\AnonymisationBatch;
 use OCA\OpenRegister\Service\Archival\AnonymisationProfile;
 use OCA\OpenRegister\Service\Archival\AnonymisationRun;
 use OCA\OpenRegister\Service\Archival\AnonymisationSweep;
@@ -97,11 +98,7 @@ class AnonymisationSweepTest extends TestCase {
 	 * @return void
 	 */
 	public function testASoundBatchIsAnonymised(): void {
-		$report = $this->sweep->run(
-			candidates: [$this->candidate('obj-1'), $this->candidate('obj-2')],
-			targetsFor: $this->workingTargets(),
-			salt: 'instance-salt'
-		);
+		$report = $this->sweep->sweep(batch: new AnonymisationBatch(candidates: [$this->candidate('obj-1'), $this->candidate('obj-2')], targetsFor: \Closure::fromCallable($this->workingTargets()), salt: 'instance-salt'));
 
 		$this->assertSame(2, $report['anonymisedCount']);
 		$this->assertSame(0, $report['refusedCount']);
@@ -115,14 +112,10 @@ class AnonymisationSweepTest extends TestCase {
 	 */
 	public function testThePlanCarriesTheCandidatesRecordAndProfileName(): void {
 		$seen = [];
-		$report = $this->sweep->run(
-			candidates: [$this->candidate('obj-7')],
-			targetsFor: static function (array $candidate, $plan) use (&$seen): array {
+		$report = $this->sweep->sweep(batch: new AnonymisationBatch(candidates: [$this->candidate('obj-7')], targetsFor: \Closure::fromCallable(static function (array $candidate, $plan) use (&$seen): array {
 				$seen = ['uuid' => $plan->objectUuid, 'profile' => $plan->profileName, 'before' => $plan->before, 'changed' => $plan->changedProperties];
 				return [new RecordingTarget(name: 'payload')];
-			},
-			salt: 'instance-salt'
-		);
+			}), salt: 'instance-salt'));
 
 		$this->assertSame(
 			['uuid' => 'obj-7', 'profile' => 'zaak-statistiek', 'before' => ['naam' => 'Fatima El-Amrani', 'zaaknummer' => 'ZK-1'], 'changed' => ['naam']],
@@ -139,14 +132,10 @@ class AnonymisationSweepTest extends TestCase {
 	 * @return void
 	 */
 	public function testAHeldRecordIsRefusedAndTheRestOfTheBatchRuns(): void {
-		$report = $this->sweep->run(
-			candidates: [
+		$report = $this->sweep->sweep(batch: new AnonymisationBatch(candidates: [
 				$this->candidate('obj-1', ['hasLegalHold' => true, 'holdReason' => 'bezwaar 2026-114']),
 				$this->candidate('obj-2'),
-			],
-			targetsFor: $this->workingTargets(),
-			salt: 'instance-salt'
-		);
+			], targetsFor: \Closure::fromCallable($this->workingTargets()), salt: 'instance-salt'));
 
 		$this->assertSame(1, $report['anonymisedCount']);
 		$this->assertSame(1, $report['refusedCount']);
@@ -161,15 +150,11 @@ class AnonymisationSweepTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAlreadyAnonymisedRecordIsRefusedByTheSweep(): void {
-		$report = $this->sweep->run(
-			candidates: [
+		$report = $this->sweep->sweep(batch: new AnonymisationBatch(candidates: [
 				$this->candidate('obj-1', [
 					'marker' => ['state' => AnonymisationRun::COMPLETE, 'anonymisedAt' => '2026-09-01', 'profile' => 'p'],
 				]),
-			],
-			targetsFor: $this->workingTargets(),
-			salt: 'instance-salt'
-		);
+			], targetsFor: \Closure::fromCallable($this->workingTargets()), salt: 'instance-salt'));
 
 		$this->assertSame(0, $report['anonymisedCount']);
 		$this->assertStringContainsString('already anonymised', $report['refused'][0]['reason']);
@@ -183,17 +168,13 @@ class AnonymisationSweepTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnreachableTargetIsCountedAsRefusedNotAsDone(): void {
-		$report = $this->sweep->run(
-			candidates: [$this->candidate('obj-1'), $this->candidate('obj-2')],
-			targetsFor: static function (array $candidate): array {
+		$report = $this->sweep->sweep(batch: new AnonymisationBatch(candidates: [$this->candidate('obj-1'), $this->candidate('obj-2')], targetsFor: \Closure::fromCallable(static function (array $candidate): array {
 				if (($candidate['uuid'] ?? '') === 'obj-1') {
 					return [new RecordingTarget(name: 'search index', failPrepare: true)];
 				}
 
 				return [new RecordingTarget(name: 'payload')];
-			},
-			salt: 'instance-salt'
-		);
+			}), salt: 'instance-salt'));
 
 		$this->assertSame(1, $report['anonymisedCount']);
 		$this->assertSame(1, $report['refusedCount']);
@@ -207,11 +188,7 @@ class AnonymisationSweepTest extends TestCase {
 	 * @return void
 	 */
 	public function testARecordTheProfileWouldNotTouchIsRefused(): void {
-		$report = $this->sweep->run(
-			candidates: [$this->candidate('obj-1', ['payload' => ['zaaknummer' => 'ZK-1']])],
-			targetsFor: $this->workingTargets(),
-			salt: 'instance-salt'
-		);
+		$report = $this->sweep->sweep(batch: new AnonymisationBatch(candidates: [$this->candidate('obj-1', ['payload' => ['zaaknummer' => 'ZK-1']])], targetsFor: \Closure::fromCallable($this->workingTargets()), salt: 'instance-salt'));
 
 		$this->assertSame(0, $report['anonymisedCount']);
 		$this->assertSame(1, $report['refusedCount']);
@@ -224,11 +201,7 @@ class AnonymisationSweepTest extends TestCase {
 	 * @return void
 	 */
 	public function testACandidateWithoutAUuidIsRefused(): void {
-		$report = $this->sweep->run(
-			candidates: [$this->candidate('')],
-			targetsFor: $this->workingTargets(),
-			salt: 'instance-salt'
-		);
+		$report = $this->sweep->sweep(batch: new AnonymisationBatch(candidates: [$this->candidate('')], targetsFor: \Closure::fromCallable($this->workingTargets()), salt: 'instance-salt'));
 
 		$this->assertSame(1, $report['refusedCount']);
 		$this->assertStringContainsString('no uuid', $report['refused'][0]['reason']);
@@ -241,15 +214,11 @@ class AnonymisationSweepTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheRefusalsAreCountedApartFromTheSuccesses(): void {
-		$report = $this->sweep->run(
-			candidates: [
+		$report = $this->sweep->sweep(batch: new AnonymisationBatch(candidates: [
 				$this->candidate('obj-1', ['hasLegalHold' => true, 'holdReason' => 'bezwaar']),
 				$this->candidate('obj-2'),
 				$this->candidate('obj-3', ['hasLegalHold' => true, 'holdReason' => 'bezwaar']),
-			],
-			targetsFor: $this->workingTargets(),
-			salt: 'instance-salt'
-		);
+			], targetsFor: \Closure::fromCallable($this->workingTargets()), salt: 'instance-salt'));
 
 		$this->assertSame(1, $report['anonymisedCount']);
 		$this->assertSame(2, $report['refusedCount']);
@@ -258,4 +227,5 @@ class AnonymisationSweepTest extends TestCase {
 			$this->assertNotSame('', $refusal['reason'], 'every refusal must carry a reason somebody can act on');
 		}
 	}//end testTheRefusalsAreCountedApartFromTheSuccesses()
+
 }//end class

@@ -23,10 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
-use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
 
 /**
  * The steps that write, transition, link and read objects.
@@ -39,16 +35,12 @@ final readonly class ObjectFlowNodes {
 	/**
 	 * Bundle the nodes.
 	 *
-	 * @param ObjectWriteNodeInterface $objectWrite The built-in "Write an object" node.
-	 * @param TransitionNodeInterface $transition The built-in "Lifecycle transition" node.
-	 * @param LinkObjectNodeInterface $linkObject The built-in "Create or link an object" node.
-	 * @param ObjectReadNodeInterface $objectRead The built-in "Read objects" node.
+	 * @param ObjectChangeFlowNodes $objectChange The steps that write objects and move them through their lifecycle.
+	 * @param ObjectLookupFlowNodes $objectLookup The steps that find, create-or-link and read objects.
 	 */
 	public function __construct(
-		private ObjectWriteNodeInterface $objectWrite,
-		private TransitionNodeInterface $transition,
-		private LinkObjectNodeInterface $linkObject,
-		private ObjectReadNodeInterface $objectRead,
+		private ObjectChangeFlowNodes $objectChange,
+		private ObjectLookupFlowNodes $objectLookup,
 	) {
 	}//end __construct()
 
@@ -59,10 +51,8 @@ final readonly class ObjectFlowNodes {
 	 */
 	public function nodes(): array {
 		return [
-			$this->objectWrite,
-			$this->transition,
-			$this->linkObject,
-			$this->objectRead,
+			...$this->objectChange->nodes(),
+			...$this->objectLookup->nodes(),
 		];
 
 	}//end nodes()

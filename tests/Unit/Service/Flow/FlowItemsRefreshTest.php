@@ -24,10 +24,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\LiveSubject;
+use OCA\OpenRegister\Service\Flow\FlowSubjectItems;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Branch coverage for {@see FlowItems::refreshSubjectProjection()}.
+ * Branch coverage for {@see FlowSubjectItems::refreshSubjectProjection()}.
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowItems
  */
@@ -65,11 +67,7 @@ class FlowItemsRefreshTest extends TestCase {
 			FlowItems::item(json: ['@self' => ['id' => 'other-9'], 'id' => 'other-9', 'description' => 'theirs']),
 		];
 
-		$refreshed = FlowItems::refreshSubjectProjection(
-			items: $items,
-			subject: $this->subject(fields: ['@self' => ['id' => 'case-1'], 'id' => 'case-1', 'description' => 'now supplied']),
-			subjectUuid: 'case-1'
-		);
+		$refreshed = FlowSubjectItems::refreshSubjectProjection(items: $items, subject: new LiveSubject(subject: $this->subject(fields: ['@self' => ['id' => 'case-1'], 'id' => 'case-1', 'description' => 'now supplied']), uuid: 'case-1'));
 
 		$this->assertSame('now supplied', $refreshed[0]['json']['description']);
 		$this->assertSame('kept', $refreshed[0]['json']['stepProduced']);
@@ -89,11 +87,7 @@ class FlowItemsRefreshTest extends TestCase {
 			FlowItems::item(json: ['x' => 'old']),
 		];
 
-		$refreshed = FlowItems::refreshSubjectProjection(
-			items: $items,
-			subject: $this->subject(fields: ['x' => 'new']),
-			subjectUuid: 'case-1'
-		);
+		$refreshed = FlowSubjectItems::refreshSubjectProjection(items: $items, subject: new LiveSubject(subject: $this->subject(fields: ['x' => 'new']), uuid: 'case-1'));
 
 		$this->assertSame('new', $refreshed[0]['json']['x'], 'flat id matches');
 		$this->assertSame('new', $refreshed[1]['json']['x'], 'flat uuid matches');
@@ -111,22 +105,22 @@ class FlowItemsRefreshTest extends TestCase {
 
 		$this->assertSame(
 			[$item],
-			FlowItems::refreshSubjectProjection(items: [$item], subject: $this->subject(fields: ['x' => 'new']), subjectUuid: '  '),
+			FlowSubjectItems::refreshSubjectProjection(items: [$item], subject: new LiveSubject(subject: $this->subject(fields: ['x' => 'new']), uuid: '  ')),
 			'no subject uuid, no refresh'
 		);
 		$this->assertSame(
 			[],
-			FlowItems::refreshSubjectProjection(items: [], subject: $this->subject(fields: ['x' => 'new']), subjectUuid: 'case-1'),
+			FlowSubjectItems::refreshSubjectProjection(items: [], subject: new LiveSubject(subject: $this->subject(fields: ['x' => 'new']), uuid: 'case-1')),
 			'nothing to refresh'
 		);
 		$this->assertSame(
 			[$item],
-			FlowItems::refreshSubjectProjection(items: [$item], subject: new \stdClass(), subjectUuid: 'case-1'),
+			FlowSubjectItems::refreshSubjectProjection(items: [$item], subject: new LiveSubject(subject: new \stdClass(), uuid: 'case-1')),
 			'a subject with no fields refreshes nothing'
 		);
 		$this->assertSame(
 			['junk'],
-			FlowItems::refreshSubjectProjection(items: ['junk'], subject: $this->subject(fields: ['x' => 'new']), subjectUuid: 'case-1'),
+			FlowSubjectItems::refreshSubjectProjection(items: ['junk'], subject: new LiveSubject(subject: $this->subject(fields: ['x' => 'new']), uuid: 'case-1')),
 			'a non-array member passes through'
 		);
 	}//end testTheNoOpBranchesPassThrough()
@@ -143,11 +137,7 @@ class FlowItemsRefreshTest extends TestCase {
 			}
 		};
 
-		$refreshed = FlowItems::refreshSubjectProjection(
-			items: [FlowItems::item(json: ['id' => 'case-1', 'x' => 'old'])],
-			subject: $subject,
-			subjectUuid: 'case-1'
-		);
+		$refreshed = FlowSubjectItems::refreshSubjectProjection(items: [FlowItems::item(json: ['id' => 'case-1', 'x' => 'old'])], subject: new LiveSubject(subject: $subject, uuid: 'case-1'));
 
 		$this->assertSame('new', $refreshed[0]['json']['x']);
 	}//end testASubjectExposingGetObjectIsRead()

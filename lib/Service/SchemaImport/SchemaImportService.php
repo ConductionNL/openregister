@@ -52,34 +52,20 @@ class SchemaImportService implements SchemaImportServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * Builds the bundled Schema.org and GGM importers over the committed,
-	 * versioned snapshot resources and registers them. The resource root is
-	 * injectable so unit tests can point at fixtures.
+	 * Registers the bundled Schema.org and GGM importers over the committed,
+	 * versioned snapshot resources (BundledImporters). Tests point an importer
+	 * at fixtures by registering it over the bundled one.
 	 *
 	 * @param DialectDetector $detector The dialect detector.
-	 * @param ThreeWayMerge $merge The pure three-way merge.
-	 * @param string|null $resourceRoot The lib/Resources directory, or null for the bundled default.
+	 * @param ThreeWayMerge   $merge    The pure three-way merge.
 	 */
 	public function __construct(
 		private readonly DialectDetector $detector,
 		private readonly ThreeWayMerge $merge,
-		?string $resourceRoot = null,
 	) {
-		$root = ($resourceRoot ?? dirname(__DIR__, 2) . '/Resources');
-
-		$schemaOrgVersion = $this->readVersion(versionFile: $root . '/schemaorg/version.json', fallback: 'schemaorg-unknown');
-		$this->register(
-			importer: new SchemaOrgImporter(
-				new SchemaOrgSnapshot($root . '/schemaorg/schemaorg-current-https.jsonld', $schemaOrgVersion)
-			)
-		);
-
-		$ggmVersion = $this->readVersion(versionFile: $root . '/ggm/version.json', fallback: 'ggm-unknown');
-		$this->register(
-			importer: new GgmImporter(
-				new GgmSnapshot($root . '/ggm/ggm-snapshot.json', $ggmVersion)
-			)
-		);
+		foreach (BundledImporters::bundled() as $importer) {
+			$this->register(importer: $importer);
+		}
 	}//end __construct()
 
 	/**
@@ -188,10 +174,8 @@ class SchemaImportService implements SchemaImportServiceInterface {
 	/**
 	 * Import a GGM objecttype from an uploaded export (normalised intermediate).
 	 *
-	 * @param array<string, mixed> $normalised The normalised GGM intermediate.
-	 * @param string $reference The objecttype id/name to import.
+	 * @param GgmUpload     $upload  The normalised GGM intermediate, the objecttype id/name to import and a provenance label.
 	 * @param ImportOptions $options Import options.
-	 * @param string $sourceLabel A provenance label for the upload.
 	 *
 	 * @return ImportedSchema The mapped schema.
 	 *
@@ -199,9 +183,9 @@ class SchemaImportService implements SchemaImportServiceInterface {
 	 *
 	 * @spec openspec/specs/schema-import/spec.md
 	 */
-	public function importGgmUpload(array $normalised, string $reference, ImportOptions $options, string $sourceLabel = 'upload'): ImportedSchema {
-		$importer = new GgmImporter(GgmSnapshot::fromNormalised($normalised), $sourceLabel);
-		return $importer->import($reference, $options);
+	public function importGgmUpload(GgmUpload $upload, ImportOptions $options): ImportedSchema {
+		$importer = new GgmImporter(GgmSnapshot::fromNormalised($upload->normalised), $upload->sourceLabel);
+		return $importer->import($upload->reference, $options);
 	}//end importGgmUpload()
 
 	/**
@@ -250,9 +234,8 @@ class SchemaImportService implements SchemaImportServiceInterface {
 	/**
 	 * Compute the classified update-from-source diff for an imported schema.
 	 *
-	 * @param array<string, mixed> $importSource The stored configuration.importSource block (with baseline).
-	 * @param array<string, array<string,mixed>> $currentProperties The schema's current properties.
-	 * @param array<int, string> $resolvedConflicts Conflict property names confirmed by the caller.
+	 * @param SourceUpdate $update The stored import source (with baseline), the schema's current properties and the
+	 *                             conflict property names confirmed by the caller.
 	 *
 	 * @return array<string, mixed> The merge result (added/removed/changed/keptLocal/conflicts/merged/applied).
 	 *
@@ -260,46 +243,45 @@ class SchemaImportService implements SchemaImportServiceInterface {
 	 *
 	 * @spec openspec/specs/schema-import/spec.md
 	 */
-	public function previewUpdateFromSource(array $importSource, array $currentProperties, array $resolvedConflicts = []): array {
+	public function previewUpdateFromSource(SourceUpdate $update): array {
+		$fresh = $this->freshImport(importSource: $update->importSource);
+		$baseline = $this->baselineOf(importSource: $update->importSource);
+		$merge = new MergeInstruction(baseline: $baseline, current: $update->currentProperties, incoming: $fresh->properties, resolved: $update->resolvedConflicts);
+		return $this->merge->compute($merge) + ['incomingSource' => $fresh->importSource, 'jsonld' => $fresh->jsonld];
+	}//end previewUpdateFromSource()
+
+	/**
+	 * Import the recorded source of an imported schema afresh.
+	 *
+	 * @param array<string, mixed> $importSource The stored configuration.importSource block.
+	 *
+	 * @return ImportedSchema The freshly-imported schema.
+	 *
+	 * @throws SchemaImportException When the schema has no recorded import source.
+	 */
+	private function freshImport(array $importSource): ImportedSchema {
 		$dialect = (string)($importSource['dialect'] ?? '');
 		$reference = (string)($importSource['reference'] ?? '');
 		if ($dialect === '' || $reference === '') {
 			throw new SchemaImportException(message: 'Schema has no recorded import source to update from.', httpStatus: 422);
 		}
 
-		$baseline = ($importSource['baseline'] ?? []);
-		if (is_array($baseline) === false) {
-			$baseline = [];
-		}
-
-		$fresh = $this->import(dialect: $dialect, reference: $reference, options: new ImportOptions());
-		$incoming = $fresh->properties;
-
-		$result = $this->merge->compute($baseline, $currentProperties, $incoming, $resolvedConflicts);
-		$result['incomingSource'] = $fresh->importSource;
-		$result['jsonld'] = $fresh->jsonld;
-
-		return $result;
-	}//end previewUpdateFromSource()
+		return $this->import(dialect: $dialect, reference: $reference, options: new ImportOptions());
+	}//end freshImport()
 
 	/**
-	 * Read a snapshot version from its version.json, with a fallback.
+	 * The imported baseline property definitions, or none when not recorded as a map.
 	 *
-	 * @param string $versionFile The version.json path.
-	 * @param string $fallback The fallback version when the file is unreadable.
+	 * @param array<string, mixed> $importSource The stored configuration.importSource block.
 	 *
-	 * @return string The version identifier.
+	 * @return array<string, array<string,mixed>> The baseline.
 	 */
-	private function readVersion(string $versionFile, string $fallback): string {
-		if (is_file($versionFile) === false) {
-			return $fallback;
+	private function baselineOf(array $importSource): array {
+		$baseline = ($importSource['baseline'] ?? []);
+		if (is_array($baseline) === false) {
+			return [];
 		}
 
-		$decoded = json_decode((string)file_get_contents($versionFile), associative: true);
-		if (is_array($decoded) === true && isset($decoded['version']) === true && is_string($decoded['version']) === true) {
-			return $decoded['version'];
-		}
-
-		return $fallback;
-	}//end readVersion()
+		return $baseline;
+	}//end baselineOf()
 }//end class

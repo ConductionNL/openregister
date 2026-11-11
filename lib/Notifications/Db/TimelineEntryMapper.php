@@ -135,7 +135,7 @@ class TimelineEntryMapper extends QBMapper {
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-		$this->whereEqualsWhenGiven(qb: $qb, column: 'visibility', value: $visibility);
+		$this->whereEqualsWhenGiven(qb: $qb, columns: ['visibility' => $visibility]);
 
 		return $this->findEntities(query: $qb);
 	}//end findForObject()
@@ -150,31 +150,29 @@ class TimelineEntryMapper extends QBMapper {
 	 * The scope's object list has three states, see {@see TimelineEntryScope}:
 	 * null does not narrow, an EMPTY list returns nothing.
 	 *
-	 * @param string             $term       The search term.
-	 * @param TimelineEntryScope $scope      The objects, kind and page size (capped at SEARCH_LIMIT).
-	 * @param string|null        $visibility The visibility the caller is entitled to, or null for both.
+	 * @param TimelineSearch $search The term, the scope and the visibility the caller is entitled to.
 	 *
 	 * @return array<int, TimelineEntry> The matching rows, newest first.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/unified-search-provider/spec.md
 	 */
-	public function search(string $term, TimelineEntryScope $scope, ?string $visibility = null): array {
-		if ($scope->narrowsToNothing() === true) {
+	public function searchEntries(TimelineSearch $search): array {
+		if ($search->scope->narrowsToNothing() === true) {
 			return [];
 		}
 
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($qb->expr()->iLike('message', $qb->createNamedParameter('%'.$this->db->escapeLikeParameter($term).'%')))
+			->where($qb->expr()->iLike('message', $qb->createNamedParameter('%'.$this->db->escapeLikeParameter($search->term).'%')))
 			->orderBy('created', 'DESC')
-			->setMaxResults(min(max($scope->limit, 1), self::SEARCH_LIMIT));
+			->setMaxResults(min(max($search->scope->limit, 1), self::SEARCH_LIMIT));
 
-		$this->whereObjectIn(qb: $qb, objectUuids: $scope->objectUuids);
-		$this->whereEqualsWhenGiven(qb: $qb, column: 'visibility', value: $visibility);
+		$this->whereObjectIn(qb: $qb, objectUuids: $search->scope->objectUuids);
+		$this->whereEqualsWhenGiven(qb: $qb, columns: ['visibility' => $search->visibility]);
 
-		return $this->findOfKind(qb: $qb, kind: $scope->kind);
-	}//end search()
+		return $this->findOfKind(qb: $qb, kind: $search->scope->kind);
+	}//end searchEntries()
 
 	/**
 	 * Every open follow-up of a kind, across objects the caller may read.
@@ -211,7 +209,7 @@ class TimelineEntryMapper extends QBMapper {
 	 * @return array<int, TimelineEntry> The entries.
 	 */
 	private function findOfKind(IQueryBuilder $qb, ?string $kind): array {
-		$this->whereEqualsWhenGiven(qb: $qb, column: 'kind', value: $kind);
+		$this->whereEqualsWhenGiven(qb: $qb, columns: ['kind' => $kind]);
 
 		return $this->findEntities(query: $qb);
 	}//end findOfKind()

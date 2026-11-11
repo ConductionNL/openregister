@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -72,17 +73,15 @@ interface WebhookMapperInterface {
 	 *
 	 * Retrieves all webhooks with organisation filtering for multi-tenancy.
 	 * Returns only webhooks belonging to the current organisation.
-	 * Supports pagination and filtering.
+	 * Supports pagination and column filtering; the listing's sort and search are not applied.
 	 *
-	 * @param int|null $limit Maximum number of results to return
-	 * @param int|null $offset Number of results to skip
-	 * @param array $filters Optional filters to apply
+	 * @param ListQuery $query The page (limitOrNull() and offset) and the column filters.
 	 *
 	 * @return Webhook[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = []): array;
+	public function findAll(ListQuery $query): array;
 
 	/**
 	 * Find all enabled webhooks
@@ -142,12 +141,11 @@ interface WebhookMapperInterface {
 	 *
 	 * @param Webhook $webhook Webhook to update
 	 * @param bool $success Was delivery successful
-	 * @param bool $incrementOnly Only increment counters, don't update timestamps
 	 *
 	 * @return Webhook
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
 	 *
 	 */
-	public function updateStatistics(Webhook $webhook, bool $success, bool $incrementOnly = false): Webhook;
+	public function updateStatistics(Webhook $webhook, bool $success): Webhook;
 }//end interface

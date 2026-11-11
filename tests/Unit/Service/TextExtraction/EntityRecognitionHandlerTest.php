@@ -36,6 +36,8 @@ use ReflectionClass;
 use ReflectionMethod;
 use OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeDialect;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkEntityScan;
+use OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeRequest;
 
 /**
  * Unit tests for EntityRecognitionHandler
@@ -817,31 +819,31 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testExtractContextWithinBounds(): void {
 		$text = 'Hello John Doe, welcome to our platform.';
-		$context = $this->invokePrivateMethod('extractContext', [$text, 6, 14, 5]);
+		$context = $this->invokePrivateMethod('extractContext', [['position_start' => 6, 'position_end' => 14], new ChunkEntityScan(new Chunk(), $text, 'regex', 5)]);
 		$this->assertStringContainsString('John', $context);
 	}
 
 	public function testExtractContextAtStartOfText(): void {
 		$text = 'test@example.com is an email.';
-		$context = $this->invokePrivateMethod('extractContext', [$text, 0, 16, 10]);
+		$context = $this->invokePrivateMethod('extractContext', [['position_start' => 0, 'position_end' => 16], new ChunkEntityScan(new Chunk(), $text, 'regex', 10)]);
 		$this->assertStringContainsString('test@example.com', $context);
 	}
 
 	public function testExtractContextAtEndOfText(): void {
 		$text = 'Contact: test@example.com';
-		$context = $this->invokePrivateMethod('extractContext', [$text, 9, 25, 5]);
+		$context = $this->invokePrivateMethod('extractContext', [['position_start' => 9, 'position_end' => 25], new ChunkEntityScan(new Chunk(), $text, 'regex', 5)]);
 		$this->assertStringContainsString('test@example.com', $context);
 	}
 
 	public function testExtractContextWithZeroWindow(): void {
 		$text = 'Hello John Doe, welcome.';
-		$context = $this->invokePrivateMethod('extractContext', [$text, 6, 14, 0]);
+		$context = $this->invokePrivateMethod('extractContext', [['position_start' => 6, 'position_end' => 14], new ChunkEntityScan(new Chunk(), $text, 'regex', 0)]);
 		$this->assertSame('John Doe', $context);
 	}
 
 	public function testExtractContextWithLargeWindow(): void {
 		$text = 'Hello John Doe, welcome.';
-		$context = $this->invokePrivateMethod('extractContext', [$text, 6, 14, 1000]);
+		$context = $this->invokePrivateMethod('extractContext', [['position_start' => 6, 'position_end' => 14], new ChunkEntityScan(new Chunk(), $text, 'regex', 1000)]);
 		// Should return the full text since the window exceeds bounds.
 		$this->assertSame($text, $context);
 	}
@@ -849,14 +851,14 @@ class EntityRecognitionHandlerTest extends TestCase {
 	public function testExtractContextClampsStartToZero(): void {
 		$text = 'AB test';
 		// positionStart = 0, window = 5 => start = max(0, 0-5) = 0.
-		$context = $this->invokePrivateMethod('extractContext', [$text, 0, 2, 5]);
+		$context = $this->invokePrivateMethod('extractContext', [['position_start' => 0, 'position_end' => 2], new ChunkEntityScan(new Chunk(), $text, 'regex', 5)]);
 		$this->assertStringStartsWith('AB', $context);
 	}
 
 	public function testExtractContextClampsEndToTextLength(): void {
 		$text = 'Hello AB';
 		// positionEnd = 8 (end of text), window = 5 => end = min(8, 8+5) = 8.
-		$context = $this->invokePrivateMethod('extractContext', [$text, 6, 8, 5]);
+		$context = $this->invokePrivateMethod('extractContext', [['position_start' => 6, 'position_end' => 8], new ChunkEntityScan(new Chunk(), $text, 'regex', 5)]);
 		$this->assertStringContainsString('AB', $context);
 	}
 
@@ -1041,8 +1043,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testBuildAnalyzeRequestBodyBasic(): void {
 		$body = $this->invokePrivateMethod('buildAnalyzeRequestBody', [
-			new EntityDetectionQuery('test text', null, 0.0),
-			new AnalyzeDialect('en', null, 'presidio', 0.0),
+			new AnalyzeRequest(new EntityDetectionQuery('test text', null, 0.0), new AnalyzeDialect('en', null, 'presidio', 0.0)),
 		]);
 
 		$this->assertSame('test text', $body['text']);
@@ -1052,8 +1053,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testBuildAnalyzeRequestBodyWithEntityTypes(): void {
 		$body = $this->invokePrivateMethod('buildAnalyzeRequestBody', [
-			new EntityDetectionQuery('test text', ['EMAIL', 'PHONE'], 0.0),
-			new AnalyzeDialect('nl', null, 'presidio', 0.0),
+			new AnalyzeRequest(new EntityDetectionQuery('test text', ['EMAIL', 'PHONE'], 0.0), new AnalyzeDialect('nl', null, 'presidio', 0.0)),
 		]);
 
 		$this->assertSame('test text', $body['text']);
@@ -1063,8 +1063,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testBuildAnalyzeRequestBodyWithEmptyEntityTypes(): void {
 		$body = $this->invokePrivateMethod('buildAnalyzeRequestBody', [
-			new EntityDetectionQuery('test text', [], 0.0),
-			new AnalyzeDialect('en', null, 'presidio', 0.0),
+			new AnalyzeRequest(new EntityDetectionQuery('test text', [], 0.0), new AnalyzeDialect('en', null, 'presidio', 0.0)),
 		]);
 
 		// Empty entity types should NOT add entities key.
@@ -1073,8 +1072,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testBuildAnalyzeRequestBodyWithUnmappableEntityTypes(): void {
 		$body = $this->invokePrivateMethod('buildAnalyzeRequestBody', [
-			new EntityDetectionQuery('test text', ['TOTALLY_UNKNOWN'], 0.0),
-			new AnalyzeDialect('en', null, 'presidio', 0.0),
+			new AnalyzeRequest(new EntityDetectionQuery('test text', ['TOTALLY_UNKNOWN'], 0.0), new AnalyzeDialect('en', null, 'presidio', 0.0)),
 		]);
 
 		// Unknown types produce empty mapping, so no entities key.
@@ -1166,8 +1164,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery($text, null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0),
+			new AnalyzeRequest(new EntityDetectionQuery($text, null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0)),
 		]);
 
 		$this->assertCount(1, $entities);
@@ -1186,8 +1183,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery('John says hello', null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0),
+			new AnalyzeRequest(new EntityDetectionQuery('John says hello', null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0)),
 		]);
 
 		$this->assertEmpty($entities);
@@ -1200,8 +1196,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery('John says hello', null, 0.5),
-			new AnalyzeDialect('en', null, 'openanonymiser', 0.85),
+			new AnalyzeRequest(new EntityDetectionQuery('John says hello', null, 0.5), new AnalyzeDialect('en', null, 'openanonymiser', 0.85)),
 		]);
 
 		$this->assertCount(1, $entities);
@@ -1216,8 +1211,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 		// Default confidence 0 is below threshold 0.5.
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery('John says hello', null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0),
+			new AnalyzeRequest(new EntityDetectionQuery('John says hello', null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0)),
 		]);
 
 		$this->assertEmpty($entities);
@@ -1237,8 +1231,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery('John Doe is a person', null, 0.5),
-			new AnalyzeDialect('en', null, 'openanonymiser', 0.85),
+			new AnalyzeRequest(new EntityDetectionQuery('John Doe is a person', null, 0.5), new AnalyzeDialect('en', null, 'openanonymiser', 0.85)),
 		]);
 
 		$this->assertSame('John Doe', $entities[0]['value']);
@@ -1256,8 +1249,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery('John Doe is a person', null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0),
+			new AnalyzeRequest(new EntityDetectionQuery('John Doe is a person', null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0)),
 		]);
 
 		$this->assertSame('John Doe', $entities[0]['value']);
@@ -1273,8 +1265,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery('Some text', null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0),
+			new AnalyzeRequest(new EntityDetectionQuery('Some text', null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0)),
 		]);
 
 		$this->assertCount(1, $entities);
@@ -1294,8 +1285,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery('Hello world', null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0),
+			new AnalyzeRequest(new EntityDetectionQuery('Hello world', null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0)),
 		]);
 
 		// UNKNOWN is not in mapping, so it passes through.
@@ -1313,8 +1303,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery('Hello world', null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0),
+			new AnalyzeRequest(new EntityDetectionQuery('Hello world', null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0)),
 		]);
 
 		// Missing entity_type defaults to 'UNKNOWN'.
@@ -1331,8 +1320,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 		$text = 'John sent user@example.com from London.';
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
 			$apiResults,
-			new EntityDetectionQuery($text, null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0),
+			new AnalyzeRequest(new EntityDetectionQuery($text, null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0)),
 		]);
 
 		// Third entity (score 0.2) should be filtered out.
@@ -1344,8 +1332,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 	public function testConvertApiResultsEmptyArray(): void {
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
 			[],
-			new EntityDetectionQuery('some text', null, 0.5),
-			new AnalyzeDialect('en', null, 'presidio', 0),
+			new AnalyzeRequest(new EntityDetectionQuery('some text', null, 0.5), new AnalyzeDialect('en', null, 'presidio', 0)),
 		]);
 
 		$this->assertEmpty($entities);
@@ -1397,6 +1384,10 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		// Should still return results from regex fallback.
 		$this->assertIsArray($entities);
+		$this->assertCount(1, $entities);
+		$this->assertSame('EMAIL', $entities[0]['type']);
+		$this->assertSame('user@test.com', $entities[0]['value']);
+		$this->assertSame([8, 21], [$entities[0]['position_start'], $entities[0]['position_end']]);
 	}
 
 	// =========================================================================
@@ -1412,6 +1403,10 @@ class EntityRecognitionHandlerTest extends TestCase {
 		]);
 
 		$this->assertIsArray($entities);
+		$this->assertCount(1, $entities);
+		$this->assertSame('EMAIL', $entities[0]['type']);
+		$this->assertSame('user@test.com', $entities[0]['value']);
+		$this->assertSame([8, 21], [$entities[0]['position_start'], $entities[0]['position_end']]);
 	}
 
 	// =========================================================================
@@ -1467,7 +1462,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 			->willReturn($newEntity);
 
 		$result = $this->invokePrivateMethod('findOrCreateEntity', [
-			'EMAIL', 'test@example.com', 'personal_data',
+			['type' => 'EMAIL', 'value' => 'test@example.com', 'category' => 'personal_data'],
 		]);
 
 		$this->assertInstanceOf(GdprEntity::class, $result);
@@ -1489,7 +1484,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 			->method('insert');
 
 		$result = $this->invokePrivateMethod('findOrCreateEntity', [
-			'EMAIL', 'test@example.com', 'personal_data',
+			['type' => 'EMAIL', 'value' => 'test@example.com', 'category' => 'personal_data'],
 		]);
 
 		$this->assertSame(42, $result->getId());
@@ -1762,6 +1757,10 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		// Since curl will fail in test environment, it falls back to regex.
 		$this->assertIsArray($result);
+		$this->assertCount(1, $result);
+		$this->assertSame('EMAIL', $result[0]['type']);
+		$this->assertSame('test@example.com', $result[0]['value']);
+		$this->assertSame([0, 16], [$result[0]['position_start'], $result[0]['position_end']]);
 	}
 
 	// =========================================================================

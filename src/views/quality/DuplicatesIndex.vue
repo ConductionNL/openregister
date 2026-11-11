@@ -76,25 +76,22 @@ import {
 } from '@nextcloud/vue'
 import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
 import MdmMergeWizardModal from '../../modals/mdm/MdmMergeWizardModal.vue'
-import QualityPageFrame from './QualityPageFrame.vue'
-import RangePager from './RangePager.vue'
 import { qualityStore } from '../../store/store.js'
-import { qualityPaging } from './qualityPaging.js'
-import { qualitySelection } from './qualitySelection.js'
+import { qualityListPage, QualityPageFrame, RangePager } from './qualityListPage.js'
 
 export default {
 	name: 'DuplicatesIndex',
 
 	components: {
-		RangePager,
 		NcAppContent,
 		NcButton,
 		ContentDuplicate,
 		QualityPageFrame,
+		RangePager,
 		MdmMergeWizardModal,
 	},
 
-	mixins: [qualitySelection, qualityPaging('fetchDuplicates', 'duplicates')],
+	mixins: [qualityListPage('fetchDuplicates', 'duplicates')],
 
 	data() {
 		return {

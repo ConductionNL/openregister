@@ -24,11 +24,13 @@ namespace OCA\OpenRegister\Controller\Support;
 
 
 use Closure;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReaderInterface;
 use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReaders;
+use OCA\OpenRegister\Service\Schemas\ReferencePick;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -84,7 +86,7 @@ final class ReferenceOptionsAnswer {
 		$record = $this->withDraft(record: $this->storedRecord(ask: $ask));
 
 		try {
-			$plan = $this->reader->plan(schema: $schema, property: $ask->property, record: $record);
+			$plan = $this->reader->plan(schema: $schema, pick: new ReferencePick(property: $ask->property, record: $record));
 		} catch (ReferenceFilterException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 422);
 		}
@@ -193,7 +195,7 @@ final class ReferenceOptionsAnswer {
 	private function options(ReferenceOptionsAsk $ask, array $plan): array {
 		$limit = $this->reader->limitFor(requested: $this->request->getParam('_limit'));
 		$offset = (int)($this->request->getParam('_offset') ?? 0);
-		$query = $this->reader->queryFor(plan: $plan, limit: $limit, offset: $offset);
+		$query = $this->reader->queryFor(plan: $plan, page: new ListQuery(limit: $limit, offset: $offset));
 
 		$this->search->setRegister(($plan['target']['register'] ?? $ask->register));
 		$this->search->setSchema($plan['target']['schema']);

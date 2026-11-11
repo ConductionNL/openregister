@@ -47,15 +47,19 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaComposition;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaLookup;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaReferenceSearch;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaRegisterReads;
 use OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
+use OCA\OpenRegister\Service\Schemas\ScopedField;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
@@ -167,44 +171,86 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	private bool $warnUnlinkable = false;
 
 	/**
+	 * Event dispatcher for schema events.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Schema property validator for validation.
+	 *
+	 * @var PropertyValidatorHandlerInterface
+	 */
+	private readonly PropertyValidatorHandlerInterface $validator;
+
+	/**
+	 * Organisation mapper for multi-tenancy.
+	 *
+	 * @var OrganisationMapperInterface
+	 */
+	protected readonly OrganisationMapperInterface $organisationMapper;
+
+	/**
+	 * User session for current user context.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for RBAC checks.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Structured logger (R07: surfaces unknown annotation keys).
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Verifies every declared action; a Closure returns it on first use, which
+	 * breaks the construction cycle through the flow services. Null only in a
+	 * hand-built test: the shape refusals still fire, only the questions about
+	 * other records are skipped.
+	 *
+	 * @var ObjectActionValidatorInterface|Closure|null
+	 */
+	private readonly ObjectActionValidatorInterface|Closure|null $objectActions;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes mapper with database connection and required dependencies
 	 * for multi-tenancy, RBAC, validation, and event dispatching.
 	 *
-	 * @param IDBConnection $db Database connection for queries
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher for schema events
-	 * @param PropertyValidatorHandlerInterface $validator Schema property validator for validation
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
-	 * @param IUserSession $userSession User session for current user context
-	 * @param IGroupManager $groupManager Group manager for RBAC checks
-	 * @param IAppConfig $appConfig App configuration for multitenancy settings
-	 * @param LoggerInterface $logger Structured logger (R07: surfaces unknown annotation keys).
-	 * @param ObjectActionValidatorInterface|Closure|null $objectActions Verifies every declared action, the flows macros bind to included;
-	 *                                                         a Closure returns it on first use, which breaks the
-	 *                                                         construction cycle through the flow services.
+	 * @param IDBConnection        $db        Database connection for queries
+	 * @param TenancyServices      $tenancy   The organisation mapper, user session and group manager the tenancy and RBAC checks read
+	 * @param IAppConfig           $appConfig App configuration for multitenancy settings
+	 * @param SchemaMapperServices $services  The event dispatcher, property validator, logger and action checks
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IDBConnection $db,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly PropertyValidatorHandlerInterface $validator,
-		protected readonly OrganisationMapperInterface $organisationMapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		TenancyServices $tenancy,
 		IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-		// LAST AND NULLABLE so every existing construction of this mapper keeps
-		// working. Nextcloud's container always supplies it; null happens only
-		// in a hand-built test, and then the SHAPE refusals below still fire —
-		// only the questions about other records (the bound flow, the step
-		// nodes, the saver) are skipped, which the save says out loud rather
-		// than passing over in silence.
-		private readonly ObjectActionValidatorInterface|Closure|null $objectActions = null,
+		SchemaMapperServices $services,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);
+
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession        = $tenancy->userSession;
+		$this->groupManager       = $tenancy->groupManager;
+		$this->eventDispatcher    = $services->eventDispatcher;
+		$this->validator          = $services->validator;
+		$this->logger             = $services->logger;
+		$this->objectActions      = $services->objectActions;
 
 		// Assign appConfig to trait's protected property.
 		$this->appConfig = $appConfig;
@@ -814,8 +860,15 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 					_rbac: $_rbac,
 					_multitenancy: $_multitenancy
 				);
-			} catch (DoesNotExistException|MultipleObjectsReturnedException|DBException) {
-				// Catch all exceptions but do nothing.
+			} catch (DoesNotExistException|MultipleObjectsReturnedException|DBException $e) {
+				// Ids that cannot be loaded are left out of the result.
+				$this->logger->debug(
+					message: '[SchemaMapper] findMultiple skips a schema id that could not be loaded',
+					context: [
+						'id' => $id,
+						'exception' => $e->getMessage(),
+					]
+				);
 			}
 		}
 
@@ -879,8 +932,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * multi-tenancy and RBAC filtering.
 	 *
 	 * @param string $slug The slug to search for
-	 * @param int $limit Maximum number of results (default: 10)
-	 * @param int $offset Offset for pagination (default: 0)
+	 * @param ListQuery $query The page: its limit and offset
 	 * @param bool $_rbac Whether to apply RBAC permission checks (default: true)
 	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering (default: true)
 	 *
@@ -892,8 +944,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	public function findBySlug(
 		string $slug,
-		int $limit = 10,
-		int $offset = 0,
+		ListQuery $query,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
@@ -901,8 +952,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		$qb = $this->exactSlugQuery(slug: $slug);
 		$this->filterByOrganisation(qb: $qb, multitenancy: $_multitenancy);
-		$qb->setMaxResults($limit)
-			->setFirstResult($offset);
+		$qb->setMaxResults($query->limit)
+			->setFirstResult($query->offset ?? 0);
 
 		return array_values($this->fetchSchemas(qb: $qb));
 	}//end findBySlug()
@@ -975,16 +1026,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		bool $_multitenancy = true,
 	): array {
 		$this->readTrace()->record(method: 'findAll');
-
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from('openregister_schemas')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
-
-		$this->applyColumnFilters(qb: $qb, filters: $filters);
-
+		$qb = $this->listedQuery(query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filters ?? [])));
 		if (empty($searchConditions) === false) {
 			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
 			$this->bindSearchParams(qb: $qb, params: $searchParams);
@@ -992,9 +1034,27 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		$this->filterByOrganisation(qb: $qb, multitenancy: $_multitenancy);
 
-		// Just return the entities; do not attach stats here.
 		return $this->findEntities(query: $qb);
 	}//end findAll()
+
+	/**
+	 * The schema list query for one page of column-filtered rows.
+	 *
+	 * @param ListQuery $query The limit (unbounded for every row), the offset and the column filters.
+	 *
+	 * @return IQueryBuilder The query, before search conditions and the organisation filter.
+	 */
+	private function listedQuery(ListQuery $query): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->setMaxResults($query->limitOrNull())
+			->setFirstResult($query->offset);
+
+		$this->applyColumnFilters(qb: $qb, filters: $query->filters);
+
+		return $qb;
+	}//end listedQuery()
 
 	/**
 	 * Bind the named parameters of the search conditions.
@@ -1080,7 +1140,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		foreach ($this->scopedProperties(schema: $entity) as $name => $scope) {
 			$governance->assertMayAddAtScope(scope: $scope, path: (string)$name);
-			$governance->assertBelowCeiling(schema: $entity, scope: $scope, property: (string)$name);
+			$governance->assertBelowCeiling(schema: $entity, field: new ScopedField(property: (string)$name, scope: $scope));
 		}
 	}//end assertScopedPropertiesAreGoverned()
 
@@ -1727,26 +1787,24 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * Returns the uuids of the schemas that reference the given schema in their
 	 * allOf, oneOf or anyOf composition patterns.
 	 *
-	 * @param int|string  $schemaIdentifier The ID, UUID, or slug of the schema.
-	 * @param string|null $knownUuid        Pre-known UUID to avoid redundant lookups.
-	 * @param string|null $knownSlug        Pre-known slug to avoid redundant lookups.
+	 * @param Schema|int|string $schema The schema, or its ID, UUID or slug to look it up by.
 	 *
 	 * @return array Array of schema UUIDs that compose with this schema
 	 *
 	 * @psalm-return list{0?: mixed,...}
+	 *
+	 * @spec exclude schema composition lookup, no OpenSpec capability of its own yet
 	 */
-	public function findExtendedBy(int|string $schemaIdentifier, string|null $knownUuid = null, string|null $knownSlug = null): array {
-		$identifiers = [(string)$schemaIdentifier, $knownUuid, $knownSlug];
-		if ($knownUuid === null && $knownSlug === null) {
+	public function findExtendedBy(Schema|int|string $schema): array {
+		if ($schema instanceof Schema === false) {
 			try {
-				$targetSchema = $this->find(id: $schemaIdentifier);
+				$schema = $this->find(id: $schema);
 			} catch (Exception $e) {
 				return [];
 			}
-
-			$identifiers = [(string)$targetSchema->getId(), $targetSchema->getUuid(), $targetSchema->getSlug()];
 		}
 
+		$identifiers = [(string)$schema->getId(), $schema->getUuid(), $schema->getSlug()];
 		return (new ExtendedByReads(db: $this->db, tableName: $this->getTableName()))->referencing(identifiers: $identifiers);
 	}//end findExtendedBy()
 
@@ -1800,21 +1858,14 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	/**
 	 * Recursively check if properties contain a reference to the target schema.
 	 *
-	 * @param array  $properties       The properties array to search through.
-	 * @param string $targetSchemaId   The target schema ID to look for.
-	 * @param string $targetSchemaUuid The target schema UUID to look for.
-	 * @param string $targetSchemaSlug The target schema slug to look for.
+	 * @param array  $properties The properties array to search through.
+	 * @param Schema $target     The schema whose id, uuid or slug a reference names.
 	 *
 	 * @return bool True if a reference to the target schema is found
 	 */
-	public function hasReferenceToSchema(
-		array $properties,
-		string $targetSchemaId,
-		string $targetSchemaUuid,
-		string $targetSchemaSlug,
-	): bool {
+	public function hasReferenceToSchema(array $properties, Schema $target): bool {
 		$search = new SchemaReferenceSearch(
-			target: ['id' => $targetSchemaId, 'uuid' => $targetSchemaUuid, 'slug' => $targetSchemaSlug]
+			target: ['id' => (string)$target->getId(), 'uuid' => $target->getUuid() ?? '', 'slug' => $target->getSlug() ?? '']
 		);
 
 		return $search->foundIn(properties: $properties);

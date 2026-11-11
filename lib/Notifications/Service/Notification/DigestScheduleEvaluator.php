@@ -150,25 +150,26 @@ class DigestScheduleEvaluator {
 	}//end isScheduledDay()
 
 	/**
-	 * Whether a row enqueued at `$enqueuedAt` is due to flush at `$now`
-	 * under the given `digest` schedule: the schedule's most recent
-	 * occurrence at-or-before `$now` happened AFTER the row was enqueued.
+	 * Whether a row that waited `$wait` is due to flush under the given
+	 * `digest` schedule: the schedule's most recent occurrence at-or-before
+	 * the wait's `now` happened AFTER the row was enqueued.
 	 *
 	 * @param array<string, mixed> $digest Validated `digest` block.
-	 * @param DateTimeImmutable $enqueuedAt When the row was queued.
-	 * @param DateTimeImmutable $now The instant to evaluate from.
+	 * @param QueueWait            $wait   When the row was queued and the instant to evaluate from.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	public function isDue(array $digest, DateTimeImmutable $enqueuedAt, DateTimeImmutable $now): bool {
+	public function isDue(array $digest, QueueWait $wait): bool {
 		if ($this->isValidDigestSpec(digest: $digest) === false) {
 			// Malformed schedule — fail open (treat as due) so a bad
 			// annotation cannot indefinitely trap events in the queue.
 			return true;
 		}
 
-		$last = $this->lastOccurrence(digest: $digest, now: $now);
+		$last = $this->lastOccurrence(digest: $digest, now: $wait->now);
 
-		return $last > $enqueuedAt;
+		return $last > $wait->enqueuedAt;
 	}//end isDue()
 }//end class

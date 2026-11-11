@@ -52,21 +52,23 @@ final class TaskTransitionNotifier implements TaskTransitionNotifierInterface {
 	/**
 	 * Dispatch the `transition` trigger for one task through the task rule set.
 	 *
-	 * @param Task                 $task    The task, presented to the dispatcher as its inbox row.
-	 * @param array<string, mixed> $extra   Fields added to the task's notification payload.
-	 * @param array<string, mixed> $context The transition context the rules match on.
+	 * @param Task             $task   The task, presented to the dispatcher as its inbox row.
+	 * @param TransitionNotice $notice The payload fields the transition adds and the context the rules match on.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
 	 */
-	public function notifyTransition(Task $task, array $extra, array $context): void {
-		$adapter = TaskObjectAdapters::forTask(task: $task, row: $this->inbox->enrich(task: $task), extra: $extra);
+	public function notifyTransition(Task $task, TransitionNotice $notice): void {
+		$adapter = TaskObjectAdapters::forTask(
+			task: $task,
+			options: new TaskAdapterOptions(row: $this->inbox->enrich(task: $task), extra: $notice->extra)
+		);
 
 		$this->dispatcher->dispatchWithSchema(
 			object: $adapter,
 			trigger: 'transition',
-			context: $context,
+			context: $notice->context,
 			schema: $this->rules->buildSchema()
 		);
 	}//end notifyTransition()

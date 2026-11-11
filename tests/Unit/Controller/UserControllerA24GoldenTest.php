@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\UserController;
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\SecurityService;
 use OCA\OpenRegister\Service\UserService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\UserControllerFactory;
@@ -48,6 +49,10 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Service\User\ActivityPeriod;
+use OCA\OpenRegister\Service\User\ActivityQuery;
+use OCA\OpenRegister\Service\User\ApiTokenRequest;
+use OCA\OpenRegister\Service\User\PasswordChange;
 
 /**
  * Golden allowed/refused outcomes of UserController.
@@ -427,7 +432,7 @@ class UserControllerA24GoldenTest extends TestCase {
 		$this->loginWith(self::valid());
 		$this->userManager->expects($this->once())->method('checkPassword')->with('alice', 'pw')->willReturn(false);
 		$this->securityService->expects($this->once())->method('recordFailedLoginAttempt')
-			->with('alice', '10.0.0.1', 'invalid_credentials');
+			->with(new FailedAttempt('alice', '10.0.0.1', 'invalid_credentials'));
 		$this->securityService->expects($this->never())->method('recordSuccessfulLogin');
 		$this->userSession->expects($this->never())->method('setUser');
 
@@ -438,7 +443,7 @@ class UserControllerA24GoldenTest extends TestCase {
 		$this->loginWith(self::valid());
 		$this->userManager->method('checkPassword')->willReturn($this->user('alice', false));
 		$this->securityService->expects($this->once())->method('recordFailedLoginAttempt')
-			->with('alice', '10.0.0.1', 'account_disabled');
+			->with(new FailedAttempt('alice', '10.0.0.1', 'account_disabled'));
 		$this->userSession->expects($this->never())->method('setUser');
 
 		$this->assertOutcome(401, ['error' => 'Account is disabled'], true, $this->controller->login());
@@ -529,14 +534,14 @@ class UserControllerA24GoldenTest extends TestCase {
 
 	public function testRateLimitedPasswordChangeIsRefusedWith429(): void {
 		$this->passwordChange(['currentPassword' => 'a', 'newPassword' => 'b'], ['allowed' => false, 'reason' => 'Locked', 'delay' => 30]);
-		$this->userService->expects($this->never())->method('changePassword');
+		$this->userService->expects($this->never())->method('applyPasswordChange');
 
 		$this->assertOutcome(429, ['error' => 'Locked', 'retry_after' => 30], true, $this->controller->changePassword());
 	}
 
 	public function testPasswordChangeRequiresBothPasswords(): void {
 		$this->passwordChange(['currentPassword' => 'a']);
-		$this->userService->expects($this->never())->method('changePassword');
+		$this->userService->expects($this->never())->method('applyPasswordChange');
 
 		$this->assertOutcome(
 			400,
@@ -548,17 +553,17 @@ class UserControllerA24GoldenTest extends TestCase {
 
 	public function testPasswordChangeSanitizesOnlyTheCurrentPassword(): void {
 		$user = $this->passwordChange(['currentPassword' => 'old', 'newPassword' => 'new<b>']);
-		$this->userService->expects($this->once())->method('changePassword')
-			->with($user, 'clean:old', 'new<b>')->willReturn(['success' => true]);
+		$this->userService->expects($this->once())->method('applyPasswordChange')
+			->with($user, new PasswordChange('clean:old', 'new<b>'))->willReturn(['success' => true]);
 
 		$this->assertOutcome(200, ['success' => true], true, $this->controller->changePassword());
 	}
 
 	public function testWrongCurrentPasswordIsRefusedWith403AndRecorded(): void {
 		$this->passwordChange(['currentPassword' => 'bad', 'newPassword' => 'new']);
-		$this->userService->method('changePassword')->willThrowException(new RuntimeException('Current password is incorrect', 403));
+		$this->userService->method('applyPasswordChange')->willThrowException(new RuntimeException('Current password is incorrect', 403));
 		$this->securityService->expects($this->once())->method('recordFailedLoginAttempt')
-			->with('alice', '10.0.0.1', 'password_change_incorrect');
+			->with(new FailedAttempt('alice', '10.0.0.1', 'password_change_incorrect'));
 
 		$this->assertOutcome(403, ['error' => 'Current password is incorrect'], true, $this->controller->changePassword());
 		$this->assertSame([], $this->errors);
@@ -566,7 +571,7 @@ class UserControllerA24GoldenTest extends TestCase {
 
 	public function testOtherPasswordRefusalsAreNotRecordedAsFailedAttempts(): void {
 		$this->passwordChange(['currentPassword' => 'old', 'newPassword' => 'x']);
-		$this->userService->method('changePassword')->willThrowException(new RuntimeException('Too weak', 400));
+		$this->userService->method('applyPasswordChange')->willThrowException(new RuntimeException('Too weak', 400));
 		$this->securityService->expects($this->never())->method('recordFailedLoginAttempt');
 
 		$this->assertOutcome(400, ['error' => 'Too weak'], true, $this->controller->changePassword());
@@ -575,7 +580,7 @@ class UserControllerA24GoldenTest extends TestCase {
 
 	public function testAvatarUploadWithoutDataIsRefusedWith400(): void {
 		$this->signedIn();
-		$this->userService->expects($this->never())->method('uploadAvatar');
+		$this->userService->expects($this->never())->method('setAvatar');
 
 		$this->assertOutcome(400, ['error' => 'No image data provided'], true, $this->controller->uploadAvatar());
 	}
@@ -639,8 +644,8 @@ class UserControllerA24GoldenTest extends TestCase {
 		$this->request->method('getParam')->willReturnMap(
 			[['_limit', '25', '10'], ['_offset', '0', '5'], ['type', null, 'create'], ['_from', null, 'a'], ['_to', null, 'b']]
 		);
-		$this->userService->expects($this->once())->method('getUserActivity')
-			->with($user, 10, 5, 'create', 'a', 'b')->willReturn(['results' => []]);
+		$this->userService->expects($this->once())->method('activity')
+			->with($user, new ActivityQuery(10, 5, 'create', new ActivityPeriod('a', 'b')))->willReturn(['results' => []]);
 
 		$this->assertOutcome(200, ['results' => []], true, $this->controller->getActivity());
 	}
@@ -656,7 +661,7 @@ class UserControllerA24GoldenTest extends TestCase {
 	public function testTokenCreationRequiresAName(): void {
 		$this->signedIn();
 		$this->request->method('getParams')->willReturn(['name' => '']);
-		$this->userService->expects($this->never())->method('createApiToken');
+		$this->userService->expects($this->never())->method('issueApiToken');
 
 		$this->assertOutcome(400, ['error' => 'Token name is required'], true, $this->controller->createToken());
 	}
@@ -664,8 +669,8 @@ class UserControllerA24GoldenTest extends TestCase {
 	public function testTokenCreationReturns201(): void {
 		$user = $this->signedIn();
 		$this->request->method('getParams')->willReturn(['name' => 'ci', 'expiresIn' => '30d']);
-		$this->userService->expects($this->once())->method('createApiToken')
-			->with($user, 'clean:ci', '30d')->willReturn(['token' => 'secret']);
+		$this->userService->expects($this->once())->method('issueApiToken')
+			->with($user, new ApiTokenRequest('clean:ci', '30d'))->willReturn(['token' => 'secret']);
 
 		$this->assertOutcome(201, ['token' => 'secret'], true, $this->controller->createToken());
 	}

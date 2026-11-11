@@ -39,10 +39,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\TaskSequence;
-use OCA\OpenRegister\Db\TaskSequenceMapperInterface;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
-use OCA\OpenRegister\Service\Task\TaskSequenceServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -58,27 +56,6 @@ use OCA\OpenRegister\Listener\Support\ApprovalChainSequences;
  */
 class ApprovalChainGateListener implements IEventListener {
 	/**
-	 * Reads the anchor's sequences.
-	 *
-	 * @var TaskSequenceMapperInterface
-	 */
-	private readonly TaskSequenceMapperInterface $sequenceMapper;
-
-	/**
-	 * Provisions a sequence on the first attempt.
-	 *
-	 * @var TaskSequenceServiceInterface
-	 */
-	private readonly TaskSequenceServiceInterface $sequenceService;
-
-	/**
-	 * Compiles the declared chain into a task template.
-	 *
-	 * @var ApprovalChainAnnotationInstaller
-	 */
-	private readonly ApprovalChainAnnotationInstaller $installer;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param LifecycleEditReader              $edits           Reads the edit and the transition it amounts to.
@@ -88,13 +65,11 @@ class ApprovalChainGateListener implements IEventListener {
 	 */
 	public function __construct(
 		private readonly LifecycleEditReader $edits,
-		ApprovalChainSequences $sequences,
+		private readonly ApprovalChainSequences $sequences,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->sequenceMapper = $sequences->sequenceMapper;
-		$this->sequenceService = $sequences->sequenceService;
-		$this->installer = $sequences->installer;
+
 	}//end __construct()
 
 	/**
@@ -207,7 +182,7 @@ class ApprovalChainGateListener implements IEventListener {
 	 */
 	private function evaluateGate(LifecycleEdit $edit, string $chainKey): bool {
 		$schema   = $edit->declaration->schema;
-		$template = $this->installer->compile(schema: $schema, chainKey: $chainKey);
+		$template = $this->sequences->installer->compile(schema: $schema, chainKey: $chainKey);
 		if ($template === null) {
 			$this->refuseMisconfigured(edit: $edit, chainKey: $chainKey);
 			return true;
@@ -289,7 +264,7 @@ class ApprovalChainGateListener implements IEventListener {
 	 * @return string|null
 	 */
 	private function newestStatus(ChainGateRun $run): ?string {
-		return $this->sequenceMapper->findNewestForAnchor(
+		return $this->sequences->sequenceMapper->findNewestForAnchor(
 			anchorObjectUuid: $run->edit->uuid(),
 			templateId: (string)$run->template['templateId']
 		)?->getStatus();
@@ -311,12 +286,13 @@ class ApprovalChainGateListener implements IEventListener {
 			$registerId = (int)$register;
 		}
 
-		$this->sequenceService->provision(
-			template: $run->template,
-			anchorObjectUuid: $run->edit->uuid(),
-			requesterId: $this->userSession->getUser()?->getUID(),
-			tierPositions: $run->tierPositions,
-			registerId: $registerId
+		$this->sequences->sequenceService->provision(
+			chain: $this->sequences->sequenceService->chain(template: $run->template, tierPositions: $run->tierPositions),
+			anchor: $this->sequences->sequenceService->anchorOf(
+				objectUuid: $run->edit->uuid(),
+				requesterId: $this->userSession->getUser()?->getUID(),
+				registerId: $registerId
+			)
 		);
 	}//end provision()
 

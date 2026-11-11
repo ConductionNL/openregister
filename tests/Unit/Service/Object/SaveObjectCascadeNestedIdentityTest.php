@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -95,7 +96,7 @@ class SaveObjectCascadeNestedIdentityTest extends TestCase {
 		$parent->setUuid('p-1');
 		$parent->setRegister('10');
 
-		return $reflection->getMethod('cascadeSingleObject')->invoke($handler, $parent, $definition, $nested);
+		return $reflection->getMethod('cascadeSingleObject')->invoke($handler, new NestedObjectTarget(parent: $parent, definition: $definition), $nested);
 	}//end cascade()
 
 	public function testANestedIdUnderAnInverseRelationIsNotWrittenOnto(): void {

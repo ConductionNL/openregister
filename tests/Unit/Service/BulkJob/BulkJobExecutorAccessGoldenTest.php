@@ -29,6 +29,7 @@ namespace Unit\Service\BulkJob;
 
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
@@ -152,8 +153,8 @@ final class BulkJobExecutorAccessGoldenTest extends TestCase {
 		$action->method('getGuards')->willReturn([]);
 		$action->method('requiresJustification')->willReturn(false);
 		$action->method('apply')->willReturnCallback(
-			function (ObjectEntity $object): BulkActionResult {
-				$this->applied[] = (string)$object->getUuid();
+			function (BulkStep $step): BulkActionResult {
+				$this->applied[] = (string)$step->object->getUuid();
 
 				return BulkActionResult::applied();
 			}

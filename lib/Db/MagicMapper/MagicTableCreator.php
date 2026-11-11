@@ -23,9 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use Exception;
-use OCP\IConfig;
-use OCP\IDBConnection;
-use Psr\Log\LoggerInterface;
 
 /**
  * Create a magic table from its column definitions.
@@ -38,15 +35,9 @@ final class MagicTableCreator {
 	/**
 	 * Build the creator.
 	 *
-	 * @param IDBConnection   $db     The connection.
-	 * @param IConfig         $config Holds the table prefix.
-	 * @param LoggerInterface $logger Receives the outcome.
+	 * @param MagicTableSql $sql The connection, the table prefix and the logger.
 	 */
-	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly IConfig $config,
-		private readonly LoggerInterface $logger,
-	) {
+	public function __construct(private readonly MagicTableSql $sql) {
 	}//end __construct()
 
 	/**
@@ -63,13 +54,13 @@ final class MagicTableCreator {
 	 */
 	public function create(string $tableName, array $columns): void {
 		try {
-			$this->db->executeStatement($this->statement(tableName: $tableName, columns: $columns));
-			$this->logger->debug(
+			$this->sql->db->executeStatement($this->statement(tableName: $tableName, columns: $columns));
+			$this->sql->logger->debug(
 				message: '[MagicMapper] Created table with columns',
 				context: ['tableName' => $tableName, 'fullTableName' => $this->prefixed(tableName: $tableName), 'columns' => array_column($columns, 'name')]
 			);
 		} catch (Exception $e) {
-			$this->logger->error(
+			$this->sql->logger->error(
 				message: '[MagicMapper] Failed to create table',
 				context: ['tableName' => $tableName, 'error' => $e->getMessage()]
 			);
@@ -87,7 +78,7 @@ final class MagicTableCreator {
 	 * @return string The SQL.
 	 */
 	private function statement(string $tableName, array $columns): string {
-		$ddl = new MagicTableDdl(platform: $this->db->getDatabasePlatform(), tableName: $tableName);
+		$ddl = new MagicTableDdl(platform: $this->sql->db->getDatabasePlatform(), tableName: $tableName);
 		foreach ($columns as $column) {
 			$this->addColumn(ddl: $ddl, column: $column);
 		}
@@ -104,7 +95,7 @@ final class MagicTableCreator {
 	 * @return string The prefixed name.
 	 */
 	private function prefixed(string $tableName): string {
-		return $this->config->getSystemValue('dbtableprefix', 'oc_') . $tableName;
+		return $this->sql->config->getSystemValue('dbtableprefix', 'oc_') . $tableName;
 	}//end prefixed()
 
 	/**

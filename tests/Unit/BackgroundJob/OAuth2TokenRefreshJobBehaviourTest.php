@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use Exception;
 use OCA\OpenRegister\BackgroundJob\OAuth2TokenRefreshJob;
 use OCA\OpenRegister\BackgroundJob\Support\OAuth2TokenRefreshServices;
@@ -101,9 +102,8 @@ class OAuth2TokenRefreshJobBehaviourTest extends TestCase {
 
 	private function job(ObjectOperationsInterface $objects, OAuth2CredentialSweepInterface $sweep): OAuth2TokenRefreshJob {
 		return new OAuth2TokenRefreshJob(
-			$this->createMock(ITimeFactory::class),
-			new OAuth2TokenRefreshServices($objects, $this->catalogue(), $sweep),
-			$this->logger()
+			new JobRuntime($this->createMock(ITimeFactory::class), $this->logger()),
+			new OAuth2TokenRefreshServices($objects, $this->catalogue(), $sweep)
 		);
 	}
 
@@ -182,7 +182,7 @@ class OAuth2TokenRefreshJobBehaviourTest extends TestCase {
 	}
 
 	private function deprovisionJob(OrganisationMapperInterface $mapper, TenantLifecycleServiceInterface $lifecycle): TenantDeprovisionJob {
-		return new TenantDeprovisionJob($this->createMock(ITimeFactory::class), $mapper, $lifecycle, $this->logger());
+		return new TenantDeprovisionJob(new \OCA\OpenRegister\BackgroundJob\Support\ScheduledJobRuntime($this->createMock(ITimeFactory::class), $this->createMock(\OCP\IAppConfig::class), $this->logger()), new \OCA\OpenRegister\BackgroundJob\Support\TenantRecords($mapper, $this->createMock(\OCA\OpenRegister\Db\TenantUsageMapperInterface::class), $lifecycle));
 	}
 
 	private static function tenant(string $uuid): Organisation {

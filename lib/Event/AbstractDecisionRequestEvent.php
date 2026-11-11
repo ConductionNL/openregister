@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Service\Decision\ReviewPolicy;
+use OCA\OpenRegister\Kernel\Contracts\ReviewPolicyInterface;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -34,15 +34,15 @@ abstract class AbstractDecisionRequestEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param string               $actorId The user asking.
-	 * @param ReviewPolicy         $policy  The review policy that applies.
-	 * @param array<string, mixed> $subject What the decision is about.
+	 * @param string                $actorId The user asking.
+	 * @param ReviewPolicyInterface $policy  The review policy that applies.
+	 * @param array<string, mixed>  $subject What the decision is about.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-show-a-hidden-decision-req-dec-003
 	 */
 	public function __construct(
 		private readonly string $actorId,
-		private readonly ReviewPolicy $policy,
+		private readonly ReviewPolicyInterface $policy,
 		private readonly array $subject,
 	) {
 		parent::__construct();
@@ -62,11 +62,11 @@ abstract class AbstractDecisionRequestEvent extends Event {
 	/**
 	 * The review policy that applies.
 	 *
-	 * @return ReviewPolicy
+	 * @return ReviewPolicyInterface
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-show-a-hidden-decision-req-dec-003
 	 */
-	public function getPolicy(): ReviewPolicy {
+	public function getPolicy(): ReviewPolicyInterface {
 		return $this->policy;
 	}//end getPolicy()
 

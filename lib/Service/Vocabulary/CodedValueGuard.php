@@ -35,7 +35,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use DateTimeInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CodedValueException;
 
@@ -54,18 +53,14 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConceptRepository $concepts Reads schemes and their concepts.
-	 * @param ConceptLifecycle $lifecycle Answers window, group and weight.
-	 * @param ConceptHierarchy $hierarchy Walks broader/narrower.
+	 * @param ConceptSchemeAccess             $scheme             Reads schemes, their concepts, hierarchy and lifecycle.
 	 * @param CodedPropertyDeclarationFactory $declarationFactory Reads a schema's coded declarations.
 	 */
 	public function __construct(
-		private readonly ConceptRepository $concepts,
-		private readonly ConceptLifecycle $lifecycle,
-		ConceptHierarchy $hierarchy,
+		private readonly ConceptSchemeAccess $scheme,
 		private readonly CodedPropertyDeclarationFactory $declarationFactory,
 	) {
-		$this->refusals = new CodedValueRefusals(lifecycle: $lifecycle, hierarchy: $hierarchy);
+		$this->refusals = new CodedValueRefusals(lifecycle: $scheme->lifecycle, hierarchy: $scheme->hierarchy);
 	}//end __construct()
 
 	/**
@@ -76,9 +71,7 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	 * behind `hardValidation`: an expiry that only applies to schemas with
 	 * hard validation on is an expiry a gemeente cannot rely on.
 	 *
-	 * @param array<string,mixed> $object The submitted object data.
-	 * @param Schema $schema The schema being written against.
-	 * @param DateTimeInterface|null $at The instant to judge windows at; now when null.
+	 * @param CodedValueWrite $write The submitted object data, the schema it is written against and the instant to judge windows at (now when null).
 	 *
 	 * @return void
 	 *
@@ -86,8 +79,20 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function enforce(array $object, Schema $schema, ?DateTimeInterface $at = null): void {
-		$errors = $this->collectViolations(object: $object, schema: $schema, at: $at);
+	public function enforce(CodedValueWrite $write): void {
+		$this->refuse(errors: $this->collectViolations(write: $write));
+	}//end enforce()
+
+	/**
+	 * Throw the refusals, when there are any.
+	 *
+	 * @param array<string,string> $errors The refusals keyed by property name.
+	 *
+	 * @return void
+	 *
+	 * @throws CodedValueException When at least one coded value is refused.
+	 */
+	private function refuse(array $errors): void {
 		if ($errors === []) {
 			return;
 		}
@@ -96,7 +101,7 @@ class CodedValueGuard implements CodedValueGuardInterface {
 			message: implode(' ', array_values($errors)),
 			errors: $errors
 		);
-	}//end enforce()
+	}//end refuse()
 
 	/**
 	 * Every refusal the object's coded values earn, keyed by property name.
@@ -105,21 +110,19 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	 * rather than refuse (a preview, a revalidation sweep) reads the same
 	 * list without catching an exception to get it.
 	 *
-	 * @param array<string,mixed> $object The submitted object data.
-	 * @param Schema $schema The schema being written against.
-	 * @param DateTimeInterface|null $at The instant to judge windows at; now when null.
+	 * @param CodedValueWrite $write The submitted object data, its schema and the instant to judge windows at.
 	 *
 	 * @return array<string,string> The refusals keyed by property name.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function collectViolations(array $object, Schema $schema, ?DateTimeInterface $at = null): array {
-		$declarations = $this->declarationsOf(schema: $schema);
+	public function collectViolations(CodedValueWrite $write): array {
+		$declarations = $this->declarationsOf(schema: $write->schema);
 		if ($declarations === []) {
 			return [];
 		}
 
-		$check = new CodedValueCheck(object: $object, asOf: $at);
+		$check = new CodedValueCheck(object: $write->object, asOf: $write->at);
 		return $this->violationsOf(declarations: $declarations, check: $check);
 	}//end collectViolations()
 
@@ -171,7 +174,7 @@ class CodedValueGuard implements CodedValueGuardInterface {
 			return null;
 		}
 
-		$conceptsByUri = $this->concepts->conceptsOf(schemeUri: $subject->declaration->scheme);
+		$conceptsByUri = $this->scheme->concepts->conceptsOf(schemeUri: $subject->declaration->scheme);
 		if ($conceptsByUri === []) {
 			// An unreadable or unseeded scheme refuses nothing: a
 			// vocabulary outage must not become a write outage.
@@ -224,7 +227,7 @@ class CodedValueGuard implements CodedValueGuardInterface {
 		foreach ($this->declarationsOf(schema: $schema) as $property => $declaration) {
 			if ($declaration->scoreProperty !== null && array_key_exists($property, $object) === true) {
 				$held = $this->heldConcepts(declaration: $declaration, value: $object[$property]);
-				$scores[$declaration->scoreProperty] = $this->lifecycle->rollUpWeights(concepts: $held);
+				$scores[$declaration->scoreProperty] = $this->scheme->lifecycle->rollUpWeights(concepts: $held);
 			}
 		}
 
@@ -260,7 +263,7 @@ class CodedValueGuard implements CodedValueGuardInterface {
 	 * @return array<string,mixed>|null The concept, or null when the scheme does not hold it.
 	 */
 	private function resolve(CodedPropertyDeclaration $declaration, string $value): ?array {
-		return $this->concepts->resolve(value: $value, schemeUri: $declaration->scheme, store: $declaration->store);
+		return $this->scheme->concepts->resolve(value: $value, declaration: $declaration);
 	}//end resolve()
 
 	/**

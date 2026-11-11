@@ -190,24 +190,23 @@ class DraftListLens {
 	}//end filtersOnStatus()
 
 	/**
-	 * The clause for a lens, or null when it puts no condition on the list.
+	 * The clause for a draft listing, or null when it puts no condition on the list.
 	 *
-	 * @param string      $mode         One of EXCLUDE, ONLY, ANY and NONE.
-	 * @param string      $columnPrefix The table alias with its dot, or empty for an unaliased UNION member.
-	 * @param string|null $owner        The caller, already quoted or bound by the emitter; null for nobody.
+	 * @param DraftListing $listing      The lens mode and the caller.
+	 * @param string       $columnPrefix The table alias with its dot, or empty for an unaliased UNION member.
 	 *
 	 * @return string|null The predicate, without a leading AND.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
 	 */
-	public function sql(string $mode, string $columnPrefix, ?string $owner): ?string {
-		return match ($mode) {
+	public function clauseFor(DraftListing $listing, string $columnPrefix): ?string {
+		return match ($listing->mode) {
 			self::ANY => null,
 			self::ONLY => $columnPrefix . "_status = '" . ObjectEntity::STATUS_DRAFT . "'",
 			self::NONE => (new DraftStatusPolicy())->notADraftSql(columnPrefix: $columnPrefix),
-			default => $this->notADraftOrOwnSql(columnPrefix: $columnPrefix, owner: $owner),
+			default => $this->notADraftOrOwnSql(columnPrefix: $columnPrefix, owner: $listing->owner),
 		};
-	}//end sql()
+	}//end clauseFor()
 
 	/**
 	 * Not a draft, or a draft of this owner; without an owner, not a draft.
