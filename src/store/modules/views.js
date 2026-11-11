@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { withoutReadOnly } from '../../services/listPage.js'
+import { withRequestToken } from '../../services/requestToken.js'
 
 /**
  * Store for managing saved search views
@@ -102,12 +103,12 @@ async function tracked(store, task) {
  * @spec openspec/specs/saved-search-views/spec.md
  */
 async function viewsRequest(path, init) {
-	const response = await fetch(`${VIEWS_API}${path}`, {
+	const response = await fetch(`${VIEWS_API}${path}`, withRequestToken({
 		...init,
 		headers: {
 			'Content-Type': 'application/json',
 		},
-	})
+	}))
 	if (!response.ok) {
 		throw new Error(`HTTP error! status: ${response.status}`)
 	}

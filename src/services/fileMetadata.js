@@ -14,6 +14,8 @@
  * Closes file-actions tasks 163, 164, 165.
  */
 
+import { withRequestToken } from './requestToken.js'
+
 const BASE = '/index.php/apps/openregister/api/objects'
 
 /**
@@ -39,11 +41,11 @@ function buildFileUrl({ registerId, schemaId, objectId, fileId }, suffix) {
  * @return {Promise<Response>} The response
  */
 function putJson(url, body) {
-	return fetch(url, {
+	return fetch(url, withRequestToken({
 		method: 'PUT',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(body),
-	})
+	}))
 }
 
 /**
