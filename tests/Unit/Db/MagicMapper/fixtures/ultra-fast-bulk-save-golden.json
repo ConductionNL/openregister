@@ -1,0 +1,360 @@
+{
+    "empty, no context": {
+        "thrown": "Exception: Cannot bulk save without register and schema context",
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":0,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}"
+        ]
+    },
+    "empty, no context / no pre-update state": {
+        "thrown": "Exception: Cannot bulk save without register and schema context",
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":0,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}"
+        ]
+    },
+    "one schema, given": {
+        "result": [
+            "openregister_table_1_2:a"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":1,\"updateCount\":0,\"hasRegister\":true,\"hasSchema\":true}",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a pre=true"
+        ]
+    },
+    "one schema, given / no pre-update state": {
+        "result": [
+            "openregister_table_1_2:a"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":1,\"updateCount\":0,\"hasRegister\":true,\"hasSchema\":true}",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a pre=false"
+        ]
+    },
+    "one schema, resolved": {
+        "result": [
+            "openregister_table_1_2:a",
+            "openregister_table_1_2:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 1",
+            "find schema 2",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a,b pre=true"
+        ]
+    },
+    "one schema, resolved / no pre-update state": {
+        "result": [
+            "openregister_table_1_2:a",
+            "openregister_table_1_2:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 1",
+            "find schema 2",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a,b pre=false"
+        ]
+    },
+    "mixed schemas": {
+        "result": [
+            "openregister_table_1_2:a",
+            "openregister_table_1_2:c",
+            "openregister_table_1_3:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":3,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 1",
+            "find schema 2",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a,c pre=true",
+            "find register 1",
+            "find schema 3",
+            "ensure table 1_3",
+            "upsert openregister_table_1_3 b pre=true"
+        ]
+    },
+    "mixed schemas / no pre-update state": {
+        "result": [
+            "openregister_table_1_2:a",
+            "openregister_table_1_2:c",
+            "openregister_table_1_3:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":3,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 1",
+            "find schema 2",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a,c pre=false",
+            "find register 1",
+            "find schema 3",
+            "ensure table 1_3",
+            "upsert openregister_table_1_3 b pre=false"
+        ]
+    },
+    "mixed, given register": {
+        "result": [
+            "openregister_table_7_2:a",
+            "openregister_table_7_3:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":true,\"hasSchema\":false}",
+            "find schema 2",
+            "ensure table 7_2",
+            "upsert openregister_table_7_2 a pre=true",
+            "find schema 3",
+            "ensure table 7_3",
+            "upsert openregister_table_7_3 b pre=true"
+        ]
+    },
+    "mixed, given register / no pre-update state": {
+        "result": [
+            "openregister_table_7_2:a",
+            "openregister_table_7_3:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":true,\"hasSchema\":false}",
+            "find schema 2",
+            "ensure table 7_2",
+            "upsert openregister_table_7_2 a pre=false",
+            "find schema 3",
+            "ensure table 7_3",
+            "upsert openregister_table_7_3 b pre=false"
+        ]
+    },
+    "given register fills a missing one": {
+        "result": [
+            "openregister_table_7_2:a",
+            "openregister_table_7_2:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":true,\"hasSchema\":false}",
+            "find schema 2",
+            "ensure table 7_2",
+            "upsert openregister_table_7_2 a,b pre=true"
+        ]
+    },
+    "given register fills a missing one / no pre-update state": {
+        "result": [
+            "openregister_table_7_2:a",
+            "openregister_table_7_2:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":true,\"hasSchema\":false}",
+            "find schema 2",
+            "ensure table 7_2",
+            "upsert openregister_table_7_2 a,b pre=false"
+        ]
+    },
+    "mixed, register from object only": {
+        "result": [
+            "openregister_table_0_2:a",
+            "openregister_table_1_3:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 0",
+            "find schema 2",
+            "ensure table 0_2",
+            "upsert openregister_table_0_2 a pre=true",
+            "find register 1",
+            "find schema 3",
+            "ensure table 1_3",
+            "upsert openregister_table_1_3 b pre=true"
+        ]
+    },
+    "mixed, register from object only / no pre-update state": {
+        "result": [
+            "openregister_table_0_2:a",
+            "openregister_table_1_3:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 0",
+            "find schema 2",
+            "ensure table 0_2",
+            "upsert openregister_table_0_2 a pre=false",
+            "find register 1",
+            "find schema 3",
+            "ensure table 1_3",
+            "upsert openregister_table_1_3 b pre=false"
+        ]
+    },
+    "mixed, unknown register": {
+        "thrown": "Exception: Cannot bulk save without register and schema context",
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 99",
+            "warning [MagicMapper] Failed to resolve register for group {\"id\":\"99\"}",
+            "find schema 2",
+            "find register 99",
+            "warning [MagicMapper] Failed to resolve register {\"id\":99}"
+        ]
+    },
+    "mixed, unknown register / no pre-update state": {
+        "thrown": "Exception: Cannot bulk save without register and schema context",
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 99",
+            "warning [MagicMapper] Failed to resolve register for group {\"id\":\"99\"}",
+            "find schema 2",
+            "find register 99",
+            "warning [MagicMapper] Failed to resolve register {\"id\":99}"
+        ]
+    },
+    "mixed, unknown schema": {
+        "thrown": "Exception: Cannot bulk save without register and schema context",
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 1",
+            "find schema 98",
+            "warning [MagicMapper] Failed to resolve schema for group {\"id\":\"98\"}",
+            "find schema 98",
+            "warning [MagicMapper] Failed to resolve schema {\"id\":98}"
+        ]
+    },
+    "mixed, unknown schema / no pre-update state": {
+        "thrown": "Exception: Cannot bulk save without register and schema context",
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 1",
+            "find schema 98",
+            "warning [MagicMapper] Failed to resolve schema for group {\"id\":\"98\"}",
+            "find schema 98",
+            "warning [MagicMapper] Failed to resolve schema {\"id\":98}"
+        ]
+    },
+    "mixed, one without schema": {
+        "result": [
+            "openregister_table_1_2:a",
+            "openregister_table_1_3:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":3,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 1",
+            "find schema 2",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a pre=true",
+            "find register 1",
+            "find schema 3",
+            "ensure table 1_3",
+            "upsert openregister_table_1_3 b pre=true"
+        ]
+    },
+    "mixed, one without schema / no pre-update state": {
+        "result": [
+            "openregister_table_1_2:a",
+            "openregister_table_1_3:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":3,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 1",
+            "find schema 2",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a pre=false",
+            "find register 1",
+            "find schema 3",
+            "ensure table 1_3",
+            "upsert openregister_table_1_3 b pre=false"
+        ]
+    },
+    "without schema, one group": {
+        "result": [
+            "openregister_table_1_2:a",
+            "openregister_table_1_2:x"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 1",
+            "find schema 2",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a,x pre=true"
+        ]
+    },
+    "without schema, one group / no pre-update state": {
+        "result": [
+            "openregister_table_1_2:a",
+            "openregister_table_1_2:x"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 1",
+            "find schema 2",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a,x pre=false"
+        ]
+    },
+    "given schema, mixed objects": {
+        "result": [
+            "openregister_table_1_2:a",
+            "openregister_table_1_2:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":true,\"hasSchema\":true}",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a,b pre=true"
+        ]
+    },
+    "given schema, mixed objects / no pre-update state": {
+        "result": [
+            "openregister_table_1_2:a",
+            "openregister_table_1_2:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":true,\"hasSchema\":true}",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a,b pre=false"
+        ]
+    },
+    "updates only": {
+        "result": [],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":0,\"updateCount\":0,\"hasRegister\":true,\"hasSchema\":true}",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2  pre=true"
+        ]
+    },
+    "updates only / no pre-update state": {
+        "result": [],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":0,\"updateCount\":0,\"hasRegister\":true,\"hasSchema\":true}",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2  pre=false"
+        ]
+    },
+    "mixed with updates": {
+        "result": [
+            "openregister_table_1_2:a",
+            "openregister_table_1_3:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 1",
+            "find schema 2",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a pre=true",
+            "find register 1",
+            "find schema 3",
+            "ensure table 1_3",
+            "upsert openregister_table_1_3 b pre=true"
+        ]
+    },
+    "mixed with updates / no pre-update state": {
+        "result": [
+            "openregister_table_1_2:a",
+            "openregister_table_1_3:b"
+        ],
+        "trace": [
+            "debug [MagicMapper] ultraFastBulkSave called {\"insertCount\":2,\"updateCount\":0,\"hasRegister\":false,\"hasSchema\":false}",
+            "find register 1",
+            "find schema 2",
+            "ensure table 1_2",
+            "upsert openregister_table_1_2 a pre=false",
+            "find register 1",
+            "find schema 3",
+            "ensure table 1_3",
+            "upsert openregister_table_1_3 b pre=false"
+        ]
+    }
+}

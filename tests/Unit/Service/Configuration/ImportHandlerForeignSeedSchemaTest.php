@@ -45,6 +45,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class ImportHandlerForeignSeedSchemaTest extends TestCase {
 
@@ -110,7 +111,7 @@ class ImportHandlerForeignSeedSchemaTest extends TestCase {
 
 		$this->objectService->method('searchObjects')->willReturn([]);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
 				$this->saved[] = $object;
 				$entity = new ObjectEntity();
 				$entity->setUuid('uuid-' . ($object['@self']['slug'] ?? 'x'));
@@ -119,17 +120,20 @@ class ImportHandlerForeignSeedSchemaTest extends TestCase {
 		);
 
 		$this->handler = new ImportHandler(
-			schemaMapper:        $this->schemaMapper,
-			registerMapper:      $this->registerMapper,
-			objectEntityMapper:  $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper:       $mappingMapper,
-			client:              $this->createMock(Client::class),
-			appConfig:           $appConfig,
-			logger:              $this->createMock(LoggerInterface::class),
-			appDataPath:         '/tmp',
-			uploadHandler:       $this->createMock(UploadHandler::class),
-			objectService:       $this->objectService
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $mappingMapper,
+				appConfig: $appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->createMock(LoggerInterface::class),
+			appDataPath: '/tmp',
+			objectService: $this->objectService
 		);
 	}//end setUp()
 

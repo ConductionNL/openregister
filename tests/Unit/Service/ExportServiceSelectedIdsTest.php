@@ -14,7 +14,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/export-honours-selected-ids/specs/data-import-export/spec.md#requirement-an-export-of-selected-ids-holds-only-those-objects
+ * @spec openspec/specs/data-import-export/spec.md#requirement-an-export-of-selected-ids-holds-only-those-objects
  */
 
 declare(strict_types=1);
@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * The `_ids` of an export request reach the search as its `ids`.
@@ -61,16 +62,14 @@ class ExportServiceSelectedIdsTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$objectService,
 			$this->createMock(CacheHandler::class),
-			$this->createMock(PropertyRbacHandler::class),
-			$this->createMock(TranslationHandler::class)
-		);
+			$this->createMock(PropertyRbacHandler::class));
 
 		$register = new Register();
 		$register->setId(3);
 		$schema = new Schema();
 		$schema->setId(9);
 
-		$service->countExportRows(register: $register, schema: $schema, filters: $filters);
+		$service->countExportRows(request: new ObjectExportRequest(register: $register, schema: $schema, filters: $filters));
 
 		return $captured;
 	}//end idsFor()

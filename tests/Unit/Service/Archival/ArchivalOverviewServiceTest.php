@@ -24,7 +24,7 @@ use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
 use OCA\OpenRegister\Service\RetentionService;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -42,7 +42,7 @@ class ArchivalOverviewServiceTest extends TestCase {
 
 	private SelectielijstImportService&MockObject $selectielijst;
 
-	private ObjectRetentionHandler&MockObject $settings;
+	private ArchivalSettingsReaderInterface&MockObject $settings;
 
 	private DestructionListCreator&MockObject $creator;
 
@@ -55,7 +55,7 @@ class ArchivalOverviewServiceTest extends TestCase {
 		$this->retention = $this->createMock(RetentionService::class);
 		$this->transfers = $this->createMock(TransferRecordService::class);
 		$this->selectielijst = $this->createMock(SelectielijstImportService::class);
-		$this->settings = $this->createMock(ObjectRetentionHandler::class);
+		$this->settings = $this->createMock(ArchivalSettingsReaderInterface::class);
 		$this->creator = $this->createMock(DestructionListCreator::class);
 
 		$pieter = $this->createMock(IUser::class);

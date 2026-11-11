@@ -1,0 +1,1207 @@
+{
+    "index-anon": {
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        },
+        "calls": []
+    },
+    "index-defaults": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                {
+                    "recipient": "bob"
+                },
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                {
+                    "recipient": "bob"
+                }
+            ]
+        ]
+    },
+    "index-admin": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 10,
+            "offset": 20
+        },
+        "calls": [
+            [
+                "findFiltered",
+                {
+                    "recipient": "alice"
+                },
+                10,
+                20
+            ],
+            [
+                "countFiltered",
+                {
+                    "recipient": "alice"
+                }
+            ]
+        ]
+    },
+    "index-forced": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                {
+                    "ruleId": "r1",
+                    "recipient": "bob"
+                },
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                {
+                    "ruleId": "r1",
+                    "recipient": "bob"
+                }
+            ]
+        ]
+    },
+    "index-all-filters": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                {
+                    "ruleId": "r",
+                    "channel": "email",
+                    "objectUuid": "o",
+                    "schemaId": "3",
+                    "registerId": "4",
+                    "status": "sent",
+                    "subjectType": "task",
+                    "subjectId": "s",
+                    "eventId": "e",
+                    "unreadOnly": "true",
+                    "includeArchived": "1",
+                    "includeSnoozed": "false"
+                },
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                {
+                    "ruleId": "r",
+                    "channel": "email",
+                    "objectUuid": "o",
+                    "schemaId": "3",
+                    "registerId": "4",
+                    "status": "sent",
+                    "subjectType": "task",
+                    "subjectId": "s",
+                    "eventId": "e",
+                    "unreadOnly": "true",
+                    "includeArchived": "1",
+                    "includeSnoozed": "false"
+                }
+            ]
+        ]
+    },
+    "index-filter-types": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                {
+                    "eventId": "0"
+                },
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                {
+                    "eventId": "0"
+                }
+            ]
+        ]
+    },
+    "index-limit-": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-0": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-0": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-00": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-00": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-1": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 1,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                1,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-1": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 1
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                1
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-7": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 7,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                7,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-7": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 7
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                7
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-499": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 499,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                499,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-499": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 499
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                499
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-500": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 500,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                500,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-500": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 500
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                500
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-501": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 500,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                500,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-501": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 501
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                501
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-99999999999999999999": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 500,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                500,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-99999999999999999999": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 9223372036854775807
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                9223372036854775807
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit--1": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset--1": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-1.5": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-1.5": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-abc": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-abc": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit- 5": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset- 5": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-int-0": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-int-0": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-int-3": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 3,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                3,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-int-3": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 3
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                3
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-int-600": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 500,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                500,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-int-600": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 600
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                600
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-int-neg": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-int-neg": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-float": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-float": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-true": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-true": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-limit-array": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "index-offset-array": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 7,
+            "limit": 50,
+            "offset": 0
+        },
+        "calls": [
+            [
+                "findFiltered",
+                [],
+                50,
+                0
+            ],
+            [
+                "countFiltered",
+                []
+            ]
+        ]
+    },
+    "snooze-missing": {
+        "status": 400,
+        "data": {
+            "message": "snoozedUntil is required",
+            "error": "snoozed-until-required"
+        },
+        "calls": []
+    },
+    "snooze-empty": {
+        "status": 400,
+        "data": {
+            "message": "snoozedUntil is required",
+            "error": "snoozed-until-required"
+        },
+        "calls": []
+    },
+    "snooze-int": {
+        "status": 400,
+        "data": {
+            "message": "snoozedUntil is required",
+            "error": "snoozed-until-required"
+        },
+        "calls": []
+    },
+    "snooze-garbage": {
+        "status": 400,
+        "data": {
+            "message": "snoozedUntil is not a moment",
+            "error": "snoozed-until-invalid"
+        },
+        "calls": []
+    },
+    "snooze-ok": {
+        "status": 200,
+        "data": {
+            "id": null,
+            "ruleId": "rule-x",
+            "schemaId": null,
+            "registerId": null,
+            "objectUuid": null,
+            "channel": null,
+            "recipient": null,
+            "subject": null,
+            "status": null,
+            "errorMessage": null,
+            "locale": null,
+            "dispatchedAt": null,
+            "readAt": null,
+            "read": false,
+            "subjectType": null,
+            "subjectId": null,
+            "snoozedUntil": null,
+            "archivedAt": null,
+            "eventId": null,
+            "inUnreadList": true
+        },
+        "calls": [
+            [
+                "snooze",
+                12,
+                "2026-01-02T03:04:05+00:00"
+            ]
+        ]
+    },
+    "snooze-forbidden": {
+        "status": 403,
+        "data": {
+            "message": "not yours"
+        },
+        "calls": [
+            [
+                "snooze",
+                12,
+                "2026-01-02T03:04:05+00:00"
+            ]
+        ]
+    },
+    "archive-ok": {
+        "status": 200,
+        "data": {
+            "id": null,
+            "ruleId": "rule-x",
+            "schemaId": null,
+            "registerId": null,
+            "objectUuid": null,
+            "channel": null,
+            "recipient": null,
+            "subject": null,
+            "status": null,
+            "errorMessage": null,
+            "locale": null,
+            "dispatchedAt": null,
+            "readAt": null,
+            "read": false,
+            "subjectType": null,
+            "subjectId": null,
+            "snoozedUntil": null,
+            "archivedAt": null,
+            "eventId": null,
+            "inUnreadList": true
+        },
+        "calls": [
+            [
+                "archive",
+                13
+            ]
+        ]
+    },
+    "archive-forbidden": {
+        "status": 403,
+        "data": {
+            "message": "not yours"
+        },
+        "calls": [
+            [
+                "archive",
+                13
+            ]
+        ]
+    },
+    "thread-missing": {
+        "status": 400,
+        "data": {
+            "message": "objectUuid is required",
+            "error": "object-uuid-required"
+        },
+        "calls": []
+    },
+    "thread-empty": {
+        "status": 400,
+        "data": {
+            "message": "objectUuid is required",
+            "error": "object-uuid-required"
+        },
+        "calls": []
+    },
+    "thread-int": {
+        "status": 400,
+        "data": {
+            "message": "objectUuid is required",
+            "error": "object-uuid-required"
+        },
+        "calls": []
+    },
+    "thread-ok": {
+        "status": 200,
+        "data": {
+            "cleared": 4
+        },
+        "calls": [
+            [
+                "markThreadRead",
+                "o-1",
+                null
+            ]
+        ]
+    },
+    "thread-subject": {
+        "status": 200,
+        "data": {
+            "cleared": 4
+        },
+        "calls": [
+            [
+                "markThreadRead",
+                "o-1",
+                "s-1"
+            ]
+        ]
+    },
+    "thread-subject-empty": {
+        "status": 200,
+        "data": {
+            "cleared": 4
+        },
+        "calls": [
+            [
+                "markThreadRead",
+                "o-1",
+                null
+            ]
+        ]
+    },
+    "thread-subject-int": {
+        "status": 200,
+        "data": {
+            "cleared": 4
+        },
+        "calls": [
+            [
+                "markThreadRead",
+                "o-1",
+                null
+            ]
+        ]
+    },
+    "thread-forbidden": {
+        "status": 403,
+        "data": {
+            "message": "not yours"
+        },
+        "calls": [
+            [
+                "markThreadRead",
+                "o-1",
+                null
+            ]
+        ]
+    }
+}

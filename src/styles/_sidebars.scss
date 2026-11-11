@@ -1,0 +1,174 @@
+// SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+// SPDX-License-Identifier: EUPL-1.2
+// Style rules shared verbatim by several components under src/sidebars.
+// Each mixin emits complete rules; a component includes it where the rules belong.
+
+@use 'sass:list';
+
+@mixin filter-group {
+	.filterGroup {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: 0 16px;
+		margin-bottom: 16px;
+	}
+}
+
+@mixin filter-group-label {
+	.filterGroup label {
+		font-size: 0.9em;
+		color: var(--color-text-maxcontrast);
+	}
+}
+
+@mixin stat-card {
+	.statCard {
+		background: var(--color-background-hover);
+		border-radius: var(--border-radius);
+		padding: 16px;
+		margin-bottom: 12px;
+		text-align: center;
+	}
+}
+
+@mixin stat-number {
+	.statNumber {
+		font-size: 2rem;
+		font-weight: bold;
+		color: var(--color-primary);
+		margin-bottom: 4px;
+	}
+}
+
+@mixin stat-label {
+	.statLabel {
+		font-size: 0.9rem;
+		color: var(--color-text-maxcontrast);
+	}
+}
+
+@mixin action-group {
+	.actionGroup {
+		padding: 0 16px;
+		margin-bottom: 12px;
+	}
+}
+
+@mixin section-title {
+	.sectionTitle {
+		color: var(--color-text-maxcontrast);
+		font-size: 14px;
+		font-weight: bold;
+		padding: 0 16px;
+		margin: 0 0 12px 0;
+	}
+}
+
+@mixin stats-stack {
+	.statsStack {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 0 8px;
+	}
+}
+
+@mixin filter-group-rules {
+	@include filter-group;
+	@include filter-group-label;
+}
+
+@mixin stat-number-rules {
+	@include stat-number;
+	@include stat-label;
+}
+
+@mixin filter-section-block {
+	.filterSection {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding-bottom: 20px;
+		border-bottom: 1px solid var(--color-border);
+
+		h3 {
+			margin: 0;
+			font-size: 1.1em;
+			color: var(--color-main-text);
+		}
+	}
+
+	.filterGroup {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+
+		label {
+			font-size: 0.9em;
+			color: var(--color-text-maxcontrast);
+		}
+	}
+}
+
+@mixin filter-hint-rules {
+	.filter-hint {
+		margin: 8px 16px;
+	}
+
+	.statsSection {
+		padding: 16px;
+	}
+}
+
+@mixin sidebar-section {
+	.section {
+		padding: 12px 0;
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.section:last-child {
+		border-bottom: none;
+	}
+}
+
+@mixin sidebar-loading {
+	.loadingContainer {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 0 16px;
+		color: var(--color-text-maxcontrast);
+	}
+}
+
+// The divided sections of a filter sidebar and their headings, for each
+// section class given (without the leading dot), in the order given.
+@mixin divided-sections($sections...) {
+	$blocks: ();
+	$lasts: ();
+	$headings: ();
+
+	@each $section in $sections {
+		$blocks: list.append($blocks, '.#{$section}', $separator: comma);
+		$lasts: list.append($lasts, '.#{$section}:last-child', $separator: comma);
+		$headings: list.append($headings, '.#{$section} h3', $separator: comma);
+	}
+
+	#{$blocks} {
+		padding: 12px 0;
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	#{$lasts} {
+		border-bottom: none;
+	}
+
+	#{$headings} {
+		color: var(--color-text-maxcontrast);
+		font-size: 14px;
+		font-weight: bold;
+		padding: 0 16px;
+		margin: 0 0 12px 0;
+	}
+}

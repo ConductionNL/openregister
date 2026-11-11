@@ -1,0 +1,1556 @@
+{
+    "dedupe findOne found": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationDedupeState#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_dedupe, NULL)",
+            "#1 param :p1 = 2, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 param :p2 = r, 2",
+            "#1 expr.eq(rule_key, :p2, NULL)",
+            "#1 andWhere(eq(rule_key, :p2, NULL))",
+            "#1 param :p3 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p3, NULL)",
+            "#1 andWhere(eq(object_uuid, :p3, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "dedupe findOne missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_dedupe, NULL)",
+            "#1 param :p1 = 2, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 param :p2 = r, 2",
+            "#1 expr.eq(rule_key, :p2, NULL)",
+            "#1 andWhere(eq(rule_key, :p2, NULL))",
+            "#1 param :p3 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p3, NULL)",
+            "#1 andWhere(eq(object_uuid, :p3, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "dedupe findOne failure": {
+        "thrown": "RuntimeException: database down",
+        "queries": []
+    },
+    "dedupe upsert existing": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationDedupeState#7 updated:fingerprint,seenAt",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_dedupe, NULL)",
+            "#1 param :p1 = 2, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 param :p2 = r, 2",
+            "#1 expr.eq(rule_key, :p2, NULL)",
+            "#1 andWhere(eq(rule_key, :p2, NULL))",
+            "#1 param :p3 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p3, NULL)",
+            "#1 andWhere(eq(object_uuid, :p3, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 update(openregister_notification_dedupe, NULL)",
+            "#2 param :p4 = fp, 2",
+            "#2 set(fingerprint, :p4)",
+            "#2 param :p5 = DateTime, datetime",
+            "#2 set(seen_at, :p5)",
+            "#2 param :p6 = 7, 1",
+            "#2 expr.eq(id, :p6, NULL)",
+            "#2 where(eq(id, :p6, NULL))",
+            "#2 executeStatement()"
+        ]
+    },
+    "dedupe upsert existing sent": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationDedupeState#7 updated:dispatchedAt,fingerprint,seenAt",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_dedupe, NULL)",
+            "#1 param :p1 = 2, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 param :p2 = r, 2",
+            "#1 expr.eq(rule_key, :p2, NULL)",
+            "#1 andWhere(eq(rule_key, :p2, NULL))",
+            "#1 param :p3 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p3, NULL)",
+            "#1 andWhere(eq(object_uuid, :p3, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 update(openregister_notification_dedupe, NULL)",
+            "#2 param :p4 = fp, 2",
+            "#2 set(fingerprint, :p4)",
+            "#2 param :p5 = DateTime, datetime",
+            "#2 set(seen_at, :p5)",
+            "#2 param :p6 = DateTime, datetime",
+            "#2 set(dispatched_at, :p6)",
+            "#2 param :p7 = 7, 1",
+            "#2 expr.eq(id, :p7, NULL)",
+            "#2 where(eq(id, :p7, NULL))",
+            "#2 executeStatement()"
+        ]
+    },
+    "dedupe upsert insert": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationDedupeState#0 updated:dispatchedAt,fingerprint,id,objectUuid,ruleKey,schemaId,seenAt",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_dedupe, NULL)",
+            "#1 param :p1 = 2, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 param :p2 = r, 2",
+            "#1 expr.eq(rule_key, :p2, NULL)",
+            "#1 andWhere(eq(rule_key, :p2, NULL))",
+            "#1 param :p3 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p3, NULL)",
+            "#1 andWhere(eq(object_uuid, :p3, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 insert(openregister_notification_dedupe)",
+            "#2 param :p4 = 2, 1",
+            "#2 setValue(schema_id, :p4)",
+            "#2 param :p5 = r, 2",
+            "#2 setValue(rule_key, :p5)",
+            "#2 param :p6 = o-1, 2",
+            "#2 setValue(object_uuid, :p6)",
+            "#2 param :p7 = fp, 2",
+            "#2 setValue(fingerprint, :p7)",
+            "#2 param :p8 = DateTime, datetime",
+            "#2 setValue(dispatched_at, :p8)",
+            "#2 param :p9 = DateTime, datetime",
+            "#2 setValue(seen_at, :p9)",
+            "#2 executeStatement()"
+        ]
+    },
+    "dedupe upsert race reread": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationDedupeState#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_dedupe, NULL)",
+            "#1 param :p1 = 2, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 param :p2 = r, 2",
+            "#1 expr.eq(rule_key, :p2, NULL)",
+            "#1 andWhere(eq(rule_key, :p2, NULL))",
+            "#1 param :p3 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p3, NULL)",
+            "#1 andWhere(eq(object_uuid, :p3, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_notification_dedupe, NULL)",
+            "#2 param :p4 = 2, 1",
+            "#2 expr.eq(schema_id, :p4, NULL)",
+            "#2 where(eq(schema_id, :p4, NULL))",
+            "#2 param :p5 = r, 2",
+            "#2 expr.eq(rule_key, :p5, NULL)",
+            "#2 andWhere(eq(rule_key, :p5, NULL))",
+            "#2 param :p6 = o-1, 2",
+            "#2 expr.eq(object_uuid, :p6, NULL)",
+            "#2 andWhere(eq(object_uuid, :p6, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()"
+        ]
+    },
+    "dedupe upsert race no row": {
+        "thrown": "OCP\\DB\\Exception (anonymous): duplicate key",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_dedupe, NULL)",
+            "#1 param :p1 = 2, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 param :p2 = r, 2",
+            "#1 expr.eq(rule_key, :p2, NULL)",
+            "#1 andWhere(eq(rule_key, :p2, NULL))",
+            "#1 param :p3 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p3, NULL)",
+            "#1 andWhere(eq(object_uuid, :p3, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_notification_dedupe, NULL)",
+            "#2 param :p4 = 2, 1",
+            "#2 expr.eq(schema_id, :p4, NULL)",
+            "#2 where(eq(schema_id, :p4, NULL))",
+            "#2 param :p5 = r, 2",
+            "#2 expr.eq(rule_key, :p5, NULL)",
+            "#2 andWhere(eq(rule_key, :p5, NULL))",
+            "#2 param :p6 = o-1, 2",
+            "#2 expr.eq(object_uuid, :p6, NULL)",
+            "#2 andWhere(eq(object_uuid, :p6, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()"
+        ]
+    },
+    "dedupe upsert other failure": {
+        "thrown": "OCP\\DB\\Exception (anonymous): duplicate key",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_dedupe, NULL)",
+            "#1 param :p1 = 2, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 param :p2 = r, 2",
+            "#1 expr.eq(rule_key, :p2, NULL)",
+            "#1 andWhere(eq(rule_key, :p2, NULL))",
+            "#1 param :p3 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p3, NULL)",
+            "#1 andWhere(eq(object_uuid, :p3, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "dedupe deleteByObject": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_notification_dedupe, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "dedupe deleteByObject failure": {
+        "result": 0,
+        "queries": []
+    },
+    "dedupe deleteByRule": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_notification_dedupe, NULL)",
+            "#1 param :p1 = 2, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 param :p2 = r, 2",
+            "#1 expr.eq(rule_key, :p2, NULL)",
+            "#1 andWhere(eq(rule_key, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "dedupe deleteByRule failure": {
+        "result": 0,
+        "queries": []
+    },
+    "dedupe deleteSeenBefore": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_notification_dedupe, NULL)",
+            "#1 param :p1 = <timestamp>, 2",
+            "#1 expr.lt(seen_at, :p1, NULL)",
+            "#1 where(lt(seen_at, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "dedupe deleteSeenBefore fail": {
+        "result": 0,
+        "queries": []
+    },
+    "dedupe listRuleKeys": {
+        "result": [
+            "r1",
+            "r2"
+        ],
+        "queries": [
+            "#1 selectDistinct(rule_key)",
+            "#1 from(openregister_notification_dedupe, NULL)",
+            "#1 param :p1 = 2, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "dedupe listRuleKeys failure": {
+        "result": [],
+        "queries": []
+    },
+    "log isDuplicate yes": {
+        "result": true,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_notif_dispatch_log, NULL)",
+            "#1 param :p1 = n, 2",
+            "#1 expr.eq(notification_slug, :p1, NULL)",
+            "#1 where(eq(notification_slug, :p1, NULL))",
+            "#1 param :p2 = k, 2",
+            "#1 expr.eq(idempotency_key, :p2, NULL)",
+            "#1 andWhere(eq(idempotency_key, :p2, NULL))",
+            "#1 param :p3 = <timestamp>, 2",
+            "#1 expr.gte(dispatched_at, :p3, NULL)",
+            "#1 andWhere(gte(dispatched_at, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "log isDuplicate no": {
+        "result": false,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_notif_dispatch_log, NULL)",
+            "#1 param :p1 = n, 2",
+            "#1 expr.eq(notification_slug, :p1, NULL)",
+            "#1 where(eq(notification_slug, :p1, NULL))",
+            "#1 param :p2 = k, 2",
+            "#1 expr.eq(idempotency_key, :p2, NULL)",
+            "#1 andWhere(eq(idempotency_key, :p2, NULL))",
+            "#1 param :p3 = <timestamp>, 2",
+            "#1 expr.gte(dispatched_at, :p3, NULL)",
+            "#1 andWhere(gte(dispatched_at, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "log record": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationDispatchLog#0 updated:dispatchedAt,id,idempotencyKey,notificationSlug",
+        "queries": [
+            "#1 insert(openregister_notif_dispatch_log)",
+            "#1 param :p1 = n, 2",
+            "#1 setValue(notification_slug, :p1)",
+            "#1 param :p2 = k, 2",
+            "#1 setValue(idempotency_key, :p2)",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 setValue(dispatched_at, :p3)",
+            "#1 executeStatement()"
+        ]
+    },
+    "log record duplicate": {
+        "thrown": "OCA\\OpenRegister\\Notifications\\Db\\DuplicateDispatchException: Duplicate dispatch: (slug=n, key=k) already recorded",
+        "queries": []
+    },
+    "log record other failure": {
+        "thrown": "OCP\\DB\\Exception (anonymous): duplicate key",
+        "queries": []
+    },
+    "log pruneExpired": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_notif_dispatch_log, NULL)",
+            "#1 param :p1 = <timestamp>, 2",
+            "#1 expr.lt(dispatched_at, :p1, NULL)",
+            "#1 where(lt(dispatched_at, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "log pruneExpired failure": {
+        "result": 0,
+        "queries": []
+    },
+    "history record": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationHistory#0 updated:channel,dispatchedAt,id,recipient,ruleId,status",
+        "queries": [
+            "#1 insert(openregister_notification_history)",
+            "#1 param :p1 = r, 2",
+            "#1 setValue(rule_id, :p1)",
+            "#1 param :p2 = email, 2",
+            "#1 setValue(channel, :p2)",
+            "#1 param :p3 = alice, 2",
+            "#1 setValue(recipient, :p3)",
+            "#1 param :p4 = sent, 2",
+            "#1 setValue(status, :p4)",
+            "#1 param :p5 = DateTime, datetime",
+            "#1 setValue(dispatched_at, :p5)",
+            "#1 executeStatement()"
+        ]
+    },
+    "history record subject": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationHistory#0 updated:channel,dispatchedAt,eventId,id,locale,objectUuid,recipient,registerId,ruleId,schemaId,status,subject,subjectId,subjectType",
+        "queries": [
+            "#1 insert(openregister_notification_history)",
+            "#1 param :p1 = r, 2",
+            "#1 setValue(rule_id, :p1)",
+            "#1 param :p2 = email, 2",
+            "#1 setValue(channel, :p2)",
+            "#1 param :p3 = alice, 2",
+            "#1 setValue(recipient, :p3)",
+            "#1 param :p4 = sent, 2",
+            "#1 setValue(status, :p4)",
+            "#1 param :p5 = 1, 2",
+            "#1 setValue(schema_id, :p5)",
+            "#1 param :p6 = 2, 2",
+            "#1 setValue(register_id, :p6)",
+            "#1 param :p7 = o-1, 2",
+            "#1 setValue(object_uuid, :p7)",
+            "#1 param :p8 = subj, 2",
+            "#1 setValue(subject, :p8)",
+            "#1 param :p9 = nl, 2",
+            "#1 setValue(locale, :p9)",
+            "#1 param :p10 = task, 2",
+            "#1 setValue(subject_type, :p10)",
+            "#1 param :p11 = e-1, 2",
+            "#1 setValue(event_id, :p11)",
+            "#1 param :p12 = t-1, 2",
+            "#1 setValue(subject_id, :p12)",
+            "#1 param :p13 = DateTime, datetime",
+            "#1 setValue(dispatched_at, :p13)",
+            "#1 executeStatement()"
+        ]
+    },
+    "history findFiltered": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\NotificationHistory#7 updated:"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_history, NULL)",
+            "#1 param :p1 = r, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 andWhere(eq(rule_id, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(recipient, :p2, NULL)",
+            "#1 andWhere(eq(recipient, :p2, NULL))",
+            "#1 param :p3 = e, 2",
+            "#1 expr.eq(event_id, :p3, NULL)",
+            "#1 andWhere(eq(event_id, :p3, NULL))",
+            "#1 expr.isNull(read_at)",
+            "#1 andWhere(isNull(read_at))",
+            "#1 expr.isNull(snoozed_until)",
+            "#1 param :p4 = DateTime, datetime",
+            "#1 expr.lte(snoozed_until, :p4, NULL)",
+            "#1 expr.orX(isNull(snoozed_until), lte(snoozed_until, :p4, NULL))",
+            "#1 andWhere(orX(isNull(snoozed_until), lte(snoozed_until, :p4, NULL)))",
+            "#1 orderBy(dispatched_at, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "history findFiltered snoozed": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_history, NULL)",
+            "#1 param :p1 = 3, 2",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 andWhere(eq(schema_id, :p1, NULL))",
+            "#1 expr.isNull(archived_at)",
+            "#1 andWhere(isNull(archived_at))",
+            "#1 orderBy(dispatched_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "history countByStatus": {
+        "result": {
+            "sent": 5
+        },
+        "queries": [
+            "#1 select(status)",
+            "#1 selectAlias(COUNT(*), status_count)",
+            "#1 from(openregister_notification_history, NULL)",
+            "#1 groupBy(status)",
+            "#1 executeQuery()"
+        ]
+    },
+    "history countByStatus since": {
+        "result": [],
+        "queries": [
+            "#1 select(status)",
+            "#1 selectAlias(COUNT(*), status_count)",
+            "#1 from(openregister_notification_history, NULL)",
+            "#1 groupBy(status)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.gte(dispatched_at, :p1, NULL)",
+            "#1 where(gte(dispatched_at, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "history countFiltered": {
+        "result": 6,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_notification_history, NULL)",
+            "#1 param :p1 = r, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 andWhere(eq(rule_id, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(recipient, :p2, NULL)",
+            "#1 andWhere(eq(recipient, :p2, NULL))",
+            "#1 param :p3 = e, 2",
+            "#1 expr.eq(event_id, :p3, NULL)",
+            "#1 andWhere(eq(event_id, :p3, NULL))",
+            "#1 expr.isNull(read_at)",
+            "#1 andWhere(isNull(read_at))",
+            "#1 expr.isNull(snoozed_until)",
+            "#1 param :p4 = DateTime, datetime",
+            "#1 expr.lte(snoozed_until, :p4, NULL)",
+            "#1 expr.orX(isNull(snoozed_until), lte(snoozed_until, :p4, NULL))",
+            "#1 andWhere(orX(isNull(snoozed_until), lte(snoozed_until, :p4, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "history countFiltered snoozed": {
+        "result": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_notification_history, NULL)",
+            "#1 param :p1 = 3, 2",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 andWhere(eq(schema_id, :p1, NULL))",
+            "#1 expr.isNull(archived_at)",
+            "#1 andWhere(isNull(archived_at))",
+            "#1 executeQuery()"
+        ]
+    },
+    "history markRead": {
+        "result": true,
+        "queries": [
+            "#1 update(openregister_notification_history, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 set(read_at, :p1)",
+            "#1 param :p2 = 7, 1",
+            "#1 expr.eq(id, :p2, NULL)",
+            "#1 where(eq(id, :p2, NULL))",
+            "#1 param :p3 = alice, 2",
+            "#1 expr.eq(recipient, :p3, NULL)",
+            "#1 andWhere(eq(recipient, :p3, NULL))",
+            "#1 expr.isNull(read_at)",
+            "#1 andWhere(isNull(read_at))",
+            "#1 executeStatement()"
+        ]
+    },
+    "history markReadForSubject": {
+        "result": 1,
+        "queries": [
+            "#1 update(openregister_notification_history, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 set(read_at, :p1)",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(recipient, :p2, NULL)",
+            "#1 where(eq(recipient, :p2, NULL))",
+            "#1 param :p3 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p3, NULL)",
+            "#1 andWhere(eq(object_uuid, :p3, NULL))",
+            "#1 expr.isNull(read_at)",
+            "#1 andWhere(isNull(read_at))",
+            "#1 param :p4 = s-1, 2",
+            "#1 expr.eq(subject_id, :p4, NULL)",
+            "#1 andWhere(eq(subject_id, :p4, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "history markReadForSubject all": {
+        "result": 1,
+        "queries": [
+            "#1 update(openregister_notification_history, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 set(read_at, :p1)",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(recipient, :p2, NULL)",
+            "#1 where(eq(recipient, :p2, NULL))",
+            "#1 param :p3 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p3, NULL)",
+            "#1 andWhere(eq(object_uuid, :p3, NULL))",
+            "#1 expr.isNull(read_at)",
+            "#1 andWhere(isNull(read_at))",
+            "#1 executeStatement()"
+        ]
+    },
+    "history snooze": {
+        "result": true,
+        "queries": [
+            "#1 update(openregister_notification_history, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 set(snoozed_until, :p1)",
+            "#1 param :p2 = 7, 1",
+            "#1 expr.eq(id, :p2, NULL)",
+            "#1 where(eq(id, :p2, NULL))",
+            "#1 param :p3 = alice, 2",
+            "#1 expr.eq(recipient, :p3, NULL)",
+            "#1 andWhere(eq(recipient, :p3, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "history archive": {
+        "result": true,
+        "queries": [
+            "#1 update(openregister_notification_history, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 set(archived_at, :p1)",
+            "#1 param :p2 = 7, 1",
+            "#1 expr.eq(id, :p2, NULL)",
+            "#1 where(eq(id, :p2, NULL))",
+            "#1 param :p3 = alice, 2",
+            "#1 expr.eq(recipient, :p3, NULL)",
+            "#1 andWhere(eq(recipient, :p3, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "history archiveByObject": {
+        "result": 1,
+        "queries": [
+            "#1 update(openregister_notification_history, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 set(archived_at, :p1)",
+            "#1 param :p2 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 where(eq(object_uuid, :p2, NULL))",
+            "#1 expr.isNull(archived_at)",
+            "#1 andWhere(isNull(archived_at))",
+            "#1 executeStatement()"
+        ]
+    },
+    "history findOwn found": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationHistory#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_history, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(recipient, :p2, NULL)",
+            "#1 andWhere(eq(recipient, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "history findOwn missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_history, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(recipient, :p2, NULL)",
+            "#1 andWhere(eq(recipient, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "history findOwn failure": {
+        "thrown": "RuntimeException: database down",
+        "queries": []
+    },
+    "entry findByUuid found": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\TimelineEntry#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_entries, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "entry findByUuid missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_entries, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "entry findByComment found": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\TimelineEntry#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_entries, NULL)",
+            "#1 param :p1 = 12, 1",
+            "#1 expr.eq(comment_id, :p1, NULL)",
+            "#1 where(eq(comment_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "entry findByComment missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_entries, NULL)",
+            "#1 param :p1 = 12, 1",
+            "#1 expr.eq(comment_id, :p1, NULL)",
+            "#1 where(eq(comment_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "entry findForObject": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\TimelineEntry#7 updated:"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_entries, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(pinned, DESC)",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "entry findForObject public": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_entries, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(pinned, DESC)",
+            "#1 addOrderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 param :p2 = public, 2",
+            "#1 expr.eq(visibility, :p2, NULL)",
+            "#1 andWhere(eq(visibility, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "entry search": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\TimelineEntry#7 updated:"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_entries, NULL)",
+            "#1 param :p1 = %50\\%\\_off%, 2",
+            "#1 expr.iLike(message, :p1, NULL)",
+            "#1 where(iLike(message, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 executeQuery()"
+        ]
+    },
+    "entry search narrowed": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_entries, NULL)",
+            "#1 param :p1 = %x%, 2",
+            "#1 expr.iLike(message, :p1, NULL)",
+            "#1 where(iLike(message, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(200)",
+            "#1 param :p2 = [\"o-1\",\"o-2\"], 102",
+            "#1 expr.in(object_uuid, :p2, NULL)",
+            "#1 andWhere(in(object_uuid, :p2, NULL))",
+            "#1 param :p3 = public, 2",
+            "#1 expr.eq(visibility, :p3, NULL)",
+            "#1 andWhere(eq(visibility, :p3, NULL))",
+            "#1 param :p4 = call, 2",
+            "#1 expr.eq(kind, :p4, NULL)",
+            "#1 andWhere(eq(kind, :p4, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "entry search no objects": {
+        "result": [],
+        "queries": []
+    },
+    "entry search low limit": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_entries, NULL)",
+            "#1 param :p1 = %x%, 2",
+            "#1 expr.iLike(message, :p1, NULL)",
+            "#1 where(iLike(message, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "entry followUps": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\TimelineEntry#7 updated:"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_entries, NULL)",
+            "#1 param :p1 = open, 2",
+            "#1 expr.eq(follow_up, :p1, NULL)",
+            "#1 where(eq(follow_up, :p1, NULL))",
+            "#1 orderBy(created, ASC)",
+            "#1 setMaxResults(50)",
+            "#1 executeQuery()"
+        ]
+    },
+    "entry followUps narrowed": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_entries, NULL)",
+            "#1 param :p1 = open, 2",
+            "#1 expr.eq(follow_up, :p1, NULL)",
+            "#1 where(eq(follow_up, :p1, NULL))",
+            "#1 orderBy(created, ASC)",
+            "#1 setMaxResults(3)",
+            "#1 param :p2 = [\"o-1\"], 102",
+            "#1 expr.in(object_uuid, :p2, NULL)",
+            "#1 andWhere(in(object_uuid, :p2, NULL))",
+            "#1 param :p3 = call, 2",
+            "#1 expr.eq(kind, :p3, NULL)",
+            "#1 andWhere(eq(kind, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "entry followUps no objects": {
+        "result": [],
+        "queries": []
+    },
+    "entry deleteForObject": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_timeline_entries, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "entry deleteForComment": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_timeline_entries, NULL)",
+            "#1 param :p1 = 12, 1",
+            "#1 expr.eq(comment_id, :p1, NULL)",
+            "#1 where(eq(comment_id, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "kind findBySlug found": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\TimelineKind#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_kinds, NULL)",
+            "#1 param :p1 = s, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 where(eq(slug, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "kind findBySlug missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_kinds, NULL)",
+            "#1 param :p1 = s, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 where(eq(slug, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "kind findAll": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\TimelineKind#7 updated:"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_kinds, NULL)",
+            "#1 orderBy(slug, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "kind findAll scoped": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_kinds, NULL)",
+            "#1 orderBy(slug, ASC)",
+            "#1 expr.isNull(register)",
+            "#1 param :p1 = reg, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 expr.orX(isNull(register), eq(register, :p1, NULL))",
+            "#1 andWhere(orX(isNull(register), eq(register, :p1, NULL)))",
+            "#1 expr.isNull(schema)",
+            "#1 param :p2 = sch, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 expr.orX(isNull(schema), eq(schema, :p2, NULL))",
+            "#1 andWhere(orX(isNull(schema), eq(schema, :p2, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "kind findAll schema only": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timeline_kinds, NULL)",
+            "#1 orderBy(slug, ASC)",
+            "#1 expr.isNull(schema)",
+            "#1 param :p1 = sch, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 expr.orX(isNull(schema), eq(schema, :p1, NULL))",
+            "#1 andWhere(orX(isNull(schema), eq(schema, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "block findBySlug found": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\TextBlock#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_text_blocks, NULL)",
+            "#1 param :p1 = s, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 where(eq(slug, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "block findBySlug missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_text_blocks, NULL)",
+            "#1 param :p1 = s, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 where(eq(slug, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "block findInScope": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\TextBlock#7 updated:"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_text_blocks, NULL)",
+            "#1 orderBy(title, ASC)",
+            "#1 expr.isNull(group_id)",
+            "#1 andWhere(isNull(group_id))",
+            "#1 executeQuery()"
+        ]
+    },
+    "block findInScope groups": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_text_blocks, NULL)",
+            "#1 orderBy(title, ASC)",
+            "#1 expr.isNull(register)",
+            "#1 param :p1 = reg, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 expr.orX(isNull(register), eq(register, :p1, NULL))",
+            "#1 andWhere(orX(isNull(register), eq(register, :p1, NULL)))",
+            "#1 expr.isNull(schema)",
+            "#1 param :p2 = sch, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 expr.orX(isNull(schema), eq(schema, :p2, NULL))",
+            "#1 andWhere(orX(isNull(schema), eq(schema, :p2, NULL)))",
+            "#1 expr.isNull(group_id)",
+            "#1 param :p3 = [\"g1\",\"g2\"], 102",
+            "#1 expr.in(group_id, :p3, NULL)",
+            "#1 expr.orX(isNull(group_id), in(group_id, :p3, NULL))",
+            "#1 andWhere(orX(isNull(group_id), in(group_id, :p3, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "block findInScope register": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_text_blocks, NULL)",
+            "#1 orderBy(title, ASC)",
+            "#1 expr.isNull(register)",
+            "#1 param :p1 = reg, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 expr.orX(isNull(register), eq(register, :p1, NULL))",
+            "#1 andWhere(orX(isNull(register), eq(register, :p1, NULL)))",
+            "#1 expr.isNull(group_id)",
+            "#1 andWhere(isNull(group_id))",
+            "#1 executeQuery()"
+        ]
+    },
+    "pattern findBySlug found": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\ReferencePattern#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_reference_patterns, NULL)",
+            "#1 param :p1 = s, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 where(eq(slug, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "pattern findBySlug missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_reference_patterns, NULL)",
+            "#1 param :p1 = s, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 where(eq(slug, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "pattern findAll": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\ReferencePattern#7 updated:"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_reference_patterns, NULL)",
+            "#1 orderBy(slug, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "pattern findAll enabled": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_reference_patterns, NULL)",
+            "#1 orderBy(slug, ASC)",
+            "#1 param :p1 = true, boolean",
+            "#1 expr.eq(enabled, :p1, NULL)",
+            "#1 andWhere(eq(enabled, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "broadcast record": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationBroadcast#0 updated:created,endsAt,id,sender,startsAt,subject,uuid",
+        "queries": [
+            "#1 insert(openregister_notif_broadcast)",
+            "#1 param :p1 = u-1, 2",
+            "#1 setValue(uuid, :p1)",
+            "#1 param :p2 = Hi, 2",
+            "#1 setValue(subject, :p2)",
+            "#1 param :p3 = admin, 2",
+            "#1 setValue(sender, :p3)",
+            "#1 param :p4 = DateTime, datetime",
+            "#1 setValue(starts_at, :p4)",
+            "#1 param :p5 = DateTime, datetime",
+            "#1 setValue(ends_at, :p5)",
+            "#1 param :p6 = DateTime, datetime",
+            "#1 setValue(created, :p6)",
+            "#1 executeStatement()"
+        ]
+    },
+    "broadcast findByUuid found": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationBroadcast#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notif_broadcast, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "broadcast findByUuid missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notif_broadcast, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "broadcast findAll": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\NotificationBroadcast#7 updated:"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notif_broadcast, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "broadcast findAll paged": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notif_broadcast, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "broadcast findUnseenFor": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\NotificationBroadcast#7 updated:"
+        ],
+        "queries": [
+            "#1 select(b.*)",
+            "#1 from(openregister_notif_broadcast, b)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.lte(b.starts_at, :p1, NULL)",
+            "#1 where(lte(b.starts_at, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(b.ends_at, :p2, NULL)",
+            "#1 andWhere(gte(b.ends_at, :p2, NULL))",
+            "#1 param :p3 = alice, 2",
+            "#1 andWhere(NOT EXISTS (SELECT 1 FROM `*PREFIX*openregister_notif_bc_receipt` r WHERE r.`broadcast_uuid` = b.`uuid` AND r.`user_id` = :p3))",
+            "#1 orderBy(b.starts_at, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "broadcast deleteByUuid": {
+        "result": true,
+        "queries": [
+            "#1 delete(openregister_notif_broadcast, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "receipt acknowledge existing": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationBroadcastReceipt#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notif_bc_receipt, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(broadcast_uuid, :p1, NULL)",
+            "#1 where(eq(broadcast_uuid, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user_id, :p2, NULL)",
+            "#1 andWhere(eq(user_id, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "receipt acknowledge insert": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationBroadcastReceipt#0 updated:broadcastUuid,id,seenAt,userId",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notif_bc_receipt, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(broadcast_uuid, :p1, NULL)",
+            "#1 where(eq(broadcast_uuid, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user_id, :p2, NULL)",
+            "#1 andWhere(eq(user_id, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 insert(openregister_notif_bc_receipt)",
+            "#2 param :p3 = u-1, 2",
+            "#2 setValue(broadcast_uuid, :p3)",
+            "#2 param :p4 = alice, 2",
+            "#2 setValue(user_id, :p4)",
+            "#2 param :p5 = DateTime, datetime",
+            "#2 setValue(seen_at, :p5)",
+            "#2 executeStatement()"
+        ]
+    },
+    "receipt acknowledge race": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\NotificationBroadcastReceipt#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notif_bc_receipt, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(broadcast_uuid, :p1, NULL)",
+            "#1 where(eq(broadcast_uuid, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user_id, :p2, NULL)",
+            "#1 andWhere(eq(user_id, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_notif_bc_receipt, NULL)",
+            "#2 param :p3 = u-1, 2",
+            "#2 expr.eq(broadcast_uuid, :p3, NULL)",
+            "#2 where(eq(broadcast_uuid, :p3, NULL))",
+            "#2 param :p4 = alice, 2",
+            "#2 expr.eq(user_id, :p4, NULL)",
+            "#2 andWhere(eq(user_id, :p4, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()"
+        ]
+    },
+    "receipt acknowledge race lost": {
+        "thrown": "RuntimeException: duplicate key",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notif_bc_receipt, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(broadcast_uuid, :p1, NULL)",
+            "#1 where(eq(broadcast_uuid, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user_id, :p2, NULL)",
+            "#1 andWhere(eq(user_id, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_notif_bc_receipt, NULL)",
+            "#2 param :p3 = u-1, 2",
+            "#2 expr.eq(broadcast_uuid, :p3, NULL)",
+            "#2 where(eq(broadcast_uuid, :p3, NULL))",
+            "#2 param :p4 = alice, 2",
+            "#2 expr.eq(user_id, :p4, NULL)",
+            "#2 andWhere(eq(user_id, :p4, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()"
+        ]
+    },
+    "receipt find missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notif_bc_receipt, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(broadcast_uuid, :p1, NULL)",
+            "#1 where(eq(broadcast_uuid, :p1, NULL))",
+            "#1 param :p2 = alice, 2",
+            "#1 expr.eq(user_id, :p2, NULL)",
+            "#1 andWhere(eq(user_id, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "receipt countFor": {
+        "result": 2,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_notif_bc_receipt, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(broadcast_uuid, :p1, NULL)",
+            "#1 where(eq(broadcast_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "watcher findOne found": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\Watcher#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_watchers, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "watcher findOne missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_watchers, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "watcher findByObject": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\Watcher#7 updated:"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_watchers, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(created, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "watcher findNotifying": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\Watcher#7 updated:"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_watchers, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = true, boolean",
+            "#1 expr.eq(notify, :p2, NULL)",
+            "#1 expr.isNull(notify)",
+            "#1 expr.orX(eq(notify, :p2, NULL), isNull(notify))",
+            "#1 andWhere(orX(eq(notify, :p2, NULL), isNull(notify)))",
+            "#1 orderBy(created, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "watcher notifyMapForUser": {
+        "result": {
+            "o-1": true
+        },
+        "queries": [
+            "#1 select(object_uuid, notify)",
+            "#1 from(openregister_watchers, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "watcher countsByObject": {
+        "result": {
+            "o-1": 2
+        },
+        "queries": [
+            "#1 select(object_uuid)",
+            "#1 selectAlias(COUNT(*), watcher_count)",
+            "#1 from(openregister_watchers, NULL)",
+            "#1 groupBy(object_uuid)",
+            "#1 setMaxResults(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "watcher countForObject": {
+        "result": 3,
+        "queries": [
+            "#1 selectAlias(COUNT(*), watcher_count)",
+            "#1 from(openregister_watchers, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "watcher countForObject none": {
+        "result": 0,
+        "queries": [
+            "#1 selectAlias(COUNT(*), watcher_count)",
+            "#1 from(openregister_watchers, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "watcher subscribe existing": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\Watcher#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_watchers, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "watcher subscribe mute": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\Watcher#7 updated:notify",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_watchers, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 update(openregister_watchers, NULL)",
+            "#2 param :p3 = false, boolean",
+            "#2 set(notify, :p3)",
+            "#2 param :p4 = 7, 1",
+            "#2 expr.eq(id, :p4, NULL)",
+            "#2 where(eq(id, :p4, NULL))",
+            "#2 executeStatement()"
+        ]
+    },
+    "watcher subscribe insert": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\Watcher#0 updated:created,id,objectUuid,register,schema,userId",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_watchers, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 insert(openregister_watchers)",
+            "#2 param :p3 = alice, 2",
+            "#2 setValue(user_id, :p3)",
+            "#2 param :p4 = o-1, 2",
+            "#2 setValue(object_uuid, :p4)",
+            "#2 param :p5 = reg, 2",
+            "#2 setValue(register, :p5)",
+            "#2 param :p6 = sch, 2",
+            "#2 setValue(schema, :p6)",
+            "#2 param :p7 = DateTime, datetime",
+            "#2 setValue(created, :p7)",
+            "#2 executeStatement()"
+        ]
+    },
+    "watcher subscribe race": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\Watcher#7 updated:notify",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_watchers, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_watchers, NULL)",
+            "#2 param :p3 = alice, 2",
+            "#2 expr.eq(user_id, :p3, NULL)",
+            "#2 where(eq(user_id, :p3, NULL))",
+            "#2 param :p4 = o-1, 2",
+            "#2 expr.eq(object_uuid, :p4, NULL)",
+            "#2 andWhere(eq(object_uuid, :p4, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()"
+        ]
+    },
+    "watcher subscribe race lost": {
+        "thrown": "RuntimeException: duplicate key",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_watchers, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_watchers, NULL)",
+            "#2 param :p3 = alice, 2",
+            "#2 expr.eq(user_id, :p3, NULL)",
+            "#2 where(eq(user_id, :p3, NULL))",
+            "#2 param :p4 = o-1, 2",
+            "#2 expr.eq(object_uuid, :p4, NULL)",
+            "#2 andWhere(eq(object_uuid, :p4, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()"
+        ]
+    },
+    "watcher unsubscribe": {
+        "result": true,
+        "queries": [
+            "#1 delete(openregister_watchers, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "watcher deleteByObject": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_watchers, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "presence findOne found": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\ObjectPresence#7 updated:",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_presence, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "presence findOne missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_presence, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "presence findPresent": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\ObjectPresence#7 updated:"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_presence, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(last_seen, :p2, NULL)",
+            "#1 andWhere(gte(last_seen, :p2, NULL))",
+            "#1 orderBy(arrived_at, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "presence removeOne": {
+        "result": true,
+        "queries": [
+            "#1 delete(openregister_presence, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "presence findStale": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\ObjectPresence#7 updated:"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_presence, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.lt(last_seen, :p1, NULL)",
+            "#1 where(lt(last_seen, :p1, NULL))",
+            "#1 setMaxResults(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "presence pruneStale": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_presence, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.lt(last_seen, :p1, NULL)",
+            "#1 where(lt(last_seen, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    }
+}

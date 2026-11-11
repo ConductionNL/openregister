@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Unit\Service\Config;
 
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Service\Config\BundleCrossingGuard;
 use OCA\OpenRegister\Service\Config\Types\RegisterSchemaShareableConfigType;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\RegisterService;
@@ -24,10 +25,13 @@ class RegisterSchemaShareableConfigTypeTest extends TestCase {
 
 	private RegisterSchemaShareableConfigType $type;
 
+	private BundleCrossingGuard $guard;
+
 	protected function setUp(): void {
+		$this->guard = $this->createMock(BundleCrossingGuard::class);
 		$this->registers = $this->createMock(RegisterService::class);
 		$this->config = $this->createMock(ConfigurationService::class);
-		$this->type = new RegisterSchemaShareableConfigType($this->registers, $this->config);
+		$this->type = new RegisterSchemaShareableConfigType($this->registers, $this->config, $this->guard);
 	}
 
 	public function testIdentity(): void {
@@ -53,6 +57,14 @@ class RegisterSchemaShareableConfigTypeTest extends TestCase {
 		$this->registers->method('find')->willThrowException(new \RuntimeException('nope'));
 		$this->expectException(UnexpectedValueException::class);
 		$this->type->serialise(['register' => 'ghost']);
+	}
+
+	public function testDeserialiseAsksTheGuardBeforeItImports(): void {
+		$this->guard->method('assertAllowed')->willThrowException(new \RuntimeException('refused'));
+		$this->config->expects($this->never())->method('importFromApp');
+
+		$this->expectExceptionMessage('refused');
+		$this->type->deserialise(['info' => ['version' => '2.3.0']]);
 	}
 
 	public function testDeserialiseImportsWithTheBundleVersion(): void {

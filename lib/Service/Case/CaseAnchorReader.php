@@ -30,7 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Case;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -44,11 +45,11 @@ class CaseAnchorReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The ordinary object read path.
+	 * @param ObjectOperationsInterface $objects The ordinary object read path.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -57,29 +58,24 @@ class CaseAnchorReader {
 	/**
 	 * The anchor's data for sentry evaluation. Empty when unreadable.
 	 *
-	 * @param string $objectUuid The anchor uuid.
-	 * @param int|null $registerId Its register, when known.
-	 * @param int|null $schemaId Its schema, when known.
+	 * @param CaseAnchor $anchor The anchor uuid, and its register and schema when known.
 	 *
 	 * @return array<string, mixed> The object's data, or [] when it cannot be read.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
-	public function read(string $objectUuid, ?int $registerId, ?int $schemaId): array {
+	public function read(CaseAnchor $anchor): array {
 		try {
 			$entity = $this->objects->find(
-				id: $objectUuid,
-				register: $registerId,
-				schema: $schemaId,
+				id: $anchor->objectUuid,
+				options: new ObjectFindOptions(register: $anchor->registerId, schema: $anchor->schemaId, render: false, audit: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false,
-				_audit: false
+				_multitenancy: false
 			);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				'[CaseAnchorReader] The anchoring object could not be read; every if-part over it is false: ' . $failure->getMessage(),
-				['object' => $objectUuid]
+				['object' => $anchor->objectUuid]
 			);
 
 			return [];
@@ -100,22 +96,17 @@ class CaseAnchorReader {
 	/**
 	 * Whether a caller may read the anchor (and therefore its plan).
 	 *
-	 * @param string $objectUuid The anchor uuid.
-	 * @param int|null $registerId Its register, when known.
-	 * @param int|null $schemaId Its schema, when known.
+	 * @param CaseAnchor $anchor The anchor uuid, and its register and schema when known.
 	 *
 	 * @return boolean True only when the RBAC-checked read succeeds.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	public function mayRead(string $objectUuid, ?int $registerId, ?int $schemaId): bool {
+	public function mayRead(CaseAnchor $anchor): bool {
 		try {
 			return $this->objects->find(
-				id: $objectUuid,
-				register: $registerId,
-				schema: $schemaId,
-				_render: false,
-				_audit: false
+				id: $anchor->objectUuid,
+				options: new ObjectFindOptions(register: $anchor->registerId, schema: $anchor->schemaId, render: false, audit: false)
 			) !== null;
 		} catch (Throwable) {
 			return false;

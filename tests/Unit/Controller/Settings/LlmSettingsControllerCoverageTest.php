@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -36,7 +37,7 @@ class LlmSettingsControllerCoverageTest extends TestCase {
 		$this->vectorizationService = $this->createMock(VectorizationService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new LlmSettingsController(
+		$this->controller = LlmSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->db,
@@ -53,7 +54,7 @@ class LlmSettingsControllerCoverageTest extends TestCase {
 	// =========================================================================
 
 	public function testTestChatSuccessPath(): void {
-		$chatServiceMock = $this->createMock(\OCA\OpenRegister\Service\ChatService::class);
+		$chatServiceMock = $this->createMock(\OCA\OpenRegister\Mcp\Service\ChatService::class);
 
 		$this->request->method('getParam')
 			->willReturnMap([
@@ -62,14 +63,14 @@ class LlmSettingsControllerCoverageTest extends TestCase {
 				['testMessage', 'Hello! Please respond with a brief greeting.', 'Hi'],
 			]);
 		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\ChatService')
+			->with('OCA\\OpenRegister\\Kernel\\Contracts\\ChatServiceInterface')
 			->willReturn($chatServiceMock);
 
-		// This will throw \Error due to named param mismatch bug in controller
-		// The controller uses testMessage: but ChatService expects $_testMessage.
-		// Verify the Error propagates (not caught by catch(Exception)).
-		$this->expectException(\Error::class);
-		$this->controller->testChat();
+		$chatServiceMock->method('testChat')->willReturn(['success' => true]);
+
+		$result = $this->controller->testChat();
+
+		$this->assertSame(200, $result->getStatus());
 	}
 
 	// =========================================================================
@@ -121,18 +122,6 @@ class LlmSettingsControllerCoverageTest extends TestCase {
 		$data = $result->getData();
 		$this->assertFalse($data['has_vectors']);
 		$this->assertFalse($data['mismatch']);
-	}
-
-	// =========================================================================
-	// getVectorStats — response structure
-	// =========================================================================
-
-	public function testGetVectorStatsResponseContainsExpectedKeys(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
-	}
-
-	public function testGetVectorStatsExceptionIncludesTrace(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
 	}
 
 	// =========================================================================

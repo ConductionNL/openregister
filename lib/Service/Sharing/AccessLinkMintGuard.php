@@ -39,10 +39,8 @@ namespace OCA\OpenRegister\Service\Sharing;
 
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Throwable;
 
 /**
@@ -50,25 +48,26 @@ use Throwable;
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
  */
-class AccessLinkMintGuard {
+class AccessLinkMintGuard implements AccessLinkMintGuardInterface {
+
+	/**
+	 * Reads which object a subject names; stateless, so it is built in place.
+	 *
+	 * @var AccessLinkSubject
+	 */
+	private readonly AccessLinkSubject $subjects;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The object read path, asked with the rules on.
-	 * @param AccessLinkSubject $subjects Reads which object a subject names.
-	 * @param ViewMapper        $views    Resolves a view under the caller's own rules.
-	 * @param RegisterMapper $registers Resolves the registers a view names, same rules.
-	 * @param SchemaMapper $schemas Resolves the schemas a view names, same rules.
+	 * @param ObjectOperationsInterface $objects The object read path, asked with the rules on.
+	 * @param AccessLinkViewReaders $viewReaders Resolves a view, and the registers and schemas it names, under the caller's own rules.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
-		private readonly AccessLinkSubject $subjects,
-		private readonly ViewMapper $views,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly ObjectOperationsInterface $objects,
+		private readonly AccessLinkViewReaders $viewReaders,
 	) {
-
+		$this->subjects = new AccessLinkSubject();
 	}//end __construct()
 
 	/**
@@ -115,10 +114,9 @@ class AccessLinkMintGuard {
 		try {
 			$object = $this->objects->find(
 				id: $uuid,
+				options: new ObjectFindOptions(render: false, audit: false),
 				_rbac: true,
-				_multitenancy: true,
-				_render: false,
-				_audit: false
+				_multitenancy: true
 			);
 		} catch (Throwable $denied) {
 			unset($denied);
@@ -160,7 +158,7 @@ class AccessLinkMintGuard {
 			// Flags stated rather than defaulted. They ARE the property this guard
 			// exists to hold - resolving the view exempt is precisely what it must
 			// not do - and a test cannot pin an argument that was never passed.
-			$view = $this->views->find($viewId, _rbac: true, _multitenancy: true);
+			$view = $this->viewReaders->views->find($viewId, _rbac: true, _multitenancy: true);
 		} catch (Throwable $denied) {
 			unset($denied);
 			return false;
@@ -202,7 +200,7 @@ class AccessLinkMintGuard {
 		if (is_array($registers) === true) {
 			foreach ($registers as $registerId) {
 				try {
-					$this->registers->find($registerId);
+					$this->viewReaders->catalog->registers()->find($registerId);
 				} catch (Throwable $denied) {
 					unset($denied);
 					return false;
@@ -214,7 +212,7 @@ class AccessLinkMintGuard {
 		if (is_array($schemas) === true) {
 			foreach ($schemas as $schemaId) {
 				try {
-					$this->schemas->find($schemaId);
+					$this->viewReaders->catalog->schemas()->find($schemaId);
 				} catch (Throwable $denied) {
 					unset($denied);
 					return false;

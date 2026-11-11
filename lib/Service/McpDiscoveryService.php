@@ -27,8 +27,8 @@
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\IURLGenerator;
 
 /**
@@ -44,7 +44,7 @@ use OCP\IURLGenerator;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
-class McpDiscoveryService {
+class McpDiscoveryService implements McpCatalogueInterface {
 
 	/**
 	 * App name constant
@@ -61,41 +61,597 @@ class McpDiscoveryService {
 	private const API_VERSION = '1.0';
 
 	/**
-	 * Register mapper for fetching live register data
+	 * What the platform is, for the Tier 1 catalog.
 	 *
-	 * @var RegisterMapper
+	 * @var string
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private const CATALOG_DESCRIPTION = 'A flexible data register platform for Nextcloud.'
+		. ' Manages structured objects across registers and schemas'
+		. ' with full CRUD, search, audit trails, file management, and AI capabilities.';
 
 	/**
-	 * Schema mapper for fetching live schema data
+	 * How a client authenticates, for the Tier 1 catalog.
 	 *
-	 * @var SchemaMapper
+	 * @var array<string, string>
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private const CATALOG_AUTHENTICATION = [
+		'type' => 'basic',
+		'description' => 'Use Nextcloud username:password via HTTP Basic Auth or session cookies.',
+		'header' => 'Authorization: Basic base64(user:pass)',
+	];
 
 	/**
-	 * URL generator for building absolute URLs
+	 * The Tier 1 capability areas, without their drill-down URLs.
 	 *
-	 * @var IURLGenerator
+	 * @var array<int|string, mixed>
 	 */
-	private readonly IURLGenerator $urlGenerator;
+	private const CATALOG_CAPABILITIES = [
+		[
+			'id' => 'registers',
+			'name' => 'Registers',
+			'description' => 'Data containers that group schemas and their objects. CRUD, export, import, publish.',
+		],
+		[
+			'id' => 'schemas',
+			'name' => 'Schemas',
+			'description' => 'JSON Schema definitions that define object structure. CRUD, upload, download, publish.',
+		],
+		[
+			'id' => 'objects',
+			'name' => 'Objects',
+			'description' => 'Data records in register/schema pairs. CRUD, filtering, pagination, lock/unlock, publish.',
+		],
+		[
+			'id' => 'search',
+			'name' => 'Search',
+			'description' => 'Full-text, semantic, and hybrid search across objects and files.',
+		],
+		[
+			'id' => 'files',
+			'name' => 'Files',
+			'description' => 'File attachments on objects. Upload, download, text extraction, anonymization.',
+		],
+		[
+			'id' => 'audit',
+			'name' => 'Audit Trails',
+			'description' => 'Change history for objects. View, export, and manage audit records.',
+		],
+		[
+			'id' => 'bulk',
+			'name' => 'Bulk Operations',
+			'description' => 'Batch save, delete, publish/depublish objects across a register/schema.',
+		],
+		[
+			'id' => 'webhooks',
+			'name' => 'Webhooks',
+			'description' => 'Event-driven HTTP callbacks. CRUD, test, view logs.',
+		],
+		[
+			'id' => 'chat',
+			'name' => 'AI Chat',
+			'description' => 'Conversational AI assistant for querying and managing register data.',
+		],
+		[
+			'id' => 'views',
+			'name' => 'Views',
+			'description' => 'Saved search/filter configurations for reusable data views.',
+		],
+	];
+
+	/**
+	 * The valid capability IDs.
+	 *
+	 * @var array<int|string, mixed>
+	 */
+	private const CAPABILITY_IDS = [
+		'registers',
+		'schemas',
+		'objects',
+		'search',
+		'files',
+		'audit',
+		'bulk',
+		'webhooks',
+		'chat',
+		'views',
+	];
+
+	/**
+	 * The builder method of each capability detail.
+	 *
+	 * @var array<int|string, mixed>
+	 */
+	private const CAPABILITY_BUILDERS = [
+		'registers' => 'buildRegistersCapability',
+		'schemas' => 'buildSchemasCapability',
+		'objects' => 'buildObjectsCapability',
+		'search' => 'buildSearchCapability',
+		'files' => 'buildFilesCapability',
+		'audit' => 'buildAuditCapability',
+		'bulk' => 'buildBulkCapability',
+		'webhooks' => 'buildWebhooksCapability',
+		'chat' => 'buildChatCapability',
+		'views' => 'buildViewsCapability',
+	];
+
+	/**
+	 * The endpoints of the registers capability.
+	 *
+	 * @var array<int|string, mixed>
+	 */
+	private const REGISTERS_ENDPOINTS = [
+		[
+			'method' => 'GET',
+			'path' => '/api/registers',
+			'description' => 'List all registers. Supports pagination via _limit and _offset query params.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/registers/{id}',
+			'description' => 'Get a single register by ID.',
+			'parameters' => [
+				['name' => 'id', 'in' => 'path', 'type' => 'integer', 'required' => true],
+			],
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/registers',
+			'description' => 'Create a new register.',
+			'body' => 'JSON with title (required), description, schemas (array of schema IDs).',
+		],
+		[
+			'method' => 'PUT',
+			'path' => '/api/registers/{id}',
+			'description' => 'Full update of a register.',
+		],
+		[
+			'method' => 'DELETE',
+			'path' => '/api/registers/{id}',
+			'description' => 'Delete a register.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/registers/{id}/schemas',
+			'description' => 'List schemas belonging to this register.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/registers/{id}/export',
+			'description' => 'Export register with all schemas and objects.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/registers/{id}/import',
+			'description' => 'Import data into a register.',
+		],
+	];
+
+	/**
+	 * The endpoints of the schemas capability.
+	 *
+	 * @var array<int|string, mixed>
+	 */
+	private const SCHEMAS_ENDPOINTS = [
+		[
+			'method' => 'GET',
+			'path' => '/api/schemas',
+			'description' => 'List all schemas.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/schemas/{id}',
+			'description' => 'Get a single schema by ID. Returns full JSON Schema definition.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/schemas',
+			'description' => 'Create a new schema. Body: JSON with title, description, properties.',
+		],
+		[
+			'method' => 'PUT',
+			'path' => '/api/schemas/{id}',
+			'description' => 'Full update of a schema.',
+		],
+		[
+			'method' => 'DELETE',
+			'path' => '/api/schemas/{id}',
+			'description' => 'Delete a schema.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/schemas/upload',
+			'description' => 'Upload a JSON Schema file to create a schema.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/schemas/{id}/download',
+			'description' => 'Download a schema as a JSON Schema file.',
+		],
+	];
+
+	/**
+	 * The endpoints of the objects capability.
+	 *
+	 * @var array<int|string, mixed>
+	 */
+	private const OBJECTS_ENDPOINTS = [
+		[
+			'method' => 'GET',
+			'path' => '/api/objects/{register}/{schema}',
+			'description' => 'List objects. Supports filtering and pagination.',
+			'parameters' => [
+				[
+					'name' => 'register',
+					'in' => 'path',
+					'type' => 'integer',
+					'required' => true,
+					'description' => 'Register ID',
+				],
+				[
+					'name' => 'schema',
+					'in' => 'path',
+					'type' => 'integer',
+					'required' => true,
+					'description' => 'Schema ID',
+				],
+				[
+					'name' => '_limit',
+					'in' => 'query',
+					'type' => 'integer',
+					'required' => false,
+					'description' => 'Max results (default 30)',
+				],
+				[
+					'name' => '_offset',
+					'in' => 'query',
+					'type' => 'integer',
+					'required' => false,
+					'description' => 'Skip N results',
+				],
+				[
+					'name' => '_search',
+					'in' => 'query',
+					'type' => 'string',
+					'required' => false,
+					'description' => 'Full-text search',
+				],
+				[
+					'name' => '_order[field]',
+					'in' => 'query',
+					'type' => 'string',
+					'required' => false,
+					'description' => 'Sort by field (asc/desc)',
+				],
+				[
+					'name' => 'field.subfield',
+					'in' => 'query',
+					'type' => 'string',
+					'required' => false,
+					'description' => 'Dot-notation filter on object properties',
+				],
+			],
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/objects/{register}/{schema}',
+			'description' => 'Create a new object. Body: JSON matching the schema definition.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/objects/{register}/{schema}/{id}',
+			'description' => 'Get a single object by ID.',
+		],
+		[
+			'method' => 'PUT',
+			'path' => '/api/objects/{register}/{schema}/{id}',
+			'description' => 'Full update of an object.',
+		],
+		[
+			'method' => 'PATCH',
+			'path' => '/api/objects/{register}/{schema}/{id}',
+			'description' => 'Partial update of an object.',
+		],
+		[
+			'method' => 'DELETE',
+			'path' => '/api/objects/{register}/{schema}/{id}',
+			'description' => 'Soft-delete an object (restorable from /api/deleted).',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/objects/{register}/{schema}/{id}/lock',
+			'description' => 'Lock an object to prevent edits.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/objects/{register}/{schema}/{id}/unlock',
+			'description' => 'Unlock a locked object.',
+		],
+	];
+
+	/**
+	 * The endpoints of the search capability.
+	 *
+	 * @var array<int|string, mixed>
+	 */
+	private const SEARCH_ENDPOINTS = [
+		[
+			'method' => 'GET',
+			'path' => '/api/search',
+			'description' => 'Search across all objects. Supports _search, register, schema, and facet filters.',
+			'parameters' => [
+				[
+					'name' => '_search',
+					'in' => 'query',
+					'type' => 'string',
+					'required' => true,
+					'description' => 'Search query',
+				],
+				[
+					'name' => 'register',
+					'in' => 'query',
+					'type' => 'integer',
+					'required' => false,
+					'description' => 'Filter by register ID',
+				],
+				[
+					'name' => 'schema',
+					'in' => 'query',
+					'type' => 'integer',
+					'required' => false,
+					'description' => 'Filter by schema ID',
+				],
+			],
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/search/semantic',
+			'description' => 'Vector-based semantic search. Body: { "query": "natural language query" }.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/search/hybrid',
+			'description' => 'Combined keyword + semantic search. Body: { "query": "search text" }.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/search/files/keyword',
+			'description' => 'Keyword search over file contents.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/search/files/semantic',
+			'description' => 'Semantic search over file contents.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/search/files/hybrid',
+			'description' => 'Hybrid search over file contents.',
+		],
+	];
+
+	/**
+	 * The endpoints of the files capability.
+	 *
+	 * @var array<int|string, mixed>
+	 */
+	private const FILES_ENDPOINTS = [
+		[
+			'method' => 'GET',
+			'path' => '/api/objects/{register}/{schema}/{id}/files',
+			'description' => 'List files attached to an object.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/objects/{register}/{schema}/{id}/files',
+			'description' => 'Upload a file to an object. Use multipart/form-data.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/objects/{register}/{schema}/{id}/files/{fileId}',
+			'description' => 'Get file metadata.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/files/{fileId}/download',
+			'description' => 'Download a file by ID.',
+		],
+		[
+			'method' => 'DELETE',
+			'path' => '/api/objects/{register}/{schema}/{id}/files/{fileId}',
+			'description' => 'Delete a file from an object.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/files/{fileId}/text',
+			'description' => 'Get extracted text content from a file.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/files/{fileId}/extract',
+			'description' => 'Extract text from a file (triggers OCR/parsing).',
+		],
+	];
+
+	/**
+	 * The endpoints of the audit capability.
+	 *
+	 * @var array<int|string, mixed>
+	 */
+	private const AUDIT_ENDPOINTS = [
+		[
+			'method' => 'GET',
+			'path' => '/api/audit-trails',
+			'description' => 'List all audit trail entries. Supports pagination.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/objects/{register}/{schema}/{id}/audit-trails',
+			'description' => 'Get audit trail for a specific object.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/audit-trails/{id}',
+			'description' => 'Get a single audit trail entry.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/audit-trails/export',
+			'description' => 'Export audit trails as CSV.',
+		],
+	];
+
+	/**
+	 * The endpoints of the bulk capability.
+	 *
+	 * @var array<int|string, mixed>
+	 */
+	private const BULK_ENDPOINTS = [
+		[
+			'method' => 'POST',
+			'path' => '/api/bulk/{register}/{schema}/save',
+			'description' => 'Batch save/upsert objects. Body: array of objects.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/bulk/{register}/{schema}/delete',
+			'description' => 'Batch delete objects. Body: { "ids": [...] }.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/bulk/{register}/{schema}/publish',
+			'description' => 'Batch publish objects. Body: { "ids": [...] }.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/bulk/{register}/{schema}/depublish',
+			'description' => 'Batch depublish objects. Body: { "ids": [...] }.',
+		],
+	];
+
+	/**
+	 * The endpoints of the webhooks capability.
+	 *
+	 * @var array<int|string, mixed>
+	 */
+	private const WEBHOOKS_ENDPOINTS = [
+		[
+			'method' => 'GET',
+			'path' => '/api/webhooks',
+			'description' => 'List all webhooks.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/webhooks',
+			'description' => 'Create a webhook. Body: { "url": "...", "events": [...], "headers": {...} }.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/webhooks/{id}',
+			'description' => 'Get a webhook by ID.',
+		],
+		[
+			'method' => 'PUT',
+			'path' => '/api/webhooks/{id}',
+			'description' => 'Update a webhook.',
+		],
+		[
+			'method' => 'DELETE',
+			'path' => '/api/webhooks/{id}',
+			'description' => 'Delete a webhook.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/webhooks/{id}/test',
+			'description' => 'Send a test payload to the webhook URL.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/webhooks/events',
+			'description' => 'List available webhook event types.',
+		],
+	];
+
+	/**
+	 * The endpoints of the chat capability.
+	 *
+	 * @var array<int|string, mixed>
+	 */
+	private const CHAT_ENDPOINTS = [
+		[
+			'method' => 'POST',
+			'path' => '/api/chat/send',
+			'description' => 'Send a message to the AI assistant. Body: { "message": "your question" }.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/chat/history',
+			'description' => 'Get chat message history.',
+		],
+		[
+			'method' => 'DELETE',
+			'path' => '/api/chat/history',
+			'description' => 'Clear chat history.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/conversations',
+			'description' => 'List all conversations.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/conversations',
+			'description' => 'Start a new conversation.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/conversations/{uuid}/messages',
+			'description' => 'Get messages in a conversation.',
+		],
+	];
+
+	/**
+	 * The endpoints of the views capability.
+	 *
+	 * @var array<int|string, mixed>
+	 */
+	private const VIEWS_ENDPOINTS = [
+		[
+			'method' => 'GET',
+			'path' => '/api/views',
+			'description' => 'List all views.',
+		],
+		[
+			'method' => 'GET',
+			'path' => '/api/views/{id}',
+			'description' => 'Get a view by ID.',
+		],
+		[
+			'method' => 'POST',
+			'path' => '/api/views',
+			'description' => 'Create a view. Body: { "name", "filters", "register", "schema" }.',
+		],
+		[
+			'method' => 'PUT',
+			'path' => '/api/views/{id}',
+			'description' => 'Update a view.',
+		],
+		[
+			'method' => 'DELETE',
+			'path' => '/api/views/{id}',
+			'description' => 'Delete a view.',
+		],
+	];
 
 	/**
 	 * Constructor
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper instance
-	 * @param SchemaMapper $schemaMapper Schema mapper instance
-	 * @param IURLGenerator $urlGenerator URL generator instance
+	 * @param SchemaCatalogInterface $catalog      Live register and schema data
+	 * @param IURLGenerator          $urlGenerator URL generator for building absolute URLs
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
-		IURLGenerator $urlGenerator,
+		private readonly SchemaCatalogInterface $catalog,
+		private readonly IURLGenerator $urlGenerator,
 	) {
-		$this->registerMapper = $registerMapper;
-		$this->schemaMapper = $schemaMapper;
-		$this->urlGenerator = $urlGenerator;
 	}//end __construct()
 
 	/**
@@ -134,77 +690,18 @@ class McpDiscoveryService {
 	 * @spec openspec/specs/mcp-discovery/spec.md
 	 */
 	public function getCatalog(): array {
-		$capabilities = [
-			[
-				'id' => 'registers',
-				'name' => 'Registers',
-				'description' => 'Data containers that group schemas and their objects. CRUD, export, import, publish.',
-			],
-			[
-				'id' => 'schemas',
-				'name' => 'Schemas',
-				'description' => 'JSON Schema definitions that define object structure. CRUD, upload, download, publish.',
-			],
-			[
-				'id' => 'objects',
-				'name' => 'Objects',
-				'description' => 'Data records in register/schema pairs. CRUD, filtering, pagination, lock/unlock, publish.',
-			],
-			[
-				'id' => 'search',
-				'name' => 'Search',
-				'description' => 'Full-text, semantic, and hybrid search across objects and files.',
-			],
-			[
-				'id' => 'files',
-				'name' => 'Files',
-				'description' => 'File attachments on objects. Upload, download, text extraction, anonymization.',
-			],
-			[
-				'id' => 'audit',
-				'name' => 'Audit Trails',
-				'description' => 'Change history for objects. View, export, and manage audit records.',
-			],
-			[
-				'id' => 'bulk',
-				'name' => 'Bulk Operations',
-				'description' => 'Batch save, delete, publish/depublish objects across a register/schema.',
-			],
-			[
-				'id' => 'webhooks',
-				'name' => 'Webhooks',
-				'description' => 'Event-driven HTTP callbacks. CRUD, test, view logs.',
-			],
-			[
-				'id' => 'chat',
-				'name' => 'AI Chat',
-				'description' => 'Conversational AI assistant for querying and managing register data.',
-			],
-			[
-				'id' => 'views',
-				'name' => 'Views',
-				'description' => 'Saved search/filter configurations for reusable data views.',
-			],
-		];
+		$capabilities = self::CATALOG_CAPABILITIES;
 
 		// Add href to each capability.
 		foreach ($capabilities as &$cap) {
 			$cap['href'] = $this->getCapabilityHref(capabilityId: $cap['id']);
 		}
 
-		$description = 'A flexible data register platform for Nextcloud.';
-		$description .= ' Manages structured objects across registers and schemas';
-		$description .= ' with full CRUD, search, audit trails, file management, and AI capabilities.';
-
 		return [
 			'version' => self::API_VERSION,
 			'name' => 'OpenRegister',
-			'description' => $description,
-			'authentication' => [
-				'type' => 'basic',
-				'description' => 'Use Nextcloud username:password via HTTP Basic Auth or session cookies.',
-				'header' => 'Authorization: Basic base64(user:pass)',
-			],
+			'description' => self::CATALOG_DESCRIPTION,
+			'authentication' => self::CATALOG_AUTHENTICATION,
 			'base_url' => $this->getBaseUrl(),
 			'capabilities' => $capabilities,
 		];
@@ -218,18 +715,7 @@ class McpDiscoveryService {
 	 * @spec openspec/specs/mcp-discovery/spec.md#requirement-capability-coverage
 	 */
 	public function getCapabilityIds(): array {
-		return [
-			'registers',
-			'schemas',
-			'objects',
-			'search',
-			'files',
-			'audit',
-			'bulk',
-			'webhooks',
-			'chat',
-			'views',
-		];
+		return self::CAPABILITY_IDS;
 	}//end getCapabilityIds()
 
 	/**
@@ -247,18 +733,7 @@ class McpDiscoveryService {
 	 * @spec openspec/specs/mcp-discovery/spec.md
 	 */
 	public function getCapabilityDetail(string $capability): ?array {
-		$builders = [
-			'registers' => 'buildRegistersCapability',
-			'schemas' => 'buildSchemasCapability',
-			'objects' => 'buildObjectsCapability',
-			'search' => 'buildSearchCapability',
-			'files' => 'buildFilesCapability',
-			'audit' => 'buildAuditCapability',
-			'bulk' => 'buildBulkCapability',
-			'webhooks' => 'buildWebhooksCapability',
-			'chat' => 'buildChatCapability',
-			'views' => 'buildViewsCapability',
-		];
+		$builders = self::CAPABILITY_BUILDERS;
 
 		if (isset($builders[$capability]) === false) {
 			return null;
@@ -278,69 +753,23 @@ class McpDiscoveryService {
 	 * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
 	 */
 	private function buildRegistersCapability(): array {
-		$registers = $this->registerMapper->findAll();
-		$context = [];
-		foreach ($registers as $register) {
-			$context[] = [
-				'id' => $register->getId(),
-				'title' => $register->getTitle(),
-				'uuid' => $register->getUuid(),
-			];
-		}
-
 		return [
 			'id' => 'registers',
 			'name' => 'Registers',
 			'description' => 'Data containers that group schemas and their objects.',
-			'context' => ['registers' => $context],
-			'endpoints' => [
-				[
-					'method' => 'GET',
-					'path' => '/api/registers',
-					'description' => 'List all registers. Supports pagination via _limit and _offset query params.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/registers/{id}',
-					'description' => 'Get a single register by ID.',
-					'parameters' => [
-						['name' => 'id', 'in' => 'path', 'type' => 'integer', 'required' => true],
-					],
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/registers',
-					'description' => 'Create a new register.',
-					'body' => 'JSON with title (required), description, schemas (array of schema IDs).',
-				],
-				[
-					'method' => 'PUT',
-					'path' => '/api/registers/{id}',
-					'description' => 'Full update of a register.',
-				],
-				[
-					'method' => 'DELETE',
-					'path' => '/api/registers/{id}',
-					'description' => 'Delete a register.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/registers/{id}/schemas',
-					'description' => 'List schemas belonging to this register.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/registers/{id}/export',
-					'description' => 'Export register with all schemas and objects.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/registers/{id}/import',
-					'description' => 'Import data into a register.',
-				],
-			],
+			'context' => ['registers' => $this->catalogSummaries()->registers()],
+			'endpoints' => self::REGISTERS_ENDPOINTS,
 		];
 	}//end buildRegistersCapability()
+
+	/**
+	 * The live register and schema summaries of the catalog.
+	 *
+	 * @return McpCatalogSummaries
+	 */
+	private function catalogSummaries(): McpCatalogSummaries {
+		return new McpCatalogSummaries(catalog: $this->catalog);
+	}//end catalogSummaries()
 
 	/**
 	 * Build the schemas capability detail
@@ -352,65 +781,12 @@ class McpDiscoveryService {
 	 * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
 	 */
 	private function buildSchemasCapability(): array {
-		$schemas = $this->schemaMapper->findAll();
-		$context = [];
-		foreach ($schemas as $schema) {
-			$properties = $schema->getProperties();
-			$propertyCount = 0;
-			if (is_array($properties) === true) {
-				$propertyCount = count($properties);
-			}
-
-			$context[] = [
-				'id' => $schema->getId(),
-				'title' => $schema->getTitle(),
-				'uuid' => $schema->getUuid(),
-				'property_count' => $propertyCount,
-			];
-		}
-
 		return [
 			'id' => 'schemas',
 			'name' => 'Schemas',
 			'description' => 'JSON Schema definitions that define object structure.',
-			'context' => ['schemas' => $context],
-			'endpoints' => [
-				[
-					'method' => 'GET',
-					'path' => '/api/schemas',
-					'description' => 'List all schemas.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/schemas/{id}',
-					'description' => 'Get a single schema by ID. Returns full JSON Schema definition.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/schemas',
-					'description' => 'Create a new schema. Body: JSON with title, description, properties.',
-				],
-				[
-					'method' => 'PUT',
-					'path' => '/api/schemas/{id}',
-					'description' => 'Full update of a schema.',
-				],
-				[
-					'method' => 'DELETE',
-					'path' => '/api/schemas/{id}',
-					'description' => 'Delete a schema.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/schemas/upload',
-					'description' => 'Upload a JSON Schema file to create a schema.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/schemas/{id}/download',
-					'description' => 'Download a schema as a JSON Schema file.',
-				],
-			],
+			'context' => ['schemas' => $this->catalogSummaries()->schemas()],
+			'endpoints' => self::SCHEMAS_ENDPOINTS,
 		];
 	}//end buildSchemasCapability()
 
@@ -424,133 +800,12 @@ class McpDiscoveryService {
 	 * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
 	 */
 	private function buildObjectsCapability(): array {
-		$registers = $this->registerMapper->findAll();
-		$allSchemas = $this->schemaMapper->findAll();
-		$schemaIndex = [];
-		foreach ($allSchemas as $schema) {
-			$schemaIndex[$schema->getId()] = $schema;
-		}
-
-		$context = [];
-		foreach ($registers as $register) {
-			$regSchemas = [];
-			$schemaIds = $register->getSchemas();
-			if (is_array($schemaIds) === true) {
-				foreach ($schemaIds as $schemaId) {
-					if (isset($schemaIndex[$schemaId]) === true) {
-						$regSchemas[] = [
-							'id' => $schemaIndex[$schemaId]->getId(),
-							'title' => $schemaIndex[$schemaId]->getTitle(),
-						];
-					}
-				}
-			}
-
-			$context[] = [
-				'id' => $register->getId(),
-				'title' => $register->getTitle(),
-				'schemas' => $regSchemas,
-			];
-		}
-
 		return [
 			'id' => 'objects',
 			'name' => 'Objects',
 			'description' => 'Data records stored in register/schema pairs.',
-			'context' => ['registers' => $context],
-			'endpoints' => [
-				[
-					'method' => 'GET',
-					'path' => '/api/objects/{register}/{schema}',
-					'description' => 'List objects. Supports filtering and pagination.',
-					'parameters' => [
-						[
-							'name' => 'register',
-							'in' => 'path',
-							'type' => 'integer',
-							'required' => true,
-							'description' => 'Register ID',
-						],
-						[
-							'name' => 'schema',
-							'in' => 'path',
-							'type' => 'integer',
-							'required' => true,
-							'description' => 'Schema ID',
-						],
-						[
-							'name' => '_limit',
-							'in' => 'query',
-							'type' => 'integer',
-							'required' => false,
-							'description' => 'Max results (default 30)',
-						],
-						[
-							'name' => '_offset',
-							'in' => 'query',
-							'type' => 'integer',
-							'required' => false,
-							'description' => 'Skip N results',
-						],
-						[
-							'name' => '_search',
-							'in' => 'query',
-							'type' => 'string',
-							'required' => false,
-							'description' => 'Full-text search',
-						],
-						[
-							'name' => '_order[field]',
-							'in' => 'query',
-							'type' => 'string',
-							'required' => false,
-							'description' => 'Sort by field (asc/desc)',
-						],
-						[
-							'name' => 'field.subfield',
-							'in' => 'query',
-							'type' => 'string',
-							'required' => false,
-							'description' => 'Dot-notation filter on object properties',
-						],
-					],
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/objects/{register}/{schema}',
-					'description' => 'Create a new object. Body: JSON matching the schema definition.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/objects/{register}/{schema}/{id}',
-					'description' => 'Get a single object by ID.',
-				],
-				[
-					'method' => 'PUT',
-					'path' => '/api/objects/{register}/{schema}/{id}',
-					'description' => 'Full update of an object.',
-				],
-				[
-					'method' => 'PATCH',
-					'path' => '/api/objects/{register}/{schema}/{id}',
-					'description' => 'Partial update of an object.',
-				],
-				[
-					'method' => 'DELETE',
-					'path' => '/api/objects/{register}/{schema}/{id}',
-					'description' => 'Soft-delete an object (restorable from /api/deleted).',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/objects/{register}/{schema}/{id}/lock',
-					'description' => 'Lock an object to prevent edits.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/objects/{register}/{schema}/{id}/unlock',
-					'description' => 'Unlock a locked object.',
-				],
-			],
+			'context' => ['registers' => $this->catalogSummaries()->registersWithSchemas()],
+			'endpoints' => self::OBJECTS_ENDPOINTS,
 		];
 	}//end buildObjectsCapability()
 
@@ -569,61 +824,7 @@ class McpDiscoveryService {
 			'name' => 'Search',
 			'description' => 'Full-text, semantic, and hybrid search across objects and files.',
 			'context' => [],
-			'endpoints' => [
-				[
-					'method' => 'GET',
-					'path' => '/api/search',
-					'description' => 'Search across all objects. Supports _search, register, schema, and facet filters.',
-					'parameters' => [
-						[
-							'name' => '_search',
-							'in' => 'query',
-							'type' => 'string',
-							'required' => true,
-							'description' => 'Search query',
-						],
-						[
-							'name' => 'register',
-							'in' => 'query',
-							'type' => 'integer',
-							'required' => false,
-							'description' => 'Filter by register ID',
-						],
-						[
-							'name' => 'schema',
-							'in' => 'query',
-							'type' => 'integer',
-							'required' => false,
-							'description' => 'Filter by schema ID',
-						],
-					],
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/search/semantic',
-					'description' => 'Vector-based semantic search. Body: { "query": "natural language query" }.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/search/hybrid',
-					'description' => 'Combined keyword + semantic search. Body: { "query": "search text" }.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/search/files/keyword',
-					'description' => 'Keyword search over file contents.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/search/files/semantic',
-					'description' => 'Semantic search over file contents.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/search/files/hybrid',
-					'description' => 'Hybrid search over file contents.',
-				],
-			],
+			'endpoints' => self::SEARCH_ENDPOINTS,
 		];
 	}//end buildSearchCapability()
 
@@ -642,43 +843,7 @@ class McpDiscoveryService {
 			'name' => 'Files',
 			'description' => 'File attachments on objects. Upload, download, text extraction, anonymization.',
 			'context' => [],
-			'endpoints' => [
-				[
-					'method' => 'GET',
-					'path' => '/api/objects/{register}/{schema}/{id}/files',
-					'description' => 'List files attached to an object.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/objects/{register}/{schema}/{id}/files',
-					'description' => 'Upload a file to an object. Use multipart/form-data.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/objects/{register}/{schema}/{id}/files/{fileId}',
-					'description' => 'Get file metadata.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/files/{fileId}/download',
-					'description' => 'Download a file by ID.',
-				],
-				[
-					'method' => 'DELETE',
-					'path' => '/api/objects/{register}/{schema}/{id}/files/{fileId}',
-					'description' => 'Delete a file from an object.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/files/{fileId}/text',
-					'description' => 'Get extracted text content from a file.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/files/{fileId}/extract',
-					'description' => 'Extract text from a file (triggers OCR/parsing).',
-				],
-			],
+			'endpoints' => self::FILES_ENDPOINTS,
 		];
 	}//end buildFilesCapability()
 
@@ -697,28 +862,7 @@ class McpDiscoveryService {
 			'name' => 'Audit Trails',
 			'description' => 'Change history for objects.',
 			'context' => [],
-			'endpoints' => [
-				[
-					'method' => 'GET',
-					'path' => '/api/audit-trails',
-					'description' => 'List all audit trail entries. Supports pagination.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/objects/{register}/{schema}/{id}/audit-trails',
-					'description' => 'Get audit trail for a specific object.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/audit-trails/{id}',
-					'description' => 'Get a single audit trail entry.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/audit-trails/export',
-					'description' => 'Export audit trails as CSV.',
-				],
-			],
+			'endpoints' => self::AUDIT_ENDPOINTS,
 		];
 	}//end buildAuditCapability()
 
@@ -737,28 +881,7 @@ class McpDiscoveryService {
 			'name' => 'Bulk Operations',
 			'description' => 'Batch operations on objects within a register/schema pair.',
 			'context' => [],
-			'endpoints' => [
-				[
-					'method' => 'POST',
-					'path' => '/api/bulk/{register}/{schema}/save',
-					'description' => 'Batch save/upsert objects. Body: array of objects.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/bulk/{register}/{schema}/delete',
-					'description' => 'Batch delete objects. Body: { "ids": [...] }.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/bulk/{register}/{schema}/publish',
-					'description' => 'Batch publish objects. Body: { "ids": [...] }.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/bulk/{register}/{schema}/depublish',
-					'description' => 'Batch depublish objects. Body: { "ids": [...] }.',
-				],
-			],
+			'endpoints' => self::BULK_ENDPOINTS,
 		];
 	}//end buildBulkCapability()
 
@@ -777,43 +900,7 @@ class McpDiscoveryService {
 			'name' => 'Webhooks',
 			'description' => 'Event-driven HTTP callbacks triggered by object changes.',
 			'context' => [],
-			'endpoints' => [
-				[
-					'method' => 'GET',
-					'path' => '/api/webhooks',
-					'description' => 'List all webhooks.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/webhooks',
-					'description' => 'Create a webhook. Body: { "url": "...", "events": [...], "headers": {...} }.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/webhooks/{id}',
-					'description' => 'Get a webhook by ID.',
-				],
-				[
-					'method' => 'PUT',
-					'path' => '/api/webhooks/{id}',
-					'description' => 'Update a webhook.',
-				],
-				[
-					'method' => 'DELETE',
-					'path' => '/api/webhooks/{id}',
-					'description' => 'Delete a webhook.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/webhooks/{id}/test',
-					'description' => 'Send a test payload to the webhook URL.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/webhooks/events',
-					'description' => 'List available webhook event types.',
-				],
-			],
+			'endpoints' => self::WEBHOOKS_ENDPOINTS,
 		];
 	}//end buildWebhooksCapability()
 
@@ -832,38 +919,7 @@ class McpDiscoveryService {
 			'name' => 'AI Chat',
 			'description' => 'Conversational AI assistant for querying register data.',
 			'context' => [],
-			'endpoints' => [
-				[
-					'method' => 'POST',
-					'path' => '/api/chat/send',
-					'description' => 'Send a message to the AI assistant. Body: { "message": "your question" }.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/chat/history',
-					'description' => 'Get chat message history.',
-				],
-				[
-					'method' => 'DELETE',
-					'path' => '/api/chat/history',
-					'description' => 'Clear chat history.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/conversations',
-					'description' => 'List all conversations.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/conversations',
-					'description' => 'Start a new conversation.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/conversations/{uuid}/messages',
-					'description' => 'Get messages in a conversation.',
-				],
-			],
+			'endpoints' => self::CHAT_ENDPOINTS,
 		];
 	}//end buildChatCapability()
 
@@ -882,33 +938,7 @@ class McpDiscoveryService {
 			'name' => 'Views',
 			'description' => 'Saved search/filter configurations for reusable data views.',
 			'context' => [],
-			'endpoints' => [
-				[
-					'method' => 'GET',
-					'path' => '/api/views',
-					'description' => 'List all views.',
-				],
-				[
-					'method' => 'GET',
-					'path' => '/api/views/{id}',
-					'description' => 'Get a view by ID.',
-				],
-				[
-					'method' => 'POST',
-					'path' => '/api/views',
-					'description' => 'Create a view. Body: { "name", "filters", "register", "schema" }.',
-				],
-				[
-					'method' => 'PUT',
-					'path' => '/api/views/{id}',
-					'description' => 'Update a view.',
-				],
-				[
-					'method' => 'DELETE',
-					'path' => '/api/views/{id}',
-					'description' => 'Delete a view.',
-				],
-			],
+			'endpoints' => self::VIEWS_ENDPOINTS,
 		];
 	}//end buildViewsCapability()
 }//end class

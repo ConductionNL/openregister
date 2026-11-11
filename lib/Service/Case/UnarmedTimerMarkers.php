@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Case;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IAppConfig;
 use Throwable;
 
@@ -89,13 +89,13 @@ class UnarmedTimerMarkers {
 		}
 
 		try {
-			if ($this->appConfig->getValueString(Application::APP_ID, $key, '', true) !== '') {
+			if ($this->appConfig->getValueString(AppIdentity::APP_ID, $key, '', true) !== '') {
 				return true;
 			}
 
 			$moment = DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable());
 
-			return $this->appConfig->setValueString(Application::APP_ID, $key, $moment->format(DATE_ATOM), true);
+			return $this->appConfig->setValueString(AppIdentity::APP_ID, $key, $moment->format(DATE_ATOM), true);
 		} catch (Throwable) {
 			return false;
 		}
@@ -117,7 +117,7 @@ class UnarmedTimerMarkers {
 		}
 
 		try {
-			$this->appConfig->deleteKey(Application::APP_ID, $key);
+			$this->appConfig->deleteKey(AppIdentity::APP_ID, $key);
 		} catch (Throwable) {
 			// A marker that cannot be cleared is looked at again by the next pass.
 			return;
@@ -133,23 +133,14 @@ class UnarmedTimerMarkers {
 	 */
 	public function all(): array {
 		try {
-			$keys = $this->appConfig->getKeys(Application::APP_ID);
+			$keys = $this->appConfig->getKeys(AppIdentity::APP_ID);
 		} catch (Throwable) {
 			return [];
 		}
 
 		$markers = [];
-		foreach ($keys as $key) {
-			if (str_starts_with($key, self::KEY_PREFIX) === false || strlen($key) === strlen(self::KEY_PREFIX)) {
-				continue;
-			}
-
-			try {
-				$moment = $this->appConfig->getValueString(Application::APP_ID, $key, '', true);
-			} catch (Throwable) {
-				continue;
-			}
-
+		foreach (array_filter($keys, fn (string $key): bool => $this->isMarkerKey(key: $key)) as $key) {
+			$moment = $this->momentOf(key: $key);
 			if ($moment !== '') {
 				$markers[substr($key, strlen(self::KEY_PREFIX))] = $moment;
 			}
@@ -157,6 +148,32 @@ class UnarmedTimerMarkers {
 
 		return $markers;
 	}//end all()
+
+	/**
+	 * Whether an app-config key is a marker's: the prefix and something after it.
+	 *
+	 * @param string $key The key.
+	 *
+	 * @return bool True for a marker key.
+	 */
+	private function isMarkerKey(string $key): bool {
+		return str_starts_with($key, self::KEY_PREFIX) === true && strlen($key) !== strlen(self::KEY_PREFIX);
+	}//end isMarkerKey()
+
+	/**
+	 * The moment a marker holds, or '' when it cannot be read.
+	 *
+	 * @param string $key The marker's key.
+	 *
+	 * @return string An ISO 8601 moment, or ''.
+	 */
+	private function momentOf(string $key): string {
+		try {
+			return $this->appConfig->getValueString(AppIdentity::APP_ID, $key, '', true);
+		} catch (Throwable) {
+			return '';
+		}
+	}//end momentOf()
 
 	/**
 	 * The app-config key of an item's marker, or null when the uuid cannot make a valid one.

@@ -52,6 +52,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\ExportRun\ExportRunFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -254,24 +255,9 @@ class ExportRun extends Entity implements JsonSerializable {
 	 * Declare the field types.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'source', type: 'string');
-		$this->addType(fieldName: 'profile', type: 'string');
-		$this->addType(fieldName: 'actor', type: 'string');
-		$this->addType(fieldName: 'registerName', type: 'string');
-		$this->addType(fieldName: 'schemaName', type: 'string');
-		$this->addType(fieldName: 'format', type: 'string');
-		$this->addType(fieldName: 'filename', type: 'string');
-		$this->addType(fieldName: 'rowCount', type: 'integer');
-		$this->addType(fieldName: 'fileId', type: 'integer');
-		$this->addType(fieldName: 'filePath', type: 'string');
-		$this->addType(fieldName: 'downloadCount', type: 'integer');
-		$this->addType(fieldName: 'retentionSeconds', type: 'integer');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'producedAt', type: 'datetime');
-		$this->addType(fieldName: 'expiresAt', type: 'datetime');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
+		foreach (ExportRunFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -313,35 +299,10 @@ class ExportRun extends Entity implements JsonSerializable {
 	 * @return array<string, mixed> The record.
 	 */
 	public function jsonSerialize(): array {
-		$format = static function (?DateTime $value): ?string {
-			if ($value === null) {
-				return null;
-			}
+		$typed = new TypedFieldsJson();
+		$json = $typed->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this));
+		$json = $typed->renamed(json: $json, names: ['registerName' => 'register', 'schemaName' => 'schema']);
 
-			return $value->format('c');
-		};
-
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'source' => $this->source,
-			'profile' => $this->profile,
-			'actor' => $this->actor,
-			'register' => $this->registerName,
-			'schema' => $this->schemaName,
-			'format' => $this->format,
-			'filename' => $this->filename,
-			'rowCount' => $this->rowCount,
-			'fileId' => $this->fileId,
-			'filePath' => $this->filePath,
-			'downloadCount' => $this->downloadCount,
-			'retentionSeconds' => $this->retentionSeconds,
-			'kept' => $this->isKept(),
-			'status' => $this->status,
-			'producedAt' => $format($this->producedAt),
-			'expiresAt' => $format($this->expiresAt),
-			'created' => $format($this->created),
-			'updated' => $format($this->updated),
-		];
+		return $typed->inserted(json: $json, entriesAfter: ['retentionSeconds' => ['kept' => $this->isKept()]]);
 	}//end jsonSerialize()
 }//end class

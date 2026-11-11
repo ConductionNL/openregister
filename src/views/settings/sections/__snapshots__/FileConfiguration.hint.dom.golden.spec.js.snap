@@ -1,0 +1,10 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`file configuration OpenAnonymiser hint shows the hint with its install link in both places 1`] = `
+[
+  "<p class="setting-description backend-hint" role="status">[The OpenAnonymiser ExApp is not installed. Install it to enable Dutch-focused PII detection.]<a href="/index.php/settings/apps/discover/openanonymiser_light" target="_blank" rel="noopener noreferrer" class="backend-install-link">[Install OpenAnonymiser]</a>
+</p>",
+  "<p class="setting-description backend-hint" role="status">[The OpenAnonymiser ExApp is not installed. Install it to enable Dutch-focused PII detection.]<a href="/index.php/settings/apps/discover/openanonymiser_light" target="_blank" rel="noopener noreferrer" class="backend-install-link">[Install OpenAnonymiser]</a>
+</p>",
+]
+`;

@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Db\Entity;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -82,9 +83,7 @@ class MultiTenancyTraitSetOwnerOnCreateTest extends TestCase {
 
 		$this->mapper = new WebhookMapper(
 			$this->db,
-			$this->createMock(OrganisationMapper::class),
-			$this->userSession,
-			$this->groupManager,
+			new TenancyServices($this->createMock(OrganisationMapper::class), $this->userSession, $this->groupManager),
 			$this->appConfig
 		);
 	}//end setUp()

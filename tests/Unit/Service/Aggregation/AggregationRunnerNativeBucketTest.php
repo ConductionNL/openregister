@@ -33,14 +33,14 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Aggregation\AggregationCache;
-use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
@@ -112,7 +112,7 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 			$captured['sql'],
 			'MySQL path MUST emit DATE_FORMAT with the day-gap format string'
 		);
-		$this->assertStringContainsString('`oc_register_1_schema_calllogs`', $captured['sql'], 'MySQL path MUST use backticks for the table');
+		$this->assertStringContainsString('`*PREFIX*register_1_schema_calllogs`', $captured['sql'], 'MySQL path MUST use backticks for the table');
 		$this->assertStringContainsString('`_organisation`', $captured['sql'], 'MySQL path MUST use backticks for the org column');
 		$this->assertSame('mysql', $result['backend'], 'response backend MUST be "mysql"');
 
@@ -178,7 +178,7 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 			$captured['sql'],
 			'SQLite path MUST emit strftime with the day-gap format string'
 		);
-		$this->assertStringContainsString('"oc_register_1_schema_calllogs"', $captured['sql'], 'SQLite path MUST use double-quotes for the table');
+		$this->assertStringContainsString('"*PREFIX*register_1_schema_calllogs"', $captured['sql'], 'SQLite path MUST use double-quotes for the table');
 		$this->assertSame('sqlite', $result['backend'], 'response backend MUST be "sqlite"');
 
 	}//end testSqlitePlatformEmitsStrftimeWithDoubleQuotes()
@@ -391,9 +391,7 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 
 	private function makeRunner(): AggregationRunner {
 		return new AggregationRunner(
-			magicMapper: $this->magicMapper,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
 			placeholders: $this->placeholderResolver,
 			db: $this->db,
 			cache: $this->cache,

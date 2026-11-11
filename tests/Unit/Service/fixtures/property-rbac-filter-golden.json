@@ -1,0 +1,908 @@
+{
+    "admin closed": {
+        "filter": [
+            {
+                "id": "obj-1",
+                "status": "closed",
+                "secretNote": "s",
+                "openNote": "o",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                }
+            },
+            []
+        ],
+        "strip": [
+            {
+                "id": "obj-1",
+                "status": "closed",
+                "secretNote": "s",
+                "openNote": "o",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            []
+        ],
+        "unauthorizedUpdate": [
+            [
+                "hiddenByState"
+            ],
+            []
+        ],
+        "unauthorizedCreate": [
+            [
+                "hiddenByState"
+            ],
+            []
+        ],
+        "omittedWriteOnly": [
+            "token",
+            "cfg.auth.secret"
+        ],
+        "omittedProtected": [
+            [],
+            []
+        ],
+        "restore": {
+            "status": "closed",
+            "secretNote": "changed",
+            "openNote": "o",
+            "audited": "changed",
+            "hiddenByState": "changed",
+            "cfg": {
+                "endpoint": "new",
+                "auth": {
+                    "secret": "k"
+                }
+            },
+            "token": "t"
+        },
+        "restoreScalar": {
+            "cfg": "flat"
+        },
+        "couldRead": {
+            "secretNote": true,
+            "openNote": true,
+            "audited": true,
+            "publicOnly": true,
+            "missing": true
+        },
+        "isAdmin": true
+    },
+    "admin open": {
+        "filter": [
+            {
+                "id": "obj-1",
+                "status": "open",
+                "secretNote": "s",
+                "openNote": "o",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            []
+        ],
+        "strip": [
+            {
+                "id": "obj-1",
+                "status": "open",
+                "secretNote": "s",
+                "openNote": "o",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            []
+        ],
+        "unauthorizedUpdate": [
+            [],
+            []
+        ],
+        "unauthorizedCreate": [
+            [],
+            []
+        ],
+        "omittedWriteOnly": [
+            "token",
+            "cfg.auth.secret"
+        ],
+        "omittedProtected": [
+            [],
+            []
+        ],
+        "restore": {
+            "status": "open",
+            "secretNote": "changed",
+            "openNote": "o",
+            "audited": "changed",
+            "hiddenByState": "changed",
+            "cfg": {
+                "endpoint": "new",
+                "auth": {
+                    "secret": "k"
+                }
+            },
+            "token": "t"
+        },
+        "restoreScalar": {
+            "cfg": "flat"
+        },
+        "couldRead": {
+            "secretNote": true,
+            "openNote": true,
+            "audited": true,
+            "publicOnly": true,
+            "missing": true
+        },
+        "isAdmin": true
+    },
+    "anonymous closed": {
+        "filter": [
+            {
+                "id": "obj-1",
+                "status": "closed",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                }
+            },
+            []
+        ],
+        "strip": [
+            {
+                "id": "obj-1",
+                "status": "closed",
+                "secretNote": "s",
+                "openNote": "o",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            []
+        ],
+        "unauthorizedUpdate": [
+            [
+                "hiddenByState",
+                "secretNote"
+            ],
+            []
+        ],
+        "unauthorizedCreate": [
+            [
+                "hiddenByState",
+                "secretNote",
+                "openNote"
+            ],
+            []
+        ],
+        "omittedWriteOnly": [
+            "token",
+            "cfg.auth.secret"
+        ],
+        "omittedProtected": [
+            [
+                "secretNote",
+                "openNote",
+                "audited"
+            ],
+            []
+        ],
+        "restore": {
+            "status": "closed",
+            "secretNote": "changed",
+            "openNote": "o",
+            "audited": "changed",
+            "hiddenByState": "changed",
+            "cfg": {
+                "endpoint": "new",
+                "auth": {
+                    "secret": "k"
+                }
+            },
+            "token": "t"
+        },
+        "restoreScalar": {
+            "cfg": "flat"
+        },
+        "couldRead": {
+            "secretNote": false,
+            "openNote": false,
+            "audited": false,
+            "publicOnly": true,
+            "missing": false
+        },
+        "isAdmin": false
+    },
+    "anonymous open": {
+        "filter": [
+            {
+                "id": "obj-1",
+                "status": "open",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            []
+        ],
+        "strip": [
+            {
+                "id": "obj-1",
+                "status": "open",
+                "secretNote": "s",
+                "openNote": "o",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            []
+        ],
+        "unauthorizedUpdate": [
+            [
+                "secretNote"
+            ],
+            []
+        ],
+        "unauthorizedCreate": [
+            [
+                "secretNote",
+                "openNote"
+            ],
+            []
+        ],
+        "omittedWriteOnly": [
+            "token",
+            "cfg.auth.secret"
+        ],
+        "omittedProtected": [
+            [
+                "secretNote",
+                "openNote",
+                "audited"
+            ],
+            []
+        ],
+        "restore": {
+            "status": "open",
+            "secretNote": "changed",
+            "openNote": "o",
+            "audited": "changed",
+            "hiddenByState": "changed",
+            "cfg": {
+                "endpoint": "new",
+                "auth": {
+                    "secret": "k"
+                }
+            },
+            "token": "t"
+        },
+        "restoreScalar": {
+            "cfg": "flat"
+        },
+        "couldRead": {
+            "secretNote": false,
+            "openNote": false,
+            "audited": false,
+            "publicOnly": true,
+            "missing": false
+        },
+        "isAdmin": false
+    },
+    "g1 closed": {
+        "filter": [
+            {
+                "id": "obj-1",
+                "status": "closed",
+                "secretNote": "s",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                }
+            },
+            [
+                [
+                    "reveal",
+                    "ann",
+                    "obj-1",
+                    "audited",
+                    7
+                ]
+            ]
+        ],
+        "strip": [
+            {
+                "id": "obj-1",
+                "status": "closed",
+                "secretNote": "s",
+                "openNote": "o",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            []
+        ],
+        "unauthorizedUpdate": [
+            [
+                "hiddenByState"
+            ],
+            []
+        ],
+        "unauthorizedCreate": [
+            [
+                "hiddenByState",
+                "openNote"
+            ],
+            []
+        ],
+        "omittedWriteOnly": [
+            "token",
+            "cfg.auth.secret"
+        ],
+        "omittedProtected": [
+            [
+                "openNote"
+            ],
+            []
+        ],
+        "restore": {
+            "status": "closed",
+            "secretNote": "changed",
+            "openNote": "o",
+            "audited": "changed",
+            "hiddenByState": "changed",
+            "cfg": {
+                "endpoint": "new",
+                "auth": {
+                    "secret": "k"
+                }
+            },
+            "token": "t"
+        },
+        "restoreScalar": {
+            "cfg": "flat"
+        },
+        "couldRead": {
+            "secretNote": true,
+            "openNote": false,
+            "audited": true,
+            "publicOnly": true,
+            "missing": true
+        },
+        "isAdmin": false
+    },
+    "g1 open": {
+        "filter": [
+            {
+                "id": "obj-1",
+                "status": "open",
+                "secretNote": "s",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            [
+                [
+                    "reveal",
+                    "ann",
+                    "obj-1",
+                    "audited",
+                    7
+                ]
+            ]
+        ],
+        "strip": [
+            {
+                "id": "obj-1",
+                "status": "open",
+                "secretNote": "s",
+                "openNote": "o",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            []
+        ],
+        "unauthorizedUpdate": [
+            [],
+            []
+        ],
+        "unauthorizedCreate": [
+            [
+                "openNote"
+            ],
+            []
+        ],
+        "omittedWriteOnly": [
+            "token",
+            "cfg.auth.secret"
+        ],
+        "omittedProtected": [
+            [
+                "openNote"
+            ],
+            []
+        ],
+        "restore": {
+            "status": "open",
+            "secretNote": "changed",
+            "openNote": "o",
+            "audited": "changed",
+            "hiddenByState": "changed",
+            "cfg": {
+                "endpoint": "new",
+                "auth": {
+                    "secret": "k"
+                }
+            },
+            "token": "t"
+        },
+        "restoreScalar": {
+            "cfg": "flat"
+        },
+        "couldRead": {
+            "secretNote": true,
+            "openNote": false,
+            "audited": true,
+            "publicOnly": true,
+            "missing": true
+        },
+        "isAdmin": false
+    },
+    "g2 closed": {
+        "filter": [
+            {
+                "id": "obj-1",
+                "status": "closed",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                }
+            },
+            [
+                [
+                    "reveal",
+                    "bob",
+                    "obj-1",
+                    "audited",
+                    7
+                ]
+            ]
+        ],
+        "strip": [
+            {
+                "id": "obj-1",
+                "status": "closed",
+                "secretNote": "s",
+                "openNote": "o",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            []
+        ],
+        "unauthorizedUpdate": [
+            [
+                "hiddenByState",
+                "secretNote"
+            ],
+            []
+        ],
+        "unauthorizedCreate": [
+            [
+                "hiddenByState",
+                "secretNote"
+            ],
+            []
+        ],
+        "omittedWriteOnly": [
+            "token",
+            "cfg.auth.secret"
+        ],
+        "omittedProtected": [
+            [
+                "secretNote",
+                "openNote"
+            ],
+            []
+        ],
+        "restore": {
+            "status": "closed",
+            "secretNote": "changed",
+            "openNote": "o",
+            "audited": "changed",
+            "hiddenByState": "changed",
+            "cfg": {
+                "endpoint": "new",
+                "auth": {
+                    "secret": "k"
+                }
+            },
+            "token": "t"
+        },
+        "restoreScalar": {
+            "cfg": "flat"
+        },
+        "couldRead": {
+            "secretNote": false,
+            "openNote": true,
+            "audited": true,
+            "publicOnly": true,
+            "missing": false
+        },
+        "isAdmin": false
+    },
+    "g2 open": {
+        "filter": [
+            {
+                "id": "obj-1",
+                "status": "open",
+                "openNote": "o",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            [
+                [
+                    "reveal",
+                    "bob",
+                    "obj-1",
+                    "audited",
+                    7
+                ]
+            ]
+        ],
+        "strip": [
+            {
+                "id": "obj-1",
+                "status": "open",
+                "secretNote": "s",
+                "openNote": "o",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            []
+        ],
+        "unauthorizedUpdate": [
+            [
+                "secretNote"
+            ],
+            []
+        ],
+        "unauthorizedCreate": [
+            [
+                "secretNote"
+            ],
+            []
+        ],
+        "omittedWriteOnly": [
+            "token",
+            "cfg.auth.secret"
+        ],
+        "omittedProtected": [
+            [
+                "secretNote"
+            ],
+            []
+        ],
+        "restore": {
+            "status": "open",
+            "secretNote": "changed",
+            "openNote": "o",
+            "audited": "changed",
+            "hiddenByState": "changed",
+            "cfg": {
+                "endpoint": "new",
+                "auth": {
+                    "secret": "k"
+                }
+            },
+            "token": "t"
+        },
+        "restoreScalar": {
+            "cfg": "flat"
+        },
+        "couldRead": {
+            "secretNote": false,
+            "openNote": true,
+            "audited": true,
+            "publicOnly": true,
+            "missing": false
+        },
+        "isAdmin": false
+    },
+    "nobody closed": {
+        "filter": [
+            {
+                "id": "obj-1",
+                "status": "closed",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                }
+            },
+            [
+                [
+                    "reveal",
+                    "cid",
+                    "obj-1",
+                    "audited",
+                    7
+                ]
+            ]
+        ],
+        "strip": [
+            {
+                "id": "obj-1",
+                "status": "closed",
+                "secretNote": "s",
+                "openNote": "o",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            []
+        ],
+        "unauthorizedUpdate": [
+            [
+                "hiddenByState",
+                "secretNote"
+            ],
+            []
+        ],
+        "unauthorizedCreate": [
+            [
+                "hiddenByState",
+                "secretNote",
+                "openNote"
+            ],
+            []
+        ],
+        "omittedWriteOnly": [
+            "token",
+            "cfg.auth.secret"
+        ],
+        "omittedProtected": [
+            [
+                "secretNote",
+                "openNote"
+            ],
+            []
+        ],
+        "restore": {
+            "status": "closed",
+            "secretNote": "changed",
+            "openNote": "o",
+            "audited": "changed",
+            "hiddenByState": "changed",
+            "cfg": {
+                "endpoint": "new",
+                "auth": {
+                    "secret": "k"
+                }
+            },
+            "token": "t"
+        },
+        "restoreScalar": {
+            "cfg": "flat"
+        },
+        "couldRead": {
+            "secretNote": false,
+            "openNote": false,
+            "audited": true,
+            "publicOnly": true,
+            "missing": false
+        },
+        "isAdmin": false
+    },
+    "nobody open": {
+        "filter": [
+            {
+                "id": "obj-1",
+                "status": "open",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            [
+                [
+                    "reveal",
+                    "cid",
+                    "obj-1",
+                    "audited",
+                    7
+                ]
+            ]
+        ],
+        "strip": [
+            {
+                "id": "obj-1",
+                "status": "open",
+                "secretNote": "s",
+                "openNote": "o",
+                "audited": "a",
+                "publicOnly": "p",
+                "plain": "x",
+                "cfg": {
+                    "auth": {
+                        "keep": 1
+                    },
+                    "endpoint": "e"
+                },
+                "hiddenByState": "h"
+            },
+            []
+        ],
+        "unauthorizedUpdate": [
+            [
+                "secretNote"
+            ],
+            []
+        ],
+        "unauthorizedCreate": [
+            [
+                "secretNote",
+                "openNote"
+            ],
+            []
+        ],
+        "omittedWriteOnly": [
+            "token",
+            "cfg.auth.secret"
+        ],
+        "omittedProtected": [
+            [
+                "secretNote",
+                "openNote"
+            ],
+            []
+        ],
+        "restore": {
+            "status": "open",
+            "secretNote": "changed",
+            "openNote": "o",
+            "audited": "changed",
+            "hiddenByState": "changed",
+            "cfg": {
+                "endpoint": "new",
+                "auth": {
+                    "secret": "k"
+                }
+            },
+            "token": "t"
+        },
+        "restoreScalar": {
+            "cfg": "flat"
+        },
+        "couldRead": {
+            "secretNote": false,
+            "openNote": false,
+            "audited": true,
+            "publicOnly": true,
+            "missing": false
+        },
+        "isAdmin": false
+    }
+}

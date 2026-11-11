@@ -34,8 +34,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -45,20 +43,59 @@ use Throwable;
  * Read-only object-source provider backed by CalDAV VEVENTs.
  */
 class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
+
+	use AnyAppInstalledCheck;
+	use CountsThroughFindAll;
+
+	/**
+	 * Apps whose presence enables CalDAV VEVENT reads. VEVENTs live in the
+	 * user's CalDAV calendars served by the CORE `dav` app — the `calendar`
+	 * app is only an optional UI, so `dav` comes first with `calendar` as a
+	 * positive signal too.
+	 *
+	 * @var list<string>
+	 */
+	private const ENABLING_APPS = ['dav', 'calendar'];
+
+	/**
+	 * The nullable object fields: field => VEVENT key.
+	 *
+	 * @var array<string, string>
+	 */
+	private const EVENT_FIELDS = [
+		'startDate' => 'dtstart',
+		'endDate' => 'dtend',
+		'location' => 'location',
+	];
+
+	/**
+	 * App availability checks.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
 	/**
 	 * Constructor.
 	 *
 	 * @param CalendarEventService $calendarEventService The CalDAV VEVENT read/list service.
-	 * @param IAppManager $appManager App availability checks.
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param OptionalAppBridge    $app                  Whether the app is installed, its services, and the log of failed reads.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly CalendarEventService $calendarEventService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		OptionalAppBridge $app,
 	) {
+		$this->appManager = $app->appManager;
+		$this->logger = $app->logger;
 	}//end __construct()
 
 	/**
@@ -75,30 +112,8 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * Enabled when CalDAV is available. VEVENTs live in the user's CalDAV
-	 * calendars served by the CORE `dav` app — the `calendar` app is only an
-	 * optional UI, so this checks `dav` (with `calendar` as a positive signal too).
-	 *
-	 * @return bool True when CalDAV VEVENT reads are available.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	public function isEnabled(): bool {
-		try {
-			return ($this->appManager->isInstalled('dav') === true
-				|| $this->appManager->isInstalled('calendar') === true);
-		} catch (Throwable $e) {
-			return false;
-		}
-	}//end isEnabled()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string $id The event UID (or calendar-object uri).
-	 * @param array<string, mixed> $config The object-source config block (unused).
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
 	 *
@@ -106,15 +121,27 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
+		return $this->findEvent(binding: $source->binding(), id: $id);
+	}//end find()
+
+	/**
+	 * Read one object for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param string               $id      The object id.
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
+	 */
+	private function findEvent(SourcedObjectBinding $binding, string $id): ?ObjectEntity {
 		foreach ($this->readEvents(limit: 1000, offset: 0) as $event) {
-			if ((string)($event['uid'] ?? '') === $id || (string)($event['id'] ?? '') === $id) {
-				return $this->toObjectEntity(register: $register, schema: $schema, event: $event);
+			if ($this->hasId(event: $event, id: $id) === true) {
+				return $this->toObjectEntity(binding: $binding, event: $event);
 			}
 		}
 
 		return null;
-	}//end find()
+	}//end findEvent()
 
 	/**
 	 * {@inheritDoc}
@@ -122,10 +149,8 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	 * Honours `limit` and `offset`; the event set is scoped by CalendarEventService
 	 * to the acting user's own calendars.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query Query (limit/offset).
-	 * @param array<string, mixed> $config The object-source config block (unused).
 	 *
 	 * @return ObjectEntity[] The matching virtual objects.
 	 *
@@ -133,33 +158,29 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+	public function findAll(SourcedTable $source, array $query = []): array {
+		return $this->listEvents(binding: $source->binding(), query: $query);
+	}//end findAll()
+
+	/**
+	 * Read one page of objects for the bound register and schema.
+	 *
+	 * @param SourcedObjectBinding $binding The register and schema the objects belong to.
+	 * @param array<string, mixed> $query   Query (filters/search/limit/offset).
+	 *
+	 * @return ObjectEntity[] The matching virtual objects.
+	 */
+	private function listEvents(SourcedObjectBinding $binding, array $query): array {
 		$limit = (int)($query['limit'] ?? 200);
 		$offset = (int)($query['offset'] ?? 0);
 
 		$objects = [];
 		foreach ($this->readEvents(limit: $limit, offset: $offset) as $event) {
-			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, event: $event);
+			$objects[] = $this->toObjectEntity(binding: $binding, event: $event);
 		}
 
 		return $objects;
-	}//end findAll()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $query Query (filters).
-	 * @param array<string, mixed> $config The object-source config block (unused).
-	 *
-	 * @return int The number of matching virtual objects.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return count($this->findAll(register: $register, schema: $schema, query: $query, config: $config));
-	}//end count()
+	}//end listEvents()
 
 	/**
 	 * Read VEVENT arrays for the acting user, failing closed to an empty list.
@@ -182,33 +203,46 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	}//end readEvents()
 
 	/**
-	 * Map a VEVENT array onto a non-persisted virtual ObjectEntity.
+	 * Whether a VEVENT answers to an id: its uid or its calendar-object uri.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $event The CalendarEventService VEVENT array.
+	 * @param array<string, mixed> $event The VEVENT array.
+	 * @param string               $id    The requested id.
+	 *
+	 * @return bool True when the event has that id.
+	 */
+	private function hasId(array $event, string $id): bool {
+		return (string)($event['uid'] ?? '') === $id || (string)($event['id'] ?? '') === $id;
+	}//end hasId()
+
+	/**
+	 * Map a CalendarEventService VEVENT array onto a non-persisted virtual ObjectEntity.
+	 *
+	 * @param SourcedObjectBinding $binding The bound register and schema.
+	 * @param array<string, mixed> $event   The CalendarEventService VEVENT array.
 	 *
 	 * @return ObjectEntity The virtual object (never saved).
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	private function toObjectEntity(Register $register, Schema $schema, array $event): ObjectEntity {
+	private function toObjectEntity(SourcedObjectBinding $binding, array $event): ObjectEntity {
 		$uuid = (string)($event['uid'] ?? $event['id'] ?? '');
-
-		$data = [
-			'id' => $uuid,
-			'summary' => (string)($event['summary'] ?? ''),
-			'startDate' => ($event['dtstart'] ?? null),
-			'endDate' => ($event['dtend'] ?? null),
-			'location' => ($event['location'] ?? null),
-		];
-
-		$entity = new ObjectEntity();
-		$entity->setUuid($uuid);
-		$entity->setRegister((string)$register->getId());
-		$entity->setSchema((string)$schema->getId());
-		$entity->setObject($data);
-
-		return $entity;
+		return $binding->toEntity(uuid: $uuid, data: $this->eventData(event: $event, uuid: $uuid));
 	}//end toObjectEntity()
+
+	/**
+	 * The object data of a VEVENT.
+	 *
+	 * @param array<string, mixed> $event The CalendarEventService VEVENT array.
+	 * @param string               $uuid  The object uuid, echoed as `id`.
+	 *
+	 * @return array<string, mixed> The object data.
+	 */
+	private function eventData(array $event, string $uuid): array {
+		$data = ['id' => $uuid, 'summary' => (string)($event['summary'] ?? '')];
+		foreach (self::EVENT_FIELDS as $field => $key) {
+			$data[$field] = ($event[$key] ?? null);
+		}
+
+		return $data;
+	}//end eventData()
 }//end class

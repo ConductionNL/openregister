@@ -27,13 +27,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\IAppConfig;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -62,9 +60,27 @@ class BlobMigrationJob extends TimedJob {
 	private const BATCH_SIZE = 100;
 
 	/**
-	 * App config key prefix
+	 * Blob columns carried over as `_<column>` metadata.
+	 *
+	 * @var string[]
 	 */
-	private const CONFIG_PREFIX = 'blob_migration_';
+	private const METADATA_FIELDS = [
+		'uuid',
+		'register',
+		'schema',
+		'uri',
+		'version',
+		'organisation',
+		'owner',
+		'authorization',
+		'updated',
+		'created',
+		'folder',
+		'textRepresentation',
+		'locked',
+		'relations',
+	];
+
 
 	/**
 	 * Constructor
@@ -90,188 +106,167 @@ class BlobMigrationJob extends TimedJob {
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	protected function run($argument): void {
-		$startTime = microtime(true);
+		$run = new BlobMigrationRun(container: $this->container);
+		$run->logger->info(message: '[BlobMigrationJob] Starting blob-to-magic migration batch', context: ['file' => __FILE__, 'line' => __LINE__]);
 
-		$logger = $this->container->get(LoggerInterface::class);
-		$db = $this->container->get(IDBConnection::class);
-		$appConfig = $this->container->get(IAppConfig::class);
-		$registerMapper = $this->container->get(RegisterMapper::class);
-		$schemaMapper = $this->container->get(SchemaMapper::class);
-		$magicMapper = $this->container->get(MagicMapper::class);
-
-		$logger->info(
-			message: '[BlobMigrationJob] Starting blob-to-magic migration batch',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-
-		// Check if migration is already complete.
-		$complete = $appConfig->getValueString(
-			app: 'openregister',
-			key: self::CONFIG_PREFIX . 'complete',
-			default: 'false'
-		);
-
-		if ($complete === 'true') {
-			$logger->debug(
-				message: '[BlobMigrationJob] Migration already complete, skipping',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		if ($this->migrationComplete(run: $run) === true) {
 			return;
 		}
 
 		try {
-			// Check if the blob table exists.
-			if ($this->blobTableExists(db: $db) === false) {
-				$logger->info(
-					message: '[BlobMigrationJob] Blob table does not exist, marking migration complete',
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				$appConfig->setValueString(app: 'openregister', key: self::CONFIG_PREFIX . 'complete', value: 'true');
-				return;
-			}
-
-			// Fetch batch of objects from blob table.
-			$objects = $this->fetchBlobObjects(db: $db);
-
-			if (empty($objects) === true) {
-				$logger->info(
-					message: '[BlobMigrationJob] No objects remaining in blob table, marking migration complete',
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				$appConfig->setValueString(app: 'openregister', key: self::CONFIG_PREFIX . 'complete', value: 'true');
-				$appConfig->setValueString(app: 'openregister', key: self::CONFIG_PREFIX . 'remaining', value: '0');
-				return;
-			}
-
-			// Group objects by register+schema pair.
-			$groups = $this->groupByRegisterSchema(objects: $objects, logger: $logger);
-			$migrated = 0;
-			$skipped = 0;
-
-			foreach ($groups as $key => $group) {
-				if ($key === 'orphaned') {
-					$skipped += count($group);
-					continue;
-				}
-
-				[$registerId, $schemaId] = explode('_', $key);
-
-				try {
-					$register = $registerMapper->find(
-						id: (int)$registerId,
-						_rbac: false,
-						_multitenancy: false
-					);
-					$schema = $schemaMapper->find(
-						id: (int)$schemaId,
-						_rbac: false,
-						_multitenancy: false
-					);
-				} catch (Exception $e) {
-					$logger->warning(
-						message: '[BlobMigrationJob] Could not resolve register/schema, skipping group',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'registerId' => $registerId,
-							'schemaId' => $schemaId,
-							'error' => $e->getMessage(),
-						]
-					);
-					$skipped += count($group);
-					continue;
-				}//end try
-
-				// Ensure magic table exists for this register+schema.
-				$magicMapper->ensureTableForRegisterSchema(register: $register, schema: $schema);
-
-				// Save objects to magic table.
-				$objectArrays = array_map(
-					function (array $row) {
-						return $this->blobRowToObjectArray(row: $row);
-					},
-					$group
-				);
-
-				$savedUuids = $magicMapper->saveObjectsToRegisterSchemaTable(
-					objects: $objectArrays,
-					register: $register,
-					schema: $schema
-				);
-
-				$logger->info(
-					message: '[BlobMigrationJob] Migrated group to magic table',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $registerId,
-						'schemaId' => $schemaId,
-						'count' => count($savedUuids),
-					]
-				);
-
-				// Delete migrated rows from blob table.
-				$this->deleteBlobRows(db: $db, rows: $group);
-				$migrated += count($savedUuids);
-			}//end foreach
-
-			// Update progress in appconfig.
-			$previousProcessed = (int)$appConfig->getValueString(
-				app: 'openregister',
-				key: self::CONFIG_PREFIX . 'processed',
-				default: '0'
-			);
-
-			$remaining = $this->countBlobRows(db: $db);
-
-			$appConfig->setValueString(
-				app: 'openregister',
-				key: self::CONFIG_PREFIX . 'processed',
-				value: (string)($previousProcessed + $migrated)
-			);
-			$appConfig->setValueString(
-				app: 'openregister',
-				key: self::CONFIG_PREFIX . 'remaining',
-				value: (string)$remaining
-			);
-			$appConfig->setValueString(
-				app: 'openregister',
-				key: self::CONFIG_PREFIX . 'last_run',
-				value: date('c')
-			);
-
-			$executionTime = microtime(true) - $startTime;
-
-			$logger->info(
-				message: '[BlobMigrationJob] Batch completed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'migrated' => $migrated,
-					'skipped' => $skipped,
-					'remaining' => $remaining,
-					'execution_time_seconds' => round($executionTime, 2),
-				]
-			);
+			$this->migrateBatch(run: $run);
 		} catch (Exception $e) {
-			$logger->error(
-				message: '[BlobMigrationJob] Migration batch failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-		}//end try
+			$context = ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()];
+			$run->logger->error(message: '[BlobMigrationJob] Migration batch failed', context: $context);
+		}
 	}//end run()
+
+	/**
+	 * Whether an earlier run already finished the migration.
+	 *
+	 * @param BlobMigrationRun $run The running batch
+	 *
+	 * @return bool
+	 */
+	private function migrationComplete(BlobMigrationRun $run): bool {
+		if ($run->config(key: 'complete', default: 'false') !== 'true') {
+			return false;
+		}
+
+		$run->logger->debug(message: '[BlobMigrationJob] Migration already complete, skipping', context: ['file' => __FILE__, 'line' => __LINE__]);
+		return true;
+	}//end migrationComplete()
+
+	/**
+	 * Move one batch of blob rows to their magic tables and record the progress.
+	 *
+	 * The migration is marked complete when the blob table is gone or empty.
+	 *
+	 * @param BlobMigrationRun $run The running batch
+	 *
+	 * @return void
+	 */
+	private function migrateBatch(BlobMigrationRun $run): void {
+		if ($this->blobTableExists(db: $run->db) === false) {
+			$this->markComplete(run: $run, message: 'Blob table does not exist, marking migration complete');
+			return;
+		}
+
+		$objects = $this->fetchBlobObjects(db: $run->db);
+		if (empty($objects) === true) {
+			$this->markComplete(run: $run, message: 'No objects remaining in blob table, marking migration complete');
+			$run->setConfig(key: 'remaining', value: '0');
+			return;
+		}
+
+		$this->migrateGroups(run: $run, groups: $this->groupByRegisterSchema(objects: $objects, logger: $run->logger));
+		$this->recordProgress(run: $run);
+	}//end migrateBatch()
+
+	/**
+	 * Migrate every group; orphaned rows are counted as skipped.
+	 *
+	 * @param BlobMigrationRun                                $run    The running batch
+	 * @param array<string, array<int, array<string, mixed>>> $groups Rows by group key
+	 *
+	 * @return void
+	 */
+	private function migrateGroups(BlobMigrationRun $run, array $groups): void {
+		foreach ($groups as $key => $rows) {
+			if ($key === 'orphaned') {
+				$run->skipped += count($rows);
+				continue;
+			}
+
+			$this->migrateGroup(run: $run, group: new BlobGroup(key: $key, rows: $rows));
+		}
+	}//end migrateGroups()
+
+	/**
+	 * Log why the migration is complete and mark it so.
+	 *
+	 * @param BlobMigrationRun $run     The running batch
+	 * @param string           $message Reason, after the log prefix
+	 *
+	 * @return void
+	 */
+	private function markComplete(BlobMigrationRun $run, string $message): void {
+		$run->logger->info(message: '[BlobMigrationJob] '.$message, context: ['file' => __FILE__, 'line' => __LINE__]);
+		$run->setConfig(key: 'complete', value: 'true');
+	}//end markComplete()
+
+	/**
+	 * Save one group's rows to its magic table and delete them from the blob table.
+	 *
+	 * A group whose register or schema cannot be resolved is skipped.
+	 *
+	 * @param BlobMigrationRun $run   The running batch
+	 * @param BlobGroup        $group Rows of one register and schema
+	 *
+	 * @return void
+	 */
+	private function migrateGroup(BlobMigrationRun $run, BlobGroup $group): void {
+		$pair = $this->resolveGroup(run: $run, group: $group);
+		if ($pair === null) {
+			$run->skipped += count($group->rows);
+			return;
+		}
+
+		[$register, $schema] = $pair;
+		$run->magicMapper->ensureTableForRegisterSchema(register: $register, schema: $schema);
+		$objects = array_map(fn (array $row): array => $this->blobRowToObjectArray(row: $row), $group->rows);
+		$saved   = count($run->magicMapper->saveObjectsToRegisterSchemaTable(objects: $objects, register: $register, schema: $schema));
+
+		$context = ['file' => __FILE__, 'line' => __LINE__] + $group->ids() + ['count' => $saved];
+		$run->logger->info(message: '[BlobMigrationJob] Migrated group to magic table', context: $context);
+		$this->deleteBlobRows(db: $run->db, rows: $group->rows);
+		$run->migrated += $saved;
+	}//end migrateGroup()
+
+	/**
+	 * The register and schema of a group, or null (with a warning) when either cannot be loaded.
+	 *
+	 * @param BlobMigrationRun $run   The running batch
+	 * @param BlobGroup        $group Rows of one register and schema
+	 *
+	 * @return array{0: Register, 1: Schema}|null
+	 */
+	private function resolveGroup(BlobMigrationRun $run, BlobGroup $group): ?array {
+		try {
+			$register = $run->registerMapper->find(id: (int)$group->registerId, _rbac: false, _multitenancy: false);
+			$schema   = $run->schemaMapper->find(id: (int)$group->schemaId, _rbac: false, _multitenancy: false);
+			return [$register, $schema];
+		} catch (Exception $e) {
+			$context = ['file' => __FILE__, 'line' => __LINE__] + $group->ids() + ['error' => $e->getMessage()];
+			$run->logger->warning(message: '[BlobMigrationJob] Could not resolve register/schema, skipping group', context: $context);
+			return null;
+		}
+	}//end resolveGroup()
+
+	/**
+	 * Store the processed and remaining counts and the run time, and log the batch.
+	 *
+	 * @param BlobMigrationRun $run The finished batch
+	 *
+	 * @return void
+	 */
+	private function recordProgress(BlobMigrationRun $run): void {
+		$previousProcessed = (int)$run->config(key: 'processed', default: '0');
+		$remaining         = $this->countBlobRows(db: $run->db);
+
+		$run->setConfig(key: 'processed', value: (string)($previousProcessed + $run->migrated));
+		$run->setConfig(key: 'remaining', value: (string)$remaining);
+		$run->setConfig(key: 'last_run', value: date('c'));
+
+		$duration = round(microtime(true) - $run->startTime, 2);
+		$context  = ['file' => __FILE__, 'line' => __LINE__, 'migrated' => $run->migrated, 'skipped' => $run->skipped, 'remaining' => $remaining];
+		$context['execution_time_seconds'] = $duration;
+		$run->logger->info(message: '[BlobMigrationJob] Batch completed', context: $context);
+	}//end recordProgress()
 
 	/**
 	 * Check if the blob table exists in the database.
@@ -285,20 +280,16 @@ class BlobMigrationJob extends TimedJob {
 	private function blobTableExists(IDBConnection $db): bool {
 		try {
 			$platform = $db->getDatabasePlatform();
-			$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
-			// phpcs:ignore Generic.Files.LineLength.TooLong -- SQL query.
-			$sql = "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = DATABASE() LIMIT 1";
-			if ($isPostgres === true) {
-				// phpcs:ignore Generic.Files.LineLength.MaxExceeded
-				$sql = "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = current_schema() LIMIT 1";
+			$schema   = 'DATABASE()';
+			if (stripos($platform::class, 'PostgreSQL') !== false) {
+				$schema = 'current_schema()';
 			}
+
+			$sql      = "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = $schema LIMIT 1";
 
 			$stmt = $db->prepare($sql);
 			$stmt->execute();
-			$result = $stmt->fetch();
-
-			return $result !== false;
+			return $stmt->fetch() !== false;
 		} catch (Exception $e) {
 			return false;
 		}//end try
@@ -365,25 +356,15 @@ class BlobMigrationJob extends TimedJob {
 		foreach ($objects as $row) {
 			$registerId = $row['register'] ?? null;
 			$schemaId = $row['schema'] ?? null;
-			$uuid = $row['uuid'] ?? 'unknown';
 
 			if (empty($registerId) === true || empty($schemaId) === true) {
-				$logger->warning(
-					message: '[BlobMigrationJob] Orphaned object: null/empty register or schema',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-						'registerId' => $registerId,
-						'schemaId' => $schemaId,
-					]
-				);
+				$context = ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $row['uuid'] ?? 'unknown', 'registerId' => $registerId, 'schemaId' => $schemaId];
+				$logger->warning(message: '[BlobMigrationJob] Orphaned object: null/empty register or schema', context: $context);
 				$groups['orphaned'][] = $row;
 				continue;
 			}
 
-			$key = $registerId . '_' . $schemaId;
-			$groups[$key][] = $row;
+			$groups[$registerId.'_'.$schemaId][] = $row;
 		}//end foreach
 
 		return $groups;
@@ -399,37 +380,9 @@ class BlobMigrationJob extends TimedJob {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function blobRowToObjectArray(array $row): array {
-		// Decode the JSON object payload.
-		$objectData = [];
-		if (isset($row['object']) === true && is_string($row['object']) === true) {
-			$decoded = json_decode($row['object'], true);
-			if (is_array($decoded) === true) {
-				$objectData = $decoded;
-			}
-		}
-
-		// Build the object array with metadata that MagicMapper expects.
-		$result = $objectData;
-
-		// Preserve metadata fields.
-		$metadataFields = [
-			'uuid',
-			'register',
-			'schema',
-			'uri',
-			'version',
-			'organisation',
-			'owner',
-			'authorization',
-			'updated',
-			'created',
-			'folder',
-			'textRepresentation',
-			'locked',
-			'relations',
-		];
-
-		foreach ($metadataFields as $field) {
+		// The object payload, with the metadata that MagicMapper expects.
+		$result = $this->decodeBlobObject(row: $row);
+		foreach (self::METADATA_FIELDS as $field) {
 			if (isset($row[$field]) === true) {
 				$result['_' . $field] = $row[$field];
 			}
@@ -445,6 +398,26 @@ class BlobMigrationJob extends TimedJob {
 	}//end blobRowToObjectArray()
 
 	/**
+	 * The decoded JSON object payload of a blob row; empty when absent or not a JSON object.
+	 *
+	 * @param array<string, mixed> $row Raw blob table row
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function decodeBlobObject(array $row): array {
+		if (isset($row['object']) === false || is_string($row['object']) === false) {
+			return [];
+		}
+
+		$decoded = json_decode($row['object'], true);
+		if (is_array($decoded) === false) {
+			return [];
+		}
+
+		return $decoded;
+	}//end decodeBlobObject()
+
+	/**
 	 * Delete migrated rows from the blob table.
 	 *
 	 * @param IDBConnection $db Database connection
@@ -455,18 +428,8 @@ class BlobMigrationJob extends TimedJob {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function deleteBlobRows(IDBConnection $db, array $rows): void {
-		$ids = array_filter(
-			array_map(
-				function (array $row): ?int {
-					if (isset($row['id']) === true) {
-						return (int)$row['id'];
-					}
-
-					return null;
-				},
-				$rows
-			)
-		);
+		$withId = array_filter($rows, static fn (array $row): bool => isset($row['id']) === true);
+		$ids    = array_filter(array_map(static fn (array $row): int => (int)$row['id'], $withId));
 
 		if (empty($ids) === true) {
 			return;

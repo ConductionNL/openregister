@@ -31,15 +31,19 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowFiring;
 use OCA\OpenRegister\Service\Flow\FlowFiringResult;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
+use OCA\OpenRegister\Service\Flow\FlowStreamHalt;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowOversightCheck;
@@ -47,6 +51,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use stdClass;
+use Symfony\Component\Workflow\Transition;
 
 /**
  * A dispatcher that suspends on a named step and records the rest.
@@ -183,7 +188,9 @@ class FlowEngineStreamWalkTest extends TestCase {
 			$this->seen['exhausted'][] = $id;
 			$exhausted[$id] = true;
 		});
-		$walk->method('claim')->willReturnCallback(function (string $id, string $transition, array $places) use (&$refused): ?array {
+		$walk->method('claim')->willReturnCallback(function (string $id, Transition $firing) use (&$refused): ?array {
+			$transition = $firing->getName();
+			$places     = array_map('strval', array_merge($firing->getFroms(), $firing->getTos()));
 			$this->seen['claims'][] = $transition;
 			if (in_array($transition, $this->refuse, true) === true) {
 				$refused[$id] = true;
@@ -217,7 +224,9 @@ class FlowEngineStreamWalkTest extends TestCase {
 		});
 		$walk->method('budgetSpent')->willReturn(false);
 		$walk->method('commitFiring')->willReturnCallback(
-			function (string $id, string $transition, array $froms, array $taken, array $placeItems, array $claimed, array $logEntry, bool $enabledAfter, string $streamStatus = 'running', ?string $streamError = null) use (&$streams, &$exhausted): FlowFiringResult {
+			function (FlowFiring $firing) use (&$streams, &$exhausted): FlowFiringResult {
+				[$id, $transition, $froms, $taken] = [$firing->streamId, $firing->transition, $firing->froms, $firing->taken];
+				[$placeItems, $logEntry] = [$firing->getPlaceItems(), $firing->getLogEntry()];
 				$this->seen['commits'][] = ['stream' => $id, 'transition' => $transition, 'froms' => $froms, 'taken' => $taken, 'status' => $logEntry['status']];
 				$this->firings++;
 				$this->run->setFirings($this->firings);
@@ -242,11 +251,13 @@ class FlowEngineStreamWalkTest extends TestCase {
 				return new FlowFiringResult(marking: $marking, placeItems: $placeItems, streams: [], firings: $this->firings);
 			}
 		);
-		$walk->method('park')->willReturnCallback(function (string $id, ?DateTime $resumeAt, string $reason, array $claimed, bool $enabled) use (&$parked): void {
+		$walk->method('park')->willReturnCallback(function (FlowStreamHalt $halt, ?DateTime $resumeAt) use (&$parked): void {
+			$id = $halt->streamId;
 			$this->seen['parked'][] = $id;
 			$parked[$id] = true;
 		});
-		$walk->method('endStream')->willReturnCallback(function (string $id, string $status, ?string $error) use (&$streams): void {
+		$walk->method('endStream')->willReturnCallback(function (FlowStreamHalt $halt, string $status) use (&$streams): void {
+			$id = $halt->streamId;
 			$this->seen['ended'][] = [$id, $status];
 			unset($streams[$id]);
 		});
@@ -282,14 +293,10 @@ class FlowEngineStreamWalkTest extends TestCase {
 	 */
 	private function walk(array $flow, FlowStepDispatcher $dispatcher, FlowStreamWalk $walk, array $context = []): array {
 		return $this->engine->run(
-			flow: $flow,
-			store: new FlowRunMarkingStore(run: $this->run),
-			subject: new stdClass(),
-			dispatcher: $dispatcher,
-			context: $context,
-			items: [FlowItems::item(json: ['n' => 1])],
-			startAt: null,
-			streams: $walk
+			start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->run), subject: new stdClass(), dispatcher: $dispatcher))->withContext(context: $context)->withStreams(streams: $walk),
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => 1])]
+			)
 		);
 	}//end walk()
 
@@ -416,11 +423,10 @@ class FlowEngineStreamWalkTest extends TestCase {
 		$legacyRun = new FlowRun();
 		$legacyDispatcher = new StreamWalkDispatcher();
 		$legacy = $this->engine->run(
-			flow: $flow,
-			store: new FlowRunMarkingStore(run: $legacyRun),
-			subject: new stdClass(),
-			dispatcher: $legacyDispatcher,
-			items: [FlowItems::item(json: ['n' => 1])]
+			start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $legacyRun), subject: new stdClass(), dispatcher: $legacyDispatcher)),
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => 1])]
+			)
 		);
 
 		$streamDispatcher = new StreamWalkDispatcher();

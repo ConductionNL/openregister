@@ -40,7 +40,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
  */
-class TaskCandidateMapper extends QBMapper {
+class TaskCandidateMapper extends QBMapper implements TaskCandidateMapperInterface {
 
 	/**
 	 * Constructor.

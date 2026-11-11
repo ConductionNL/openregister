@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -71,13 +73,7 @@ class PropertyRbacHandlerStateRulesTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('getUserGroupIds')->willReturn($groups);
 
-		return new PropertyRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
-		);
+		return new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($this->userSession, $this->groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($this->userSession, $this->groupManager)), logger: $this->createMock(LoggerInterface::class));
 	}
 
 	/**
@@ -174,9 +170,7 @@ class PropertyRbacHandlerStateRulesTest extends TestCase {
 	 */
 	public function testWritingAHiddenFieldIsRefused(): void {
 		$unauthorized = $this->handlerFor(['frontdesk'])->getUnauthorizedProperties(
-			schema: $this->schema(),
-			object: ['status' => 'intake', 'internalNote' => 'oud'],
-			incomingData: ['status' => 'intake', 'internalNote' => 'nieuw']
+			write: new PropertyWriteCheck(schema: $this->schema(), request: new PropertyAccessRequest(object: ['status' => 'intake', 'internalNote' => 'oud']), incoming: ['status' => 'intake', 'internalNote' => 'nieuw'])
 		);
 
 		$this->assertSame(['internalNote'], $unauthorized);
@@ -187,9 +181,7 @@ class PropertyRbacHandlerStateRulesTest extends TestCase {
 	 */
 	public function testResubmittingAHiddenFieldUnchangedIsNotAWrite(): void {
 		$unauthorized = $this->handlerFor(['frontdesk'])->getUnauthorizedProperties(
-			schema: $this->schema(),
-			object: ['status' => 'intake', 'internalNote' => 'oud'],
-			incomingData: ['status' => 'intake', 'internalNote' => 'oud']
+			write: new PropertyWriteCheck(schema: $this->schema(), request: new PropertyAccessRequest(object: ['status' => 'intake', 'internalNote' => 'oud']), incoming: ['status' => 'intake', 'internalNote' => 'oud'])
 		);
 
 		$this->assertSame([], $unauthorized);
@@ -203,9 +195,7 @@ class PropertyRbacHandlerStateRulesTest extends TestCase {
 	 */
 	public function testAReadOnlyFieldIsNotReportedAsUnauthorizedHere(): void {
 		$unauthorized = $this->handlerFor(['handlers'])->getUnauthorizedProperties(
-			schema: $this->schema(),
-			object: ['status' => 'closed', 'decision' => 'toegekend'],
-			incomingData: ['status' => 'closed', 'decision' => 'afgewezen']
+			write: new PropertyWriteCheck(schema: $this->schema(), request: new PropertyAccessRequest(object: ['status' => 'closed', 'decision' => 'toegekend']), incoming: ['status' => 'closed', 'decision' => 'afgewezen'])
 		);
 
 		$this->assertSame([], $unauthorized);
@@ -228,10 +218,8 @@ class PropertyRbacHandlerStateRulesTest extends TestCase {
 		$this->assertSame(
 			[],
 			$handler->getUnauthorizedProperties(
-				schema: $schema,
-				object: $object,
-				incomingData: ['note' => 'gewijzigd']
-			)
+			write: new PropertyWriteCheck(schema: $schema, request: new PropertyAccessRequest(object: $object), incoming: ['note' => 'gewijzigd'])
+		)
 		);
 	}
 }

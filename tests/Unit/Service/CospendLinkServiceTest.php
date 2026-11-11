@@ -31,10 +31,14 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\CospendProjectDraft;
 use Exception;
+use OCA\OpenRegister\Db\CospendEntryKey;
 use OCA\OpenRegister\Db\CospendLink;
 use OCA\OpenRegister\Db\CospendLinkMapper;
 use OCA\OpenRegister\Service\CospendLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -50,6 +54,8 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
  * @group requires-app-cospend
+ * @uses \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Db\CospendEntryKey
  */
 class CospendLinkServiceTest extends TestCase {
 
@@ -73,7 +79,6 @@ class CospendLinkServiceTest extends TestCase {
 			->onlyMethods(
 				[
 					'findByObjectUuid',
-					'findByObjectAndId',
 					'findDuplicate',
 					'deleteByObjectAndId',
 					'insert',
@@ -91,10 +96,8 @@ class CospendLinkServiceTest extends TestCase {
 		$this->service = new CospendLinkService(
 			$this->mapper,
 			$this->container,
-			$this->appManager,
-			$this->userSession,
-			$this->db,
-			$this->logger
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger),
+			$this->db
 		);
 	}//end setUp()
 
@@ -121,7 +124,7 @@ class CospendLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->linkProject('abc-123', 1, 2, 'proj-1');
+		$this->service->linkProject((new LinkTarget('abc-123', 1))->inSchema(2), 'proj-1');
 	}//end testLinkProjectThrowsWhenNoUser()
 
 	public function testLinkProjectThrowsWhenCospendUnavailable(): void {
@@ -131,7 +134,7 @@ class CospendLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->linkProject('abc-123', 1, 2, 'proj-1');
+		$this->service->linkProject((new LinkTarget('abc-123', 1))->inSchema(2), 'proj-1');
 	}//end testLinkProjectThrowsWhenCospendUnavailable()
 
 	public function testLinkProjectThrowsOnEmptyProjectId(): void {
@@ -141,21 +144,21 @@ class CospendLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->linkProject('abc-123', 1, 2, '   ');
+		$this->service->linkProject((new LinkTarget('abc-123', 1))->inSchema(2), '   ');
 	}//end testLinkProjectThrowsOnEmptyProjectId()
 
 	public function testLinkProjectThrowsOnDuplicate(): void {
 		$this->setupUser();
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
 		$this->mapper->method('findDuplicate')
-			->with('abc-123', 'project', 'proj-1', null)
+			->with('abc-123', new CospendEntryKey('project', 'proj-1'))
 			->willReturn(new CospendLink());
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('Project already linked to this object');
 
-		$this->service->linkProject('abc-123', 1, 2, 'proj-1');
+		$this->service->linkProject((new LinkTarget('abc-123', 1))->inSchema(2), 'proj-1');
 	}//end testLinkProjectThrowsOnDuplicate()
 
 	public function testLinkBillThrowsWhenNoUser(): void {
@@ -164,7 +167,7 @@ class CospendLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->linkBill('abc-123', 1, 2, 'proj-1', 7);
+		$this->service->linkBill((new LinkTarget('abc-123', 1))->inSchema(2), 'proj-1', 7);
 	}//end testLinkBillThrowsWhenNoUser()
 
 	public function testLinkBillThrowsWhenCospendUnavailable(): void {
@@ -174,21 +177,21 @@ class CospendLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->linkBill('abc-123', 1, 2, 'proj-1', 7);
+		$this->service->linkBill((new LinkTarget('abc-123', 1))->inSchema(2), 'proj-1', 7);
 	}//end testLinkBillThrowsWhenCospendUnavailable()
 
 	public function testLinkBillThrowsOnDuplicate(): void {
 		$this->setupUser();
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
 		$this->mapper->method('findDuplicate')
-			->with('abc-123', 'bill', 'proj-1', 7)
+			->with('abc-123', (new CospendEntryKey('bill', 'proj-1'))->withBill(7))
 			->willReturn(new CospendLink());
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('Bill already linked to this object');
 
-		$this->service->linkBill('abc-123', 1, 2, 'proj-1', 7);
+		$this->service->linkBill((new LinkTarget('abc-123', 1))->inSchema(2), 'proj-1', 7);
 	}//end testLinkBillThrowsOnDuplicate()
 
 	public function testCreateAndLinkProjectThrowsWhenNoUser(): void {
@@ -197,7 +200,7 @@ class CospendLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->createAndLinkProject('abc-123', 1, 2, 'Holiday', 'EUR');
+		$this->service->createAndLinkProject((new LinkTarget('abc-123', 1))->inSchema(2), new CospendProjectDraft('Holiday', 'EUR'));
 	}//end testCreateAndLinkProjectThrowsWhenNoUser()
 
 	public function testCreateAndLinkProjectThrowsOnEmptyName(): void {
@@ -206,7 +209,7 @@ class CospendLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createAndLinkProject('abc-123', 1, 2, '   ', 'EUR');
+		$this->service->createAndLinkProject((new LinkTarget('abc-123', 1))->inSchema(2), new CospendProjectDraft('   ', 'EUR'));
 	}//end testCreateAndLinkProjectThrowsOnEmptyName()
 
 	public function testCreateAndLinkProjectThrowsWhenCospendUnavailable(): void {
@@ -216,7 +219,7 @@ class CospendLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->createAndLinkProject('abc-123', 1, 2, 'Holiday', 'EUR');
+		$this->service->createAndLinkProject((new LinkTarget('abc-123', 1))->inSchema(2), new CospendProjectDraft('Holiday', 'EUR'));
 	}//end testCreateAndLinkProjectThrowsWhenCospendUnavailable()
 
 	public function testUnlinkThrowsWhenNoUser(): void {

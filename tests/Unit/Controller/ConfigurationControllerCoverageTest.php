@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationControllerFactory;
 use OCA\OpenRegister\Controller\ConfigurationController;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
@@ -17,6 +18,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
 
 /**
  * Coverage tests for ConfigurationController — targets uncovered branches.
@@ -53,7 +55,7 @@ class ConfigurationControllerCoverageTest extends TestCase {
 		$groupManager = $this->createMock(\OCP\IGroupManager::class);
 		$groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new ConfigurationController(
+		$this->controller = ConfigurationControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->configurationMapper,
@@ -173,7 +175,7 @@ class ConfigurationControllerCoverageTest extends TestCase {
 			'_search' => 'openregister',
 			'page' => 1,
 		]);
-		$this->gitlabHandler->method('searchConfigurations')
+		$this->gitlabHandler->method('searchPage')
 			->willReturn(['results' => [['name' => 'config1']]]);
 
 		$result = $this->controller->discover();
@@ -234,7 +236,7 @@ class ConfigurationControllerCoverageTest extends TestCase {
 		]);
 		$this->githubHandler->expects($this->once())
 			->method('listConfigurationFiles')
-			->with('conduction', 'openregister', 'develop')
+			->with(new GitHubFileLocation(owner: 'conduction', repo: 'openregister', path: '', branch: 'develop'))
 			->willReturn([['path' => '.openregister/config.json']]);
 
 		$result = $this->controller->getGitHubConfigurations();

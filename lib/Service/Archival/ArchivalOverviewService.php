@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
 use OCA\OpenRegister\Service\RetentionService;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\IL10N;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -56,16 +56,16 @@ class ArchivalOverviewService {
 	/**
 	 * Constructor.
 	 *
-	 * @param DestructionListRepository  $lists           Finds the destruction lists.
-	 * @param DestructionReviewService   $reviews         Reads the entries of a list.
-	 * @param RetentionService           $retention       Scans the records that carry retention.
-	 * @param TransferRecordService      $transfers       Reads the e-Depot transfer lists.
-	 * @param SelectielijstImportService $selectielijst   Reads the stored selection lists.
-	 * @param ObjectRetentionHandler     $settingsHandler Reads the archival settings.
-	 * @param DestructionListCreator     $creator         Creates a list for the objects named.
-	 * @param IUserManager               $userManager     Resolves display names.
-	 * @param IL10N                      $l10n            Translates the status labels.
-	 * @param LoggerInterface            $logger          Logger.
+	 * @param DestructionListRepository       $lists           Finds the destruction lists.
+	 * @param DestructionReviewService        $reviews         Reads the entries of a list.
+	 * @param RetentionService                $retention       Scans the records that carry retention.
+	 * @param TransferRecordService           $transfers       Reads the e-Depot transfer lists.
+	 * @param SelectielijstImportService      $selectielijst   Reads the stored selection lists.
+	 * @param ArchivalSettingsReaderInterface $settingsHandler Reads the archival settings.
+	 * @param DestructionListCreator          $creator         Creates a list for the objects named.
+	 * @param IUserManager                    $userManager     Resolves display names.
+	 * @param IL10N                           $l10n            Translates the status labels.
+	 * @param LoggerInterface                 $logger          Logger.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor: one collaborator per archival store it reads.
 	 */
@@ -75,7 +75,7 @@ class ArchivalOverviewService {
 		private readonly RetentionService $retention,
 		private readonly TransferRecordService $transfers,
 		private readonly SelectielijstImportService $selectielijst,
-		private readonly ObjectRetentionHandler $settingsHandler,
+		private readonly ArchivalSettingsReaderInterface $settingsHandler,
 		private readonly DestructionListCreator $creator,
 		private readonly IUserManager $userManager,
 		private readonly IL10N $l10n,

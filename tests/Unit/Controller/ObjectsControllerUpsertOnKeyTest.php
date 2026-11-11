@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -26,6 +27,7 @@ use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -39,6 +41,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * `POST /api/objects/{register}/{schema}?_upsertOn=<constraint>` through the real controller.
@@ -65,6 +68,9 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 
 	/** @var array<int, string|null> The uuid each saveObject() call was given. */
 	private array $savedUuids = [];
+
+	/** @var array<int, array<string, mixed>> The object each saveObject() call was given. */
+	private array $savedObjects = [];
 
 	/** @var array<int, string> What the store finds for the key. */
 	private array $found = [];
@@ -114,7 +120,7 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 		$webhooks = $this->createMock(WebhookService::class);
 		$webhooks->method('interceptRequest')->willReturnCallback(fn (): array => $this->params);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
@@ -143,8 +149,10 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 	private function savesEcho(): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
 			// Positional, in ObjectService::saveObject()'s own order: object, extend, register, schema, uuid.
-			function (array $object, $extend = [], $register = null, $schema = null, ?string $uuid = null): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$uuid = $options->uuid;
 				$this->savedUuids[] = $uuid;
+				$this->savedObjects[] = $object;
 				$entity = new ObjectEntity();
 				$entity->setUuid($uuid ?? 'new-uuid');
 				$entity->setObject($object);
@@ -168,6 +176,65 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 		$this->assertSame(201, $result->getStatus());
 		$this->assertSame([null], $this->savedUuids);
 	}//end testAKeyNobodyHoldsCreatesWith201()
+
+	/**
+	 * The attempt rides on the created object's own payload. The uuid stays
+	 * null: a create must not become a write to a uuid the controller made up.
+	 */
+	public function testACreateCarryingACauseMarksItsOwnPayloadAndNamesNoUuid(): void {
+		$this->signedIn();
+		$this->savesEcho();
+
+		$result = $this->post(['_cause' => 'migration', 'gemeentecode' => '0363']);
+
+		$this->assertSame(201, $result->getStatus());
+		$this->assertSame([null], $this->savedUuids);
+		$this->assertSame(
+			['gemeentecode' => '0363', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]],
+			$this->savedObjects[0]
+		);
+	}//end testACreateCarryingACauseMarksItsOwnPayloadAndNamesNoUuid()
+
+	public function testACreateWithoutACauseCarriesNoMark(): void {
+		$this->signedIn();
+		$this->savesEcho();
+
+		$this->post(['gemeentecode' => '0363']);
+
+		$this->assertSame(['gemeentecode' => '0363'], $this->savedObjects[0]);
+	}//end testACreateWithoutACauseCarriesNoMark()
+
+	public function testAClientCannotSetTheMarkItself(): void {
+		$this->signedIn();
+		$this->savesEcho();
+
+		$this->post(['@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true, 'slug' => 'x'], 'gemeentecode' => '0363']);
+
+		$this->assertSame(['slug' => 'x'], $this->savedObjects[0]['@self']);
+	}//end testAClientCannotSetTheMarkItself()
+
+	public function testTheMarkKeepsWhatTheClientPutInSelf(): void {
+		$this->signedIn();
+		$this->savesEcho();
+
+		$this->post(['_cause' => 'migration', '@self' => ['slug' => 'x'], 'gemeentecode' => '0363']);
+
+		$this->assertSame(
+			['slug' => 'x', WriteCause::CLIENT_ATTEMPT_KEY => true],
+			$this->savedObjects[0]['@self']
+		);
+	}//end testTheMarkKeepsWhatTheClientPutInSelf()
+
+	public function testAnUpsertCarryingACauseMarksTheSaveItMakes(): void {
+		$this->signedIn();
+		$this->savesEcho();
+		$this->found = ['u-1'];
+
+		$this->post(['_upsertOn' => 'zaaksleutel', '_cause' => 'import', 'gemeentecode' => '0363', 'zaaknummer' => 'Z-1']);
+
+		$this->assertSame(['u-1'], $this->savedUuids);
+		$this->assertTrue($this->savedObjects[0]['@self'][WriteCause::CLIENT_ATTEMPT_KEY]);
+	}//end testAnUpsertCarryingACauseMarksTheSaveItMakes()
 
 	public function testAHeldKeyUpdatesThatRecordWith200(): void {
 		$this->signedIn();

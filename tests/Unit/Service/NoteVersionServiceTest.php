@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
+use OCP\Comments\IComment;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- PHPUnit fixture properties are named by their type.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\NoteVersion;
-use OCA\OpenRegister\Db\NoteVersionMapper;
+use OCA\OpenRegister\Files\Db\NoteVersion;
+use OCA\OpenRegister\Files\Db\NoteVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\NoteVersionService;
+use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -77,7 +79,13 @@ class NoteVersionServiceTest extends TestCase {
 				}
 			);
 
-		$this->service->record(7, 'Applicant called', 'a', 'users', 'b');
+		$previous = $this->createMock(IComment::class);
+		$previous->method('getMessage')->willReturn('Applicant called');
+		$previous->method('getActorId')->willReturn('a');
+		$previous->method('getActorType')->willReturn('users');
+		$previous->method('getId')->willReturn('7');
+
+		$this->service->record($previous, 'b');
 
 		$this->assertInstanceOf(NoteVersion::class, $stored);
 		$this->assertSame(7, $stored->getCommentId());
@@ -170,16 +178,16 @@ class NoteVersionServiceTest extends TestCase {
 
 		$context = null;
 		$this->auditTrail->expects($this->once())
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (ObjectEntity $written, string $action, array $ctx) use (&$context) {
 					$this->assertSame(NoteVersionService::AUDIT_ACTION, $action);
 					$context = $ctx;
 					return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
 				}
-			);
+			));
 
-		$this->assertTrue($this->service->auditEdit($object, 9, 1));
+		$this->assertTrue($this->service->auditEdit($object, ['id' => 9, 'versionCount' => 1]));
 
 		$this->assertSame(['noteId' => 9, 'versionCount' => 1], $context);
 		$this->assertSame('note.edited', NoteVersionService::AUDIT_ACTION);
@@ -189,10 +197,10 @@ class NoteVersionServiceTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setUuid('obj-uuid');
 
-		$this->auditTrail->method('createAuditTrailEntry')
+		$this->auditTrail->method('recordObjectEvent')
 			->willThrowException(new RuntimeException('trail unavailable'));
 		$this->logger->expects($this->once())->method('error');
 
-		$this->assertFalse($this->service->auditEdit($object, 9, 1));
+		$this->assertFalse($this->service->auditEdit($object, ['id' => 9, 'versionCount' => 1]));
 	}
 }

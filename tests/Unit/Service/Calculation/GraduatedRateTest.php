@@ -7,7 +7,7 @@ namespace Unit\Service\Calculation;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 
@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
  * The fixture is a neutral one, a parking fee that steps up: 2 per hour for
  * the first 3 hours, 3 per hour up to hour 8, then 5 per hour, capped at 40.
  *
- * @spec openspec/changes/graduated-rate-calculation/specs/computed-fields/spec.md
+ * @spec openspec/specs/computed-fields/spec.md
  */
 class GraduatedRateTest extends TestCase {
 

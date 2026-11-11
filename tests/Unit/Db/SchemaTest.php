@@ -2,6 +2,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantObject;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery;
 use DateTime;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\Schema;
@@ -258,29 +261,29 @@ class SchemaTest extends TestCase {
 	// --- hasPermission ---
 
 	public function testHasPermissionAdminGroup(): void {
-		$this->assertTrue($this->schema->hasPermission('admin', 'read'));
+		$this->assertTrue($this->schema->hasPermission($this->grantQuery('admin', 'read')));
 	}
 
 	public function testHasPermissionAdminUserGroup(): void {
-		$this->assertTrue($this->schema->hasPermission('users', 'read', null, 'admin'));
+		$this->assertTrue($this->schema->hasPermission($this->grantQuery('users', 'read', null, 'admin')));
 	}
 
 	public function testHasPermissionOwnerMatch(): void {
-		$this->assertTrue($this->schema->hasPermission('users', 'read', 'user1', null, 'user1'));
+		$this->assertTrue($this->schema->hasPermission($this->grantQuery('users', 'read', 'user1', null, 'user1')));
 	}
 
 	public function testHasPermissionEmptyAuthReturnsTrue(): void {
-		$this->assertTrue($this->schema->hasPermission('users', 'read'));
+		$this->assertTrue($this->schema->hasPermission($this->grantQuery('users', 'read')));
 	}
 
 	public function testHasPermissionGroupMatch(): void {
 		$this->schema->setAuthorization(['read' => ['editors']]);
-		$this->assertTrue($this->schema->hasPermission('editors', 'read'));
+		$this->assertTrue($this->schema->hasPermission($this->grantQuery('editors', 'read')));
 	}
 
 	public function testHasPermissionGroupNoMatch(): void {
 		$this->schema->setAuthorization(['read' => ['editors']]);
-		$this->assertFalse($this->schema->hasPermission('viewers', 'read'));
+		$this->assertFalse($this->schema->hasPermission($this->grantQuery('viewers', 'read')));
 	}
 
 	public function testHasPermissionMissingAction(): void {
@@ -289,17 +292,17 @@ class SchemaTest extends TestCase {
 		// 'delete', only 'read' is declared) must be denied, not implicitly
 		// allowed. See Schema::hasPermission()'s fail-closed comment.
 		$this->schema->setAuthorization(['read' => ['editors']]);
-		$this->assertFalse($this->schema->hasPermission('viewers', 'delete'));
+		$this->assertFalse($this->schema->hasPermission($this->grantQuery('viewers', 'delete')));
 	}
 
 	public function testHasPermissionComplexEntryWithGroup(): void {
 		$this->schema->setAuthorization(['read' => [['group' => 'editors']]]);
-		$this->assertTrue($this->schema->hasPermission('editors', 'read'));
+		$this->assertTrue($this->schema->hasPermission($this->grantQuery('editors', 'read')));
 	}
 
 	public function testHasPermissionComplexEntryWithMatchNotEvaluated(): void {
 		$this->schema->setAuthorization(['read' => [['group' => 'editors', 'match' => ['field' => 'val']]]]);
-		$this->assertFalse($this->schema->hasPermission('editors', 'read'));
+		$this->assertFalse($this->schema->hasPermission($this->grantQuery('editors', 'read')));
 	}
 
 	// --- Hydrate ---
@@ -342,6 +345,7 @@ class SchemaTest extends TestCase {
 	public function testHydrateDateTimeStrings(): void {
 		$this->schema->hydrate(['created' => '2024-01-15T10:30:00+00:00']);
 		$this->assertInstanceOf(DateTime::class, $this->schema->getCreated());
+		$this->assertSame('2024-01-15T10:30:00+00:00', $this->schema->getCreated()->format(DATE_ATOM));
 	}
 
 	public function testHydrateDateTimeObject(): void {
@@ -360,7 +364,7 @@ class SchemaTest extends TestCase {
 		$this->schema->hydrate(['configuration' => json_encode($config)]);
 		// setConfiguration goes through fallback path (no Server available)
 		$result = $this->schema->getConfiguration();
-		$this->assertIsArray($result);
+		$this->assertSame($config, $result);
 	}
 
 	public function testHydrateWithValidator(): void {
@@ -838,6 +842,28 @@ class SchemaTest extends TestCase {
 		$this->schema->validateAuthorization();
 	}
 
+	public function testValidateAuthorizationAcceptsABooleanCrossOrganisationMarker(): void {
+		$this->schema->setAuthorization([
+			'read' => [
+				['group' => 'vng-raadpleger', 'crossOrganisation' => true],
+				['group' => 'team', 'match' => ['status' => 'open'], 'crossOrganisation' => false],
+			],
+		]);
+		$this->assertTrue($this->schema->validateAuthorization());
+	}
+
+	public function testValidateAuthorizationRejectsANonBooleanCrossOrganisationMarker(): void {
+		$this->schema->setAuthorization([
+			'read' => [['group' => 'hr', 'crossOrganisation' => 'yes']],
+		]);
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage(
+			"Authorization 'crossOrganisation' for action 'read' in schema must be true or false;"
+			. " set it to true only on a rule that may read other organisations' rows"
+		);
+		$this->schema->validateAuthorization();
+	}
+
 	public function testValidateAuthorizationRejectsUnknownAction(): void {
 		$this->schema->setAuthorization([
 			'frobnicate' => ['admin'],
@@ -845,5 +871,28 @@ class SchemaTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessage("Invalid authorization action 'frobnicate'");
 		$this->schema->validateAuthorization();
+	}
+
+	/**
+	 * The GrantQuery Schema::hasPermission() takes, built from the group, action, actor and object fields.
+	 *
+	 * @return GrantQuery
+	 */
+	private function grantQuery(
+		string $groupId,
+		string $action,
+		?string $userId = null,
+		?string $userGroup = null,
+		?string $objectOwner = null,
+		?array $objectData = null,
+		?string $objectOrganisation = null,
+		?string $activeOrganisation = null,
+	): GrantQuery {
+		return new GrantQuery(
+			groupId: $groupId,
+			action: $action,
+			actor: new GrantActor(userId: $userId, userGroup: $userGroup, activeOrganisation: $activeOrganisation),
+			object: new GrantObject(owner: $objectOwner, data: $objectData, organisation: $objectOrganisation)
+		);
 	}
 }

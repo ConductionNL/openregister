@@ -27,21 +27,28 @@ use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
+use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
+use OCA\OpenRegister\Service\Case\CasePlanAnchorAccess;
+use OCA\OpenRegister\Service\Case\CasePlanBringOver;
+use OCA\OpenRegister\Service\Case\CasePlanMechanics;
+use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
-use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseStepRunner;
 use OCA\OpenRegister\Tests\Unit\Service\Case\CaseFixtures;
 use OCA\OpenRegister\Tests\Unit\Service\Case\FakeCaseItemMapper;
 use OCA\OpenRegister\Tests\Unit\Service\Case\RecordingAuditMapper;
@@ -100,20 +107,27 @@ class CaseFlowNodesTest extends TestCase {
 		$anchor->method('mayRead')->willReturn(true);
 		$writer = $this->createMock(CaseBusinessStateWriter::class);
 		$sentries = new CaseSentryEvaluator(catalog: new EventCatalogService());
-		$machine = new CasePlanStateMachine(items: $this->items, audits: $this->audits, table: new CasePlanTransitions(), realiser: $realiser, writer: $writer, db: $db, logger: new NullLogger());
+		$machine = new CasePlanStateMachine(store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()), effects: new CaseTransitionEffects(realiser: $realiser, writer: $writer));
 
 		return new CasePlanService(
-			items: $this->items,
-			audits: $this->audits,
-			machine: $machine,
-			cascade: new CasePlanCascade(items: $this->items, machine: $machine, sentries: $sentries, realiser: $realiser, anchor: $anchor, db: $db, logger: new NullLogger()),
-			sentries: $sentries,
-			authorization: new CasePlanAuthorizationService(groupManager: $groups),
-			anchor: $anchor,
-			writer: $writer,
-			definitions: new CasePlanDefinition(sentries: $sentries),
-			db: $db,
-			logger: new NullLogger()
+			store: new CasePlanStore(
+				items: $this->items,
+				audits: $this->audits,
+				db: $db,
+				logger: new NullLogger()
+			),
+			mechanics: new CasePlanMechanics(
+				machine: $machine,
+				cascade: new CasePlanCascade(machine: $machine, readers: new CaseCascadeReaders(sentries: $sentries, realiser: $realiser, anchor: $anchor)),
+				sentries: $sentries,
+				definitions: new CasePlanDefinition(sentries: $sentries)
+			),
+			anchorAccess: new CasePlanAnchorAccess(
+				authorization: new CasePlanAuthorizationService(groupManager: $groups),
+				anchor: $anchor,
+				writer: $writer
+			),
+			bringOver: new CasePlanBringOver()
 		);
 	}//end plans()
 
@@ -143,7 +157,7 @@ class CaseFlowNodesTest extends TestCase {
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('imagePath')->willReturn('/icon.svg');
 
-		return ['plans' => $this->plans(), 'scope' => $scope, 'session' => $session, 'l10n' => $l10n, 'urls' => $urls];
+		return ['steps' => new CaseStepRunner(plans: $this->plans(), scope: $scope, session: $session), 'presentation' => new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($l10n, $urls)];
 	}//end collaborators()
 
 	/**
@@ -204,7 +218,7 @@ class CaseFlowNodesTest extends TestCase {
 	 */
 	public function testOpenCreatesThePlanAndASecondOpenSaysSo(): void {
 		$node = new CaseOpenNode(...$this->collaborators());
-		$out = $node->execute(items: self::items(), config: ['definition' => self::definition()], context: [FlowRunService::RUN_AS_CONTEXT_KEY => 'alice']);
+		$out = $node->execute(new FlowNodeCall(items: self::items(), config: ['definition' => self::definition()], context: [FlowRunService::RUN_AS_CONTEXT_KEY => 'alice']));
 
 		$this->assertSame(['opened' => true, 'reason' => 'opened'], $out[0][FlowItems::JSON]['case']);
 		$rows = $this->items->findByObject(objectUuid: CaseFixtures::OBJECT);
@@ -213,7 +227,7 @@ class CaseFlowNodesTest extends TestCase {
 		$this->assertSame(2, $rows[0]->getSchemaId());
 		$this->assertSame('alice', $this->audits->findForItem((int)$rows[0]->getId())[0]->getActor());
 
-		$again = $node->execute(items: self::items(), config: ['definition' => self::definition()], context: [FlowRunService::RUN_AS_CONTEXT_KEY => 'alice']);
+		$again = $node->execute(new FlowNodeCall(items: self::items(), config: ['definition' => self::definition()], context: [FlowRunService::RUN_AS_CONTEXT_KEY => 'alice']));
 		$this->assertSame(['opened' => false, 'reason' => 'exists'], $again[0][FlowItems::JSON]['case']);
 		$this->assertCount(2, $this->items->findByObject(objectUuid: CaseFixtures::OBJECT));
 	}//end testOpenCreatesThePlanAndASecondOpenSaysSo()
@@ -234,14 +248,14 @@ class CaseFlowNodesTest extends TestCase {
 		}
 
 		try {
-			$node->execute(items: self::items(), config: ['definition' => self::definition()], context: []);
+			$node->execute(new FlowNodeCall(items: self::items(), config: ['definition' => self::definition()], context: []));
 			$this->fail('nobody to act as');
 		} catch (RuntimeException $refusal) {
 			$this->assertStringContainsString('names nobody', $refusal->getMessage());
 		}
 
 		$this->expectException(CaseAccessDeniedException::class);
-		$node->execute(items: self::items(), config: ['definition' => self::definition()], context: [FlowRunService::RUN_AS_CONTEXT_KEY => 'mallory']);
+		$node->execute(new FlowNodeCall(items: self::items(), config: ['definition' => self::definition()], context: [FlowRunService::RUN_AS_CONTEXT_KEY => 'mallory']));
 	}//end testOpenRefusals()
 
 	/**
@@ -253,16 +267,16 @@ class CaseFlowNodesTest extends TestCase {
 	 */
 	public function testAdvanceMovesTheItemAndRefusalsFailTheStep(): void {
 		$collaborators = $this->collaborators();
-		(new CaseOpenNode(...$collaborators))->execute(items: self::items(), config: ['definition' => self::definition()], context: [FlowRunService::RUN_AS_CONTEXT_KEY => 'alice']);
+		(new CaseOpenNode(...$collaborators))->execute(new FlowNodeCall(items: self::items(), config: ['definition' => self::definition()], context: [FlowRunService::RUN_AS_CONTEXT_KEY => 'alice']));
 
 		$this->sessionUid = 'alice';
 		$node = new CaseAdvanceNode(...$collaborators);
 		$config = ['item' => 'besluit-genomen', 'to' => CaseItem::STATE_COMPLETED, 'reason' => 'Besluit verzonden'];
-		$out = $node->execute(items: self::items(), config: $config, context: []);
+		$out = $node->execute(new FlowNodeCall(items: self::items(), config: $config, context: []));
 		$this->assertSame(['item' => 'besluit-genomen', 'state' => 'completed'], $out[0][FlowItems::JSON]['case']);
 
 		try {
-			$node->execute(items: self::items(), config: $config, context: []);
+			$node->execute(new FlowNodeCall(items: self::items(), config: $config, context: []));
 			$this->fail('a terminal milestone accepts nothing further');
 		} catch (CaseTransitionException $refusal) {
 			$this->assertStringContainsString('milestone', $refusal->getMessage());
@@ -270,7 +284,7 @@ class CaseFlowNodesTest extends TestCase {
 		}
 
 		try {
-			$node->execute(items: self::items(), config: ['item' => 'ghost', 'to' => CaseItem::STATE_COMPLETED], context: []);
+			$node->execute(new FlowNodeCall(items: self::items(), config: ['item' => 'ghost', 'to' => CaseItem::STATE_COMPLETED], context: []));
 			$this->fail('unknown key');
 		} catch (RuntimeException $refusal) {
 			$this->assertStringContainsString('"ghost"', $refusal->getMessage());
@@ -293,7 +307,7 @@ class CaseFlowNodesTest extends TestCase {
 		$other = CaseFixtures::OBJECT;
 		$items = [[FlowItems::JSON => ['uuid' => 'received-object-of-schema-a', 'parent' => $other, '@self' => ['register' => '1', 'schema' => 2]]]];
 
-		$out = $node->execute(items: $items, config: ['definition' => self::definition(), 'uuid' => '{{ parent }}'], context: $context);
+		$out = $node->execute(new FlowNodeCall(items: $items, config: ['definition' => self::definition(), 'uuid' => '{{ parent }}'], context: $context));
 
 		$this->assertSame(['opened' => true, 'reason' => 'opened'], $out[0][FlowItems::JSON]['case']);
 		$rows = $this->items->findByObject(objectUuid: $other);
@@ -303,7 +317,7 @@ class CaseFlowNodesTest extends TestCase {
 
 		// A template that renders the item's own uuid still anchors to its register and schema.
 		$ownItems = [[FlowItems::JSON => ['uuid' => 'own-object', 'again' => 'own-object', '@self' => ['register' => '1', 'schema' => 2]]]];
-		$node->execute(items: $ownItems, config: ['definition' => self::definition(), 'uuid' => '{{ again }}'], context: $context);
+		$node->execute(new FlowNodeCall(items: $ownItems, config: ['definition' => self::definition(), 'uuid' => '{{ again }}'], context: $context));
 		$own = $this->items->findByObject(objectUuid: 'own-object');
 		$this->assertSame(1, $own[0]->getRegisterId());
 		$this->assertSame(2, $own[0]->getSchemaId());
@@ -326,7 +340,7 @@ class CaseFlowNodesTest extends TestCase {
 
 		$this->sessionUid = 'alice';
 		$node = new CaseAdvanceNode(...$this->collaborators());
-		$out = $node->execute(items: self::items(), config: ['item' => 'assessment', 'to' => CaseItem::STATE_COMPLETED], context: []);
+		$out = $node->execute(new FlowNodeCall(items: self::items(), config: ['item' => 'assessment', 'to' => CaseItem::STATE_COMPLETED], context: []));
 
 		$this->assertSame(['item' => 'assessment', 'state' => 'completed'], $out[0][FlowItems::JSON]['case']);
 		$this->assertSame(CaseItem::STATE_COMPLETED, $this->items->findByUuid('item-2')->getState(), 'the open realisation moved');
@@ -344,8 +358,8 @@ class CaseFlowNodesTest extends TestCase {
 	public function testEmptyBatchesPassThroughAndAnAdvanceNeedsAnItemKey(): void {
 		$open = new CaseOpenNode(...$this->collaborators());
 		$advance = new CaseAdvanceNode(...$this->collaborators());
-		$this->assertSame([], $open->execute(items: [], config: ['definition' => self::definition()], context: []));
-		$this->assertSame([], $advance->execute(items: [], config: [], context: []));
+		$this->assertSame([], $open->execute(new FlowNodeCall(items: [], config: ['definition' => self::definition()], context: [])));
+		$this->assertSame([], $advance->execute(new FlowNodeCall(items: [], config: [], context: [])));
 
 		$this->expectException(UnexpectedValueException::class);
 		$advance->validateConfig(config: ['item' => ' ', 'to' => CaseItem::STATE_COMPLETED]);
@@ -364,13 +378,13 @@ class CaseFlowNodesTest extends TestCase {
 		$context = [FlowRunService::RUN_AS_CONTEXT_KEY => 'alice'];
 
 		$items = [[FlowItems::JSON => ['ref' => CaseFixtures::OBJECT, '@self' => 'not-an-array']]];
-		$out = $node->execute(items: $items, config: ['definition' => self::definition(), 'uuid' => '{{ref}}'], context: $context);
+		$out = $node->execute(new FlowNodeCall(items: $items, config: ['definition' => self::definition(), 'uuid' => '{{ref}}'], context: $context));
 		$this->assertSame(['opened' => true, 'reason' => 'opened'], $out[0][FlowItems::JSON]['case']);
 		$rows = $this->items->findByObject(objectUuid: CaseFixtures::OBJECT);
 		$this->assertNull($rows[0]->getRegisterId(), 'A malformed @self carries no register.');
 
 		try {
-			$node->execute(items: [[FlowItems::JSON => 'not-an-array']], config: ['definition' => self::definition()], context: $context);
+			$node->execute(new FlowNodeCall(items: [[FlowItems::JSON => 'not-an-array']], config: ['definition' => self::definition()], context: $context));
 			$this->fail('an item with no object cannot open a case');
 		} catch (RuntimeException $refusal) {
 			$this->assertStringContainsString('which object', $refusal->getMessage());

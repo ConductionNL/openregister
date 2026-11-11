@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace Unit\Service\Configuration;
 
-use GuzzleHttp\Client;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
-use OCA\OpenRegister\Service\Configuration\UploadHandler;
+use OCA\OpenRegister\Service\Configuration\SeedRelatedItems;
+use OCA\OpenRegister\Service\Configuration\SeedRelatedTarget;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IAppConfig;
@@ -29,7 +34,7 @@ use Psr\Log\LoggerInterface;
  *
  * Verifies that `_relatedItems` payloads on seed objects route to the
  * right service (FileService::addFile / NoteService::createNote /
- * TaskService::createTask), that base64 file content gets decoded, and
+ * TaskService::createObjectTask), that base64 file content gets decoded, and
  * that error isolation + user-context guards behave correctly.
  *
  * Tests bypass the heavy importSeedData entry point by reflecting into
@@ -43,10 +48,8 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 	private MagicMapper&MockObject $objectEntityMapper;
 	private ConfigurationMapper&MockObject $configurationMapper;
 	private MappingMapper&MockObject $mappingMapper;
-	private Client&MockObject $client;
 	private IAppConfig&MockObject $appConfig;
 	private LoggerInterface&MockObject $logger;
-	private UploadHandler&MockObject $uploadHandler;
 	private ObjectService&MockObject $objectService;
 
 	protected function setUp(): void {
@@ -56,10 +59,8 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
 		$this->configurationMapper = $this->createMock(ConfigurationMapper::class);
 		$this->mappingMapper = $this->createMock(MappingMapper::class);
-		$this->client = $this->createMock(Client::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->uploadHandler = $this->createMock(UploadHandler::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 	}
 
@@ -68,7 +69,8 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		$captured = [];
 		$fileService->expects($this->exactly(2))
 			->method('addFile')
-			->willReturnCallback(function ($obj, string $name, string $content, bool $share, array $tags) use (&$captured) {
+			->willReturnCallback(function (FileTarget $target, FileUpload $upload) use (&$captured) {
+				[$name, $content, $share, $tags] = [$upload->fileName, $upload->content, $upload->share, $upload->tags];
 				$captured[] = compact('name', 'content', 'share', 'tags');
 				return $this->createMock(\OCP\Files\File::class);
 			});
@@ -100,8 +102,8 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		$captured = [];
 		$noteService->expects($this->exactly(2))
 			->method('createNote')
-			->willReturnCallback(function (string $uuid, string $message) use (&$captured) {
-				$captured[] = compact('uuid', 'message');
+			->willReturnCallback(function (NoteDraft $draft) use (&$captured) {
+				$captured[] = ['uuid' => $draft->objectUuid, 'message' => $draft->message];
 				return ['id' => count($captured)];
 			});
 
@@ -130,9 +132,9 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		$taskService = $this->createMock(TaskService::class);
 		$captured = [];
 		$taskService->expects($this->once())
-			->method('createTask')
-			->willReturnCallback(function (int $r, int $s, string $uuid, string $title, array $data) use (&$captured) {
-				$captured = compact('r', 's', 'uuid', 'title', 'data');
+			->method('createObjectTask')
+			->willReturnCallback(function (ObjectRef $ref, LinkedTaskDraft $draft) use (&$captured) {
+				$captured = ['r' => $ref->register, 's' => $ref->schema, 'uuid' => $ref->id, 'title' => $draft->objectTitle, 'data' => $draft->data];
 				return ['id' => 'task-1'];
 			});
 
@@ -179,7 +181,7 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 
 		$fileService->expects($this->once())->method('addFile')->willReturn($this->createMock(\OCP\Files\File::class));
 		$noteService->expects($this->once())->method('createNote')->willReturn(['id' => 1]);
-		$taskService->expects($this->once())->method('createTask')->willThrowException(new \RuntimeException('no calendar'));
+		$taskService->expects($this->once())->method('createObjectTask')->willThrowException(new \RuntimeException('no calendar'));
 
 		// Warning must be logged for the failed task; debug summary still runs.
 		$this->logger->expects($this->atLeastOnce())->method('warning');
@@ -202,7 +204,7 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 
 		$this->assertSame(1, $result['relatedFiles']);
 		$this->assertSame(1, $result['relatedNotes']);
-		$this->assertSame(0, $result['relatedTasks'], 'task should not count when createTask throws');
+		$this->assertSame(0, $result['relatedTasks'], 'task should not count when createObjectTask throws');
 	}
 
 	public function testTasksAndNotesSkippedWhenNoUserContextButFilesRun(): void {
@@ -216,7 +218,7 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 
 		$fileService->expects($this->once())->method('addFile')->willReturn($this->createMock(\OCP\Files\File::class));
 		$noteService->expects($this->never())->method('createNote');
-		$taskService->expects($this->never())->method('createTask');
+		$taskService->expects($this->never())->method('createObjectTask');
 
 		$handler = $this->makeHandler();
 		$handler->setFileService($fileService);
@@ -295,16 +297,19 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 	 */
 	private function makeHandler(): ImportHandler {
 		return new ImportHandler(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
-			objectEntityMapper: $this->objectEntityMapper,
-			configurationMapper: $this->configurationMapper,
-			mappingMapper: $this->mappingMapper,
-			client: $this->client,
-			appConfig: $this->appConfig,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $this->objectEntityMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->configurationMapper,
+				mappings: $this->mappingMapper,
+				appConfig: $this->appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $this->logger,
 			appDataPath: '/tmp',
-			uploadHandler: $this->uploadHandler,
 			objectService: $this->objectService
 		);
 	}
@@ -325,6 +330,22 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 	}
 
 	/**
+	 * Without a user, nothing is reported as skipped when there were no notes or tasks to skip.
+	 */
+	public function testNoUserWarningNeedsItemsToSkip(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('warning');
+		$items = new SeedRelatedItems(logger: $logger);
+		$items->useNoteService($this->createMock(NoteService::class));
+		$items->useTaskService($this->createMock(TaskService::class));
+
+		$result = [];
+		$items->create(new SeedRelatedTarget(object: new ObjectEntity()), $result);
+
+		$this->assertSame(['relatedFiles' => 0, 'relatedNotes' => 0, 'relatedTasks' => 0], $result);
+	}
+
+	/**
 	 * @param array<string, mixed> $items
 	 * @param array<string, mixed> $result
 	 */
@@ -338,17 +359,12 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		bool $hasUserContext,
 		array &$result,
 	): void {
-		$reflection = new \ReflectionClass($handler);
-		$method = $reflection->getMethod('processRelatedItems');
-		$method->setAccessible(true);
-		$method->invokeArgs($handler, [
-			$object,
-			$items,
-			$registerId,
-			$schemaId,
-			$title,
-			$hasUserContext,
-			&$result,
-		]);
+		$target = new SeedRelatedTarget(object: $object);
+		$target->items = $items;
+		$target->registerId = $registerId;
+		$target->schemaId = $schemaId;
+		$target->title = $title;
+		$target->hasUserContext = $hasUserContext;
+		(new \ReflectionProperty(ImportHandler::class, 'relatedItems'))->getValue($handler)->create($target, $result);
 	}
 }

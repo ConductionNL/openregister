@@ -58,45 +58,37 @@ use Throwable;
 class ArchivalImmutableException extends \Exception {
 
 	/**
-	 * The schema slug or identifier that triggered this exception.
-	 *
-	 * @var string
-	 */
-	private readonly string $schemaIdentifier;
-
-	/**
-	 * The blocked operation name (always 'delete' in v1, reserved for future ops).
-	 *
-	 * @var string
-	 */
-	private readonly string $operation;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param string $schemaIdentifier The schema slug, UUID, or ID.
-	 * @param string $operation The blocked operation name (e.g. 'delete').
-	 * @param Throwable|null $previous Previous exception.
+	 * @param string         $schemaIdentifier The schema slug, UUID, or ID.
+	 * @param string         $operation        The blocked operation name (e.g. 'delete').
+	 * @param Throwable|null $previous         Previous exception.
 	 */
 	public function __construct(
-		string $schemaIdentifier,
-		string $operation = 'delete',
-		?Throwable $previous = null,
+		private readonly string $schemaIdentifier,
+		private readonly string $operation='delete',
+		?Throwable $previous=null,
 	) {
-		$this->schemaIdentifier = $schemaIdentifier;
-		$this->operation = $operation;
+		parent::__construct(message: self::refusal(schemaIdentifier: $schemaIdentifier, operation: $operation), code: 403, previous: $previous);
+	}//end __construct()
 
-		$message = sprintf(
+	/**
+	 * Compose the refusal sentence.
+	 *
+	 * @param string $schemaIdentifier The schema slug, UUID, or ID.
+	 * @param string $operation        The blocked operation name.
+	 *
+	 * @return string The message.
+	 */
+	private static function refusal(string $schemaIdentifier, string $operation): string {
+		return sprintf(
 			'SCHEMA_ARCHIVAL_IMMUTABLE: Schema "%s" declares x-openregister-archival; '
 			. 'user-driven %s operations are not permitted. Rows expire automatically '
 			. 'via the ArchivalRetentionTask cron.',
 			$schemaIdentifier,
 			$operation
 		);
-
-		parent::__construct(message: $message, code: 403, previous: $previous);
-
-	}//end __construct()
+	}//end refusal()
 
 	/**
 	 * Get the schema identifier that triggered this exception.

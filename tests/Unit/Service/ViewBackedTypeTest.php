@@ -20,14 +20,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ReadOnlyTypeException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -58,6 +61,7 @@ use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\ViewObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\ViewSourceMappers;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -69,6 +73,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * The Schema, View, Register entities and the provider are real. MagicMapper
@@ -127,7 +133,10 @@ class ViewBackedTypeTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willReturn($sourceSchema);
 
-		return new ViewObjectSourceProvider($views, $registers, $schemas, $magic, $this->createMock(LoggerInterface::class));
+		return new ViewObjectSourceProvider(
+			new ViewSourceMappers(viewMapper: $views, catalog: new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $magic)),
+			$this->createMock(LoggerInterface::class)
+		);
 	}//end provider()
 
 	public function testTheSchemaDeclaresAViewAsItsReadOnlySource(): void {
@@ -163,10 +172,8 @@ class ViewBackedTypeTest extends TestCase {
 			->willReturn([$permit]);
 
 		$rows = $this->provider($magic)->findAll(
-			register: new Register(),
-			schema: $this->viewBackedSchema(),
-			query: ['limit' => 10, 'offset' => 20],
-			config: ['view' => 'active-permits']
+			source: new SourcedTable(new RegisterSchema(new Register(), $this->viewBackedSchema()), ['view' => 'active-permits']),
+			query: ['limit' => 10, 'offset' => 20]
 		);
 
 		$this->assertSame([$permit], $rows);
@@ -178,10 +185,8 @@ class ViewBackedTypeTest extends TestCase {
 
 		// status=expired is outside the view's status=active: nothing can match.
 		$rows = $this->provider($magic)->findAll(
-			register: new Register(),
-			schema: $this->viewBackedSchema(),
-			query: ['status' => 'expired'],
-			config: ['view' => 'active-permits']
+			source: new SourcedTable(new RegisterSchema(new Register(), $this->viewBackedSchema()), ['view' => 'active-permits']),
+			query: ['status' => 'expired']
 		);
 
 		$this->assertSame([], $rows);
@@ -194,7 +199,7 @@ class ViewBackedTypeTest extends TestCase {
 			->with($this->callback(fn (array $q): bool => $q['status'] === ['active'] && isset($q['_limit']) === false))
 			->willReturn(7);
 
-		$this->assertSame(7, $this->provider($magic)->count(register: new Register(), schema: $this->viewBackedSchema(), query: ['limit' => 5], config: ['view' => 'active-permits']));
+		$this->assertSame(7, $this->provider($magic)->count(source: new SourcedTable(new RegisterSchema(new Register(), $this->viewBackedSchema()), ['view' => 'active-permits']), query: ['limit' => 5]));
 	}//end testTheCountIsTheQueryCount()
 
 	/**
@@ -211,7 +216,7 @@ class ViewBackedTypeTest extends TestCase {
 			static fn (array $obj, mixed $schema, ?string $uuid, ?int $register): array => [$obj, $uuid]
 		);
 
-		$service = new ObjectService(
+		$service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$delete,
 			$this->createMock(GetObject::class),
@@ -250,7 +255,7 @@ class ViewBackedTypeTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$prop = (new ReflectionClass(ObjectService::class))->getProperty('currentSchema');
 		$prop->setAccessible(true);
@@ -264,7 +269,7 @@ class ViewBackedTypeTest extends TestCase {
 		$save->expects($this->never())->method('saveObject');
 
 		try {
-			$this->objectService($save, $this->createMock(DeleteObject::class))->saveObject(object: ['name' => 'x'], uuid: null);
+			$this->objectService($save, $this->createMock(DeleteObject::class))->saveObject(object: ['name' => 'x']);
 			$this->fail('a view-backed type must refuse a create');
 		} catch (ReadOnlyTypeException $e) {
 			// The controllers map the append-only family to 405; this is one of it.
@@ -281,6 +286,6 @@ class ViewBackedTypeTest extends TestCase {
 
 		$this->expectException(ReadOnlyTypeException::class);
 
-		$this->objectService($this->createMock(SaveObject::class), $delete)->deleteObject(uuid: 'p-1');
+		$this->objectService($this->createMock(SaveObject::class), $delete)->deleteObject(deletion: new ObjectDeletion(uuid: 'p-1'));
 	}//end testDeletingAnObjectOfTheTypeIsRefused()
 }//end class

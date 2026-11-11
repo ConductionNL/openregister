@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\SortRequest;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -121,7 +122,9 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 		$schema->setProperties($properties);
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
-		$method->invoke($this->handler, $this->makeQueryBuilder(), $order, $schema, null, $dateTimeColumns);
+		$sort = new SortRequest(order: $order, schema: $schema);
+		$sort->dateTimeColumns = $dateTimeColumns;
+		$method->invoke($this->handler, $this->makeQueryBuilder(), $sort);
 
 		return $this->orderBy;
 	}//end sort()

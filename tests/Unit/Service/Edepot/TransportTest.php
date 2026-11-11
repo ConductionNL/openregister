@@ -40,18 +40,15 @@ class TransportTest extends TestCase {
 	 */
 	public function testTransportResultSuccess(): void {
 		$result = new TransportResult(
-			success: true,
+			transferReference: 'transfer-ref-1',
 			objectResults: [
 				'uuid-1' => ['accepted' => true, 'reference' => 'ref-1', 'error' => null],
 				'uuid-2' => ['accepted' => true, 'reference' => 'ref-2', 'error' => null],
-			],
-			transferReference: 'transfer-ref-1'
+			]
 		);
 
 		$this->assertTrue($result->isSuccess());
 		$this->assertFalse($result->isPartialSuccess());
-		$this->assertCount(2, $result->getAcceptedUuids());
-		$this->assertCount(0, $result->getRejectedUuids());
 		$this->assertEquals('transfer-ref-1', $result->getTransferReference());
 	}
 
@@ -60,7 +57,7 @@ class TransportTest extends TestCase {
 	 */
 	public function testTransportResultPartialSuccess(): void {
 		$result = new TransportResult(
-			success: false,
+			transferReference: null,
 			objectResults: [
 				'uuid-1' => ['accepted' => true, 'reference' => 'ref-1', 'error' => null],
 				'uuid-2' => ['accepted' => false, 'reference' => null, 'error' => 'Validation failed'],
@@ -69,15 +66,28 @@ class TransportTest extends TestCase {
 
 		$this->assertFalse($result->isSuccess());
 		$this->assertTrue($result->isPartialSuccess());
-		$this->assertCount(1, $result->getAcceptedUuids());
-		$this->assertCount(1, $result->getRejectedUuids());
+	}
+
+	/**
+	 * A transfer whose every object was rejected failed, and is not a partial success.
+	 */
+	public function testTransportResultAllRejectedIsNotPartial(): void {
+		$result = new TransportResult(
+			transferReference: null,
+			objectResults: [
+				'uuid-1' => ['accepted' => false, 'reference' => null, 'error' => 'Validation failed'],
+			]
+		);
+
+		$this->assertFalse($result->isSuccess());
+		$this->assertFalse($result->isPartialSuccess());
 	}
 
 	/**
 	 * Test TransportResult serialization.
 	 */
 	public function testTransportResultToArray(): void {
-		$result = new TransportResult(success: false, errorMessage: 'Connection refused');
+		$result = (new TransportResult())->failed(errorMessage: 'Connection refused');
 		$array = $result->toArray();
 
 		$this->assertFalse($array['success']);

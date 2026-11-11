@@ -221,4 +221,24 @@ class TaskPerformerResolverTest extends TestCase {
 
 		$this->assertSame('first-line', $resolver->resolveAssignee(task: $task));
 	}//end testHierarchicalTakesTheFirstTier()
+
+	/**
+	 * A non-string candidate group entry expands to nobody: casting it would
+	 * look up the members of a group literally named "Array".
+	 *
+	 * @return void
+	 */
+	public function testANonStringCandidateGroupExpandsToNobody(): void {
+		$mapper = $this->createMock(originalClassName: TaskMapper::class);
+		$resolver = new TaskPerformerResolver(
+			tasks: $mapper,
+			groupManager: $this->backendWithGroup(groupId: 'Array', memberUids: ['mallory'])
+		);
+
+		$task = new Task();
+		$task->setCandidateUsers(['anna']);
+		$task->setCandidateGroups([['type' => 'group', 'id' => 'reviewers']]);
+
+		$this->assertSame(expected: ['anna'], actual: $resolver->expandPool(task: $task));
+	}//end testANonStringCandidateGroupExpandsToNobody()
 }//end class

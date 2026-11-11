@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Exception;
 
-use Throwable;
-
 /**
  * Thrown when a client writes to a type whose objects are the rows of a saved view.
  *
@@ -38,18 +36,13 @@ class ReadOnlyTypeException extends AppendOnlyException {
 	/**
 	 * Constructor.
 	 *
-	 * @param string         $schemaIdentifier The schema slug or id.
-	 * @param string         $operation        The refused operation (create, update, delete).
-	 * @param Throwable|null $previous         The previous exception.
+	 * @param string $schemaIdentifier The schema slug or id.
+	 * @param string $operation        The refused operation (create, update, delete).
 	 *
 	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
-	public function __construct(
-		string $schemaIdentifier,
-		string $operation = 'create',
-		?Throwable $previous = null,
-	) {
-		parent::__construct(schemaIdentifier: $schemaIdentifier, operation: $operation, previous: $previous);
+	public function __construct(string $schemaIdentifier, string $operation='create') {
+		parent::__construct(schemaIdentifier: $schemaIdentifier, operation: $operation);
 		$this->message = sprintf(
 			'SCHEMA_READ_ONLY: Schema "%s" lists the rows of a saved view; %s operations are not permitted.',
 			$schemaIdentifier,

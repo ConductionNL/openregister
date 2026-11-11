@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Relation;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Relation\AffectedSet;
+use OCA\OpenRegister\Service\Relation\AffectedSetQuery;
 use OCA\OpenRegister\Service\Relation\LinkExposure;
 use PHPUnit\Framework\TestCase;
 
@@ -75,7 +76,7 @@ class AffectedSetAndExposureTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheWalkNamesWhoIsAffectedAndHowTheyWereReached(): void {
-		$result = $this->affected()->derive(graph: $this->graph(), partySchemas: ['partij']);
+		$result = $this->affected()->derive(graph: $this->graph(), query: (new AffectedSetQuery())->withPartySchemas(schemas: ['partij']));
 
 		$uuids = array_column($result['objects'], 'uuid');
 		$this->assertSame(['a', 'b', 'c'], $uuids, 'the root itself is not in its own affected set');
@@ -98,7 +99,7 @@ class AffectedSetAndExposureTest extends TestCase {
 	 * @return void
 	 */
 	public function testFilteringToNamedTypesDropsTheRest(): void {
-		$result = $this->affected()->derive(graph: $this->graph(), types: ['betreft'], partySchemas: ['partij']);
+		$result = $this->affected()->derive(graph: $this->graph(), query: (new AffectedSetQuery(types: ['betreft']))->withPartySchemas(schemas: ['partij']));
 
 		$this->assertSame(['a', 'b'], array_column($result['objects'], 'uuid'));
 		$this->assertSame([], $result['parties'], 'the party edge was not one of the named types');
@@ -112,7 +113,7 @@ class AffectedSetAndExposureTest extends TestCase {
 	public function testAnEmptyTypeListIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->affected()->derive(graph: $this->graph(), types: []);
+		$this->affected()->derive(graph: $this->graph(), query: new AffectedSetQuery(types: []));
 	}//end testAnEmptyTypeListIsRefused()
 
 	/**
@@ -121,7 +122,7 @@ class AffectedSetAndExposureTest extends TestCase {
 	 * @return void
 	 */
 	public function testANullTypeListFiltersNothing(): void {
-		$result = $this->affected()->derive(graph: $this->graph(), types: null, partySchemas: ['partij']);
+		$result = $this->affected()->derive(graph: $this->graph(), query: (new AffectedSetQuery(types: null))->withPartySchemas(schemas: ['partij']));
 
 		$this->assertCount(3, $result['objects'], 'the control: absent means "not filtered by type"');
 	}//end testANullTypeListFiltersNothing()
@@ -132,7 +133,7 @@ class AffectedSetAndExposureTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPruneIsReportedAsWellAsApplied(): void {
-		$result = $this->affected()->derive(graph: $this->graph(), prune: ['bijlage'], partySchemas: ['partij']);
+		$result = $this->affected()->derive(graph: $this->graph(), query: (new AffectedSetQuery(prune: ['bijlage']))->withPartySchemas(schemas: ['partij']));
 
 		$this->assertSame(['a', 'b'], array_column($result['objects'], 'uuid'), 'the cut branch is gone');
 		$this->assertSame(
@@ -152,7 +153,7 @@ class AffectedSetAndExposureTest extends TestCase {
 	 * @return void
 	 */
 	public function testPruningRemovesWhatWasOnlyReachableThroughTheCut(): void {
-		$result = $this->affected()->derive(graph: $this->graph(), prune: ['betreft'], partySchemas: ['partij']);
+		$result = $this->affected()->derive(graph: $this->graph(), query: (new AffectedSetQuery(prune: ['betreft']))->withPartySchemas(schemas: ['partij']));
 
 		$uuids = array_column($result['objects'], 'uuid');
 		$this->assertNotContains('a', $uuids, 'the node behind the cut edge is gone');
@@ -169,7 +170,7 @@ class AffectedSetAndExposureTest extends TestCase {
 		$graph = $this->graph();
 		$graph['edges'][] = ['from' => 'c', 'to' => 'b', 'type' => 'bijlage'];
 
-		$result = $this->affected()->derive(graph: $graph, prune: ['betreft']);
+		$result = $this->affected()->derive(graph: $graph, query: new AffectedSetQuery(prune: ['betreft']));
 
 		$this->assertContains('b', array_column($result['objects'], 'uuid'), 'one route cut is not every route cut');
 	}//end testANodeReachableAnotherWaySurvivesAPrune()
@@ -184,11 +185,63 @@ class AffectedSetAndExposureTest extends TestCase {
 		$graph['truncated'] = true;
 		$graph['truncatedBy'] = 'cap';
 
-		$result = $this->affected()->derive(graph: $graph);
+		$result = $this->affected()->derive(graph: $graph, query: new AffectedSetQuery());
 
 		$this->assertTrue($result['truncated'], 'a complete-looking answer to an incomplete question is the failure here');
 		$this->assertSame('cap', $result['truncatedBy']);
 	}//end testTruncationIsPassedThrough()
+
+	/**
+	 * 🔴 A record the caller may not read is absent, and so is what lies only behind it.
+	 *
+	 * The walk loads nodes under the caller's RBAC, so an unreadable record
+	 * arrives unresolved. Neither it nor its uuid in a path may reach the answer.
+	 *
+	 * @return void
+	 */
+	public function testARecordTheCallerMayNotReadIsAbsentAndNotWalkedThrough(): void {
+		$graph = $this->graph();
+		$graph['nodes'][1] = ['uuid' => 'a', 'title' => null, 'schema' => null, 'distance' => 1, 'resolved' => false, 'external' => false];
+
+		$result = $this->affected()->derive(graph: $graph, query: (new AffectedSetQuery())->withPartySchemas(schemas: ['partij']));
+
+		$uuids = array_column($result['objects'], 'uuid');
+		$this->assertNotContains('a', $uuids, 'the unreadable record is not in the answer');
+		$this->assertNotContains('b', $uuids, 'nor what was only reachable through it');
+		$this->assertSame(['c'], $uuids, 'the control: a readable sibling stays');
+		$this->assertSame(['p'], array_column($result['parties'], 'uuid'));
+	}//end testARecordTheCallerMayNotReadIsAbsentAndNotWalkedThrough()
+
+	/**
+	 * A node with no readable flag fails closed, while an external address stays.
+	 *
+	 * @return void
+	 */
+	public function testOnlyResolvedAndExternalNodesAreWalked(): void {
+		$graph = $this->graph();
+		unset($graph['nodes'][3]['resolved']);
+		$graph['nodes'][] = ['uuid' => 'https://example.org/x', 'distance' => 1, 'resolved' => false, 'external' => true];
+		$graph['edges'][] = ['from' => 'root', 'to' => 'https://example.org/x', 'type' => 'verwijst'];
+		$graph['edges'][] = ['from' => 'root', 'to' => 'nowhere', 'type' => 'verwijst'];
+
+		$result = $this->affected()->derive(graph: $graph, query: new AffectedSetQuery());
+
+		$this->assertSame(['a', 'b', 'p', 'https://example.org/x'], array_column($result['objects'], 'uuid'));
+	}//end testOnlyResolvedAndExternalNodesAreWalked()
+
+	/**
+	 * A pruned edge into an unreadable record is not reported, so the report does not name it.
+	 *
+	 * @return void
+	 */
+	public function testAPruneReportNeverNamesAnUnreadableRecord(): void {
+		$graph = $this->graph();
+		$graph['nodes'][3]['resolved'] = false;
+
+		$result = $this->affected()->derive(graph: $graph, query: new AffectedSetQuery(prune: ['bijlage']));
+
+		$this->assertSame([], $result['pruned']);
+	}//end testAPruneReportNeverNamesAnUnreadableRecord()
 
 	/**
 	 * A relation type with an `exposes` set.
@@ -207,10 +260,10 @@ class AffectedSetAndExposureTest extends TestCase {
 	public function testALinkShowsWhatItDeclaresAndWithholdsTheRest(): void {
 		$far = ['zaaknummer' => 'Z-1', 'status' => 'open', 'toelichting' => 'gevoelig', 'bsn' => '123'];
 
-		$projection = (new LinkExposure())->project(
+		$exposure = new LinkExposure();
+		$projection = $exposure->project(
 			farObject: $far,
-			relationType: $this->exposingType(),
-			readable: ['zaaknummer', 'status', 'toelichting', 'bsn']
+			visible: $exposure->visibleProperties(relationType: $this->exposingType(), readable: ['zaaknummer', 'status', 'toelichting', 'bsn'])
 		);
 
 		$this->assertSame('Z-1', $projection['zaaknummer']);
@@ -241,11 +294,7 @@ class AffectedSetAndExposureTest extends TestCase {
 
 		$this->assertSame(['zaaknummer'], $visible, 'the link may not hand over a field this reader may not see');
 
-		$projection = $exposure->project(
-			farObject: ['zaaknummer' => 'Z-1', 'bsn' => '123'],
-			relationType: $type,
-			readable: ['zaaknummer', 'status']
-		);
+		$projection = $exposure->project(farObject: ['zaaknummer' => 'Z-1', 'bsn' => '123'], visible: $visible);
 		$this->assertSame(LinkExposure::WITHHELD, $projection['bsn']);
 	}//end testExposureNeverWidensBeyondTheReadersOwnRules()
 

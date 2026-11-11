@@ -32,9 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowVersion;
-use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\FlowVersionMapperInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -44,20 +43,8 @@ use Throwable;
  *
  * @spec openspec/specs/flow-definition-versioning/spec.md
  */
-class FlowRunVersionPin {
-	/**
-	 * The trigger an interactive test run carries.
-	 *
-	 * 🔑 THE ONE DISPATCH THAT MAY WALK A DRAFT. Every other path is a live
-	 * process acting on real data and must run a published version. A test run
-	 * is an author pressing "try this" on the graph in front of them — refusing
-	 * it would mean a flow could not be tried until it was published, which is
-	 * exactly backwards: publishing is the thing you do AFTER testing.
-	 *
-	 * @var string
-	 */
-	public const TRIGGER_TEST = 'test';
-
+class FlowRunVersionPin implements FlowRunVersionPinInterface {
+	
 	/**
 	 * Constructor.
 	 *
@@ -81,24 +68,8 @@ class FlowRunVersionPin {
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function publishedVersionOf(string $flowId): ?FlowVersion {
-		try {
-			$mapper = $this->container->get(FlowVersionMapper::class);
-		} catch (Throwable $e) {
-			// 🔴 NOT a fail-open. The caller refuses the dispatch when this is
-			// null, exactly as it does for a flow with no published version.
-			// An unresolvable mapper means we cannot establish which graph a
-			// run would execute, and "run it against whatever is current" is
-			// the behaviour versioning exists to remove.
-			$this->logger->error(
-				message: '[FlowRunVersionPin] Could not resolve the version mapper for flow "'
-					. $flowId . '"; the dispatch is refused rather than run unpinned.',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flowId]
-			);
-
-			return null;
-		}
-
-		if ($mapper instanceof FlowVersionMapper === false) {
+		$mapper = $this->versionMapper(flowId: $flowId);
+		if ($mapper === null) {
 			return null;
 		}
 
@@ -106,8 +77,7 @@ class FlowRunVersionPin {
 			return $mapper->findPublished(flowUuid: $flowId);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				message: '[FlowRunVersionPin] Could not read the published version of flow "'
-					. $flowId . '": ' . $e->getMessage(),
+				message: '[FlowRunVersionPin] Could not read the published version of flow "' . $flowId . '": ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flowId]
 			);
 
@@ -115,6 +85,39 @@ class FlowRunVersionPin {
 		}
 
 	}//end publishedVersionOf()
+
+	/**
+	 * The version mapper, or null when it cannot be resolved.
+	 *
+	 * 🔴 NOT a fail-open. The caller refuses the dispatch when this is null,
+	 * exactly as it does for a flow with no published version. An
+	 * unresolvable mapper means we cannot establish which graph a run would
+	 * execute, and "run it against whatever is current" is the behaviour
+	 * versioning exists to remove.
+	 *
+	 * @param string $flowId The flow being dispatched, for the log.
+	 *
+	 * @return FlowVersionMapperInterface|null The mapper.
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
+	 */
+	private function versionMapper(string $flowId): ?FlowVersionMapperInterface {
+		try {
+			$mapper = $this->container->get(FlowVersionMapperInterface::class);
+		} catch (Throwable) {
+			$this->logger->error(
+				message: '[FlowRunVersionPin] Could not resolve the version mapper for flow "' . $flowId . '"; the dispatch is refused rather than run unpinned.',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flowId]
+			);
+			return null;
+		}
+
+		if ($mapper instanceof FlowVersionMapperInterface === false) {
+			return null;
+		}
+
+		return $mapper;
+	}//end versionMapper()
 
 	/**
 	 * The graph a version names.
@@ -131,12 +134,11 @@ class FlowRunVersionPin {
 		}
 
 		try {
-			return $this->container->get(FlowDefinitionPin::class)
-				->graphFor($version->getDefinitionHash());
+			return $this->container->get(FlowDefinitionPin::class)->graphFor($version->getDefinitionHash());
 		} catch (Throwable $e) {
 			$this->logger->error(
-				message: '[FlowRunVersionPin] Could not read the definition of version '
-					. $version->getVersion() . ' of flow "' . $version->getFlowUuid() . '": ' . $e->getMessage(),
+				message: '[FlowRunVersionPin] Could not read the definition of version ' . $version->getVersion()
+					. ' of flow "' . $version->getFlowUuid() . '": ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 
@@ -178,21 +180,7 @@ class FlowRunVersionPin {
 		}
 
 		if ($version === null) {
-			$this->logger->warning(
-				message: '[FlowRunVersionPin] Refused to queue a run of an unpublished flow',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'flow' => $flowId,
-					'trigger' => $trigger,
-				]
-			);
-
-			throw new FlowLifecycleRefused(
-				reason: FlowLifecycleRefused::REASON_NO_PUBLISHED_VERSION,
-				flowId: $flowId,
-				state: null
-			);
+			$this->refuseUnpublished(flowId: $flowId, trigger: $trigger);
 		}
 
 		$this->refuseDeadEnd(flowId: $flowId, graph: $this->graphOf(version: $version));
@@ -200,6 +188,31 @@ class FlowRunVersionPin {
 		return $version;
 
 	}//end requirePublishedAndSound()
+
+	/**
+	 * Refuse to queue a run of a flow with no published version.
+	 *
+	 * @param string $flowId  The flow being dispatched.
+	 * @param string $trigger What caused the dispatch, for the log.
+	 *
+	 * @return never
+	 *
+	 * @throws FlowLifecycleRefused Always.
+	 *
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
+	 */
+	private function refuseUnpublished(string $flowId, string $trigger): never {
+		$this->logger->warning(
+			message: '[FlowRunVersionPin] Refused to queue a run of an unpublished flow',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flowId, 'trigger' => $trigger]
+		);
+
+		throw new FlowLifecycleRefused(
+			reason: FlowLifecycleRefused::REASON_NO_PUBLISHED_VERSION,
+			flowId: $flowId,
+			state: null
+		);
+	}//end refuseUnpublished()
 
 	/**
 	 * Refuse a graph that has a node its token cannot leave.
@@ -242,66 +255,34 @@ class FlowRunVersionPin {
 			return;
 		}
 
-		$deadEnds = $this->deadEndsIn(preflight: $preflight, graph: $graph);
-
-		if ($deadEnds === []) {
-			// Accepted. Clear a stale refusal so a repaired flow stops
-			// reporting the error it no longer has.
-			if ($flow->getStatus() === Flow::STATUS_ERROR) {
-				$flow->setStatus(Flow::STATUS_OK);
-				$flow->setStatusMessage(null);
-				$mapper->update($flow);
-			}
-
-			return;
-		}
-
-		$refusal = new FlowDeadEnd(nodeIds: $deadEnds);
-
-		$flow->setStatus(Flow::STATUS_ERROR);
-		$flow->setStatusMessage($refusal->getMessage());
-		$mapper->update($flow);
-
-		$this->logger->warning(
-			message: '[FlowRunVersionPin] Refused to queue a flow with a dead end',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'flow' => $flowId,
-				'nodes' => $deadEnds,
-			]
-		);
-
-		throw $refusal;
+		$deadEnds = (new FlowDeadEndSteps(preflight: $preflight))->inGraph(graph: $graph);
+		$refusal = (new FlowDeadEndVerdict(mapper: $mapper, flow: $flow))->record(deadEnds: $deadEnds);
+		$this->refuseQueueing(flowId: $flowId, refusal: $refusal);
 
 	}//end refuseDeadEnd()
 
 	/**
-	 * The ids of the steps a token cannot leave.
+	 * Log a dead-end refusal, then throw it; nothing when there is none.
 	 *
-	 * @param FlowNodePreflight    $preflight The inspector.
-	 * @param array<string, mixed> $graph     The graph being judged.
+	 * @param string           $flowId  The flow uuid.
+	 * @param FlowDeadEnd|null $refusal The refusal, or null for a sound graph.
 	 *
-	 * @return array<int, string> The offending step ids.
+	 * @return void
+	 *
+	 * @throws FlowDeadEnd When there is a refusal.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function deadEndsIn(FlowNodePreflight $preflight, array $graph): array {
-		$findings = $preflight->inspect(
-			flow: [
-				'nodes' => (array)($graph['nodes'] ?? []),
-				'edges' => (array)($graph['edges'] ?? []),
-			]
-		);
-
-		$deadEnds = [];
-		foreach (($findings['warnings'] ?? []) as $warning) {
-			if (($warning['reason'] ?? '') === FlowNodePreflight::REASON_DEAD_END) {
-				$deadEnds[] = (string)($warning['step'] ?? '');
-			}
+	private function refuseQueueing(string $flowId, ?FlowDeadEnd $refusal): void {
+		if ($refusal === null) {
+			return;
 		}
 
-		return $deadEnds;
+		$this->logger->warning(
+			message: '[FlowRunVersionPin] Refused to queue a flow with a dead end',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flowId, 'nodes' => $refusal->getNodeIds()]
+		);
 
-	}//end deadEndsIn()
+		throw $refusal;
+	}//end refuseQueueing()
 }//end class

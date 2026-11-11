@@ -6,14 +6,10 @@
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load register data')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Empty state -->
 		<NcEmptyContent
@@ -53,53 +49,29 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import DatabaseOffOutline from 'vue-material-design-icons/DatabaseOffOutline.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
+import { fetchFileTab, fileTab } from './fileTabFetch.js'
 
 export default {
 	name: 'RegisterObjectsTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
-		AlertCircleOutline,
 		DatabaseOffOutline,
 	},
 
-	props: {
-		fileId: {
-			type: Number,
-			required: true,
-		},
-	},
+	mixins: [fileTab('fetchObjects')],
 
 	data() {
 		return {
-			loading: false,
-			error: false,
-			errorMessage: '',
 			objects: [],
 		}
-	},
-
-	watch: {
-		fileId: {
-			/**
-			 * @param newVal
-			 * @spec exclude watcher refetching objects on fileId change, UI plumbing
-			 */
-			handler(newVal) {
-				if (newVal) {
-					this.fetchObjects()
-				}
-			},
-
-			immediate: true,
-		},
 	},
 
 	methods: {
@@ -111,33 +83,16 @@ export default {
 		 * @spec exclude API passthrough loading file-referencing objects; object contract owned by object capability
 		 */
 		async fetchObjects() {
-			this.loading = true
-			this.error = false
-			this.errorMessage = ''
 			this.objects = []
-
-			try {
-				const url = generateUrl(
-					'/apps/openregister/api/files/{fileId}/objects',
-					{
-						fileId: this.fileId,
-					},
-				)
-				const response = await axios.get(url)
-
-				if (response.data?.success) {
-					this.objects = response.data.data || []
-				} else {
-					this.error = true
-					this.errorMessage =
-						response.data?.error || t('openregister', 'Unknown error')
-				}
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message
-				console.error('[RegisterObjectsTab] Failed to fetch objects:', err)
-			} finally {
-				this.loading = false
+			const failure = await fetchFileTab(
+				this,
+				'/apps/openregister/api/files/{fileId}/objects',
+				(data) => {
+					this.objects = data || []
+				},
+			)
+			if (failure) {
+				console.error('[RegisterObjectsTab] Failed to fetch objects:', failure)
 			}
 		},
 
@@ -177,7 +132,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
+
 .register-objects-tab {
 	padding: 10px;
 }
@@ -230,15 +187,7 @@ export default {
 	margin: 0 4px;
 }
 
-.material-design-icon {
-	display: inline-flex;
-}
-
-.material-design-icon :deep(svg) {
-	width: 64px;
-	height: 64px;
-	fill: currentColor;
-}
+@include material-design-icon-block;
 
 @media (prefers-reduced-motion: reduce) {
 	.register-objects-tab__link {

@@ -31,6 +31,7 @@ namespace Unit\Service\Handoff;
 
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Handoff\HandoffKindBinding;
 
 /**
  * HandoffContractBindingValidatorTest.
@@ -122,9 +123,7 @@ class HandoffContractBindingValidatorTest extends TestCase {
 		$shape = $this->shape();
 		$this->assertTrue(
 			HandoffContractBindingValidator::isCompleteBinding(
-				kindUri: self::CASE_URI,
-				binding: $shape['handoffContract'],
-				properties: $shape['properties']
+				kind: new HandoffKindBinding(kindUri: self::CASE_URI, fieldMap: ($shape['handoffContract'][self::CASE_URI] ?? null), properties: $shape['properties'])
 			)
 		);
 
@@ -133,18 +132,14 @@ class HandoffContractBindingValidatorTest extends TestCase {
 		unset($incomplete[self::CASE_URI]['source']);
 		$this->assertFalse(
 			HandoffContractBindingValidator::isCompleteBinding(
-				kindUri: self::CASE_URI,
-				binding: $incomplete,
-				properties: $shape['properties']
+				kind: new HandoffKindBinding(kindUri: self::CASE_URI, fieldMap: ($incomplete[self::CASE_URI] ?? null), properties: $shape['properties'])
 			)
 		);
 
 		// Kind not bound at all → incomplete.
 		$this->assertFalse(
 			HandoffContractBindingValidator::isCompleteBinding(
-				kindUri: 'https://openregister.app/ns#Quote',
-				binding: $shape['handoffContract'],
-				properties: $shape['properties']
+				kind: new HandoffKindBinding(kindUri: 'https://openregister.app/ns#Quote', fieldMap: ($shape['handoffContract']['https://openregister.app/ns#Quote'] ?? null), properties: $shape['properties'])
 			)
 		);
 

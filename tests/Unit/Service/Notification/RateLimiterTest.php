@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\RateLimiter;
+use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
 use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;

@@ -21,17 +21,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class CollectiveLinkMapper
  *
  * @template-extends QBMapper<CollectiveLink>
+ * @method list<CollectiveLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class CollectiveLinkMapper extends QBMapper {
+class CollectiveLinkMapper extends QBMapper implements CollectiveLinkMapperInterface {
+
+	use ObjectKeyLinkTrait;
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -42,40 +45,6 @@ class CollectiveLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find collective links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return CollectiveLink[] Array of collective links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
-
-	/**
-	 * Find collective links by page id.
-	 *
-	 * @param int $pageId The page id.
-	 *
-	 * @return CollectiveLink[] Array of collective links.
-	 */
-	public function findByPageId(int $pageId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('page_id', $qb->createNamedParameter($pageId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByPageId()
-
-	/**
 	 * Find a specific collective link by object UUID and page id.
 	 *
 	 * @param string $objectUuid The object UUID.
@@ -84,33 +53,13 @@ class CollectiveLinkMapper extends QBMapper {
 	 * @return CollectiveLink|null The link or null if not found.
 	 */
 	public function findByObjectAndPage(string $objectUuid, int $pageId): ?CollectiveLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('page_id', $qb->createNamedParameter($pageId, IQueryBuilder::PARAM_INT)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'page_id', value: $pageId));
+		if ($link instanceof CollectiveLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndPage()
-
-	/**
-	 * Delete all collective links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a collective link by object UUID + page id (Tier-2 unlink path).
@@ -124,11 +73,6 @@ class CollectiveLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndPage(string $objectUuid, int $pageId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('page_id', $qb->createNamedParameter($pageId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'page_id', value: $pageId));
 	}//end deleteByObjectAndPage()
 }//end class

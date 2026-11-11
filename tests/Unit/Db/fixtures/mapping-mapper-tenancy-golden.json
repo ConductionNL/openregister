@@ -1,0 +1,257 @@
+{
+    "findAll as admin": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_mappings, NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "find as admin": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException",
+        "message": "Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_mappings, NULL)",
+            "#1 param :p1 = slug-1, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 resetQueryPart(where)",
+            "#1 param :p2 = slug-1, 2",
+            "#1 expr.eq(uuid, :p2, NULL)",
+            "#1 param :p3 = slug-1, 2",
+            "#1 expr.eq(slug, :p3, NULL)",
+            "#1 expr.orX(eq(uuid, :p2, NULL), eq(slug, :p3, NULL))",
+            "#1 where(orX(eq(uuid, :p2, NULL), eq(slug, :p3, NULL)))",
+            "#1 param :p4 = org-1, 2",
+            "#1 expr.eq(organisation, :p4, NULL)",
+            "#1 expr.orX(eq(organisation, :p4, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p4, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "create as admin": {
+        "organisation": "org-1",
+        "queries": [
+            "#1 insert(openregister_mappings)",
+            "#1 param :p1 = M, 2",
+            "#1 setValue(name, :p1)",
+            "#1 param :p2 = m, 2",
+            "#1 setValue(slug, :p2)",
+            "#1 param :p3 = mapping-uuid-1, 2",
+            "#1 setValue(uuid, :p3)",
+            "#1 param :p4 = 0.0.1, 2",
+            "#1 setValue(version, :p4)",
+            "#1 param :p5 = DateTime, datetime",
+            "#1 setValue(created, :p5)",
+            "#1 param :p6 = DateTime, datetime",
+            "#1 setValue(updated, :p6)",
+            "#1 param :p7 = org-1, 2",
+            "#1 setValue(organisation, :p7)",
+            "#1 executeStatement()"
+        ]
+    },
+    "findAll as granted user": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_mappings, NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "find as granted user": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException",
+        "message": "Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_mappings, NULL)",
+            "#1 param :p1 = slug-1, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 resetQueryPart(where)",
+            "#1 param :p2 = slug-1, 2",
+            "#1 expr.eq(uuid, :p2, NULL)",
+            "#1 param :p3 = slug-1, 2",
+            "#1 expr.eq(slug, :p3, NULL)",
+            "#1 expr.orX(eq(uuid, :p2, NULL), eq(slug, :p3, NULL))",
+            "#1 where(orX(eq(uuid, :p2, NULL), eq(slug, :p3, NULL)))",
+            "#1 param :p4 = org-1, 2",
+            "#1 expr.eq(organisation, :p4, NULL)",
+            "#1 expr.orX(eq(organisation, :p4, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p4, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "create as granted user": {
+        "organisation": "org-1",
+        "queries": [
+            "#1 insert(openregister_mappings)",
+            "#1 param :p1 = M, 2",
+            "#1 setValue(name, :p1)",
+            "#1 param :p2 = m, 2",
+            "#1 setValue(slug, :p2)",
+            "#1 param :p3 = mapping-uuid-1, 2",
+            "#1 setValue(uuid, :p3)",
+            "#1 param :p4 = 0.0.1, 2",
+            "#1 setValue(version, :p4)",
+            "#1 param :p5 = DateTime, datetime",
+            "#1 setValue(created, :p5)",
+            "#1 param :p6 = DateTime, datetime",
+            "#1 setValue(updated, :p6)",
+            "#1 param :p7 = org-1, 2",
+            "#1 setValue(organisation, :p7)",
+            "#1 executeStatement()"
+        ]
+    },
+    "findAll as reader": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_mappings, NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "find as reader": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException",
+        "message": "Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_mappings, NULL)",
+            "#1 param :p1 = slug-1, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 resetQueryPart(where)",
+            "#1 param :p2 = slug-1, 2",
+            "#1 expr.eq(uuid, :p2, NULL)",
+            "#1 param :p3 = slug-1, 2",
+            "#1 expr.eq(slug, :p3, NULL)",
+            "#1 expr.orX(eq(uuid, :p2, NULL), eq(slug, :p3, NULL))",
+            "#1 where(orX(eq(uuid, :p2, NULL), eq(slug, :p3, NULL)))",
+            "#1 param :p4 = org-1, 2",
+            "#1 expr.eq(organisation, :p4, NULL)",
+            "#1 expr.orX(eq(organisation, :p4, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p4, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "create as reader": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to create mapping entities.",
+        "queries": []
+    },
+    "findAll as refused user": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_mappings, NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation, :p1, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 expr.orX(eq(organisation, :p1, NULL), isNull(organisation))",
+            "#1 andWhere(orX(eq(organisation, :p1, NULL), isNull(organisation)))",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "find as refused user": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException",
+        "message": "Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_mappings, NULL)",
+            "#1 param :p1 = slug-1, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 resetQueryPart(where)",
+            "#1 param :p2 = slug-1, 2",
+            "#1 expr.eq(uuid, :p2, NULL)",
+            "#1 param :p3 = slug-1, 2",
+            "#1 expr.eq(slug, :p3, NULL)",
+            "#1 expr.orX(eq(uuid, :p2, NULL), eq(slug, :p3, NULL))",
+            "#1 where(orX(eq(uuid, :p2, NULL), eq(slug, :p3, NULL)))",
+            "#1 param :p4 = org-1, 2",
+            "#1 expr.eq(organisation, :p4, NULL)",
+            "#1 expr.orX(eq(organisation, :p4, NULL))",
+            "#1 andWhere(orX(eq(organisation, :p4, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "create as refused user": {
+        "thrown": "Exception",
+        "message": "Access denied: You do not have permission to create mapping entities.",
+        "queries": []
+    },
+    "findAll as anonymous": {
+        "rows": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_mappings, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "find as anonymous": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException",
+        "message": "Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_mappings, NULL)",
+            "#1 param :p1 = slug-1, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 resetQueryPart(where)",
+            "#1 param :p2 = slug-1, 2",
+            "#1 expr.eq(uuid, :p2, NULL)",
+            "#1 param :p3 = slug-1, 2",
+            "#1 expr.eq(slug, :p3, NULL)",
+            "#1 expr.orX(eq(uuid, :p2, NULL), eq(slug, :p3, NULL))",
+            "#1 where(orX(eq(uuid, :p2, NULL), eq(slug, :p3, NULL)))",
+            "#1 andWhere(1 = 0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "create as anonymous": {
+        "organisation": null,
+        "queries": [
+            "#1 insert(openregister_mappings)",
+            "#1 param :p1 = M, 2",
+            "#1 setValue(name, :p1)",
+            "#1 param :p2 = m, 2",
+            "#1 setValue(slug, :p2)",
+            "#1 param :p3 = mapping-uuid-1, 2",
+            "#1 setValue(uuid, :p3)",
+            "#1 param :p4 = 0.0.1, 2",
+            "#1 setValue(version, :p4)",
+            "#1 param :p5 = DateTime, datetime",
+            "#1 setValue(created, :p5)",
+            "#1 param :p6 = DateTime, datetime",
+            "#1 setValue(updated, :p6)",
+            "#1 executeStatement()"
+        ]
+    }
+}

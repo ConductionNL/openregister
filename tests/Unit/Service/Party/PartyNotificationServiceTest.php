@@ -10,14 +10,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
 use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
+use OCA\OpenRegister\Service\Party\PartyAddressSelection;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Notification\EmailSender;
-use OCA\OpenRegister\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
-use OCA\OpenRegister\Service\Party\PartyNotificationService;
+use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
+use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
+use OCA\OpenRegister\Notifications\Service\Party\PartyReachGates;
 use OCA\OpenRegister\Service\Party\PartyService;
 use PHPUnit\Framework\MockObject\MockObject;
 use OCP\EventDispatcher\Event;
@@ -25,11 +28,13 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\MailAddressee;
+use OCA\OpenRegister\Notifications\Service\Notification\MailContent;
 
 /**
  * A melder with no account is reached over the addresses the party holds.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 class PartyNotificationServiceTest extends TestCase {
 
@@ -110,9 +115,9 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->indicators = $this->createMock(PartyIndicatorGuard::class);
 		$this->email = $this->createMock(EmailSender::class);
 
-		$this->email->method('sendToAddress')->willReturnCallback(
-			function (string $address, string $displayName, string $subject, string $body, ?array $unsubscribe = null): string {
-				$this->sent[] = ['address' => $address, 'name' => $displayName, 'subject' => $subject, 'body' => $body, 'unsubscribe' => $unsubscribe];
+		$this->email->method('sendMailTo')->willReturnCallback(
+			function (MailAddressee $to, MailContent $mail): string {
+				$this->sent[] = ['address' => $to->address, 'name' => $to->displayName, 'subject' => $mail->subject, 'body' => $mail->body, 'unsubscribe' => $mail->unsubscribe];
 
 				return EmailSender::OUTCOME_DISPATCHED;
 			}
@@ -132,9 +137,11 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->service = new PartyNotificationService(
 			$this->links,
 			$this->parties,
-			$this->indicators,
 			$this->email,
-			new OptOutAuthority(eventDispatcher: $dispatcher, appConfig: $appConfig, logger: $this->createMock(LoggerInterface::class))
+			new PartyReachGates(
+				indicators: $this->indicators,
+				optOut: new OptOutAuthority(eventDispatcher: $dispatcher, appConfig: $appConfig, logger: $this->createMock(LoggerInterface::class))
+			)
 		);
 	}//end setUp()
 
@@ -191,7 +198,7 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->parties->method('definitionFor')->willReturn(new PartyDefinition());
 		$this->indicators->method('sendRefusalFor')->willReturn(null);
 		$this->parties->method('addressesOfKind')->willReturnCallback(
-			static fn (ObjectEntity $p, string $kind, ?PartyDefinition $d = null): array => [
+			static fn (ObjectEntity $p, PartyAddressSelection $selection): array => [
 				['kind' => 'correspondence', 'type' => 'email', 'value' => $byUuid[(string)$p->getUuid()][1], 'label' => null],
 			]
 		);
@@ -228,8 +235,8 @@ class PartyNotificationServiceTest extends TestCase {
 
 		$this->indicators->method('sendRefusalFor')->willReturn($refusal);
 		$this->parties->method('addressesOfKind')->willReturnCallback(
-			static fn (ObjectEntity $p, string $kind, ?PartyDefinition $d = null): array => array_values(
-				array_filter($addresses, static fn (array $a): bool => $a['kind'] === $kind)
+			static fn (ObjectEntity $p, PartyAddressSelection $selection): array => array_values(
+				array_filter($addresses, static fn (array $a): bool => $a['kind'] === $selection->kind)
 			)
 		);
 		$this->parties->method('addresses')->willReturn($addresses);
@@ -241,7 +248,7 @@ class PartyNotificationServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function testAMelderWithNoAccountIsNotifiedAtTheCorrespondenceAddress(): void {
 		$this->objectHasPartyWith(
@@ -251,11 +258,11 @@ class PartyNotificationServiceTest extends TestCase {
 			]
 		);
 
-		$outcome = $this->service->notifyParties(
+		$outcome = $this->service->notifyParties(message: new PartyMessage(
 			objectUuid: 'case-1',
 			subject: 'Uw melding',
 			body: 'Wij hebben uw melding ontvangen.'
-		);
+		));
 
 		$this->assertCount(1, $this->sent);
 		$this->assertSame('jan@example.org', $this->sent[0]['address']);
@@ -269,7 +276,7 @@ class PartyNotificationServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function testARefuseSendIndicatorStopsTheMessage(): void {
 		$this->objectHasPartyWith(
@@ -277,7 +284,7 @@ class PartyNotificationServiceTest extends TestCase {
 			indicators: [['key' => 'geen-post', 'label' => 'Geen post', 'effect' => 'refuse-send', 'note' => null]]
 		);
 
-		$outcome = $this->service->notifyParties(objectUuid: 'case-1', subject: 'Uw melding', body: 'Tekst');
+		$outcome = $this->service->notifyParties(message: new PartyMessage(objectUuid: 'case-1', subject: 'Uw melding', body: 'Tekst'));
 
 		$this->assertSame([], $this->sent);
 		$this->assertSame('refused-by-indicator', $outcome[0]['outcome']);
@@ -293,12 +300,12 @@ class PartyNotificationServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function testAPartyWithNoAddressIsReportedNotSkipped(): void {
 		$this->objectHasPartyWith(addresses: []);
 
-		$outcome = $this->service->notifyParties(objectUuid: 'case-1', subject: 'Uw melding', body: 'Tekst');
+		$outcome = $this->service->notifyParties(message: new PartyMessage(objectUuid: 'case-1', subject: 'Uw melding', body: 'Tekst'));
 
 		$this->assertCount(1, $outcome);
 		$this->assertSame(EmailSender::OUTCOME_NO_ADDRESS, $outcome[0]['outcome']);
@@ -309,7 +316,7 @@ class PartyNotificationServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function testARoleNarrowsTheRecipients(): void {
 		$this->objectHasPartyWith(
@@ -331,7 +338,7 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->objectHasTwoParties();
 		$this->optedOut = ['piet@example.org'];
 
-		$outcome = $this->service->notifyParties(objectUuid: 'case-1', subject: 'Uw zaak', body: 'Nieuwe status', category: 'case-update');
+		$outcome = $this->service->notifyParties(message: new PartyMessage(objectUuid: 'case-1', subject: 'Uw zaak', body: 'Nieuwe status', category: 'case-update'));
 
 		$this->assertCount(1, $this->sent);
 		$this->assertSame('jan@example.org', $this->sent[0]['address']);
@@ -359,11 +366,11 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->objectHasTwoParties();
 		$this->integriq = 'ignore';
 
-		$refused = $this->service->notifyParties(objectUuid: 'case-1', subject: 'S', body: 'B');
+		$refused = $this->service->notifyParties(message: new PartyMessage(objectUuid: 'case-1', subject: 'S', body: 'B'));
 		$this->assertSame([], $this->sent);
 		$this->assertSame(['authority-unavailable', 'authority-unavailable'], array_column($refused, 'outcome'));
 
-		$sent = $this->service->notifyParties(objectUuid: 'case-1', subject: 'S', body: 'B', category: 'besluit');
+		$sent = $this->service->notifyParties(message: new PartyMessage(objectUuid: 'case-1', subject: 'S', body: 'B', category: 'besluit'));
 		$this->assertCount(2, $this->sent);
 		$this->assertSame('B', $this->sent[0]['body']);
 		$this->assertNull($this->sent[0]['unsubscribe']);
@@ -384,7 +391,7 @@ class PartyNotificationServiceTest extends TestCase {
 		);
 		$this->optedOut = ['jan@example.org'];
 
-		$outcome = $this->service->notifyParties(objectUuid: 'case-1', subject: 'S', body: 'B');
+		$outcome = $this->service->notifyParties(message: new PartyMessage(objectUuid: 'case-1', subject: 'S', body: 'B'));
 
 		$this->assertSame('refused-by-indicator', $outcome[0]['outcome']);
 		$this->assertSame([], $this->questions);

@@ -3,7 +3,7 @@
 namespace Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\Message;
+use OCA\OpenRegister\Notifications\Db\Message;
 use PHPUnit\Framework\TestCase;
 
 class MessageTest extends TestCase {

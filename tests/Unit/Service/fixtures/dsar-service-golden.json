@@ -1,0 +1,2269 @@
+{
+    "erase activity unresolved": {
+        "result": {
+            "subject": "a@b.nl",
+            "type": null,
+            "dryRun": false,
+            "matchedCount": 6,
+            "erased": [
+                {
+                    "uuid": "u-10",
+                    "register": "1",
+                    "schema": "2"
+                },
+                {
+                    "uuid": "by-id-11",
+                    "register": "1",
+                    "schema": "2"
+                }
+            ],
+            "failed": [
+                {
+                    "object": {
+                        "object_id": 13,
+                        "object_uuid": "gone"
+                    },
+                    "error": "Object could not be loaded for erasure"
+                },
+                {
+                    "object": {
+                        "object_id": 14,
+                        "object_uuid": "broken"
+                    },
+                    "error": "Object could not be loaded for erasure"
+                },
+                {
+                    "object": {
+                        "object_id": 15,
+                        "object_uuid": "readonly"
+                    },
+                    "error": "read only"
+                }
+            ],
+            "withheld": [
+                {
+                    "uuid": "held",
+                    "reason": "archival"
+                }
+            ],
+            "complete": false,
+            "failedCount": 3,
+            "withheldCount": 1
+        },
+        "log": [
+            [
+                "qb.selectDistinct",
+                [
+                    [
+                        "e.id",
+                        "e.type",
+                        "e.value",
+                        "e.category",
+                        "e.detected_at",
+                        "r.object_id",
+                        "r.object_uuid",
+                        "r.register_id",
+                        "r.schema_id"
+                    ]
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_entities",
+                    "e"
+                ]
+            ],
+            [
+                "qb.innerJoin",
+                [
+                    "e",
+                    "openregister_entity_relations",
+                    "r",
+                    "eq(r.entity_id,e.id)"
+                ]
+            ],
+            [
+                "qb.where",
+                [
+                    "isNotNull(r.object_id)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "iLike(e.value,:a@b.nl)"
+                ]
+            ],
+            [
+                "closeCursor"
+            ],
+            [
+                "config",
+                "openregister",
+                "dsar_processing_activity",
+                "dsar"
+            ],
+            [
+                "resolveReference",
+                "unknown"
+            ],
+            [
+                "find",
+                "u-10"
+            ],
+            [
+                "update",
+                "u-10",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                null,
+                {
+                    "id": "u-10",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "find",
+                11
+            ],
+            [
+                "update",
+                "by-id-11",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                null,
+                {
+                    "id": "by-id-11",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "find",
+                "held"
+            ],
+            [
+                "find",
+                "gone"
+            ],
+            [
+                "warning",
+                "[DSAR] Matched object could not be loaded during vergetelheid",
+                {
+                    "object": {
+                        "object_id": 13,
+                        "object_uuid": "gone"
+                    }
+                }
+            ],
+            [
+                "find",
+                "broken"
+            ],
+            [
+                "debug",
+                "[DSAR] Failed to load object",
+                {
+                    "identifier": "broken",
+                    "error": "db down"
+                }
+            ],
+            [
+                "warning",
+                "[DSAR] Matched object could not be loaded during vergetelheid",
+                {
+                    "object": {
+                        "object_id": 14,
+                        "object_uuid": "broken"
+                    }
+                }
+            ],
+            [
+                "find",
+                "readonly"
+            ],
+            [
+                "update",
+                "readonly",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                null,
+                {
+                    "id": "readonly",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "warning",
+                "[DSAR] Soft-delete failed during vergetelheid",
+                {
+                    "object": {
+                        "object_id": 15,
+                        "object_uuid": "readonly"
+                    },
+                    "error": "read only"
+                }
+            ]
+        ]
+    },
+    "erase all": {
+        "result": {
+            "subject": "a@b.nl",
+            "type": null,
+            "dryRun": false,
+            "matchedCount": 6,
+            "erased": [
+                {
+                    "uuid": "u-10",
+                    "register": "1",
+                    "schema": "2"
+                },
+                {
+                    "uuid": "by-id-11",
+                    "register": "1",
+                    "schema": "2"
+                }
+            ],
+            "failed": [
+                {
+                    "object": {
+                        "object_id": 13,
+                        "object_uuid": "gone"
+                    },
+                    "error": "Object could not be loaded for erasure"
+                },
+                {
+                    "object": {
+                        "object_id": 14,
+                        "object_uuid": "broken"
+                    },
+                    "error": "Object could not be loaded for erasure"
+                },
+                {
+                    "object": {
+                        "object_id": 15,
+                        "object_uuid": "readonly"
+                    },
+                    "error": "read only"
+                }
+            ],
+            "withheld": [
+                {
+                    "uuid": "held",
+                    "reason": "archival"
+                }
+            ],
+            "complete": false,
+            "failedCount": 3,
+            "withheldCount": 1
+        },
+        "log": [
+            [
+                "qb.selectDistinct",
+                [
+                    [
+                        "e.id",
+                        "e.type",
+                        "e.value",
+                        "e.category",
+                        "e.detected_at",
+                        "r.object_id",
+                        "r.object_uuid",
+                        "r.register_id",
+                        "r.schema_id"
+                    ]
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_entities",
+                    "e"
+                ]
+            ],
+            [
+                "qb.innerJoin",
+                [
+                    "e",
+                    "openregister_entity_relations",
+                    "r",
+                    "eq(r.entity_id,e.id)"
+                ]
+            ],
+            [
+                "qb.where",
+                [
+                    "isNotNull(r.object_id)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "iLike(e.value,:a@b.nl)"
+                ]
+            ],
+            [
+                "closeCursor"
+            ],
+            [
+                "config",
+                "openregister",
+                "dsar_processing_activity",
+                "dsar"
+            ],
+            [
+                "resolveReference",
+                "dsar"
+            ],
+            [
+                "find",
+                "u-10"
+            ],
+            [
+                "update",
+                "u-10",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                "act-dsar",
+                {
+                    "id": "u-10",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "find",
+                11
+            ],
+            [
+                "update",
+                "by-id-11",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                "act-dsar",
+                {
+                    "id": "by-id-11",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "find",
+                "held"
+            ],
+            [
+                "find",
+                "gone"
+            ],
+            [
+                "warning",
+                "[DSAR] Matched object could not be loaded during vergetelheid",
+                {
+                    "object": {
+                        "object_id": 13,
+                        "object_uuid": "gone"
+                    }
+                }
+            ],
+            [
+                "find",
+                "broken"
+            ],
+            [
+                "debug",
+                "[DSAR] Failed to load object",
+                {
+                    "identifier": "broken",
+                    "error": "db down"
+                }
+            ],
+            [
+                "warning",
+                "[DSAR] Matched object could not be loaded during vergetelheid",
+                {
+                    "object": {
+                        "object_id": 14,
+                        "object_uuid": "broken"
+                    }
+                }
+            ],
+            [
+                "find",
+                "readonly"
+            ],
+            [
+                "update",
+                "readonly",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                "act-dsar",
+                {
+                    "id": "readonly",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "warning",
+                "[DSAR] Soft-delete failed during vergetelheid",
+                {
+                    "object": {
+                        "object_id": 15,
+                        "object_uuid": "readonly"
+                    },
+                    "error": "read only"
+                }
+            ]
+        ]
+    },
+    "erase config throws": {
+        "result": {
+            "subject": "a@b.nl",
+            "type": null,
+            "dryRun": false,
+            "matchedCount": 1,
+            "erased": [
+                {
+                    "uuid": "u-10",
+                    "register": "1",
+                    "schema": "2"
+                }
+            ],
+            "failed": [],
+            "withheld": [],
+            "complete": true,
+            "failedCount": 0,
+            "withheldCount": 0
+        },
+        "log": [
+            [
+                "qb.selectDistinct",
+                [
+                    [
+                        "e.id",
+                        "e.type",
+                        "e.value",
+                        "e.category",
+                        "e.detected_at",
+                        "r.object_id",
+                        "r.object_uuid",
+                        "r.register_id",
+                        "r.schema_id"
+                    ]
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_entities",
+                    "e"
+                ]
+            ],
+            [
+                "qb.innerJoin",
+                [
+                    "e",
+                    "openregister_entity_relations",
+                    "r",
+                    "eq(r.entity_id,e.id)"
+                ]
+            ],
+            [
+                "qb.where",
+                [
+                    "isNotNull(r.object_id)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "iLike(e.value,:a@b.nl)"
+                ]
+            ],
+            [
+                "closeCursor"
+            ],
+            [
+                "config",
+                "openregister",
+                "dsar_processing_activity",
+                "dsar"
+            ],
+            [
+                "resolveReference",
+                "dsar"
+            ],
+            [
+                "find",
+                "u-10"
+            ],
+            [
+                "update",
+                "u-10",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                "act-dsar",
+                {
+                    "id": "u-10",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ]
+        ]
+    },
+    "erase dry run": {
+        "result": {
+            "subject": "a@b.nl",
+            "type": null,
+            "dryRun": true,
+            "matchedCount": 6,
+            "erased": [],
+            "failed": [],
+            "withheld": [],
+            "complete": true,
+            "failedCount": 0,
+            "withheldCount": 0
+        },
+        "log": [
+            [
+                "qb.selectDistinct",
+                [
+                    [
+                        "e.id",
+                        "e.type",
+                        "e.value",
+                        "e.category",
+                        "e.detected_at",
+                        "r.object_id",
+                        "r.object_uuid",
+                        "r.register_id",
+                        "r.schema_id"
+                    ]
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_entities",
+                    "e"
+                ]
+            ],
+            [
+                "qb.innerJoin",
+                [
+                    "e",
+                    "openregister_entity_relations",
+                    "r",
+                    "eq(r.entity_id,e.id)"
+                ]
+            ],
+            [
+                "qb.where",
+                [
+                    "isNotNull(r.object_id)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "iLike(e.value,:a@b.nl)"
+                ]
+            ],
+            [
+                "closeCursor"
+            ]
+        ]
+    },
+    "erase no activity": {
+        "result": {
+            "subject": "a@b.nl",
+            "type": null,
+            "dryRun": false,
+            "matchedCount": 6,
+            "erased": [
+                {
+                    "uuid": "u-10",
+                    "register": "1",
+                    "schema": "2"
+                },
+                {
+                    "uuid": "by-id-11",
+                    "register": "1",
+                    "schema": "2"
+                }
+            ],
+            "failed": [
+                {
+                    "object": {
+                        "object_id": 13,
+                        "object_uuid": "gone"
+                    },
+                    "error": "Object could not be loaded for erasure"
+                },
+                {
+                    "object": {
+                        "object_id": 14,
+                        "object_uuid": "broken"
+                    },
+                    "error": "Object could not be loaded for erasure"
+                },
+                {
+                    "object": {
+                        "object_id": 15,
+                        "object_uuid": "readonly"
+                    },
+                    "error": "read only"
+                }
+            ],
+            "withheld": [
+                {
+                    "uuid": "held",
+                    "reason": "archival"
+                }
+            ],
+            "complete": false,
+            "failedCount": 3,
+            "withheldCount": 1
+        },
+        "log": [
+            [
+                "qb.selectDistinct",
+                [
+                    [
+                        "e.id",
+                        "e.type",
+                        "e.value",
+                        "e.category",
+                        "e.detected_at",
+                        "r.object_id",
+                        "r.object_uuid",
+                        "r.register_id",
+                        "r.schema_id"
+                    ]
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_entities",
+                    "e"
+                ]
+            ],
+            [
+                "qb.innerJoin",
+                [
+                    "e",
+                    "openregister_entity_relations",
+                    "r",
+                    "eq(r.entity_id,e.id)"
+                ]
+            ],
+            [
+                "qb.where",
+                [
+                    "isNotNull(r.object_id)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "iLike(e.value,:a@b.nl)"
+                ]
+            ],
+            [
+                "closeCursor"
+            ],
+            [
+                "config",
+                "openregister",
+                "dsar_processing_activity",
+                "dsar"
+            ],
+            [
+                "find",
+                "u-10"
+            ],
+            [
+                "update",
+                "u-10",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                null,
+                {
+                    "id": "u-10",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "find",
+                11
+            ],
+            [
+                "update",
+                "by-id-11",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                null,
+                {
+                    "id": "by-id-11",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "find",
+                "held"
+            ],
+            [
+                "find",
+                "gone"
+            ],
+            [
+                "warning",
+                "[DSAR] Matched object could not be loaded during vergetelheid",
+                {
+                    "object": {
+                        "object_id": 13,
+                        "object_uuid": "gone"
+                    }
+                }
+            ],
+            [
+                "find",
+                "broken"
+            ],
+            [
+                "debug",
+                "[DSAR] Failed to load object",
+                {
+                    "identifier": "broken",
+                    "error": "db down"
+                }
+            ],
+            [
+                "warning",
+                "[DSAR] Matched object could not be loaded during vergetelheid",
+                {
+                    "object": {
+                        "object_id": 14,
+                        "object_uuid": "broken"
+                    }
+                }
+            ],
+            [
+                "find",
+                "readonly"
+            ],
+            [
+                "update",
+                "readonly",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                null,
+                {
+                    "id": "readonly",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "warning",
+                "[DSAR] Soft-delete failed during vergetelheid",
+                {
+                    "object": {
+                        "object_id": 15,
+                        "object_uuid": "readonly"
+                    },
+                    "error": "read only"
+                }
+            ]
+        ]
+    },
+    "erase no user": {
+        "result": {
+            "error": [
+                "RuntimeException",
+                "DSAR operations require administrator privileges"
+            ]
+        },
+        "log": [
+            [
+                "warning",
+                "[DSAR] Blocked unprivileged DSAR composition call",
+                {
+                    "user": "anonymous"
+                }
+            ]
+        ]
+    },
+    "erase nothing": {
+        "result": {
+            "subject": "a@b.nl",
+            "type": null,
+            "dryRun": false,
+            "matchedCount": 0,
+            "erased": [],
+            "failed": [],
+            "withheld": [],
+            "complete": true,
+            "failedCount": 0,
+            "withheldCount": 0
+        },
+        "log": [
+            [
+                "qb.selectDistinct",
+                [
+                    [
+                        "e.id",
+                        "e.type",
+                        "e.value",
+                        "e.category",
+                        "e.detected_at",
+                        "r.object_id",
+                        "r.object_uuid",
+                        "r.register_id",
+                        "r.schema_id"
+                    ]
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_entities",
+                    "e"
+                ]
+            ],
+            [
+                "qb.innerJoin",
+                [
+                    "e",
+                    "openregister_entity_relations",
+                    "r",
+                    "eq(r.entity_id,e.id)"
+                ]
+            ],
+            [
+                "qb.where",
+                [
+                    "isNotNull(r.object_id)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "iLike(e.value,:a@b.nl)"
+                ]
+            ],
+            [
+                "closeCursor"
+            ]
+        ]
+    },
+    "erase only clean": {
+        "result": {
+            "subject": "a@b.nl",
+            "type": null,
+            "dryRun": false,
+            "matchedCount": 2,
+            "erased": [
+                {
+                    "uuid": "u-10",
+                    "register": "1",
+                    "schema": "2"
+                },
+                {
+                    "uuid": "by-id-11",
+                    "register": "1",
+                    "schema": "2"
+                }
+            ],
+            "failed": [],
+            "withheld": [],
+            "complete": true,
+            "failedCount": 0,
+            "withheldCount": 0
+        },
+        "log": [
+            [
+                "qb.selectDistinct",
+                [
+                    [
+                        "e.id",
+                        "e.type",
+                        "e.value",
+                        "e.category",
+                        "e.detected_at",
+                        "r.object_id",
+                        "r.object_uuid",
+                        "r.register_id",
+                        "r.schema_id"
+                    ]
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_entities",
+                    "e"
+                ]
+            ],
+            [
+                "qb.innerJoin",
+                [
+                    "e",
+                    "openregister_entity_relations",
+                    "r",
+                    "eq(r.entity_id,e.id)"
+                ]
+            ],
+            [
+                "qb.where",
+                [
+                    "isNotNull(r.object_id)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "iLike(e.value,:a@b.nl)"
+                ]
+            ],
+            [
+                "closeCursor"
+            ],
+            [
+                "config",
+                "openregister",
+                "dsar_processing_activity",
+                "dsar"
+            ],
+            [
+                "resolveReference",
+                "dsar"
+            ],
+            [
+                "find",
+                "u-10"
+            ],
+            [
+                "update",
+                "u-10",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                "act-dsar",
+                {
+                    "id": "u-10",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "find",
+                11
+            ],
+            [
+                "update",
+                "by-id-11",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                "act-dsar",
+                {
+                    "id": "by-id-11",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ]
+        ]
+    },
+    "erase typed empty type": {
+        "result": {
+            "subject": "a@b.nl",
+            "type": "",
+            "dryRun": false,
+            "matchedCount": 6,
+            "erased": [
+                {
+                    "uuid": "u-10",
+                    "register": "1",
+                    "schema": "2"
+                },
+                {
+                    "uuid": "by-id-11",
+                    "register": "1",
+                    "schema": "2"
+                }
+            ],
+            "failed": [
+                {
+                    "object": {
+                        "object_id": 13,
+                        "object_uuid": "gone"
+                    },
+                    "error": "Object could not be loaded for erasure"
+                },
+                {
+                    "object": {
+                        "object_id": 14,
+                        "object_uuid": "broken"
+                    },
+                    "error": "Object could not be loaded for erasure"
+                },
+                {
+                    "object": {
+                        "object_id": 15,
+                        "object_uuid": "readonly"
+                    },
+                    "error": "read only"
+                }
+            ],
+            "withheld": [
+                {
+                    "uuid": "held",
+                    "reason": "archival"
+                }
+            ],
+            "complete": false,
+            "failedCount": 3,
+            "withheldCount": 1
+        },
+        "log": [
+            [
+                "qb.selectDistinct",
+                [
+                    [
+                        "e.id",
+                        "e.type",
+                        "e.value",
+                        "e.category",
+                        "e.detected_at",
+                        "r.object_id",
+                        "r.object_uuid",
+                        "r.register_id",
+                        "r.schema_id"
+                    ]
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_entities",
+                    "e"
+                ]
+            ],
+            [
+                "qb.innerJoin",
+                [
+                    "e",
+                    "openregister_entity_relations",
+                    "r",
+                    "eq(r.entity_id,e.id)"
+                ]
+            ],
+            [
+                "qb.where",
+                [
+                    "isNotNull(r.object_id)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "iLike(e.value,:a@b.nl)"
+                ]
+            ],
+            [
+                "closeCursor"
+            ],
+            [
+                "config",
+                "openregister",
+                "dsar_processing_activity",
+                "dsar"
+            ],
+            [
+                "resolveReference",
+                "dsar"
+            ],
+            [
+                "find",
+                "u-10"
+            ],
+            [
+                "update",
+                "u-10",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                "act-dsar",
+                {
+                    "id": "u-10",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "find",
+                11
+            ],
+            [
+                "update",
+                "by-id-11",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                "act-dsar",
+                {
+                    "id": "by-id-11",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "find",
+                "held"
+            ],
+            [
+                "find",
+                "gone"
+            ],
+            [
+                "warning",
+                "[DSAR] Matched object could not be loaded during vergetelheid",
+                {
+                    "object": {
+                        "object_id": 13,
+                        "object_uuid": "gone"
+                    }
+                }
+            ],
+            [
+                "find",
+                "broken"
+            ],
+            [
+                "debug",
+                "[DSAR] Failed to load object",
+                {
+                    "identifier": "broken",
+                    "error": "db down"
+                }
+            ],
+            [
+                "warning",
+                "[DSAR] Matched object could not be loaded during vergetelheid",
+                {
+                    "object": {
+                        "object_id": 14,
+                        "object_uuid": "broken"
+                    }
+                }
+            ],
+            [
+                "find",
+                "readonly"
+            ],
+            [
+                "update",
+                "readonly",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                "act-dsar",
+                {
+                    "id": "readonly",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "warning",
+                "[DSAR] Soft-delete failed during vergetelheid",
+                {
+                    "object": {
+                        "object_id": 15,
+                        "object_uuid": "readonly"
+                    },
+                    "error": "read only"
+                }
+            ]
+        ]
+    },
+    "erase withheld only": {
+        "result": {
+            "subject": "a@b.nl",
+            "type": null,
+            "dryRun": false,
+            "matchedCount": 2,
+            "erased": [
+                {
+                    "uuid": "u-10",
+                    "register": "1",
+                    "schema": "2"
+                }
+            ],
+            "failed": [],
+            "withheld": [
+                {
+                    "uuid": "held",
+                    "reason": "archival"
+                }
+            ],
+            "complete": false,
+            "failedCount": 0,
+            "withheldCount": 1
+        },
+        "log": [
+            [
+                "qb.selectDistinct",
+                [
+                    [
+                        "e.id",
+                        "e.type",
+                        "e.value",
+                        "e.category",
+                        "e.detected_at",
+                        "r.object_id",
+                        "r.object_uuid",
+                        "r.register_id",
+                        "r.schema_id"
+                    ]
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_entities",
+                    "e"
+                ]
+            ],
+            [
+                "qb.innerJoin",
+                [
+                    "e",
+                    "openregister_entity_relations",
+                    "r",
+                    "eq(r.entity_id,e.id)"
+                ]
+            ],
+            [
+                "qb.where",
+                [
+                    "isNotNull(r.object_id)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "iLike(e.value,:a@b.nl)"
+                ]
+            ],
+            [
+                "closeCursor"
+            ],
+            [
+                "config",
+                "openregister",
+                "dsar_processing_activity",
+                "dsar"
+            ],
+            [
+                "resolveReference",
+                "dsar"
+            ],
+            [
+                "find",
+                "u-10"
+            ],
+            [
+                "update",
+                "u-10",
+                {
+                    "deletedBy": "officer",
+                    "deletedAt": "<time>",
+                    "reason": "avg-vergetelheid",
+                    "subject": "a@b.nl"
+                },
+                "act-dsar",
+                {
+                    "id": "u-10",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "find",
+                "held"
+            ]
+        ]
+    },
+    "find blank": {
+        "result": [],
+        "log": []
+    },
+    "find exact": {
+        "result": [
+            {
+                "object": {
+                    "name": "Ann",
+                    "email": "a@b.nl",
+                    "@self": {
+                        "id": "u-10",
+                        "slug": null,
+                        "name": "u-10",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "1",
+                        "schema": "2",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "u-10"
+                },
+                "gdprEntities": [
+                    {
+                        "type": "email",
+                        "value": "a@b.nl",
+                        "category": "contact",
+                        "detectedAt": "2026-01-01"
+                    },
+                    {
+                        "type": "name",
+                        "value": "Ann",
+                        "category": "person",
+                        "detectedAt": ""
+                    }
+                ]
+            },
+            {
+                "object": {
+                    "name": "Ann",
+                    "email": "a@b.nl",
+                    "@self": {
+                        "id": "by-id-11",
+                        "slug": null,
+                        "name": "by-id-11",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "1",
+                        "schema": "2",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "by-id-11"
+                },
+                "gdprEntities": [
+                    {
+                        "type": "email",
+                        "value": "a@b.nl",
+                        "category": "",
+                        "detectedAt": ""
+                    }
+                ]
+            },
+            {
+                "object": {
+                    "name": "Ann",
+                    "email": "a@b.nl",
+                    "@self": {
+                        "id": "held",
+                        "slug": null,
+                        "name": "held",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "1",
+                        "schema": "2",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "held"
+                },
+                "gdprEntities": [
+                    {
+                        "type": "email",
+                        "value": "a@b.nl",
+                        "category": "",
+                        "detectedAt": ""
+                    }
+                ]
+            },
+            {
+                "object": {
+                    "name": "Ann",
+                    "email": "a@b.nl",
+                    "@self": {
+                        "id": "readonly",
+                        "slug": null,
+                        "name": "readonly",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "1",
+                        "schema": "2",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "readonly"
+                },
+                "gdprEntities": [
+                    {
+                        "type": "email",
+                        "value": "a@b.nl",
+                        "category": "",
+                        "detectedAt": ""
+                    }
+                ]
+            }
+        ],
+        "log": [
+            [
+                "qb.selectDistinct",
+                [
+                    [
+                        "e.id",
+                        "e.type",
+                        "e.value",
+                        "e.category",
+                        "e.detected_at",
+                        "r.object_id",
+                        "r.object_uuid",
+                        "r.register_id",
+                        "r.schema_id"
+                    ]
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_entities",
+                    "e"
+                ]
+            ],
+            [
+                "qb.innerJoin",
+                [
+                    "e",
+                    "openregister_entity_relations",
+                    "r",
+                    "eq(r.entity_id,e.id)"
+                ]
+            ],
+            [
+                "qb.where",
+                [
+                    "isNotNull(r.object_id)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "iLike(e.value,:a@b.nl)"
+                ]
+            ],
+            [
+                "closeCursor"
+            ],
+            [
+                "find",
+                "u-10"
+            ],
+            [
+                "find",
+                11
+            ],
+            [
+                "find",
+                "held"
+            ],
+            [
+                "find",
+                "gone"
+            ],
+            [
+                "find",
+                "broken"
+            ],
+            [
+                "debug",
+                "[DSAR] Failed to load object",
+                {
+                    "identifier": "broken",
+                    "error": "db down"
+                }
+            ],
+            [
+                "find",
+                "readonly"
+            ]
+        ]
+    },
+    "find ilike typed": {
+        "result": [
+            {
+                "object": {
+                    "name": "Ann",
+                    "email": "a@b.nl",
+                    "@self": {
+                        "id": "u-10",
+                        "slug": null,
+                        "name": "u-10",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "1",
+                        "schema": "2",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "u-10"
+                },
+                "gdprEntities": [
+                    {
+                        "type": "email",
+                        "value": "a@b.nl",
+                        "category": "contact",
+                        "detectedAt": "2026-01-01"
+                    },
+                    {
+                        "type": "name",
+                        "value": "Ann",
+                        "category": "person",
+                        "detectedAt": ""
+                    }
+                ]
+            },
+            {
+                "object": {
+                    "name": "Ann",
+                    "email": "a@b.nl",
+                    "@self": {
+                        "id": "by-id-11",
+                        "slug": null,
+                        "name": "by-id-11",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "1",
+                        "schema": "2",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "by-id-11"
+                },
+                "gdprEntities": [
+                    {
+                        "type": "email",
+                        "value": "a@b.nl",
+                        "category": "",
+                        "detectedAt": ""
+                    }
+                ]
+            },
+            {
+                "object": {
+                    "name": "Ann",
+                    "email": "a@b.nl",
+                    "@self": {
+                        "id": "held",
+                        "slug": null,
+                        "name": "held",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "1",
+                        "schema": "2",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "held"
+                },
+                "gdprEntities": [
+                    {
+                        "type": "email",
+                        "value": "a@b.nl",
+                        "category": "",
+                        "detectedAt": ""
+                    }
+                ]
+            },
+            {
+                "object": {
+                    "name": "Ann",
+                    "email": "a@b.nl",
+                    "@self": {
+                        "id": "readonly",
+                        "slug": null,
+                        "name": "readonly",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "1",
+                        "schema": "2",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "readonly"
+                },
+                "gdprEntities": [
+                    {
+                        "type": "email",
+                        "value": "a@b.nl",
+                        "category": "",
+                        "detectedAt": ""
+                    }
+                ]
+            }
+        ],
+        "log": [
+            [
+                "qb.selectDistinct",
+                [
+                    [
+                        "e.id",
+                        "e.type",
+                        "e.value",
+                        "e.category",
+                        "e.detected_at",
+                        "r.object_id",
+                        "r.object_uuid",
+                        "r.register_id",
+                        "r.schema_id"
+                    ]
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_entities",
+                    "e"
+                ]
+            ],
+            [
+                "qb.innerJoin",
+                [
+                    "e",
+                    "openregister_entity_relations",
+                    "r",
+                    "eq(r.entity_id,e.id)"
+                ]
+            ],
+            [
+                "qb.where",
+                [
+                    "isNotNull(r.object_id)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "iLike(e.value,:%50\\%\\_x%)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "eq(e.type,:email)"
+                ]
+            ],
+            [
+                "closeCursor"
+            ],
+            [
+                "find",
+                "u-10"
+            ],
+            [
+                "find",
+                11
+            ],
+            [
+                "find",
+                "held"
+            ],
+            [
+                "find",
+                "gone"
+            ],
+            [
+                "find",
+                "broken"
+            ],
+            [
+                "debug",
+                "[DSAR] Failed to load object",
+                {
+                    "identifier": "broken",
+                    "error": "db down"
+                }
+            ],
+            [
+                "find",
+                "readonly"
+            ]
+        ]
+    },
+    "find no hits": {
+        "result": [],
+        "log": [
+            [
+                "qb.selectDistinct",
+                [
+                    [
+                        "e.id",
+                        "e.type",
+                        "e.value",
+                        "e.category",
+                        "e.detected_at",
+                        "r.object_id",
+                        "r.object_uuid",
+                        "r.register_id",
+                        "r.schema_id"
+                    ]
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_entities",
+                    "e"
+                ]
+            ],
+            [
+                "qb.innerJoin",
+                [
+                    "e",
+                    "openregister_entity_relations",
+                    "r",
+                    "eq(r.entity_id,e.id)"
+                ]
+            ],
+            [
+                "qb.where",
+                [
+                    "isNotNull(r.object_id)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "iLike(e.value,:x)"
+                ]
+            ],
+            [
+                "closeCursor"
+            ]
+        ]
+    },
+    "find query fails": {
+        "result": [],
+        "log": [
+            [
+                "qb.selectDistinct",
+                [
+                    [
+                        "e.id",
+                        "e.type",
+                        "e.value",
+                        "e.category",
+                        "e.detected_at",
+                        "r.object_id",
+                        "r.object_uuid",
+                        "r.register_id",
+                        "r.schema_id"
+                    ]
+                ]
+            ],
+            [
+                "qb.from",
+                [
+                    "openregister_entities",
+                    "e"
+                ]
+            ],
+            [
+                "qb.innerJoin",
+                [
+                    "e",
+                    "openregister_entity_relations",
+                    "r",
+                    "eq(r.entity_id,e.id)"
+                ]
+            ],
+            [
+                "qb.where",
+                [
+                    "isNotNull(r.object_id)"
+                ]
+            ],
+            [
+                "qb.andWhere",
+                [
+                    "iLike(e.value,:x)"
+                ]
+            ],
+            [
+                "warning",
+                "[DSAR] GdprEntity lookup failed",
+                {
+                    "subject": "x",
+                    "type": null,
+                    "error": "no table"
+                }
+            ]
+        ]
+    },
+    "find unprivileged": {
+        "result": {
+            "error": [
+                "RuntimeException",
+                "DSAR operations require administrator privileges"
+            ]
+        },
+        "log": [
+            [
+                "warning",
+                "[DSAR] Blocked unprivileged DSAR composition call",
+                {
+                    "user": "officer"
+                }
+            ]
+        ]
+    },
+    "rectify": {
+        "result": {
+            "id": "by-id-10",
+            "name": "Bea",
+            "email": "a@b.nl",
+            "new": 1,
+            "@self": {
+                "id": "by-id-10",
+                "slug": null,
+                "name": "by-id-10",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": "1",
+                "schema": "2",
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            }
+        },
+        "log": [
+            [
+                "find",
+                10
+            ],
+            [
+                "config",
+                "openregister",
+                "dsar_processing_activity",
+                "dsar"
+            ],
+            [
+                "resolveReference",
+                "dsar"
+            ],
+            [
+                "update",
+                "by-id-10",
+                [],
+                "act-dsar",
+                {
+                    "id": "by-id-10",
+                    "name": "Bea",
+                    "email": "a@b.nl",
+                    "new": 1
+                }
+            ]
+        ]
+    },
+    "rectify missing": {
+        "result": null,
+        "log": [
+            [
+                "find",
+                13
+            ]
+        ]
+    },
+    "rectify update fails": {
+        "result": null,
+        "log": [
+            [
+                "find",
+                15
+            ],
+            [
+                "config",
+                "openregister",
+                "dsar_processing_activity",
+                "dsar"
+            ],
+            [
+                "resolveReference",
+                "dsar"
+            ],
+            [
+                "update",
+                "by-id-15",
+                [],
+                "act-dsar",
+                {
+                    "id": "by-id-15",
+                    "name": "Ann",
+                    "email": "a@b.nl"
+                }
+            ],
+            [
+                "warning",
+                "[DSAR] Rectificatie update failed",
+                {
+                    "objectId": 15,
+                    "error": "read only"
+                }
+            ]
+        ]
+    }
+}

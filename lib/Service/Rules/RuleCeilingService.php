@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\Rules;
  * ceiling still applies to a replay, and a schema that declares nothing behaves
  * exactly as it did (task 5.3).
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleCeilingService {
 
@@ -62,7 +62,7 @@ final class RuleCeilingService {
 	 *
 	 * @throws RuleCeilingException When the count is above the declared ceiling.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function assert(RuleDescriptor $rule, int $count): void {
 		$ceiling = $rule->getMaxObjects();
@@ -70,7 +70,21 @@ final class RuleCeilingService {
 			return;
 		}
 
-		throw new RuleCeilingException(
+		throw self::refusal(rule: $rule, count: $count);
+	}//end assert()
+
+	/**
+	 * The refusal for a run larger than the rule's ceiling.
+	 *
+	 * @param RuleDescriptor $rule  The rule whose ceiling the run exceeds.
+	 * @param int            $count The number of objects the run would touch.
+	 *
+	 * @return RuleCeilingException The refusal, naming the rule, the ceiling and the count.
+	 */
+	private static function refusal(RuleDescriptor $rule, int $count): RuleCeilingException {
+		$ceiling = (int)$rule->getMaxObjects();
+
+		return new RuleCeilingException(
 			message: sprintf(
 				'Rule "%s" allows at most %d objects in one run, and this selection holds %d. '
 				. 'Nothing was written. Narrow the selection, or raise maxObjects on the rule.',
@@ -82,7 +96,7 @@ final class RuleCeilingService {
 			ceiling: $ceiling,
 			count: $count
 		);
-	}//end assert()
+	}//end refusal()
 
 	/**
 	 * Whether a run of this size is within the rule's ceiling.
@@ -96,7 +110,7 @@ final class RuleCeilingService {
 	 *
 	 * @return bool True when the run is allowed to proceed.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function allows(RuleDescriptor $rule, int $count): bool {
 		$ceiling = $rule->getMaxObjects();
