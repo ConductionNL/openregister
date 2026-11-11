@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Schemas;
 
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Support\FilterParams;
 
 /**
  * The read behind a filtered reference picker.
@@ -147,7 +148,7 @@ class ReferenceOptionsReader implements ReferenceOptionsReaderInterface {
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
 	public function queryFor(array $plan, ListQuery $page): array {
-		$query = ($plan['filter'] ?? []);
+		$query = FilterParams::withoutResolvedReaderKeys(query: ($plan['filter'] ?? []));
 
 		$query['_limit']  = $page->limit;
 		$query['_offset'] = max(0, ($page->offset ?? 0));

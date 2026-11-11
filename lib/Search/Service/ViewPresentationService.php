@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibilityInterface;
 use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Support\FilterParams;
 use OCP\AppFramework\Db\Entity;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -436,7 +437,7 @@ class ViewPresentationService {
 		$objectQuery = [];
 
 		if (empty($query['filters']) === false && is_array($query['filters']) === true) {
-			$objectQuery = array_merge($objectQuery, $query['filters']);
+			$objectQuery = array_merge($objectQuery, FilterParams::withoutResolvedReaderKeys(query: $query['filters']));
 		}
 
 		if (empty($query['sort']) === false) {

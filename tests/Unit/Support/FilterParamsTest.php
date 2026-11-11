@@ -382,4 +382,27 @@ class FilterParamsTest extends TestCase {
 			FilterParams::hasBareCandidates(params: ['metric' => 'count', 'origin' => 'manual'], controlParams: $controlParams)
 		);
 	}//end testHasBareCandidatesIgnoresControlAndRouteParams()
+
+	public function testAQueryLosesTheKeysOnlyTheSearchHandlerSets(): void {
+		$query = [
+			'status'       => 'open',
+			'_unread'      => 'true',
+			'_unreadFor'   => 'alice',
+			'_watchingFor' => 'alice',
+			'_recentFor'   => 'alice',
+			'_recentViews' => ['x'],
+			'_recentLens'  => true,
+		];
+
+		$this->assertSame(['status' => 'open', '_unread' => 'true'], FilterParams::withoutResolvedReaderKeys(query: $query));
+	}//end testAQueryLosesTheKeysOnlyTheSearchHandlerSets()
+
+	public function testAStoredViewFilterCannotNameAnotherReader(): void {
+		$service = (new \ReflectionClass(\OCA\OpenRegister\Search\Service\ViewPresentationService::class))->newInstanceWithoutConstructor();
+		$build = new \ReflectionMethod($service, 'buildBaseObjectQuery');
+
+		$query = $build->invoke($service, ['filters' => ['status' => 'open', '_unreadFor' => 'alice'], 'sort' => ['title' => 'asc']]);
+
+		$this->assertSame(['status' => 'open', '_order' => ['title' => 'asc']], $query);
+	}//end testAStoredViewFilterCannotNameAnotherReader()
 }//end class
