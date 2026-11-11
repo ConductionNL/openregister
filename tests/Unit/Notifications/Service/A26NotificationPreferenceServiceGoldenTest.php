@@ -28,6 +28,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic;
 use OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices;
 use OCA\OpenRegister\Notifications\Service\Notification\SystemSchemaRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
@@ -166,7 +168,14 @@ class A26NotificationPreferenceServiceGoldenTest extends TestCase {
 				$schemaDefault = [];
 			}
 
-			$out['effective ' . $name] = $this->capture(step: fn (): mixed => $service->resolveEffective($schemaDefault, $user, 'case', 'assigned', $scopes, $groupIds));
+			$out['effective ' . $name] = $this->capture(step: fn (): mixed => $service->resolve(
+				resolution: new PreferenceResolution(
+					schemaDefault: $schemaDefault,
+					userId: $user,
+					topic: new PreferenceTopic(schemaSlug: 'case', notificationKey: 'assigned', scopes: $scopes),
+					groupIds: $groupIds
+				)
+			));
 		}
 
 		$this->store = $seed;

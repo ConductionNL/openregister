@@ -245,14 +245,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 
 		$response = $this->router->call(
 			provider: $this,
-			request: new UpstreamRequest(
-				method: 'POST',
-				path: 'personen',
-				options: [
-					'body' => $this->buildQueryBody(bsn: $bsn),
-					'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-				]
-			)
+			request: $this->personenRequest(body: $this->buildQueryBody(bsn: $bsn))
 		);
 
 		return $this->extractPersonen(response: $response);
@@ -291,14 +284,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 		try {
 			$envelope = $this->router->callWithMeta(
 				provider: $this,
-				request: new UpstreamRequest(
-					method: 'POST',
-					path: 'personen',
-					options: [
-						'body' => $this->buildQueryBody(bsn: $bsn),
-						'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-					]
-				)
+				request: $this->personenRequest(body: $this->buildQueryBody(bsn: $bsn))
 			);
 		} catch (ProviderUnavailableException $e) {
 			return $this->degraded(cause: $e->getCause());
@@ -346,18 +332,13 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 
 			$envelope = $this->router->callWithMeta(
 				provider: $this,
-				request: new UpstreamRequest(
-					method: 'POST',
-					path: 'personen',
-					options: [
-						'body' => [
-							'type' => 'ZoekMetAdresseerbaarObjectIdentificatie',
-							'adresseerbaarObjectIdentificatie' => $addressObjectId,
-							'fields' => ['burgerservicenummer'],
-						],
-						'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-						'withholdBodies' => true,
-					]
+				request: $this->personenRequest(
+					body: [
+						'type' => 'ZoekMetAdresseerbaarObjectIdentificatie',
+						'adresseerbaarObjectIdentificatie' => $addressObjectId,
+						'fields' => ['burgerservicenummer'],
+					],
+					extraOptions: ['withholdBodies' => true]
 				)
 			);
 		} catch (ProviderUnavailableException $e) {
@@ -372,6 +353,28 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 			'meta' => $this->shapeMeta(meta: ($envelope['meta'] ?? [])),
 		];
 	}//end countResidentsAtAddressObject()
+
+	/**
+	 * A HAL+JSON query to the BRP `personen` endpoint.
+	 *
+	 * @param array<string,mixed> $body         The query body.
+	 * @param array<string,mixed> $extraOptions Further connector options, after the body and headers.
+	 *
+	 * @return UpstreamRequest
+	 */
+	private function personenRequest(array $body, array $extraOptions=[]): UpstreamRequest {
+		return new UpstreamRequest(
+			method: 'POST',
+			path: 'personen',
+			options: array_merge(
+				[
+					'body' => $body,
+					'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
+				],
+				$extraOptions
+			)
+		);
+	}//end personenRequest()
 
 	/**
 	 * Build the `RaadpleegMetBurgerservicenummer` query body for the

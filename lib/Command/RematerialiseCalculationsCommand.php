@@ -38,6 +38,7 @@ use OCA\OpenRegister\Command\Support\RematerialiseStorage;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
+use OCA\OpenRegister\Service\Calculation\ReferringObject;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -247,10 +248,9 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @return array<string, mixed>|null The payload, or null when an aggregate failed.
 	 */
 	private function payloadWithAggregates(RematerialiseRun $run, array $row): ?array {
-		$outcome = $this->evaluation->aggregates->resolveAllWithOutcome(
-			payload: $row['payload'],
-			aggregates: $run->aggregateSpecs,
-			registerRef: $row['entity']->getRegister()
+		$outcome = $this->evaluation->aggregates->resolveOutcome(
+			referrer: new ReferringObject(payload: $row['payload'], register: $row['entity']->getRegister()),
+			aggregates: $run->aggregateSpecs
 		);
 		if ($outcome['failed'] !== []) {
 			$messages = $this->aggregateFailureMessages(failed: $outcome['failed'], uuid: (string)$row['entity']->getUuid());

@@ -253,20 +253,7 @@ class ExampleSetViews extends ExampleSetEngineRows implements ExampleSetViewRows
 
 		try {
 			$view = $this->service()->create(
-				edit: new ViewEdit(
-					definition: new ViewDefinition(
-						name: (string) $data['name'],
-						description: (string) ($data['description'] ?? ''),
-						query: (array) ($data['query'] ?? []),
-						presentation: $this->optional(data: $data, field: 'presentation')
-					),
-					audience: new ViewAudience(
-						owner: (string) $data['owner'],
-						isPublic: ($data['isPublic'] ?? false) === true,
-						sharedWith: $this->shares(declared: ($data['sharedWith'] ?? []))
-					),
-					alert: $this->optional(data: $data, field: 'alert'),
-				)
+				edit: $this->viewEdit(data: $data)
 			);
 			$view->setUuid($uuid);
 			$this->mapper()->update($view);
@@ -308,21 +295,7 @@ class ExampleSetViews extends ExampleSetEngineRows implements ExampleSetViewRows
 		try {
 			$this->service()->revise(
 				id: $uuid,
-				edit: new ViewEdit(
-					definition: new ViewDefinition(
-						name: (string) $data['name'],
-						description: (string) ($data['description'] ?? ''),
-						query: (array) ($data['query'] ?? []),
-						presentation: $this->optional(data: $data, field: 'presentation')
-					),
-					audience: new ViewAudience(
-						owner: (string) $data['owner'],
-						isPublic: ($data['isPublic'] ?? false) === true,
-						isDefault: false,
-						sharedWith: $this->shares(declared: ($data['sharedWith'] ?? []))
-					),
-					alert: $this->optional(data: $data, field: 'alert')
-				)
+				edit: $this->viewEdit(data: $data)
 			);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
@@ -330,6 +303,33 @@ class ExampleSetViews extends ExampleSetEngineRows implements ExampleSetViewRows
 
 		return ['error' => '', 'entry' => ['uuid' => $uuid]];
 	}//end update()
+
+	/**
+	 * The edit a declared view's fields describe: its definition, its audience and its alert.
+	 *
+	 * A seeded view is never the owner's default.
+	 *
+	 * @param array<string, mixed> $data The row's filled fields.
+	 *
+	 * @return ViewEdit The edit.
+	 */
+	private function viewEdit(array $data): ViewEdit {
+		return new ViewEdit(
+			definition: new ViewDefinition(
+				name: (string) $data['name'],
+				description: (string) ($data['description'] ?? ''),
+				query: (array) ($data['query'] ?? []),
+				presentation: $this->optional(data: $data, field: 'presentation')
+			),
+			audience: new ViewAudience(
+				owner: (string) $data['owner'],
+				isPublic: ($data['isPublic'] ?? false) === true,
+				isDefault: false,
+				sharedWith: $this->shares(declared: ($data['sharedWith'] ?? []))
+			),
+			alert: $this->optional(data: $data, field: 'alert')
+		);
+	}//end viewEdit()
 
 	/**
 	 * The uuid a seeded view has: the same for the same app and key, on every instance and every install.

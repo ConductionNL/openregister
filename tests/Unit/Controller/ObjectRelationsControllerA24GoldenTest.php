@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Relation\Derivation;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
+use OCA\OpenRegister\Service\Relation\ParentInheritance;
 use OCA\OpenRegister\Service\Relation\ProvenanceLink;
 use OCA\OpenRegister\Service\Relation\ProseMention;
 use OCA\OpenRegister\Service\Relation\RelationEndpoint;
@@ -355,7 +356,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 		);
 
 		$failing = $this->controller(params: ['object' => ['a' => 1]], readable: ['a']);
-		$this->relations->method('applyInheritance')->willReturn(['data' => ['a' => 1], 'inherited' => []]);
+		$this->relations->method('inherit')->willReturn(['data' => ['a' => 1], 'inherited' => []]);
 		$this->objects->method('saveObject')->willThrowException(new \Exception('invalid'));
 		$this->relations->expects($this->never())->method('recordSplit');
 		$this->assertSame([422, ['error' => 'invalid']], $this->outcome($failing->derive('r', 's', 'a')));
@@ -370,8 +371,8 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 		$controller = $this->controller(params: ['object' => ['t' => 1], 'property' => 'parent', 'entry' => 'e1'], readable: ['a']);
 		$this->relations->expects($this->once())->method('declarationFor')->with(4, 'parent', 'nl')
 			->willReturn(['inherits' => ['zaaktype'], 'type' => 'deelzaak']);
-		$this->relations->expects($this->once())->method('applyInheritance')
-			->with($this->isInstanceOf(ObjectEntity::class), ['t' => 1], ['zaaktype'])
+		$this->relations->expects($this->once())->method('inherit')
+			->with($this->callback(fn (ParentInheritance $i): bool => $i->parent instanceof ObjectEntity && $i->childData === ['t' => 1] && $i->inherits === ['zaaktype']))
 			->willReturn(['data' => ['t' => 1, 'zaaktype' => 'z'], 'inherited' => ['zaaktype' => 'z']]);
 		$created = $this->object(uuid: 'child');
 		$this->objects->expects($this->once())->method('saveObject')->with(['t' => 1, 'zaaktype' => 'z'], [], 'r', 's')->willReturn($created);
@@ -398,7 +399,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 	public function testADeriveThatInheritsNothingIsASplit(): void {
 		$controller = $this->controller(params: ['object' => ['t' => 1], 'type' => 'split-from'], readable: ['a']);
 		$this->relations->expects($this->never())->method('declarationFor');
-		$this->relations->method('applyInheritance')->willReturn(['data' => ['t' => 1], 'inherited' => []]);
+		$this->relations->method('inherit')->willReturn(['data' => ['t' => 1], 'inherited' => []]);
 		$created = $this->object(uuid: 'child');
 		$this->objects->method('saveObject')->willReturn($created);
 		$this->relations->expects($this->never())->method('recordDerived');
