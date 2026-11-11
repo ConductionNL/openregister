@@ -1266,3 +1266,4 @@ opencatalogi	2499	c5d9a34365e2c8c31cc46c673b440bdbc5f77162	GREEN	FV08:3	tree gre
 opencatalogi	2500	581768a1b43d2a63f2511e399c42f4ba2d218645	GREEN	FV08:3	tree green (phpunit 4744, 56 baseline errors only; vitest 736 ok), diff review clean
 decidiq	1969	73fc5c3b8b219b68c76244bf8825d5e30ae967cb	RED	fv13:1	PortalPublicRecordsTest::testEveryMembersVotingRecordIsUnchanged fails: golden fixture pinned to the date it was written (example-set dates are relative to time()), fails against unchanged code too
 humaniq	945	c08d30157c8d1f2c845a1111d7126b040f57ecb0	GREEN	FV14:3	unit suites green on the tree
+humaniq	946	b43e3793fcfd08432fe3650105cc2cc5e9f93332	GREEN	FV14:3	unit suites green on the tree
