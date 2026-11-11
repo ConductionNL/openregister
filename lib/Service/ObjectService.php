@@ -158,6 +158,10 @@ use OCA\OpenRegister\Service\Object\DraftSubject;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Object\SavedScopeIds;
+use OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices;
+use OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices;
+use OCA\OpenRegister\Service\Object\Collaborators\ObjectQueryServices;
+use OCA\OpenRegister\Service\Object\Collaborators\ObjectWriteServices;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -318,9 +322,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * The row-by-row repeating-group validator, constructed on first use.
      *
-     * Not injected. This class takes forty-odd constructor arguments and a
-     * long tail of unit tests build it positionally, so a new argument is a
-     * bigger change than it looks. Both validators below are pure and have no
+     * Not injected. Both validators below are pure and have no
      * dependencies of their own, which is what makes constructing them here
      * safe: there is no wiring that can be missing, so there is no
      * configuration under which the enforcement quietly stops running.
@@ -337,127 +339,346 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private ?NotSuppliedHandler $notSuppliedHandler = null;
 
     /**
+     * Collaborator taken from the shaping bundle.
+     *
+     * @var DataManipulationHandler
+     */
+    private readonly DataManipulationHandler $dataManipHandler;
+
+    /**
+     * Collaborator taken from the removal bundle.
+     *
+     * @var DeleteObject
+     */
+    private readonly DeleteObject $deleteHandler;
+
+    /**
+     * Collaborator taken from the read bundle.
+     *
+     * @var GetObject
+     */
+    private readonly GetObject $getHandler;
+
+    /**
+     * Collaborator taken from the authorisation bundle.
+     *
+     * @var PermissionHandlerInterface
+     */
+    private readonly PermissionHandlerInterface $permissionHandler;
+
+    /**
+     * Collaborator taken from the read bundle.
+     *
+     * @var RenderObject
+     */
+    private readonly RenderObject $renderHandler;
+
+    /**
+     * Collaborator taken from the save bundle.
+     *
+     * @var SaveObjectInterface
+     */
+    private readonly SaveObjectInterface $saveHandler;
+
+    /**
+     * Collaborator taken from the save bundle.
+     *
+     * @var SaveObjects
+     */
+    private readonly SaveObjects $saveObjectsHandler;
+
+    /**
+     * Collaborator taken from the search bundle.
+     *
+     * @var SearchQueryHandler
+     */
+    private readonly SearchQueryHandler $searchQueryHandler;
+
+    /**
+     * Collaborator taken from the save bundle.
+     *
+     * @var ValidateObjectInterface
+     */
+    private readonly ValidateObjectInterface $validateHandler;
+
+    /**
+     * Collaborator taken from the history bundle.
+     *
+     * @var LockHandler
+     */
+    private readonly LockHandler $lockHandler;
+
+    /**
+     * Collaborator taken from the history bundle.
+     *
+     * @var AuditHandler
+     */
+    private readonly AuditHandler $auditHandler;
+
+    /**
+     * Collaborator taken from the read bundle.
+     *
+     * @var RelationHandler
+     */
+    private readonly RelationHandler $relationHandler;
+
+    /**
+     * Collaborator taken from the removal bundle.
+     *
+     * @var MergeHandler
+     */
+    private readonly MergeHandler $mergeHandler;
+
+    /**
+     * Collaborator taken from the search bundle.
+     *
+     * @var FacetHandler
+     */
+    private readonly FacetHandler $facetHandler;
+
+    /**
+     * Collaborator taken from the read bundle.
+     *
+     * @var MetadataHandler
+     */
+    private readonly MetadataHandler $metadataHandler;
+
+    /**
+     * Collaborator taken from the search bundle.
+     *
+     * @var PerformanceOptimizationHandler
+     */
+    private readonly PerformanceOptimizationHandler $perfOptHandler;
+
+    /**
+     * Collaborator taken from the search bundle.
+     *
+     * @var QueryHandler
+     */
+    private readonly QueryHandler $queryHandler;
+
+    /**
+     * Collaborator taken from the history bundle.
+     *
+     * @var RevertHandler
+     */
+    private readonly RevertHandler $revertHandler;
+
+    /**
+     * Collaborator taken from the shaping bundle.
+     *
+     * @var UtilityHandler
+     */
+    private readonly UtilityHandler $utilityHandler;
+
+    /**
+     * Collaborator taken from the save bundle.
+     *
+     * @var ValidationHandler
+     */
+    private readonly ValidationHandler $validationHandler;
+
+    /**
+     * Collaborator taken from the removal bundle.
+     *
+     * @var CascadingHandler
+     */
+    private readonly CascadingHandler $cascadingHandler;
+
+    /**
+     * Collaborator taken from the removal bundle.
+     *
+     * @var MigrationHandler
+     */
+    private readonly MigrationHandler $migrationHandler;
+
+    /**
+     * Collaborator taken from the mappers bundle.
+     *
+     * @var RegisterMapperInterface
+     */
+    private readonly RegisterMapperInterface $registerMapper;
+
+    /**
+     * Collaborator taken from the mappers bundle.
+     *
+     * @var SchemaMapperInterface
+     */
+    private readonly SchemaMapperInterface $schemaMapper;
+
+    /**
+     * Collaborator taken from the mappers bundle.
+     *
+     * @var ViewMapperInterface
+     */
+    private readonly ViewMapperInterface $viewMapper;
+
+    /**
+     * Collaborator taken from the mappers bundle.
+     *
+     * @var MagicMapperInterface
+     */
+    private readonly MagicMapperInterface $objectMapper;
+
+    /**
+     * Collaborator taken from the storage bundle.
+     *
+     * @var FileFolderServiceInterface
+     */
+    private readonly FileFolderServiceInterface $fileService;
+
+    /**
+     * Collaborator taken from the caller bundle.
+     *
+     * @var IUserSession
+     */
+    private readonly IUserSession $userSession;
+
+    /**
+     * Collaborator taken from the storage bundle.
+     *
+     * @var SearchTrailService
+     */
+    private readonly SearchTrailService $searchTrailService;
+
+    /**
+     * Collaborator taken from the caller bundle.
+     *
+     * @var IGroupManager
+     */
+    private readonly IGroupManager $groupManager;
+
+    /**
+     * Collaborator taken from the caller bundle.
+     *
+     * @var IUserManager
+     */
+    private readonly IUserManager $userManager;
+
+    /**
+     * Collaborator taken from the authorisation bundle.
+     *
+     * @var OrganisationServiceInterface
+     */
+    private readonly OrganisationServiceInterface $organisationService;
+
+    /**
+     * Collaborator taken from the runtime bundle.
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
+
+    /**
+     * Collaborator taken from the storage bundle.
+     *
+     * @var CacheHandlerInterface
+     */
+    private readonly CacheHandlerInterface $cacheHandler;
+
+    /**
+     * Collaborator taken from the runtime bundle.
+     *
+     * @var SettingsServiceInterface
+     */
+    private readonly SettingsServiceInterface $settingsService;
+
+    /**
+     * Collaborator taken from the shaping bundle.
+     *
+     * @var DateTimeNormalizer
+     */
+    private readonly DateTimeNormalizer $dateTimeNormalizer;
+
+    /**
+     * Collaborator taken from the runtime bundle.
+     *
+     * @var IAppContainer
+     */
+    private readonly IAppContainer $container;
+
+    /**
+     * Collaborator taken from the storage bundle.
+     *
+     * @var ObjectSourceRegistry
+     */
+    private readonly ObjectSourceRegistry $objectSourceRegistry;
+
+    /**
+     * Collaborator taken from the history bundle.
+     *
+     * @var AutoTransitionPass|null
+     */
+    private readonly ?AutoTransitionPass $autoTransitions;
+
+    /**
+     * Collaborator taken from the caller bundle.
+     *
+     * @var TokenGrantSource|null
+     */
+    private readonly ?TokenGrantSource $tokenGrantSource;
+
+    /**
      * Constructor for ObjectService.
      *
-     * @param DataManipulationHandler        $dataManipHandler     Handler for data manipulation operations.
-     * @param DeleteObject                   $deleteHandler        Handler for object deletion.
-     * @param GetObject                      $getHandler           Handler for object retrieval.
-     * @param PermissionHandlerInterface              $permissionHandler    Handler for permission checks.
-     * @param RenderObject                   $renderHandler        Handler for object rendering.
-     * @param SaveObjectInterface                     $saveHandler          Handler for individual object saving.
-     * @param SaveObjects                    $saveObjectsHandler   Handler for bulk object saving operations.
-     * @param SearchQueryHandler             $searchQueryHandler   Handler for search query operations.
-     * @param ValidateObjectInterface                 $validateHandler      Handler for object validation.
-     * @param LockHandler                    $lockHandler          Handler for object locking.
-     * @param AuditHandler                   $auditHandler         Handler for audit trail operations.
-     * @param RelationHandler                $relationHandler      Handler for object relationships.
-     * @param MergeHandler                   $mergeHandler         Handler for merge and migration.
-     * @param FacetHandler                   $facetHandler         Handler for facet operations.
-     * @param MetadataHandler                $metadataHandler      Handler for metadata operations.
-     * @param PerformanceOptimizationHandler $perfOptHandler       Handler for performance optimization.
-     * @param QueryHandler                   $queryHandler         Handler for query operations.
-     * @param RevertHandler                  $revertHandler        Handler for revert operations.
-     * @param UtilityHandler                 $utilityHandler       Handler for utility operations.
-     * @param ValidationHandler              $validationHandler    Handler for validation operations.
-     * @param CascadingHandler               $cascadingHandler     Handler for cascading operations.
-     * @param MigrationHandler               $migrationHandler     Handler for migration operations.
-     * @param RegisterMapperInterface                 $registerMapper       Mapper for register operations.
-     * @param SchemaMapperInterface                   $schemaMapper         Mapper for schema operations.
-     * @param ViewMapperInterface                     $viewMapper           Mapper for view operations.
-     * @param MagicMapperInterface                    $objectMapper         Unified mapper for object
-     *                                                             operations (routes to
-     *                                                             magic tables).
-     * @param FileFolderServiceInterface                    $fileService          Service for file operations.
-     * @param IUserSession                   $userSession          User session for getting current user.
-     * @param SearchTrailService             $searchTrailService   Service for search trail operations.
-     * @param IGroupManager                  $groupManager         Group manager for checking user groups.
-     * @param IUserManager                   $userManager          User manager for getting user objects.
-     * @param OrganisationServiceInterface            $organisationService  Service for organisation operations.
-     * @param LoggerInterface                $logger               Logger for performance monitoring.
-     * @param CacheHandlerInterface                   $cacheHandler         Service for entity and query caching.
-     * @param SettingsServiceInterface                $settingsService      Service for settings operations.
-     * @param DateTimeNormalizer             $dateTimeNormalizer   Normaliser for user-supplied datetime input.
-     * @param IAppContainer                  $container            Application container.
-     * @param ObjectSourceRegistry           $objectSourceRegistry Registry of object-source providers (virtual schemas).
-     * @param AutoTransitionPass|null        $autoTransitions      Request-scoped pass applying automatic lifecycle moves.
-     * @param TokenGrantSource|null          $tokenGrantSource     The grant the request's token carries; suspended inside runAsAnonymous().
+     * The collaborators arrive in four autowired bundles; each is unpacked into
+     * its own property here.
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+     * @param ObjectWriteServices    $write    Save, removal and history handlers.
+     * @param ObjectQueryServices    $query    Read, search and shaping handlers.
+     * @param ObjectAccessServices   $access   Caller identity and authorisation.
+     * @param ObjectPlatformServices $platform Mappers, storage and runtime services.
      */
     public function __construct(
-        // Legacy handlers - TESTING:..
-        private readonly DataManipulationHandler $dataManipHandler,
-        private readonly DeleteObject $deleteHandler,
-        private readonly GetObject $getHandler,
-        private readonly PermissionHandlerInterface $permissionHandler,
-        private readonly RenderObject $renderHandler,
-        private readonly SaveObjectInterface $saveHandler,
-        private readonly SaveObjects $saveObjectsHandler,
-        private readonly SearchQueryHandler $searchQueryHandler,
-        private readonly ValidateObjectInterface $validateHandler,
-        // New handlers - TESTING FIRST 5:.
-        private readonly LockHandler $lockHandler,
-        private readonly AuditHandler $auditHandler,
-        private readonly RelationHandler $relationHandler,
-        private readonly MergeHandler $mergeHandler,
-        // REFACTORED: CrudHandler removed - was unimplemented stub causing circular dependency.
-        // REFACTORED: BulkOperationsHandler removed - retired with blob objects table.
-        // TODO: CIRCULAR DEPENDENCY ISSUE - These handlers still cause timeouts.
-        // Temporarily disabled until full architectural refactoring is complete.
-        // See DEBUGGING_REGISTER_CREATION_TIMEOUT.md for details.
-        // Private readonly ExportHandler $exportHandler,
-        // Private readonly VectorizationHandler $vectorizationHandler,
-        // STILL COMMENTED - Second half:
-        // REFACTORED: Re-enabled legacy handlers - they have clean dependencies (no circular loops).
-        private readonly FacetHandler $facetHandler,
-        private readonly MetadataHandler $metadataHandler,
-        private readonly PerformanceOptimizationHandler $perfOptHandler,
-        private readonly QueryHandler $queryHandler,
-        private readonly RevertHandler $revertHandler,
-        private readonly UtilityHandler $utilityHandler,
-        private readonly ValidationHandler $validationHandler,
-        private readonly CascadingHandler $cascadingHandler,
-        private readonly MigrationHandler $migrationHandler,
-        private readonly RegisterMapperInterface $registerMapper,
-        private readonly SchemaMapperInterface $schemaMapper,
-        private readonly ViewMapperInterface $viewMapper,
-        private readonly MagicMapperInterface $objectMapper,
-        private readonly FileFolderServiceInterface $fileService,
-        private readonly IUserSession $userSession,
-        private readonly SearchTrailService $searchTrailService,
-        private readonly IGroupManager $groupManager,
-        private readonly IUserManager $userManager,
-        private readonly OrganisationServiceInterface $organisationService,
-        private readonly LoggerInterface $logger,
-        private readonly CacheHandlerInterface $cacheHandler,
-        private readonly SettingsServiceInterface $settingsService,
-        private readonly DateTimeNormalizer $dateTimeNormalizer,
-        private readonly IAppContainer $container,
-        private readonly ObjectSourceRegistry $objectSourceRegistry,
-        // The request-scoped automatic-transition pass. Nullable with a null
-        // default so the many unit tests that build this service positionally
-        // keep working; the container resolves the real, SHARED instance by
-        // type in production, as it does for FlowRunController's attribution.
-        private readonly ?AutoTransitionPass $autoTransitions = null,
-        // The grant the request's API token carries, if it authenticated with
-        // one. Read here for exactly one reason: runAsAnonymous() has to
-        // suspend it. Nullable with a null default for the same reason as
-        // above — the unit tests build this service positionally — and the
-        // container resolves the real, SHARED instance by type in production.
-        private readonly ?TokenGrantSource $tokenGrantSource = null
-        // TODO: CIRCULAR DEPENDENCY ISSUE - ExportService, ImportService, and VectorizationService
-        // These services have deep circular dependencies:
-        // - ExportService → uses SaveObjects → potentially loops back
-        // - ImportService → SaveObject/SaveObjects → potentially loops back
-        // - VectorizationService → strategies that may depend on ObjectService
-        // Temporarily disabled until full architectural refactoring is complete.
-        // See DEBUGGING_REGISTER_CREATION_TIMEOUT.md for details.
+        ObjectWriteServices $write,
+        ObjectQueryServices $query,
+        ObjectAccessServices $access,
+        ObjectPlatformServices $platform
     ) {
-        // REFACTORED: Removed ExportHandler and VectorizationHandler to break circular deps.
-        // Handlers should not depend on services - using ExportService, ImportService, VectorizationService.
+        $this->dataManipHandler = $query->shaping->dataManipHandler;
+        $this->deleteHandler = $write->removal->deleteHandler;
+        $this->getHandler = $query->read->getHandler;
+        $this->permissionHandler = $access->authorisation->permissionHandler;
+        $this->renderHandler = $query->read->renderHandler;
+        $this->saveHandler = $write->save->saveHandler;
+        $this->saveObjectsHandler = $write->save->saveObjectsHandler;
+        $this->searchQueryHandler = $query->search->searchQueryHandler;
+        $this->validateHandler = $write->save->validateHandler;
+        $this->lockHandler = $write->history->lockHandler;
+        $this->auditHandler = $write->history->auditHandler;
+        $this->relationHandler = $query->read->relationHandler;
+        $this->mergeHandler = $write->removal->mergeHandler;
+        $this->facetHandler = $query->search->facetHandler;
+        $this->metadataHandler = $query->read->metadataHandler;
+        $this->perfOptHandler = $query->search->perfOptHandler;
+        $this->queryHandler = $query->search->queryHandler;
+        $this->revertHandler = $write->history->revertHandler;
+        $this->utilityHandler = $query->shaping->utilityHandler;
+        $this->validationHandler = $write->save->validationHandler;
+        $this->cascadingHandler = $write->removal->cascadingHandler;
+        $this->migrationHandler = $write->removal->migrationHandler;
+        $this->registerMapper = $platform->mappers->registerMapper;
+        $this->schemaMapper = $platform->mappers->schemaMapper;
+        $this->viewMapper = $platform->mappers->viewMapper;
+        $this->objectMapper = $platform->mappers->objectMapper;
+        $this->fileService = $platform->storage->fileService;
+        $this->userSession = $access->caller->userSession;
+        $this->searchTrailService = $platform->storage->searchTrailService;
+        $this->groupManager = $access->caller->groupManager;
+        $this->userManager = $access->caller->userManager;
+        $this->organisationService = $access->authorisation->organisationService;
+        $this->logger = $platform->runtime->logger;
+        $this->cacheHandler = $platform->storage->cacheHandler;
+        $this->settingsService = $platform->runtime->settingsService;
+        $this->dateTimeNormalizer = $query->shaping->dateTimeNormalizer;
+        $this->container = $platform->runtime->container;
+        $this->objectSourceRegistry = $platform->storage->objectSourceRegistry;
+        $this->autoTransitions = $write->history->autoTransitions;
+        $this->tokenGrantSource = $access->caller->tokenGrantSource;
+
         $this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
-            registerMapper: $registerMapper,
-            schemaMapper: $schemaMapper
+            registerMapper: $this->registerMapper,
+            schemaMapper: $this->schemaMapper
         );
 
         $this->logger->debug(

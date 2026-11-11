@@ -90,6 +90,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests that deleteObject() hands an object-source delete to its provider.
@@ -146,7 +147,7 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 			registerMapper: $this->createMock(RegisterMapper::class)
 		);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$deleteHandler,
 			$this->createMock(GetObject::class),
@@ -185,7 +186,7 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->registry
-		);
+		));
 	}//end setUp()
 
 	/**
