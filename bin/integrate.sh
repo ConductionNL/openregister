@@ -10,7 +10,10 @@
 #   integrate.sh build            integration tree on fresh main (resolves use lines / map entries only)
 #   integrate.sh test             starts deps check + 4 shards (+ frontend) in the background, returns at once
 #   integrate.sh wait [SECS] [JOB] blocks up to SECS (default 170) for the test run; prints DONE or RUNNING
-#   integrate.sh verdict          GREEN / AUTOPARK / RED / NORESULT, recorded in the state branch
+#   integrate.sh verdict          GREEN / AUTOPARK / RED / NORESULT, recorded in the state branch; a tree whose
+#                                 suite is green must also hold the maintainability floor against main (no
+#                                 rating drops more than 0.01, floor_check.py from ConductionNL/.github main):
+#                                 the first PR whose merge lowers it is auto-parked
 #   integrate.sh merge            merges each PR of a GREEN tree; exit 5 when main or a head moved
 #   integrate.sh finish           releases the lease
 # Exit codes: 0 ok, 1 nothing to do / lease held, 4 no result, 5 rebuild needed, 6 stop and report.
@@ -303,6 +306,53 @@ phase_wait() {
 	say "DONE $job rc=$(cat "$RUN/$job.rc")"
 }
 
+# The maintainability floor tool: a sparse clone of ConductionNL/.github at FLOOR_REF (default main).
+floor_tool() {
+	local d=$W/dotgithub
+	if [ ! -d "$d/.git" ]; then
+		git clone -q --depth 1 --filter=blob:none --sparse --no-checkout https://github.com/ConductionNL/.github "$d" \
+			&& git -C "$d" sparse-checkout set hydra-gates/scripts/lib || return 1
+	fi
+	git -C "$d" fetch -q --depth 1 origin "${FLOOR_REF:-main}" && git -C "$d" checkout -q --detach FETCH_HEAD || return 1
+	[ -f "$d/hydra-gates/scripts/lib/floor_check.py" ] && echo "$d/hydra-gates/scripts/lib/floor_check.py"
+}
+
+# floor_at TOOL COMMIT: floor_check compare of COMMIT against main ($D0), output in $RUN/floor.out.
+# 0 holds, 1 lowers the floor, 4 nothing measured, anything else not measured.
+floor_at() {
+	local tree=$W/floor-tree
+	rm -rf "$tree"
+	git clone -q --shared --no-checkout "$C" "$tree" && git -C "$tree" checkout -q --detach "$2" || return 9
+	python3 "$1" compare "$tree" --base-ref "$D0" > "$RUN/floor.out" 2>&1
+}
+
+# A green tree that lowers the floor parks the first PR whose merge lowers it (binary search over the
+# tree's merge commits, each measured once and cached by commit) and exits 5 for a rebuild without it.
+floor_gate() {
+	local tool rc lo hi mid n head drops commits=()
+	tool=$(floor_tool) || { say "NORESULT tree $T10: the maintainability floor tool is unavailable"; st_log "NORESULT tree $T10: floor tool unavailable"; echo NORESULT > "$RUN/verdict"; exit 4; }
+	floor_at "$tool" "$T"; rc=$?
+	if [ "$rc" -eq 0 ] || [ "$rc" -eq 4 ]; then say "FLOOR tree $T10: $(tail -1 "$RUN/floor.out")"; return 0; fi
+	[ "$rc" -eq 1 ] || { say "NORESULT tree $T10: floor not measured (exit $rc): $(tail -1 "$RUN/floor.out")"; st_log "NORESULT tree $T10: floor not measured (exit $rc)"; echo NORESULT > "$RUN/verdict"; exit 4; }
+	mapfile -t commits < <(cut -f5 "$W/tree.tsv")
+	lo=0; hi=$(( ${#commits[@]} - 1 ))
+	while [ "$lo" -lt "$hi" ]; do
+		mid=$(( (lo + hi) / 2 ))
+		floor_at "$tool" "${commits[$mid]}"; rc=$?
+		case "$rc" in
+			1) hi=$mid ;;
+			0|4) lo=$((mid + 1)) ;;
+			*) say "NORESULT tree $T10: floor not measured at ${commits[$mid]:0:10} (exit $rc)"; echo NORESULT > "$RUN/verdict"; exit 4 ;;
+		esac
+	done
+	floor_at "$tool" "${commits[$hi]}"
+	read -r n head < <(awk -F'\t' -v i=$((hi + 1)) 'NR == i { print $1, $2 }' "$W/tree.tsv")
+	drops=$(grep -E '^ *DROP ' "$RUN/floor.out" | sed -E 's/^ *DROP //' | paste -sd';')
+	st_append parked.txt "$(echo "openregister#$n $head auto-park: floor: ${drops:-lowered}" | cut -c1-300)"
+	st_log "AUTOPARK openregister#$n ${head:0:8} floor: ${drops:-lowered} (tree $T10)"
+	echo AUTOPARK > "$RUN/verdict"; say "AUTOPARK openregister#$n floor: ${drops:-lowered}"; exit 5
+}
+
 phase_verdict() {
 	need_state
 	source "$W/tree.env"
@@ -324,6 +374,7 @@ phase_verdict() {
 		[ -s "$RUN/risky.new" ] && mapfile -t rl < "$RUN/risky.new" && st_append risky-debt.txt "${rl[@]}"
 	fi
 	if [ "${f:-0}" = 0 ] && [ "${e:-0}" = 0 ] && [ "$front" != red ]; then
+		floor_gate
 		echo GREEN > "$RUN/verdict"
 		python3 "$BIN/batch_tools.py" times "$C" "$RUN/class-times.json" >/dev/null && [ -s "$RUN/class-times.json" ] && st_put cache/class-times.json "$RUN/class-times.json"
 		st_log "GREEN tree $T10 on dev ${D0:0:10} prs $N front=$front: $line"
