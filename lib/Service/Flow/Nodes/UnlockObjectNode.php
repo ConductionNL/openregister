@@ -53,7 +53,7 @@ use OCP\IUserManager;
 use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use UnexpectedValueException;
-use OCA\OpenRegister\Service\Object\UnlockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 
 /**
  * Release a run-scoped object lock.

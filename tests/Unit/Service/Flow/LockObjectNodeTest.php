@@ -38,7 +38,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
-use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode
