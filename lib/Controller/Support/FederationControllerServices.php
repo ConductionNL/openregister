@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\FederatedShareMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Federation\CreatorPropertyFilter;
 use OCA\OpenRegister\Service\FederationShareServiceInterface;
 use OCP\Security\Bruteforce\IThrottler;
 
@@ -40,6 +41,7 @@ final class FederationControllerServices {
 	 * @param ObjectOperationsInterface          $objectService Object read service.
 	 * @param FederationShareServiceInterface $shareService  Share management (list/create/revoke).
 	 * @param IThrottler             $throttler     Brute-force throttler for rejected tokens.
+	 * @param CreatorPropertyFilter  $creatorProperties Keeps an object-scope share to the properties its creator may read.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
@@ -48,6 +50,7 @@ final class FederationControllerServices {
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly FederationShareServiceInterface $shareService,
 		public readonly IThrottler $throttler,
+		public readonly CreatorPropertyFilter $creatorProperties,
 	) {
 	}//end __construct()
 }//end class

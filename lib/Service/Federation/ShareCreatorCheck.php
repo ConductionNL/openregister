@@ -23,8 +23,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Federation;
 
 use OCA\OpenRegister\Db\FederatedShare;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -73,14 +75,54 @@ class ShareCreatorCheck {
 			return 'creator no longer exists';
 		}
 
+		try {
+			return $this->runAs(creator: $creator, check: fn (): ?string => $this->grantor->refusal(share: $share));
+		} catch (Throwable $e) {
+			return 'the creator\'s rights could not be checked';
+		}
+	}//end refusal()
+
+	/**
+	 * Run a check with the share's creator as the active user.
+	 *
+	 * @param FederatedShare $share The share.
+	 * @param callable       $check The check, run without arguments.
+	 *
+	 * @return mixed What the check returns.
+	 *
+	 * @throws RuntimeException When the share has no creator that exists.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 */
+	public function asCreator(FederatedShare $share, callable $check): mixed {
+		$owner = (string)$share->getOwner();
+		$creator = null;
+		if ($owner !== '') {
+			$creator = $this->userManager->get($owner);
+		}
+
+		if ($creator === null) {
+			throw new RuntimeException('The share has no creator to judge it as');
+		}
+
+		return $this->runAs(creator: $creator, check: $check);
+	}//end asCreator()
+
+	/**
+	 * Run a check as a user, restoring the active user afterwards.
+	 *
+	 * @param IUser    $creator The user.
+	 * @param callable $check   The check.
+	 *
+	 * @return mixed What the check returns.
+	 */
+	private function runAs(IUser $creator, callable $check): mixed {
 		$previous = $this->userSession->getUser();
 		$this->userSession->setVolatileActiveUser($creator);
 		try {
-			return $this->grantor->refusal(share: $share);
-		} catch (Throwable $e) {
-			return 'the creator\'s rights could not be checked';
+			return $check();
 		} finally {
 			$this->userSession->setVolatileActiveUser($previous);
 		}
-	}//end refusal()
+	}//end runAs()
 }//end class
