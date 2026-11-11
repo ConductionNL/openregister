@@ -110,12 +110,7 @@ class ExportHandler {
 	private const EMPTY_COMPONENTS = [
 		'registers' => [],
 		'schemas' => [],
-		'endpoints' => [],
-		'sources' => [],
-		'mappings' => [],
-		'jobs' => [],
-		'synchronizations' => [],
-		'rules' => [],
+	] + ConfigurationComponentSections::CONNECTOR_SECTIONS + [
 		'workflows' => [],
 		'objects' => [],
 	];
@@ -184,50 +179,120 @@ class ExportHandler {
 		$this->registersMap = [];
 		$this->schemasMap = [];
 
-		$configuration = $this->configurationToExport(input: $input);
-		$openApiSpec = [
-			'openapi' => '3.0.0',
-			'components' => self::EMPTY_COMPONENTS,
-		] + $this->exportHeader(input: $input);
+		$run = new ConfigurationExportRun(includeObjects: $includeObjects, openConnectorService: $openConnectorService);
+		$run->configuration = $this->configurationToExport(input: $input);
+		$run->openApiSpec   = $this->emptyDocument(input: $input);
 
-		$registers = [$input];
-		if ($configuration !== null) {
-			$registers = $configuration->getRegisters();
-		}
-
-		foreach ($registers ?? [] as $register) {
-			$register = $this->registerToExport(register: $register);
-			$this->registersMap[$register->getId()] = $register;
-			$openApiSpec = $this->withRegisterAndSchemas(openApiSpec: $openApiSpec, register: $register);
-
-			if ($includeObjects === true) {
-				foreach ($this->exportRegisterObjects(register: $register) as $object) {
-					$openApiSpec['components']['objects'][] = $object;
-				}
-			}
-
-			// Merge the OpenAPI specification over the OpenConnector configuration.
-			if ($openConnectorService !== null) {
-				$openApiSpec = array_replace_recursive(
-					$openConnectorService->exportRegister($register->getId()),
-					$openApiSpec
-				);
-			}
-		}//end foreach
-
-		if ($configuration !== null) {
-			foreach ($this->exportMappings(configuration: $configuration) as $slug => $mapping) {
-				$openApiSpec['components']['mappings'][$slug] = $mapping;
-			}
-		}
+		$this->addRegisters(run: $run, input: $input);
+		$this->addMappings(run: $run);
 
 		// Declare the RBAC groups this configuration depends on, in the OAS-native
 		// slot. Without this the export is LOSSY: OasService emits the same scope
 		// map for API consumers, but the configuration document never carried it,
 		// so exporting a register and re-importing it silently dropped every group
 		// declaration and left the importer nothing to provision.
-		return $this->attachDeclaredScopes(openApiSpec: $openApiSpec);
+		return $this->attachDeclaredScopes(openApiSpec: $run->openApiSpec);
 	}//end exportConfig()
+
+	/**
+	 * The export document before any register is added: the OAS version, empty components and the header.
+	 *
+	 * @param array|Configuration|Register $input The export input.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function emptyDocument(array|Configuration|Register $input): array {
+		return [
+			'openapi' => '3.0.0',
+			'components' => self::EMPTY_COMPONENTS,
+		] + $this->exportHeader(input: $input);
+	}//end emptyDocument()
+
+	/**
+	 * Add the export's registers: the configuration's, or the input itself for a register export.
+	 *
+	 * @param ConfigurationExportRun       $run   The export.
+	 * @param array|Configuration|Register $input The export input.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function addRegisters(ConfigurationExportRun $run, array|Configuration|Register $input): void {
+		$registers = [$input];
+		if ($run->configuration !== null) {
+			$registers = $run->configuration->getRegisters();
+		}
+
+		foreach ($registers ?? [] as $register) {
+			$this->addRegister(run: $run, register: $register);
+		}
+	}//end addRegisters()
+
+	/**
+	 * Add one register with its schemas, its objects when asked, merged over OpenConnector's export of it.
+	 *
+	 * @param ConfigurationExportRun $run      The export.
+	 * @param mixed                  $register A Register or a register id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function addRegister(ConfigurationExportRun $run, mixed $register): void {
+		$register = $this->registerToExport(register: $register);
+		$this->registersMap[$register->getId()] = $register;
+		$run->openApiSpec = $this->withRegisterAndSchemas(openApiSpec: $run->openApiSpec, register: $register);
+
+		if ($run->includeObjects === true) {
+			$this->addRegisterObjects(run: $run, register: $register);
+		}
+
+		// Merge the OpenAPI specification over the OpenConnector configuration.
+		if ($run->openConnectorService !== null) {
+			$run->openApiSpec = array_replace_recursive(
+				$run->openConnectorService->exportRegister($register->getId()),
+				$run->openApiSpec
+			);
+		}
+	}//end addRegister()
+
+	/**
+	 * Add a register's objects to the export.
+	 *
+	 * @param ConfigurationExportRun $run      The export.
+	 * @param Register               $register The register.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function addRegisterObjects(ConfigurationExportRun $run, Register $register): void {
+		foreach ($this->exportRegisterObjects(register: $register) as $object) {
+			$run->openApiSpec['components']['objects'][] = $object;
+		}
+	}//end addRegisterObjects()
+
+	/**
+	 * Add the configuration's mappings to the export; a register export has none.
+	 *
+	 * @param ConfigurationExportRun $run The export.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function addMappings(ConfigurationExportRun $run): void {
+		if ($run->configuration === null) {
+			return;
+		}
+
+		foreach ($this->exportMappings(configuration: $run->configuration) as $slug => $mapping) {
+			$run->openApiSpec['components']['mappings'][$slug] = $mapping;
+		}
+	}//end addMappings()
 
 	/**
 	 * A configuration's register entry as an entity: an id is looked up, anything else is used as it is.
@@ -287,53 +352,114 @@ class ExportHandler {
 	 */
 	private function exportHeader(array|Configuration|Register $input): array {
 		if ($input instanceof Configuration) {
-			return [
-				'info' => [
-					'title' => $input->getTitle(),
-					'description' => $input->getDescription(),
-					'version' => $input->getVersion(),
-				],
-				'x-openregister' => [
-					'type' => $input->getType(),
-					'app' => $input->getApp(),
-					'sourceType' => $input->getSourceType(),
-					'sourceUrl' => $input->getSourceUrl(),
-					'openregister' => $input->getOpenregister(),
-					'github' => [
-						'repo' => $input->getGithubRepo(),
-						'branch' => $input->getGithubBranch(),
-						'path' => $input->getGithubPath(),
-					],
-				],
-			];
+			return $this->configurationHeader(configuration: $input);
 		}
 
 		if ($input instanceof Register) {
 			return [
-				'info' => [
-					'title' => $input->getTitle(),
-					'description' => $input->getDescription(),
-					'version' => $input->getVersion(),
-				],
+				'info' => $this->entityInfo(entity: $input),
 				'x-openregister' => ['type' => 'register'],
 			];
 		}
 
+		return $this->arrayHeader(input: $input);
+	}//end exportHeader()
+
+	/**
+	 * The header of a configuration export: its OAS info and its OpenRegister metadata.
+	 *
+	 * @param Configuration $configuration The configuration.
+	 *
+	 * @return array{info: array<string, mixed>, x-openregister: array<string, mixed>}
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function configurationHeader(Configuration $configuration): array {
+		return [
+			'info' => $this->entityInfo(entity: $configuration),
+			'x-openregister' => [
+				'type' => $configuration->getType(),
+				'app' => $configuration->getApp(),
+				'sourceType' => $configuration->getSourceType(),
+				'sourceUrl' => $configuration->getSourceUrl(),
+				'openregister' => $configuration->getOpenregister(),
+				'github' => $this->githubSource(configuration: $configuration),
+			],
+		];
+	}//end configurationHeader()
+
+	/**
+	 * The GitHub location a configuration is kept at.
+	 *
+	 * @param Configuration $configuration The configuration.
+	 *
+	 * @return array{repo: mixed, branch: mixed, path: mixed}
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function githubSource(Configuration $configuration): array {
+		return [
+			'repo' => $configuration->getGithubRepo(),
+			'branch' => $configuration->getGithubBranch(),
+			'path' => $configuration->getGithubPath(),
+		];
+	}//end githubSource()
+
+	/**
+	 * The OAS `info` block of a configuration or register: title, description and version.
+	 *
+	 * @param Configuration|Register $entity The exported entity.
+	 *
+	 * @return array{title: mixed, description: mixed, version: mixed}
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function entityInfo(Configuration|Register $entity): array {
+		return [
+			'title' => $entity->getTitle(),
+			'description' => $entity->getDescription(),
+			'version' => $entity->getVersion(),
+		];
+	}//end entityInfo()
+
+	/**
+	 * The header of an array export, with defaults for what the array leaves out.
+	 *
+	 * @param array<string, mixed> $input The export input.
+	 *
+	 * @return array{info: array<string, mixed>, x-openregister: mixed}
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function arrayHeader(array $input): array {
 		return [
 			'info' => [
 				'title' => $input['title'] ?? 'Default Title',
 				'description' => $input['description'] ?? 'Default Description',
 				'version' => $input['version'] ?? '1.0.0',
 			],
-			'x-openregister' => $input['x-openregister'] ?? [
-				'title' => $input['title'] ?? null,
-				'description' => $input['description'] ?? null,
-				'type' => $input['type'] ?? null,
-				'app' => $input['app'] ?? null,
-				'version' => $input['version'] ?? '1.0.0',
-			],
+			'x-openregister' => $input['x-openregister'] ?? $this->arrayExtension(input: $input),
 		];
-	}//end exportHeader()
+	}//end arrayHeader()
+
+	/**
+	 * The `x-openregister` block of an array export that declares none.
+	 *
+	 * @param array<string, mixed> $input The export input.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function arrayExtension(array $input): array {
+		return [
+			'title' => $input['title'] ?? null,
+			'description' => $input['description'] ?? null,
+			'type' => $input['type'] ?? null,
+			'app' => $input['app'] ?? null,
+			'version' => $input['version'] ?? '1.0.0',
+		];
+	}//end arrayExtension()
 
 	/**
 	 * Add a register and its schemas to the export, with schema references as slugs.
