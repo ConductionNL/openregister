@@ -149,10 +149,11 @@ use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 
 /**
  * Writes one OpenRegister object per flow item, as the run's owner.
@@ -815,11 +816,12 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 */
 	private function deleteMatched(ObjectWritePlan $plan, string $uuid): bool {
 		return $this->objects->deleteObject(
-			uuid: $uuid,
-			register: $plan->register,
-			schema: $plan->schema,
-			currentUser: $plan->owner,
-			permanent: $this->permanenceOf(config: $plan->config)
+			deletion: new ObjectDeletion(
+				uuid: $uuid,
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				currentUser: $plan->owner,
+				permanent: $this->permanenceOf(config: $plan->config)
+			)
 		);
 	}//end deleteMatched()
 

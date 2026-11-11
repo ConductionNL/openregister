@@ -80,6 +80,7 @@ use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
@@ -641,9 +642,10 @@ class CredentialBrokerService {
 	private function discardOrphanedCredential(string $uuid): void {
 		try {
 			$this->sources->objectService->deleteObject(
-				uuid: $uuid,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
+				deletion: new ObjectDeletion(
+					uuid: $uuid,
+					target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA)
+				),
 				_rbac: false
 			);
 		} catch (Throwable $e) {

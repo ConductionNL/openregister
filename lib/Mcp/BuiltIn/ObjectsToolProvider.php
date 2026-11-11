@@ -32,6 +32,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * ObjectsToolProvider
@@ -226,7 +227,7 @@ class ObjectsToolProvider extends AbstractBuiltInToolProvider {
 	 */
 	private function deleteObject(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
-		$this->objectService->deleteObject(uuid: $arguments['id']);
+		$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $arguments['id']));
 		return ['deleted' => true, 'id' => $arguments['id']];
 	}//end deleteObject()
 }//end class

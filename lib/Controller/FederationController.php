@@ -51,6 +51,7 @@ use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
@@ -480,9 +481,10 @@ class FederationController extends Controller {
 		$share = $target['share'];
 		try {
 			$ok = $this->objectService->deleteObject(
-				uuid: $target['uuid'],
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
+				deletion: new ObjectDeletion(
+					uuid: $target['uuid'],
+					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema())
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

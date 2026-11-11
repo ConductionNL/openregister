@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Unit tests for ObjectsToolProvider.
@@ -239,7 +240,7 @@ class ObjectsToolProviderTest extends TestCase {
 	// ── delete ─────────────────────────────────────────────────────
 
 	public function testDeleteCallsDeleteObjectAndReturnsConfirmation(): void {
-		$this->objectService->expects($this->once())->method('deleteObject')->with(uuid: 'uuid-3');
+		$this->objectService->expects($this->once())->method('deleteObject')->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'uuid-3'));
 
 		$this->assertSame(['deleted' => true, 'id' => 'uuid-3'], $this->provider->invokeTool(ObjectsToolProvider::TOOL_ID, $this->args(['action' => 'delete', 'id' => 'uuid-3'])));
 

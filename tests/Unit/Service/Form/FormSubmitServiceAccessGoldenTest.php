@@ -54,6 +54,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * The submit path's allowed and refused outcomes, with the flags of every call.
@@ -137,7 +138,9 @@ class FormSubmitServiceAccessGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false, ?IUser $currentUser = null, bool $permanent = false): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
+				$permanent = $deletion->permanent;
 				$this->calls[] = ['delete', $uuid, $_rbac, $_multitenancy, $permanent];
 				unset($this->stored[$uuid]);
 

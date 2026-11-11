@@ -47,6 +47,7 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Register access for the example-set loader.
@@ -580,9 +581,10 @@ class ExampleSetStore {
 
 		try {
 			$deleted = $service->deleteObject(
-				uuid: $ref->id,
-				register: $ref->register,
-				schema: $ref->schema,
+				deletion: new ObjectDeletion(
+					uuid: $ref->id,
+					target: new ObjectFindTarget(register: $ref->register, schema: $ref->schema)
+				),
 				_rbac: false,
 				_multitenancy: false,
 				_retentionSweep: true

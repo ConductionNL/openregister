@@ -54,6 +54,7 @@ use OCA\OpenRegister\Service\Form\FormSubmitDestinations;
 use OCA\OpenRegister\Service\Form\FormSubmitKeeping;
 use OCA\OpenRegister\Service\Form\FormSubmitPlatform;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * The submit contract against real stores, a real opis validator and a fake creating listener.
@@ -244,7 +245,8 @@ class FormSubmitServiceTest extends TestCase {
 			}
 		);
 		$this->objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
 				$this->deleted[] = $uuid;
 				unset($this->stored[$uuid]);
 
