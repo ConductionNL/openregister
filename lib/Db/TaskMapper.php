@@ -572,15 +572,7 @@ class TaskMapper extends QBMapper {
 		$qb->selectAlias($qb->func()->count('id'), 'total')->from($this->getTableName());
 		$this->applyInboxPredicates(qb: $qb, criteria: $criteria);
 
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		if ($row === false) {
-			return 0;
-		}
-
-		return (int)$row['total'];
+		return $this->totalOf(qb: $qb);
 	}//end countInbox()
 
 	/**
@@ -736,6 +728,17 @@ class TaskMapper extends QBMapper {
 		$qb->selectAlias($qb->func()->count('id'), 'total')->from($this->getTableName());
 		$this->applyPartyPredicates(qb: $qb, partyReference: $partyReference);
 
+		return $this->totalOf(qb: $qb);
+	}//end countOpenExternalForParty()
+
+	/**
+	 * Run a count query and read its `total`, 0 when it returns no row.
+	 *
+	 * @param IQueryBuilder $qb The count query.
+	 *
+	 * @return int The total.
+	 */
+	private function totalOf(IQueryBuilder $qb): int {
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
@@ -745,7 +748,7 @@ class TaskMapper extends QBMapper {
 		}
 
 		return (int)$row['total'];
-	}//end countOpenExternalForParty()
+	}//end totalOf()
 
 	/**
 	 * The portal seam's predicate: this party's, external, still open, and not held back by an open blocker.
@@ -962,15 +965,7 @@ class TaskMapper extends QBMapper {
 		$qb->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
 		$this->applyOverdue(qb: $qb, now: $now);
 
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		if ($row === false) {
-			return 0;
-		}
-
-		return (int)$row['total'];
+		return $this->totalOf(qb: $qb);
 	}//end countOverdueOpen()
 
 	/**
