@@ -2221,3 +2221,4 @@ pipelinq	3421	0c060fd77e66fa1112d835dcfff0e2f1e20c1dc3	GREEN	FV07:12	tree green:
 pipelinq	3422	59b423461924633786778baf3206f067d49a12f7	GREEN	FV07:12	tree green: phpunit 0 new failures, vitest 0 new failures
 pipelinq	3423	555e66606d70fed15e8ef1ca8210d3048bdd5e40	GREEN	FV07:12	tree green: phpunit 0 new failures, vitest 0 new failures
 pipelinq	3424	e6bc326020d06856a62f402da87e56be72545e8c	GREEN	FV07:12	tree green: phpunit 0 new failures, vitest 0 new failures
+dossiq	5818	487e5e7a2baad208b7955dc55e99097fa0e11ccd	GREEN	FV02:17	tree of 2 green on php unit suite (54 inherited php failures)
