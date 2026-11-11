@@ -181,8 +181,9 @@ class FormsController extends Controller {
 			$schemaRef = trim((string)($destination['schema'] ?? ''));
 		}
 
+		// The author's own tenancy and RBAC decide which schemas exist for them.
 		try {
-			$schema = $this->schemas->find($schemaRef, _multitenancy: false);
+			$schema = $this->schemas->find($schemaRef, _rbac: true, _multitenancy: true);
 		} catch (Throwable) {
 			return new JSONResponse(data: ['message' => $this->l10n->t('The destination schema does not exist.')], statusCode: 404);
 		}
