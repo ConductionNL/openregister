@@ -69,31 +69,16 @@ class ExampleSetUserPreferences {
 	}//end __construct()
 
 	/**
-	 * Why a preference cannot be written, or ''.
-	 *
-	 * @param string             $app   The app that ships the fragment.
-	 * @param string             $uid   The filled account id.
-	 * @param string             $key   The key.
-	 * @param array<int, string> $users The account ids the set creates or adopts.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
-	 */
-	public function refusal(string $app, string $uid, string $key, array $users): string {
-		return $this->refusalFor(preference: new UserPreferenceKey(entry: ['user' => $uid, 'app' => $app, 'key' => $key]), users: $users);
-	}//end refusal()
-
-	/**
 	 * Why a preference cannot be written, or '': its account is not in the set, or its key holds a secret.
 	 *
 	 * @param UserPreferenceKey  $preference The filled account id, the app and the key.
 	 * @param array<int, string> $users      The account ids the set creates or adopts.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
-	private function refusalFor(UserPreferenceKey $preference, array $users): string {
+	public function refusal(UserPreferenceKey $preference, array $users): string {
 		$uid = $preference->uid;
 		if (in_array($uid, $users, true) === false) {
 			if ($this->accounts->inGroup(gid: self::ADMIN_GROUP, uid: $uid) === true) {
@@ -108,24 +93,7 @@ class ExampleSetUserPreferences {
 		}
 
 		return '';
-	}//end refusalFor()
-
-	/**
-	 * Write a preference when the key does not hold that value yet.
-	 *
-	 * @param string $uid   The account id.
-	 * @param string $app   The app.
-	 * @param string $key   The key.
-	 * @param string $value The filled value.
-	 *
-	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (null when nothing had to be
-	 *                                                                 written), or why the write failed.
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
-	 */
-	public function apply(string $uid, string $app, string $key, string $value): array {
-		return $this->applyTo(preference: new UserPreferenceKey(entry: ['user' => $uid, 'app' => $app, 'key' => $key]), value: $value);
-	}//end apply()
+	}//end refusal()
 
 	/**
 	 * Write a preference when the key does not hold that value yet.
@@ -135,8 +103,10 @@ class ExampleSetUserPreferences {
 	 *
 	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (null when nothing had to be
 	 *                                                                 written), or why the write failed.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
-	private function applyTo(UserPreferenceKey $preference, string $value): array {
+	public function apply(UserPreferenceKey $preference, string $value): array {
 		$had        = $this->has(preference: $preference);
 		$old        = $this->read(preference: $preference);
 		if ($had === true && $old === $value) {
@@ -152,48 +122,44 @@ class ExampleSetUserPreferences {
 			'error' => '',
 			'entry' => ['user' => $preference->uid, 'app' => $preference->app, 'key' => $preference->key, 'had' => $had, 'old' => $old, 'new' => $value],
 		];
-	}//end applyTo()
+	}//end apply()
+
+	/**
+	 * A held preference this run does not refresh: the record entry as it is, nothing written.
+	 *
+	 * @param array<string, mixed> $entry The record entry from apply().
+	 *
+	 * @return array{error: string, entry: array<string, mixed>, wrote: bool}
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 */
+	public function kept(array $entry): array {
+		return ['error' => '', 'entry' => $entry, 'wrote' => false];
+	}//end kept()
 
 	/**
 	 * Write a held preference again when its declaration now resolves to something else than the set last wrote (a
 	 * view it quotes was written again under a new uuid); what it first replaced stays recorded.
 	 *
-	 * @param array<string, mixed> $entry   The record entry from apply().
-	 * @param string               $value   The value the declaration resolves to now.
-	 * @param bool                 $refresh Whether this run refreshes and the value resolved.
-	 *
-	 * @return array{error: string, entry: array<string, mixed>, wrote: bool}
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
-	 */
-	public function follow(array $entry, string $value, bool $refresh): array {
-		if ($refresh === false) {
-			return ['error' => '', 'entry' => $entry, 'wrote' => false];
-		}
-
-		return $this->followTo(entry: $entry, value: $value);
-	}//end follow()
-
-	/**
-	 * Write a held preference again when its declaration now resolves to something else than the set last wrote.
-	 *
 	 * @param array<string, mixed> $entry The record entry from apply().
 	 * @param string               $value The value the declaration resolves to now.
 	 *
 	 * @return array{error: string, entry: array<string, mixed>, wrote: bool}
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
-	private function followTo(array $entry, string $value): array {
+	public function follow(array $entry, string $value): array {
 		if ($value === (string) $entry['new']) {
 			return ['error' => '', 'entry' => $entry, 'wrote' => false];
 		}
 
-		$made = $this->applyTo(preference: new UserPreferenceKey(entry: $entry), value: $value);
+		$made = $this->apply(preference: new UserPreferenceKey(entry: $entry), value: $value);
 		if ($made['error'] !== '') {
 			return ['error' => $made['error'], 'entry' => $entry, 'wrote' => false];
 		}
 
 		return ['error' => '', 'entry' => array_merge($entry, ['new' => $value]), 'wrote' => true];
-	}//end followTo()
+	}//end follow()
 
 	/**
 	 * Whether a written preference is no longer on the instance as written.

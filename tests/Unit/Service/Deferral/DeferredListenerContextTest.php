@@ -73,4 +73,12 @@ class DeferredListenerContextTest extends TestCase {
 		$this->assertNull($rebuilt->getOrganisationUuid());
 		$this->assertSame([['uuid' => 'ok']], $rebuilt->getEntries());
 	}
+
+	public function testAnEntryListThatIsNotAListIsEmpty(): void {
+		$rebuilt = DeferredListenerContext::fromJobArguments(['userId' => 'bob', 'entries' => 'not-a-list']);
+
+		$this->assertSame('bob', $rebuilt->getUserId());
+		$this->assertNull($rebuilt->getOrganisationUuid());
+		$this->assertSame([], $rebuilt->getEntries());
+	}
 }

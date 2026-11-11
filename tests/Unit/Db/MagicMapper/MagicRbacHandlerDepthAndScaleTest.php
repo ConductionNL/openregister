@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -295,11 +296,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 
 			// What the list term excludes, read through the same resolver the
 			// emitter built it from.
-			$listExcludes = ($resolver->unconditionalDenial(
-				authorization: ($node->getAuthorization() ?? []),
-				action: 'read',
-				principals: $principals
-			) !== null);
+			$listExcludes = ($resolver->unconditionalDenial(authorization: ($node->getAuthorization() ?? []), question: new DenyQuestion(action: 'read', principals: $principals)) !== null);
 
 			$this->assertSame(
 				$objectVerdict,

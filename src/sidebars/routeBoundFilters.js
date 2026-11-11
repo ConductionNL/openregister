@@ -38,109 +38,130 @@ export function routeBoundFilters(path) {
 			schemaStore: () => schemaStore,
 		},
 
-		watch: {
-			'$route.query': {
-				/**
-				 * @spec exclude follows the URL query, UI plumbing
-				 */
-				handler() {
-					if (this.$route.path !== path) return
-					this.applyQueryParamsFromRoute()
-				},
+		watch: routeWatchers(path),
 
-				deep: true,
+		methods: routeBoundMethods(path),
+	}
+}
+
+/**
+ * The watchers of a route-bound sidebar: the URL query on `path`, and the
+ * picked register and schema.
+ *
+ * @param {string} path The route the sidebar belongs to
+ * @return {object} The watchers
+ */
+function routeWatchers(path) {
+	return {
+		'$route.query': {
+			/**
+			 * @spec exclude follows the URL query, UI plumbing
+			 */
+			handler() {
+				if (this.$route.path !== path) return
+				this.applyQueryParamsFromRoute()
 			},
 
-			'registerStore.registerItem': function() {
-				this.applyFilters()
-			},
-
-			'schemaStore.schemaItem': function() {
-				this.applyFilters()
-			},
+			deep: true,
 		},
 
-		methods: {
-			/**
-			 * Start loading the register and schema lists when they are still empty.
-			 *
-			 * @spec exclude Lifecycle plumbing; fire-and-forget load of the picker lists.
-			 * @return {void}
-			 */
-			refreshEmptyScopeLists() {
-				if (!registerStore.registerList.length) {
-					registerStore.refreshRegisterList()
-				}
+		'registerStore.registerItem': function() {
+			this.applyFilters()
+		},
 
-				if (!schemaStore.schemaList.length) {
-					schemaStore.refreshSchemaList()
-				}
-			},
+		'schemaStore.schemaItem': function() {
+			this.applyFilters()
+		},
+	}
+}
 
-			/**
-			 * Follow the filtered count the list announces on `event`.
-			 *
-			 * @param {string} event The event bus event carrying the count
-			 * @spec exclude Lifecycle plumbing; mirrors the list's filtered count.
-			 * @return {void}
-			 */
-			listenFilteredCount(event) {
-				eventBus.on(event, (count) => {
-					this.filteredCount = count
-				})
-			},
+/**
+ * The filter handlers of a route-bound sidebar on `path`.
+ *
+ * @param {string} path The route the sidebar belongs to
+ * @return {object} The methods
+ */
+function routeBoundMethods(path) {
+	return {
+		/**
+		 * Start loading the register and schema lists when they are still empty.
+		 *
+		 * @spec exclude Lifecycle plumbing; fire-and-forget load of the picker lists.
+		 * @return {void}
+		 */
+		refreshEmptyScopeLists() {
+			if (!registerStore.registerList.length) {
+				registerStore.refreshRegisterList()
+			}
 
-			/**
-			 * Clear filters (alias for clearAllFilters for template compatibility)
-			 *
-			 * @spec exclude filter handler, UI plumbing
-			 * @return {void}
-			 */
-			clearFilters() {
-				this.clearAllFilters()
-			},
+			if (!schemaStore.schemaList.length) {
+				schemaStore.refreshSchemaList()
+			}
+		},
 
-			/**
-			 * Debounced version of applyFilters for text input
-			 *
-			 * @spec exclude filter handler, UI plumbing
-			 * @return {void}
-			 */
-			debouncedApplyFilters() {
-				clearTimeout(this.filterTimeout)
-				this.filterTimeout = setTimeout(() => {
-					this.applyFilters()
-				}, 500)
-			},
+		/**
+		 * Follow the filtered count the list announces on `event`.
+		 *
+		 * @param {string} event The event bus event carrying the count
+		 * @spec exclude Lifecycle plumbing; mirrors the list's filtered count.
+		 * @return {void}
+		 */
+		listenFilteredCount(event) {
+			eventBus.on(event, (count) => {
+				this.filteredCount = count
+			})
+		},
 
-			/**
-			 * @param {object|null} register The picked register
-			 * @spec exclude filter handler, clears the schema of another register
-			 */
-			handleRegisterChange(register) {
-				registerStore.setRegisterItem(register)
-				schemaStore.setSchemaItem(null)
+		/**
+		 * Clear filters (alias for clearAllFilters for template compatibility)
+		 *
+		 * @spec exclude filter handler, UI plumbing
+		 * @return {void}
+		 */
+		clearFilters() {
+			this.clearAllFilters()
+		},
+
+		/**
+		 * Debounced version of applyFilters for text input
+		 *
+		 * @spec exclude filter handler, UI plumbing
+		 * @return {void}
+		 */
+		debouncedApplyFilters() {
+			clearTimeout(this.filterTimeout)
+			this.filterTimeout = setTimeout(() => {
 				this.applyFilters()
-			},
+			}, 500)
+		},
 
-			/**
-			 * @param {object|null} schema The picked schema
-			 * @spec exclude filter handler, UI plumbing
-			 */
-			handleSchemaChange(schema) {
-				schemaStore.setSchemaItem(schema)
-				this.applyFilters()
-			},
+		/**
+		 * @param {object|null} register The picked register
+		 * @spec exclude filter handler, clears the schema of another register
+		 */
+		handleRegisterChange(register) {
+			registerStore.setRegisterItem(register)
+			schemaStore.setSchemaItem(null)
+			this.applyFilters()
+		},
 
-			/**
-			 * @spec exclude writes the filters to the URL query, UI plumbing
-			 */
-			updateRouteQueryFromState() {
-				if (this.$route.path !== path) return
-				const nextQuery = this.buildQueryFromState()
-				if (queriesEqual(nextQuery, this.$route.query || {})) return
-				this.$router.replace({ path: this.$route.path, query: nextQuery })
-			},
+		/**
+		 * @param {object|null} schema The picked schema
+		 * @spec exclude filter handler, UI plumbing
+		 */
+		handleSchemaChange(schema) {
+			schemaStore.setSchemaItem(schema)
+			this.applyFilters()
+		},
+
+		/**
+		 * @spec exclude writes the filters to the URL query, UI plumbing
+		 */
+		updateRouteQueryFromState() {
+			if (this.$route.path !== path) return
+			const nextQuery = this.buildQueryFromState()
+			if (queriesEqual(nextQuery, this.$route.query || {})) return
+			this.$router.replace({ path: this.$route.path, query: nextQuery })
 		},
 	}
 }

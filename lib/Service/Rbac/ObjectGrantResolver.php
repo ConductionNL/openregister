@@ -418,22 +418,24 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	private function collectForType(ShareGrantRun $run): void {
 		$page = 0;
 		while ($page < self::MAX_PAGES) {
-			$shares = $this->readPage(run: $run, page: $page);
-			if (empty($shares) === true) {
-				return;
-			}
-
-			foreach ($shares as $share) {
-				$this->absorbShare(share: $share, run: $run);
-			}
-
-			if (count($shares) < self::PAGE_SIZE) {
+			if ($this->absorbPage(run: $run, shares: $this->readPage(run: $run, page: $page)) === false) {
 				return;
 			}
 
 			$page++;
-		}//end while
+		}
 
+		$this->warnPagingBound(run: $run);
+	}//end collectForType()
+
+	/**
+	 * Say that the paging bound was hit, so some grants of this type were not read.
+	 *
+	 * @param ShareGrantRun $run The run: its share type.
+	 *
+	 * @return void
+	 */
+	private function warnPagingBound(ShareGrantRun $run): void {
 		$this->logger->warning(
 			message: '[ObjectGrantResolver] Hit the share paging bound; some grants were NOT read',
 			context: [
@@ -443,7 +445,27 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 				'bound' => (self::PAGE_SIZE * self::MAX_PAGES),
 			]
 		);
-	}//end collectForType()
+	}//end warnPagingBound()
+
+	/**
+	 * Add one page of shares to the grant map, and say whether another page may follow.
+	 *
+	 * @param ShareGrantRun $run    The run whose grant map takes the shares.
+	 * @param IShare[]      $shares The page.
+	 *
+	 * @return bool True when the page was full, so the next one must be read.
+	 */
+	private function absorbPage(ShareGrantRun $run, array $shares): bool {
+		if (empty($shares) === true) {
+			return false;
+		}
+
+		foreach ($shares as $share) {
+			$this->absorbShare(share: $share, run: $run);
+		}
+
+		return count($shares) >= self::PAGE_SIZE;
+	}//end absorbPage()
 
 	/**
 	 * Read one page of one share type, or nothing when the read failed.
@@ -463,18 +485,30 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 				($page * self::PAGE_SIZE)
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[ObjectGrantResolver] Could not read shares for a type; skipping it',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'shareType' => $run->shareType,
-					'exception' => $e->getMessage(),
-				]
-			);
+			$this->warnUnreadableType(run: $run, error: $e);
 			return [];
 		}
 	}//end readPage()
+
+	/**
+	 * Say that the shares of one type could not be read, so the type is skipped.
+	 *
+	 * @param ShareGrantRun $run   The run: its share type.
+	 * @param Throwable     $error Why the read failed.
+	 *
+	 * @return void
+	 */
+	private function warnUnreadableType(ShareGrantRun $run, Throwable $error): void {
+		$this->logger->warning(
+			message: '[ObjectGrantResolver] Could not read shares for a type; skipping it',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'shareType' => $run->shareType,
+				'exception' => $error->getMessage(),
+			]
+		);
+	}//end warnUnreadableType()
 
 	/**
 	 * Add one share to the grant map, when it is a folder share on an object.

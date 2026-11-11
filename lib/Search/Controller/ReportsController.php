@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
+use OCA\OpenRegister\Search\Controller\Support\ReportRenderRequest;
 use OCA\OpenRegister\Search\Controller\Support\ReportsControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -102,60 +103,112 @@ class ReportsController extends Controller {
 	 */
 	public function render(string $id) {
 		$format = (string)($this->request->getParam(key: 'format', default: 'xlsx'));
-		$format = strtolower($format);
+		$request = new ReportRenderRequest(identifier: $id, format: strtolower($format));
 
 		try {
 			$dashboard = $this->loadDashboard(identifier: $id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: ['error' => 'Dashboard not found', 'identifier' => $id],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
 		} catch (\Throwable $e) {
-			// SECURITY: log internal exception detail (file paths, SQL
-			// fragments, library state) and return a generic message.
-			$this->logger->error(
-				message: '[ReportsController] Failed to load dashboard',
-				context: ['identifier' => $id, 'error' => $e->getMessage()]
-			);
-			return new JSONResponse(
-				data: ['error' => 'Failed to load dashboard'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->loadFailureResponse(identifier: $id, error: $e);
 		}
 
+		return $this->renderedDownload(dashboard: $dashboard, request: $request);
+	}//end render()
+
+	/**
+	 * The response to a dashboard that could not be loaded.
+	 *
+	 * @param string     $identifier The dashboard identifier.
+	 * @param \Throwable $error      Why loading failed.
+	 *
+	 * @return JSONResponse 404 for an unknown dashboard, a generic 500 otherwise.
+	 */
+	private function loadFailureResponse(string $identifier, \Throwable $error): JSONResponse {
+		if ($error instanceof DoesNotExistException) {
+			return $this->notFoundResponse(identifier: $identifier);
+		}
+
+		// SECURITY: log internal exception detail (file paths, SQL
+		// fragments, library state) and return a generic message.
+		$this->logger->error(
+			message: '[ReportsController] Failed to load dashboard',
+			context: ['identifier' => $identifier, 'error' => $error->getMessage()]
+		);
+		return new JSONResponse(
+			data: ['error' => 'Failed to load dashboard'],
+			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end loadFailureResponse()
+
+	/**
+	 * The 404 for an unknown dashboard.
+	 *
+	 * @param string $identifier The dashboard identifier.
+	 *
+	 * @return JSONResponse
+	 */
+	private function notFoundResponse(string $identifier): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'Dashboard not found', 'identifier' => $identifier],
+			statusCode: Http::STATUS_NOT_FOUND
+		);
+	}//end notFoundResponse()
+
+	/**
+	 * Render the dashboard and hand it back as a download.
+	 *
+	 * @param ObjectEntity        $dashboard The dashboard.
+	 * @param ReportRenderRequest $request   The identifier and format.
+	 *
+	 * @return DataDownloadResponse|JSONResponse
+	 */
+	private function renderedDownload(ObjectEntity $dashboard, ReportRenderRequest $request) {
 		try {
 			$rendered = $this->renderService->render(
 				dashboard: $dashboard,
-				format: $format
+				format: $request->format
 			);
-		} catch (InvalidArgumentException $e) {
-			// Validation errors are safe to return verbatim (the caller
-			// controls the input that triggered them).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		} catch (OfficeServerRequiredException $e) {
-			return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
 		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[ReportsController] Render failed',
-				context: ['identifier' => $id, 'format' => $format, 'error' => $e->getMessage()]
-			);
-			return new JSONResponse(
-				data: ['error' => 'Render failed; see server logs for details'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}//end try
+			return $this->renderFailureResponse(request: $request, error: $e);
+		}
 
 		return new DataDownloadResponse(
 			data: $rendered['bytes'],
 			filename: $rendered['filename'],
 			contentType: $rendered['mime']
 		);
+	}//end renderedDownload()
 
-	}//end render()
+	/**
+	 * The response to a render that failed.
+	 *
+	 * @param ReportRenderRequest $request The identifier and format.
+	 * @param \Throwable          $error   Why rendering failed.
+	 *
+	 * @return JSONResponse 422 for a validation error, 501 without an office server, a generic 500 otherwise.
+	 */
+	private function renderFailureResponse(ReportRenderRequest $request, \Throwable $error): JSONResponse {
+		if ($error instanceof InvalidArgumentException) {
+			// Validation errors are safe to return verbatim (the caller
+			// controls the input that triggered them).
+			return new JSONResponse(
+				data: ['error' => $error->getMessage()],
+				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		if ($error instanceof OfficeServerRequiredException) {
+			return new JSONResponse(data: $error->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
+		}
+
+		$this->logger->error(
+			message: '[ReportsController] Render failed',
+			context: ['identifier' => $request->identifier, 'format' => $request->format, 'error' => $error->getMessage()]
+		);
+		return new JSONResponse(
+			data: ['error' => 'Render failed; see server logs for details'],
+			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end renderFailureResponse()
 
 	/**
 	 * GET /api/reports/{id}/preview — render to HTML and return as
@@ -175,10 +228,7 @@ class ReportsController extends Controller {
 		try {
 			$dashboard = $this->loadDashboard(identifier: $id);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: ['error' => 'Dashboard not found', 'identifier' => $id],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+			return $this->notFoundResponse(identifier: $id);
 		}
 
 		$rendered = $this->renderService->render(

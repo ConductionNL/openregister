@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\DeckPlacement;
+use OCA\OpenRegister\Kernel\Contracts\MassValidationRequest;
 
 /**
  * Every public method of SettingsService. Callers depend on this interface, not on the class.
@@ -359,7 +361,7 @@ interface SettingsServiceInterface {
 	 * Validate all objects in the system
 	 *
 	 * Triggers validation logic for all objects without re-saving them.
-	 * This is a lighter-weight operation compared to massValidateObjects.
+	 * This is a lighter-weight operation compared to massValidate.
 	 *
 	 * @return array Validation results
 	 *
@@ -375,23 +377,16 @@ interface SettingsServiceInterface {
 	 * Re-saves all objects in the system to ensure all business logic
 	 * is triggered and objects are properly processed according to current rules.
 	 *
-	 * @param int $maxObjects Maximum number of objects to process (0 = all).
-	 * @param int $batchSize Batch size for processing (default: 1000).
-	 * @param string $mode Processing mode: 'serial' or 'parallel'.
-	 * @param bool $collectErrors Whether to collect all errors or stop on first.
+	 * @param MassValidationRequest $request How many objects (0 = all), the batch size, the mode
+	 *                                       ('serial' or 'parallel') and whether all errors are collected.
 	 *
 	 * @return array Mass validation results
 	 *
 	 * @throws Exception If mass validation operation fails.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex batch validation requires comprehensive logic
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple validation paths and error handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple validation paths and error handling
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for error collection behavior
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
 	 */
-	public function massValidateObjects(int $maxObjects = 0, int $batchSize = 1000, string $mode = 'serial', bool $collectErrors = false): array;
+	public function massValidate(MassValidationRequest $request): array;
 
 	/**
 	 * Format bytes into human readable format
@@ -507,13 +502,12 @@ interface SettingsServiceInterface {
 	/**
 	 * Persist the Deck default board+stack for a schema. Overwrites any prior value.
 	 *
-	 * @param string $schemaSlug Schema slug or numeric id used to scope the default.
-	 * @param int $boardId NC Deck board id.
-	 * @param int $stackId NC Deck stack id on that board.
+	 * @param string        $schemaSlug Schema slug or numeric id used to scope the default.
+	 * @param DeckPlacement $placement  The NC Deck board id and the stack id on that board.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/integration-deck/spec.md
 	 */
-	public function setDeckDefault(string $schemaSlug, int $boardId, int $stackId): void;
+	public function setDeckDefault(string $schemaSlug, DeckPlacement $placement): void;
 }//end interface

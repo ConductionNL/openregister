@@ -92,12 +92,7 @@ class LifecycleConditionEvaluatorHoldsTest extends TestCase {
 			static fn (string $text, array $parameters = []): string => vsprintf($text, $parameters)
 		);
 
-		$this->evaluator = new LifecycleConditionEvaluator(
-			$this->userSession,
-			$groupManager,
-			new LifecycleConditionReporting($l10n, $this->logger),
-			$this->realConditionDialect()
-		);
+		$this->evaluator = new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->userSession, $groupManager)));
 	}//end setUp()
 
 	/**

@@ -1112,6 +1112,147 @@ function blankValueFor(property) {
 }
 
 /**
+ * The rows of a new object: each property of its schema, if any, with its
+ * default value.
+ *
+ * @param {object|undefined} schema The current schema.
+ * @return {Array<Array>} The rows, as [key, value].
+ */
+function newObjectRows(schema) {
+	const schemaProperties = schema?.properties
+	if (!schemaProperties) {
+		return []
+	}
+	return schemaDefaultRows(schemaProperties)
+}
+
+/**
+ * Each schema property with its default value.
+ *
+ * @param {object} schemaProperties The schema's properties.
+ * @return {Array<Array>} The rows, as [key, value].
+ */
+function schemaDefaultRows(schemaProperties) {
+	return Object.entries(schemaProperties).map(([key, schemaProperty]) => [
+		key,
+		defaultValueFor(schemaProperty),
+	])
+}
+
+/**
+ * The rows of the schema properties a stored object does not hold yet, with
+ * their default values.
+ *
+ * @param {object} objectData The stored object.
+ * @param {object} schemaProperties The schema's properties.
+ * @return {Array<Array>} The rows, as [key, value].
+ */
+function missingSchemaRows(objectData, schemaProperties) {
+	return Object.entries(schemaProperties)
+		.filter(([key]) => !Object.hasOwn(objectData, key))
+		.map(([key, schemaProperty]) => [key, defaultValueFor(schemaProperty)])
+}
+
+/**
+ * The `@self` metadata of a blank object in a register and schema.
+ *
+ * @param {number|string} register The register id, or ''.
+ * @param {number|string} schema The schema id, or ''.
+ * @return {object} The metadata.
+ */
+function blankSelf(register, schema) {
+	return {
+		id: '',
+		uuid: '',
+		uri: '',
+		register,
+		schema,
+		...blankBookkeeping(),
+	}
+}
+
+/**
+ * The bookkeeping metadata of a blank object: no relations, files, folder,
+ * dates, lock or owner yet.
+ *
+ * @return {object} The metadata.
+ */
+function blankBookkeeping() {
+	return {
+		relations: '',
+		files: '',
+		folder: '',
+		updated: '',
+		created: '',
+		locked: null,
+		owner: '',
+	}
+}
+
+/**
+ * The value a blank object starts with for a property: its default, else the
+ * blank value of its type.
+ *
+ * @param {object} property The schema property.
+ * @return {unknown} The value.
+ */
+function initialValueFor(property) {
+	return property.default !== undefined
+		? property.default
+		: blankValueFor(property)
+}
+
+/**
+ * Clear what the modal showed: the edits, titles, tab, attachments, outcome
+ * and copy state.
+ *
+ * @param {object} modal The modal.
+ * @return {void}
+ */
+function clearFormState(modal) {
+	modal.isUpdated = false
+	modal.registerTitle = ''
+	modal.schemaTitle = ''
+	modal.activeTab = 0
+	modal.selectedAttachments = []
+	modal.activeAttachment = null
+	modal.success = null
+	modal.error = null
+	modal.isCopied = false
+}
+
+/**
+ * Forget the register and schema chosen for a new object, and the choices
+ * the store offered.
+ *
+ * @param {object} modal The modal.
+ * @return {void}
+ */
+function clearNewObjectScope(modal) {
+	// Clear register/schema selection state
+	modal.selectedRegisterForNewObject = null
+	modal.selectedSchemaForNewObject = null
+	modal.registerSchemaSelectionConfirmed = false
+	objectStore.availableRegistersForNewObject = null
+	objectStore.availableSchemasForNewObject = null
+}
+
+/**
+ * Stop the pending property change notifications.
+ *
+ * @param {object} modal The modal.
+ * @return {void}
+ */
+function clearPropertyChangeTimers(modal) {
+	// Clear debounce timers
+	Object.values(modal.propertyChangeDebounceTimers).forEach((timer) => {
+		if (timer) clearTimeout(timer)
+	})
+	modal.propertyChangeDebounceTimers = {}
+	modal.pendingNotifications = {}
+}
+
+/**
  * The id of a reference that is either an object with an id or the id itself.
  *
  * @param {unknown} reference The reference.
@@ -1439,20 +1580,7 @@ export default {
 		objectProperties() {
 			// For new objects, show schema properties with default values
 			if (!objectStore?.objectItem) {
-				const schemaProperties = this.currentSchema?.properties
-				if (!schemaProperties) {
-					return []
-				}
-
-				const defaultProperties = []
-
-				for (const [key, schemaProperty] of Object.entries(
-					schemaProperties,
-				)) {
-					defaultProperties.push([key, defaultValueFor(schemaProperty)])
-				}
-
-				return defaultProperties
+				return newObjectRows(this.currentSchema)
 			}
 
 			const objectData = objectStore.objectItem
@@ -1464,15 +1592,10 @@ export default {
 			)
 
 			// Add schema properties that don't exist in the object yet
-			const missingSchemaProperties = []
-			for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
-				if (!Object.hasOwn(objectData, key)) {
-					missingSchemaProperties.push([
-						key,
-						defaultValueFor(schemaProperty),
-					])
-				}
-			}
+			const missingSchemaProperties = missingSchemaRows(
+				objectData,
+				schemaProperties,
+			)
 
 			// Combine existing properties and missing schema properties
 			return [...existingProperties, ...missingSchemaProperties]
@@ -1903,29 +2026,9 @@ export default {
 		 */
 		closeModal() {
 			// Clear state first
-			this.isUpdated = false
-			this.registerTitle = ''
-			this.schemaTitle = ''
-			this.activeTab = 0
-			this.selectedAttachments = []
-			this.activeAttachment = null
-			this.success = null
-			this.error = null
-			this.isCopied = false
-
-			// Clear register/schema selection state
-			this.selectedRegisterForNewObject = null
-			this.selectedSchemaForNewObject = null
-			this.registerSchemaSelectionConfirmed = false
-			objectStore.availableRegistersForNewObject = null
-			objectStore.availableSchemasForNewObject = null
-
-			// Clear debounce timers
-			Object.values(this.propertyChangeDebounceTimers).forEach((timer) => {
-				if (timer) clearTimeout(timer)
-			})
-			this.propertyChangeDebounceTimers = {}
-			this.pendingNotifications = {}
+			clearFormState(this)
+			clearNewObjectScope(this)
+			clearPropertyChangeTimers(this)
 
 			// Clear any timeouts
 			clearTimeout(this.closeModalTimeout)
@@ -2043,28 +2146,15 @@ export default {
 		 */
 		blankObjectData() {
 			const initialData = {
-				'@self': {
-					id: '',
-					uuid: '',
-					uri: '',
-					register: this.currentRegister?.id || '',
-					schema: this.currentSchema?.id || '',
-					relations: '',
-					files: '',
-					folder: '',
-					updated: '',
-					created: '',
-					locked: null,
-					owner: '',
-				},
+				'@self': blankSelf(
+					this.currentRegister?.id || '',
+					this.currentSchema?.id || '',
+				),
 			}
 			for (const [key, property] of Object.entries(
 				this.currentSchema?.properties || {},
 			)) {
-				initialData[key] =
-					property.default !== undefined
-						? property.default
-						: blankValueFor(property)
+				initialData[key] = initialValueFor(property)
 			}
 			return initialData
 		},

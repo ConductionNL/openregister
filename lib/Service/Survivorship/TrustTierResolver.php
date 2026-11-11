@@ -32,7 +32,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Survivorship;
 
 use DateTimeImmutable;
-use Throwable;
 
 /**
  * Resolves the effective trust tier for an (entityType, attribute, sourceSystem)
@@ -155,7 +154,7 @@ class TrustTierResolver implements TrustTierResolverInterface {
 	 * @return int|null The rank, or null when not yet effective.
 	 */
 	private function effectiveRank(array $row, DateTimeImmutable $asOf): ?int {
-		$effectiveFrom = $this->parseDate(value: ($row['effectiveFrom'] ?? null));
+		$effectiveFrom = SurvivorshipDate::parse(value: ($row['effectiveFrom'] ?? null));
 		if ($effectiveFrom !== null && $effectiveFrom > $asOf) {
 			// Future-dated row: not yet effective.
 			return null;
@@ -268,23 +267,4 @@ class TrustTierResolver implements TrustTierResolverInterface {
 			&& (string)($row['attribute'] ?? '') === $tuple->attribute
 			&& (string)($row['sourceSystem'] ?? '') === $tuple->sourceSystem;
 	}//end matchesTuple()
-
-	/**
-	 * Parse a date-ish value into a DateTimeImmutable, never throwing.
-	 *
-	 * @param mixed $value Candidate date value.
-	 *
-	 * @return DateTimeImmutable|null Parsed date, or null when absent/unparseable.
-	 */
-	private function parseDate(mixed $value): ?DateTimeImmutable {
-		if (is_string($value) === false || $value === '') {
-			return null;
-		}
-
-		try {
-			return new DateTimeImmutable($value);
-		} catch (Throwable) {
-			return null;
-		}
-	}//end parseDate()
 }//end class

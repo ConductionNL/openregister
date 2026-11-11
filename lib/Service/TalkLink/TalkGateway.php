@@ -138,14 +138,28 @@ final class TalkGateway {
 		}
 
 		try {
-			$roomService = $this->resolve(className: 'OCA\\Talk\\Service\\RoomService', label: 'RoomService');
-			if ($roomService !== null && method_exists($roomService, 'setDescription') === true) {
+			$roomService = $this->descriptionRoomService();
+			if ($roomService !== null) {
 				$roomService->setDescription($room, $description);
 			}
 		} catch (Throwable $e) {
 			$this->runtime->logger()->debug('Failed to set Talk room description: ' . $e->getMessage());
 		}
 	}//end setDescription()
+
+	/**
+	 * Talk's RoomService when it resolves and can set a description, else null.
+	 *
+	 * @return object|null
+	 */
+	private function descriptionRoomService(): ?object {
+		$roomService = $this->resolve(className: 'OCA\\Talk\\Service\\RoomService', label: 'RoomService');
+		if ($roomService === null || method_exists($roomService, 'setDescription') === false) {
+			return null;
+		}
+
+		return $roomService;
+	}//end descriptionRoomService()
 
 	/**
 	 * Invite a user into a room so it appears in their Talk UI, best-effort.

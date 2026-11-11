@@ -147,6 +147,7 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import AuditActionBadge from './AuditActionBadge.vue'
 import auditTrailModal from '../../services/auditTrailModal.js'
+import { printableValue } from './auditValues.js'
 
 export default {
 	name: 'AuditTrailChanges',
@@ -221,15 +222,7 @@ export default {
 			if (value === undefined) return 'undefined'
 			if (value === '') return '(empty)'
 
-			if (typeof value === 'object') {
-				try {
-					return JSON.stringify(value, null, 2)
-				} catch {
-					return String(value)
-				}
-			}
-
-			return String(value)
+			return printableValue(value)
 		},
 
 		/**
