@@ -222,11 +222,11 @@ class ExportProfileService implements ExportProfileServiceInterface {
 	 *
 	 * @param ProfileExportRun $run The profile and the principal it runs as.
 	 *
-	 * @return Schema The schema.
+	 * @return Schema|null The schema, or null when the profile has none or it no longer exists.
 	 *
 	 * @throws ExportRefusedException When the principal does not hold the export verb; the refusal is recorded first.
 	 */
-	private function permittedSchema(ProfileExportRun $run): Schema {
+	private function permittedSchema(ProfileExportRun $run): ?Schema {
 		$schema = $this->schemaOf(profile: $run->profile);
 
 		$refusal = $this->rightService->refusalForUid(schema: $schema, userId: $run->actorUid);
