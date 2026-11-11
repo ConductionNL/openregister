@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\Support;
 
 use OCP\Security\ICrypto;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -46,6 +47,15 @@ final class SecretAtRest {
 	public const PREFIX = 'orenc:v1:';
 
 	/**
+	 * The value a webhook secret reads as when it cannot be opened.
+	 *
+	 * Sealed by its prefix, so a delivery that meets it is refused instead of sent unsigned.
+	 *
+	 * @var string
+	 */
+	public const UNREADABLE = self::PREFIX . 'unreadable';
+
+	/**
 	 * The authorization configuration keys of a consumer whose values are secret.
 	 *
 	 * `publicKey` holds the shared secret for an HS* algorithm; for RS* it is a
@@ -58,10 +68,12 @@ final class SecretAtRest {
 	/**
 	 * Constructor.
 	 *
-	 * @param ICrypto $crypto Nextcloud's crypto service.
+	 * @param ICrypto              $crypto Nextcloud's crypto service.
+	 * @param LoggerInterface|null $logger Told when a stored secret cannot be opened.
 	 */
 	public function __construct(
 		private readonly ICrypto $crypto,
+		private readonly ?LoggerInterface $logger = null,
 	) {
 	}//end __construct()
 
@@ -96,11 +108,15 @@ final class SecretAtRest {
 	}//end seal()
 
 	/**
-	 * The value opened; a plain value comes back as it is, one that cannot be opened stays sealed.
+	 * The value opened; a plain value comes back as it is.
+	 *
+	 * A sealed value that cannot be opened reads as null (logged), never as its
+	 * ciphertext: the ciphertext is visible to whoever may read the stored
+	 * configuration, so it must not work as the secret.
 	 *
 	 * @param string|null $value The stored value.
 	 *
-	 * @return string|null The plain value.
+	 * @return string|null The plain value, or null when it cannot be opened.
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
@@ -111,8 +127,12 @@ final class SecretAtRest {
 
 		try {
 			return $this->crypto->decrypt(substr((string)$value, strlen(self::PREFIX)));
-		} catch (Throwable) {
-			return $value;
+		} catch (Throwable $e) {
+			$this->logger?->error(
+				message: '[SecretAtRest] A stored secret cannot be decrypted; it is treated as absent',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($e)]
+			);
+			return null;
 		}
 	}//end open()
 

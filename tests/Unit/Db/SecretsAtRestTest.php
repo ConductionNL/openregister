@@ -44,6 +44,7 @@ use OCP\IUserSession;
 use OCP\Migration\IOutput;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
 
@@ -80,11 +81,32 @@ class SecretsAtRestTest extends TestCase {
 		$this->assertNull($this->secrets()->seal(null));
 	}//end testASecretIsSealedOnceAndOpensToItself()
 
-	public function testAValueThatCannotBeOpenedStaysSealed(): void {
+	public function testAValueThatCannotBeOpenedNeverReadsAsItsCiphertext(): void {
+		$broken = SecretAtRest::PREFIX . 'garbage';
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('error');
+
+		$this->assertNull((new SecretAtRest($this->crypto(), $logger))->open($broken));
+	}//end testAValueThatCannotBeOpenedNeverReadsAsItsCiphertext()
+
+	public function testAConsumerSecretThatCannotBeOpenedIsAbsentNotItsCiphertext(): void {
+		$mapper = new ConsumerMapper($this->createMock(IDBConnection::class), $this->secrets());
 		$broken = SecretAtRest::PREFIX . 'garbage';
 
-		$this->assertSame($broken, $this->secrets()->open($broken));
-	}//end testAValueThatCannotBeOpenedStaysSealed()
+		$read = new ReflectionMethod(ConsumerMapper::class, 'mapRowToEntity');
+		$loaded = $read->invoke($mapper, ['id' => 1, 'authorization_configuration' => json_encode(['apiKey' => $broken, 'publicKey' => $broken, 'algorithm' => 'HS256'])]);
+
+		$this->assertSame(['apiKey' => null, 'publicKey' => null, 'algorithm' => 'HS256'], $loaded->getAuthorizationConfiguration());
+	}//end testAConsumerSecretThatCannotBeOpenedIsAbsentNotItsCiphertext()
+
+	public function testAStoredWebhookSecretThatCannotBeOpenedRefusesTheDelivery(): void {
+		$read = new ReflectionMethod(WebhookMapper::class, 'mapRowToEntity');
+		$loaded = $read->invoke($this->webhookMapper(), ['id' => 1, 'secret' => SecretAtRest::PREFIX . 'garbage']);
+
+		$this->assertSame(SecretAtRest::UNREADABLE, $loaded->getSecret());
+		$this->expectException(RuntimeException::class);
+		(new WebhookRequestOptions(webhook: $loaded))->headers(payload: ['a' => 1]);
+	}//end testAStoredWebhookSecretThatCannotBeOpenedRefusesTheDelivery()
 
 	public function testOnlyTheSecretKeysOfAConsumerConfigurationAreSealed(): void {
 		$sealed = $this->secrets()->sealConfiguration(['apiKey' => 'k', 'algorithm' => 'HS256', 'publicKey' => 'shared', 'grants' => ['a']]);

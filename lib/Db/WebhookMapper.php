@@ -388,8 +388,8 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function openSecret(Entity $entity): void {
-		if ($this->secrets !== null && $entity instanceof Webhook) {
-			$entity->setSecret($this->secrets->open(value: $entity->getSecret()));
+		if ($this->secrets !== null && $entity instanceof Webhook && $entity->getSecret() !== null) {
+			$entity->setSecret($this->secrets->open(value: $entity->getSecret()) ?? SecretAtRest::UNREADABLE);
 		}
 	}//end openSecret()
 
@@ -402,7 +402,7 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	 */
 	protected function mapRowToEntity(array $row): Entity {
 		if ($this->secrets !== null && isset($row['secret']) === true) {
-			$row['secret'] = $this->secrets->open(value: (string)$row['secret']);
+			$row['secret'] = ($this->secrets->open(value: (string)$row['secret']) ?? SecretAtRest::UNREADABLE);
 		}
 
 		return parent::mapRowToEntity(row: $row);

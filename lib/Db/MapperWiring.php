@@ -145,7 +145,10 @@ final class MapperWiring {
 				groupManager: $container->get('OCP\IGroupManager')
 			),
 			appConfig: $container->get('OCP\IAppConfig'),
-			secrets: new SecretAtRest(crypto: $container->get('OCP\Security\ICrypto'))
+			secrets: new SecretAtRest(
+				crypto: $container->get('OCP\Security\ICrypto'),
+				logger: $container->get('Psr\Log\LoggerInterface')
+			)
 		);
 	}//end webhookMapper()
 
